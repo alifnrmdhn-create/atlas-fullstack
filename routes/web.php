@@ -3,6 +3,9 @@
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BlockerController;
+use App\Http\Controllers\ChannelController;
+use App\Http\Controllers\ChannelMessageController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\KpiController;
 use App\Http\Controllers\PhaseController;
 use App\Http\Controllers\ProgramController;
@@ -107,5 +110,51 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{id}',    [KpiController::class, 'update'])->name('update');
         Route::delete('/{id}',   [KpiController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/values', [KpiController::class, 'storeValue'])->name('values.store');
+    });
+
+    // ── Channels ──────────────────────────────────────────────────────────────
+    Route::prefix('channels')->name('channels.')->group(function () {
+        Route::get('/',          [ChannelController::class, 'index'])->name('index');
+        Route::post('/',         [ChannelController::class, 'store'])->name('store');
+        Route::get('/browse',    [ChannelController::class, 'browse'])->name('browse');
+        Route::put('/read-all',  [ChannelController::class, 'markAllRead'])->name('read-all');
+        Route::get('/{id}',      [ChannelController::class, 'show'])->name('show');
+        Route::put('/{id}',      [ChannelController::class, 'update'])->name('update');
+        Route::delete('/{id}',   [ChannelController::class, 'destroy'])->name('destroy');
+
+        // Members
+        Route::post('/{id}/members',           [ChannelController::class, 'addMember'])->name('members.store');
+        Route::delete('/{id}/members/{userId}',[ChannelController::class, 'removeMember'])->name('members.destroy');
+        Route::put('/{id}/members/{userId}/mute',[ChannelController::class, 'toggleMute'])->name('members.mute');
+        Route::post('/{id}/join',              [ChannelController::class, 'join'])->name('join');
+
+        // Read state
+        Route::put('/{id}/star',        [ChannelController::class, 'toggleStar'])->name('star');
+        Route::put('/{id}/read',        [ChannelController::class, 'markRead'])->name('read');
+        Route::put('/{id}/mark-unread', [ChannelController::class, 'markUnread'])->name('mark-unread');
+
+        // Messages (nested)
+        Route::prefix('/{channelId}/messages')->name('messages.')->group(function () {
+            Route::get('/',  [ChannelMessageController::class, 'index'])->name('index');
+            Route::post('/', [ChannelMessageController::class, 'store'])->name('store');
+            Route::put('/{messageId}',      [ChannelMessageController::class, 'update'])->name('update');
+            Route::delete('/{messageId}',   [ChannelMessageController::class, 'destroy'])->name('destroy');
+            Route::get('/{messageId}/thread',[ChannelMessageController::class, 'thread'])->name('thread');
+            Route::put('/{messageId}/pin',  [ChannelMessageController::class, 'togglePin'])->name('pin');
+            Route::post('/{messageId}/reactions',          [ChannelMessageController::class, 'addReaction'])->name('reactions.store');
+            Route::delete('/{messageId}/reactions/{emoji}',[ChannelMessageController::class, 'removeReaction'])->name('reactions.destroy');
+        });
+    });
+
+    // ── Comments (polymorphic) ────────────────────────────────────────────────
+    Route::prefix('')->name('comments.')->group(function () {
+        Route::get('/{entityType}/{entityId}/comments',  [CommentController::class, 'index'])->name('index');
+        Route::post('/{entityType}/{entityId}/comments', [CommentController::class, 'store'])->name('store');
+        Route::get('/comments/{commentId}/thread',       [CommentController::class, 'thread'])->name('thread');
+        Route::put('/comments/{commentId}',              [CommentController::class, 'update'])->name('update');
+        Route::delete('/comments/{commentId}',           [CommentController::class, 'destroy'])->name('destroy');
+        Route::put('/comments/{commentId}/pin',          [CommentController::class, 'togglePin'])->name('pin');
+        Route::post('/comments/{commentId}/reactions',          [CommentController::class, 'addReaction'])->name('reactions.store');
+        Route::delete('/comments/{commentId}/reactions/{emoji}',[CommentController::class, 'removeReaction'])->name('reactions.destroy');
     });
 });
