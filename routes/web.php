@@ -8,9 +8,11 @@ use App\Http\Controllers\ChannelMessageController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\KpiController;
 use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\MonthlyReportController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PhaseController;
 use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\RiskReportController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -208,5 +210,28 @@ Route::middleware('auth')->group(function () {
         Route::patch('/positions/{id}',       [OrganizationController::class, 'updatePosition'])->name('positions.update');
         Route::delete('/positions/{id}',      [OrganizationController::class, 'destroyPosition'])->name('positions.destroy');
         Route::patch('/positions/{id}/assign',[OrganizationController::class, 'assignPosition'])->name('positions.assign');
+    });
+
+    // ── Monthly Reports ───────────────────────────────────────────────────────
+    Route::prefix('monthly-reports')->name('monthly-reports.')->group(function () {
+        Route::get('/',          [MonthlyReportController::class, 'index'])->name('index');
+        Route::post('/',         [MonthlyReportController::class, 'store'])->name('store');
+        Route::get('/{id}',      [MonthlyReportController::class, 'show'])->name('show');
+        Route::put('/{id}',      [MonthlyReportController::class, 'update'])->name('update');
+        Route::delete('/{id}',   [MonthlyReportController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/upload',  [MonthlyReportController::class, 'upload'])->name('upload');
+        Route::post('/{id}/submit',  [MonthlyReportController::class, 'submit'])->name('submit');
+        Route::post('/{id}/approve', [MonthlyReportController::class, 'approve'])->name('approve');
+    });
+
+    // ── Risk Reports ──────────────────────────────────────────────────────────
+    Route::prefix('risk-reports')->name('risk-reports.')->group(function () {
+        Route::get('/',          [RiskReportController::class, 'index'])->name('index');
+        Route::post('/',         [RiskReportController::class, 'store'])->name('store');
+        Route::get('/{id}',      [RiskReportController::class, 'show'])->name('show');
+        Route::put('/{id}',      [RiskReportController::class, 'update'])->name('update');
+        Route::get('/{id}/ytd',  [RiskReportController::class, 'ytd'])->name('ytd');
+        Route::post('/{id}/submit',  [RiskReportController::class, 'submit'])->name('submit');
+        Route::post('/{id}/approve', [RiskReportController::class, 'approve'])->name('approve');
     });
 });
