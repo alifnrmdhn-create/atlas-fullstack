@@ -1,0 +1,504 @@
+/* ─── Execution Grid (Ren/Real tabel mingguan ala PTPN) ──────────────────────
+ * Mengacu pola Excel "Timeline Pengembangan Ubi Kayu" dari PTPN Holding:
+ * hierarki Fase → Tahap (sub-step a/b/c), sticky kolom kiri (Fase/Uraian/PIC/
+ * Person/Status), minggu dikelompok bulan di header. Dual-row per step: Ren
+ * (rencana, biru) di atas, Real (realisasi, hijau/kuning/merah) di bawah.
+ */
+
+.execution-grid {
+  display: block;
+  position: relative;
+  font-family: var(--font-sans);
+  font-size: var(--type-small);
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md, 12px);
+  overflow: hidden;
+}
+
+.execution-grid__scroller {
+  overflow-x: auto;
+  overflow-y: visible;
+  max-width: 100%;
+}
+
+.execution-grid__table {
+  display: grid;
+  /* grid-template-columns di-set via inline style; satu per kolom mingguan */
+  grid-auto-rows: minmax(28px, auto);
+  min-width: max-content;
+}
+
+/* ── Header rows (2-level: month spanning + week cells) ─────────────────── */
+
+.execution-grid__month {
+  background: var(--surface-1);
+  color: var(--text-strong);
+  font-weight: var(--w-semibold);
+  text-align: center;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--panel-border);
+  border-right: 1px solid var(--panel-border);
+  font-size: var(--type-xs);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.execution-grid__week {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  text-align: center;
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--panel-border);
+  border-right: 1px solid var(--panel-border);
+  font-size: var(--type-caption);
+  font-weight: var(--w-medium);
+  font-family: var(--font-mono);
+}
+
+.execution-grid__week--today {
+  background: var(--ptpn-green-dim);
+  color: var(--ptpn-green);
+  font-weight: var(--w-semibold);
+}
+
+/* ── Sticky left columns (5 kolom info) ─────────────────────────────────── */
+
+.execution-grid__col-sticky {
+  position: sticky;
+  background: var(--panel);
+  border-right: 1px solid var(--panel-border);
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  font-size: var(--type-small);
+  z-index: 2;
+}
+
+.execution-grid__col-sticky--header {
+  background: var(--surface-1);
+  color: var(--text-strong);
+  font-weight: var(--w-semibold);
+  font-size: var(--type-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  z-index: 3;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.execution-grid__fase {
+  left: 0;
+  min-width: 54px;
+  justify-content: center;
+  font-weight: var(--w-semibold);
+  font-family: var(--font-mono);
+  color: var(--indigo);
+}
+
+.execution-grid__uraian {
+  left: 54px;
+  min-width: 320px;
+  max-width: 360px;
+  font-weight: var(--w-medium);
+  line-height: 1.35;
+}
+
+.execution-grid__pic-unit {
+  left: 374px;
+  min-width: 180px;
+  max-width: 220px;
+  color: var(--text);
+  font-size: var(--type-xs);
+  line-height: 1.35;
+}
+
+.execution-grid__pic-person {
+  left: 554px;
+  min-width: 180px;
+  max-width: 220px;
+  color: var(--text-muted);
+  font-size: var(--type-xs);
+  line-height: 1.35;
+}
+
+.execution-grid__status-label {
+  left: 734px;
+  min-width: 56px;
+  max-width: 56px;
+  justify-content: center;
+  font-size: var(--type-caption);
+  font-weight: var(--w-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--blue);
+  color: var(--text-inverse);
+  border-right: 1px solid var(--panel-border);
+}
+
+.execution-grid__status-label--real {
+  background: var(--surface-0);
+  color: var(--text-muted);
+}
+
+/* ── Phase header row ───────────────────────────────────────────────────── */
+
+.execution-grid__phase-row {
+  grid-column: 1 / -1;
+  background: var(--indigo-dim);
+  border-top: 2px solid var(--indigo);
+  border-bottom: 1px solid var(--panel-border);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: var(--w-semibold);
+  color: var(--indigo-dark);
+  font-size: var(--type-small);
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.execution-grid__phase-row__order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--indigo);
+  color: var(--text-inverse);
+  font-size: var(--type-caption);
+  font-weight: var(--w-heading);
+}
+
+.execution-grid__phase-row__name {
+  flex: 1;
+}
+
+.execution-grid__phase-row__meta {
+  color: var(--text-muted);
+  font-size: var(--type-xs);
+  font-weight: var(--w-normal);
+}
+
+/* ── Step rows ──────────────────────────────────────────────────────────── */
+
+.execution-grid__step-ren {
+  background: var(--panel);
+}
+
+.execution-grid__step-real {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.execution-grid__cell {
+  border-right: 1px solid var(--panel-border);
+  border-bottom: 1px solid var(--panel-border);
+  min-height: 28px;
+  position: relative;
+}
+
+.execution-grid__cell--today {
+  background: var(--ptpn-green-dim);
+}
+
+/* Ren cell (planned) — solid biru */
+.execution-grid__cell--ren {
+  background: var(--blue);
+}
+
+/* Real cell states */
+.execution-grid__cell--real-on-time {
+  background: var(--green);
+}
+
+.execution-grid__cell--real-late {
+  background: var(--yellow);
+}
+
+.execution-grid__cell--real-blocked {
+  background: var(--red);
+}
+
+/* Reset to auto button inside Real label cell */
+.execution-grid__reset-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 3px;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 10px;
+  cursor: pointer;
+  border-radius: 2px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 150ms, color 150ms;
+}
+.execution-grid__reset-btn:hover {
+  opacity: 1;
+  color: var(--ptpn-green);
+}
+
+/* Real cell editable (manual override) */
+.execution-grid__cell--editable {
+  cursor: pointer;
+}
+.execution-grid__cell--editable:hover {
+  filter: brightness(1.18);
+  outline: 1px solid var(--ptpn-green);
+  outline-offset: -1px;
+  z-index: 1;
+}
+.execution-grid__step-real .execution-grid__cell--editable:not([class*='--real-']) {
+  background: transparent;
+}
+.execution-grid__step-real .execution-grid__cell--editable:not([class*='--real-']):hover {
+  background: color-mix(in srgb, var(--ptpn-green) 14%, transparent);
+}
+
+/* ── Sticky "today" vertical line overlay ───────────────────────────────── */
+
+.execution-grid__today-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ptpn-green);
+  pointer-events: none;
+  z-index: 4;
+  box-shadow: 0 0 0 2px var(--ptpn-green-dim);
+}
+
+/* ── Empty / loading / meta ─────────────────────────────────────────────── */
+
+.execution-grid__empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--type-small);
+}
+
+.execution-grid__legend {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--surface-1);
+  border-top: 1px solid var(--panel-border);
+  font-size: var(--type-caption);
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.execution-grid__legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.execution-grid__legend-swatch {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* ── Workstream switcher pills ──────────────────────────────────────────── */
+
+.workstream-pills {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0 12px;
+  border-bottom: 1px solid var(--panel-border);
+  margin-bottom: 12px;
+}
+
+.workstream-pill {
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: var(--type-small);
+  font-weight: var(--w-medium);
+  white-space: nowrap;
+  transition: all var(--transition, 160ms);
+}
+
+.workstream-pill:hover {
+  border-color: var(--ptpn-green);
+  color: var(--ptpn-green);
+}
+
+.workstream-pill--active {
+  background: var(--ptpn-green);
+  border-color: var(--ptpn-green);
+  color: var(--text-inverse);
+}
+
+.workstream-pill__count {
+  margin-left: 6px;
+  font-size: var(--type-caption);
+  opacity: 0.7;
+  font-family: var(--font-mono);
+}
+
+/* ── Light mode quality pass: Excel-like grid with more premium depth and readability ── */
+:root:not([data-theme="dark"]) .execution-grid {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 56%, var(--panel) 44%) 0%, var(--panel) 100%);
+  border-color: color-mix(in srgb, var(--panel-border-strong) 58%, transparent);
+  box-shadow:
+    var(--panel-shadow-xl),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 70%, transparent);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__month {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ptpn-green) 9%, var(--surface-2) 91%) 0%, color-mix(in srgb, var(--surface-1) 88%, var(--panel) 12%) 100%);
+  color: var(--green-ink);
+  border-color: color-mix(in srgb, var(--panel-border-strong) 54%, transparent);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__week,
+:root:not([data-theme="dark"]) .execution-grid__col-sticky--header {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 74%, transparent), color-mix(in srgb, var(--surface-1) 88%, transparent));
+  border-color: color-mix(in srgb, var(--panel-border-strong) 50%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 64%, transparent);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__week--today {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ptpn-green) 15%, var(--surface-2) 85%) 0%, color-mix(in srgb, var(--ptpn-green-dim) 80%, var(--panel) 20%) 100%);
+  color: var(--green-ink);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ptpn-green) 18%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 58%, transparent);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__col-sticky {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, var(--surface-2) 12%) 0%, var(--panel) 100%);
+  border-color: color-mix(in srgb, var(--panel-border-strong) 48%, transparent);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__phase-row {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--indigo) 13%, transparent), transparent 64%),
+    linear-gradient(180deg, color-mix(in srgb, var(--indigo-dim) 72%, var(--surface-2) 28%) 0%, color-mix(in srgb, var(--panel) 88%, var(--indigo-dim) 12%) 100%);
+  border-top-color: var(--indigo);
+  border-bottom-color: color-mix(in srgb, var(--indigo) 20%, var(--panel-border) 80%);
+  color: var(--indigo-dark);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 60%, transparent),
+    0 8px 16px color-mix(in srgb, var(--indigo) 6%, transparent);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__phase-row__order {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 36%, transparent),
+    0 6px 12px color-mix(in srgb, var(--indigo) 16%, transparent);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__step-ren,
+:root:not([data-theme="dark"]) .execution-grid__step-real {
+  background: var(--panel);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__step-real .execution-grid__col-sticky,
+:root:not([data-theme="dark"]) .execution-grid__step-real {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 48%, var(--panel) 52%) 0%, var(--panel) 100%);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__cell {
+  border-color: color-mix(in srgb, var(--panel-border) 72%, transparent);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__cell--today {
+  background: color-mix(in srgb, var(--ptpn-green-dim) 72%, var(--panel) 28%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ptpn-green) 12%, transparent);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__cell--ren,
+:root:not([data-theme="dark"]) .execution-grid__cell--real-on-time,
+:root:not([data-theme="dark"]) .execution-grid__cell--real-late,
+:root:not([data-theme="dark"]) .execution-grid__cell--real-blocked {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 36%, transparent);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__today-line {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--ptpn-green) 18%, transparent),
+    0 0 18px color-mix(in srgb, var(--ptpn-green) 30%, transparent);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__legend {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 66%, transparent), color-mix(in srgb, var(--surface-1) 88%, transparent));
+  border-top-color: color-mix(in srgb, var(--panel-border-strong) 52%, transparent);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__legend-swatch {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 42%, transparent),
+    0 2px 6px color-mix(in srgb, var(--panel-border-strong) 12%, transparent);
+}
+
+:root:not([data-theme="dark"]) .workstream-pills {
+  border-bottom-color: color-mix(in srgb, var(--panel-border-strong) 52%, transparent);
+}
+
+:root:not([data-theme="dark"]) .workstream-pill {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 72%, transparent), color-mix(in srgb, var(--panel) 92%, transparent));
+  border-color: color-mix(in srgb, var(--panel-border-strong) 52%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 66%, transparent);
+}
+
+:root:not([data-theme="dark"]) .workstream-pill:hover {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ptpn-green) 9%, var(--surface-2) 91%) 0%, var(--panel) 100%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 62%, transparent),
+    0 8px 16px color-mix(in srgb, var(--ptpn-green) 8%, transparent);
+}
+
+:root:not([data-theme="dark"]) .workstream-pill--active {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ptpn-green) 88%, var(--accent) 12%) 0%, var(--ptpn-green) 100%);
+  color: var(--text-inverse);
+  border-color: var(--ptpn-green);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 34%, transparent),
+    0 10px 20px color-mix(in srgb, var(--ptpn-green) 20%, transparent);
+}
+
+/* ── Perencanaan notice banner above grid ─────────────────────────── */
+.exec-planning-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin: 0 0 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--yellow);
+  background: color-mix(in srgb, var(--yellow) 6%, var(--surface-1));
+  border: 1px solid color-mix(in srgb, var(--yellow) 25%, var(--panel-border));
+}
+.exec-planning-notice svg { flex-shrink: 0; }
+.exec-planning-notice strong {
+  color: var(--yellow);
+  font-weight: 700;
+}

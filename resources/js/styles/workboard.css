@@ -1,0 +1,1287 @@
+/* ─── Workboard View ─────────────────────────────────────────── */
+.view-workboard { display: flex; flex-direction: column; height: 100%; }
+
+.workboard-header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--panel-border);
+  padding: 20px 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.workboard-header__title {
+  font-size: var(--type-title);
+  font-weight: var(--w-display);
+  color: var(--text-strong);
+  letter-spacing: -0.03em;
+}
+.workboard-header__sub {
+  font-size: var(--type-small);
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.workboard-stats { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.workboard-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 20px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  min-width: 80px;
+  text-align: center;
+  box-shadow: var(--panel-shadow);
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+.workboard-stat:hover { box-shadow: var(--lift-shadow); transform: translateY(-1px); }
+.workboard-stat__val {
+  font-size: 1.5rem;
+  font-weight: var(--w-display);
+  color: var(--text-strong);
+  line-height: 1;
+  margin-bottom: 4px;
+  letter-spacing: -0.03em;
+}
+.workboard-stat__label {
+  font-size: var(--type-caption);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+/* target both class-based and raw element children */
+.workboard-stat strong, .workboard-stat__val  {
+  font-size: 1.5rem;
+  font-weight: var(--w-display);
+  color: var(--text-strong);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.workboard-stat span, .workboard-stat__label {
+  font-size: var(--type-caption);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.workboard-stat--warn strong, .workboard-stat--warn .workboard-stat__val  { color: var(--yellow); }
+.workboard-stat--red strong,  .workboard-stat--red .workboard-stat__val   { color: var(--red); }
+.workboard-stat--green strong,.workboard-stat--green .workboard-stat__val { color: var(--green); }
+.workboard-stat--success strong { color: var(--green); }
+
+.workboard-workspace {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-width: 0;
+}
+.workboard-main {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: auto;
+  padding: 20px 20px 24px;
+  /* Stable scrollbar so layout doesn't shift on open/close */
+  scrollbar-gutter: stable;
+}
+
+/* ── Work item list (List mode in WorkboardView) ──────────── */
+.wi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 0 6px;
+}
+.wi-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 14px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-left-width: 3px;
+  border-left-color: var(--panel-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition);
+  box-shadow: var(--panel-shadow);
+}
+.wi-list-row:hover {
+  border-top-color: var(--indigo-mid);
+  border-right-color: var(--indigo-mid);
+  border-bottom-color: var(--indigo-mid);
+  box-shadow: var(--lift-shadow);
+  transform: translateY(-1px);
+}
+.wi-list-row:focus-visible {
+  outline: none;
+  border-color: var(--indigo);
+  box-shadow: var(--focus-ring), var(--panel-shadow);
+}
+.wi-list-row--active {
+  background: var(--indigo-dim);
+  border-left-color: var(--indigo);
+}
+.wi-list-row__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.wi-list-row__left > div {
+  flex: 1;
+  min-width: 0;
+}
+.wi-list-row__left strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wi-list-row__right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.wi-list-row__right .progress-bar { width: 60px; }
+
+/* Status colored text label */
+.status-dot-label {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.status-dot-label--backlog { color: var(--text-muted); }
+.status-dot-label--ready { color: var(--blue); }
+.status-dot-label--in_progress { color: var(--yellow); }
+.status-dot-label--in_review { color: var(--purple); }
+.status-dot-label--blocked { color: var(--red); }
+.status-dot-label--completed { color: var(--green); }
+
+/* ── Subtask list ──────────────────────────────────────────── */
+.subtask-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.subtask-row:last-child { border-bottom: none; }
+.subtask-row > div:last-child {
+  flex: 1;
+  min-width: 0;
+}
+.subtask-row > div:last-child span:first-child {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.4;
+}
+.subtask-row > div:last-child .text-muted {
+  display: block;
+  font-size: 11px;
+  margin-top: 1px;
+}
+.subtask-row__check {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--panel-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 1px;
+  background: var(--surface-1);
+}
+.subtask-row__check--done {
+  background: var(--green);
+  border-color: var(--green);
+  color: var(--text-inverse);
+}
+.text-strikethrough { text-decoration: line-through; color: var(--text-muted) !important; }
+
+/* ── Blocker row (inside panel) ────────────────────────────── */
+.blocker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.blocker-row:last-child { border-bottom: none; }
+.blocker-row__left {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.blocker-row__left > div {
+  flex: 1;
+  min-width: 0;
+}
+.blocker-row__left strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin-bottom: 2px;
+}
+.blocker-row__left p {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Execution controls form ───────────────────────────────── */
+.exec-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 16px 16px;
+}
+.exec-form__label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.exec-form__select {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  color: var(--text-strong);
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.exec-form__select:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px var(--indigo-dim); }
+.exec-form__range {
+  width: 100%;
+  accent-color: var(--indigo);
+  cursor: pointer;
+  height: 4px;
+}
+
+/* ── Gov table active row ──────────────────────────────────── */
+.gov-table__row--active td { background: var(--indigo-dim); }
+
+/* ── Program kanban wrapper ────────────────────────────────── */
+.program-kanban {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: 16px;
+}
+.program-kanban .kanban-col { flex: 0 0 220px; min-width: 200px; max-width: 260px; }
+
+/* ─── Inline Push Panel ──────────────────────────────────────── */
+/* Replaces the old fixed-overlay drawer with a flex-child split view.
+   The workspace (programs-workspace / workboard-workspace) is already
+   display:flex — the panel just animates its width from 0 to open. */
+
+.push-panel {
+  width: 0;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--surface-1);
+  border-left: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  transition: width 280ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0ms 280ms;
+}
+.push-panel--open {
+  width: 440px;
+  border-left-color: var(--indigo-mid);
+  box-shadow: calc(-1 * 8px) 0 40px var(--panel-border-soft);
+  transition: width 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* Panels inside the push panel inherit the tinted background */
+.push-panel .panel {
+  background: var(--panel);
+  box-shadow: none;
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  overflow: visible;
+}
+.push-panel .panel + .panel {
+  border-top: 1px solid var(--panel-border-soft);
+}
+/* Section headers inside push panel */
+.push-panel .panel__header {
+  padding: 14px 16px 10px;
+}
+.push-panel .panel__section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+.push-panel .panel__title { font-size: 12px; }
+.push-panel .detail-hero { padding: 14px 16px 12px; }
+
+/* Standalone section title (not inside panel__header) needs its own padding */
+.push-panel .panel > h4.panel__section-title,
+.push-panel .panel > h3.panel__section-title {
+  padding: 14px 16px 6px;
+  display: block;
+}
+
+/* Hide program stat-nums when panel is open (not enough width) */
+.programs-workspace--panel-open .program-row__nums { display: none; }
+
+.drawer__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--panel-border);
+  background: var(--panel);
+  flex-shrink: 0;
+  box-shadow: var(--panel-shadow);
+}
+.drawer__title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-strong);
+  letter-spacing: -0.025em;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.drawer__close {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--panel-border);
+  background: var(--app-bg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.drawer__close:hover {
+  background: var(--red-dim);
+  border-color: var(--red-subtle);
+  color: var(--red);
+}
+.drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--surface-1);
+}
+.drawer__body::-webkit-scrollbar { width: 4px; }
+.drawer__body::-webkit-scrollbar-track { background: transparent; }
+.drawer__body::-webkit-scrollbar-thumb { background: var(--panel-border-strong); border-radius: 2px; }
+.drawer__body .panel { border-radius: 0; border-left: none; border-right: none; box-shadow: none; background: var(--panel); }
+.drawer__body .panel:first-child { border-top: none; }
+.drawer__body .panel + .panel { border-top: 1px solid var(--panel-border-soft); }
+
+/* Legacy rail — keep hidden for responsive */
+.workboard-rail {
+  display: none;
+}
+
+/* Kanban board */
+.kanban-board {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-height: 400px;
+  padding-bottom: 24px;
+}
+.kanban-col {
+  flex: 0 0 248px;
+  min-width: 220px;
+  max-width: 280px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  border: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--panel-shadow);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.kanban-col--drop-target,
+.kanban-col--drag-over {
+  border-color: var(--indigo);
+  box-shadow: 0 0 0 3px var(--indigo-dim), var(--panel-shadow);
+  background: var(--indigo-dim);
+  transition: background 100ms, box-shadow 100ms, border-color 100ms;
+}
+.kanban-col--collapsed {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: none;
+}
+.kanban-col--collapsed .kanban-col__header {
+  border-bottom: none;
+}
+.kanban-col__header--toggle {
+  width: 100%;
+  background: var(--panel);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: background var(--transition);
+}
+.kanban-col__header--toggle:hover {
+  background: var(--surface-2);
+}
+.kanban-col__header--toggle:focus-visible {
+  outline: none;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--indigo), var(--focus-ring);
+}
+.kanban-col__caret {
+  display: inline-block;
+  width: 10px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.kanban-col__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px 12px 8px;
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid var(--panel-border);
+  background: var(--panel);
+  flex-shrink: 0;
+}
+.kanban-col__header--backlog { border-left-color: var(--text-muted); }
+.kanban-col__header--ready { border-left-color: var(--blue); }
+.kanban-col__header--in_progress { border-left-color: var(--yellow); }
+.kanban-col__header--in_review { border-left-color: var(--purple); }
+.kanban-col__header--blocked { border-left-color: var(--red); }
+.kanban-col__header--completed { border-left-color: var(--green); }
+/* TSX uses kanban-col__label-row + kanban-col__status-dot + kanban-col__label */
+.kanban-col__label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.kanban-col__status-dot,
+.kanban-col__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.kanban-col__label,
+.kanban-col__name {
+  font-size: var(--type-xs);
+  font-weight: var(--w-semibold);
+  color: var(--text-strong);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kanban-col__count {
+  font-size: var(--type-xs);
+  font-weight: var(--w-semibold);
+  color: var(--text-muted);
+  background: var(--surface-1);
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  padding: 1px 8px;
+  flex-shrink: 0;
+}
+.kanban-col__body {
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 100px;
+  flex: 1;
+}
+.kanban-col__empty {
+  margin: 6px 2px;
+  padding: 24px 12px;
+  text-align: center;
+  border: 1.5px dashed var(--panel-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: var(--type-xs);
+  letter-spacing: 0.03em;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Work card ─────────────────────────────────── */
+.work-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 12px 13px;
+  cursor: inherit;
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+  text-align: left;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  box-shadow: var(--panel-shadow);
+  overflow: hidden;
+}
+.work-card-shell {
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  appearance: none;
+}
+.work-card-shell--draggable { cursor: grab; }
+.work-card-shell--dragging { cursor: grabbing; }
+.work-card-shell--readonly { cursor: default; }
+.work-card-shell:focus-visible {
+  outline: none;
+}
+.work-card-shell:focus-visible .work-card {
+  border-color: var(--indigo);
+  box-shadow: var(--focus-ring), var(--panel-shadow);
+}
+.work-card:hover {
+  border-color: var(--indigo);
+  box-shadow: var(--lift-shadow);
+  transform: translateY(-2px);
+}
+.work-card--active,
+.work-card--selected {
+  border-color: var(--indigo);
+  background: var(--indigo-dim);
+  box-shadow: 0 0 0 3px var(--indigo-dim), var(--panel-shadow);
+}
+/* Ghost placeholder — subtle dashed outline so user sees where card came from */
+.work-card--drag-ghost {
+  opacity: 0.28 !important;
+  background: transparent !important;
+  border: 1.5px dashed var(--panel-border) !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+.work-card--drag-ghost * { visibility: hidden; }
+
+/* Lift-up animation when drag starts */
+@keyframes card-lift {
+  from {
+    transform: scale(1) rotate(0deg);
+    box-shadow: var(--panel-shadow);
+  }
+  to {
+    transform: scale(1.045) rotate(1deg);
+    box-shadow: var(--panel-shadow-xl);
+  }
+}
+
+/* Floating overlay card */
+.work-card--drag-overlay {
+  animation: card-lift 140ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  border-color: var(--indigo) !important;
+  background: var(--panel) !important;
+  cursor: grabbing !important;
+  width: 248px;
+  user-select: none;
+  will-change: transform;
+}
+
+/* Drop slot — animated placeholder in the target column */
+@keyframes drop-slot-in {
+  from { opacity: 0; transform: scaleY(0.6); }
+  to   { opacity: 1; transform: scaleY(1); }
+}
+.kanban-drop-slot {
+  height: 54px;
+  border: 1.5px dashed var(--indigo);
+  border-radius: var(--radius-md);
+  background: var(--indigo-dim);
+  margin: 0;
+  animation: drop-slot-in 120ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: top center;
+  flex-shrink: 0;
+}
+.work-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.work-card__title {
+  font-size: var(--type-small);
+  font-weight: var(--w-semibold);
+  color: var(--text-strong);
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.work-card__initiative {
+  font-size: var(--type-xs);
+  color: var(--text-muted);
+  overflow-wrap: break-word;
+  word-break: break-word;
+  margin: 0;
+}
+.work-card__context {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 3px;
+  overflow: hidden;
+}
+.work-card__context-prog {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.work-card__context-sep {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.work-card__context-ini {
+  font-size: 10px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.work-card__progress-track {
+  margin: 7px 0 6px;
+}
+.work-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+.work-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--panel-border);
+  margin-top: 2px;
+}
+.work-card__meta { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.work-card__blocked {
+  font-size: var(--type-caption);
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--red-dim);
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.work-card__footer-meta {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Work list table */
+.work-list { width: 100%; border-collapse: collapse; font-size: 12.5px; background: var(--panel); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--panel-border); box-shadow: var(--panel-shadow); }
+.work-list th { background: var(--surface-1); border-bottom: 1px solid var(--panel-border); padding: 10px 14px; text-align: left; font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.work-list td { padding: 11px 14px; border-bottom: 1px solid var(--panel-border-soft); vertical-align: middle; }
+.work-list tr:last-child td { border-bottom: none; }
+.work-list tr { cursor: pointer; transition: background var(--transition); }
+.work-list tr:hover td { background: var(--indigo-dim); }
+
+/* Blockers list */
+.blocker-list { display: flex; flex-direction: column; gap: 8px; }
+.blocker-card {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.blocker-card--CRITICAL { border-left: 3px solid var(--red); }
+.blocker-card--HIGH { border-left: 3px solid var(--accent); }
+.blocker-card--MEDIUM { border-left: 3px solid var(--yellow); }
+.blocker-card--LOW { border-left: 3px solid var(--green); }
+.blocker-card__top { display: flex; align-items: center; gap: 8px; }
+.blocker-card__title { font-size: 13px; font-weight: 600; color: var(--text-strong); flex: 1; }
+.blocker-card__desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+.blocker-card__meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Status dot (for kanban headers) */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.status-dot--backlog { background: var(--text-muted); }
+.status-dot--ready { background: var(--blue); }
+.status-dot--in_progress { background: var(--accent); }
+.status-dot--in_review { background: var(--purple); }
+.status-dot--blocked { background: var(--red); }
+.status-dot--completed { background: var(--green); }
+.status-dot--planning { background: var(--text-muted); }
+.status-dot--on_hold { background: var(--yellow); }
+.status-dot--cancelled { background: var(--text-muted); }
+
+/* Detail rail shared */
+.rail-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+.rail-close:hover { background: var(--app-bg); color: var(--text); }
+.rail-section { padding: 12px 16px; border-bottom: 1px solid var(--panel-border); }
+.rail-section:last-child { border-bottom: none; }
+.rail-section__label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 8px; }
+
+/* Subtask checklist */
+.subtask-list { display: flex; flex-direction: column; gap: 5px; }
+.subtask-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text); }
+.subtask-item--done { text-decoration: line-through; color: var(--text-muted); }
+.subtask-item input[type=checkbox] { accent-color: var(--accent); flex-shrink: 0; }
+
+/* Execution controls */
+.exec-controls { display: flex; flex-direction: column; gap: 12px; }
+.exec-controls__label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.exec-controls__select {
+  width: 100%;
+  height: 34px;
+  padding: 0 28px 0 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-body);
+  background: var(--surface-1);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394A3B8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.exec-controls__select:focus {
+  outline: none;
+  border-color: var(--indigo);
+  box-shadow: 0 0 0 3px var(--indigo-dim);
+}
+.exec-controls__range {
+  width: 100%;
+  accent-color: var(--indigo);
+  cursor: pointer;
+  height: 4px;
+  border-radius: 2px;
+}
+
+/* Empty states inside push-panel section panels */
+.push-panel .panel-empty-state {
+  padding: 18px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.push-panel .text-muted.text-sm {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Description text inside panel body */
+.push-panel .panel > p.text-sm {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-body);
+  padding: 2px 16px 14px;
+  margin: 0;
+}
+
+/* Attention queue */
+.attention-panel { margin-top: 16px; }
+.attention-list { display: flex; flex-direction: column; }
+.attention-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--panel-border);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background var(--transition);
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  width: 100%;
+  text-align: left;
+}
+.attention-item:last-child { border-bottom: none; }
+.attention-item:hover { background: var(--yellow-dim); }
+.attention-item:focus-visible {
+  outline: none;
+  background: var(--yellow-dim);
+  box-shadow: inset 0 0 0 1px var(--yellow), var(--focus-ring);
+}
+.attention-item__title { flex: 1; font-weight: 500; color: var(--text-strong); }
+.attention-item__meta { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+
+/* ── Program filter select ─────────────────────────────── */
+.wb-program-filter {
+  height: 26px;
+  padding: 0 24px 0 8px;
+  font-size: 12px;
+  color: var(--text-body);
+  background: var(--surface-1);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394A3B8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wb-program-filter:focus {
+  outline: none;
+  border-color: var(--indigo);
+  box-shadow: 0 0 0 2px var(--indigo-dim);
+}
+.wb-view-toggle { margin-left: 4px; }
+.wb-stats__blocked {
+  color: var(--red);
+  font-weight: 600;
+}
+.wb-stats__blocked em {
+  color: inherit;
+  font-style: normal;
+}
+
+/* ── Drawer header restructure ─────────────────────────── */
+.drawer__header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+/* ── Breadcrumb in push panel ──────────────────────────── */
+.wb-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  flex-wrap: wrap;
+}
+.wb-breadcrumb__program {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--indigo);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: opacity 120ms;
+}
+.wb-breadcrumb__program:hover { opacity: 0.75; text-decoration: underline; }
+.wb-breadcrumb__sep {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1;
+}
+.wb-breadcrumb__initiative {
+  font-size: 11px;
+  color: var(--text-muted);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wb-breadcrumb__goto {
+  margin-left: 2px;
+  font-size: 11px;
+  color: var(--indigo);
+  background: var(--indigo-dim);
+  border: none;
+  border-radius: 4px;
+  padding: 1px 5px;
+  cursor: pointer;
+  transition: background 120ms;
+  line-height: 1.6;
+}
+.wb-breadcrumb__goto:hover { background: var(--indigo-mid); }
+
+/* ── Drag rollback error banner ────────────────────────── */
+@keyframes banner-slide-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.board-rollback-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--red-dim);
+  border-bottom: 1px solid var(--red-subtle);
+  border-left: 3px solid var(--red);
+  font-size: 13px;
+  color: var(--red);
+  flex-shrink: 0;
+  animation: banner-slide-in 180ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.board-rollback-banner__icon { font-size: 14px; flex-shrink: 0; }
+.board-rollback-banner__msg { font-weight: 600; }
+.board-rollback-banner__sub { color: var(--red); font-size: 11.5px; opacity: 0.85; margin-left: 2px; }
+.board-rollback-banner__close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--red);
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.7;
+  transition: opacity 100ms;
+}
+.board-rollback-banner__close:hover { opacity: 1; }
+.wb-modal-error {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--red-subtle);
+  background: var(--red-dim);
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 500;
+}
+.wb-modal-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+.wb-form-grid {
+  display: grid;
+  gap: 12px;
+}
+.wb-form-grid--equal {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+
+/* ── Role-aware UI ─────────────────────────────────────────────── */
+
+/* Badge shown in toolbar for BOD monitoring mode */
+.role-monitoring-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: var(--blue-dim);
+  border: 1px solid var(--blue-subtle);
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--blue);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.role-monitoring-badge::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+
+/* Non-draggable card (BOD, or OFFICER viewing others' cards) */
+.work-card--readonly {
+  opacity: 0.85;
+}
+.work-card--readonly:hover {
+  transform: none;
+  box-shadow: var(--shadow-card);
+}
+
+@media (max-width: 720px) {
+  .wb-form-grid--equal {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Light mode quality pass: Workboard depth, kanban hierarchy, and task affordance ── */
+:root:not([data-theme="dark"]) .workboard-header {
+  background:
+    radial-gradient(ellipse 42% 140% at 0% 0%, color-mix(in srgb, var(--ptpn-green) 10%, transparent), transparent 72%),
+    radial-gradient(ellipse 38% 130% at 100% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 91%, var(--surface-2) 9%) 0%, var(--panel) 100%);
+  border-bottom-color: color-mix(in srgb, var(--panel-border-strong) 66%, transparent);
+  box-shadow:
+    0 1px 0 var(--panel-border),
+    0 18px 34px color-mix(in srgb, var(--panel-border-strong) 9%, transparent);
+}
+
+:root:not([data-theme="dark"]) .workboard-main {
+  background:
+    radial-gradient(ellipse 38% 48% at 0% 0%, color-mix(in srgb, var(--ptpn-green) 7%, transparent), transparent 72%),
+    radial-gradient(ellipse 38% 48% at 100% 0%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%),
+    var(--app-bg);
+}
+
+:root:not([data-theme="dark"]) .workboard-stat {
+  background:
+    radial-gradient(ellipse 78% 70% at 100% 0%, color-mix(in srgb, var(--indigo) 6%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, var(--surface-2) 12%) 0%, var(--panel) 100%);
+  border-color: color-mix(in srgb, var(--panel-border-strong) 52%, transparent);
+  box-shadow:
+    var(--panel-shadow-md),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 70%, transparent);
+}
+
+:root:not([data-theme="dark"]) .workboard-stat--warn {
+  background:
+    radial-gradient(ellipse 78% 70% at 100% 0%, color-mix(in srgb, var(--yellow) 10%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 90%, var(--surface-2) 10%) 0%, var(--panel) 100%);
+}
+
+:root:not([data-theme="dark"]) .workboard-stat--red {
+  background:
+    radial-gradient(ellipse 78% 70% at 100% 0%, color-mix(in srgb, var(--red) 9%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 90%, var(--surface-2) 10%) 0%, var(--panel) 100%);
+}
+
+:root:not([data-theme="dark"]) .workboard-stat--green,
+:root:not([data-theme="dark"]) .workboard-stat--success {
+  background:
+    radial-gradient(ellipse 78% 70% at 100% 0%, color-mix(in srgb, var(--green) 9%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 90%, var(--surface-2) 10%) 0%, var(--panel) 100%);
+}
+
+:root:not([data-theme="dark"]) .wi-list-row {
+  --wi-row-accent: var(--indigo);
+  --wi-row-wash: color-mix(in srgb, var(--wi-row-accent) 5%, transparent);
+  background:
+    linear-gradient(90deg, var(--wi-row-wash), transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 87%, var(--surface-2) 13%) 0%, var(--panel) 100%);
+  border-color: color-mix(in srgb, var(--panel-border) 78%, var(--wi-row-accent) 22%);
+  border-left-color: var(--wi-row-accent);
+  box-shadow:
+    var(--panel-shadow),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 70%, transparent);
+}
+
+:root:not([data-theme="dark"]) .wi-list-row:hover {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--wi-row-accent) 10%, transparent), transparent 50%),
+    linear-gradient(180deg, var(--surface-2) 0%, var(--panel) 100%);
+  border-top-color: color-mix(in srgb, var(--wi-row-accent) 38%, var(--panel-border) 62%);
+  border-right-color: color-mix(in srgb, var(--wi-row-accent) 38%, var(--panel-border) 62%);
+  border-bottom-color: color-mix(in srgb, var(--wi-row-accent) 38%, var(--panel-border) 62%);
+}
+
+:root:not([data-theme="dark"]) .wi-list-row--active {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--indigo) 15%, transparent), transparent 58%),
+    linear-gradient(180deg, color-mix(in srgb, var(--indigo-dim) 58%, var(--panel) 42%) 0%, var(--panel) 100%);
+  border-color: color-mix(in srgb, var(--indigo) 38%, var(--panel-border) 62%);
+  border-left-color: var(--indigo);
+}
+
+:root:not([data-theme="dark"]) .push-panel,
+:root:not([data-theme="dark"]) .drawer__body {
+  background:
+    radial-gradient(ellipse 86% 42% at 100% 0%, color-mix(in srgb, var(--indigo) 6%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-1) 84%, var(--surface-2) 16%) 0%, var(--surface-1) 100%);
+}
+
+:root:not([data-theme="dark"]) .push-panel--open {
+  border-left-color: color-mix(in srgb, var(--indigo) 34%, var(--panel-border) 66%);
+  box-shadow: calc(-1 * 14px) 0 42px color-mix(in srgb, var(--panel-border-strong) 18%, transparent);
+}
+
+:root:not([data-theme="dark"]) .drawer__header {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 68%, var(--panel) 32%) 0%, var(--panel) 100%);
+  border-bottom-color: color-mix(in srgb, var(--panel-border-strong) 54%, transparent);
+  box-shadow:
+    0 1px 0 var(--panel-border),
+    0 12px 24px color-mix(in srgb, var(--panel-border-strong) 9%, transparent);
+}
+
+:root:not([data-theme="dark"]) .kanban-col {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 58%, var(--surface-1) 42%) 0%, var(--surface-1) 100%);
+  border-color: color-mix(in srgb, var(--panel-border-strong) 52%, transparent);
+  box-shadow:
+    var(--panel-shadow-md),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 64%, transparent);
+}
+
+:root:not([data-theme="dark"]) .kanban-col__header {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 74%, var(--panel) 26%) 0%, var(--panel) 100%);
+  border-bottom-color: color-mix(in srgb, var(--panel-border-strong) 50%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 68%, transparent);
+}
+
+:root:not([data-theme="dark"]) .kanban-col__count {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 78%, transparent), color-mix(in srgb, var(--surface-1) 86%, transparent));
+  border-color: color-mix(in srgb, var(--panel-border-strong) 46%, transparent);
+}
+
+:root:not([data-theme="dark"]) .kanban-col--drop-target,
+:root:not([data-theme="dark"]) .kanban-col--drag-over {
+  background:
+    radial-gradient(ellipse 92% 36% at 50% 0%, color-mix(in srgb, var(--indigo) 12%, transparent), transparent 70%),
+    color-mix(in srgb, var(--indigo-dim) 72%, var(--surface-1) 28%);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--indigo) 14%, transparent),
+    var(--panel-shadow-md);
+}
+
+:root:not([data-theme="dark"]) .kanban-col__empty,
+:root:not([data-theme="dark"]) .kanban-col__empty--dashed {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 54%, transparent), transparent);
+  border-color: color-mix(in srgb, var(--panel-border-strong) 62%, transparent);
+}
+
+:root:not([data-theme="dark"]) .work-card {
+  --work-card-accent: var(--indigo);
+  background:
+    radial-gradient(ellipse 78% 68% at 100% 0%, color-mix(in srgb, var(--work-card-accent) 7%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, var(--surface-2) 12%) 0%, var(--panel) 100%);
+  border-color: color-mix(in srgb, var(--panel-border) 78%, var(--work-card-accent) 22%);
+  box-shadow:
+    var(--panel-shadow),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 70%, transparent);
+}
+
+:root:not([data-theme="dark"]) .work-card:hover {
+  background:
+    radial-gradient(ellipse 86% 76% at 100% 0%, color-mix(in srgb, var(--work-card-accent) 11%, transparent), transparent 74%),
+    linear-gradient(180deg, var(--surface-2) 0%, var(--panel) 100%);
+  border-color: color-mix(in srgb, var(--work-card-accent) 38%, var(--panel-border) 62%);
+}
+
+:root:not([data-theme="dark"]) .work-card--active,
+:root:not([data-theme="dark"]) .work-card--selected {
+  background:
+    radial-gradient(ellipse 86% 76% at 100% 0%, color-mix(in srgb, var(--indigo) 13%, transparent), transparent 74%),
+    linear-gradient(180deg, color-mix(in srgb, var(--indigo-dim) 56%, var(--panel) 44%) 0%, var(--panel) 100%);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--indigo) 12%, transparent),
+    var(--panel-shadow-md);
+}
+
+:root:not([data-theme="dark"]) .work-card__footer {
+  border-top-color: color-mix(in srgb, var(--panel-border-strong) 42%, transparent);
+}
+
+:root:not([data-theme="dark"]) .work-card__blocked,
+:root:not([data-theme="dark"]) .role-monitoring-badge,
+:root:not([data-theme="dark"]) .status-dot-label {
+  filter: saturate(1.08);
+}
+
+:root:not([data-theme="dark"]) .work-list {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 54%, var(--panel) 46%) 0%, var(--panel) 100%);
+  border-color: color-mix(in srgb, var(--panel-border-strong) 52%, transparent);
+  box-shadow: var(--panel-shadow-md);
+}
+
+:root:not([data-theme="dark"]) .work-list th {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 72%, transparent), color-mix(in srgb, var(--surface-1) 88%, transparent));
+}
+
+:root:not([data-theme="dark"]) .work-list tr:hover td {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--indigo) 7%, transparent), transparent 50%),
+    color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+
+:root:not([data-theme="dark"]) .blocker-card,
+:root:not([data-theme="dark"]) .wi-blocker-card,
+:root:not([data-theme="dark"]) .subtask-row {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 90%, var(--surface-2) 10%) 0%, var(--panel) 100%);
+}

@@ -1,0 +1,716 @@
+/* ── Playbook workspace ───────────────────────────────────────────────────── */
+
+.pb-workspace {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Sticky page header bar (same pattern as Presence / Focus) ───────────── */
+
+.pb-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  padding: 11px 32px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--panel-border);
+  flex-shrink: 0;
+}
+
+.pb-topbar__left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.pb-topbar__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-strong, var(--text));
+  margin: 0;
+  line-height: 1.3;
+}
+
+.pb-topbar__sub {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.pb-topbar__dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.4;
+  flex-shrink: 0;
+}
+
+.pb-topbar__badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green-ink);
+  background: var(--green-dim);
+  border: 1px solid var(--green-subtle);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+/* ── Two-column layout ───────────────────────────────────────────────────── */
+
+.pb-layout {
+  display: grid;
+  grid-template-columns: 256px 1fr;
+  align-items: start;
+  gap: 0;
+  flex: 1;
+}
+
+/* ── TOC ─────────────────────────────────────────────────────────────────── */
+
+.pb-nav {
+  position: sticky;
+  top: 44px; /* height of pb-topbar */
+  padding: 20px 16px 40px 20px;
+  border-right: 1px solid var(--panel-border);
+  max-height: calc(100vh - 44px);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.pb-nav::-webkit-scrollbar { display: none; }
+
+.pb-nav__heading {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+  opacity: 0.65;
+}
+
+.pb-nav__item {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  outline: none;
+  box-shadow: none;
+  text-align: left;
+  padding: 4px 0 4px 10px;
+  margin: 1px 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 0 3px 3px 0;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+.pb-nav__item:hover {
+  color: var(--text);
+  background: var(--surface-overlay-soft);
+}
+.pb-nav__item--active {
+  color: var(--green-ink);
+  border-left-color: var(--green);
+  font-weight: 500;
+  background: var(--green-dim);
+}
+
+.pb-nav__idx {
+  display: inline-block;
+  min-width: 16px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  opacity: 0.45;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+.pb-nav__item--active .pb-nav__idx {
+  color: var(--green-ink);
+  opacity: 0.7;
+}
+
+.pb-nav__divider {
+  margin: 8px 10px;
+  border-top: 1px solid var(--panel-border);
+  opacity: 0.6;
+}
+
+.pb-nav__top {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  background: none;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 4px 0 4px 10px;
+  margin-top: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, color 0.12s;
+}
+.pb-nav__top--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.pb-nav__top:hover { color: var(--text); }
+
+/* ── Content area ────────────────────────────────────────────────────────── */
+
+.pb-content {
+  padding: 20px 48px 80px 40px;
+  min-width: 0;
+  max-width: 900px;
+}
+
+/* Loading / error */
+.pb-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 64px 32px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+@keyframes pb-spin { to { transform: rotate(360deg); } }
+.pb-state__spin {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: pb-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ── Body ────────────────────────────────────────────────────────────────── */
+
+.pb-body {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+/* ── Intro card (pre-H2 content) + section cards ─────────────────────────── */
+
+.pb-body .pb-intro {
+  margin-bottom: 12px;
+  padding: 14px 18px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+/* Tighten blockquote margin inside intro card */
+.pb-body .pb-intro .pb-bq {
+  margin-bottom: 4px;
+}
+
+.pb-body .pb-section {
+  margin-bottom: 8px;
+  padding: 18px 22px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+/* Reference sections (unnumbered: Referensi Jabatan, Glosarium, etc.) */
+.pb-body .pb-section--ref {
+  background: var(--surface-overlay-faint);
+}
+.pb-body .pb-section--ref .pb-h2 {
+  border-bottom: none;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  margin-bottom: 10px;
+  padding-bottom: 0;
+}
+
+/* Remove compound margin on last child so card padding alone controls spacing */
+.pb-body .pb-intro > *:last-child,
+.pb-body .pb-section > *:last-child {
+  margin-bottom: 0;
+}
+
+
+/* Tables and pre inside sections — prevent double bottom gap */
+.pb-body .pb-section .pb-table-wrap:last-child,
+.pb-body .pb-section .pb-pre:last-child {
+  margin-bottom: 0;
+}
+
+/* Section headings */
+.pb-body .pb-h2 {
+  font-size: 13.5px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--panel-border);
+  color: var(--text-strong, var(--text));
+  scroll-margin-top: 60px;
+}
+
+.pb-body .pb-h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  margin: 16px 0 5px;
+  color: var(--text-strong, var(--text));
+  letter-spacing: 0;
+  scroll-margin-top: 60px;
+}
+.pb-body .pb-h3::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 12px;
+  background: var(--green);
+  border-radius: 2px;
+  flex-shrink: 0;
+  opacity: 0.65;
+}
+
+/* Suppress accent bar on H3s that live inside the intro card (no H2 parent) */
+.pb-body .pb-intro .pb-h3::before {
+  display: none;
+}
+
+.pb-body .pb-h4 {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin: 14px 0 4px;
+}
+.pb-body .pb-h5,
+.pb-body .pb-h6 {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 12px 0 3px;
+}
+
+/* ── Body elements ───────────────────────────────────────────────────────── */
+
+.pb-body .pb-p { margin: 0 0 6px; }
+
+.pb-body .pb-ul { list-style: disc; padding-left: 18px; margin: 0 0 8px; }
+.pb-body .pb-ul li { margin-bottom: 2px; line-height: 1.55; }
+
+/* Styled step counter for ordered lists */
+.pb-body .pb-ol {
+  list-style: none;
+  counter-reset: step-counter;
+  padding-left: 0;
+  margin: 0 0 8px;
+}
+.pb-body .pb-ol li {
+  counter-increment: step-counter;
+  position: relative;
+  padding-left: 26px;
+  margin-bottom: 5px;
+  line-height: 1.55;
+}
+.pb-body .pb-ol li::before {
+  content: counter(step-counter);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 17px;
+  height: 17px;
+  background: var(--green-dim);
+  color: var(--green-ink);
+  border-radius: 50%;
+  font-size: 10.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* ── Inline code ─────────────────────────────────────────────────────────── */
+
+.pb-body .pb-ic {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11.5px;
+  background: var(--surface-overlay-soft);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  color: var(--text-strong, var(--text));
+  vertical-align: baseline;
+}
+
+.pb-body .pb-a {
+  color: var(--green-ink);
+  text-decoration: none;
+  font-weight: 450;
+}
+.pb-body .pb-a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pb-body .pb-hr {
+  border: none;
+  border-top: 1px solid var(--panel-border);
+  margin: 28px 0;
+}
+
+/* ── Code blocks ─────────────────────────────────────────────────────────── */
+
+.pb-body .pb-pre {
+  position: relative;
+  background: var(--code-surface);
+  color: var(--code-text);
+  border-radius: 7px;
+  padding: 14px 16px;
+  margin: 6px 0 14px;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11.5px;
+  line-height: 1.65;
+  white-space: pre;
+  box-shadow: inset 0 1px 0 var(--surface-overlay-strong), var(--shadow-soft);
+}
+.pb-body .pb-pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+.pb-body .pb-lang {
+  position: absolute;
+  top: 9px;
+  right: 12px;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--code-muted);
+  font-family: inherit;
+  user-select: none;
+}
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+
+.pb-body .pb-table-wrap {
+  overflow-x: auto;
+  margin: 8px 0 16px;
+  border: 1px solid var(--panel-border);
+  border-radius: 7px;
+}
+.pb-body .pb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.pb-body .pb-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--panel-border);
+  background: var(--surface-overlay-faint);
+  white-space: nowrap;
+}
+.pb-body .pb-table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--panel-border-soft);
+  vertical-align: top;
+  line-height: 1.5;
+  font-size: 12.5px;
+}
+.pb-body .pb-table tbody tr:last-child td { border-bottom: none; }
+.pb-body .pb-table tbody tr:hover td {
+  background: var(--surface-overlay-soft);
+  transition: background 0.08s;
+}
+
+/* ── Blockquote ──────────────────────────────────────────────────────────── */
+
+.pb-body .pb-bq {
+  margin: 6px 0 16px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--green-subtle);
+  background: var(--green-dim);
+  border-radius: 0 6px 6px 0;
+  color: var(--text);
+  font-size: 13px;
+}
+.pb-body .pb-bq p { margin: 0 0 4px; }
+.pb-body .pb-bq p:last-child { margin: 0; }
+
+/* Tech note blockquote variant — muted, for developer-only context */
+.pb-body .pb-bq--tech {
+  border-left-color: var(--panel-border-strong);
+  background: var(--surface-overlay-faint);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Neutral blockquote — structural info, no tip/tech emoji */
+.pb-body .pb-bq--neutral {
+  border-left-color: var(--panel-border-soft);
+  background: var(--surface-overlay-soft);
+  color: var(--text);
+}
+
+/* ── "Siapa yang bisa" role bar ──────────────────────────────────────────── */
+
+.pb-body .pb-who {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--panel-border);
+  font-size: 12px;
+}
+
+.pb-body .pb-who__label {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pb-body .pb-who__roles {
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ── Status badges ───────────────────────────────────────────────────────── */
+
+.pb-body .pb-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin: 4px 0 10px;
+  background: var(--surface-overlay);
+  color: var(--text-muted);
+  border: 1px solid var(--panel-border);
+}
+.pb-body .pb-status--green {
+  background: var(--green-dim);
+  color: var(--green-ink);
+  border-color: var(--green-subtle);
+}
+.pb-body .pb-status--amber {
+  background: var(--yellow-dim);
+  color: var(--yellow-ink);
+  border-color: var(--yellow-subtle);
+}
+.pb-body .pb-status--red {
+  background: var(--red-dim);
+  color: var(--red-ink);
+  border-color: var(--red-subtle);
+}
+
+/* Light mode quality pass: Playbook reading experience */
+:root:not([data-theme="dark"]) .pb-workspace {
+  background:
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--green-dim) 48%, transparent) 0 26%, transparent 52%),
+    radial-gradient(circle at 94% 12%, color-mix(in srgb, var(--blue-dim) 36%, transparent) 0 22%, transparent 48%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-1) 68%, var(--panel)), var(--app-bg));
+}
+
+:root:not([data-theme="dark"]) .pb-topbar {
+  border-bottom-color: color-mix(in srgb, var(--panel-border) 72%, var(--green-subtle));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--panel) 88%, var(--green-dim)), color-mix(in srgb, var(--panel) 94%, var(--surface-1)));
+  box-shadow: var(--panel-shadow-md);
+}
+
+:root:not([data-theme="dark"]) .pb-topbar__badge,
+:root:not([data-theme="dark"]) .pb-nav__idx,
+:root:not([data-theme="dark"]) .pb-body .pb-status {
+  box-shadow: var(--shadow-soft);
+}
+
+:root:not([data-theme="dark"]) .pb-nav {
+  border-right-color: color-mix(in srgb, var(--panel-border) 72%, var(--green-subtle));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, var(--surface-1)), var(--panel));
+  box-shadow: 10px 0 28px color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+:root:not([data-theme="dark"]) .pb-nav__item {
+  border: 1px solid transparent;
+}
+
+:root:not([data-theme="dark"]) .pb-nav__item:hover {
+  border-color: color-mix(in srgb, var(--green-subtle) 52%, transparent);
+  background: color-mix(in srgb, var(--green-dim) 34%, var(--panel));
+}
+
+:root:not([data-theme="dark"]) .pb-nav__item--active {
+  border-color: color-mix(in srgb, var(--green-subtle) 76%, var(--panel-border));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--green-dim) 76%, var(--panel)), color-mix(in srgb, var(--panel) 86%, var(--blue-dim)));
+  box-shadow: var(--panel-shadow);
+}
+
+:root:not([data-theme="dark"]) .pb-state,
+:root:not([data-theme="dark"]) .pb-body .pb-intro,
+:root:not([data-theme="dark"]) .pb-body .pb-section {
+  border-color: color-mix(in srgb, var(--panel-border) 70%, var(--green-subtle));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 94%, var(--surface-1)), var(--panel)),
+    var(--panel);
+  box-shadow: var(--panel-shadow-md);
+}
+
+:root:not([data-theme="dark"]) .pb-body .pb-intro {
+  background:
+    radial-gradient(circle at 6% 0%, color-mix(in srgb, var(--green-dim) 68%, transparent) 0 28%, transparent 58%),
+    linear-gradient(135deg, color-mix(in srgb, var(--panel) 90%, var(--green-dim)), var(--panel));
+}
+
+:root:not([data-theme="dark"]) .pb-body .pb-section--ref {
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--yellow-dim) 50%, transparent) 0 26%, transparent 58%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, var(--yellow-dim)), var(--panel));
+  border-color: color-mix(in srgb, var(--yellow-subtle) 58%, var(--panel-border));
+}
+
+:root:not([data-theme="dark"]) .pb-body .pb-h2 {
+  color: color-mix(in srgb, var(--text-strong) 82%, var(--green));
+}
+
+:root:not([data-theme="dark"]) .pb-body .pb-table-wrap {
+  border-color: color-mix(in srgb, var(--panel-border) 72%, var(--green-subtle));
+  box-shadow: var(--panel-shadow);
+}
+
+:root:not([data-theme="dark"]) .pb-body .pb-table th {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-1) 74%, var(--panel)), var(--panel));
+  color: color-mix(in srgb, var(--text-strong) 84%, var(--green));
+}
+
+:root:not([data-theme="dark"]) .pb-body .pb-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--green-dim) 28%, var(--panel));
+}
+
+:root:not([data-theme="dark"]) .pb-body .pb-bq {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--green-dim) 62%, var(--panel)), color-mix(in srgb, var(--panel) 92%, var(--surface-1)));
+  border-left-color: color-mix(in srgb, var(--green) 70%, var(--green-subtle));
+  box-shadow: var(--shadow-soft);
+}
+
+:root:not([data-theme="dark"]) .pb-body .pb-bq--tech,
+:root:not([data-theme="dark"]) .pb-body .pb-bq--neutral {
+  background: color-mix(in srgb, var(--panel) 88%, var(--surface-1));
+}
+
+/* ── Mermaid flowchart container ──────────────────────────────────────────── */
+
+.pb-mermaid {
+  margin: 1.25rem 0;
+  padding: 1rem 0.75rem 0.75rem;
+  background: linear-gradient(160deg, #f8faf8 0%, #f0f4f0 100%);
+  border: 1px solid #d4e3d4;
+  border-radius: 10px;
+  overflow: auto;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(45, 106, 79, 0.06), 0 0 0 1px rgba(45, 106, 79, 0.04);
+  position: relative;
+}
+
+/* subtle top accent line */
+.pb-mermaid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 1.5rem;
+  right: 1.5rem;
+  height: 2px;
+  background: linear-gradient(90deg, #2d6a4f, transparent);
+  border-radius: 0 0 2px 2px;
+}
+
+.pb-mermaid svg {
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.04));
+}
+
+/* make edge labels clean */
+.pb-mermaid svg .edgeLabel .label {
+  background: #f8faf8 !important;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px !important;
+}
+
+.pb-mermaid__spin {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d4e3d4;
+  border-top-color: #2d6a4f;
+  border-radius: 50%;
+  animation: pb-spin 0.7s linear infinite;
+}
+
+@keyframes pb-spin {
+  to { transform: rotate(360deg); }
+}
+
+.pb-mermaid__err {
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.8rem;
+  margin: 0;
+  padding: 0.5rem;
+}
+
+[data-theme="dark"] .pb-mermaid {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--panel) 80%, #1e3a2f) 0%, var(--panel) 100%);
+  border-color: color-mix(in srgb, #2d6a4f 30%, var(--border));
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+[data-theme="dark"] .pb-mermaid svg text {
+  fill: var(--text, #f3f4f6) !important;
+}
