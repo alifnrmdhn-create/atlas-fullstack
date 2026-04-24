@@ -1,0 +1,249 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Directorate;
+use App\Models\OrganizationalUnit;
+use App\Models\Position;
+use App\Models\PositionHistory;
+use App\Models\User;
+use App\Support\RolePolicy;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class OrganizationController extends Controller
+{
+    // ── Pages ─────────────────────────────────────────────────────────────────
+
+    public function hierarchy(): Response
+    {
+        $directorates = Directorate::where('isActive', true)->orderBy('code')->get();
+        $units = OrganizationalUnit::with('directorate:id,code,name')
+            ->orderBy('code')->get();
+        $positions = Position::with(['directorate:id,code', 'division:id,code'])
+            ->orderBy('seatOrder')->get();
+        $users = User::where('isActive', true)
+            ->select('id','name','roleType','unitId','directorateId','positionId','positionTitle','managerUserId')
+            ->get();
+
+        $usersByUnit = $users->groupBy('unitId');
+        $positionsByUnit = $positions->groupBy('divisionId');
+
+        $tree = $directorates->map(fn ($dir) => [
+            ...$dir->toArray(),
+            'divisionCount' => $units->where('directorateId', $dir->id)->count(),
+            'userCount' => $users->where('directorateId', $dir->id)->count(),
+            'divisions' => $units->where('directorateId', $dir->id)->map(fn ($unit) => [
+                ...$unit->toArray(),
+                'positionCount' => $positionsByUnit->get($unit->id, collect())->count(),
+                'occupiedPositionCount' => $positionsByUnit->get($unit->id, collect())->filter(fn ($p) => $users->contains('positionId', $p->id))->count(),
+                'positions' => $positionsByUnit->get($unit->id, collect())->sortBy('seatOrder')->map(fn ($p) => [
+                    ...$p->toArray(),
+                    'occupant' => $users->firstWhere('positionId', $p->id),
+                ])->values()->all(),
+            ])->values()->all(),
+        ])->values()->all();
+
+        return Inertia::render('OrganizationView', [
+            'summary' => [
+                'directorateCount' => $directorates->count(),
+                'divisionCount' => $units->count(),
+                'positionCount' => $positions->count(),
+                'userCount' => $users->count(),
+            ],
+            'directorates' => $tree,
+        ]);
+    }
+
+    // ── Directorates ──────────────────────────────────────────────────────────
+
+    public function directorates()
+    {
+        $dirs = Directorate::orderBy('code')->get()
+            ->map(fn ($d) => [
+                ...$d->toArray(),
+                'unitCount' => OrganizationalUnit::where('directorateId', $d->id)->count(),
+            ])->values();
+
+        return response()->json(['data' => $dirs]);
+    }
+
+    public function storeDirectorate(Request $request): RedirectResponse
+    {
+        Gate: RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+        $data = $request->validate([
+            'code' => 'required|string|min:2|max:40|unique:Directorate,code',
+            'name' => 'required|string|min:2|max:120',
+            'shortName' => 'nullable|string|max:40',
+            'domain' => 'nullable|string|max:120',
+            'isActive' => 'boolean',
+        ]);
+        $dir = Directorate::create($data);
+        return back()->with('success', 'Direktorat dibuat.');
+    }
+
+    public function updateDirectorate(Request $request, int $id): RedirectResponse
+    {
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+        $data = $request->validate([
+            'code' => "sometimes|string|min:2|max:40|unique:Directorate,code,{$id}",
+            'name' => 'sometimes|string|min:2|max:120',
+            'shortName' => 'nullable|string|max:40',
+            'domain' => 'nullable|string|max:120',
+            'isActive' => 'sometimes|boolean',
+        ]);
+        Directorate::findOrFail($id)->update($data);
+        return back()->with('success', 'Direktorat diperbarui.');
+    }
+
+    public function destroyDirectorate(Request $request, int $id): RedirectResponse
+    {
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+        Directorate::findOrFail($id)->delete();
+        return back()->with('success', 'Direktorat dihapus.');
+    }
+
+    // ── Units ─────────────────────────────────────────────────────────────────
+
+    public function units()
+    {
+        $units = OrganizationalUnit::with('directorate:id,code,name')->orderBy('code')->get();
+        return response()->json(['data' => $units, 'total' => $units->count()]);
+    }
+
+    public function storeUnit(Request $request): RedirectResponse
+    {
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+        $data = $request->validate([
+            'code' => 'required|string|min:2|max:40|unique:OrganizationalUnit,code',
+            'name' => 'required|string|min:2|max:120',
+            'description' => 'nullable|string|max:400',
+            'unitType' => 'required|string|max:40',
+            'directorateId' => 'nullable|integer',
+            'parentId' => 'nullable|integer',
+            'isActive' => 'boolean',
+        ]);
+        OrganizationalUnit::create($data);
+        return back()->with('success', 'Unit dibuat.');
+    }
+
+    public function updateUnit(Request $request, int $id): RedirectResponse
+    {
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+        $data = $request->validate([
+            'code' => "sometimes|string|min:2|max:40|unique:OrganizationalUnit,code,{$id}",
+            'name' => 'sometimes|string|min:2|max:120',
+            'description' => 'nullable|string|max:400',
+            'unitType' => 'sometimes|string|max:40',
+            'directorateId' => 'nullable|integer',
+            'parentId' => 'nullable|integer',
+            'isActive' => 'sometimes|boolean',
+        ]);
+        OrganizationalUnit::findOrFail($id)->update($data);
+        return back()->with('success', 'Unit diperbarui.');
+    }
+
+    public function destroyUnit(Request $request, int $id): RedirectResponse
+    {
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+        OrganizationalUnit::findOrFail($id)->delete();
+        return back()->with('success', 'Unit dihapus.');
+    }
+
+    // ── Positions ─────────────────────────────────────────────────────────────
+
+    public function positions()
+    {
+        $positions = Position::with([
+            'directorate:id,code,name',
+            'division:id,code,name',
+            'users' => fn ($q) => $q->where('isActive', true)->select('id','name','roleType')->limit(1),
+        ])->orderBy('seatOrder')->get()
+            ->map(fn ($p) => [
+                ...$p->toArray(),
+                'currentHolder' => $p->users->first(),
+            ])->values();
+
+        return response()->json(['data' => $positions, 'total' => $positions->count()]);
+    }
+
+    public function storePosition(Request $request): RedirectResponse
+    {
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+        $data = $request->validate([
+            'code' => 'required|string|min:2|max:40|unique:Position,code',
+            'name' => 'required|string|min:2|max:120',
+            'levelCode' => 'required|string|max:20',
+            'roleType' => 'required|string',
+            'directorateId' => 'nullable|integer',
+            'divisionId' => 'nullable|integer',
+            'reportsToPositionId' => 'nullable|integer',
+            'seatOrder' => 'nullable|integer',
+            'isActive' => 'boolean',
+        ]);
+        Position::create($data);
+        return back()->with('success', 'Jabatan dibuat.');
+    }
+
+    public function updatePosition(Request $request, int $id): RedirectResponse
+    {
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+        $data = $request->validate([
+            'name' => 'sometimes|string|min:2|max:120',
+            'levelCode' => 'sometimes|string|max:20',
+            'roleType' => 'sometimes|string',
+            'directorateId' => 'nullable|integer',
+            'divisionId' => 'nullable|integer',
+            'reportsToPositionId' => 'nullable|integer',
+            'seatOrder' => 'nullable|integer',
+            'isActive' => 'sometimes|boolean',
+        ]);
+        Position::findOrFail($id)->update($data);
+        return back()->with('success', 'Jabatan diperbarui.');
+    }
+
+    public function destroyPosition(Request $request, int $id): RedirectResponse
+    {
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+        // Unassign users from this position first
+        User::where('positionId', $id)->update(['positionId' => null]);
+        Position::findOrFail($id)->delete();
+        return back()->with('success', 'Jabatan dihapus.');
+    }
+
+    public function assignPosition(Request $request, int $id): RedirectResponse
+    {
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+        $data = $request->validate([
+            'userId' => 'nullable|integer',
+            'mutationType' => 'nullable|string',
+            'mutationReason' => 'nullable|string',
+            'skNumber' => 'nullable|string',
+        ]);
+
+        $position = Position::findOrFail($id);
+
+        // Unassign previous holder
+        User::where('positionId', $id)->update(['positionId' => null]);
+
+        if ($data['userId']) {
+            $user = User::findOrFail($data['userId']);
+            $user->update(['positionId' => $id]);
+
+            // Record history
+            PositionHistory::create([
+                'userId' => $user->id,
+                'positionId' => $id,
+                'startDate' => now(),
+                'mutationType' => $data['mutationType'] ?? 'reassignment',
+                'mutationReason' => $data['mutationReason'] ?? null,
+                'skNumber' => $data['skNumber'] ?? null,
+                'createdBy' => $request->user()->id,
+            ]);
+        }
+
+        return back()->with('success', 'Penugasan jabatan disimpan.');
+    }
+}

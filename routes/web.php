@@ -7,6 +7,8 @@ use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\ChannelMessageController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\KpiController;
+use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PhaseController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\TaskController;
@@ -156,5 +158,55 @@ Route::middleware('auth')->group(function () {
         Route::put('/comments/{commentId}/pin',          [CommentController::class, 'togglePin'])->name('pin');
         Route::post('/comments/{commentId}/reactions',          [CommentController::class, 'addReaction'])->name('reactions.store');
         Route::delete('/comments/{commentId}/reactions/{emoji}',[CommentController::class, 'removeReaction'])->name('reactions.destroy');
+    });
+
+    // ── Meetings ──────────────────────────────────────────────────────────────
+    Route::prefix('meetings')->name('meetings.')->group(function () {
+        Route::get('/',              [MeetingController::class, 'index'])->name('index');
+        Route::post('/',             [MeetingController::class, 'store'])->name('store');
+        Route::get('/decisions',     [MeetingController::class, 'decisions'])->name('decisions');
+        Route::get('/suggestions',   [MeetingController::class, 'suggestions'])->name('suggestions');
+        Route::get('/{id}',          [MeetingController::class, 'show'])->name('show');
+        Route::patch('/{id}',        [MeetingController::class, 'update'])->name('update');
+        Route::delete('/{id}',       [MeetingController::class, 'destroy'])->name('destroy');
+
+        // RSVP & attendees
+        Route::post('/{id}/rsvp',                       [MeetingController::class, 'rsvp'])->name('rsvp');
+        Route::post('/{id}/attendees',                  [MeetingController::class, 'addAttendee'])->name('attendees.store');
+        Route::delete('/{id}/attendees/{userId}',       [MeetingController::class, 'removeAttendee'])->name('attendees.destroy');
+
+        // Decisions
+        Route::post('/{id}/decisions',                  [MeetingController::class, 'addDecision'])->name('decisions.store');
+        Route::delete('/{id}/decisions/{decisionId}',   [MeetingController::class, 'destroyDecision'])->name('decisions.destroy');
+
+        // Action items
+        Route::get('/{id}/action-items',                [MeetingController::class, 'listActionItems'])->name('action-items.index');
+        Route::post('/{id}/action-items',               [MeetingController::class, 'storeActionItem'])->name('action-items.store');
+        Route::patch('/{id}/action-items/{itemId}',     [MeetingController::class, 'updateActionItem'])->name('action-items.update');
+        Route::delete('/{id}/action-items/{itemId}',    [MeetingController::class, 'destroyActionItem'])->name('action-items.destroy');
+
+        // Continuity
+        Route::get('/{id}/continuity',  [MeetingController::class, 'continuity'])->name('continuity');
+    });
+
+    // ── Organization ──────────────────────────────────────────────────────────
+    Route::prefix('organization')->name('organization.')->group(function () {
+        Route::get('/hierarchy',  [OrganizationController::class, 'hierarchy'])->name('hierarchy');
+
+        Route::get('/directorates',       [OrganizationController::class, 'directorates'])->name('directorates.index');
+        Route::post('/directorates',      [OrganizationController::class, 'storeDirectorate'])->name('directorates.store');
+        Route::patch('/directorates/{id}',[OrganizationController::class, 'updateDirectorate'])->name('directorates.update');
+        Route::delete('/directorates/{id}',[OrganizationController::class, 'destroyDirectorate'])->name('directorates.destroy');
+
+        Route::get('/units',       [OrganizationController::class, 'units'])->name('units.index');
+        Route::post('/units',      [OrganizationController::class, 'storeUnit'])->name('units.store');
+        Route::patch('/units/{id}',[OrganizationController::class, 'updateUnit'])->name('units.update');
+        Route::delete('/units/{id}',[OrganizationController::class, 'destroyUnit'])->name('units.destroy');
+
+        Route::get('/positions',              [OrganizationController::class, 'positions'])->name('positions.index');
+        Route::post('/positions',             [OrganizationController::class, 'storePosition'])->name('positions.store');
+        Route::patch('/positions/{id}',       [OrganizationController::class, 'updatePosition'])->name('positions.update');
+        Route::delete('/positions/{id}',      [OrganizationController::class, 'destroyPosition'])->name('positions.destroy');
+        Route::patch('/positions/{id}/assign',[OrganizationController::class, 'assignPosition'])->name('positions.assign');
     });
 });
