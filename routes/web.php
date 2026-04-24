@@ -12,6 +12,7 @@ use App\Http\Controllers\MonthlyReportController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PhaseController;
 use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\RealtimeController;
 use App\Http\Controllers\RiskReportController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
@@ -211,6 +212,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/positions/{id}',      [OrganizationController::class, 'destroyPosition'])->name('positions.destroy');
         Route::patch('/positions/{id}/assign',[OrganizationController::class, 'assignPosition'])->name('positions.assign');
     });
+
+    // ── Real-time SSE + Presence ──────────────────────────────────────────────
+    Route::get('/realtime/stream', [RealtimeController::class, 'stream'])->name('realtime.stream');
+    Route::post('/realtime/ping',  [RealtimeController::class, 'ping'])->name('realtime.ping');
 
     // ── Monthly Reports ───────────────────────────────────────────────────────
     Route::prefix('monthly-reports')->name('monthly-reports.')->group(function () {

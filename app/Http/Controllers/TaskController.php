@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Blocker;
 use App\Models\SubTask;
 use App\Models\Task;
+use App\Services\BroadcastService;
 use App\Services\ProgramHealthService;
 use App\Services\TaskService;
 use App\Support\RolePolicy;
@@ -55,6 +56,7 @@ class TaskController extends Controller
 
         $task = $this->taskService->create($request->user()->id, $data);
         $this->triggerHealth($task->id);
+        BroadcastService::task($task->id, 'created');
 
         return back()->with('success', 'Task berhasil dibuat.');
     }
@@ -81,6 +83,7 @@ class TaskController extends Controller
 
         $this->taskService->update($id, $data);
         $this->triggerHealth($id);
+        BroadcastService::task($id, 'updated');
 
         return back()->with('success', 'Task diperbarui.');
     }
@@ -94,6 +97,7 @@ class TaskController extends Controller
         $data = $request->validate(['status' => 'required|string']);
         $this->taskService->transitionStatus($id, $data['status'], $request->user()->id);
         $this->triggerHealth($id);
+        BroadcastService::task($id, 'status-changed', ['status' => $data['status']]);
 
         return back()->with('success', 'Status task diperbarui.');
     }
@@ -110,6 +114,7 @@ class TaskController extends Controller
 
         $this->taskService->updateProgress($id, $data['percentComplete'], $request->user()->id);
         $this->triggerHealth($id);
+        BroadcastService::task($id, 'progress-changed', ['percent' => $data['percentComplete']]);
 
         return back()->with('success', 'Progress task diperbarui.');
     }

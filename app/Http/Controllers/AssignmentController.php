@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\AssignmentAttachment;
 use App\Services\AssignmentService;
+use App\Services\BroadcastService;
 use App\Support\RolePolicy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -68,6 +69,16 @@ class AssignmentController extends Controller
         ]);
 
         $assignment = $this->service->create($request->user(), $data);
+        BroadcastService::assignment($assignment->id, 'created');
+        BroadcastService::toUsers('notification:created', [
+            'notification' => [
+                'type' => 'TASK_ASSIGNED',
+                'message' => "Tugas baru: {$assignment->title}",
+                'source' => "assignment:{$assignment->id}",
+                'state' => 'UNREAD',
+                'createdAt' => now()->toIso8601String(),
+            ],
+        ], [$assignment->assigneeId]);
         return redirect()->route('assignments.show', $assignment->id)
             ->with('success', 'Penugasan berhasil dibuat.');
     }
@@ -86,6 +97,7 @@ class AssignmentController extends Controller
         ]);
 
         $this->service->update($request->user(), $id, $data);
+        BroadcastService::assignment($id, 'updated');
         return back()->with('success', 'Penugasan diperbarui.');
     }
 
@@ -96,13 +108,17 @@ class AssignmentController extends Controller
             'note' => 'nullable|string|max:1000',
         ]);
 
-        $this->service->transition($request->user(), $id, $data['action'], $data['note'] ?? null);
+        $a = $this->service->transition($request->user(), $id, $data['action'], $data['note'] ?? null);
+        BroadcastService::assignment($id, 'status-changed', [
+            'status' => $a->status, 'action' => $data['action'],
+        ]);
         return back()->with('success', "Aksi {$data['action']} berhasil.");
     }
 
     public function destroy(Request $request, int $id): RedirectResponse
     {
         $this->service->delete($request->user(), $id);
+        BroadcastService::assignment($id, 'deleted');
         return redirect()->route('assignments.index')->with('success', 'Penugasan dihapus.');
     }
 

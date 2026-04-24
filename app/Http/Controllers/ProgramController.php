@@ -6,6 +6,7 @@ use App\Models\Blocker;
 use App\Models\KpiDefinition;
 use App\Models\Program;
 use App\Models\ProgramKpiLink;
+use App\Services\BroadcastService;
 use App\Services\ProgramHealthService;
 use App\Services\ProgramService;
 use App\Support\RolePolicy;
@@ -128,6 +129,7 @@ class ProgramController extends Controller
         ]);
 
         $program = $this->programService->create($request->user(), $data);
+        BroadcastService::program($program->id, 'created');
 
         return redirect()->route('programs.show', $program->id)
             ->with('success', 'Program berhasil dibuat.');
@@ -156,6 +158,7 @@ class ProgramController extends Controller
         ]);
 
         $this->programService->update($id, $data);
+        BroadcastService::program($id, 'updated');
 
         return back()->with('success', 'Program diperbarui.');
     }
@@ -165,6 +168,7 @@ class ProgramController extends Controller
         $program = Program::findOrFail($id);
         Gate::authorize('delete-program', $program);
         $this->programService->delete($id);
+        BroadcastService::program($id, 'deleted');
         return redirect()->route('programs.index')->with('success', 'Program dihapus.');
     }
 
@@ -187,6 +191,7 @@ class ProgramController extends Controller
 
         $nextStatus = $role === 'KASUBDIV' ? 'PENDING_KADIV' : 'PENDING_KASUB';
         $program->update(['approvalStatus' => $nextStatus, 'rejectionNote' => null, 'submittedById' => $user->id]);
+        BroadcastService::program($id, 'updated', ['approvalStatus' => $nextStatus]);
 
         return back()->with('success', "Program diajukan untuk persetujuan.");
     }
@@ -202,6 +207,7 @@ class ProgramController extends Controller
             return back()->withErrors(['Hanya program DRAFT yang dapat diaktifkan.']);
         }
         $program->update(['approvalStatus' => 'ACTIVE', 'rejectionNote' => null]);
+        BroadcastService::program($id, 'approved');
         return back()->with('success', 'Program diaktifkan — eksekusi dimulai.');
     }
 
@@ -218,6 +224,7 @@ class ProgramController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk menyetujui program ini pada tahap ini');
         }
 
+        BroadcastService::program($id, 'approved');
         return back()->with('success', 'Program disetujui.');
     }
 
@@ -235,6 +242,7 @@ class ProgramController extends Controller
         if (!$canReject) abort(403, 'Anda tidak memiliki izin untuk menolak program ini');
 
         $program->update(['approvalStatus' => 'DRAFT', 'rejectionNote' => $data['note']]);
+        BroadcastService::program($id, 'rejected');
         return back()->with('success', 'Program ditolak dan dikembalikan ke Draft.');
     }
 
