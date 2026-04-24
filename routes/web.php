@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BlockerController;
 use App\Http\Controllers\KpiController;
@@ -78,6 +79,24 @@ Route::middleware('auth')->group(function () {
         Route::put('/{id}/status',   [BlockerController::class, 'updateStatus'])->name('status');
         Route::patch('/{id}',        [BlockerController::class, 'update'])->name('update');
         Route::delete('/{id}',       [BlockerController::class, 'destroy'])->name('destroy');
+    });
+
+    // ── Assignments (Penugasan) ───────────────────────────────────────────────
+    Route::prefix('assignments')->name('assignments.')->group(function () {
+        Route::get('/',                 [AssignmentController::class, 'index'])->name('index');
+        Route::post('/',                [AssignmentController::class, 'store'])->name('store');
+        Route::get('/preview-chain',    [AssignmentController::class, 'previewChain'])->name('preview-chain');
+        Route::get('/{id}',             [AssignmentController::class, 'show'])->name('show');
+        Route::patch('/{id}',           [AssignmentController::class, 'update'])->name('update');
+        Route::delete('/{id}',          [AssignmentController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/transition', [AssignmentController::class, 'transition'])->name('transition');
+
+        // Evidence
+        Route::get('/{id}/attachments',            [AssignmentController::class, 'listAttachments'])->name('attachments.index');
+        Route::post('/{id}/attachments/file',      [AssignmentController::class, 'uploadFile'])->name('attachments.upload');
+        Route::post('/{id}/attachments',           [AssignmentController::class, 'addLinkOrNote'])->name('attachments.store');
+        Route::get('/{id}/attachments/{attId}/download', [AssignmentController::class, 'downloadAttachment'])->name('attachments.download');
+        Route::delete('/{id}/attachments/{attId}', [AssignmentController::class, 'destroyAttachment'])->name('attachments.destroy');
     });
 
     // ── KPIs ──────────────────────────────────────────────────────────────────
