@@ -1,6 +1,7 @@
 import { createInertiaApp } from '@inertiajs/react'
 import { createRoot } from 'react-dom/client'
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers'
+import { RealtimeProvider } from './contexts/RealtimeProvider'
 
 import './styles/tokens.css'
 import './styles/reset.css'
@@ -32,6 +33,13 @@ createInertiaApp({
             import.meta.glob('./Pages/**/*.tsx'),
         ),
     setup({ el, App, props }) {
-        createRoot(el).render(<App {...props} />)
+        // RealtimeProvider: SSE subscription + presence ping diaktifkan saat
+        // user sudah login. Guest routes (login page) ditangani dengan
+        // `enabled={false}` lewat suppress — EventSource akan 401 anyway.
+        createRoot(el).render(
+            <RealtimeProvider>
+                <App {...props} />
+            </RealtimeProvider>
+        )
     },
 })
