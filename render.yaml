@@ -1,0 +1,205 @@
+services:
+  - type: web
+    name: atlas-app-dev
+    runtime: php
+    buildCommand: composer install --no-dev --optimize-autoloader && npm ci && npm run build && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache
+    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
+    envVars:
+      - key: APP_NAME
+        value: ATLAS
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_URL
+        fromService:
+          name: atlas-app-dev
+          type: web
+          property: host
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: atlas-db-dev
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: atlas-db-dev
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: atlas-db-dev
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: atlas-db-dev
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: atlas-db-dev
+          property: password
+      - key: DB_SCHEMA
+        value: ptpn_kmr_app
+      - key: SESSION_DRIVER
+        value: file
+      - key: SESSION_LIFETIME
+        value: "120"
+      - key: CACHE_STORE
+        value: file
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: warning
+    branch: development
+
+  - type: web
+    name: atlas-app-prod
+    runtime: php
+    buildCommand: composer install --no-dev --optimize-autoloader && npm ci && npm run build && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache
+    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
+    envVars:
+      - key: APP_NAME
+        value: ATLAS
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_URL
+        fromService:
+          name: atlas-app-prod
+          type: web
+          property: host
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: atlas-db-prod
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: atlas-db-prod
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: atlas-db-prod
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: atlas-db-prod
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: atlas-db-prod
+          property: password
+      - key: DB_SCHEMA
+        value: ptpn_kmr_app
+      - key: SESSION_DRIVER
+        value: file
+      - key: SESSION_LIFETIME
+        value: "120"
+      - key: CACHE_STORE
+        value: file
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: error
+    branch: main
+
+  # Laravel Scheduler — jalan setiap menit, shared env vars dengan web service.
+  # Render `cron` service tidak perlu port, hanya menjalankan satu command berkala.
+  - type: cron
+    name: atlas-scheduler-dev
+    runtime: php
+    buildCommand: composer install --no-dev --optimize-autoloader
+    schedule: "* * * * *"
+    startCommand: php artisan schedule:run
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        fromService:
+          name: atlas-app-dev
+          type: web
+          envVarKey: APP_KEY
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: atlas-db-dev
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: atlas-db-dev
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: atlas-db-dev
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: atlas-db-dev
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: atlas-db-dev
+          property: password
+      - key: DB_SCHEMA
+        value: ptpn_kmr_app
+      - key: CACHE_STORE
+        value: file
+    branch: development
+
+  - type: cron
+    name: atlas-scheduler-prod
+    runtime: php
+    buildCommand: composer install --no-dev --optimize-autoloader
+    schedule: "* * * * *"
+    startCommand: php artisan schedule:run
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        fromService:
+          name: atlas-app-prod
+          type: web
+          envVarKey: APP_KEY
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: atlas-db-prod
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: atlas-db-prod
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: atlas-db-prod
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: atlas-db-prod
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: atlas-db-prod
+          property: password
+      - key: DB_SCHEMA
+        value: ptpn_kmr_app
+      - key: CACHE_STORE
+        value: file
+    branch: main
+
+databases:
+  - name: atlas-db-dev
+    databaseName: atlas_dev
+    plan: free
+
+  - name: atlas-db-prod
+    databaseName: atlas_prod
+    plan: starter

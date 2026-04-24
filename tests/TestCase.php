@@ -3,8 +3,17 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\DB;
 
 abstract class TestCase extends BaseTestCase
 {
-    //
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Pastikan schema ptpn_kmr_app ada di test DB
+        $schema = config('database.connections.pgsql.search_path', 'ptpn_kmr_app');
+        DB::statement("CREATE SCHEMA IF NOT EXISTS \"{$schema}\"");
+        DB::statement("SET search_path TO \"{$schema}\"");
+    }
 }
