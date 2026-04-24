@@ -1,0 +1,140 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Blocker;
+use App\Models\Task;
+use App\Services\ProgramHealthService;
+use App\Support\RolePolicy;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+
+class BlockerController extends Controller
+{
+    public function __construct(private ProgramHealthService $healthService) {}
+
+    public function index(Request $request)
+    {
+        $status = $request->query('status');
+        $query = Blocker::query()
+            ->with([
+                'task:id,code,title,initiativeId',
+                'task.workstream:id,name,programId',
+                'task.workstream.program:id,code,name',
+                'creator:id,name',
+                'assignee:id,name',
+            ])
+            ->orderByRaw("CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END")
+            ->orderBy('createdAt');
+
+        if ($status) $query->where('status', $status);
+
+        return response()->json(['data' => $query->get(), 'total' => $query->count()]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        if (RolePolicy::isReadOnly($request->user()->roleType)) {
+            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+        }
+
+        $data = $request->validate([
+            'taskId' => 'required|integer',
+            'title' => 'required|string|min:3|max:120',
+            'description' => 'nullable|string|max:400',
+            'severity' => 'required|in:CRITICAL,HIGH,MEDIUM,LOW',
+        ]);
+
+        $code = 'BLK-' . strtoupper(substr(md5(uniqid()), 0, 6));
+        $blocker = Blocker::create([
+            ...$data,
+            'code' => $code,
+            'workItemId' => $data['taskId'],
+            'createdBy' => $request->user()->id,
+            'status' => 'OPEN',
+            'priority' => 'HIGH',
+        ]);
+
+        // Mark task as blocked
+        Task::query()->where('id', $data['taskId'])->update(['isBlocked' => true]);
+
+        return back()->with('success', 'Blocker ditambahkan.');
+    }
+
+    public function updateStatus(Request $request, int $id): RedirectResponse
+    {
+        if (RolePolicy::isReadOnly($request->user()->roleType)) {
+            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+        }
+
+        $data = $request->validate([
+            'status' => 'required|in:OPEN,IN_PROGRESS,RESOLVED',
+            'resolution' => 'nullable|string|max:500',
+        ]);
+
+        $blocker = Blocker::findOrFail($id);
+        $updateData = ['status' => $data['status']];
+        if ($data['status'] === 'RESOLVED') {
+            $updateData['resolvedAt'] = now();
+            $updateData['resolution'] = $data['resolution'] ?? null;
+        }
+
+        $blocker->update($updateData);
+
+        // Auto-unblock task when all blockers resolved
+        if ($data['status'] === 'RESOLVED') {
+            $openCount = Blocker::query()
+                ->where('workItemId', $blocker->workItemId)
+                ->whereIn('status', ['OPEN', 'IN_PROGRESS'])
+                ->count();
+
+            if ($openCount === 0) {
+                Task::query()->where('id', $blocker->workItemId)->update(['isBlocked' => false]);
+            }
+
+            // Trigger health recompute
+            $task = Task::query()->with('workstream:id,programId')->find($blocker->workItemId);
+            if ($task?->workstream?->programId) {
+                rescue(fn () => $this->healthService->recompute($task->workstream->programId));
+            }
+        }
+
+        return back()->with('success', 'Status blocker diperbarui.');
+    }
+
+    public function update(Request $request, int $id): RedirectResponse
+    {
+        if (RolePolicy::isReadOnly($request->user()->roleType)) {
+            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+        }
+
+        $blocker = Blocker::findOrFail($id);
+        $user = $request->user();
+        $canEdit = RolePolicy::isAdminOrAbove($user->roleType)
+            || RolePolicy::norm($user->roleType) === 'kadiv'
+            || $blocker->createdBy === $user->id
+            || $blocker->assignedTo === $user->id;
+
+        if (!$canEdit) abort(403, 'Hanya pembuat atau assignee blocker yang dapat mengubah ini.');
+
+        $data = $request->validate([
+            'title' => 'sometimes|string|min:3|max:120',
+            'description' => 'nullable|string|max:400',
+            'severity' => 'sometimes|in:CRITICAL,HIGH,MEDIUM,LOW',
+            'assignedTo' => 'nullable|integer',
+        ]);
+
+        $blocker->update($data);
+        return back()->with('success', 'Blocker diperbarui.');
+    }
+
+    public function destroy(Request $request, int $id): RedirectResponse
+    {
+        if (RolePolicy::isReadOnly($request->user()->roleType)) {
+            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+        }
+
+        Blocker::destroy($id);
+        return back()->with('success', 'Blocker dihapus.');
+    }
+}
