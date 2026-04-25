@@ -17,6 +17,7 @@ class Workstream extends Model
 
     protected $guarded = ['id'];
     protected $appends = ['picPersonIds'];
+    protected $hidden  = ['entityPics'];
     protected string $ownerColumn = 'ownerId';
 
     protected $casts = [
@@ -54,16 +55,12 @@ class Workstream extends Model
             ->where('entityType', 'Initiative');
     }
 
-    /** @return array<int, int>|null */
-    public function getPicPersonIdsAttribute(): ?array
+    /** @return array<int, int> */
+    public function getPicPersonIdsAttribute(): array
     {
         if ($this->relationLoaded('entityPics')) {
             return $this->entityPics->pluck('userId')->map(fn ($id) => (int) $id)->values()->all();
         }
-
-        $raw = $this->getRawOriginal('picPersonIds');
-        if ($raw === null || $raw === '') return null;
-        $decoded = is_array($raw) ? $raw : json_decode($raw, true);
-        return is_array($decoded) ? $decoded : null;
+        return [];
     }
 }

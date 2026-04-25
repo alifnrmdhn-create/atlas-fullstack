@@ -15,6 +15,7 @@ class Program extends Model
 
     protected $guarded = ['id'];
     protected $appends = ['picPersonIds'];
+    protected $hidden  = ['coPics'];
 
     /** Kolom pemilik yang dipakai untuk user-scope filter. */
     protected string $ownerColumn = 'ownerId';
@@ -49,16 +50,12 @@ class Program extends Model
             ->where('entityType', 'Program');
     }
 
-    /** @return array<int, int>|null */
-    public function getPicPersonIdsAttribute(): ?array
+    /** @return array<int, int> */
+    public function getPicPersonIdsAttribute(): array
     {
         if ($this->relationLoaded('coPics')) {
             return $this->coPics->pluck('userId')->map(fn ($id) => (int) $id)->values()->all();
         }
-
-        $raw = $this->getRawOriginal('picPersonIds');
-        if ($raw === null || $raw === '') return null;
-        $decoded = is_array($raw) ? $raw : json_decode($raw, true);
-        return is_array($decoded) ? $decoded : null;
+        return [];
     }
 }

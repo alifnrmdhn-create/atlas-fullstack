@@ -11,6 +11,7 @@ class Assignment extends Model
     const UPDATED_AT = 'updatedAt';
     protected $guarded = ['id'];
     protected $appends = ['approvalChain'];
+    protected $hidden  = ['approvalEntries'];
 
     protected $casts = [
         'watcherIds' => 'array',
@@ -45,12 +46,11 @@ class Assignment extends Model
     }
 
     /**
-     * Selalu kembalikan approvalChain dari tabel normalisasi jika relasi sudah
-     * di-load; fallback ke JSON column untuk data lama yang belum di-eager-load.
+     * Serialize approval chain dari tabel normalisasi ke shape yang dipakai frontend.
      *
-     * @return array<int, array<string, mixed>>|null
+     * @return array<int, array<string, mixed>>
      */
-    public function getApprovalChainAttribute(): ?array
+    public function getApprovalChainAttribute(): array
     {
         if ($this->relationLoaded('approvalEntries')) {
             return $this->approvalEntries->map(fn ($e) => [
@@ -64,12 +64,7 @@ class Assignment extends Model
                 'note'          => $e->note,
             ])->values()->all();
         }
-
-        // Legacy fallback: baca JSON column (data lama sebelum normalisasi)
-        $raw = $this->getRawOriginal('approvalChain');
-        if ($raw === null || $raw === '') return null;
-        $decoded = is_array($raw) ? $raw : json_decode($raw, true);
-        return is_array($decoded) ? $decoded : null;
+        return [];
     }
 
     /** Normalized chain (dari Fase 2). Source of truth untuk approval flow. */

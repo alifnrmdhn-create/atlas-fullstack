@@ -333,37 +333,18 @@ class ProgramService
             ->map(fn ($id) => (int) $id)
             ->all();
 
-        EntityPic::query()
-            ->where('entityType', 'Program')
-            ->where('entityId', $program->id)
-            ->delete();
-
-        $nextUserIds = collect($userIds)
+        // Validate IDs exist before syncing (guards FK + membership invalidation)
+        $validatedIds = empty($userIds) ? [] : User::query()
+            ->whereIn('id', $userIds)
+            ->pluck('id')
             ->map(fn ($id) => (int) $id)
-            ->filter(fn ($id) => $id > 0)
-            ->unique()
-            ->values();
+            ->all();
 
-        if ($nextUserIds->isNotEmpty()) {
-            $nextUserIds = User::query()
-                ->whereIn('id', $nextUserIds->all())
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id)
-                ->values();
-        }
-
-        foreach ($nextUserIds as $index => $userId) {
-            EntityPic::create([
-                'entityType' => 'Program',
-                'entityId' => $program->id,
-                'userId' => $userId,
-                'isPrimary' => $index === 0,
-            ]);
-        }
+        EntityPic::syncForEntity('Program', $program->id, $validatedIds);
 
         $this->membershipResolver->invalidateMany(array_unique([
             ...$previousUserIds,
-            ...$nextUserIds->all(),
+            ...$validatedIds,
         ]));
     }
 }
