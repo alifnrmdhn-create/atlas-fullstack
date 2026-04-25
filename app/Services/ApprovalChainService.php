@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Assignment;
 use App\Models\AssignmentApprovalEntry;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -14,8 +13,7 @@ use Illuminate\Support\Collection;
  * ketemu pemberi (assigner). Kalau pemberi skip hierarki (mis. BOD → Kasub),
  * atasan di antara (Kadiv) TETAP harus review — baru ke pemberi.
  *
- * Source of truth di Laravel: tabel assignment_approval_entries (normalisasi
- * dari JSON approvalChain di Fase 2). Legacy JSON column diabaikan.
+ * Source of truth di Laravel: tabel assignment_approval_entries.
  *
  * Kasus khusus:
  *   - Self-assign (assignee === assigner): chain = [] (bypass approval)
@@ -113,39 +111,9 @@ class ApprovalChainService
         }
     }
 
-    /**
-     * Ambil chain dari tabel normalisasi. Fallback ke JSON legacy (dan migrate)
-     * jika tabel kosong tapi assignment punya approvalChain JSON.
-     */
+    /** Ambil chain dari tabel normalisasi. */
     public function getEntries(int $assignmentId): Collection
     {
-        $entries = AssignmentApprovalEntry::query()
-            ->where('assignmentId', $assignmentId)
-            ->orderBy('order')
-            ->get();
-
-        if ($entries->isNotEmpty()) return $entries;
-
-        // Migrate-on-read: JSON → normalized (one-time)
-        $assignment = Assignment::query()->find($assignmentId);
-        $legacy = $assignment?->approvalChain ?? [];
-        if (empty($legacy) || !is_array($legacy)) return collect();
-
-        foreach ($legacy as $item) {
-            if (!is_array($item) || !isset($item['userId'])) continue;
-            AssignmentApprovalEntry::create([
-                'assignmentId'  => $assignmentId,
-                'userId'        => (int) $item['userId'],
-                'role'          => (string) ($item['role'] ?? ''),
-                'name'          => (string) ($item['name'] ?? ''),
-                'positionTitle' => $item['positionTitle'] ?? null,
-                'order'         => (int) ($item['order'] ?? 0),
-                'status'        => (string) ($item['status'] ?? self::STATUS_PENDING),
-                'actedAt'       => !empty($item['actedAt']) ? new \DateTime($item['actedAt']) : null,
-                'note'          => $item['note'] ?? null,
-            ]);
-        }
-
         return AssignmentApprovalEntry::query()
             ->where('assignmentId', $assignmentId)
             ->orderBy('order')

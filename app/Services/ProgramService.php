@@ -5,13 +5,13 @@ namespace App\Services;
 use App\Auth\MembershipResolver;
 use App\Auth\ScopeResolver;
 use App\Models\Blocker;
+use App\Models\EntityPic;
 use App\Models\Program;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Workstream;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class ProgramService
 {
@@ -42,10 +42,9 @@ class ProgramService
 
         $membershipIds = $this->membershipResolver->getProgramIdsViaMembership($user->id);
 
-        return $query->where(function (Builder $q) use ($scope, $membershipIds, $user) {
+        return $query->where(function (Builder $q) use ($scope, $membershipIds) {
             $q->whereIn('id', $membershipIds)
-              ->orWhereIn('ownerId', $scope->userIds)
-              ->orWhereRaw('"picPersonIds"::jsonb @> ?::jsonb', [json_encode([$user->id])]);
+              ->orWhereIn('ownerId', $scope->userIds);
         })->orderBy('createdAt', 'desc')->get();
     }
 
@@ -238,7 +237,6 @@ class ProgramService
             ->where('id', $programId)
             ->where(fn ($q) => $q
                 ->whereIn('ownerId', $scope->userIds)
-                ->orWhereRaw('"picPersonIds"::jsonb @> ?::jsonb', [json_encode([$user->id])])
             )
             ->exists();
 
@@ -253,7 +251,7 @@ class ProgramService
         $ownerId = $data['ownerId'] ?? $user->id;
         unset($data['ownerId']);
 
-        return Program::create([
+        $program = Program::create([
             ...$data,
             'code' => $data['code'] ?? $code,
             'ownerId' => $ownerId,
@@ -261,12 +259,21 @@ class ProgramService
             'submittedById' => $user->id,
             'progressPercent' => 0,
         ]);
+
+        $this->syncProgramPics($program, $data['picPersonIds'] ?? []);
+
+        return $program->fresh();
     }
 
     public function update(int $id, array $data): Program
     {
         $program = Program::findOrFail($id);
         $program->update($data);
+
+        if (array_key_exists('picPersonIds', $data)) {
+            $this->syncProgramPics($program, $data['picPersonIds'] ?? []);
+        }
+
         return $program->fresh();
     }
 
@@ -306,5 +313,49 @@ class ProgramService
             ])
             ->orderBy('createdAt')
             ->get();
+    }
+
+    /** @param array<int, int|string> $userIds */
+    private function syncProgramPics(Program $program, array $userIds): void
+    {
+        $previousUserIds = EntityPic::query()
+            ->where('entityType', 'Program')
+            ->where('entityId', $program->id)
+            ->pluck('userId')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        EntityPic::query()
+            ->where('entityType', 'Program')
+            ->where('entityId', $program->id)
+            ->delete();
+
+        $nextUserIds = collect($userIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($nextUserIds->isNotEmpty()) {
+            $nextUserIds = User::query()
+                ->whereIn('id', $nextUserIds->all())
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values();
+        }
+
+        foreach ($nextUserIds as $index => $userId) {
+            EntityPic::create([
+                'entityType' => 'Program',
+                'entityId' => $program->id,
+                'userId' => $userId,
+                'isPrimary' => $index === 0,
+            ]);
+        }
+
+        $this->membershipResolver->invalidateMany(array_unique([
+            ...$previousUserIds,
+            ...$nextUserIds->all(),
+        ]));
     }
 }

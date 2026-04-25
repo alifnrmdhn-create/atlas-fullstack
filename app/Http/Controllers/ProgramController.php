@@ -155,6 +155,7 @@ class ProgramController extends Controller
             'ownerUnitId' => 'nullable|integer',
             'budgetIdr' => 'nullable|numeric',
             'picPersonIds' => 'nullable|array',
+            'picPersonIds.*' => 'integer|exists:User,id',
             'hasNoApmsKpi' => 'nullable|boolean',
         ]);
 
@@ -188,7 +189,7 @@ class ProgramController extends Controller
             'priority' => 'sometimes|in:LOW,MEDIUM,HIGH,CRITICAL',
             'budgetIdr' => 'nullable|numeric',
             'picPersonIds' => 'nullable|array',
-            'picPersonIds.*' => 'integer',
+            'picPersonIds.*' => 'integer|exists:User,id',
         ]);
 
         $program = $this->programService->update($id, $data);

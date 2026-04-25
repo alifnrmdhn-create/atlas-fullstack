@@ -83,6 +83,7 @@ class WorkflowMutationSmokeTest extends TestCase
             'startDate' => now()->toDateString(),
             'targetEndDate' => now()->addMonth()->toDateString(),
             'ownerId' => $this->teammate->id,
+            'picPersonIds' => [$this->admin->id],
             'hasNoApmsKpi' => true,
         ])
             ->assertCreated()
@@ -93,6 +94,32 @@ class WorkflowMutationSmokeTest extends TestCase
             'id' => $programId,
             'ownerId' => $this->teammate->id,
             'status' => 'IN_PROGRESS',
+        ]);
+
+        $this->assertDatabaseHas('entity_pics', [
+            'entityType' => 'Program',
+            'entityId' => $programId,
+            'userId' => $this->admin->id,
+            'isPrimary' => true,
+        ]);
+
+        $this->putJson("/programs/{$programId}", [
+            'picPersonIds' => [$this->teammate->id],
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.picPersonIds.0', $this->teammate->id);
+
+        $this->assertDatabaseMissing('entity_pics', [
+            'entityType' => 'Program',
+            'entityId' => $programId,
+            'userId' => $this->admin->id,
+        ]);
+
+        $this->assertDatabaseHas('entity_pics', [
+            'entityType' => 'Program',
+            'entityId' => $programId,
+            'userId' => $this->teammate->id,
+            'isPrimary' => true,
         ]);
 
         $workstreamId = $this->postJson('/workstreams', [

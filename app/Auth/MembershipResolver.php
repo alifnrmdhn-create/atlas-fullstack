@@ -9,7 +9,6 @@ use App\Models\Program;
 use App\Models\Task;
 use App\Models\Workstream;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Port dari backend/src/lib/scope.ts → getProgramIdsViaMembership().
@@ -17,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  * Mengembalikan daftar program-id yang user "terlihat" lewat partisipasi,
  * di luar scope unit. User dianggap partisipan jika:
  *   1. Owner Program.
- *   2. Co-PIC Program (via entity_pics — ganti picPersonIds JSON legacy).
+ *   2. Co-PIC Program (via entity_pics).
  *   3. Owner Workstream di program tsb.
  *   4. Assignee Task di workstream di program tsb.
  *   5. Member Channel yang linked ke program/workstream.
@@ -26,7 +25,7 @@ use Illuminate\Support\Facades\DB;
  * terlihat oleh kontributor dari direktorat lain meski scope unit tidak
  * mencakup owner program.
  *
- * Caching: 30 detik TTL. Invalidate saat picPersonIds / membership berubah.
+ * Caching: 30 detik TTL. Invalidate saat membership berubah.
  */
 class MembershipResolver
 {
@@ -65,21 +64,12 @@ class MembershipResolver
             $ids[(int) $id] = true;
         }
 
-        // 2. Co-PIC Program (via entity_pics) — ganti picPersonIds JSON legacy
+        // 2. Co-PIC Program (via entity_pics)
         $coPicProgramIds = EntityPic::query()
             ->where('entityType', 'Program')
             ->where('userId', $userId)
             ->pluck('entityId');
         foreach ($coPicProgramIds as $id) {
-            $ids[(int) $id] = true;
-        }
-
-        // 2b. Fallback: picPersonIds JSON legacy pada Program (selama data lama belum dimigrasi)
-        //     JSON @> operator PostgreSQL.
-        $legacyCoPicIds = DB::table('Program')
-            ->whereRaw('"picPersonIds"::jsonb @> ?::jsonb', [json_encode([$userId])])
-            ->pluck('id');
-        foreach ($legacyCoPicIds as $id) {
             $ids[(int) $id] = true;
         }
 

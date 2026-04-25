@@ -15,7 +15,7 @@ class Assignment extends Model
         'watcherIds' => 'array',
         'attachments' => 'array',
         'tags' => 'array',
-        'approvalChain' => 'array',  // legacy JSON — backup only; source of truth = assignment_approval_entries
+        'approvalChain' => 'array',
         'needsClarification' => 'boolean',
         'evidenceRequired' => 'boolean',
         'isPrivate' => 'boolean',
