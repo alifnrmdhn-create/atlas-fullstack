@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\FiltersByUserScope;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Task extends Model
 {
@@ -46,5 +47,24 @@ class Task extends Model
     public function blockers()
     {
         return $this->hasMany(Blocker::class, 'workItemId');
+    }
+
+    public function entityPics(): HasMany
+    {
+        return $this->hasMany(EntityPic::class, 'entityId')
+            ->where('entityType', 'WorkItem');
+    }
+
+    /** @return array<int, int>|null */
+    public function getPicPersonIdsAttribute(): ?array
+    {
+        if ($this->relationLoaded('entityPics')) {
+            return $this->entityPics->pluck('userId')->map(fn ($id) => (int) $id)->values()->all();
+        }
+
+        $raw = $this->getRawOriginal('picPersonIds');
+        if ($raw === null || $raw === '') return null;
+        $decoded = is_array($raw) ? $raw : json_decode($raw, true);
+        return is_array($decoded) ? $decoded : null;
     }
 }

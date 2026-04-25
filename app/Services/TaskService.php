@@ -29,6 +29,7 @@ class TaskService
                 'workstream.program:id,code,name,approvalStatus',
                 'assignee:id,name,avatarUrl',
                 'blockers',
+                'entityPics',
             ])
             ->findOrFail($id);
     }

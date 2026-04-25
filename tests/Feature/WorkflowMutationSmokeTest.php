@@ -465,4 +465,59 @@ class WorkflowMutationSmokeTest extends TestCase
             ->assertOk()
             ->assertJsonPath('ok', true);
     }
+
+    public function test_program_detail_includes_workstream_phases_and_entity_pics(): void
+    {
+        $this->actingAs($this->admin);
+
+        // Buat program dengan PIC
+        $programId = $this->postJson('/programs', [
+            'code'        => 'PRG-DETAIL',
+            'name'        => 'Detail Test Program',
+            'priority'    => 'HIGH',
+            'startDate'   => now()->toDateString(),
+            'targetEndDate' => now()->addMonth()->toDateString(),
+            'picPersonIds' => [$this->teammate->id],
+            'hasNoApmsKpi' => true,
+        ])
+            ->assertCreated()
+            ->json('data.id');
+
+        // Buat workstream dengan PIC
+        $wsId = $this->postJson('/workstreams', [
+            'programId'        => $programId,
+            'name'             => 'Detail WS',
+            'targetCompletion' => now()->addWeeks(2)->toDateString(),
+            'picPersonIds'     => [$this->admin->id],
+        ])
+            ->assertCreated()
+            ->json('data.id');
+
+        // Buat phase dengan PIC
+        $this->postJson("/workstreams/{$wsId}/phases", [
+            'name'         => 'Detail Phase',
+            'picPersonIds' => [$this->teammate->id],
+        ])->assertCreated();
+
+        // entity_pics tersync untuk workstream
+        $this->assertDatabaseHas('entity_pics', [
+            'entityType' => 'Initiative',
+            'entityId'   => $wsId,
+            'userId'     => $this->admin->id,
+        ]);
+
+        // GET /programs/:id harus berhasil (bukan 500) dan mengandung workstreams + phases
+        $detail = $this->getJson("/programs/{$programId}")
+            ->assertOk()
+            ->json('data');
+
+        $this->assertNotEmpty($detail['workstreams'], 'Workstreams harus ada');
+        $ws = collect($detail['workstreams'])->firstWhere('id', $wsId);
+        $this->assertNotNull($ws, 'Workstream yang dibuat harus ada di detail');
+        $this->assertNotEmpty($ws['phases'], 'Phases harus ter-load di workstream');
+
+        // picPersonIds dari entity_pics (accessor)
+        $this->assertEquals([$this->teammate->id], $detail['picPersonIds']);
+        $this->assertEquals([$this->admin->id], $ws['picPersonIds']);
+    }
 }

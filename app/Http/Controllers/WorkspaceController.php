@@ -616,6 +616,7 @@ class WorkspaceController extends Controller
             ->with([
                 'program:id,code,name,healthStatus,approvalStatus',
                 'tasks:id,code,title,status,percentComplete,initiativeId',
+                'entityPics',
             ])
             ->findOrFail($id);
 

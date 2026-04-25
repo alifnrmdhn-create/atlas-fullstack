@@ -219,8 +219,12 @@ class ProgramService
         return Program::query()
             ->with([
                 'owner:id,name,avatarUrl,roleType,unitId,positionTitle',
-                'workstreams.tasks.blockers',
+                'coPics',
+                'workstreams.entityPics',
                 'workstreams.phases',
+                'workstreams.phases.entityPics',
+                'workstreams.tasks.blockers',
+                'workstreams.tasks.entityPics',
             ])
             ->findOrFail($id);
     }

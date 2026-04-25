@@ -48,4 +48,17 @@ class Program extends Model
         return $this->hasMany(EntityPic::class, 'entityId')
             ->where('entityType', 'Program');
     }
+
+    /** @return array<int, int>|null */
+    public function getPicPersonIdsAttribute(): ?array
+    {
+        if ($this->relationLoaded('coPics')) {
+            return $this->coPics->pluck('userId')->map(fn ($id) => (int) $id)->values()->all();
+        }
+
+        $raw = $this->getRawOriginal('picPersonIds');
+        if ($raw === null || $raw === '') return null;
+        $decoded = is_array($raw) ? $raw : json_decode($raw, true);
+        return is_array($decoded) ? $decoded : null;
+    }
 }
