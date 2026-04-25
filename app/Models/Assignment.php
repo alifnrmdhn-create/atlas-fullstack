@@ -15,7 +15,6 @@ class Assignment extends Model
         'watcherIds' => 'array',
         'attachments' => 'array',
         'tags' => 'array',
-        'approvalChain' => 'array',
         'needsClarification' => 'boolean',
         'evidenceRequired' => 'boolean',
         'isPrivate' => 'boolean',
@@ -42,6 +41,34 @@ class Assignment extends Model
     public function relatedProgram()
     {
         return $this->belongsTo(Program::class, 'relatedProgramId');
+    }
+
+    /**
+     * Selalu kembalikan approvalChain dari tabel normalisasi jika relasi sudah
+     * di-load; fallback ke JSON column untuk data lama yang belum di-eager-load.
+     *
+     * @return array<int, array<string, mixed>>|null
+     */
+    public function getApprovalChainAttribute(): ?array
+    {
+        if ($this->relationLoaded('approvalEntries')) {
+            return $this->approvalEntries->map(fn ($e) => [
+                'userId'        => $e->userId,
+                'role'          => $e->role,
+                'name'          => $e->name,
+                'positionTitle' => $e->positionTitle,
+                'order'         => $e->order,
+                'status'        => $e->status,
+                'actedAt'       => $e->actedAt?->toIso8601String(),
+                'note'          => $e->note,
+            ])->values()->all();
+        }
+
+        // Legacy fallback: baca JSON column (data lama sebelum normalisasi)
+        $raw = $this->getRawOriginal('approvalChain');
+        if ($raw === null || $raw === '') return null;
+        $decoded = is_array($raw) ? $raw : json_decode($raw, true);
+        return is_array($decoded) ? $decoded : null;
     }
 
     /** Normalized chain (dari Fase 2). Source of truth untuk approval flow. */
