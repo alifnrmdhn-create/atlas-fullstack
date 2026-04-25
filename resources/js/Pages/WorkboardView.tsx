@@ -1,6 +1,6 @@
 import { useState, useEffect, useId, useRef } from 'react'
 import type { FormEvent, ReactNode } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { usePage } from '@inertiajs/react'
 import {
   DndContext,
   DragOverlay,
@@ -14,6 +14,7 @@ import {
 import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core'
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import { useWorkspace } from '../context/workspace'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import {
   HealthPill,
   SectionState,
@@ -141,18 +142,18 @@ export function WorkboardView() {
   } = useWorkspace()
 
   const roleAccess = useRoleAccess()
-  const location = useLocation()
-  const navigate = useNavigate()
+  const { url } = usePage()
+  const navigate = useInertiaNavigate()
 
   // Read ?programId from URL on first mount — set filter automatically
   const didConsumeUrlFilter = useRef(false)
   useEffect(() => {
     if (didConsumeUrlFilter.current) return
     didConsumeUrlFilter.current = true
-    const params = new URLSearchParams(location.search)
+    const params = new URLSearchParams(url.split('?')[1] ?? '')
     const pid = params.get('programId')
     if (pid) setBoardFilterProgramId(Number(pid))
-  }, [location.search])
+  }, [url])
 
   // Default myItemsOnly respects role: KADIV/KASUBDIV/BOD default to full view
   const [myItemsOnly, setMyItemsOnly] = useState(roleAccess.defaultMyItemsOnly)
@@ -767,3 +768,5 @@ export function WorkboardView() {
     </div>
   )
 }
+
+export default WorkboardView

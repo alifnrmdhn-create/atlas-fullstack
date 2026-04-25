@@ -254,3 +254,5 @@ export function AdminRolesView() {
     </div>
   )
 }
+
+export default AdminRolesView

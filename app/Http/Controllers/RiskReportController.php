@@ -75,7 +75,7 @@ class RiskReportController extends Controller
 
     // ── Pages ────────────────────────────────────────────────────────────────
 
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $query = RiskMonthlyReport::query()
             ->with([
@@ -91,15 +91,24 @@ class RiskReportController extends Controller
         if ($request->unitId) $query->where('unitId', $request->unitId);
         if ($request->status) $query->where('status', $request->status);
 
+        $reports = $query->get();
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $reports, 'total' => $reports->count()]);
+        }
+
         return Inertia::render('RiskReportView', [
-            'reports' => $query->get(),
+            'reports' => $reports,
             'filters' => $request->only(['year', 'month', 'unitId', 'status']),
         ]);
     }
 
-    public function show(int $id): Response
+    public function show(Request $request, int $id)
     {
         $report = RiskMonthlyReport::with($this->baseWith())->findOrFail($id);
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $report]);
+        }
+
         return Inertia::render('RiskReportDetailView', ['report' => $report]);
     }
 

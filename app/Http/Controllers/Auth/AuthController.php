@@ -21,27 +21,33 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'string', 'email'],
+        $request->validate([
+            'email'    => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
-        // Cari user by email, cek isActive, verifikasi password via bcrypt.
+        $identifier = trim($request->input('email'));
+
+        // Coba cocokkan identifier ke NIK, userId, atau email — urutan prioritas.
         $user = User::query()
-            ->where('email', $credentials['email'])
             ->where('isActive', true)
+            ->where(function ($q) use ($identifier) {
+                $q->where('nik', $identifier)
+                  ->orWhere('userId', $identifier)
+                  ->orWhere('email', $identifier);
+            })
             ->first();
 
-        if (!$user || !$user->passwordHash || !Hash::check($credentials['password'], $user->passwordHash)) {
+        if (!$user || !$user->passwordHash || !Hash::check($request->input('password'), $user->passwordHash)) {
             throw ValidationException::withMessages([
-                'email' => 'Email atau password salah.',
+                'email' => 'NIK, User ID, atau password salah.',
             ]);
         }
 
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->intended('/');
+        return redirect()->intended('/dashboard');
     }
 
     public function logout(Request $request): RedirectResponse

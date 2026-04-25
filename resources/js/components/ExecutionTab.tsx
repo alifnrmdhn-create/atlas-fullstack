@@ -12,11 +12,9 @@ type Props = {
 }
 
 async function downloadXlsx(programId: number, workstreamId: number, grid: ExecutionGridData) {
-  // Reuse shared auth token + base URL from api module; use a plain fetch to get a binary blob.
-  const base = import.meta.env.VITE_API_URL ?? import.meta.env.VITE_API_BASE_URL ?? '/api'
-  const token = typeof window !== 'undefined' ? window.localStorage.getItem('atlas.auth.token') : null
-  const res = await fetch(`${base}/programs/${programId}/execution-grid.xlsx?workstreamId=${workstreamId}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  const res = await fetch(`/programs/${programId}/execution-grid.xlsx?workstreamId=${workstreamId}`, {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
   })
   if (!res.ok) {
     let msg = `Gagal export Excel (HTTP ${res.status}).`

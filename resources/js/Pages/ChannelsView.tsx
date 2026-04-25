@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
 import type { FormEvent } from 'react'
 import type { ChannelMember, ChannelMessage, ChannelSummary, Program, UnfurlData, Task } from '../types'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { extractErrorMessage } from '../lib/api'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import {
   Avatar,
   EMOJI_SHORTCODES,
@@ -705,14 +705,14 @@ export function ChannelsView({
 
   // URL unfurl cache: url → UnfurlData | null (null = fetch in progress or failed)
   const [unfurlCache, setUnfurlCache] = useState<Map<string, UnfurlData | 'loading' | 'error'>>(new Map())
-  const apiBase = (typeof import.meta !== 'undefined' && (import.meta as { env?: Record<string, string> }).env?.VITE_API_URL) ?? '/api'
+  const apiBase = (typeof import.meta !== 'undefined' && (import.meta as { env?: Record<string, string> }).env?.VITE_API_URL) ?? ''
 
   const fetchUnfurl = (url: string) => {
     if (unfurlCache.has(url)) return
     setUnfurlCache((prev) => new Map(prev).set(url, 'loading'))
-    const token = localStorage.getItem('atlas.auth.token')
     fetch(`${apiBase}/unfurl?url=${encodeURIComponent(url)}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
     })
       .then((r) => r.json() as Promise<{ data: UnfurlData }>)
       .then(({ data }) => setUnfurlCache((prev) => new Map(prev).set(url, data)))
@@ -1182,7 +1182,7 @@ export function ChannelsView({
   const [dmQuery, setDmQuery] = useState('')
   const [openingDm, setOpeningDm] = useState(false)
 
-  const navigate = useNavigate()
+  const navigate = useInertiaNavigate()
 
   // ── Linked Program / Workstream for context banner ──────
   const linkedProgram = useMemo(

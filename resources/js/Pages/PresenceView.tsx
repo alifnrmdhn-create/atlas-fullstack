@@ -1,8 +1,8 @@
 import { createPortal } from 'react-dom'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useEscKey } from '../hooks/useEscKey'
-import { useNavigate } from 'react-router-dom'
 import { useWorkspace } from '../context/workspace'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { PresenceRow, SectionState, Avatar, resolveEmoji, formatRelativeTime, effectivePresenceSlug } from '../components/ui'
 import { api } from '../lib/api'
 import type { PresenceStatus, PresenceUser } from '../types'
@@ -307,7 +307,7 @@ function Toast({ msg, isError, onDone }: { msg: string; isError?: boolean; onDon
 // ── Main view ────────────────────────────────────────────────
 export function PresenceView() {
   const { presence, currentUser, presenceDraft, setPresenceDraft, setSelectedChannelId } = useWorkspace()
-  const navigate  = useNavigate()
+  const navigate  = useInertiaNavigate()
   const searchRef = useRef<HTMLInputElement>(null)
 
   // ── Tab ───────────────────────────────────────────────────
@@ -870,3 +870,5 @@ export function PresenceView() {
     </div>
   )
 }
+
+export default PresenceView

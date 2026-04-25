@@ -1,9 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import type { ReactNode } from 'react'
+import { Link, usePage } from '@inertiajs/react'
 import { useWorkspace } from '../context/workspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 
 type NavItem = {
   path: string
@@ -222,32 +224,45 @@ function prefetchRoute(path: string) {
   prefetchedRoutes.add(route)
 
   const loaders: Record<string, () => Promise<unknown>> = {
-    '/activity': () => import('../views/ActivityView'),
-    '/admin/orgs': () => import('../views/AdminOrgsView'),
-    '/admin/positions': () => import('../views/AdminPositionsView'),
-    '/admin/roles': () => import('../views/AdminRolesView'),
-    '/admin/users': () => import('../views/AdminUsersView'),
-    '/channels': () => import('../views/ChannelsViewWrapper'),
-    '/dashboard': () => import('../views/DashboardView'),
-    '/execution': () => import('../views/WorkboardView'),
-    '/penugasan': () => import('../views/AssignmentsView'),
-    '/fokus': () => import('../views/InboxView'),
-    '/goals': () => import('../views/GoalsView'),
-    '/jadwal': () => import('../views/ScheduleView'),
-    '/laporan-bulanan': () => import('../views/MonthlyReportsView'),
-    '/laporan-risiko': () => import('../views/RiskReportsView'),
-    '/playbook': () => import('../views/PlaybookView'),
-    '/presence': () => import('../views/PresenceView'),
-    '/profile': () => import('../views/ProfileView'),
-    '/programs': () => import('../views/ProgramsView'),
-    '/reports': () => import('../views/ReportsView'),
-    '/search': () => import('../views/SearchView'),
-    '/settings': () => import('../views/SettingsView'),
+    '/activity': () => import('../Pages/ActivityView'),
+    '/admin/orgs': () => import('../Pages/AdminOrgsView'),
+    '/admin/positions': () => import('../Pages/AdminPositionsView'),
+    '/admin/roles': () => import('../Pages/AdminRolesView'),
+    '/admin/users': () => import('../Pages/AdminUsersView'),
+    '/channels': () => import('../Pages/ChannelsViewWrapper'),
+    '/dashboard': () => import('../Pages/DashboardView'),
+    '/execution': () => import('../Pages/WorkboardView'),
+    '/penugasan': () => import('../Pages/AssignmentsView'),
+    '/fokus': () => import('../Pages/InboxView'),
+    '/goals': () => import('../Pages/GoalsView'),
+    '/jadwal': () => import('../Pages/ScheduleView'),
+    '/laporan-bulanan': () => import('../Pages/MonthlyReportsView'),
+    '/laporan-risiko': () => import('../Pages/RiskReportsView'),
+    '/playbook': () => import('../Pages/PlaybookView'),
+    '/presence': () => import('../Pages/PresenceView'),
+    '/profile': () => import('../Pages/ProfileView'),
+    '/programs': () => import('../Pages/ProgramsView'),
+    '/reports': () => import('../Pages/ReportsView'),
+    '/search': () => import('../Pages/SearchView'),
+    '/settings': () => import('../Pages/SettingsView'),
   }
 
   void loaders[route]?.().catch(() => {
     prefetchedRoutes.delete(route)
   })
+}
+
+function normalizeShellPath(pathname: string): string {
+  if (pathname === '/') return '/dashboard'
+  if (pathname.startsWith('/programs/')) return '/programs'
+  if (pathname.startsWith('/execution/tasks/')) return '/execution'
+  if (pathname.startsWith('/assignments')) return '/penugasan'
+  if (pathname.startsWith('/channels/')) return '/channels'
+  if (pathname.startsWith('/meetings')) return '/jadwal'
+  if (pathname.startsWith('/monthly-reports') || pathname.startsWith('/laporan-bulanan/')) return '/laporan-bulanan'
+  if (pathname.startsWith('/risk-reports') || pathname.startsWith('/laporan-risiko/')) return '/laporan-risiko'
+  if (pathname.startsWith('/organization')) return '/admin/orgs'
+  return pathname
 }
 
 // ── Notification Toast Item ─────────────────────────────────────────────────
@@ -462,9 +477,11 @@ function NotifToast({
   )
 }
 
-export function AppShell() {
-  const location = useLocation()
-  const navigate = useNavigate()
+export function AppShell({ children }: { children?: ReactNode }) {
+  const { url } = usePage()
+  const pathname = url.split('?')[0] || '/'
+  const activePath = normalizeShellPath(pathname)
+  const navigate = useInertiaNavigate()
   const {
     userMenuSurface, toggleUserMenu, closeUserMenu,
     currentUser, totalUnreadChannels,
@@ -813,7 +830,7 @@ export function AppShell() {
 
   // Page name for breadcrumb
   const PAGE_NAMES: Record<string, string> = {
-    '/dashboard': 'Dashboard', '/programs': 'Programs',
+    '/': 'Dashboard', '/dashboard': 'Dashboard', '/programs': 'Programs',
     '/goals': 'Goals & KPI', '/activity': 'Team Activity', '/execution': 'Execution', '/penugasan': 'Penugasan', '/reports': 'Analytics', '/laporan-bulanan': 'Monthly Reports', '/laporan-risiko': 'Risk Reports',
     '/fokus': 'Focus', '/channels': 'Channels', '/jadwal': 'Schedule', '/search': 'Search',
     '/presence': 'Presence', '/profile': 'Profile', '/settings': 'Settings',
@@ -821,7 +838,7 @@ export function AppShell() {
     '/admin/orgs': 'Companies', '/admin/roles': 'Roles & Permissions',
     '/playbook': 'Playbook',
   }
-  const currentPage = PAGE_NAMES[location.pathname] ?? 'ATLAS'
+  const currentPage = PAGE_NAMES[activePath] ?? PAGE_NAMES[pathname] ?? 'ATLAS'
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -861,7 +878,7 @@ export function AppShell() {
           {/* Fokus — home entry point, always first */}
           {(() => {
             const item = fokusItem
-            const isActive = location.pathname === item.path
+            const isActive = activePath === item.path
             const badge = item.badge?.()
             return (
               <div className="sidebar__fokus-wrap">
@@ -869,7 +886,7 @@ export function AppShell() {
                 <Link
                   className={`sidebar__item sidebar__item--home${isActive ? ' sidebar__item--active' : ''}`}
                   data-tooltip={item.label}
-                  to={item.path}
+                  href={item.path}
                   onMouseEnter={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon()) }}
                   onMouseLeave={closeTooltip}
                   onFocus={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon()) }}
@@ -893,14 +910,14 @@ export function AppShell() {
             >
               <p className="sidebar__group-label">{group.label}</p>
               {group.items.map((item) => {
-                const isActive = location.pathname === item.path
+                const isActive = activePath === item.path
                 const badge = item.badge?.()
                 return (
                   <Link
                     className={`sidebar__item${isActive ? ' sidebar__item--active' : ''}`}
                     data-tooltip={item.label}
                     key={item.path}
-                    to={item.path}
+                    href={item.path}
                     onMouseEnter={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon()) }}
                     onMouseLeave={closeTooltip}
                     onFocus={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon()) }}
@@ -922,7 +939,7 @@ export function AppShell() {
         <div className="sidebar__footer">
           <Link
             className="sidebar__user"
-            to="/profile"
+            href="/profile"
             onMouseEnter={(e) => { prefetchRoute('/profile'); openTooltip(e.currentTarget, currentUser?.name ?? 'Atlas User', userRoleLabel, IconProfile()) }}
             onMouseLeave={closeTooltip}
             onFocus={(e) => { prefetchRoute('/profile'); openTooltip(e.currentTarget, currentUser?.name ?? 'Atlas User', userRoleLabel, IconProfile()) }}
@@ -1127,7 +1144,7 @@ export function AppShell() {
                     <div className="topbar__menu-divider" />
                     <Link
                       className="topbar__menu-item"
-                      to="/playbook"
+                      href="/playbook"
                       onClick={closeUserMenu}
                       onFocus={() => prefetchRoute('/playbook')}
                       onMouseEnter={() => prefetchRoute('/playbook')}
@@ -1168,7 +1185,7 @@ export function AppShell() {
         </header>
 
         <main className="workspace__content">
-          <Outlet />
+          {children}
         </main>
       </div>
 

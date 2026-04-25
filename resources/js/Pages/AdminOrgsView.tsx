@@ -619,3 +619,5 @@ export function AdminOrgsView() {
     </div>
   )
 }
+
+export default AdminOrgsView

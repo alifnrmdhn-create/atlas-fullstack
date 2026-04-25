@@ -370,6 +370,8 @@ export function AssignmentsView() {
   )
 }
 
+export default AssignmentsView
+
 // ── Droppable column ──────────────────────────────────────────────────────
 function DroppableColumn({ status, children, className }: { status: Status; children: ReactNode; className?: string }) {
   const { setNodeRef, isOver } = useDroppable({ id: `col-${status}` })
@@ -623,7 +625,7 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
                   <div className="pg-evidence__body">
                     <a
                       className="pg-evidence__title"
-                      href={`/api/assignments/${assignmentId}/attachments/${it.id}/download`}
+                      href={`/assignments/${assignmentId}/attachments/${it.id}/download`}
                       target="_blank"
                       rel="noreferrer"
                     >{it.originalName ?? it.filename ?? 'file'}</a>

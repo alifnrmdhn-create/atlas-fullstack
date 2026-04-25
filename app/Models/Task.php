@@ -42,4 +42,9 @@ class Task extends Model
     {
         return $this->belongsTo(User::class, 'assignedTo');
     }
+
+    public function blockers()
+    {
+        return $this->hasMany(Blocker::class, 'workItemId');
+    }
 }

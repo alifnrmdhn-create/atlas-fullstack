@@ -60,6 +60,11 @@ class User extends Model implements AuthenticatableContract
         return $this->belongsTo(self::class, 'managerUserId');
     }
 
+    public function position()
+    {
+        return $this->belongsTo(Position::class, 'positionId');
+    }
+
     public function directReports()
     {
         return $this->hasMany(self::class, 'managerUserId');

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useWorkspace } from '../context/workspace'
 import { InlineNotice, SectionState, SkeletonBlock, SkeletonStack } from '../components/ui'
-import { useNavigate } from 'react-router-dom'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 
 const SEARCH_PRESETS = [
   'blocker kritis',
@@ -26,7 +26,7 @@ export function SearchView() {
     runSearch, openTaskWorkspace, openProgramWorkspace,
     formatDate,
   } = useWorkspace()
-  const navigate = useNavigate()
+  const navigate = useInertiaNavigate()
 
   const [searchType, setSearchType] = useState('ALL')
 
@@ -274,3 +274,5 @@ export function SearchView() {
     </div>
   )
 }
+
+export default SearchView

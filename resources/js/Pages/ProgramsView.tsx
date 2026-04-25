@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useId } from 'react'
 import { createPortal } from 'react-dom'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useWorkspace } from '../context/workspace'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { getProgramDisplayStatus } from '../lib/programStatus'
 import {
   HealthPill,
@@ -96,7 +96,7 @@ export function ProgramsView() {
     currentUser, apmsKpis,
   } = useWorkspace()
 
-  const navigate = useNavigate()
+  const navigate = useInertiaNavigate()
   const role = currentUser?.roleType?.toUpperCase() ?? ''
   const roleAccess = useRoleAccess()
   const isStrategic = role === 'BOD' || role === 'KADIV'
@@ -1804,3 +1804,5 @@ export function ProgramsView() {
     </div>
   )
 }
+
+export default ProgramsView

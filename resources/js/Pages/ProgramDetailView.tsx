@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { FormEvent } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { usePage } from '@inertiajs/react'
 import { useWorkspace } from '../context/workspace'
 import { api, extractErrorMessage } from '../lib/api'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { formatKpiValue, getKpiFillPercent } from '../lib/kpi'
 import { useDarkMode } from '../lib/useDarkMode'
 import { useDialogFocus } from '../hooks/useDialogFocus'
@@ -110,9 +111,9 @@ type WorkstreamDetail = {
 // ── Component ──────────────────────────────────────────────────────────────
 
 export function ProgramDetailView() {
-  const { id } = useParams<{ id: string }>()
-  const numId = Number(id)
-  const navigate = useNavigate()
+  const page = usePage<{ program?: { id: number } }>()
+  const numId = Number(page.props.program?.id)
+  const navigate = useInertiaNavigate()
   const {
     programs, currentUser, apmsKpis, apmsLastFetchedAt, refreshApmsKpis,
     normalizeHealthStatus, formatStatusLabel,
@@ -2699,3 +2700,5 @@ export function ProgramDetailView() {
     </div>
   )
 }
+
+export default ProgramDetailView

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useWorkspace } from '../context/workspace'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { MON_FULL, STATUS } from '../types/monthlyReports'
 
 type RiskReportSummary = {
@@ -28,7 +28,7 @@ const COMPOSITE_META: Record<string, { label: string; color: string }> = {
 }
 
 export function RiskReportsView() {
-  const navigate = useNavigate()
+  const navigate = useInertiaNavigate()
   const { currentUser } = useWorkspace()
 
   const [reports, setReports] = useState<RiskReportSummary[]>([])
@@ -200,6 +200,8 @@ export function RiskReportsView() {
     </div>
   )
 }
+
+export default RiskReportsView
 
 // ── Create Risk Report Modal ──────────────────────────────────────────────────
 

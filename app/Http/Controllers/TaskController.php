@@ -21,9 +21,42 @@ class TaskController extends Controller
         private ProgramHealthService $healthService,
     ) {}
 
-    public function show(int $id): Response
+    public function index()
+    {
+        $tasks = Task::query()
+            ->with([
+                'workstream:id,code,name,programId',
+                'workstream.program:id,code,name,healthStatus,approvalStatus',
+                'assignee:id,name,roleType,avatarUrl',
+            ])
+            ->orderBy('targetCompletion')
+            ->get();
+
+        return response()->json([
+            'data' => $tasks,
+            'groups' => $tasks
+                ->groupBy('status')
+                ->map(fn ($items, $status) => [
+                    'status' => $status,
+                    'count' => $items->count(),
+                    'items' => $items->values(),
+                ])
+                ->values(),
+            'total' => $tasks->count(),
+        ]);
+    }
+
+    public function show(Request $request, int $id)
     {
         $task = $this->taskService->findOrFail($id);
+        if ($request->expectsJson()) {
+            return response()->json(['data' => [
+                ...$task->toArray(),
+                'comments' => [],
+                'subTasks' => SubTask::query()->where('workItemId', $id)->get(),
+            ]]);
+        }
+
         return Inertia::render('TaskDetailView', ['task' => $task]);
     }
 

@@ -25,25 +25,37 @@ class ProgramController extends Controller
 
     // ── Pages ────────────────────────────────────────────────────────────────
 
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $programs = $this->programService->listForUser($request->user());
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $programs, 'total' => $programs->count()]);
+        }
+
         return Inertia::render('ProgramsView', [
             'programs' => $programs,
         ]);
     }
 
-    public function archived(Request $request): Response
+    public function archived(Request $request)
     {
         Gate::authorize('view-archive');
         $programs = $this->programService->listArchived($request->user());
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $programs, 'total' => $programs->count()]);
+        }
+
         return Inertia::render('Programs/Archived', ['programs' => $programs]);
     }
 
-    public function show(Request $request, int $id): Response
+    public function show(Request $request, int $id)
     {
         $this->programService->assertAccess($request->user(), $id);
         $program = $this->programService->findOrFail($id);
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $program]);
+        }
+
         return Inertia::render('ProgramDetailView', ['program' => $program]);
     }
 

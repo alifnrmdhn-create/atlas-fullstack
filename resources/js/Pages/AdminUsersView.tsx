@@ -614,3 +614,5 @@ export function AdminUsersView() {
     </div>
   )
 }
+
+export default AdminUsersView

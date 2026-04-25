@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useEscKey } from '../hooks/useEscKey'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { api, extractErrorMessage } from '../lib/api'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import type { TaskDetail } from '../types'
@@ -78,7 +78,7 @@ type Props = {
 }
 
 export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 'overlay' }: Props) {
-  const navigate   = useNavigate()
+  const navigate   = useInertiaNavigate()
   const roleAccess = useRoleAccess()
 
   // ── Remote data ───────────────────────────────────────────────────────────

@@ -218,3 +218,5 @@ export function RoadmapView() {
     </div>
   )
 }
+
+export default RoadmapView

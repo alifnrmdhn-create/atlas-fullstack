@@ -30,9 +30,11 @@ class MonthlyReportController extends Controller
 
     // ── Pages ────────────────────────────────────────────────────────────────
 
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $query = MonthlyReport::query()
+            ->select('MonthlyReport.*')
+            ->leftJoin('OrganizationalUnit as unit', 'MonthlyReport.unitId', '=', 'unit.id')
             ->with([
                 'unit:id,code,name',
                 'submittedBy:id,name',
@@ -46,13 +48,18 @@ class MonthlyReportController extends Controller
         if ($request->unitId) $query->where('unitId', $request->unitId);
         if ($request->status) $query->where('status', $request->status);
 
+        $reports = $query->get();
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $reports, 'total' => $reports->count()]);
+        }
+
         return Inertia::render('MonthlyReportView', [
-            'reports' => $query->get(),
+            'reports' => $reports,
             'filters' => $request->only(['year', 'month', 'unitId', 'status']),
         ]);
     }
 
-    public function show(int $id): Response
+    public function show(Request $request, int $id)
     {
         $report = MonthlyReport::with([
             'unit:id,code,name',
@@ -65,6 +72,13 @@ class MonthlyReportController extends Controller
         $linkedPrograms = !empty($report->linkedProgramIds)
             ? Program::whereIn('id', $report->linkedProgramIds)->get(['id','code','name'])->all()
             : [];
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => $report,
+                'linkedPrograms' => $linkedPrograms,
+            ]);
+        }
 
         return Inertia::render('MonthlyReportDetailView', [
             'report' => $report,

@@ -183,12 +183,11 @@ export function ChannelsViewWrapper() {
 
   const handleUploadFiles = async (formData: FormData): Promise<ChannelAttachment[]> => {
     // Note: api.post stringifies JSON. For multipart we use raw fetch.
-    const apiBase = (import.meta.env.VITE_API_URL ?? import.meta.env.VITE_API_BASE_URL ?? '/api') as string
-    const token = localStorage.getItem('atlas.auth.token')
-    const res = await fetch(`${apiBase}/uploads`, {
+    const res = await fetch('/uploads', {
       method: 'POST',
       body: formData,
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
     })
     if (!res.ok) {
       let msg = `Upload failed (${res.status})`
@@ -487,3 +486,5 @@ export function ChannelsViewWrapper() {
     />
   )
 }
+
+export default ChannelsViewWrapper

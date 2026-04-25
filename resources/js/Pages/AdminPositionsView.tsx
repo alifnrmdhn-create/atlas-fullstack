@@ -638,3 +638,5 @@ export function AdminPositionsView() {
     </div>
   )
 }
+
+export default AdminPositionsView

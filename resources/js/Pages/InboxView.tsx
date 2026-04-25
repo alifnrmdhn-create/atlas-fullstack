@@ -1,6 +1,6 @@
-import { useNavigate } from 'react-router-dom'
 import { useWorkspace } from '../context/workspace'
 import { api } from '../lib/api'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useState, useEffect, useRef, type CSSProperties } from 'react'
 import type { Blocker, ChannelSummary, FocusPolicy, Meeting, MyWorkDecision, NotificationItem, Program, Task } from '../types'
 
@@ -761,7 +761,7 @@ export function InboxView() {
     programs, myWork, channels,
     currentUser, formatDate, setSelectedProgramId, setSelectedTaskId, setSelectedChannelId,
   } = useWorkspace()
-  const navigate = useNavigate()
+  const navigate = useInertiaNavigate()
 
   function navigateToNotifSource(source: string) {
     // Source dapat berupa: "type:id", "name·type:id", atau kombinasi lain
@@ -1915,3 +1915,5 @@ export function InboxView() {
     </div>
   )
 }
+
+export default InboxView

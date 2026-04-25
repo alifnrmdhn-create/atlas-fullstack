@@ -385,3 +385,5 @@ export function PlaybookView() {
     </div>
   )
 }
+
+export default PlaybookView

@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import type { FormEvent } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { usePage } from '@inertiajs/react'
 import { useWorkspace } from '../context/workspace'
 import { api } from '../lib/api'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useDarkMode } from '../lib/useDarkMode'
 import { tonePalette } from '../lib/statusColors'
 import { useRoleAccess } from '../hooks/useRoleAccess'
@@ -195,8 +196,9 @@ function fireConfetti(originX: number, originY: number) {
 }
 
 export function TaskDetailView() {
-  const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const page = usePage<{ task?: { id: number } }>()
+  const id = page.props.task?.id != null ? String(page.props.task.id) : undefined
+  const navigate = useInertiaNavigate()
   const { currentUser, loadOverview, normalizeHealthStatus, appendComposerSnippet, setSelectedTaskId, taskDetail: contextTaskDetail, programs } = useWorkspace()
   const roleAccess = useRoleAccess()
   const dark = useDarkMode()
@@ -2324,3 +2326,5 @@ export function TaskDetailView() {
     </div>
   )
 }
+
+export default TaskDetailView

@@ -435,3 +435,5 @@ export function ActivityView() {
     </div>
   )
 }
+
+export default ActivityView

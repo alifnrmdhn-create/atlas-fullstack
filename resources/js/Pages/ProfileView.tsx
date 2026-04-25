@@ -526,3 +526,5 @@ export function ProfileView() {
     </div>
   )
 }
+
+export default ProfileView

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useId, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useWorkspace } from '../context/workspace'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { api } from '../lib/api'
@@ -47,7 +47,7 @@ function Modal({ title, subtitle, onClose, children, footer }: {
 // ── Main view (list only) ─────────────────────────────────────────────────────
 
 export function MonthlyReportsView() {
-  const navigate = useNavigate()
+  const navigate = useInertiaNavigate()
   const { currentUser } = useWorkspace()
   const role   = currentUser?.roleType?.toUpperCase() ?? ''
   const myUnit = currentUser?.unit
@@ -395,3 +395,5 @@ export function MonthlyReportsView() {
     </div>
   )
 }
+
+export default MonthlyReportsView

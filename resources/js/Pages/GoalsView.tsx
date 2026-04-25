@@ -619,3 +619,5 @@ export function GoalsView() {
     </div>
   )
 }
+
+export default GoalsView

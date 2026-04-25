@@ -15,6 +15,7 @@ use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\RealtimeController;
 use App\Http\Controllers\RiskReportController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -28,7 +29,56 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/', fn () => Inertia::render('Dashboard'))->name('home');
+    Route::get('/', fn () => Inertia::render('DashboardView'))->name('home');
+    Route::get('/dashboard', [WorkspaceController::class, 'dashboard'])->name('dashboard');
+    Route::get('/roadmap', fn () => Inertia::render('RoadmapView'))->name('roadmap');
+    Route::get('/execution', fn () => Inertia::render('WorkboardView'))->name('execution');
+    Route::get('/execution/tasks/{id}', [TaskController::class, 'show'])->name('execution.tasks.show');
+    Route::get('/penugasan', fn () => Inertia::render('AssignmentsView'))->name('penugasan');
+    Route::get('/fokus', fn () => Inertia::render('InboxView'))->name('fokus');
+    Route::get('/goals', fn () => Inertia::render('GoalsView'))->name('goals');
+    Route::get('/activity', fn () => Inertia::render('ActivityView'))->name('activity');
+    Route::get('/reports', fn () => Inertia::render('ReportsView'))->name('reports');
+    Route::get('/jadwal', fn () => Inertia::render('ScheduleView'))->name('jadwal');
+    Route::get('/laporan-bulanan', fn () => Inertia::render('MonthlyReportView'))->name('laporan-bulanan');
+    Route::get('/laporan-bulanan/{id}', [MonthlyReportController::class, 'show'])->name('laporan-bulanan.show');
+    Route::get('/laporan-risiko', fn () => Inertia::render('RiskReportView'))->name('laporan-risiko');
+    Route::get('/laporan-risiko/{id}', [RiskReportController::class, 'show'])->name('laporan-risiko.show');
+    Route::get('/search', fn () => Inertia::render('SearchView'))->name('search');
+    Route::get('/presence', fn () => Inertia::render('PresenceView'))->name('presence');
+    Route::get('/profile', [WorkspaceController::class, 'profile'])->name('profile');
+    Route::put('/profile', [WorkspaceController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/settings', fn () => Inertia::render('SettingsView'))->name('settings');
+    Route::post('/auth/change-password', [WorkspaceController::class, 'changePassword'])->name('auth.change-password');
+    Route::get('/playbook', fn () => Inertia::render('PlaybookView'))->name('playbook');
+    Route::get('/admin/orgs', fn () => Inertia::render('AdminOrgsView'))->name('admin.orgs');
+    Route::get('/admin/users', fn () => Inertia::render('AdminUsersView'))->name('admin.users');
+    Route::get('/admin/positions', fn () => Inertia::render('AdminPositionsView'))->name('admin.positions');
+    Route::get('/admin/roles', fn () => Inertia::render('AdminRolesView'))->name('admin.roles');
+
+    Route::get('/my-work', [WorkspaceController::class, 'myWork'])->name('my-work');
+    Route::get('/apms/kpi', [WorkspaceController::class, 'apmsKpi'])->name('apms.kpi');
+    Route::get('/system/status', [WorkspaceController::class, 'systemStatus'])->name('system.status');
+    Route::get('/search/saved', [WorkspaceController::class, 'savedSearches'])->name('search.saved');
+    Route::get('/users', [WorkspaceController::class, 'users'])->name('users.index');
+    Route::post('/users', [WorkspaceController::class, 'storeUser'])->name('users.store');
+    Route::get('/users/directory', [WorkspaceController::class, 'usersDirectory'])->name('users.directory');
+    Route::get('/users/presence', [WorkspaceController::class, 'usersPresence'])->name('users.presence');
+    Route::put('/users/me/status', [WorkspaceController::class, 'updateMyStatus'])->name('users.me.status');
+    Route::patch('/users/{id}', [WorkspaceController::class, 'updateUser'])->name('users.update');
+    Route::get('/notifications', [WorkspaceController::class, 'notifications'])->name('notifications.index');
+    Route::put('/notifications/read-all', [WorkspaceController::class, 'readAllNotifications'])->name('notifications.read-all');
+    Route::put('/notifications/{id}/read', [WorkspaceController::class, 'readNotification'])->name('notifications.read');
+    Route::put('/notifications/{id}/dismiss', [WorkspaceController::class, 'dismissNotification'])->name('notifications.dismiss');
+    Route::get('/role-configs', [WorkspaceController::class, 'roleConfigs'])->name('role-configs.index');
+    Route::put('/role-configs/{role}', [WorkspaceController::class, 'updateRoleConfig'])->name('role-configs.update');
+    Route::get('/focus-blocks', [WorkspaceController::class, 'focusBlocks'])->name('focus-blocks.index');
+    Route::post('/focus-blocks', [WorkspaceController::class, 'storeFocusBlock'])->name('focus-blocks.store');
+    Route::delete('/focus-blocks/{id}', [WorkspaceController::class, 'destroyFocusBlock'])->name('focus-blocks.destroy');
+    Route::post('/dm/open', [WorkspaceController::class, 'openDirectMessage'])->name('dm.open');
+    Route::post('/reminders', [WorkspaceController::class, 'storeReminder'])->name('reminders.store');
+    Route::post('/analytics/focus-interactions', [WorkspaceController::class, 'recordFocusInteraction'])->name('analytics.focus-interactions');
+    Route::post('/uploads', [WorkspaceController::class, 'upload'])->name('uploads.store');
 
     // ── Programs ─────────────────────────────────────────────────────────────
     Route::prefix('programs')->name('programs.')->group(function () {
@@ -60,6 +110,7 @@ Route::middleware('auth')->group(function () {
 
     // ── Tasks ─────────────────────────────────────────────────────────────────
     Route::prefix('tasks')->name('tasks.')->group(function () {
+        Route::get('/',              [TaskController::class, 'index'])->name('index');
         Route::post('/',             [TaskController::class, 'store'])->name('store');
         Route::get('/{id}',          [TaskController::class, 'show'])->name('show');
         Route::patch('/{id}',        [TaskController::class, 'update'])->name('update');
@@ -78,6 +129,15 @@ Route::middleware('auth')->group(function () {
     Route::prefix('phases')->name('phases.')->group(function () {
         Route::put('/{id}',    [PhaseController::class, 'update'])->name('update');
         Route::delete('/{id}', [PhaseController::class, 'destroy'])->name('destroy');
+    });
+
+    // ── Workstreams ─────────────────────────────────────────────────────────
+    Route::prefix('workstreams')->name('workstreams.')->group(function () {
+        Route::get('/',        [WorkspaceController::class, 'workstreams'])->name('index');
+        Route::post('/',       [WorkspaceController::class, 'storeWorkstream'])->name('store');
+        Route::get('/{id}',    [WorkspaceController::class, 'showWorkstream'])->name('show');
+        Route::put('/{id}',    [WorkspaceController::class, 'updateWorkstream'])->name('update');
+        Route::delete('/{id}', [WorkspaceController::class, 'destroyWorkstream'])->name('destroy');
     });
 
     // ── Blockers ──────────────────────────────────────────────────────────────

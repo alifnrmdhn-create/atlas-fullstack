@@ -1,4 +1,5 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { usePresencePing } from '../hooks/usePresencePing'
 import { realtime } from '../lib/api'
@@ -75,7 +76,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     const enabled = user !== null
 
     const [ticks, setTicks] = useState<RefreshTicks>(DEFAULT_TICKS)
-    const dispatcherRef = useRef<RealtimeDispatcher>()
+    const dispatcherRef = useRef<RealtimeDispatcher | null>(null)
     if (!dispatcherRef.current) dispatcherRef.current = new RealtimeDispatcher()
 
     usePresencePing(enabled)

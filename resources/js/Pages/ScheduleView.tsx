@@ -2219,3 +2219,5 @@ export function ScheduleView() {
     </div>
   )
 }
+
+export default ScheduleView

@@ -27,18 +27,26 @@ class AssignmentController extends Controller
 
     // ── Pages ────────────────────────────────────────────────────────────────
 
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $items = $this->service->listForUser($request->user(), $request->only(['scope', 'status', 'priority']));
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $items, 'total' => $items->count()]);
+        }
+
         return Inertia::render('AssignmentsView', [
             'assignments' => $items,
             'filters' => $request->only(['scope', 'status', 'priority']),
         ]);
     }
 
-    public function show(Request $request, int $id): Response
+    public function show(Request $request, int $id)
     {
         $assignment = $this->service->findOrFailForUser($request->user(), $id);
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $assignment]);
+        }
+
         return Inertia::render('AssignmentDetailView', ['assignment' => $assignment]);
     }
 

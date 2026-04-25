@@ -9,10 +9,10 @@ import {
   useState,
 } from 'react'
 import type { Dispatch, FormEvent, ReactNode, SetStateAction } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ApiRequestError, api, realtime, sessionStorage } from '../lib/api'
+import { api, realtime, sessionStorage } from '../lib/api'
+import { useAuth as useInertiaAuth } from '../hooks/useAuth'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import type {
-  AuthSession,
   AuthUser,
   Blocker,
   ChannelMember,
@@ -54,7 +54,6 @@ type TasksResponse = {
 type ProgramDetailResponse = { data: ProgramDetail }
 type TaskDetailResponse = { data: TaskDetail }
 type WorkstreamDetailResponse = { data: WorkstreamDetail }
-type AuthOptionsResponse = { users: unknown[]; passwordHint: string }
 type RealtimeSnapshot = {
   type: 'snapshot'
   generatedAt: string
@@ -277,7 +276,8 @@ function appendComposerSnippet(
 const WorkspaceContext = createContext<WorkspaceContextValue>(null!)
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const navigate = useNavigate()
+  const navigate = useInertiaNavigate()
+  const inertiaUser = useInertiaAuth()
 
   // Auth
   const [authStatus, setAuthStatus] = useState<WorkspaceContextValue['authStatus']>('booting')
@@ -286,6 +286,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null)
   const [authMessage, setAuthMessage] = useState<string | null>(null)
   const [authForm, setAuthForm] = useState({ identifier: '', password: '' })
+
+  const toWorkspaceUser = (user: typeof inertiaUser): AuthUser | null => {
+    if (!user) return null
+    return {
+      id: user.id,
+      userId: user.email,
+      email: user.email,
+      name: user.name,
+      roleType: user.roleType,
+      positionTitle: user.positionTitle ?? undefined,
+      avatarUrl: user.avatarUrl ?? undefined,
+    }
+  }
 
   // Shell UI
   const [navRailCollapsed, setNavRailCollapsed] = useState(() =>
@@ -434,9 +447,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [lastSyncedAt])
 
   // ── Auth helpers ─────────────────────────────────────────
-  const resolvePreferredIdentifier = (user: AuthUser) =>
-    user.displayIdentifier ?? user.nik ?? user.userId
-
   const closeUserMenu = () => setUserMenuSurface(null)
   const toggleUserMenu = (surface: 'topbar') => {
     setUserMenuSurface((cur) => (cur === surface ? null : surface))
@@ -470,56 +480,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }
 
   // ── Auth effects ─────────────────────────────────────────
-  const bootstrapAuth = useEffectEvent(async () => {
-    setAuthStatus('booting')
-    setAuthError(null)
-    try {
-      await api.get<AuthOptionsResponse>('/auth/options')
-      const existingToken = sessionStorage.getToken()
-      if (!existingToken) { setAuthStatus('signed_out'); setAuthMessage(null); return }
-      const session = await api.get<AuthSession>('/auth/session')
-      setCurrentUser(session.user)
-      setAuthForm({ identifier: resolvePreferredIdentifier(session.user), password: '' })
-      setAuthMessage(null)
-      setAuthStatus('signed_in')
-    } catch (error) {
-      sessionStorage.clear()
-      setCurrentUser(null)
-      if (error instanceof ApiRequestError && error.status >= 500) {
-        setAuthError('Layanan autentikasi sedang tidak tersedia.')
-      }
-      setAuthStatus('signed_out')
-      setAuthMessage(null)
-    }
-  })
-
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!authForm.identifier.trim() || !authForm.password.trim()) {
-      setAuthError('NIK atau User ID dan kata sandi wajib diisi.')
-      return
-    }
-    setAuthStatus('authenticating')
-    setAuthError(null)
-    setAuthMessage(null)
-    try {
-      const session = await api.post<AuthSession>('/auth/login', {
-        identifier: authForm.identifier.trim(),
-        password: authForm.password,
-      })
-      sessionStorage.setToken(session.token)
-      setCurrentUser(session.user)
-      setAuthForm((cur) => ({
-        ...cur,
-        identifier: resolvePreferredIdentifier(session.user),
-        password: '',
-      }))
-      setAuthStatus('transitioning')
-      setTimeout(() => setAuthStatus('signed_in'), 1150)
-    } catch (error) {
-      setAuthStatus('signed_out')
-      setAuthError(error instanceof Error ? error.message : 'Gagal masuk.')
-    }
+    setAuthError('Silakan gunakan halaman login utama.')
+    window.location.assign('/login')
   }
 
   const handleForgotPassword = async () => {
@@ -528,14 +492,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       return
     }
     setAuthError(null)
-    try {
-      const payload = await api.post<{ message: string }>('/auth/forgot-password', {
-        identifier: authForm.identifier.trim(),
-      })
-      setAuthMessage(payload.message)
-    } catch (error) {
-      setAuthError(error instanceof Error ? error.message : 'Reset kata sandi gagal.')
-    }
+    setAuthMessage('Reset kata sandi belum tersedia di aplikasi Laravel.')
   }
 
   const requestLogout = () => setLogoutPending(true)
@@ -544,7 +501,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const handleLogout = async () => {
     setLogoutPending(false)
     setAuthStatus('logging_out')
-    try { await api.post('/auth/logout', {}) } catch { /* always clear */ }
+    try { await api.post('/logout', {}) } catch { /* always clear */ }
     // Wait for the app-shell exit animation (~300ms) before unmounting
     setTimeout(() => signOutToEntry('You have been signed out.'), 400)
   }
@@ -823,7 +780,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }
 
   // ── Effects ───────────────────────────────────────────────
-  useEffect(() => { void bootstrapAuth() }, [])
+  useEffect(() => {
+    const user = toWorkspaceUser(inertiaUser)
+    setCurrentUser(user)
+    setAuthStatus(user ? 'signed_in' : 'signed_out')
+    if (user) {
+      setAuthForm((cur) => ({
+        ...cur,
+        identifier: cur.identifier || user.email,
+        password: '',
+      }))
+      setAuthError(null)
+      setAuthMessage(null)
+    }
+  }, [inertiaUser])
 
   useEffect(() => {
     window.localStorage.setItem('atlas-nav-collapsed', navRailCollapsed ? 'true' : 'false')

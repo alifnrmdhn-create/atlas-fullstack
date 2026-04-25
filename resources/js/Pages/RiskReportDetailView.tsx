@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { usePage } from '@inertiajs/react'
 import { useWorkspace } from '../context/workspace'
 import { api } from '../lib/api'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import type { RiskReport } from '../types/monthlyReports'
 import { MonthlyReportDetailDIMR } from './MonthlyReportDetailDIMR'
 
 export function RiskReportDetailView() {
-  const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const page = usePage<{ report?: { id: number } }>()
+  const reportId = page.props.report?.id != null ? String(page.props.report.id) : undefined
+  const navigate = useInertiaNavigate()
   const { currentUser } = useWorkspace()
 
   const [report, setReport] = useState<RiskReport | null>(null)
@@ -15,14 +17,14 @@ export function RiskReportDetailView() {
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(() => {
-    if (!id) return
+    if (!reportId) return
     setLoading(true)
     setError(null)
-    api.get<{ data: RiskReport }>(`/risk-reports/${id}`)
+    api.get<{ data: RiskReport }>(`/risk-reports/${reportId}`)
       .then(j => setReport(j.data))
       .catch(e => setError(e instanceof Error ? e.message : 'Gagal memuat laporan risiko.'))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [reportId])
 
   useEffect(() => { load() }, [load])
 
@@ -61,3 +63,5 @@ export function RiskReportDetailView() {
     />
   )
 }
+
+export default RiskReportDetailView

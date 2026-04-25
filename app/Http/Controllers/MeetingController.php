@@ -66,20 +66,28 @@ class MeetingController extends Controller
 
     // ── Pages ────────────────────────────────────────────────────────────────
 
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $meetings = $this->queryMeetings($request);
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $meetings, 'total' => count($meetings)]);
+        }
+
         return Inertia::render('MeetingsView', [
             'meetings' => $meetings,
             'filters' => $request->only(['filter', 'from', 'to', 'forUserId']),
         ]);
     }
 
-    public function show(Request $request, int $id): Response
+    public function show(Request $request, int $id)
     {
         $meeting = Meeting::with('attendees', 'decisions', 'actionItems')->findOrFail($id);
         $this->assertAccess($meeting, $request->user()->id, $request->user()->roleType);
         $enriched = $this->enrichMeetings(collect([$meeting]))[0];
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $enriched]);
+        }
+
         return Inertia::render('MeetingDetailView', ['meeting' => $enriched]);
     }
 

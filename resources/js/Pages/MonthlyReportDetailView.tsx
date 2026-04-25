@@ -1,5 +1,5 @@
 import { useState, useEffect, useId, useRef, useCallback, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { usePage } from '@inertiajs/react'
 import { MonthlyReportDetailDIMR } from './MonthlyReportDetailDIMR'
 import type { RiskReport } from '../types/monthlyReports'
 import {
@@ -8,6 +8,7 @@ import {
 } from 'recharts'
 import { useWorkspace } from '../context/workspace'
 import { api } from '../lib/api'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import {
@@ -740,8 +741,9 @@ function Modal({ title, subtitle, onClose, children, footer }: {
 // ── Main view ─────────────────────────────────────────────────────────────────
 
 export function MonthlyReportDetailView() {
-  const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const page = usePage<{ report?: { id: number } }>()
+  const reportId = page.props.report?.id != null ? String(page.props.report.id) : undefined
+  const navigate = useInertiaNavigate()
   const { currentUser, programs } = useWorkspace()
   const role = currentUser?.roleType?.toUpperCase() ?? ''
 
@@ -763,16 +765,16 @@ export function MonthlyReportDetailView() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const loadReport = useCallback(() => {
-    if (!id) return
+    if (!reportId) return
     setLoading(true); setError(null)
-    api.get<{ data: Report }>(`/monthly-reports/${id}`)
+    api.get<{ data: Report }>(`/monthly-reports/${reportId}`)
       .then(r => {
         setReport(r.data)
         setNarrativeForm({ narrativeSummary: r.data.narrativeSummary ?? '', highlights: r.data.highlights ?? '' })
       })
       .catch(e => setError(e instanceof Error ? e.message : 'Gagal memuat laporan'))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [reportId])
 
   useEffect(() => { loadReport() }, [loadReport])
 
@@ -1181,3 +1183,5 @@ export function MonthlyReportDetailView() {
     </div>
   )
 }
+
+export default MonthlyReportDetailView

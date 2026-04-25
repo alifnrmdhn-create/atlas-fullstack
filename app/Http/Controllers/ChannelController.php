@@ -15,18 +15,37 @@ class ChannelController extends Controller
 {
     // ── Pages ────────────────────────────────────────────────────────────────
 
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $userId = $request->user()->id;
         $channels = $this->listForUser($userId, $request->user()->roleType);
-        return Inertia::render('ChannelsView', ['channels' => $channels]);
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $channels, 'total' => count($channels)]);
+        }
+
+        return Inertia::render('ChannelsViewWrapper', ['channels' => $channels]);
     }
 
-    public function show(int $id): Response
+    public function show(Request $request, int $id)
     {
         $channel = Channel::query()->with([
             'members.user:id,name,avatarUrl,roleType,positionTitle',
         ])->findOrFail($id);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'channel' => $channel,
+                'members' => $channel->members->map(fn ($member) => [
+                    'channelId' => $member->channelId,
+                    'userId' => $member->userId,
+                    'name' => $member->user?->name,
+                    'roleType' => $member->user?->roleType,
+                    'status' => null,
+                    'lastViewedAt' => $member->lastViewedAt,
+                    'isMuted' => $member->isMuted,
+                ])->values(),
+            ]);
+        }
+
         return Inertia::render('ChannelDetailView', ['channel' => $channel]);
     }
 

@@ -517,8 +517,7 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
   // Fetch YTD
   useEffect(() => {
     if (!report.id) return
-    fetch(`/api/risk-reports/${report.id}/ytd`)
-      .then(r => r.json())
+    api.get<{ data: typeof ytdSeries }>(`/risk-reports/${report.id}/ytd`)
       .then(d => { if (d?.data) setYtdSeries(d.data) })
       .catch(() => {})
   }, [report.id])

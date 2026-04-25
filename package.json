@@ -4,7 +4,10 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "typecheck": "tsc --noEmit --ignoreDeprecations 6.0",
+        "audit:routes": "node scripts/audit-frontend-routes.mjs",
+        "check": "npm run typecheck && npm run audit:routes && npm run build"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
@@ -25,9 +28,11 @@
         "pdfjs-dist": "^5.6.205",
         "react": "^19.2.5",
         "react-dom": "^19.2.5",
-        "react-router-dom": "^7.14.2",
         "recharts": "^3.8.1",
         "typescript": "^6.0.3",
         "zustand": "^5.0.12"
+    },
+    "overrides": {
+        "uuid": "^14.0.0"
     }
 }

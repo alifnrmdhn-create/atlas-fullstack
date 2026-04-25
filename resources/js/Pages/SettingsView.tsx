@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import type { FormEvent } from 'react'
 import { useWorkspace } from '../context/workspace'
 import { api } from '../lib/api'
@@ -313,7 +313,7 @@ function loadThemePreference(): ThemePreference {
 
 export function SettingsView() {
   const { currentUser, systemStatus, requestLogout } = useWorkspace()
-  const navigate = useNavigate()
+  const navigate = useInertiaNavigate()
 
   const [activeNav, setActiveNav] = useState('Profile')
 
@@ -717,3 +717,5 @@ export function SettingsView() {
     </div>
   )
 }
+
+export default SettingsView

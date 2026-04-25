@@ -1,7 +1,10 @@
 import { createInertiaApp } from '@inertiajs/react'
+import type { ComponentType, ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers'
 import { RealtimeProvider } from './contexts/RealtimeProvider'
+import { WorkspaceProvider } from './context/workspace'
+import { AppShell } from './layouts/AppShell'
 
 import './styles/tokens.css'
 import './styles/reset.css'
@@ -25,21 +28,31 @@ import './styles/responsive.css'
     if (compact === 'true') document.documentElement.setAttribute('data-sidebar', 'compact')
 })()
 
+type InertiaPage = ComponentType & {
+    layout?: (page: ReactNode) => ReactNode
+}
+
 createInertiaApp({
     title: (title) => `${title} — ATLAS`,
-    resolve: (name) =>
-        resolvePageComponent(
+    resolve: async (name) => {
+        const page = await resolvePageComponent(
             `./Pages/${name}.tsx`,
             import.meta.glob('./Pages/**/*.tsx'),
-        ),
+        ) as InertiaPage
+
+        if (!name.startsWith('Auth/')) {
+            page.layout ??= (page) => (
+                <RealtimeProvider>
+                    <WorkspaceProvider>
+                        <AppShell>{page}</AppShell>
+                    </WorkspaceProvider>
+                </RealtimeProvider>
+            )
+        }
+
+        return page
+    },
     setup({ el, App, props }) {
-        // RealtimeProvider: SSE subscription + presence ping diaktifkan saat
-        // user sudah login. Guest routes (login page) ditangani dengan
-        // `enabled={false}` lewat suppress — EventSource akan 401 anyway.
-        createRoot(el).render(
-            <RealtimeProvider>
-                <App {...props} />
-            </RealtimeProvider>
-        )
+        createRoot(el).render(<App {...props} />)
     },
 })
