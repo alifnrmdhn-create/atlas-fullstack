@@ -29,9 +29,28 @@ class ScopeResolver
     {
         $cacheKey = "scope:user:{$user->id}";
 
-        return Cache::remember($cacheKey, self::TTL_SECONDS, function () use ($user) {
-            return $this->computeScope($user);
-        });
+        $cached = Cache::get($cacheKey);
+        if ($cached instanceof UserScope) {
+            return $cached;
+        }
+        if (is_array($cached) && array_key_exists('userIds', $cached) && array_key_exists('unitIds', $cached)) {
+            return new UserScope(
+                userIds: $cached['userIds'],
+                unitIds: $cached['unitIds'],
+            );
+        }
+
+        if ($cached !== null) {
+            Cache::forget($cacheKey);
+        }
+
+        $scope = $this->computeScope($user);
+        Cache::put($cacheKey, [
+            'userIds' => $scope->userIds,
+            'unitIds' => $scope->unitIds,
+        ], self::TTL_SECONDS);
+
+        return $scope;
     }
 
     public function invalidate(int $userId): void

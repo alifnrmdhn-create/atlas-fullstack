@@ -167,7 +167,7 @@ export default function Login({ errors: pageErrors }: PageProps) {
                     <div className="auth-form-container">
                         <div className="auth-form-header">
                             <span className="auth-form-header__eyebrow">Masuk ke ATLAS Workspace</span>
-                            <p>Masuk dengan NIK atau email untuk membuka workspace kerja hari ini.</p>
+                            <p>Masuk dengan NIK atau User ID untuk membuka workspace kerja hari ini.</p>
                         </div>
 
                         {authError && (
@@ -188,7 +188,7 @@ export default function Login({ errors: pageErrors }: PageProps) {
                                     value={data.email}
                                     autoFocus
                                 />
-                                <label htmlFor="email" className="auth-float-label">NIK atau email PTPN</label>
+                                <label htmlFor="email" className="auth-float-label">NIK atau User ID</label>
                             </div>
 
                             <div className="auth-float-group">

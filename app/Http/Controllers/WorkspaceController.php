@@ -19,6 +19,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -172,7 +174,7 @@ class WorkspaceController extends Controller
                 'mode' => 'database',
                 'databaseUrlConfigured' => config('database.default') !== null,
                 'availability' => 'ready',
-                'fallbackStore' => 'seeded-memory',
+                'fallbackStore' => null,
                 'lastError' => null,
             ],
         ]);
@@ -187,6 +189,279 @@ class WorkspaceController extends Controller
             ->get();
 
         return response()->json(['data' => $rows]);
+    }
+
+    public function search(Request $request): JsonResponse|Response
+    {
+        if (!$request->expectsJson()) {
+            return Inertia::render('SearchView');
+        }
+
+        $query = trim((string) $request->query('q', ''));
+        $type = strtoupper((string) $request->query('type', 'ALL'));
+        $limit = min(max($request->integer('limit', 24), 1), 50);
+        $offset = max($request->integer('offset', 0), 0);
+
+        if ($query === '') {
+            return response()->json(['results' => [], 'total' => 0]);
+        }
+
+        $needle = '%' . $query . '%';
+        $like = $this->likeOperator();
+        $results = collect();
+
+        if ($this->searchIncludes($type, ['PROGRAM', 'PROGRAMS'])) {
+            $results = $results->concat(Program::query()
+                ->where(fn ($q) => $q->where('name', $like, $needle)->orWhere('code', $like, $needle))
+                ->orderByDesc('createdAt')
+                ->limit($limit)
+                ->get()
+                ->map(fn ($program) => [
+                    'type' => 'PROGRAM',
+                    'id' => $program->id,
+                    'title' => $program->name,
+                    'snippet' => $program->code . ' · ' . ($program->description ?? 'Program strategis'),
+                    'author' => 'Program',
+                    'createdAt' => $this->iso($program->createdAt),
+                ]));
+        }
+
+        if ($this->searchIncludes($type, ['WORKSTREAM', 'WORKSTREAMS', 'INITIATIVE', 'INITIATIVES'])) {
+            $results = $results->concat(Workstream::query()
+                ->with('program:id,code,name')
+                ->where(fn ($q) => $q->where('name', $like, $needle)->orWhere('code', $like, $needle))
+                ->orderByDesc('createdAt')
+                ->limit($limit)
+                ->get()
+                ->map(fn ($workstream) => [
+                    'type' => 'WORKSTREAM',
+                    'id' => $workstream->id,
+                    'title' => $workstream->name,
+                    'snippet' => trim(($workstream->program?->code ?? 'Workstream') . ' · ' . ($workstream->description ?? '')),
+                    'author' => $workstream->program?->name,
+                    'createdAt' => $this->iso($workstream->createdAt),
+                ]));
+        }
+
+        if ($this->searchIncludes($type, ['TASK', 'TASKS', 'WORK_ITEM', 'WORK_ITEMS'])) {
+            $results = $results->concat(Task::query()
+                ->with('workstream.program:id,code,name')
+                ->where(fn ($q) => $q->where('title', $like, $needle)->orWhere('code', $like, $needle))
+                ->orderByDesc('createdAt')
+                ->limit($limit)
+                ->get()
+                ->map(fn ($task) => [
+                    'type' => 'TASK',
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'snippet' => trim(($task->code ?? 'Task') . ' · ' . ($task->workstream?->program?->code ?? '') . ' · ' . ($task->description ?? '')),
+                    'author' => $task->workstream?->program?->name,
+                    'createdAt' => $this->iso($task->createdAt),
+                ]));
+        }
+
+        if ($this->searchIncludes($type, ['BLOCKER', 'BLOCKERS'])) {
+            $results = $results->concat(Blocker::query()
+                ->where(fn ($q) => $q->where('title', $like, $needle)->orWhere('code', $like, $needle))
+                ->orderByDesc('createdAt')
+                ->limit($limit)
+                ->get()
+                ->map(fn ($blocker) => [
+                    'type' => 'BLOCKER',
+                    'id' => $blocker->id,
+                    'title' => $blocker->title,
+                    'snippet' => trim(($blocker->code ?? 'Blocker') . ' · ' . ($blocker->severity ?? '') . ' · ' . ($blocker->description ?? '')),
+                    'author' => $blocker->severity,
+                    'createdAt' => $this->iso($blocker->createdAt),
+                ]));
+        }
+
+        if ($this->searchIncludes($type, ['CHANNEL_MESSAGE', 'CHANNEL_MESSAGES', 'MESSAGE', 'MESSAGES'])) {
+            $results = $results->concat(ChannelMessage::query()
+                ->with('author:id,name')
+                ->whereNull('deletedForEveryoneAt')
+                ->where(fn ($q) => $q->where('searchableText', $like, $needle)->orWhere('content', $like, $needle))
+                ->orderByDesc('createdAt')
+                ->limit($limit)
+                ->get()
+                ->map(fn ($message) => [
+                    'type' => 'CHANNEL_MESSAGE',
+                    'id' => $message->id,
+                    'title' => 'Message #' . $message->id,
+                    'snippet' => Str::limit($message->searchableText ?: $message->content, 180),
+                    'author' => $message->author?->name,
+                    'createdAt' => $this->iso($message->createdAt),
+                ]));
+        }
+
+        if ($this->searchIncludes($type, ['MEETING', 'MEETINGS'])) {
+            $results = $results->concat(Meeting::query()
+                ->where(fn ($q) => $q->where('title', $like, $needle)->orWhere('description', $like, $needle)->orWhere('location', $like, $needle))
+                ->orderByDesc('startAt')
+                ->limit($limit)
+                ->get()
+                ->map(fn ($meeting) => [
+                    'type' => 'MEETING',
+                    'id' => $meeting->id,
+                    'title' => $meeting->title,
+                    'snippet' => trim(($meeting->location ?? 'Meeting') . ' · ' . ($meeting->description ?? '')),
+                    'author' => $meeting->meetingType,
+                    'createdAt' => $this->iso($meeting->startAt),
+                ]));
+        }
+
+        $sorted = $results
+            ->sortByDesc(fn ($result) => $result['createdAt'])
+            ->values();
+
+        return response()->json([
+            'results' => $sorted->slice($offset, $limit)->values(),
+            'total' => $sorted->count(),
+        ]);
+    }
+
+    public function userActivity(Request $request): JsonResponse
+    {
+        [$from, $to] = $this->activityRange($request->query('range'));
+        $sessions = UserSession::query()
+            ->whereBetween('startedAt', [$from, $to])
+            ->get()
+            ->groupBy('userId');
+        $statuses = UserStatus::query()->pluck('status', 'userId');
+
+        $users = User::query()
+            ->with(['unit:id,name', 'directorate:id,name'])
+            ->where('isActive', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'positionTitle', 'avatarUrl', 'unitId', 'directorateId'])
+            ->map(function ($user) use ($sessions, $statuses) {
+                $userSessions = $sessions->get($user->id, collect());
+                $totalMs = $userSessions->sum(fn ($session) => $this->sessionDurationMs($session));
+                $lastActive = $userSessions
+                    ->map(fn ($session) => $session->endedAt ?? $session->lastPingAt ?? $session->startedAt)
+                    ->filter()
+                    ->sortDesc()
+                    ->first();
+
+                return [
+                    'rank' => 0,
+                    'userId' => $user->id,
+                    'name' => $user->name,
+                    'positionTitle' => $user->positionTitle,
+                    'avatarUrl' => $user->avatarUrl,
+                    'unit' => $user->unit,
+                    'directorate' => $user->directorate,
+                    'totalDurationMs' => $totalMs,
+                    'sessionCount' => $userSessions->count(),
+                    'lastActiveAt' => $lastActive ? $this->iso($lastActive) : null,
+                    'isOnline' => ($statuses[$user->id] ?? null) === 'ONLINE',
+                ];
+            })
+            ->sortByDesc('totalDurationMs')
+            ->values()
+            ->map(fn ($user, $index) => [...$user, 'rank' => $index + 1]);
+
+        return response()->json(['data' => [
+            'users' => $users,
+            'from' => $from->toDateString(),
+            'to' => $to->toDateString(),
+        ]]);
+    }
+
+    public function userActivityDetail(Request $request, int $id): JsonResponse
+    {
+        [$from, $to] = $this->activityRange($request->query('range'));
+        $user = User::query()
+            ->with(['unit:id,name', 'directorate:id,name'])
+            ->findOrFail($id);
+        $sessions = UserSession::query()
+            ->where('userId', $id)
+            ->whereBetween('startedAt', [$from, $to])
+            ->orderByDesc('startedAt')
+            ->get();
+        $totalMs = $sessions->sum(fn ($session) => $this->sessionDurationMs($session));
+        $lastActive = $sessions
+            ->map(fn ($session) => $session->endedAt ?? $session->lastPingAt ?? $session->startedAt)
+            ->filter()
+            ->sortDesc()
+            ->first();
+
+        return response()->json(['data' => [
+            'user' => [
+                'userId' => $user->id,
+                'name' => $user->name,
+                'positionTitle' => $user->positionTitle,
+                'unit' => $user->unit,
+                'directorate' => $user->directorate,
+            ],
+            'totalDurationMs' => $totalMs,
+            'sessionCount' => $sessions->count(),
+            'avgSessionDurationMs' => $sessions->count() > 0 ? (int) round($totalMs / $sessions->count()) : 0,
+            'lastActiveAt' => $lastActive ? $this->iso($lastActive) : null,
+            'sessions' => $sessions->map(fn ($session) => [
+                'id' => $session->id,
+                'startedAt' => $this->iso($session->startedAt),
+                'endedAt' => $session->endedAt ? $this->iso($session->endedAt) : null,
+                'durationMs' => $this->sessionDurationMs($session),
+                'endReason' => $session->endReason,
+            ])->values(),
+            'dailyBreakdown' => $this->dailyActivity($from, $to, $sessions),
+            'from' => $from->toDateString(),
+            'to' => $to->toDateString(),
+        ]]);
+    }
+
+    public function savedMessages(Request $request): JsonResponse
+    {
+        $messages = DB::table('SavedMessage')
+            ->join('ChannelMessage', 'SavedMessage.messageId', '=', 'ChannelMessage.id')
+            ->where('SavedMessage.userId', $request->user()->id)
+            ->orderByDesc('SavedMessage.createdAt')
+            ->get([
+                'ChannelMessage.id',
+                'ChannelMessage.channelId',
+                'ChannelMessage.content',
+                'SavedMessage.createdAt',
+            ]);
+
+        return response()->json(['data' => $messages]);
+    }
+
+    public function storeSavedMessage(Request $request, int $messageId): JsonResponse
+    {
+        ChannelMessage::query()->findOrFail($messageId);
+
+        DB::table('SavedMessage')->updateOrInsert(
+            ['userId' => $request->user()->id, 'messageId' => $messageId],
+            ['createdAt' => now()],
+        );
+
+        return response()->json(['data' => ['id' => $messageId]]);
+    }
+
+    public function destroySavedMessage(Request $request, int $messageId): JsonResponse
+    {
+        DB::table('SavedMessage')
+            ->where('userId', $request->user()->id)
+            ->where('messageId', $messageId)
+            ->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function unfurl(Request $request): JsonResponse
+    {
+        $data = $request->validate(['url' => 'required|url|max:2048']);
+        $host = parse_url($data['url'], PHP_URL_HOST) ?: $data['url'];
+        $siteName = preg_replace('/^www\./', '', (string) $host);
+
+        return response()->json(['data' => [
+            'url' => $data['url'],
+            'title' => $siteName,
+            'description' => $data['url'],
+            'siteName' => $siteName,
+            'favicon' => 'https://www.google.com/s2/favicons?domain=' . rawurlencode($siteName) . '&sz=64',
+        ]]);
     }
 
     public function profile(Request $request): JsonResponse|Response
@@ -607,5 +882,63 @@ class WorkspaceController extends Controller
         if ($actual <= $critical) return 'RED';
         if ($actual <= $warning) return 'YELLOW';
         return 'GREEN';
+    }
+
+    private function searchIncludes(string $type, array $aliases): bool
+    {
+        return $type === 'ALL' || in_array($type, $aliases, true);
+    }
+
+    private function likeOperator(): string
+    {
+        return DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+    }
+
+    private function activityRange(mixed $range): array
+    {
+        $days = match ($range) {
+            '30d' => 30,
+            '90d' => 90,
+            default => 7,
+        };
+
+        return [now()->subDays($days - 1)->startOfDay(), now()->endOfDay()];
+    }
+
+    private function sessionDurationMs(UserSession $session): int
+    {
+        if ($session->durationMs > 0) {
+            return (int) $session->durationMs;
+        }
+
+        $start = $session->startedAt ? Carbon::parse($session->startedAt) : now();
+        $end = $session->endedAt
+            ? Carbon::parse($session->endedAt)
+            : ($session->lastPingAt ? Carbon::parse($session->lastPingAt) : now());
+
+        return max(0, $start->diffInMilliseconds($end));
+    }
+
+    private function dailyActivity(Carbon $from, Carbon $to, $sessions)
+    {
+        $byDate = $sessions->groupBy(fn ($session) => Carbon::parse($session->startedAt)->toDateString());
+        $days = collect();
+        $cursor = $from->copy();
+
+        while ($cursor->lte($to)) {
+            $date = $cursor->toDateString();
+            $days->push([
+                'date' => $date,
+                'durationMs' => $byDate->get($date, collect())->sum(fn ($session) => $this->sessionDurationMs($session)),
+            ]);
+            $cursor->addDay();
+        }
+
+        return $days;
+    }
+
+    private function iso(mixed $value): string
+    {
+        return Carbon::parse($value ?? now())->toISOString();
     }
 }

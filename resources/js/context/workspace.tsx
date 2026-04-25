@@ -1091,6 +1091,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (authStatus !== 'signed_in') return
+    if (!realtime.enabled()) return
     const streamUrl = realtime.streamUrl()
     if (!streamUrl) return
     const es = new EventSource(streamUrl)

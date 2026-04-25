@@ -1,8 +1,10 @@
-# ATLAS Migration Recap — Express.js → Laravel 11 + Inertia + React
+# ATLAS Migration Recap — Express.js → Laravel + Inertia + React
 
-> Dokumen ini merangkum keseluruhan proses migrasi sistem manajemen program ATLAS dari stack Express.js + TypeScript + Prisma ke Laravel 11 + Inertia.js + React monorepo, sesuai standar DTDI PTPN.
+> Dokumen ini merangkum keseluruhan proses migrasi sistem manajemen program ATLAS dari stack Express.js + TypeScript + Prisma ke Laravel + Inertia.js + React monorepo, sesuai standar DTDI PTPN.
 >
 > Ditujukan untuk **review teknis CODEX** sebelum tahap staging deployment.
+>
+> Catatan: dokumen ini bersifat historis. Runtime operasional yang berlaku ada di `README.md`; repo tidak boleh bergantung pada path MAMP atau file dari stack lama.
 
 ---
 
@@ -481,7 +483,7 @@ bash scripts/setup-test-db.sh
 # Jalankan tests
 composer test
 # atau:
-/Applications/MAMP/bin/php/php8.3.30/bin/php artisan test
+php artisan test
 ```
 
 ---
@@ -532,7 +534,7 @@ Verifikasi terakhir:
 
 ```bash
 npm run check
-/Applications/MAMP/bin/php/php8.3.30/bin/php artisan test
+php artisan test
 ```
 
 Hasil:

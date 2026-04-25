@@ -8,6 +8,7 @@ use App\Models\Position;
 use App\Models\PositionHistory;
 use App\Models\User;
 use App\Support\RolePolicy;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -70,7 +71,7 @@ class OrganizationController extends Controller
         return response()->json(['data' => $dirs]);
     }
 
-    public function storeDirectorate(Request $request): RedirectResponse
+    public function storeDirectorate(Request $request): JsonResponse|RedirectResponse
     {
         Gate: RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
         $data = $request->validate([
@@ -81,10 +82,15 @@ class OrganizationController extends Controller
             'isActive' => 'boolean',
         ]);
         $dir = Directorate::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $dir], 201);
+        }
+
         return back()->with('success', 'Direktorat dibuat.');
     }
 
-    public function updateDirectorate(Request $request, int $id): RedirectResponse
+    public function updateDirectorate(Request $request, int $id): JsonResponse|RedirectResponse
     {
         RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
         $data = $request->validate([
@@ -94,14 +100,25 @@ class OrganizationController extends Controller
             'domain' => 'nullable|string|max:120',
             'isActive' => 'sometimes|boolean',
         ]);
-        Directorate::findOrFail($id)->update($data);
+        $dir = Directorate::findOrFail($id);
+        $dir->update($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $dir->fresh()]);
+        }
+
         return back()->with('success', 'Direktorat diperbarui.');
     }
 
-    public function destroyDirectorate(Request $request, int $id): RedirectResponse
+    public function destroyDirectorate(Request $request, int $id): JsonResponse|RedirectResponse
     {
         RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
         Directorate::findOrFail($id)->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back()->with('success', 'Direktorat dihapus.');
     }
 
@@ -113,7 +130,7 @@ class OrganizationController extends Controller
         return response()->json(['data' => $units, 'total' => $units->count()]);
     }
 
-    public function storeUnit(Request $request): RedirectResponse
+    public function storeUnit(Request $request): JsonResponse|RedirectResponse
     {
         RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
         $data = $request->validate([
@@ -125,11 +142,16 @@ class OrganizationController extends Controller
             'parentId' => 'nullable|integer',
             'isActive' => 'boolean',
         ]);
-        OrganizationalUnit::create($data);
+        $unit = OrganizationalUnit::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $unit], 201);
+        }
+
         return back()->with('success', 'Unit dibuat.');
     }
 
-    public function updateUnit(Request $request, int $id): RedirectResponse
+    public function updateUnit(Request $request, int $id): JsonResponse|RedirectResponse
     {
         RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
         $data = $request->validate([
@@ -141,14 +163,25 @@ class OrganizationController extends Controller
             'parentId' => 'nullable|integer',
             'isActive' => 'sometimes|boolean',
         ]);
-        OrganizationalUnit::findOrFail($id)->update($data);
+        $unit = OrganizationalUnit::findOrFail($id);
+        $unit->update($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $unit->fresh()]);
+        }
+
         return back()->with('success', 'Unit diperbarui.');
     }
 
-    public function destroyUnit(Request $request, int $id): RedirectResponse
+    public function destroyUnit(Request $request, int $id): JsonResponse|RedirectResponse
     {
         RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
         OrganizationalUnit::findOrFail($id)->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back()->with('success', 'Unit dihapus.');
     }
 
@@ -169,7 +202,7 @@ class OrganizationController extends Controller
         return response()->json(['data' => $positions, 'total' => $positions->count()]);
     }
 
-    public function storePosition(Request $request): RedirectResponse
+    public function storePosition(Request $request): JsonResponse|RedirectResponse
     {
         RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
         $data = $request->validate([
@@ -183,11 +216,16 @@ class OrganizationController extends Controller
             'seatOrder' => 'nullable|integer',
             'isActive' => 'boolean',
         ]);
-        Position::create($data);
+        $position = Position::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $position], 201);
+        }
+
         return back()->with('success', 'Jabatan dibuat.');
     }
 
-    public function updatePosition(Request $request, int $id): RedirectResponse
+    public function updatePosition(Request $request, int $id): JsonResponse|RedirectResponse
     {
         RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
         $data = $request->validate([
@@ -200,20 +238,31 @@ class OrganizationController extends Controller
             'seatOrder' => 'nullable|integer',
             'isActive' => 'sometimes|boolean',
         ]);
-        Position::findOrFail($id)->update($data);
+        $position = Position::findOrFail($id);
+        $position->update($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $position->fresh()]);
+        }
+
         return back()->with('success', 'Jabatan diperbarui.');
     }
 
-    public function destroyPosition(Request $request, int $id): RedirectResponse
+    public function destroyPosition(Request $request, int $id): JsonResponse|RedirectResponse
     {
         RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
         // Unassign users from this position first
         User::where('positionId', $id)->update(['positionId' => null]);
         Position::findOrFail($id)->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back()->with('success', 'Jabatan dihapus.');
     }
 
-    public function assignPosition(Request $request, int $id): RedirectResponse
+    public function assignPosition(Request $request, int $id): JsonResponse|RedirectResponse
     {
         RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
         $data = $request->validate([
@@ -242,6 +291,10 @@ class OrganizationController extends Controller
                 'skNumber' => $data['skNumber'] ?? null,
                 'createdBy' => $request->user()->id,
             ]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $position->fresh(['users' => fn ($q) => $q->where('isActive', true)])]);
         }
 
         return back()->with('success', 'Penugasan jabatan disimpan.');

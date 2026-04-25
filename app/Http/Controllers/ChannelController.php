@@ -6,6 +6,7 @@ use App\Models\Channel;
 use App\Models\ChannelMember;
 use App\Models\ChannelMessage;
 use App\Support\RolePolicy;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,6 +14,18 @@ use Inertia\Response;
 
 class ChannelController extends Controller
 {
+    private function validationError(Request $request, string $message): JsonResponse|RedirectResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'errors' => ['general' => [$message]],
+            ], 422);
+        }
+
+        return back()->withErrors([$message]);
+    }
+
     // ── Pages ────────────────────────────────────────────────────────────────
 
     public function index(Request $request)
@@ -78,7 +91,7 @@ class ChannelController extends Controller
 
     // ── Mutations ────────────────────────────────────────────────────────────
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'name' => 'required|string|max:80',
@@ -112,10 +125,14 @@ class ChannelController extends Controller
             'isStarred' => true,
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $channel], 201);
+        }
+
         return redirect()->route('channels.show', $channel->id)->with('success', 'Channel dibuat.');
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'name' => 'sometimes|string|max:80',
@@ -124,18 +141,26 @@ class ChannelController extends Controller
         ]);
 
         Channel::query()->where('id', $id)->update($data);
+        if ($request->expectsJson()) {
+            return response()->json(['data' => Channel::findOrFail($id)]);
+        }
+
         return back()->with('success', 'Channel diperbarui.');
     }
 
-    public function destroy(int $id): RedirectResponse
+    public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
         Channel::query()->where('id', $id)->update(['isArchived' => true]);
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return redirect()->route('channels.index')->with('success', 'Channel diarsipkan.');
     }
 
     // ── Member management ─────────────────────────────────────────────────────
 
-    public function addMember(Request $request, int $id): RedirectResponse
+    public function addMember(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $data = $request->validate(['userId' => 'required|integer']);
         $channel = Channel::findOrFail($id);
@@ -144,26 +169,30 @@ class ChannelController extends Controller
 
         // Check: actor must be member or admin
         $isMember = ChannelMember::where('channelId', $id)->where('userId', $user->id)->exists();
-        if (!$isMember && !$isAdmin) return back()->withErrors(['Anda bukan anggota channel ini.']);
+        if (!$isMember && !$isAdmin) return $this->validationError($request, 'Anda bukan anggota channel ini.');
 
         // DM guard
         if ($channel->type === 'PRIVATE' && preg_match('/^dm-\d+-\d+$/', $channel->name)) {
-            return back()->withErrors(['Direct message tidak mendukung penambahan peserta baru.']);
+            return $this->validationError($request, 'Direct message tidak mendukung penambahan peserta baru.');
         }
 
         if (!$isAdmin && $channel->createdBy !== $user->id) {
-            return back()->withErrors(['Hanya pembuat channel atau admin yang dapat menambah anggota.']);
+            return $this->validationError($request, 'Hanya pembuat channel atau admin yang dapat menambah anggota.');
         }
 
-        ChannelMember::updateOrCreate(
+        $member = ChannelMember::updateOrCreate(
             ['channelId' => $id, 'userId' => $data['userId']],
             ['isMuted' => false, 'isStarred' => false],
         );
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $member], 201);
+        }
+
         return back()->with('success', 'Anggota ditambahkan.');
     }
 
-    public function removeMember(Request $request, int $id, int $userId): RedirectResponse
+    public function removeMember(Request $request, int $id, int $userId): JsonResponse|RedirectResponse
     {
         $channel = Channel::findOrFail($id);
         $user = $request->user();
@@ -171,76 +200,111 @@ class ChannelController extends Controller
         $isSelf = $user->id === $userId;
 
         if (!ChannelMember::where('channelId', $id)->where('userId', $userId)->exists()) {
-            return back()->withErrors(['Member tidak ditemukan di channel ini.']);
+            return $this->validationError($request, 'Member tidak ditemukan di channel ini.');
         }
 
         if (!$isSelf) {
             if ($channel->type === 'PRIVATE' && preg_match('/^dm-\d+-\d+$/', $channel->name)) {
-                return back()->withErrors(['DM hanya bisa ditutup oleh masing-masing peserta.']);
+                return $this->validationError($request, 'DM hanya bisa ditutup oleh masing-masing peserta.');
             }
             $canManage = $isAdmin || $channel->createdBy === $user->id;
-            if (!$canManage) return back()->withErrors(['Hanya pembuat channel atau admin yang dapat menghapus anggota.']);
+            if (!$canManage) return $this->validationError($request, 'Hanya pembuat channel atau admin yang dapat menghapus anggota.');
             if ($userId === $channel->createdBy && !$isAdmin) {
-                return back()->withErrors(['Pembuat channel hanya dapat keluar sendiri atau dikeluarkan oleh admin.']);
+                return $this->validationError($request, 'Pembuat channel hanya dapat keluar sendiri atau dikeluarkan oleh admin.');
             }
         }
 
         ChannelMember::where('channelId', $id)->where('userId', $userId)->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back()->with('success', 'Anggota dikeluarkan.');
     }
 
-    public function join(Request $request, int $id): RedirectResponse
+    public function join(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $userId = $request->user()->id;
-        ChannelMember::updateOrCreate(
+        $member = ChannelMember::updateOrCreate(
             ['channelId' => $id, 'userId' => $userId],
             ['isMuted' => false, 'isStarred' => false],
         );
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $member]);
+        }
+
         return back()->with('success', 'Berhasil bergabung ke channel.');
     }
 
-    public function toggleStar(Request $request, int $id): RedirectResponse
+    public function toggleStar(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $data = $request->validate(['isStarred' => 'required|boolean']);
         ChannelMember::where('channelId', $id)
             ->where('userId', $request->user()->id)
             ->update(['isStarred' => $data['isStarred']]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back();
     }
 
-    public function markRead(Request $request, int $id): RedirectResponse
+    public function markRead(Request $request, int $id): JsonResponse|RedirectResponse
     {
         ChannelMember::where('channelId', $id)
             ->where('userId', $request->user()->id)
             ->update(['lastViewedAt' => now()]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back();
     }
 
-    public function markAllRead(Request $request): RedirectResponse
+    public function markAllRead(Request $request): JsonResponse|RedirectResponse
     {
         ChannelMember::where('userId', $request->user()->id)->update(['lastViewedAt' => now()]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back();
     }
 
-    public function markUnread(Request $request, int $id): RedirectResponse
+    public function markUnread(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $data = $request->validate(['messageId' => 'required|integer']);
         $msg = ChannelMessage::find($data['messageId']);
-        if (!$msg) return back()->withErrors(['Pesan tidak ditemukan.']);
+        if (!$msg) return $this->validationError($request, 'Pesan tidak ditemukan.');
 
         $markAt = $msg->createdAt->subSecond();
         ChannelMember::where('channelId', $id)
             ->where('userId', $request->user()->id)
             ->update(['lastViewedAt' => $markAt]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back();
     }
 
-    public function toggleMute(Request $request, int $id, int $userId): RedirectResponse
+    public function toggleMute(Request $request, int $id, int $userId): JsonResponse|RedirectResponse
     {
         $data = $request->validate(['isMuted' => 'required|boolean']);
         ChannelMember::where('channelId', $id)
             ->where('userId', $userId)
             ->update(['isMuted' => $data['isMuted']]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back();
     }
 

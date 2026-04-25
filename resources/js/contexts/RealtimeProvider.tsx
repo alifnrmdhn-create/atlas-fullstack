@@ -73,7 +73,7 @@ const RealtimeContext = createContext<RealtimeContextValue | null>(null)
  */
 export function RealtimeProvider({ children }: { children: ReactNode }) {
     const user = useAuth()
-    const enabled = user !== null
+    const enabled = user !== null && realtime.enabled()
 
     const [ticks, setTicks] = useState<RefreshTicks>(DEFAULT_TICKS)
     const dispatcherRef = useRef<RealtimeDispatcher | null>(null)

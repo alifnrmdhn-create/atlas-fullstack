@@ -5,6 +5,8 @@
     "scripts": {
         "build": "vite build",
         "dev": "concurrently -n \"vite,laravel\" -c \"cyan,green\" \"vite\" \"sh scripts/serve.sh\"",
+        "smoke:browser": "node scripts/browser-smoke.mjs",
+        "smoke:workflow": "node scripts/browser-smoke.mjs",
         "typecheck": "tsc --noEmit --ignoreDeprecations 6.0",
         "audit:routes": "node scripts/audit-frontend-routes.mjs",
         "check": "npm run typecheck && npm run audit:routes && npm run build"

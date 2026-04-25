@@ -298,9 +298,14 @@ export function WorkboardView() {
   type WorkstreamOption = { id: number; code: string; name: string; program?: { code: string; name: string } }
   const [wiWorkstreams, setWiWorkstreams] = useState<WorkstreamOption[]>([])
   const [wiUsers, setWiUsers] = useState<DirectoryUser[]>([])
+  const defaultTaskDueDate = () => {
+    const date = new Date()
+    date.setDate(date.getDate() + 7)
+    return date.toISOString().slice(0, 10)
+  }
   const [wiForm, setWiForm] = useState({
     workstreamId: '', title: '', description: '',
-    status: 'BACKLOG', priority: 'MEDIUM', assignedTo: '',
+    status: 'BACKLOG', priority: 'MEDIUM', assignedTo: '', targetCompletion: defaultTaskDueDate(),
   })
   const [wiSaving, setWiSaving] = useState(false)
   const [wiError, setWiError] = useState<string | null>(null)
@@ -320,7 +325,7 @@ export function WorkboardView() {
   const closeCreateWI = () => closeWIOverlay('create-wi', () => {
     setShowCreateWI(false)
     setWiError(null)
-    setWiForm({ workstreamId: '', title: '', description: '', status: 'BACKLOG', priority: 'MEDIUM', assignedTo: '' })
+    setWiForm({ workstreamId: '', title: '', description: '', status: 'BACKLOG', priority: 'MEDIUM', assignedTo: '', targetCompletion: defaultTaskDueDate() })
   })
 
   const submitCreateWI = async (e: FormEvent<HTMLFormElement>) => {
@@ -334,6 +339,7 @@ export function WorkboardView() {
         description: wiForm.description.trim() || undefined,
         status: wiForm.status,
         priority: wiForm.priority,
+        targetCompletion: wiForm.targetCompletion,
         assignedTo: wiForm.assignedTo ? Number(wiForm.assignedTo) : undefined,
       })
       closeCreateWI()
@@ -741,6 +747,16 @@ export function WorkboardView() {
                       ))}
                     </select>
                   </div>
+                  <div className="form-field">
+                    <label>Tenggat <span className="form-field__required">*</span></label>
+                    <input
+                      className="form-input"
+                      onChange={e => setWiForm(f => ({ ...f, targetCompletion: e.target.value }))}
+                      required
+                      type="date"
+                      value={wiForm.targetCompletion}
+                    />
+                  </div>
                 </section>
               </div>
               <div className="modal__footer">
@@ -754,7 +770,7 @@ export function WorkboardView() {
                 </button>
                 <button
                   className="profile-save-btn"
-                  disabled={wiSaving || !wiForm.workstreamId || !wiForm.title.trim()}
+                  disabled={wiSaving || !wiForm.workstreamId || !wiForm.title.trim() || !wiForm.targetCompletion}
                   type="submit"
                 >
                   {wiSaving ? 'Menyimpan…' : 'Buat Tugas'}

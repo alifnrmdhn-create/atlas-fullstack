@@ -141,6 +141,17 @@ const THREAD_AVATAR_PALETTE = [
   { bg: 'var(--cyan-dim)', fg: 'var(--cyan-ink)' },
 ] as const
 
+function normalizeReactions(value: unknown): Record<string, number[]> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([emoji, userIds]) => [
+      emoji,
+      Array.isArray(userIds) ? userIds.filter((id): id is number => typeof id === 'number') : [],
+    ]),
+  )
+}
+
 // ── SVG icon atoms ─────────────────────────────────────────────────────────
 const IcoSearch = () => (
   <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" viewBox="0 0 16 16" width="14">
@@ -551,22 +562,22 @@ type ChannelsViewProps = {
 }
 
 export function ChannelsView({
-  channels,
+  channels = [],
   selectedChannelId,
   selectedChannel,
   currentUserId,
-  addableUsers,
-  workspaceUsers,
-  programs,
-  tasks,
-  channelMembers,
-  messages,
+  addableUsers = [],
+  workspaceUsers = [],
+  programs = [],
+  tasks = [],
+  channelMembers = [],
+  messages = [],
   selectedThreadId,
   threadParent,
-  threadReplies,
+  threadReplies = [],
   channelStatus,
   composerValue,
-  typingUsers,
+  typingUsers = [],
   onComposerChange,
   onSelectChannel,
   onSelectThread,
@@ -1655,10 +1666,17 @@ export function ChannelsView({
               )}
 
               <div className="channel-section-compact">
-                <button
+                <div
                   className="channel-section-compact__header"
                   onClick={() => toggleSection('channels')}
-                  type="button"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      toggleSection('channels')
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
                   <span className={`channel-section-compact__caret${collapsedSections.has('channels') ? ' is-collapsed' : ''}`}>▾</span>
                   <span>Channels</span>
@@ -1675,7 +1693,7 @@ export function ChannelsView({
                   >
                     +
                   </button>
-                </button>
+                </div>
                 {!collapsedSections.has('channels') && regularChannels.map((channel) => (
                   <div className="channel-row-wrap" key={channel.id}>
                     <button
@@ -1705,10 +1723,17 @@ export function ChannelsView({
 
               {/* Direct Messages section */}
               <div className="channel-section-compact">
-                <button
+                <div
                   className="channel-section-compact__header"
                   onClick={() => toggleSection('dms')}
-                  type="button"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      toggleSection('dms')
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
                   <span className={`channel-section-compact__caret${collapsedSections.has('dms') ? ' is-collapsed' : ''}`}>▾</span>
                   <span>Direct Messages</span>
@@ -1721,7 +1746,7 @@ export function ChannelsView({
                   >
                     +
                   </button>
-                </button>
+                </div>
                 {dmEntries.length === 0 && !collapsedSections.has('dms') && (
                   <div className="channel-dm-empty">
                     <p>No conversations yet.</p>
@@ -2143,6 +2168,7 @@ export function ChannelsView({
                     const isOwnMessage = message.userId === currentUserId
                     const isDeletedMessage = Boolean(message.isDeletedForEveryone)
                     const isAttachmentOnly = !tag && !isDeletedMessage && hasAttachments && !hasVisibleText
+                    const reactions = normalizeReactions(message.reactions)
                     const hasClusterPrev = !tag && !prevTag && !!prevMsg && prevMsg.userId === message.userId &&
                       (new Date(message.createdAt).getTime() - new Date(prevMsg.createdAt).getTime() < 5 * 60 * 1000)
                     const hasClusterNext = !tag && !nextTag && !!nextMsg && nextMsg.userId === message.userId &&
@@ -2276,9 +2302,9 @@ export function ChannelsView({
                         )}
 
                         {/* Reactions display */}
-                        {Object.keys(message.reactions).length > 0 && (
+                        {Object.keys(reactions).length > 0 && (
                           <div className="message-reactions">
-                            {Object.entries(message.reactions).map(([emojiKey, userIds]) =>
+                            {Object.entries(reactions).map(([emojiKey, userIds]) =>
                               userIds.length > 0 ? (
                                 <button
                                   className={`reaction-chip ${currentUserId && userIds.includes(currentUserId) ? 'reaction-chip--active' : ''}`}

@@ -7,6 +7,7 @@ use App\Models\MonthlyReportApproval;
 use App\Models\MonthlyReportFile;
 use App\Models\MonthlyReportMetric;
 use App\Models\Program;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -88,10 +89,15 @@ class MonthlyReportController extends Controller
 
     // ── Mutations ────────────────────────────────────────────────────────────
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $user = $request->user();
-        if (!$user->unitId) return back()->withErrors(['User tidak terdaftar di unit manapun.']);
+        if (!$user->unitId) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'User tidak terdaftar di unit manapun.'], 422);
+            }
+            return back()->withErrors(['User tidak terdaftar di unit manapun.']);
+        }
 
         $data = $request->validate([
             'month' => 'required|integer|min:1|max:12',
@@ -108,6 +114,9 @@ class MonthlyReportController extends Controller
             ->where('year', $data['year'])
             ->first();
         if ($existing) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => "Laporan {$data['month']}/{$data['year']} untuk divisi ini sudah ada (status: {$existing->status})."], 422);
+            }
             return back()->withErrors(["Laporan {$data['month']}/{$data['year']} untuk divisi ini sudah ada (status: {$existing->status})."]);
         }
 
@@ -118,6 +127,9 @@ class MonthlyReportController extends Controller
                 ->get(['code']);
             if ($planning->isNotEmpty()) {
                 $codes = $planning->pluck('code')->join(', ');
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => "Program berikut masih dalam fase Perencanaan: {$codes}"], 422);
+                }
                 return back()->withErrors(["Program berikut masih dalam fase Perencanaan: {$codes}"]);
             }
         }
@@ -132,13 +144,22 @@ class MonthlyReportController extends Controller
             'linkedProgramIds' => $linkedIds,
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $report], 201);
+        }
+
         return redirect()->route('monthly-reports.show', $report->id)->with('success', 'Laporan dibuat.');
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $report = MonthlyReport::findOrFail($id);
-        if ($report->status !== 'DRAFT') return back()->withErrors(['Hanya laporan DRAFT yang bisa diedit.']);
+        if ($report->status !== 'DRAFT') {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Hanya laporan DRAFT yang bisa diedit.'], 422);
+            }
+            return back()->withErrors(['Hanya laporan DRAFT yang bisa diedit.']);
+        }
 
         $data = $request->validate([
             'narrativeSummary' => 'nullable|string|max:10000',
@@ -147,6 +168,10 @@ class MonthlyReportController extends Controller
         ]);
 
         $report->update($data);
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $report->fresh()]);
+        }
+
         return back()->with('success', 'Laporan diperbarui.');
     }
 
@@ -154,10 +179,15 @@ class MonthlyReportController extends Controller
      * Upload Excel → parse → replace semua metrics.
      * Format sheet: A=Section B=Kategori C=Label D=Satuan E=RKAP F=Realisasi G=TahunLalu
      */
-    public function upload(Request $request, int $id): RedirectResponse
+    public function upload(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $report = MonthlyReport::findOrFail($id);
-        if ($report->status !== 'DRAFT') return back()->withErrors(['Hanya laporan DRAFT yang bisa diupdate.']);
+        if ($report->status !== 'DRAFT') {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Hanya laporan DRAFT yang bisa diupdate.'], 422);
+            }
+            return back()->withErrors(['Hanya laporan DRAFT yang bisa diupdate.']);
+        }
 
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls|max:10240',
@@ -174,6 +204,9 @@ class MonthlyReportController extends Controller
             $metrics = $this->parseExcel($fullPath);
         } catch (\Exception $e) {
             Storage::disk('local')->delete($storedPath);
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
             return back()->withErrors([$e->getMessage()]);
         }
 
@@ -192,14 +225,29 @@ class MonthlyReportController extends Controller
             ]);
         });
 
+        $report->refresh()->load(['unit:id,code,name', 'submittedBy:id,name', 'metrics', 'files']);
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $report]);
+        }
+
         return back()->with('success', 'Data Excel berhasil diimport (' . count($metrics) . ' baris).');
     }
 
-    public function submit(Request $request, int $id): RedirectResponse
+    public function submit(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $report = MonthlyReport::withCount('metrics')->findOrFail($id);
-        if ($report->status !== 'DRAFT') return back()->withErrors(['Hanya laporan DRAFT yang bisa disubmit.']);
-        if ($report->metrics_count === 0) return back()->withErrors(['Upload data Excel terlebih dahulu sebelum submit.']);
+        if ($report->status !== 'DRAFT') {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Hanya laporan DRAFT yang bisa disubmit.'], 422);
+            }
+            return back()->withErrors(['Hanya laporan DRAFT yang bisa disubmit.']);
+        }
+        if ($report->metrics_count === 0) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Upload data Excel terlebih dahulu sebelum submit.'], 422);
+            }
+            return back()->withErrors(['Upload data Excel terlebih dahulu sebelum submit.']);
+        }
 
         $report->update([
             'status' => 'SUBMITTED',
@@ -207,10 +255,14 @@ class MonthlyReportController extends Controller
             'submittedAt' => now(),
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $report->fresh()]);
+        }
+
         return back()->with('success', 'Laporan disubmit.');
     }
 
-    public function approve(Request $request, int $id): RedirectResponse
+    public function approve(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $user = $request->user();
         $roleType = strtoupper($user->roleType);
@@ -226,11 +278,19 @@ class MonthlyReportController extends Controller
                    || ($roleType === 'KADIV' && $report->status === 'REVIEWED');
 
         if (!$canApprove) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => "Role {$roleType} tidak bisa melakukan approval pada laporan dengan status {$report->status}."], 422);
+            }
             return back()->withErrors(["Role {$roleType} tidak bisa melakukan approval pada laporan dengan status {$report->status}."]);
         }
 
         $nextStatus = self::STATUS_AFTER[$data['action']][$roleType] ?? null;
-        if (!$nextStatus) return back()->withErrors(['Kombinasi action dan role tidak valid.']);
+        if (!$nextStatus) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Kombinasi action dan role tidak valid.'], 422);
+            }
+            return back()->withErrors(['Kombinasi action dan role tidak valid.']);
+        }
 
         DB::transaction(function () use ($report, $user, $roleType, $data, $nextStatus) {
             MonthlyReportApproval::create([
@@ -243,20 +303,33 @@ class MonthlyReportController extends Controller
             $report->update(['status' => $nextStatus]);
         });
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $report->fresh()]);
+        }
+
         return back()->with('success', "Laporan {$data['action']}.");
     }
 
-    public function destroy(Request $request, int $id): RedirectResponse
+    public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $report = MonthlyReport::findOrFail($id);
         $user = $request->user();
 
-        if ($report->status !== 'DRAFT') return back()->withErrors(['Hanya laporan DRAFT yang bisa dihapus.']);
+        if ($report->status !== 'DRAFT') {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Hanya laporan DRAFT yang bisa dihapus.'], 422);
+            }
+            return back()->withErrors(['Hanya laporan DRAFT yang bisa dihapus.']);
+        }
         if ($report->unitId !== $user->unitId && strtoupper($user->roleType) !== 'KADIV') {
             abort(403, 'Tidak bisa menghapus laporan divisi lain.');
         }
 
         $report->delete();
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return redirect()->route('monthly-reports.index')->with('success', 'Laporan dihapus.');
     }
 

@@ -12,6 +12,7 @@ use App\Models\RiskReportNarrative;
 use App\Models\RiskReportRiskSnapshot;
 use App\Models\RiskReportStrategy;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -145,7 +146,7 @@ class RiskReportController extends Controller
 
     // ── Mutations ────────────────────────────────────────────────────────────
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'month' => 'required|integer|min:1|max:12',
@@ -158,13 +159,22 @@ class RiskReportController extends Controller
             ->where('year', $data['year'])
             ->first();
 
-        if ($existing) return back()->withErrors(['Laporan risiko untuk periode ini sudah ada.']);
+        if ($existing) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Laporan risiko untuk periode ini sudah ada.'], 422);
+            }
+            return back()->withErrors(['Laporan risiko untuk periode ini sudah ada.']);
+        }
 
         $report = RiskMonthlyReport::create([
             ...$data,
             'createdById' => $request->user()->id,
             'status' => 'DRAFT',
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $report], 201);
+        }
 
         return redirect()->route('risk-reports.show', $report->id)->with('success', 'Laporan risiko dibuat.');
     }
@@ -173,10 +183,13 @@ class RiskReportController extends Controller
      * Full upsert: strategy, governance, narratives, lossEvents,
      * riskSnapshots + KRI + mitigation (dengan BUMN matrix + KRI status calculation).
      */
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $existing = RiskMonthlyReport::findOrFail($id);
         if ($existing->status === 'APPROVED') {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Laporan yang sudah disetujui tidak dapat diubah.'], 422);
+            }
             return back()->withErrors(['Laporan yang sudah disetujui tidak dapat diubah.']);
         }
 
@@ -346,13 +359,22 @@ class RiskReportController extends Controller
             }
         });
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => RiskMonthlyReport::with($this->baseWith())->findOrFail($id)]);
+        }
+
         return back()->with('success', 'Laporan risiko disimpan.');
     }
 
-    public function submit(Request $request, int $id): RedirectResponse
+    public function submit(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $report = RiskMonthlyReport::findOrFail($id);
-        if ($report->status !== 'DRAFT') return back()->withErrors(['Hanya laporan DRAFT yang dapat disubmit.']);
+        if ($report->status !== 'DRAFT') {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Hanya laporan DRAFT yang dapat disubmit.'], 422);
+            }
+            return back()->withErrors(['Hanya laporan DRAFT yang dapat disubmit.']);
+        }
 
         $userId = $request->user()->id;
 
@@ -370,10 +392,14 @@ class RiskReportController extends Controller
             ]);
         });
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $report->fresh()]);
+        }
+
         return back()->with('success', 'Laporan risiko disubmit.');
     }
 
-    public function approve(Request $request, int $id): RedirectResponse
+    public function approve(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'action' => 'required|in:APPROVE,REJECT',
@@ -401,6 +427,22 @@ class RiskReportController extends Controller
             ]);
         });
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $report->fresh()]);
+        }
+
         return back()->with('success', "Laporan risiko {$data['action']}D.");
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $report = RiskMonthlyReport::findOrFail($id);
+        if ($report->status !== 'DRAFT') {
+            return response()->json(['message' => 'Hanya laporan DRAFT yang dapat dihapus.'], 422);
+        }
+
+        $report->delete();
+
+        return response()->json(['ok' => true]);
     }
 }

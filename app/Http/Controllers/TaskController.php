@@ -9,6 +9,7 @@ use App\Services\BroadcastService;
 use App\Services\ProgramHealthService;
 use App\Services\TaskService;
 use App\Support\RolePolicy;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -60,7 +61,7 @@ class TaskController extends Controller
         return Inertia::render('TaskDetailView', ['task' => $task]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
             abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
@@ -73,9 +74,11 @@ class TaskController extends Controller
             'title' => 'required|string|min:2|max:200',
             'description' => 'nullable|string|max:2000',
             'workstreamId' => 'required|integer', // maps to initiativeId
+            'status' => 'nullable|in:BACKLOG,READY,IN_PROGRESS,IN_REVIEW,BLOCKED,COMPLETED',
             'priority' => 'in:LOW,MEDIUM,HIGH,CRITICAL',
             'targetCompletion' => 'required|date',
             'startDate' => 'nullable|date',
+            'assignedTo' => 'nullable|integer',
             'phaseId' => 'nullable|integer',
             'estimatedHours' => 'nullable|numeric',
             'picPersonIds' => 'nullable|array',
@@ -91,10 +94,14 @@ class TaskController extends Controller
         $this->triggerHealth($task->id);
         BroadcastService::task($task->id, 'created');
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $task], 201);
+        }
+
         return back()->with('success', 'Task berhasil dibuat.');
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
             abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
@@ -114,14 +121,18 @@ class TaskController extends Controller
             'picUnitIds' => 'nullable|array',
         ]);
 
-        $this->taskService->update($id, $data);
+        $task = $this->taskService->update($id, $data);
         $this->triggerHealth($id);
         BroadcastService::task($id, 'updated');
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $task]);
+        }
 
         return back()->with('success', 'Task diperbarui.');
     }
 
-    public function updateStatus(Request $request, int $id): RedirectResponse
+    public function updateStatus(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
             abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
@@ -132,10 +143,14 @@ class TaskController extends Controller
         $this->triggerHealth($id);
         BroadcastService::task($id, 'status-changed', ['status' => $data['status']]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => Task::findOrFail($id)]);
+        }
+
         return back()->with('success', 'Status task diperbarui.');
     }
 
-    public function updateProgress(Request $request, int $id): RedirectResponse
+    public function updateProgress(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
             abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
@@ -149,10 +164,14 @@ class TaskController extends Controller
         $this->triggerHealth($id);
         BroadcastService::task($id, 'progress-changed', ['percent' => $data['percentComplete']]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => Task::findOrFail($id)]);
+        }
+
         return back()->with('success', 'Progress task diperbarui.');
     }
 
-    public function assign(Request $request, int $id): RedirectResponse
+    public function assign(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
             abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
@@ -161,10 +180,14 @@ class TaskController extends Controller
         $data = $request->validate(['assignedTo' => 'nullable|integer']);
         Task::query()->where('id', $id)->update(['assignedTo' => $data['assignedTo']]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => Task::findOrFail($id)]);
+        }
+
         return back()->with('success', 'Task di-assign.');
     }
 
-    public function destroy(Request $request, int $id): RedirectResponse
+    public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $task = Task::findOrFail($id);
         $user = $request->user();
@@ -179,12 +202,16 @@ class TaskController extends Controller
         $this->taskService->delete($id, $user->id);
         $this->taskService->recomputeWorkstreamProgress($workstreamId);
 
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back()->with('success', 'Task dihapus.');
     }
 
     // ── SubTask ───────────────────────────────────────────────────────────────
 
-    public function storeSubTask(Request $request, int $id): RedirectResponse
+    public function storeSubTask(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
             abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
@@ -196,22 +223,36 @@ class TaskController extends Controller
             'dueDate' => 'nullable|date',
         ]);
 
-        SubTask::create([...$data, 'workItemId' => $id, 'assignedTo' => $request->user()->id]);
+        $subTask = SubTask::create([...$data, 'workItemId' => $id, 'assignedTo' => $request->user()->id]);
         $this->taskService->recomputeFromSubTasks($id);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $subTask], 201);
+        }
 
         return back()->with('success', 'Sub-task ditambahkan.');
     }
 
-    public function destroySubTask(Request $request, int $id, int $subTaskId): RedirectResponse
+    public function destroySubTask(Request $request, int $id, int $subTaskId): JsonResponse|RedirectResponse
     {
         SubTask::query()->where('id', $subTaskId)->where('workItemId', $id)->delete();
         $this->taskService->recomputeFromSubTasks($id);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back()->with('success', 'Sub-task dihapus.');
     }
 
-    public function toggleSubTask(Request $request, int $id, int $subTaskId): RedirectResponse
+    public function toggleSubTask(Request $request, int $id, int $subTaskId): JsonResponse|RedirectResponse
     {
-        $this->taskService->toggleSubTask($subTaskId);
+        $subTask = $this->taskService->toggleSubTask($subTaskId);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $subTask]);
+        }
+
         return back();
     }
 

@@ -7,6 +7,7 @@ use App\Models\KpiValue;
 use App\Models\Program;
 use App\Services\ProgramHealthService;
 use App\Support\RolePolicy;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -40,7 +41,7 @@ class KpiController extends Controller
         return response()->json(['data' => $kpi]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'code' => 'required|string|min:2|max:40|unique:KpiDefinition,code',
@@ -70,10 +71,14 @@ class KpiController extends Controller
             'dataType' => self::inferDataType($data['unitOfMeasure'] ?? null, $data['metricType']),
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $kpi], 201);
+        }
+
         return back()->with('success', 'KPI dibuat.');
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $kpi = KpiDefinition::findOrFail($id);
         $user = $request->user();
@@ -99,17 +104,27 @@ class KpiController extends Controller
         ]);
 
         $kpi->update($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $kpi->fresh()]);
+        }
+
         return back()->with('success', 'KPI diperbarui.');
     }
 
-    public function destroy(Request $request, int $id): RedirectResponse
+    public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (!RolePolicy::canManageUsers($request->user()->roleType)) abort(403, 'Forbidden');
         KpiDefinition::destroy($id);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back()->with('success', 'KPI dihapus.');
     }
 
-    public function storeValue(Request $request, int $id): RedirectResponse
+    public function storeValue(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $kpi = KpiDefinition::findOrFail($id);
 
@@ -117,6 +132,9 @@ class KpiController extends Controller
         if ($kpi->programId) {
             $approvalStatus = Program::query()->where('id', $kpi->programId)->value('approvalStatus');
             if (!in_array($approvalStatus, ['ACTIVE'], true)) {
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => 'Program belum aktif — KPI belum bisa diukur.'], 422);
+                }
                 return back()->withErrors(['Program belum aktif — KPI belum bisa diukur.']);
             }
         }
@@ -138,6 +156,10 @@ class KpiController extends Controller
         $kpi->update(['actualValue' => $data['actualValue'], 'lastMeasuredDate' => $data['measurementDate']]);
         if ($kpi->programId) {
             rescue(fn () => $this->healthService->recompute($kpi->programId));
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $value], 201);
         }
 
         return back()->with('success', 'Nilai KPI disimpan.');

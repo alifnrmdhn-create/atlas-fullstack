@@ -4,7 +4,7 @@ import { join, relative } from 'node:path'
 
 const root = process.cwd()
 const jsRoot = join(root, 'resources/js')
-const php = process.env.PHP_BIN ?? '/Applications/MAMP/bin/php/php8.3.30/bin/php'
+const php = process.env.PHP_BIN ?? 'php'
 
 const files = []
 function walk(dir) {

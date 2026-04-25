@@ -16,7 +16,9 @@ type RiskReportSummary = {
   unit: { id: number; code: string; name: string }
   submittedBy: { id: number; name: string } | null
   approvals: { id: number; approver: { id: number; name: string; roleType: string } }[]
-  _count: { riskSnapshots: number; lossEvents: number }
+  _count?: { riskSnapshots?: number; lossEvents?: number }
+  risk_snapshots_count?: number
+  loss_events_count?: number
 }
 
 const COMPOSITE_META: Record<string, { label: string; color: string }> = {
@@ -144,6 +146,8 @@ export function RiskReportsView() {
                 .map(r => {
                   const statusMeta = STATUS[r.status]
                   const compositeMeta = r.compositeRating ? COMPOSITE_META[r.compositeRating] : null
+                  const riskCount = r._count?.riskSnapshots ?? r.risk_snapshots_count ?? 0
+                  const lossEventCount = r._count?.lossEvents ?? r.loss_events_count ?? 0
                   return (
                     <button
                       key={r.id}
@@ -172,10 +176,10 @@ export function RiskReportsView() {
                         {r.rmiScore != null ? Number(r.rmiScore).toFixed(2) : '—'}
                       </span>
                       <span className="risk-reports-table__count">
-                        {r._count.riskSnapshots > 0 ? `${r._count.riskSnapshots} risiko` : '—'}
+                        {riskCount > 0 ? `${riskCount} risiko` : '—'}
                       </span>
                       <span className="risk-reports-table__count">
-                        {r._count.lossEvents > 0 ? `${r._count.lossEvents} kejadian` : '—'}
+                        {lossEventCount > 0 ? `${lossEventCount} kejadian` : '—'}
                       </span>
                       <span className="risk-reports-table__submitted text-muted">
                         {r.submittedBy

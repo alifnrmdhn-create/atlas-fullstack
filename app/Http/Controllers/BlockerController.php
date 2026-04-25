@@ -6,6 +6,7 @@ use App\Models\Blocker;
 use App\Models\Task;
 use App\Services\ProgramHealthService;
 use App\Support\RolePolicy;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -32,7 +33,7 @@ class BlockerController extends Controller
         return response()->json(['data' => $query->get(), 'total' => $query->count()]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
             abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
@@ -58,10 +59,14 @@ class BlockerController extends Controller
         // Mark task as blocked
         Task::query()->where('id', $data['taskId'])->update(['isBlocked' => true]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $blocker], 201);
+        }
+
         return back()->with('success', 'Blocker ditambahkan.');
     }
 
-    public function updateStatus(Request $request, int $id): RedirectResponse
+    public function updateStatus(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
             abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
@@ -99,10 +104,14 @@ class BlockerController extends Controller
             }
         }
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $blocker->fresh()]);
+        }
+
         return back()->with('success', 'Status blocker diperbarui.');
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
             abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
@@ -125,16 +134,37 @@ class BlockerController extends Controller
         ]);
 
         $blocker->update($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $blocker->fresh()]);
+        }
+
         return back()->with('success', 'Blocker diperbarui.');
     }
 
-    public function destroy(Request $request, int $id): RedirectResponse
+    public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
             abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
         }
 
-        Blocker::destroy($id);
+        $blocker = Blocker::findOrFail($id);
+        $taskId = $blocker->workItemId;
+        $blocker->delete();
+
+        $openCount = Blocker::query()
+            ->where('workItemId', $taskId)
+            ->whereIn('status', ['OPEN', 'IN_PROGRESS'])
+            ->count();
+
+        if ($openCount === 0) {
+            Task::query()->where('id', $taskId)->update(['isBlocked' => false]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back()->with('success', 'Blocker dihapus.');
     }
 }

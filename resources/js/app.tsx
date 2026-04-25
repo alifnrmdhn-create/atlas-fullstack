@@ -35,10 +35,11 @@ type InertiaPage = ComponentType & {
 createInertiaApp({
     title: (title) => `${title} — ATLAS`,
     resolve: async (name) => {
-        const page = await resolvePageComponent(
+        const pageModule = await resolvePageComponent(
             `./Pages/${name}.tsx`,
             import.meta.glob('./Pages/**/*.tsx'),
-        ) as InertiaPage
+        ) as InertiaPage | { default: InertiaPage }
+        const page = 'default' in pageModule ? pageModule.default : pageModule
 
         if (!name.startsWith('Auth/')) {
             page.layout ??= (page) => (

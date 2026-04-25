@@ -9,6 +9,7 @@ use App\Models\ChannelMessageHidden;
 use App\Models\Notification;
 use App\Models\User;
 use App\Support\RolePolicy;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -46,7 +47,7 @@ class ChannelMessageController extends Controller
     }
 
     // POST /channels/:channelId/messages
-    public function store(Request $request, int $channelId): RedirectResponse
+    public function store(Request $request, int $channelId): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'content' => 'required|string|max:10000',
@@ -84,11 +85,15 @@ class ChannelMessageController extends Controller
             $this->processMentions($channelId, $userId, $data['content'], $message->id);
         });
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $message], 201);
+        }
+
         return back()->with('success', 'Pesan terkirim.');
     }
 
     // PUT /channels/:channelId/messages/:messageId
-    public function update(Request $request, int $channelId, int $messageId): RedirectResponse
+    public function update(Request $request, int $channelId, int $messageId): JsonResponse|RedirectResponse
     {
         $data = $request->validate(['content' => 'required|string|max:10000']);
         $msg = ChannelMessage::where('channelId', $channelId)->findOrFail($messageId);
@@ -106,11 +111,15 @@ class ChannelMessageController extends Controller
             'searchableText' => strtolower($data['content']),
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $msg->fresh()]);
+        }
+
         return back()->with('success', 'Pesan diedit.');
     }
 
     // DELETE /channels/:channelId/messages/:messageId
-    public function destroy(Request $request, int $channelId, int $messageId): RedirectResponse
+    public function destroy(Request $request, int $channelId, int $messageId): JsonResponse|RedirectResponse
     {
         $scope = $request->input('scope', 'self'); // 'self' | 'everyone'
         $userId = $request->user()->id;
@@ -134,6 +143,10 @@ class ChannelMessageController extends Controller
                 'deletedForEveryoneBy' => $userId,
                 'content' => '[Pesan dihapus]',
             ]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
         }
 
         return back()->with('success', 'Pesan dihapus.');
@@ -162,25 +175,40 @@ class ChannelMessageController extends Controller
     }
 
     // POST /channels/:channelId/messages/:messageId/reactions
-    public function addReaction(Request $request, int $channelId, int $messageId): RedirectResponse
+    public function addReaction(Request $request, int $channelId, int $messageId): JsonResponse|RedirectResponse
     {
         $data = $request->validate(['emoji' => 'required|string|max:10']);
         $this->toggleReaction($messageId, $request->user()->id, $data['emoji'], false);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => ChannelMessage::findOrFail($messageId)]);
+        }
+
         return back();
     }
 
     // DELETE /channels/:channelId/messages/:messageId/reactions/:emoji
-    public function removeReaction(Request $request, int $channelId, int $messageId, string $emoji): RedirectResponse
+    public function removeReaction(Request $request, int $channelId, int $messageId, string $emoji): JsonResponse|RedirectResponse
     {
         $this->toggleReaction($messageId, $request->user()->id, $emoji, true);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => ChannelMessage::findOrFail($messageId)]);
+        }
+
         return back();
     }
 
     // PUT /channels/:channelId/messages/:messageId/pin
-    public function togglePin(int $channelId, int $messageId): RedirectResponse
+    public function togglePin(Request $request, int $channelId, int $messageId): JsonResponse|RedirectResponse
     {
         $msg = ChannelMessage::where('channelId', $channelId)->findOrFail($messageId);
         $msg->update(['isPinned' => !$msg->isPinned]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $msg->fresh()]);
+        }
+
         return back()->with('success', $msg->isPinned ? 'Pesan di-unpin.' : 'Pesan di-pin.');
     }
 

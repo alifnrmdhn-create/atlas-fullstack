@@ -250,10 +250,13 @@ class ProgramService
     public function create(User $user, array $data): Program
     {
         $code = 'PRG-' . strtoupper(substr(md5(uniqid()), 0, 6));
+        $ownerId = $data['ownerId'] ?? $user->id;
+        unset($data['ownerId']);
+
         return Program::create([
             ...$data,
             'code' => $data['code'] ?? $code,
-            'ownerId' => $user->id,
+            'ownerId' => $ownerId,
             'approvalStatus' => 'DRAFT',
             'submittedById' => $user->id,
             'progressPercent' => 0,

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Comment;
 use App\Support\RolePolicy;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -55,7 +56,7 @@ class CommentController extends Controller
     }
 
     // POST /:entityType/:entityId/comments
-    public function store(Request $request, string $entityType, int $entityId): RedirectResponse
+    public function store(Request $request, string $entityType, int $entityId): JsonResponse|RedirectResponse
     {
         $type = self::ENTITY_TYPE_MAP[$entityType] ?? abort(404);
 
@@ -83,6 +84,10 @@ class CommentController extends Controller
             Comment::query()->where('id', $data['parentCommentId'])->increment('replyCount');
         }
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $comment->load('author:id,name,avatarUrl,roleType,positionTitle')], 201);
+        }
+
         return back()->with('success', 'Komentar ditambahkan.');
     }
 
@@ -100,7 +105,7 @@ class CommentController extends Controller
     }
 
     // PUT /comments/:commentId
-    public function update(Request $request, int $commentId): RedirectResponse
+    public function update(Request $request, int $commentId): JsonResponse|RedirectResponse
     {
         $comment = Comment::findOrFail($commentId);
         $isAdmin = RolePolicy::isAdminOrAbove($request->user()->roleType);
@@ -116,11 +121,15 @@ class CommentController extends Controller
             'searchableText' => strtolower($data['commentText']),
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $comment->fresh('author:id,name,avatarUrl,roleType,positionTitle')]);
+        }
+
         return back()->with('success', 'Komentar diperbarui.');
     }
 
     // DELETE /comments/:commentId
-    public function destroy(Request $request, int $commentId): RedirectResponse
+    public function destroy(Request $request, int $commentId): JsonResponse|RedirectResponse
     {
         $comment = Comment::findOrFail($commentId);
         $isAdmin = RolePolicy::isAdminOrAbove($request->user()->roleType);
@@ -136,29 +145,49 @@ class CommentController extends Controller
         }
 
         $comment->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back()->with('success', 'Komentar dihapus.');
     }
 
     // POST /comments/:commentId/reactions
-    public function addReaction(Request $request, int $commentId): RedirectResponse
+    public function addReaction(Request $request, int $commentId): JsonResponse|RedirectResponse
     {
         $data = $request->validate(['emoji' => 'required|string|max:10']);
         $this->toggleReaction($commentId, $request->user()->id, $data['emoji'], false);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => Comment::findOrFail($commentId)]);
+        }
+
         return back();
     }
 
     // DELETE /comments/:commentId/reactions/:emoji
-    public function removeReaction(Request $request, int $commentId, string $emoji): RedirectResponse
+    public function removeReaction(Request $request, int $commentId, string $emoji): JsonResponse|RedirectResponse
     {
         $this->toggleReaction($commentId, $request->user()->id, $emoji, true);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => Comment::findOrFail($commentId)]);
+        }
+
         return back();
     }
 
     // PUT /comments/:commentId/pin
-    public function togglePin(Request $request, int $commentId): RedirectResponse
+    public function togglePin(Request $request, int $commentId): JsonResponse|RedirectResponse
     {
         $comment = Comment::findOrFail($commentId);
         $comment->update(['isPinned' => !$comment->isPinned]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $comment->fresh()]);
+        }
+
         return back()->with('success', $comment->isPinned ? 'Komentar di-pin.' : 'Komentar di-unpin.');
     }
 

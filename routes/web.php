@@ -44,7 +44,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/laporan-bulanan/{id}', [MonthlyReportController::class, 'show'])->name('laporan-bulanan.show');
     Route::get('/laporan-risiko', fn () => Inertia::render('RiskReportView'))->name('laporan-risiko');
     Route::get('/laporan-risiko/{id}', [RiskReportController::class, 'show'])->name('laporan-risiko.show');
-    Route::get('/search', fn () => Inertia::render('SearchView'))->name('search');
+    Route::get('/search', [WorkspaceController::class, 'search'])->name('search');
     Route::get('/presence', fn () => Inertia::render('PresenceView'))->name('presence');
     Route::get('/profile', [WorkspaceController::class, 'profile'])->name('profile');
     Route::put('/profile', [WorkspaceController::class, 'updateProfile'])->name('profile.update');
@@ -78,6 +78,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/dm/open', [WorkspaceController::class, 'openDirectMessage'])->name('dm.open');
     Route::post('/reminders', [WorkspaceController::class, 'storeReminder'])->name('reminders.store');
     Route::post('/analytics/focus-interactions', [WorkspaceController::class, 'recordFocusInteraction'])->name('analytics.focus-interactions');
+    Route::get('/analytics/user-activity', [WorkspaceController::class, 'userActivity'])->name('analytics.user-activity');
+    Route::get('/analytics/user-activity/{id}', [WorkspaceController::class, 'userActivityDetail'])->name('analytics.user-activity.detail');
+    Route::get('/saved-messages', [WorkspaceController::class, 'savedMessages'])->name('saved-messages.index');
+    Route::post('/saved-messages/{messageId}', [WorkspaceController::class, 'storeSavedMessage'])->name('saved-messages.store');
+    Route::delete('/saved-messages/{messageId}', [WorkspaceController::class, 'destroySavedMessage'])->name('saved-messages.destroy');
+    Route::get('/unfurl', [WorkspaceController::class, 'unfurl'])->name('unfurl');
     Route::post('/uploads', [WorkspaceController::class, 'upload'])->name('uploads.store');
 
     // ── Programs ─────────────────────────────────────────────────────────────
@@ -138,6 +144,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}',    [WorkspaceController::class, 'showWorkstream'])->name('show');
         Route::put('/{id}',    [WorkspaceController::class, 'updateWorkstream'])->name('update');
         Route::delete('/{id}', [WorkspaceController::class, 'destroyWorkstream'])->name('destroy');
+        Route::post('/{id}/phases', [PhaseController::class, 'storeForWorkstream'])->name('phases.store');
     });
 
     // ── Blockers ──────────────────────────────────────────────────────────────
@@ -295,6 +302,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/',         [RiskReportController::class, 'store'])->name('store');
         Route::get('/{id}',      [RiskReportController::class, 'show'])->name('show');
         Route::put('/{id}',      [RiskReportController::class, 'update'])->name('update');
+        Route::delete('/{id}',   [RiskReportController::class, 'destroy'])->name('destroy');
         Route::get('/{id}/ytd',  [RiskReportController::class, 'ytd'])->name('ytd');
         Route::post('/{id}/submit',  [RiskReportController::class, 'submit'])->name('submit');
         Route::post('/{id}/approve', [RiskReportController::class, 'approve'])->name('approve');

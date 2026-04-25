@@ -16,6 +16,7 @@ use App\Models\RiskMonthlyReport;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserStatus;
+use App\Models\UserSession;
 use App\Models\Workstream;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -189,6 +190,15 @@ class WorkspaceEndpointSmokeTest extends TestCase
             'searchableText' => 'Runtime message',
         ]);
 
+        UserSession::create([
+            'userId' => $this->admin->id,
+            'startedAt' => now()->subHour(),
+            'endedAt' => now()->subMinutes(10),
+            'durationMs' => 50 * 60 * 1000,
+            'lastPingAt' => now()->subMinutes(10),
+            'endReason' => 'logout',
+        ]);
+
         Notification::create([
             'userId' => $this->admin->id,
             'type' => 'MENTION',
@@ -280,7 +290,10 @@ class WorkspaceEndpointSmokeTest extends TestCase
 
         $this->getJson('/system/status')
             ->assertOk()
-            ->assertJsonStructure(['service', 'timestamp', 'persistence']);
+            ->assertJsonStructure(['service', 'timestamp', 'persistence'])
+            ->assertJsonPath('persistence.provider', 'postgresql')
+            ->assertJsonPath('persistence.mode', 'database')
+            ->assertJsonPath('persistence.fallbackStore', null);
 
         $this->getJson('/apms/kpi')
             ->assertOk()
@@ -289,6 +302,50 @@ class WorkspaceEndpointSmokeTest extends TestCase
         $this->getJson('/role-configs')
             ->assertOk()
             ->assertJsonStructure(['data']);
+    }
+
+    public function test_runtime_compatibility_endpoints_return_frontend_shapes(): void
+    {
+        $this->actingAs($this->admin);
+        $message = ChannelMessage::query()->firstOrFail();
+
+        $this->getJson('/search?q=Runtime&type=ALL&limit=10')
+            ->assertOk()
+            ->assertJsonStructure(['results', 'total'])
+            ->assertJsonPath('results.0.title', 'Runtime Program');
+
+        $this->getJson('/search?q=Runtime&type=TASKS&limit=10')
+            ->assertOk()
+            ->assertJsonPath('results.0.type', 'TASK');
+
+        $this->getJson('/analytics/user-activity?range=7d')
+            ->assertOk()
+            ->assertJsonStructure(['data' => ['users', 'from', 'to']])
+            ->assertJsonPath('data.users.0.userId', $this->admin->id);
+
+        $this->getJson('/analytics/user-activity/' . $this->admin->id . '?range=7d')
+            ->assertOk()
+            ->assertJsonStructure(['data' => ['user', 'totalDurationMs', 'sessionCount', 'avgSessionDurationMs', 'lastActiveAt', 'sessions', 'dailyBreakdown', 'from', 'to']]);
+
+        $this->getJson('/saved-messages')
+            ->assertOk()
+            ->assertJsonPath('data', []);
+
+        $this->postJson('/saved-messages/' . $message->id)
+            ->assertOk()
+            ->assertJsonPath('data.id', $message->id);
+
+        $this->getJson('/saved-messages')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $message->id);
+
+        $this->deleteJson('/saved-messages/' . $message->id)
+            ->assertOk()
+            ->assertJson(['ok' => true]);
+
+        $this->getJson('/unfurl?url=' . urlencode('https://example.com/path'))
+            ->assertOk()
+            ->assertJsonPath('data.siteName', 'example.com');
     }
 
     public function test_legacy_detail_aliases_resolve_to_inertia_pages(): void

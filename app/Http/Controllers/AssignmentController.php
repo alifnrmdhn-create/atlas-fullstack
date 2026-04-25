@@ -7,6 +7,7 @@ use App\Models\AssignmentAttachment;
 use App\Services\AssignmentService;
 use App\Services\BroadcastService;
 use App\Support\RolePolicy;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -60,7 +61,7 @@ class AssignmentController extends Controller
 
     // ── Mutations ────────────────────────────────────────────────────────────
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'title' => 'required|string|min:2|max:200',
@@ -87,11 +88,16 @@ class AssignmentController extends Controller
                 'createdAt' => now()->toIso8601String(),
             ],
         ], [$assignment->assigneeId]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $assignment], 201);
+        }
+
         return redirect()->route('assignments.show', $assignment->id)
             ->with('success', 'Penugasan berhasil dibuat.');
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'title' => 'sometimes|string|min:2|max:200',
@@ -104,12 +110,17 @@ class AssignmentController extends Controller
             'tags' => 'nullable|array',
         ]);
 
-        $this->service->update($request->user(), $id, $data);
+        $assignment = $this->service->update($request->user(), $id, $data);
         BroadcastService::assignment($id, 'updated');
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $assignment]);
+        }
+
         return back()->with('success', 'Penugasan diperbarui.');
     }
 
-    public function transition(Request $request, int $id): RedirectResponse
+    public function transition(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'action' => 'required|in:ACKNOWLEDGE,CLARIFY,SUBMIT,SUBMIT_REVIEW,APPROVE,COMPLETE,RETURN,REJECT,CANCEL,REOPEN',
@@ -120,13 +131,23 @@ class AssignmentController extends Controller
         BroadcastService::assignment($id, 'status-changed', [
             'status' => $a->status, 'action' => $data['action'],
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $a]);
+        }
+
         return back()->with('success', "Aksi {$data['action']} berhasil.");
     }
 
-    public function destroy(Request $request, int $id): RedirectResponse
+    public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $this->service->delete($request->user(), $id);
         BroadcastService::assignment($id, 'deleted');
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return redirect()->route('assignments.index')->with('success', 'Penugasan dihapus.');
     }
 
@@ -144,7 +165,7 @@ class AssignmentController extends Controller
         return response()->json(['data' => $items, 'total' => $items->count()]);
     }
 
-    public function uploadFile(Request $request, int $id): RedirectResponse
+    public function uploadFile(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $a = Assignment::findOrFail($id);
         $user = $request->user();
@@ -176,7 +197,7 @@ class AssignmentController extends Controller
         $relativePath = "assignments/{$id}/{$storedName}";
         Storage::disk('local')->putFileAs("assignments/{$id}", $file, $storedName);
 
-        AssignmentAttachment::create([
+        $attachment = AssignmentAttachment::create([
             'assignmentId' => $id,
             'uploadedBy'   => $user->id,
             'type'         => 'FILE',
@@ -187,10 +208,14 @@ class AssignmentController extends Controller
             'description'  => $request->input('description'),
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $attachment], 201);
+        }
+
         return back()->with('success', 'File evidence diunggah.');
     }
 
-    public function addLinkOrNote(Request $request, int $id): RedirectResponse
+    public function addLinkOrNote(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $a = Assignment::findOrFail($id);
         $user = $request->user();
@@ -206,13 +231,17 @@ class AssignmentController extends Controller
             'description' => 'required|string|min:1|max:2000',
         ]);
 
-        AssignmentAttachment::create([
+        $attachment = AssignmentAttachment::create([
             'assignmentId' => $id,
             'uploadedBy'   => $user->id,
             'type'         => $data['type'],
             'url'          => $data['url'] ?? null,
             'description'  => $data['description'],
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $attachment], 201);
+        }
 
         return back()->with('success', 'Evidence ditambahkan.');
     }
@@ -229,7 +258,7 @@ class AssignmentController extends Controller
         return Storage::disk('local')->download($att->filepath, $att->originalName ?? $att->filename);
     }
 
-    public function destroyAttachment(Request $request, int $id, int $attId): RedirectResponse
+    public function destroyAttachment(Request $request, int $id, int $attId): JsonResponse|RedirectResponse
     {
         $att = AssignmentAttachment::where('assignmentId', $id)->findOrFail($attId);
         $user = $request->user();
@@ -245,6 +274,11 @@ class AssignmentController extends Controller
         }
 
         $att->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back()->with('success', 'Lampiran dihapus.');
     }
 

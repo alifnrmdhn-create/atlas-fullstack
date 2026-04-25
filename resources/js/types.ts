@@ -451,7 +451,7 @@ export type SystemStatus = {
     mode: 'database' | 'fallback'
     databaseUrlConfigured: boolean
     availability: 'unknown' | 'ready' | 'unavailable'
-    fallbackStore: 'seeded-memory'
+    fallbackStore: string | null
     lastError: string | null
   }
 }

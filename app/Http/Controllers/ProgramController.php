@@ -10,6 +10,7 @@ use App\Services\BroadcastService;
 use App\Services\ProgramHealthService;
 use App\Services\ProgramService;
 use App\Support\RolePolicy;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -22,6 +23,18 @@ class ProgramController extends Controller
         private ProgramService $programService,
         private ProgramHealthService $healthService,
     ) {}
+
+    private function validationError(Request $request, string $message): JsonResponse|RedirectResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'errors' => ['general' => [$message]],
+            ], 422);
+        }
+
+        return back()->withErrors([$message]);
+    }
 
     // ── Pages ────────────────────────────────────────────────────────────────
 
@@ -125,36 +138,45 @@ class ProgramController extends Controller
 
     // ── Mutations ─────────────────────────────────────────────────────────────
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         Gate::authorize('create-program');
 
         $data = $request->validate([
+            'code' => 'nullable|string|max:40|unique:Program,code',
             'name' => 'required|string|max:200',
             'description' => 'nullable|string|max:2000',
             'strategicObjective' => 'nullable|string|max:1000',
             'startDate' => 'required|date',
             'targetEndDate' => 'required|date|after:startDate',
+            'status' => 'nullable|string|max:40',
             'priority' => 'in:LOW,MEDIUM,HIGH,CRITICAL',
+            'ownerId' => 'nullable|integer|exists:User,id',
             'ownerUnitId' => 'nullable|integer',
             'budgetIdr' => 'nullable|numeric',
+            'picPersonIds' => 'nullable|array',
+            'hasNoApmsKpi' => 'nullable|boolean',
         ]);
 
         $program = $this->programService->create($request->user(), $data);
         BroadcastService::program($program->id, 'created');
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $program], 201);
+        }
+
         return redirect()->route('programs.show', $program->id)
             ->with('success', 'Program berhasil dibuat.');
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $program = Program::findOrFail($id);
         Gate::authorize('edit-program', $program);
 
         $isAdmin = RolePolicy::isAdminOrAbove($request->user()->roleType);
         if (!$isAdmin && in_array($program->approvalStatus, ['PENDING_KASUB', 'PENDING_KADIV'], true)) {
-            return back()->withErrors(['Program sedang dalam proses persetujuan dan tidak dapat diubah.']);
+            return $this->validationError($request, 'Program sedang dalam proses persetujuan dan tidak dapat diubah.');
         }
 
         $data = $request->validate([
@@ -169,22 +191,31 @@ class ProgramController extends Controller
             'picPersonIds.*' => 'integer',
         ]);
 
-        $this->programService->update($id, $data);
+        $program = $this->programService->update($id, $data);
         BroadcastService::program($id, 'updated');
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $program]);
+        }
 
         return back()->with('success', 'Program diperbarui.');
     }
 
-    public function destroy(Request $request, int $id): RedirectResponse
+    public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $program = Program::findOrFail($id);
         Gate::authorize('delete-program', $program);
         $this->programService->delete($id);
         BroadcastService::program($id, 'deleted');
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return redirect()->route('programs.index')->with('success', 'Program dihapus.');
     }
 
-    public function submit(Request $request, int $id): RedirectResponse
+    public function submit(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $program = Program::findOrFail($id);
         $user = $request->user();
@@ -195,20 +226,24 @@ class ProgramController extends Controller
             abort(403, 'Hanya PIC atau pembuat program yang dapat mengajukan persetujuan');
         }
         if ($program->approvalStatus !== 'DRAFT') {
-            return back()->withErrors(['Hanya program berstatus DRAFT yang dapat disubmit.']);
+            return $this->validationError($request, 'Hanya program berstatus DRAFT yang dapat disubmit.');
         }
         if (in_array($role, ['KADIV', 'SUPERADMIN', 'ADMIN'], true)) {
-            return back()->withErrors(['KADIV/Admin gunakan tombol "Mulai Eksekusi" untuk mengaktifkan program.']);
+            return $this->validationError($request, 'KADIV/Admin gunakan tombol "Mulai Eksekusi" untuk mengaktifkan program.');
         }
 
         $nextStatus = $role === 'KASUBDIV' ? 'PENDING_KADIV' : 'PENDING_KASUB';
         $program->update(['approvalStatus' => $nextStatus, 'rejectionNote' => null, 'submittedById' => $user->id]);
         BroadcastService::program($id, 'updated', ['approvalStatus' => $nextStatus]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $program->fresh()]);
+        }
+
         return back()->with('success', "Program diajukan untuk persetujuan.");
     }
 
-    public function activate(Request $request, int $id): RedirectResponse
+    public function activate(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $role = strtoupper($request->user()->roleType);
         if (!in_array($role, ['KADIV', 'SUPERADMIN', 'ADMIN'], true)) {
@@ -216,14 +251,19 @@ class ProgramController extends Controller
         }
         $program = Program::findOrFail($id);
         if ($program->approvalStatus !== 'DRAFT') {
-            return back()->withErrors(['Hanya program DRAFT yang dapat diaktifkan.']);
+            return $this->validationError($request, 'Hanya program DRAFT yang dapat diaktifkan.');
         }
         $program->update(['approvalStatus' => 'ACTIVE', 'rejectionNote' => null]);
         BroadcastService::program($id, 'approved');
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $program->fresh()]);
+        }
+
         return back()->with('success', 'Program diaktifkan — eksekusi dimulai.');
     }
 
-    public function approve(Request $request, int $id): RedirectResponse
+    public function approve(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $program = Program::findOrFail($id);
         $role = strtoupper($request->user()->roleType);
@@ -237,10 +277,15 @@ class ProgramController extends Controller
         }
 
         BroadcastService::program($id, 'approved');
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $program->fresh()]);
+        }
+
         return back()->with('success', 'Program disetujui.');
     }
 
-    public function reject(Request $request, int $id): RedirectResponse
+    public function reject(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $program = Program::findOrFail($id);
         $role = strtoupper($request->user()->roleType);
@@ -255,28 +300,43 @@ class ProgramController extends Controller
 
         $program->update(['approvalStatus' => 'DRAFT', 'rejectionNote' => $data['note']]);
         BroadcastService::program($id, 'rejected');
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $program->fresh()]);
+        }
+
         return back()->with('success', 'Program ditolak dan dikembalikan ke Draft.');
     }
 
-    public function archive(Request $request, int $id): RedirectResponse
+    public function archive(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $program = Program::findOrFail($id);
         Gate::authorize('archive-program', $program);
-        if ($program->archivedAt) return back()->withErrors(['Program sudah diarsipkan.']);
+        if ($program->archivedAt) return $this->validationError($request, 'Program sudah diarsipkan.');
         $this->programService->archive($id, $request->user()->id);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => Program::findOrFail($id)]);
+        }
+
         return back()->with('success', 'Program diarsipkan.');
     }
 
-    public function restore(Request $request, int $id): RedirectResponse
+    public function restore(Request $request, int $id): JsonResponse|RedirectResponse
     {
         Gate::authorize('view-archive');
         $program = Program::findOrFail($id);
-        if (!$program->archivedAt) return back()->withErrors(['Program tidak dalam status arsip.']);
+        if (!$program->archivedAt) return $this->validationError($request, 'Program tidak dalam status arsip.');
         $this->programService->restore($id);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => Program::findOrFail($id)]);
+        }
+
         return back()->with('success', 'Program dipulihkan.');
     }
 
-    public function addKpiLink(Request $request, int $id): RedirectResponse
+    public function addKpiLink(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'apmsKpiCode' => 'required|string|max:30',
@@ -290,18 +350,27 @@ class ProgramController extends Controller
             ->where('apmsKpiCode', $data['apmsKpiCode'])
             ->exists();
 
-        if ($exists) return back()->withErrors(["KPI {$data['apmsKpiCode']} sudah terhubung ke program ini."]);
+        if ($exists) return $this->validationError($request, "KPI {$data['apmsKpiCode']} sudah terhubung ke program ini.");
 
-        ProgramKpiLink::create([...$data, 'programId' => $id]);
+        $link = ProgramKpiLink::create([...$data, 'programId' => $id]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $link], 201);
+        }
+
         return back()->with('success', 'KPI dihubungkan.');
     }
 
-    public function removeKpiLink(Request $request, int $id, string $code): RedirectResponse
+    public function removeKpiLink(Request $request, int $id, string $code): JsonResponse|RedirectResponse
     {
         ProgramKpiLink::query()
             ->where('programId', $id)
             ->where('apmsKpiCode', $code)
             ->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
 
         return back()->with('success', 'Link KPI dihapus.');
     }

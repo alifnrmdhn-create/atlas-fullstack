@@ -10,6 +10,7 @@ use App\Models\MeetingDecision;
 use App\Models\Program;
 use App\Models\User;
 use App\Support\RolePolicy;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,18 @@ use Inertia\Response;
 class MeetingController extends Controller
 {
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private function validationError(Request $request, string $message): JsonResponse|RedirectResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'errors' => ['general' => [$message]],
+            ], 422);
+        }
+
+        return back()->withErrors([$message]);
+    }
 
     private function canSeeAll(string $role): bool
     {
@@ -144,7 +157,7 @@ class MeetingController extends Controller
 
         $programs = Program::where($programWhere)
             ->select('id','name','code','healthStatus','progressPercent','ownerId')
-            ->orderByRaw("CASE healthStatus WHEN 'RED' THEN 1 WHEN 'YELLOW' THEN 2 ELSE 3 END")
+            ->orderByRaw('CASE "healthStatus" WHEN \'RED\' THEN 1 WHEN \'YELLOW\' THEN 2 ELSE 3 END')
             ->orderBy('progressPercent')
             ->limit(10)
             ->get();
@@ -247,7 +260,7 @@ class MeetingController extends Controller
 
     // ── Mutations ────────────────────────────────────────────────────────────
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'title' => 'required|string|min:3|max:120',
@@ -268,7 +281,7 @@ class MeetingController extends Controller
             ->take(101);
 
         if ($attendees->where('userId', '!=', $organizerId)->count() > 100) {
-            return back()->withErrors(['Maksimal 100 peserta per meeting.']);
+            return $this->validationError($request, 'Maksimal 100 peserta per meeting.');
         }
 
         $meeting = DB::transaction(function () use ($data, $organizerId, $attendees) {
@@ -305,10 +318,14 @@ class MeetingController extends Controller
             return $meeting;
         });
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $meeting->fresh(['attendees'])], 201);
+        }
+
         return redirect()->route('meetings.show', $meeting->id)->with('success', 'Meeting dijadwalkan.');
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $meeting = Meeting::findOrFail($id);
         $userId = $request->user()->id;
@@ -336,28 +353,28 @@ class MeetingController extends Controller
             $now = now();
 
             if ($status === 'ONGOING' && $meeting->status !== 'SCHEDULED') {
-                return back()->withErrors(['Hanya meeting berstatus Terjadwal yang dapat dimulai.']);
+                return $this->validationError($request, 'Hanya meeting berstatus Terjadwal yang dapat dimulai.');
             }
             if ($status === 'ONGOING') {
                 $earliest = $meeting->startAt->subMinutes(15);
-                if ($now->lt($earliest)) return back()->withErrors(['Meeting belum bisa dimulai — terlalu awal (maks 15 menit sebelum jadwal).']);
+                if ($now->lt($earliest)) return $this->validationError($request, 'Meeting belum bisa dimulai — terlalu awal (maks 15 menit sebelum jadwal).');
             }
             if ($status === 'COMPLETED' && !in_array($meeting->status, ['SCHEDULED', 'ONGOING'], true)) {
-                return back()->withErrors(['Meeting hanya dapat diselesaikan dari status Terjadwal atau Berlangsung.']);
+                return $this->validationError($request, 'Meeting hanya dapat diselesaikan dari status Terjadwal atau Berlangsung.');
             }
             if ($status === 'POSTPONED') {
                 if (!in_array($meeting->status, ['SCHEDULED', 'ONGOING'], true)) {
-                    return back()->withErrors(['Hanya meeting Terjadwal/Berlangsung yang dapat ditunda.']);
+                    return $this->validationError($request, 'Hanya meeting Terjadwal/Berlangsung yang dapat ditunda.');
                 }
                 if (empty($data['postponedReason'])) {
-                    return back()->withErrors(['Alasan penundaan wajib diisi.']);
+                    return $this->validationError($request, 'Alasan penundaan wajib diisi.');
                 }
             }
             if ($status === 'SCHEDULED' && $meeting->status !== 'POSTPONED') {
-                return back()->withErrors(['Hanya meeting Ditunda yang dapat dijadwalkan ulang.']);
+                return $this->validationError($request, 'Hanya meeting Ditunda yang dapat dijadwalkan ulang.');
             }
             if ($status === 'CANCELLED' && $meeting->status === 'COMPLETED') {
-                return back()->withErrors(['Meeting yang sudah selesai tidak dapat dibatalkan.']);
+                return $this->validationError($request, 'Meeting yang sudah selesai tidak dapat dibatalkan.');
             }
         }
 
@@ -391,10 +408,14 @@ class MeetingController extends Controller
             $meeting->update($updateData);
         });
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $meeting->fresh(['attendees', 'decisions', 'actionItems'])]);
+        }
+
         return back()->with('success', 'Meeting diperbarui.');
     }
 
-    public function destroy(Request $request, int $id): RedirectResponse
+    public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $meeting = Meeting::findOrFail($id);
         $user = $request->user();
@@ -403,23 +424,28 @@ class MeetingController extends Controller
             abort(403, 'Hanya organizer yang dapat membatalkan meeting.');
         }
         if ($meeting->status === 'COMPLETED') {
-            return back()->withErrors(['Meeting yang sudah selesai tidak dapat dibatalkan.']);
+            return $this->validationError($request, 'Meeting yang sudah selesai tidak dapat dibatalkan.');
         }
 
         $meeting->update(['status' => 'CANCELLED']);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return redirect()->route('meetings.index')->with('success', 'Meeting dibatalkan.');
     }
 
-    public function rsvp(Request $request, int $id): RedirectResponse
+    public function rsvp(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $meeting = Meeting::findOrFail($id);
         $userId = $request->user()->id;
 
         if ($meeting->isTerminal()) {
-            return back()->withErrors(['Tidak dapat RSVP untuk meeting yang sudah ' . ($meeting->status === 'CANCELLED' ? 'dibatalkan' : 'selesai') . '.']);
+            return $this->validationError($request, 'Tidak dapat RSVP untuk meeting yang sudah ' . ($meeting->status === 'CANCELLED' ? 'dibatalkan' : 'selesai') . '.');
         }
         if ($meeting->status === 'POSTPONED') {
-            return back()->withErrors(['Tidak dapat RSVP untuk meeting yang sedang ditunda.']);
+            return $this->validationError($request, 'Tidak dapat RSVP untuk meeting yang sedang ditunda.');
         }
 
         $data = $request->validate([
@@ -429,15 +455,15 @@ class MeetingController extends Controller
         ]);
 
         if ($data['rsvpStatus'] === 'DELEGASI') {
-            if (empty($data['delegateToId'])) return back()->withErrors(['delegateToId wajib untuk DELEGASI.']);
-            if ($data['delegateToId'] === $userId) return back()->withErrors(['Tidak dapat mendelegasikan kepada diri sendiri.']);
+            if (empty($data['delegateToId'])) return $this->validationError($request, 'delegateToId wajib untuk DELEGASI.');
+            if ($data['delegateToId'] === $userId) return $this->validationError($request, 'Tidak dapat mendelegasikan kepada diri sendiri.');
             $delegateUser = User::where('id', $data['delegateToId'])->where('isActive', true)->first();
-            if (!$delegateUser) return back()->withErrors(['User delegasi tidak ditemukan atau tidak aktif.']);
+            if (!$delegateUser) return $this->validationError($request, 'User delegasi tidak ditemukan atau tidak aktif.');
         }
 
         $attendee = MeetingAttendee::where('meetingId', $id)->where('userId', $userId)->first();
-        if (!$attendee) return back()->withErrors(['Anda tidak diundang ke meeting ini.']);
-        if ($attendee->attendeeRole === 'ORGANIZER') return back()->withErrors(['Organizer tidak perlu RSVP.']);
+        if (!$attendee) return $this->validationError($request, 'Anda tidak diundang ke meeting ini.');
+        if ($attendee->attendeeRole === 'ORGANIZER') return $this->validationError($request, 'Organizer tidak perlu RSVP.');
 
         $attendee->update([
             'rsvpStatus' => $data['rsvpStatus'],
@@ -445,6 +471,10 @@ class MeetingController extends Controller
             'delegateNote' => $data['rsvpStatus'] === 'DELEGASI' ? ($data['delegateNote'] ?? null) : null,
             'respondedAt' => now(),
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $attendee->fresh()]);
+        }
 
         return back()->with('success', 'RSVP disimpan.');
     }
@@ -475,34 +505,44 @@ class MeetingController extends Controller
         return back()->with('success', 'Peserta dihapus.');
     }
 
-    public function addDecision(Request $request, int $id): RedirectResponse
+    public function addDecision(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $data = $request->validate(['decision' => 'required|string|min:3|max:600']);
-        MeetingDecision::create([
+        $decision = MeetingDecision::create([
             'meetingId' => $id,
             'decision' => $data['decision'],
             'decidedBy' => $request->user()->id,
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $decision], 201);
+        }
+
         return back()->with('success', 'Keputusan ditambahkan.');
     }
 
-    public function destroyDecision(int $id, int $decisionId): RedirectResponse
+    public function destroyDecision(Request $request, int $id, int $decisionId): JsonResponse|RedirectResponse
     {
         MeetingDecision::where('meetingId', $id)->where('id', $decisionId)->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back()->with('success', 'Keputusan dihapus.');
     }
 
-    public function storeActionItem(Request $request, int $id): RedirectResponse
+    public function storeActionItem(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $meeting = Meeting::findOrFail($id);
         $userId = $request->user()->id;
 
         if ($meeting->organizerId !== $userId) abort(403, 'Hanya organizer yang dapat menambah action item.');
         if (in_array($meeting->status, ['CANCELLED', 'COMPLETED', 'POSTPONED'], true)) {
-            return back()->withErrors(['Tidak dapat menambah action item ke meeting yang ditunda, dibatalkan, atau selesai.']);
+            return $this->validationError($request, 'Tidak dapat menambah action item ke meeting yang ditunda, dibatalkan, atau selesai.');
         }
         if (MeetingActionItem::where('meetingId', $id)->count() >= 100) {
-            return back()->withErrors(['Batas action item per meeting tercapai (maksimal 100).']);
+            return $this->validationError($request, 'Batas action item per meeting tercapai (maksimal 100).');
         }
 
         $data = $request->validate([
@@ -515,17 +555,22 @@ class MeetingController extends Controller
         if (!empty($data['assignedToId'])) {
             $isOrganizer = $meeting->organizerId === $data['assignedToId'];
             $attendee = $isOrganizer ? null : MeetingAttendee::where('meetingId', $id)->where('userId', $data['assignedToId'])->first();
-            if (!$isOrganizer && !$attendee) return back()->withErrors(['User yang di-assign harus merupakan peserta meeting ini.']);
+            if (!$isOrganizer && !$attendee) return $this->validationError($request, 'User yang di-assign harus merupakan peserta meeting ini.');
             if ($attendee && in_array($attendee->rsvpStatus, ['TIDAK_HADIR', 'DELEGASI'], true)) {
-                return back()->withErrors(['Tidak dapat assign action item ke peserta yang tidak hadir atau mendelegasikan.']);
+                return $this->validationError($request, 'Tidak dapat assign action item ke peserta yang tidak hadir atau mendelegasikan.');
             }
         }
 
-        MeetingActionItem::create([...$data, 'meetingId' => $id, 'title' => trim($data['title']), 'status' => 'OPEN']);
+        $item = MeetingActionItem::create([...$data, 'meetingId' => $id, 'title' => trim($data['title']), 'status' => 'OPEN']);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $item], 201);
+        }
+
         return back()->with('success', 'Action item ditambahkan.');
     }
 
-    public function updateActionItem(Request $request, int $id, int $itemId): RedirectResponse
+    public function updateActionItem(Request $request, int $id, int $itemId): JsonResponse|RedirectResponse
     {
         $item = MeetingActionItem::where('meetingId', $id)->findOrFail($itemId);
         $meeting = Meeting::find($id);
@@ -547,10 +592,15 @@ class MeetingController extends Controller
         }
 
         $item->update($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $item->fresh()]);
+        }
+
         return back()->with('success', 'Action item diperbarui.');
     }
 
-    public function destroyActionItem(Request $request, int $id, int $itemId): RedirectResponse
+    public function destroyActionItem(Request $request, int $id, int $itemId): JsonResponse|RedirectResponse
     {
         $item = MeetingActionItem::where('meetingId', $id)->findOrFail($itemId);
         $meeting = Meeting::find($id);
@@ -561,6 +611,11 @@ class MeetingController extends Controller
         }
 
         $item->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back()->with('success', 'Action item dihapus.');
     }
 
