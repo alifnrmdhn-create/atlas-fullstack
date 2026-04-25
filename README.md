@@ -61,6 +61,10 @@ npm run check
 
 `npm run check` runs TypeScript, frontend route audit, and a production Vite build.
 
+## Deployment
+
+The deployment contract is documented in `deploy/README.md`. Production must use PostgreSQL and a DTDI-approved Laravel runtime, without MAMP paths, SQLite artifacts, or files from the previous stack.
+
 ## Architecture Notes
 
 - Backend: Laravel with session authentication and PostgreSQL persistence.

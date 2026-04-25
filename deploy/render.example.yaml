@@ -1,3 +1,6 @@
+# Render example only. The DTDI production contract is documented in
+# deploy/README.md and should be adapted to the approved runtime platform.
+
 services:
   - type: web
     name: atlas-app-dev
