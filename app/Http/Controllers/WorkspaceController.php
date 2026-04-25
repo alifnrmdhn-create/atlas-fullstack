@@ -881,7 +881,11 @@ class WorkspaceController extends Controller
     private function presenceQuery()
     {
         return UserStatus::query()
-            ->with('user:id,name,email,roleType,positionTitle,avatarUrl,unitId,directorateId')
+            ->with([
+                'user:id,name,email,roleType,positionTitle,avatarUrl,unitId,directorateId',
+                'user.unit:id,name',
+                'user.directorate:id,name',
+            ])
             ->join('User', 'UserStatus.userId', '=', 'User.id')
             ->orderBy('User.name')
             ->select('UserStatus.*');

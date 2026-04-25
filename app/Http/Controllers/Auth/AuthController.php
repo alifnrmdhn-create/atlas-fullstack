@@ -28,7 +28,7 @@ class AuthController extends Controller
 
         $identifier = trim($request->input('identifier'));
 
-        if (str_contains($identifier, '@')) {
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
             throw ValidationException::withMessages([
                 'identifier' => 'Gunakan NIK atau User ID, bukan email.',
             ]);

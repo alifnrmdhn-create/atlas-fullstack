@@ -192,10 +192,13 @@ class OrganizationController extends Controller
         $positions = Position::with([
             'directorate:id,code,name',
             'division:id,code,name',
-            'users' => fn ($q) => $q->where('isActive', true)->select('id','name','roleType')->limit(1),
+            'users' => fn ($q) => $q->whereRaw('"isActive" IS TRUE')->select('id','name','roleType','positionId'),
         ])->orderBy('seatOrder')->get()
             ->map(fn ($p) => [
                 ...$p->toArray(),
+                'title'         => $p->name,
+                'unit'          => $p->division,
+                'level'         => $p->levelCode ? (int) filter_var($p->levelCode, FILTER_SANITIZE_NUMBER_INT) : null,
                 'currentHolder' => $p->users->first(),
             ])->values();
 
@@ -294,7 +297,7 @@ class OrganizationController extends Controller
         }
 
         if ($request->expectsJson()) {
-            return response()->json(['data' => $position->fresh(['users' => fn ($q) => $q->where('isActive', true)])]);
+            return response()->json(['data' => $position->fresh(['users' => fn ($q) => $q->whereRaw('"isActive" IS TRUE')])]);
         }
 
         return back()->with('success', 'Penugasan jabatan disimpan.');

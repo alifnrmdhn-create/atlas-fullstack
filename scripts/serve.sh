@@ -9,4 +9,5 @@ if [ -n "$IP" ]; then
 fi
 echo "  PHP:     $PHP_BIN"
 echo ""
-exec "$PHP_BIN" artisan serve --host=0.0.0.0
+export PHP_CLI_SERVER_WORKERS=8
+exec "$PHP_BIN" artisan serve --host=0.0.0.0 --no-reload
