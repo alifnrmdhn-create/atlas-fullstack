@@ -24,3 +24,9 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Binary reference docs — ada di disk tapi tidak masuk git (terlalu besar)
+docs/**/*.pdf
+docs/**/*.docx
+docs/**/*.xlsx
+docs/**/.DS_Store
