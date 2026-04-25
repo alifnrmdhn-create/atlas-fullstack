@@ -142,7 +142,7 @@ const FIELD_LABELS: Record<string, string> = {
     startDate: 'Tanggal Mulai', targetCompletion: 'Target Selesai', dueDate: 'Tenggat',
     programId: 'Program', workstreamId: 'Workstream', phaseId: 'Phase',
     content: 'Konten', type: 'Tipe', note: 'Catatan',
-    email: 'Email', password: 'Password',
+    identifier: 'NIK/User ID', email: 'Email', password: 'Password',
 }
 
 export function extractErrorMessage(err: unknown, fallback = 'Terjadi kesalahan.'): string {

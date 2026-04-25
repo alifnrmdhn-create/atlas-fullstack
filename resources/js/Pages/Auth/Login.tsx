@@ -69,12 +69,12 @@ function ShieldIcon() {
 }
 
 type PageProps = {
-    errors?: { email?: string; password?: string }
+    errors?: { identifier?: string; password?: string }
 }
 
 export default function Login({ errors: pageErrors }: PageProps) {
     const { data, setData, post, processing, errors } = useForm({
-        email: '',
+        identifier: '',
         password: '',
     })
 
@@ -82,7 +82,7 @@ export default function Login({ errors: pageErrors }: PageProps) {
     const [isSuccess, setIsSuccess] = useState(false)
     const [isExiting, setIsExiting] = useState(false)
 
-    const authError = errors.email ?? null
+    const authError = errors.identifier ?? null
 
     useEffect(() => {
         if (!isSuccess) return
@@ -179,16 +179,16 @@ export default function Login({ errors: pageErrors }: PageProps) {
                         <form className="auth-form" onSubmit={onSubmit}>
                             <div className="auth-float-group">
                                 <input
-                                    id="email"
+                                    id="identifier"
                                     className="auth-float-input"
                                     autoComplete="username"
-                                    onChange={(e) => setData('email', e.target.value)}
+                                    onChange={(e) => setData('identifier', e.target.value)}
                                     placeholder=" "
                                     type="text"
-                                    value={data.email}
+                                    value={data.identifier}
                                     autoFocus
                                 />
-                                <label htmlFor="email" className="auth-float-label">NIK atau User ID</label>
+                                <label htmlFor="identifier" className="auth-float-label">NIK atau User ID</label>
                             </div>
 
                             <div className="auth-float-group">

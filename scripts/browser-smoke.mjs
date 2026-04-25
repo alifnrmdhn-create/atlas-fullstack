@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process'
 
 const baseUrl = process.env.APP_URL ?? 'http://127.0.0.1:8000'
 const chromeBin = process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-const loginId = process.env.SMOKE_LOGIN_ID ?? 'admin@atlas.local'
+const loginId = process.env.SMOKE_LOGIN_ID ?? 'atlas.admin'
 const loginPassword = process.env.SMOKE_LOGIN_PASSWORD ?? 'Password123!'
 const navPaths = (process.env.SMOKE_PATHS ?? [
   '/dashboard',
@@ -87,9 +87,9 @@ try {
 
   step('open login')
   await navigate(page, `${baseUrl}/login`)
-  await waitFor(page, () => document.querySelector('#email') && document.querySelector('#password'), 10_000, 'login form')
+  await waitFor(page, () => document.querySelector('#identifier') && document.querySelector('#password'), 10_000, 'login form')
   step('submit login')
-  await typeInput(page, '#email', loginId)
+  await typeInput(page, '#identifier', loginId)
   await typeInput(page, '#password', loginPassword)
   await page.evaluate(() => document.querySelector('button[type="submit"]')?.click())
   await waitFor(page, () => location.pathname !== '/login' && document.querySelector('.app-shell'), 15_000, 'authenticated app shell')

@@ -37,7 +37,7 @@ class LoginTest extends TestCase
     public function test_user_can_login_with_nik(): void
     {
         $response = $this->post('/login', [
-            'email'    => '8005835',
+            'identifier' => '8005835',
             'password' => 'password123',
         ]);
 
@@ -48,7 +48,7 @@ class LoginTest extends TestCase
     public function test_user_can_login_with_user_id(): void
     {
         $response = $this->post('/login', [
-            'email'    => 'alif.nrmdhn',
+            'identifier' => 'alif.nrmdhn',
             'password' => 'password123',
         ]);
 
@@ -56,25 +56,25 @@ class LoginTest extends TestCase
         $this->assertAuthenticatedAs($this->user);
     }
 
-    public function test_user_can_login_with_email(): void
+    public function test_user_cannot_login_with_email(): void
     {
         $response = $this->post('/login', [
-            'email'    => 'asisten@ptpn.test',
+            'identifier' => 'asisten@ptpn.test',
             'password' => 'password123',
         ]);
 
-        $response->assertRedirect('/dashboard');
-        $this->assertAuthenticatedAs($this->user);
+        $response->assertSessionHasErrors('identifier');
+        $this->assertGuest();
     }
 
     public function test_login_fails_with_wrong_password(): void
     {
         $response = $this->post('/login', [
-            'email'    => '8005835',
+            'identifier' => '8005835',
             'password' => 'wrongpassword',
         ]);
 
-        $response->assertSessionHasErrors('email');
+        $response->assertSessionHasErrors('identifier');
         $this->assertGuest();
     }
 
@@ -88,11 +88,11 @@ class LoginTest extends TestCase
         );
 
         $response = $this->post('/login', [
-            'email'    => '9999999',
+            'identifier' => '9999999',
             'password' => 'password123',
         ]);
 
-        $response->assertSessionHasErrors('email');
+        $response->assertSessionHasErrors('identifier');
         $this->assertGuest();
     }
 
@@ -100,7 +100,7 @@ class LoginTest extends TestCase
     {
         $response = $this->post('/login', []);
 
-        $response->assertSessionHasErrors(['email', 'password']);
+        $response->assertSessionHasErrors(['identifier', 'password']);
     }
 
     public function test_authenticated_user_is_redirected_from_login(): void

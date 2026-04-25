@@ -22,25 +22,30 @@ class AuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $request->validate([
-            'email'    => ['required', 'string'],
+            'identifier' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
-        $identifier = trim($request->input('email'));
+        $identifier = trim($request->input('identifier'));
 
-        // Coba cocokkan identifier ke NIK, userId, atau email — urutan prioritas.
+        if (str_contains($identifier, '@')) {
+            throw ValidationException::withMessages([
+                'identifier' => 'Gunakan NIK atau User ID, bukan email.',
+            ]);
+        }
+
+        // Coba cocokkan identifier ke NIK atau User ID — email login dinonaktifkan.
         $user = User::query()
             ->where('isActive', true)
             ->where(function ($q) use ($identifier) {
                 $q->where('nik', $identifier)
-                  ->orWhere('userId', $identifier)
-                  ->orWhere('email', $identifier);
+                  ->orWhere('userId', $identifier);
             })
             ->first();
 
         if (!$user || !$user->passwordHash || !Hash::check($request->input('password'), $user->passwordHash)) {
             throw ValidationException::withMessages([
-                'email' => 'NIK, User ID, atau password salah.',
+                'identifier' => 'NIK, User ID, atau password salah.',
             ]);
         }
 
