@@ -67,4 +67,4 @@ npm run check
 - Frontend: React pages resolved through Inertia.
 - Frontend API calls use same-origin Laravel routes, not a separate Express API.
 - Local sessions default to file storage to avoid requiring a separate `sessions` table.
-- PostgreSQL is the default database connection; SQLite is not the project default.
+- PostgreSQL is the only configured application database connection.
