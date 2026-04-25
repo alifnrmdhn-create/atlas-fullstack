@@ -14,6 +14,7 @@ class Program extends Model
     const UPDATED_AT = 'updatedAt';
 
     protected $guarded = ['id'];
+    protected $appends = ['picPersonIds'];
 
     /** Kolom pemilik yang dipakai untuk user-scope filter. */
     protected string $ownerColumn = 'ownerId';
@@ -23,7 +24,6 @@ class Program extends Model
         'budgetIdr' => 'decimal:4',
         'budgetSpent' => 'decimal:4',
         'strategicAlignment' => 'float',
-        'picPersonIds' => 'array',
         'startDate' => 'datetime',
         'targetEndDate' => 'datetime',
         'actualEndDate' => 'datetime',

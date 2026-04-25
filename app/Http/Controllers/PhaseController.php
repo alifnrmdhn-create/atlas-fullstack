@@ -29,6 +29,9 @@ class PhaseController extends Controller
             'order' => 'nullable|integer',
         ]);
 
+        $picPersonIds = $data['picPersonIds'] ?? [];
+        unset($data['picPersonIds']);
+
         $nextOrder = Phase::query()->where('initiativeId', $id)->max('order');
         $phase = Phase::create([
             ...$data,
@@ -39,10 +42,11 @@ class PhaseController extends Controller
             'healthStatus' => 'YELLOW',
         ]);
 
-        if (!empty($data['picPersonIds'])) {
-            EntityPic::syncForEntity('Phase', $phase->id, $data['picPersonIds']);
+        if (!empty($picPersonIds)) {
+            EntityPic::syncForEntity('Phase', $phase->id, $picPersonIds);
         }
 
+        $phase->load('entityPics');
         return response()->json(['data' => $phase], 201);
     }
 
@@ -64,14 +68,17 @@ class PhaseController extends Controller
             'order' => 'sometimes|integer',
         ]);
 
+        $picPersonIds = array_key_exists('picPersonIds', $data) ? $data['picPersonIds'] : null;
+        unset($data['picPersonIds']);
+
         Phase::query()->where('id', $id)->update($data);
 
-        if (array_key_exists('picPersonIds', $data)) {
-            EntityPic::syncForEntity('Phase', $id, $data['picPersonIds'] ?? []);
+        if ($picPersonIds !== null) {
+            EntityPic::syncForEntity('Phase', $id, $picPersonIds ?? []);
         }
 
         if ($request->expectsJson()) {
-            return response()->json(['data' => Phase::findOrFail($id)]);
+            return response()->json(['data' => Phase::with('entityPics')->findOrFail($id)]);
         }
 
         return back()->with('success', 'Fase diperbarui.');

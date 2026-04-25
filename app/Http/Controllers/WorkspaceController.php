@@ -641,6 +641,9 @@ class WorkspaceController extends Controller
             'primaryPicPersonId' => 'nullable|integer',
         ]);
 
+        $picPersonIds = $data['picPersonIds'] ?? [];
+        unset($data['picPersonIds']);
+
         $workstream = Workstream::create([
             ...$data,
             'code' => 'WS-' . strtoupper(substr(sha1(uniqid('', true)), 0, 8)),
@@ -651,10 +654,11 @@ class WorkspaceController extends Controller
             'healthStatus' => 'YELLOW',
         ]);
 
-        if (!empty($data['picPersonIds'])) {
-            EntityPic::syncForEntity('Initiative', $workstream->id, $data['picPersonIds']);
+        if (!empty($picPersonIds)) {
+            EntityPic::syncForEntity('Initiative', $workstream->id, $picPersonIds);
         }
 
+        $workstream->load('entityPics');
         return response()->json(['data' => $workstream], 201);
     }
 
@@ -672,14 +676,17 @@ class WorkspaceController extends Controller
             'primaryPicPersonId' => 'nullable|integer',
         ]);
 
+        $picPersonIds = array_key_exists('picPersonIds', $data) ? $data['picPersonIds'] : null;
+        unset($data['picPersonIds']);
+
         $workstream = Workstream::findOrFail($id);
         $workstream->update($data);
 
-        if (array_key_exists('picPersonIds', $data)) {
-            EntityPic::syncForEntity('Initiative', $id, $data['picPersonIds'] ?? []);
+        if ($picPersonIds !== null) {
+            EntityPic::syncForEntity('Initiative', $id, $picPersonIds ?? []);
         }
 
-        return response()->json(['data' => $workstream->fresh()]);
+        return response()->json(['data' => $workstream->fresh(['entityPics'])]);
     }
 
     public function destroyWorkstream(int $id): JsonResponse

@@ -37,6 +37,9 @@ class TaskService
     public function create(int $creatorId, array $data): Task
     {
         $code = 'WI-' . strtoupper(substr(md5(uniqid()), 0, 6));
+        $picPersonIds = $data['picPersonIds'] ?? [];
+        unset($data['picPersonIds']);
+
         $task = Task::create([
             ...$data,
             'code' => $data['code'] ?? $code,
@@ -49,15 +52,19 @@ class TaskService
             ),
         ]);
 
-        if (!empty($data['picPersonIds'])) {
-            EntityPic::syncForEntity('WorkItem', $task->id, $data['picPersonIds']);
+        if (!empty($picPersonIds)) {
+            EntityPic::syncForEntity('WorkItem', $task->id, $picPersonIds);
         }
 
+        $task->load('entityPics');
         return $task;
     }
 
     public function update(int $id, array $data): Task
     {
+        $picPersonIds = array_key_exists('picPersonIds', $data) ? $data['picPersonIds'] : null;
+        unset($data['picPersonIds']);
+
         $task = Task::findOrFail($id);
 
         // Re-derive plannedWeeks if dates change
@@ -73,11 +80,11 @@ class TaskService
 
         $task->update($data);
 
-        if (array_key_exists('picPersonIds', $data)) {
-            EntityPic::syncForEntity('WorkItem', $id, $data['picPersonIds'] ?? []);
+        if ($picPersonIds !== null) {
+            EntityPic::syncForEntity('WorkItem', $id, $picPersonIds ?? []);
         }
 
-        return $task->fresh();
+        return $task->fresh(['entityPics']);
     }
 
     /** Validate + apply status transition. Returns updated Task. */

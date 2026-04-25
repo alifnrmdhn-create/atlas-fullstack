@@ -253,7 +253,8 @@ class ProgramService
     {
         $code = 'PRG-' . strtoupper(substr(md5(uniqid()), 0, 6));
         $ownerId = $data['ownerId'] ?? $user->id;
-        unset($data['ownerId']);
+        $picPersonIds = $data['picPersonIds'] ?? [];
+        unset($data['ownerId'], $data['picPersonIds']);
 
         $program = Program::create([
             ...$data,
@@ -264,21 +265,24 @@ class ProgramService
             'progressPercent' => 0,
         ]);
 
-        $this->syncProgramPics($program, $data['picPersonIds'] ?? []);
+        $this->syncProgramPics($program, $picPersonIds);
 
-        return $program->fresh();
+        return $program->fresh(['coPics']);
     }
 
     public function update(int $id, array $data): Program
     {
+        $picPersonIds = array_key_exists('picPersonIds', $data) ? $data['picPersonIds'] : null;
+        unset($data['picPersonIds']);
+
         $program = Program::findOrFail($id);
         $program->update($data);
 
-        if (array_key_exists('picPersonIds', $data)) {
-            $this->syncProgramPics($program, $data['picPersonIds'] ?? []);
+        if ($picPersonIds !== null) {
+            $this->syncProgramPics($program, $picPersonIds ?? []);
         }
 
-        return $program->fresh();
+        return $program->fresh(['coPics']);
     }
 
     public function archive(int $id, int $userId): void

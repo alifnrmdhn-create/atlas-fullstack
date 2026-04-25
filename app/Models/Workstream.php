@@ -16,11 +16,11 @@ class Workstream extends Model
     const UPDATED_AT = 'updatedAt';
 
     protected $guarded = ['id'];
+    protected $appends = ['picPersonIds'];
     protected string $ownerColumn = 'ownerId';
 
     protected $casts = [
         'milestones' => 'array',
-        'picPersonIds' => 'array',
         'startDate' => 'datetime',
         'targetCompletion' => 'datetime',
         'actualCompletion' => 'datetime',

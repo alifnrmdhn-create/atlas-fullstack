@@ -16,6 +16,7 @@ class Task extends Model
     const UPDATED_AT = 'updatedAt';
 
     protected $guarded = ['id'];
+    protected $appends = ['picPersonIds'];
 
     /** Untuk Task, ownerColumn = assignedTo (bukan ownerId). */
     protected string $ownerColumn = 'assignedTo';
@@ -25,7 +26,6 @@ class Task extends Model
         'dependsOnIds' => 'array',
         'actualWeeks' => 'array',
         'plannedWeeks' => 'array',
-        'picPersonIds' => 'array',
         'picUnitIds' => 'array',
         'startDate' => 'datetime',
         'targetCompletion' => 'datetime',

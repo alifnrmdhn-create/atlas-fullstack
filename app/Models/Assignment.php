@@ -10,6 +10,7 @@ class Assignment extends Model
     const CREATED_AT = 'createdAt';
     const UPDATED_AT = 'updatedAt';
     protected $guarded = ['id'];
+    protected $appends = ['approvalChain'];
 
     protected $casts = [
         'watcherIds' => 'array',

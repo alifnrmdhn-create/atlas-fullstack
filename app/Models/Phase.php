@@ -11,10 +11,10 @@ class Phase extends Model
     const CREATED_AT = 'createdAt';
     const UPDATED_AT = 'updatedAt';
     protected $guarded = ['id'];
+    protected $appends = ['picPersonIds'];
 
     protected $casts = [
         'picUnitIds' => 'array',
-        'picPersonIds' => 'array',
         'createdAt' => 'datetime',
         'updatedAt' => 'datetime',
     ];
