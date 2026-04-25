@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Blocker;
+use App\Models\EntityPic;
 use App\Models\SubTask;
 use App\Models\Task;
 use App\Models\Workstream;
@@ -35,7 +36,7 @@ class TaskService
     public function create(int $creatorId, array $data): Task
     {
         $code = 'WI-' . strtoupper(substr(md5(uniqid()), 0, 6));
-        return Task::create([
+        $task = Task::create([
             ...$data,
             'code' => $data['code'] ?? $code,
             'createdBy' => $creatorId,
@@ -46,6 +47,12 @@ class TaskService
                 isset($data['targetCompletion']) ? new \DateTime($data['targetCompletion']) : null,
             ),
         ]);
+
+        if (!empty($data['picPersonIds'])) {
+            EntityPic::syncForEntity('WorkItem', $task->id, $data['picPersonIds']);
+        }
+
+        return $task;
     }
 
     public function update(int $id, array $data): Task
@@ -64,6 +71,11 @@ class TaskService
         }
 
         $task->update($data);
+
+        if (array_key_exists('picPersonIds', $data)) {
+            EntityPic::syncForEntity('WorkItem', $id, $data['picPersonIds'] ?? []);
+        }
+
         return $task->fresh();
     }
 

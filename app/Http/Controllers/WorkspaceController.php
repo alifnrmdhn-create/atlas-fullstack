@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Blocker;
 use App\Models\Channel;
 use App\Models\ChannelMessage;
+use App\Models\EntityPic;
 use App\Models\KpiDefinition;
 use App\Models\Meeting;
 use App\Models\Notification;
@@ -649,6 +650,10 @@ class WorkspaceController extends Controller
             'healthStatus' => 'YELLOW',
         ]);
 
+        if (!empty($data['picPersonIds'])) {
+            EntityPic::syncForEntity('Initiative', $workstream->id, $data['picPersonIds']);
+        }
+
         return response()->json(['data' => $workstream], 201);
     }
 
@@ -668,6 +673,10 @@ class WorkspaceController extends Controller
 
         $workstream = Workstream::findOrFail($id);
         $workstream->update($data);
+
+        if (array_key_exists('picPersonIds', $data)) {
+            EntityPic::syncForEntity('Initiative', $id, $data['picPersonIds'] ?? []);
+        }
 
         return response()->json(['data' => $workstream->fresh()]);
     }

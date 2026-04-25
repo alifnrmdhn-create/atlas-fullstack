@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EntityPic;
 use App\Models\Phase;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
@@ -38,6 +39,10 @@ class PhaseController extends Controller
             'healthStatus' => 'YELLOW',
         ]);
 
+        if (!empty($data['picPersonIds'])) {
+            EntityPic::syncForEntity('Phase', $phase->id, $data['picPersonIds']);
+        }
+
         return response()->json(['data' => $phase], 201);
     }
 
@@ -60,6 +65,10 @@ class PhaseController extends Controller
         ]);
 
         Phase::query()->where('id', $id)->update($data);
+
+        if (array_key_exists('picPersonIds', $data)) {
+            EntityPic::syncForEntity('Phase', $id, $data['picPersonIds'] ?? []);
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['data' => Phase::findOrFail($id)]);
