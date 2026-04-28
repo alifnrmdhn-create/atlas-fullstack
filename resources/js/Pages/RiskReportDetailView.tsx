@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { usePage } from '@inertiajs/react'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import type { RiskReport } from '../types/monthlyReports'

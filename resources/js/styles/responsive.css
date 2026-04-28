@@ -124,7 +124,7 @@
   font-weight: 500;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all var(--transition);
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
   white-space: nowrap;
 }
 .ghost-button:hover {
@@ -159,7 +159,7 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: background var(--transition), opacity var(--transition);
   white-space: nowrap;
 }
 .primary-action:hover:not(:disabled) { background: var(--indigo-dark); }
@@ -273,7 +273,6 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  background: var(--app-bg);
   gap: 16px;
   padding: 16px 20px;
 }
@@ -352,7 +351,7 @@
   color: var(--text);
   outline: none;
   background: var(--app-bg);
-  transition: all var(--transition);
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
 }
 .channel-search input:focus {
   border-color: var(--indigo);
@@ -2174,7 +2173,7 @@
   justify-content: center;
   flex-direction: column;
   gap: 14px;
-  animation: lightbox-in 160ms ease;
+  animation: lightbox-in 160ms var(--ease-enter);
 }
 .lightbox-img {
   max-width: min(90vw, 1100px);
@@ -2182,7 +2181,7 @@
   object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 8px 40px rgba(0,0,0,0.5);
-  animation: lightbox-img-in 180ms ease;
+  animation: lightbox-img-in 180ms var(--ease-enter);
 }
 .lightbox-close {
   position: absolute;
@@ -3823,15 +3822,7 @@
 
 /* ══ Targeted improvements ════════════════════════════════════ */
 
-/* 2. Active item: left accent border */
-.sidebar__item--active {
-  border-left: 2px solid var(--green);
-  padding-left: 8px;
-}
-.nav-item.active {
-  border-left: 2px solid var(--green);
-  padding-left: 6px;
-}
+/* Active state — bg + bold weight only, no colored border (Linear-style) */
 
 /* 3. Tim group: extra visual separation */
 .sidebar__group--tim {
@@ -3864,12 +3855,6 @@
 /* Label: flex:1 causes label to grow and push icon left even at width:0 — must override */
 .app-shell--collapsed .sidebar__item-label {
   flex: none;
-}
-/* Active item in collapsed mode: clear border-left + padding-left that shift icon right */
-.app-shell--collapsed .sidebar__item--active,
-.app-shell--collapsed .sidebar__item--active:hover {
-  border-left: 2px solid transparent;
-  padding-left: 0;
 }
 
 /* 6. Topbar right cluster gap */
@@ -4637,24 +4622,10 @@
   font-weight: 500;
 }
 
-/* ── InboxView overrides ──────────────────────────────────────── */
-
-/* Fokus toolbar — bolder title + accent dot */
+/* ── Fokus toolbar — match Home (no accent dot, no gradient) ────────── */
 .view-inbox .view-toolbar__title {
   font-weight: 800;
   letter-spacing: -0.02em;
-}
-.view-inbox .view-toolbar__title::before {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--indigo);
-  margin-right: 8px;
-  vertical-align: middle;
-  margin-bottom: 1px;
-  opacity: 0.85;
 }
 .fokus-context-line {
   font-size: 12px;
@@ -5585,37 +5556,6 @@
   margin-top: 4px;
 }
 
-/* ── Light mode quality pass: Fokus gets the same depth language as dark mode ── */
-:root:not([data-theme="dark"]) .view-inbox .view-toolbar {
-  background:
-    radial-gradient(ellipse 38% 150% at 0% 0%, color-mix(in srgb, var(--indigo) 8%, transparent), transparent 72%),
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 72%, var(--panel) 28%) 0%, var(--panel) 100%);
-}
-
-:root:not([data-theme="dark"]) .fokus-feed {
-  background:
-    radial-gradient(ellipse 74% 42% at 100% 0%, color-mix(in srgb, var(--indigo) 7%, transparent), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, var(--surface-2) 12%) 0%, var(--panel) 100%);
-  border: 1px solid color-mix(in srgb, var(--panel-border-strong) 58%, transparent);
-  box-shadow:
-    var(--panel-shadow-xl),
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 72%, transparent);
-}
-
-:root:not([data-theme="dark"]) .fokus-hero {
-  background:
-    radial-gradient(ellipse 42% 130% at 4% 0%, color-mix(in srgb, var(--ptpn-green) 10%, transparent), transparent 72%),
-    radial-gradient(ellipse 38% 120% at 100% 0%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 64%, transparent), transparent 100%);
-  border-bottom-color: color-mix(in srgb, var(--panel-border-strong) 54%, transparent);
-}
-
-:root:not([data-theme="dark"]) .fokus-hero__avatar,
-:root:not([data-theme="dark"]) .inbox-avatar {
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 72%, transparent),
-    0 8px 18px color-mix(in srgb, var(--indigo) 12%, transparent);
-}
 
 :root:not([data-theme="dark"]) .fokus-priority-spot {
   background:
@@ -7732,10 +7672,10 @@ mark.presence-highlight {
 .settings-page-header { border-bottom: 0.5px solid var(--panel-border); padding-bottom: 16px; margin-bottom: 20px; }
 .settings-header__sub { font-size: 13px; color: var(--text-muted); margin: 4px 0 0; }
 
-.settings-workspace { display: flex; gap: 20px; align-items: flex-start; }
+.settings-workspace { display: flex; gap: 20px; align-items: stretch; }
 
 /* Left nav */
-.settings-nav { width: 200px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; }
+.settings-nav { width: 184px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; align-self: flex-start; position: sticky; top: 16px; }
 .settings-nav__item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 10px; border-radius: 7px; border: none;
@@ -8681,7 +8621,7 @@ a svg,
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: emojiPanelIn 120ms ease;
+  animation: emojiPanelIn 120ms var(--ease-enter);
 }
 @keyframes emojiPanelIn {
   from { opacity: 0; transform: translateY(6px) scale(0.98); }
@@ -9073,7 +9013,7 @@ a svg,
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 120ms;
+  transition: background 120ms cubic-bezier(0.4, 0, 0.2, 1), color 120ms cubic-bezier(0.4, 0, 0.2, 1), border-color 120ms cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
 .sidebar-filter-pill:hover { background: var(--surface-1); color: var(--text-strong); }
@@ -9843,7 +9783,6 @@ a svg,
 
 :root:not([data-theme="dark"]) .roadmap-toolbar,
 :root:not([data-theme="dark"]) .reports-tabs,
-:root:not([data-theme="dark"]) .settings-nav,
 :root:not([data-theme="dark"]) .admin-users-toolbar,
 :root:not([data-theme="dark"]) .apms-filter-bar {
   background:
@@ -10056,37 +9995,9 @@ a svg,
   border-radius: var(--radius-lg);
 }
 
-/* Light mode quality pass: communication layer refinement */
-:root:not([data-theme="dark"]) .view-inbox,
-:root:not([data-theme="dark"]) .view-search {
-  min-height: 100%;
-  background:
-    radial-gradient(ellipse 46% 34% at 8% 0%, color-mix(in srgb, var(--green-dim) 62%, transparent), transparent 72%),
-    radial-gradient(ellipse 42% 32% at 94% 4%, color-mix(in srgb, var(--blue-dim) 48%, transparent), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-1) 70%, var(--panel)), var(--app-bg));
-}
-
-:root:not([data-theme="dark"]) .view-inbox .view-toolbar,
-:root:not([data-theme="dark"]) .view-search .view-toolbar {
-  position: relative;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse 42% 140% at 0% 0%, color-mix(in srgb, var(--green-dim) 78%, transparent), transparent 72%),
-    radial-gradient(ellipse 34% 120% at 100% 0%, color-mix(in srgb, var(--blue-dim) 56%, transparent), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, var(--surface-2)), var(--panel));
-  border-bottom-color: color-mix(in srgb, var(--green-subtle) 54%, var(--panel-border));
-  box-shadow: var(--panel-shadow-md);
-}
-
-:root:not([data-theme="dark"]) .view-inbox .view-toolbar::after,
-:root:not([data-theme="dark"]) .view-search .view-toolbar::after {
-  content: '';
-  position: absolute;
-  inset: auto 28px 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--green) 34%, transparent), transparent);
-  pointer-events: none;
-}
+/* View-level gradient bg overrides removed — universal `.workspace__content > *`
+   transparent rule (in dashboard.css) lets the workspace ambient gradient show
+   through uniformly across all pages. */
 
 :root:not([data-theme="dark"]) .fokus-context-line,
 :root:not([data-theme="dark"]) .search-hint {
@@ -10503,58 +10414,10 @@ a svg,
     linear-gradient(135deg, color-mix(in srgb, var(--panel) 92%, var(--surface-2)), var(--panel));
 }
 
-/* Light mode quality pass: operational and admin control surfaces */
-:root:not([data-theme="dark"]) .view-profile,
-:root:not([data-theme="dark"]) .view-settings,
-:root:not([data-theme="dark"]) .view-admin-users,
-:root:not([data-theme="dark"]) .view-admin-positions,
-:root:not([data-theme="dark"]) .view-admin-orgs,
-:root:not([data-theme="dark"]) .view-admin-roles,
-:root:not([data-theme="dark"]) .view-reports,
-:root:not([data-theme="dark"]) .view-goals,
-:root:not([data-theme="dark"]) .view-roadmap {
-  min-height: 100%;
-  background:
-    radial-gradient(ellipse 48% 34% at 6% 0%, color-mix(in srgb, var(--green-dim) 52%, transparent), transparent 72%),
-    radial-gradient(ellipse 42% 32% at 94% 6%, color-mix(in srgb, var(--blue-dim) 38%, transparent), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-1) 70%, var(--panel)), var(--app-bg));
-}
-
-:root:not([data-theme="dark"]) .view-profile .view-toolbar,
-:root:not([data-theme="dark"]) .view-settings .view-toolbar,
-:root:not([data-theme="dark"]) .view-admin-users .view-toolbar,
-:root:not([data-theme="dark"]) .view-admin-positions .view-toolbar,
-:root:not([data-theme="dark"]) .view-admin-orgs .view-toolbar,
-:root:not([data-theme="dark"]) .view-admin-roles .view-toolbar,
-:root:not([data-theme="dark"]) .view-reports .view-toolbar,
-:root:not([data-theme="dark"]) .view-goals .view-toolbar,
-:root:not([data-theme="dark"]) .view-roadmap .view-toolbar {
-  position: relative;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse 42% 140% at 0% 0%, color-mix(in srgb, var(--green-dim) 76%, transparent), transparent 72%),
-    radial-gradient(ellipse 36% 128% at 100% 0%, color-mix(in srgb, var(--blue-dim) 48%, transparent), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 90%, var(--surface-2)), var(--panel));
-  border-bottom-color: color-mix(in srgb, var(--green-subtle) 50%, var(--panel-border));
-  box-shadow: var(--panel-shadow-md);
-}
-
-:root:not([data-theme="dark"]) .view-profile .view-toolbar::after,
-:root:not([data-theme="dark"]) .view-settings .view-toolbar::after,
-:root:not([data-theme="dark"]) .view-admin-users .view-toolbar::after,
-:root:not([data-theme="dark"]) .view-admin-positions .view-toolbar::after,
-:root:not([data-theme="dark"]) .view-admin-orgs .view-toolbar::after,
-:root:not([data-theme="dark"]) .view-admin-roles .view-toolbar::after,
-:root:not([data-theme="dark"]) .view-reports .view-toolbar::after,
-:root:not([data-theme="dark"]) .view-goals .view-toolbar::after,
-:root:not([data-theme="dark"]) .view-roadmap .view-toolbar::after {
-  content: '';
-  position: absolute;
-  inset: auto 28px 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--green) 30%, transparent), transparent);
-  pointer-events: none;
-}
+/* View-level + toolbar gradient bg overrides removed — handled by the
+   universal `.workspace__content > *` transparent rule (dashboard.css) +
+   the unified .view-toolbar base. Each page now inherits the workspace
+   ambient gradient uniformly, no per-page bg painting. */
 
 :root:not([data-theme="dark"]) .profile-layout,
 :root:not([data-theme="dark"]) .settings-workspace,
@@ -10612,7 +10475,6 @@ a svg,
     linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 66%, var(--panel)), color-mix(in srgb, var(--panel) 94%, var(--surface-1)));
 }
 
-:root:not([data-theme="dark"]) .settings-nav,
 :root:not([data-theme="dark"]) .admin-users-toolbar,
 :root:not([data-theme="dark"]) .admin-positions-stats,
 :root:not([data-theme="dark"]) .admin-orgs-summary,
@@ -10624,6 +10486,19 @@ a svg,
   box-shadow:
     var(--shadow-soft),
     inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 62%, transparent);
+}
+
+/* Settings nav: standalone card panel (overrides all previous rules) */
+:root:not([data-theme="dark"]) .settings-nav {
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-strong) 50%, var(--green-subtle));
+  border-radius: var(--radius-md);
+  background:
+    radial-gradient(ellipse 80% 46% at 50% 0%, color-mix(in srgb, var(--indigo-dim) 22%, transparent), transparent 74%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 94%, var(--surface-2)) 0%, var(--panel) 100%);
+  box-shadow:
+    var(--panel-shadow),
+    inset 0 1px 0 rgba(255,255,255,0.78);
 }
 
 :root:not([data-theme="dark"]) .settings-nav__item,
@@ -10855,7 +10730,7 @@ a svg,
 :root:not([data-theme="dark"]) .section-block {
   position: relative;
   overflow: hidden;
-  border-color: color-mix(in srgb, var(--panel-border) 70%, var(--green-subtle));
+  border: 1px solid color-mix(in srgb, var(--panel-border-strong) 50%, var(--green-subtle));
   background:
     radial-gradient(ellipse 72% 44% at 100% 0%, color-mix(in srgb, var(--green-dim) 34%, transparent), transparent 72%),
     linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, var(--surface-2)), var(--panel));
@@ -11074,6 +10949,30 @@ a svg,
   border-radius: 999px;
   background: color-mix(in srgb, var(--panel) 82%, transparent);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 48%, transparent);
+}
+
+/* ─── Light mode: hover states using surface-overlay (too faint on white) ─── */
+:root:not([data-theme="dark"]) .hd-divrow:hover,
+:root:not([data-theme="dark"]) .hd-mom-stag__row:hover,
+:root:not([data-theme="dark"]) .hd-pl-row:hover,
+:root:not([data-theme="dark"]) .hd-scatter-prog-row--hov,
+:root:not([data-theme="dark"]) .hd-act-row:hover,
+:root:not([data-theme="dark"]) .hd-tb-btn:hover,
+:root:not([data-theme="dark"]) .range-chip:hover,
+:root:not([data-theme="dark"]) .meeting-detail__attendee:hover {
+  background: color-mix(in srgb, var(--indigo-dim) 38%, var(--surface-1));
+}
+
+/* ─── Light mode: skeleton loader contrast (surface-0 ↔ surface-1 too close) ─── */
+:root:not([data-theme="dark"]) .skeleton-block {
+  background: linear-gradient(90deg, #DCE3EB 25%, #F2F5F9 50%, #DCE3EB 75%);
+  background-size: 200% 100%;
+}
+
+/* ─── Light mode: reaction pill — keep accent for engagement, just polish ─── */
+:root:not([data-theme="dark"]) .reaction-pill--mine {
+  border-color: color-mix(in srgb, var(--accent) 78%, var(--panel-border));
+  background: color-mix(in srgb, var(--accent-dim) 88%, var(--panel));
 }
 
 /* Shared admin utility hooks */
@@ -13624,5 +13523,383 @@ a svg,
   .message-action-bar--popover-above .message-reaction-picker {
     top: auto;
     bottom: 62px;
+  }
+}
+
+/* ============================================================================
+   Focus page — refactor 2026-04: Sekarang / Hari Ini / Bisa Ditunda buckets
+   Single column, opinionated, verb-driven CTAs.
+   ============================================================================ */
+
+.fokus-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px 40px 40px;
+  width: 100%;
+}
+
+/* Day strip — compact header */
+.fokus-day {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 6px 2px 2px;
+}
+.fokus-day__title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-strong);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  letter-spacing: -0.01em;
+}
+.fokus-day__date {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+.fokus-day__stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.fokus-day__stat strong {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-strong);
+  margin-right: 4px;
+}
+.fokus-day__stat--done strong { color: var(--green); }
+.fokus-day__sep {
+  width: 1px;
+  height: 12px;
+  background: var(--panel-border);
+}
+
+/* Scope strip override for fokus-page (no border-bottom, padding adjust) */
+.fokus-page .fokus-scope-strip {
+  padding: 0 2px;
+  border-bottom: none;
+  margin-bottom: 2px;
+}
+
+/* Bucket — wraps each urgency group */
+.fokus-bucket {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fokus-bucket__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 2px 2px;
+}
+.fokus-bucket__label {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0;
+}
+.fokus-bucket--now .fokus-bucket__label {
+  color: var(--text-strong);
+}
+.fokus-bucket__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface-overlay-soft);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+.fokus-bucket__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.fokus-bucket--later .fokus-bucket__list {
+  opacity: 0.92;
+}
+.fokus-bucket__toggle {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 2px 2px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.fokus-bucket__toggle:hover .fokus-bucket__label {
+  color: var(--text-strong);
+}
+.fokus-bucket__chev {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+.fokus-bucket__chev.is-open { transform: rotate(90deg); }
+
+/* ── Urgency tokens — Linear-style restraint ──
+ *   ONE color signal per item: a 2px left rail.
+ *   No icon BG pills. No colored chip backgrounds. No tinted borders.
+ *   Icons stay neutral muted gray — color is reserved for the rail only.
+ *
+ *   critical → red rail.    Blockers, overdue tasks, RED programs.
+ *   warn     → amber rail.  Tasks due today/tomorrow, YELLOW programs.
+ *   decide   → indigo rail. Approvals.
+ *   info     → no rail.     Most items. Mentions, DMs, notifs, healthy tasks.
+ */
+.fokus-row,
+.fokus-hero-card {
+  --u-rail: transparent;
+}
+.fokus-row--critical,
+.fokus-hero-card--critical { --u-rail: var(--red); }
+.fokus-row--warn,
+.fokus-hero-card--warn     { --u-rail: var(--yellow); }
+.fokus-row--decide,
+.fokus-hero-card--decide   { --u-rail: var(--indigo); }
+
+/* Hero card — typography hierarchy first, color last */
+.fokus-hero-card {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 16px;
+  align-items: start;
+  padding: 22px 26px 22px 24px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+.fokus-hero-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--u-rail);
+}
+.fokus-hero-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.fokus-hero-card__body { min-width: 0; }
+.fokus-hero-card__title {
+  margin: 0 0 4px;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--text-strong);
+  letter-spacing: -0.012em;
+  line-height: 1.35;
+}
+.fokus-hero-card__meta {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-feature-settings: "tnum" 1;
+}
+.fokus-hero-card__reason {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.55;
+}
+.fokus-hero-card__reason strong {
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+/* Compact row — clean list, no decoration noise */
+.fokus-row {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 18px 13px 16px;
+  border-bottom: 1px solid var(--panel-border-soft);
+  transition: background var(--transition);
+  position: relative;
+}
+.fokus-row::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--u-rail);
+}
+.fokus-row:last-child { border-bottom: none; }
+.fokus-row:hover { background: var(--surface-overlay-faint); }
+.fokus-row--muted { opacity: 0.65; }
+.fokus-row__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.fokus-row__icon svg { width: 15px; height: 15px; }
+.fokus-row__body { min-width: 0; }
+.fokus-row__title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-strong);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.005em;
+}
+/* Critical/warn items get inline urgent text color — NOT a chip */
+.fokus-row--critical .fokus-row__chip { color: var(--red); font-weight: 600; }
+.fokus-row--warn     .fokus-row__chip { color: color-mix(in srgb, var(--yellow) 75%, var(--text-strong)); font-weight: 600; }
+.fokus-row--decide   .fokus-row__chip { color: var(--indigo); font-weight: 600; }
+.fokus-row__chip {
+  color: var(--text);
+  font-weight: 500;
+}
+.fokus-row__meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Verb CTA button */
+.fokus-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 7px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.fokus-cta:hover {
+  background: var(--surface-overlay-soft);
+  border-color: var(--text-muted);
+}
+.fokus-cta--primary {
+  background: var(--text-strong);
+  border-color: transparent;
+  color: var(--surface, #fff);
+}
+.fokus-cta--primary:hover {
+  background: color-mix(in srgb, var(--text-strong) 86%, transparent);
+  border-color: transparent;
+}
+.fokus-cta--sm {
+  padding: 6px 11px;
+  font-size: 12px;
+}
+.fokus-cta--lg {
+  padding: 11px 22px;
+  font-size: 13.5px;
+  border-radius: 9px;
+}
+
+/* Empty state — calm zero */
+.fokus-zero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 64px 32px;
+  background: var(--panel);
+  border: 1px dashed var(--panel-border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+.fokus-zero__check {
+  font-size: 28px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--green-dim);
+  color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.fokus-zero__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.fokus-zero__sub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 380px;
+  line-height: 1.5;
+}
+.fokus-zero__link {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: var(--accent, var(--text-strong));
+  font-weight: 600;
+  font-family: inherit;
+  font-size: inherit;
+}
+.fokus-zero__link:hover { text-decoration: underline; }
+
+/* Responsive: stack day stats on small screens */
+@media (max-width: 640px) {
+  .fokus-page { padding: 16px 16px 32px; }
+  .fokus-day {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .fokus-hero-card {
+    grid-template-columns: 32px 1fr;
+  }
+  .fokus-hero-card .fokus-cta {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+  .fokus-row {
+    grid-template-columns: 24px 1fr auto;
+  }
+  .fokus-row .fokus-cta {
+    grid-column: 1 / -1;
+    justify-self: end;
   }
 }

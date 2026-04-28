@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\OrgScope;
 use App\Models\Blocker;
 use App\Models\Channel;
 use App\Models\ChannelMessage;
@@ -16,6 +17,8 @@ use App\Models\User;
 use App\Models\UserSession;
 use App\Models\UserStatus;
 use App\Models\Workstream;
+use App\Services\BroadcastService;
+use App\Services\ProgramHealthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +30,8 @@ use Inertia\Response;
 
 class WorkspaceController extends Controller
 {
+    public function __construct(private ProgramHealthService $healthService) {}
+
     public function page(string $component): Response
     {
         return Inertia::render($component);
@@ -38,9 +43,24 @@ class WorkspaceController extends Controller
             return Inertia::render('DashboardView');
         }
 
-        $programs = Program::query()->whereNull('archivedAt')->get();
+        $orgScope = OrgScope::forUser($request->user());
+        $scopedUnitIds = $orgScope->unitIds ?: [0];
+
+        $programs = Program::query()
+            ->whereNull('archivedAt')
+            ->when(!$orgScope->isExecutive, fn ($q) => $q->whereIn('ownerUnitId', $scopedUnitIds))
+            ->get();
         $activePrograms = $programs->where('approvalStatus', 'ACTIVE');
-        $criticalBlockers = Blocker::query()->where('severity', 'CRITICAL')->where('status', '!=', 'RESOLVED')->count();
+
+        $criticalBlockerQuery = Blocker::query()
+            ->where('severity', 'CRITICAL')
+            ->where('status', '!=', 'RESOLVED');
+        if (!$orgScope->isExecutive) {
+            $criticalBlockerQuery->whereHas('task.workstream.program',
+                fn ($q) => $q->whereIn('ownerUnitId', $scopedUnitIds));
+        }
+        $criticalBlockers = $criticalBlockerQuery->count();
+
         $onlineUsers = UserStatus::query()->where('status', 'ONLINE')->count();
         $unreadNotifications = Notification::query()
             ->where('userId', $request->user()->id)
@@ -50,18 +70,23 @@ class WorkspaceController extends Controller
         $programRows = Program::query()
             ->withCount(['workstreams'])
             ->whereNull('archivedAt')
+            ->when(!$orgScope->isExecutive, fn ($q) => $q->whereIn('ownerUnitId', $scopedUnitIds))
             ->orderByDesc('createdAt')
             ->limit(12)
             ->get();
 
         $tasksDue = Task::query()
             ->whereNotIn('status', ['COMPLETED', 'CANCELLED'])
+            ->when(!$orgScope->isExecutive, fn ($q) => $q->whereHas('workstream.program',
+                fn ($q2) => $q2->whereIn('ownerUnitId', $scopedUnitIds)))
             ->orderBy('targetCompletion')
             ->limit(10)
             ->get(['id', 'code', 'title', 'targetCompletion', 'status']);
 
         $controlBlockers = Blocker::query()
             ->whereIn('status', ['OPEN', 'IN_PROGRESS'])
+            ->when(!$orgScope->isExecutive, fn ($q) => $q->whereHas('task.workstream.program',
+                fn ($q2) => $q2->whereIn('ownerUnitId', $scopedUnitIds)))
             ->orderByRaw("CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END")
             ->limit(10)
             ->get(['id', 'code', 'title', 'status', 'severity']);
@@ -686,12 +711,16 @@ class WorkspaceController extends Controller
             EntityPic::syncForEntity('Initiative', $id, $picPersonIds ?? []);
         }
 
+        rescue(fn () => $this->healthService->recompute($workstream->programId));
+
         return response()->json(['data' => $workstream->fresh(['entityPics'])]);
     }
 
     public function destroyWorkstream(int $id): JsonResponse
     {
+        $programId = Workstream::find($id)?->programId;
         Workstream::destroy($id);
+        if ($programId) rescue(fn () => $this->healthService->recompute($programId));
         return response()->json(['ok' => true]);
     }
 
@@ -823,16 +852,19 @@ class WorkspaceController extends Controller
         $data = $request->validate(['userId' => 'required|integer|exists:User,id']);
         $currentUserId = $request->user()->id;
         $otherUserId = (int) $data['userId'];
-        $name = 'DM:' . implode(':', collect([$currentUserId, $otherUserId])->sort()->values()->all());
+        $ids = collect([$currentUserId, $otherUserId])->sort()->values()->all();
+        $name = 'dm-' . implode('-', $ids);
 
         $channel = Channel::firstOrCreate(
             ['name' => $name, 'type' => 'PRIVATE'],
             [
-                'code' => 'DM-' . strtoupper(substr(sha1($name), 0, 12)),
+                'code' => 'dm-' . implode('-', $ids),
                 'description' => 'Direct message',
                 'createdBy' => $currentUserId,
             ],
         );
+
+        $wasNew = $channel->wasRecentlyCreated;
 
         DB::table('ChannelMember')->updateOrInsert(
             ['channelId' => $channel->id, 'userId' => $currentUserId],
@@ -842,6 +874,13 @@ class WorkspaceController extends Controller
             ['channelId' => $channel->id, 'userId' => $otherUserId],
             ['joinedAt' => now()],
         );
+
+        // Notify the DM partner so their sidebar updates in real-time
+        if ($wasNew) {
+            BroadcastService::toUsers('channel:channel:created', [
+                'channel' => $channel->toArray(),
+            ], [$otherUserId]);
+        }
 
         return response()->json(['data' => ['id' => $channel->id]]);
     }
@@ -872,10 +911,20 @@ class WorkspaceController extends Controller
 
     public function upload(Request $request): JsonResponse
     {
-        $request->validate(['file' => 'required|file|max:10240']);
-        $path = $request->file('file')->store('uploads', 'public');
+        $request->validate(['files' => 'required|array', 'files.*' => 'file|max:10240']);
 
-        return response()->json(['url' => '/storage/' . $path, 'path' => $path]);
+        $attachments = [];
+        foreach ($request->file('files') as $file) {
+            $path = $file->store('uploads', 'public');
+            $attachments[] = [
+                'url'  => '/storage/' . $path,
+                'name' => $file->getClientOriginalName(),
+                'type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+            ];
+        }
+
+        return response()->json(['data' => $attachments]);
     }
 
     private function presenceQuery()

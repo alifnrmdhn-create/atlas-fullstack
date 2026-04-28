@@ -12,9 +12,9 @@ class KpiValue extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
-        'targetValue' => 'decimal:6',
-        'actualValue' => 'decimal:6',
-        'variance' => 'decimal:6',
+        'targetValue' => 'float',
+        'actualValue' => 'float',
+        'variance' => 'float',
         'variancePercent' => 'float',
         'measurementDate' => 'datetime',
         'createdAt' => 'datetime',

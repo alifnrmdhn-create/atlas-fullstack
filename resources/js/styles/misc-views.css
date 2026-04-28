@@ -1,7 +1,7 @@
 /* ─── Comment thread ─────────────────────────────────────────── */
 .comment-thread-list { display: flex; flex-direction: column; gap: 10px; }
 .comment-item { display: flex; gap: 8px; }
-.comment-item__avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-dim); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.comment-item__avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--avatar-bg); color: var(--avatar-color); border: 1px solid var(--avatar-border); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
 .comment-item__body { flex: 1; background: var(--surface-1); border-radius: 0 var(--radius) var(--radius) var(--radius); padding: 7px 10px; }
 .comment-item__top { display: flex; align-items: baseline; gap: 7px; margin-bottom: 3px; }
 .comment-item__author { font-size: 12px; font-weight: 700; color: var(--text-strong); }
@@ -23,7 +23,7 @@
   background: var(--app-bg);
   color: var(--text);
 }
-.comment-composer__textarea:focus { border-color: var(--accent); background: var(--panel); }
+.comment-composer__textarea:focus { border-color: var(--indigo); background: var(--panel); box-shadow: 0 0 0 3px var(--indigo-dim); }
 .comment-composer__actions { display: flex; justify-content: flex-end; gap: 6px; }
 
 /* ─── KPI Section ─────────────────────────────────────────────── */
@@ -91,8 +91,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* ─── Inbox View ─────────────────────────────────────────────── */
-.view-inbox { padding: 0 0 32px; }
+/* ─── Inbox View (now Fokus — base padding lives in dashboard.css) ─── */
 .inbox-header {
   background: var(--panel);
   border-bottom: 1px solid var(--panel-border);
@@ -209,7 +208,8 @@
 .dm-row:hover { background: var(--surface-1); }
 .dm-row__avatar {
   width: 28px; height: 28px; border-radius: 50%;
-  background: var(--accent-dim); color: var(--accent);
+  background: var(--avatar-bg); color: var(--avatar-color);
+  border: 1px solid var(--avatar-border);
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 700; flex-shrink: 0; position: relative;
 }
@@ -269,7 +269,7 @@
   font-size: 12.5px; outline: none; background: var(--app-bg); color: var(--text); width: 220px;
   transition: border-color var(--transition), box-shadow var(--transition);
 }
-.roadmap-search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.roadmap-search:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px var(--indigo-dim); }
 
 .roadmap-body { padding: 1.25rem 2.25rem; display: flex; flex-direction: column; gap: 20px; }
 .roadmap-body--timeline { padding: 0 0 24px; }
@@ -409,7 +409,7 @@
   padding: 10px 16px; font-size: 13px; font-weight: 600;
   border: none; background: none; color: var(--text-muted);
   cursor: pointer; border-bottom: 2px solid transparent;
-  transition: all var(--transition);
+  transition: color var(--transition), border-color var(--transition);
 }
 .reports-tab--active { color: var(--indigo); border-bottom-color: var(--indigo); }
 
@@ -604,7 +604,8 @@
 .leaderboard-row__rank { font-size: 16px; width: 28px; text-align: center; flex-shrink: 0; }
 .leaderboard-row__avatar {
   width: 32px; height: 32px; border-radius: 50%;
-  background: var(--accent-dim); color: var(--accent);
+  background: var(--avatar-bg); color: var(--avatar-color);
+  border: 1px solid var(--avatar-border);
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 700; flex-shrink: 0;
 }
@@ -819,19 +820,26 @@
 .settings-header__title { font-size: 22px; font-weight: 800; color: var(--text-strong); letter-spacing: -0.03em; }
 .settings-header__sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
-.settings-workspace { display: grid; grid-template-columns: 180px 1fr; gap: 0; padding: 20px 24px; align-items: start; }
-.settings-nav { display: flex; flex-direction: column; gap: 2px; padding-right: 20px; border-right: 1px solid var(--panel-border); }
+.settings-workspace { display: grid; grid-template-columns: 200px 1fr; gap: 20px; padding: 20px 24px; align-items: start; }
+.settings-nav {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+}
 .settings-nav__item {
   display: flex; align-items: center; gap: 8px;
-  padding: 8px 10px; border-radius: 6px; border: none;
+  padding: 8px 10px; border-radius: 8px; border: none;
   background: none; font-size: 13px; font-weight: 500;
   color: var(--text-muted); cursor: pointer; text-align: left;
-  transition: all var(--transition);
+  transition: background var(--transition), color var(--transition);
 }
-.settings-nav__item:hover { background: var(--app-bg); color: var(--text); }
-.settings-nav__item--active { background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+.settings-nav__item:hover { background: var(--surface-1); color: var(--text-strong); }
+.settings-nav__item--active,
+.settings-nav__item--active:hover { background: var(--indigo-dim); color: var(--indigo); font-weight: 600; }
 
-.settings-content { padding-left: 24px; display: flex; flex-direction: column; gap: 20px; }
+.settings-content { display: flex; flex-direction: column; gap: 20px; }
 .settings-section {
   background: var(--panel); border: 1px solid var(--panel-border);
   border-radius: var(--radius-lg); overflow: hidden;
@@ -1911,7 +1919,7 @@
   background: var(--green-dim);
   border: 1px solid var(--green-subtle);
   color: var(--green-ink);
-  animation: toast-slide-in 200ms ease both;
+  animation: toast-slide-in 200ms var(--ease-enter) both;
 }
 .meeting-inline-toast__close {
   background: none;
@@ -3089,13 +3097,6 @@
 }
 
 /* Light mode quality pass: Schedule, meeting detail, and gantt surfaces */
-:root:not([data-theme="dark"]) .schedule-content {
-  background:
-    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--green-dim) 44%, transparent) 0 24%, transparent 48%),
-    radial-gradient(circle at 92% 10%, color-mix(in srgb, var(--blue-dim) 40%, transparent) 0 22%, transparent 50%),
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-1) 66%, var(--panel)), var(--app-bg));
-}
-
 :root:not([data-theme="dark"]) .schedule-empty {
   margin: 16px auto;
   max-width: 520px;

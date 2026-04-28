@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BroadcastEvent;
+use App\Models\ChannelMember;
 use App\Models\UserSession;
 use App\Models\UserStatus;
 use App\Services\BroadcastService;
@@ -164,6 +165,31 @@ class RealtimeController extends Controller
             BroadcastService::presence($user->id, $newStatus, $now->toIso8601String());
         } else {
             BroadcastService::presenceActivity($user->id, $now->toIso8601String());
+        }
+
+        return response()->noContent();
+    }
+
+    /**
+     * POST /realtime/typing/:channelId — kirim indikator mengetik ke anggota channel.
+     * Fire-and-forget: client tidak butuh response body.
+     */
+    public function typing(Request $request, int $channelId)
+    {
+        $user = $request->user();
+        abort_unless($user, 401);
+
+        $otherMemberIds = ChannelMember::where('channelId', $channelId)
+            ->where('userId', '!=', $user->id)
+            ->pluck('userId')
+            ->all();
+
+        if (!empty($otherMemberIds)) {
+            BroadcastService::toUsers('channel:typing:start', [
+                'channelId' => $channelId,
+                'userId' => $user->id,
+                'userName' => $user->name,
+            ], $otherMemberIds);
         }
 
         return response()->noContent();

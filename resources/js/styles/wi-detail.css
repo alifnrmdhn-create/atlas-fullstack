@@ -58,7 +58,6 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: var(--app-bg);
 }
 
 /* ── Breadcrumb header ─────────────────────────────── */
@@ -277,6 +276,20 @@
   text-align: left;
   line-height: 1.4;
 }
+.wi-sidebar-row--block {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+.wi-sidebar-row--block .wi-sidebar-label { font-weight: 600; }
+.wi-sidebar-value--prose {
+  text-align: left;
+  line-height: 1.5;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin: 0;
+  white-space: pre-wrap;
+}
 
 /* ── Execution form ────────────────────────────────── */
 .wi-exec-label {
@@ -368,7 +381,6 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: var(--app-bg);
 }
 
 /* Push-panel layout — panel becomes a flex sibling, content compresses */
@@ -401,7 +413,7 @@
   animation: tpp-push-in 200ms cubic-bezier(0.22,1,0.36,1) both;
 }
 .tpp-push-wrap--closing {
-  animation: tpp-push-out 150ms ease both;
+  animation: tpp-push-out 150ms var(--ease-exit) both;
 }
 
 /* (page-level push removed — panel now embedded in workstream card) */
@@ -525,7 +537,7 @@
   font-size: 13px;
   font-weight: 500;
   color: var(--green-accent);
-  animation: approval-success-in 300ms ease;
+  animation: approval-success-in 300ms var(--ease-enter);
 }
 @keyframes approval-success-in {
   from { opacity: 0; transform: translateY(-6px); }
@@ -868,7 +880,6 @@
 /* ── Body ──────────────────────────────────────────── */
 .prog-detail-body {
   flex: 1;
-  background: var(--panel);
   display: flex;
   flex-direction: column;
 }
@@ -2217,14 +2228,14 @@ select.wi-bl-input {
   from { opacity: 0; transform: translateY(3px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.wi-exec-msg { animation: wi-saved-fadein 180ms ease-out; }
+.wi-exec-msg { animation: wi-saved-fadein 180ms var(--ease-enter); }
 
 /* Blocker create form slide-down */
 @keyframes wi-slide-down {
   from { opacity: 0; transform: translateY(-5px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.wi-blocker-create-form { animation: wi-slide-down 160ms ease-out; }
+.wi-blocker-create-form { animation: wi-slide-down 160ms var(--ease-enter); }
 
 /* Subtask title smooth strikethrough on done */
 .wi-subtask-title { transition: color 150ms; }
@@ -2246,7 +2257,6 @@ select.wi-bl-input {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: var(--app-bg);
   animation: wid-page-in 220ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes wid-page-in {
@@ -2336,7 +2346,7 @@ select.wi-bl-input {
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-family: inherit;
-  transition: all 140ms;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wid-iconbtn:hover {
   color: var(--indigo);
@@ -2370,7 +2380,7 @@ select.wi-bl-input {
   border-radius: 5px;
   cursor: pointer;
   font-family: inherit;
-  transition: all 120ms;
+  transition: background 120ms cubic-bezier(0.4, 0, 0.2, 1), color 120ms cubic-bezier(0.4, 0, 0.2, 1), border-color 120ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 120ms cubic-bezier(0.4, 0, 0.2, 1), transform 120ms cubic-bezier(0.4, 0, 0.2, 1), opacity 120ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wid-confirm__btn:hover { border-color: var(--text-muted); }
 .wid-confirm__btn--danger {
@@ -2912,7 +2922,7 @@ select.wi-bl-input {
   padding: 10px 2px 2px;
   margin-top: 4px;
   border-top: 1px solid var(--wi-subtle-border);
-  animation: wid-slidein 160ms ease-out;
+  animation: wid-slidein 160ms var(--ease-enter);
 }
 @keyframes wid-slidein {
   from { opacity: 0; transform: translateY(-3px); }
@@ -2972,7 +2982,7 @@ select.wi-bl-input {
   border: 1px solid var(--panel-border);
   border-radius: 8px;
   margin-bottom: 10px;
-  animation: wid-slidein 180ms ease-out;
+  animation: wid-slidein 180ms var(--ease-enter);
 }
 
 .wid-bl-card {
@@ -3076,7 +3086,7 @@ select.wi-bl-input {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 120ms;
+  transition: background 120ms cubic-bezier(0.4, 0, 0.2, 1), color 120ms cubic-bezier(0.4, 0, 0.2, 1), border-color 120ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 120ms cubic-bezier(0.4, 0, 0.2, 1), transform 120ms cubic-bezier(0.4, 0, 0.2, 1), opacity 120ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wid-bl-actionbtn:hover {
   background: var(--wi-subtle-bg-soft);
@@ -3096,7 +3106,7 @@ select.wi-bl-input {
   padding: 10px;
   background: var(--wi-subtle-bg-soft);
   border-radius: 6px;
-  animation: wid-slidein 160ms ease-out;
+  animation: wid-slidein 160ms var(--ease-enter);
 }
 .wid-bl-delete-confirm {
   display: flex;
@@ -3108,7 +3118,7 @@ select.wi-bl-input {
   border-radius: 6px;
   font-size: 12px;
   color: var(--wi-danger-fg);
-  animation: wid-slidein 160ms ease-out;
+  animation: wid-slidein 160ms var(--ease-enter);
 }
 
 /* ── Form primitives ──────────────────────────────────────────── */
@@ -3191,7 +3201,7 @@ select.wid-input {
   color: var(--text);
   cursor: pointer;
   font-family: inherit;
-  transition: all 140ms;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
 .wid-btn:hover:not(:disabled) {
@@ -3320,7 +3330,7 @@ select.wid-input {
   color: var(--text-muted);
   text-align: center;
   white-space: nowrap;
-  transition: all 120ms;
+  transition: background 120ms cubic-bezier(0.4, 0, 0.2, 1), color 120ms cubic-bezier(0.4, 0, 0.2, 1), border-color 120ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 120ms cubic-bezier(0.4, 0, 0.2, 1), transform 120ms cubic-bezier(0.4, 0, 0.2, 1), opacity 120ms cubic-bezier(0.4, 0, 0.2, 1);
   font-family: inherit;
 }
 .wid-status-pill:hover:not(.is-active) {
@@ -3356,7 +3366,7 @@ select.wid-input {
   justify-content: center;
   flex-shrink: 0;
   font-family: inherit;
-  transition: all 120ms;
+  transition: background 120ms cubic-bezier(0.4, 0, 0.2, 1), color 120ms cubic-bezier(0.4, 0, 0.2, 1), border-color 120ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 120ms cubic-bezier(0.4, 0, 0.2, 1), transform 120ms cubic-bezier(0.4, 0, 0.2, 1), opacity 120ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wid-progress-step:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-dim); }
 .wid-progress-step:active { transform: scale(0.94); }
@@ -3392,7 +3402,7 @@ select.wid-input {
   font-size: 11.5px;
   font-weight: 600;
   color: var(--green);
-  animation: wid-slidein 180ms ease-out;
+  animation: wid-slidein 180ms var(--ease-enter);
 }
 .wid-exec__msg.is-error { color: var(--wi-danger-fg); }
 
@@ -3472,7 +3482,7 @@ select.wid-input {
   border-radius: 8px;
   padding: 9px 11px;
   cursor: pointer;
-  transition: all 140ms;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
   text-align: left;
   font-family: inherit;
 }
@@ -3575,7 +3585,7 @@ select.wid-input {
   cursor: pointer;
   text-align: left;
   font-family: inherit;
-  transition: all 160ms;
+  transition: background 160ms cubic-bezier(0.4, 0, 0.2, 1), color 160ms cubic-bezier(0.4, 0, 0.2, 1), border-color 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1), transform 160ms cubic-bezier(0.4, 0, 0.2, 1), opacity 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wid-parent-card:hover {
   border-color: var(--indigo);
@@ -3741,7 +3751,7 @@ select.wid-input {
   outline: none;
   font-family: inherit;
   box-shadow: 0 0 0 3px var(--indigo-dim);
-  animation: wid-title-pulse 220ms ease-out;
+  animation: wid-title-pulse 220ms var(--ease-enter);
 }
 @keyframes wid-title-pulse {
   0%   { transform: scale(0.995); }
@@ -3816,7 +3826,7 @@ select.wid-input {
   flex-shrink: 0;
   margin-left: auto;
   letter-spacing: 0.01em;
-  transition: all 140ms;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
 .wid-alert__action--danger {
@@ -3912,7 +3922,7 @@ select.wid-input {
   color: var(--text-muted);
   white-space: nowrap;
   font-family: inherit;
-  transition: all 140ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wid-status-seg__dot {
   width: 6px;
@@ -4047,7 +4057,7 @@ select.wid-input {
   border-radius: 5px;
   cursor: pointer;
   font-family: inherit;
-  transition: all 140ms;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: 0.02em;
 }
 .wid-slider-preset:hover {
@@ -4102,7 +4112,7 @@ select.wid-input {
   border: 1px solid transparent;
   cursor: pointer;
   font-family: inherit;
-  transition: all 140ms;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: 0.01em;
 }
 .wid-empty__cta:hover {
@@ -4189,7 +4199,7 @@ select.wid-input {
   color: var(--text-muted);
   cursor: pointer;
   font-family: inherit;
-  transition: all 140ms;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wid-tpl__trigger:hover {
   color: var(--indigo);
@@ -4273,7 +4283,7 @@ select.wid-input {
   transform: translate(-50%, -50%) scale(0);
   left: 50%;
   top: 50%;
-  animation: wid-st-ring 620ms ease-out forwards;
+  animation: wid-st-ring 620ms var(--ease-enter) forwards;
   pointer-events: none;
 }
 @keyframes wid-st-ring {
@@ -4285,7 +4295,7 @@ select.wid-input {
   position: relative;
 }
 .wid-subtask-row.is-celebrating .wid-subtask-title {
-  animation: wid-text-pop 400ms ease-out;
+  animation: wid-text-pop 400ms var(--ease-enter);
 }
 @keyframes wid-text-pop {
   0%, 100% { transform: translateX(0); }
@@ -4295,7 +4305,7 @@ select.wid-input {
 /* ── Assignee avatar cross-fade ─────────────────────────────────── */
 .wid-assignee-btn .avatar,
 .wid-assignee-btn .wid-assignee-avatar-empty {
-  animation: wid-fade-in 260ms ease-out;
+  animation: wid-fade-in 260ms var(--ease-enter);
 }
 @keyframes wid-fade-in {
   from { opacity: 0; transform: scale(0.92); }
@@ -4349,7 +4359,7 @@ select.wid-input {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  animation: wid-slidein 180ms ease-out;
+  animation: wid-slidein 180ms var(--ease-enter);
 }
 .wid-desc-edit__textarea {
   width: 100%;
@@ -4390,7 +4400,7 @@ select.wid-input {
   font-weight: 500;
   cursor: pointer;
   font-family: inherit;
-  transition: all 140ms;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wid-desc-add:hover {
   color: var(--indigo);
@@ -4504,7 +4514,7 @@ select.wid-input {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  animation: wid-help-bg 140ms ease-out;
+  animation: wid-help-bg 140ms var(--ease-enter);
 }
 @keyframes wid-help-bg {
   from { background: transparent; backdrop-filter: blur(0); }
@@ -4551,7 +4561,7 @@ select.wid-input {
   border-radius: 6px;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 140ms;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wid-help__close:hover {
   background: var(--wi-subtle-bg-strong);
@@ -4630,7 +4640,7 @@ select.wid-input {
   border-radius: 5px;
   cursor: pointer;
   font-family: inherit;
-  transition: all 140ms;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wid-slider-presets__hint:hover {
   background: var(--indigo-dim);
@@ -4736,7 +4746,7 @@ select.wid-input {
   background: var(--indigo-dim);
   padding: 3px 9px;
   border-radius: 99px;
-  animation: wid-live-in 200ms ease-out, wid-live-pulse 1200ms ease-out 200ms;
+  animation: wid-live-in 200ms var(--ease-enter), wid-live-pulse 1200ms var(--ease-enter) 200ms;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -4759,7 +4769,7 @@ select.wid-input {
   cursor: pointer;
   font-family: inherit;
   font-size: inherit;
-  transition: all 140ms;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wid-hero__due--btn.is-editable:hover {
   background: var(--wi-subtle-bg);
@@ -4830,7 +4840,7 @@ select.wid-input {
   color: var(--text-muted);
   cursor: pointer;
   border-radius: 5px;
-  transition: all 140ms;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wid-panel__collapse:hover {
   background: var(--wi-subtle-bg-soft);
@@ -4875,7 +4885,7 @@ select.wid-input {
   color: var(--indigo);
   font-size: 12px;
   font-weight: 600;
-  transition: all 140ms;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wid-assign-me-cta:hover:not(:disabled) {
   background: var(--indigo-dim);
@@ -4980,7 +4990,7 @@ select.wid-input {
   align-items: flex-start;
   justify-content: center;
   padding: 10vh 20px 20px;
-  animation: wid-help-bg 140ms ease-out;
+  animation: wid-help-bg 140ms var(--ease-enter);
 }
 .wid-qs__modal {
   background: var(--panel);
@@ -5233,13 +5243,6 @@ select.wid-input {
 /* ── Light mode quality pass: detail pages get richer editorial hierarchy ── */
 :root:not([data-theme="dark"]) .wi-detail-page,
 :root:not([data-theme="dark"]) .prog-detail-page,
-:root:not([data-theme="dark"]) .wid-page {
-  background:
-    radial-gradient(ellipse 44% 58% at 0% 0%, color-mix(in srgb, var(--ptpn-green) 8%, transparent), transparent 72%),
-    radial-gradient(ellipse 44% 58% at 100% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 72%),
-    var(--app-bg);
-}
-
 :root:not([data-theme="dark"]) .wi-detail-header,
 :root:not([data-theme="dark"]) .wi-detail-titlebar,
 :root:not([data-theme="dark"]) .wid-topbar,
@@ -5299,13 +5302,6 @@ select.wid-input {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--panel-border) 76%, transparent), color-mix(in srgb, var(--surface-1) 90%, transparent));
   box-shadow: inset 0 1px 2px color-mix(in srgb, var(--panel-border-strong) 16%, transparent);
-}
-
-:root:not([data-theme="dark"]) .wid-body {
-  background:
-    radial-gradient(ellipse 38% 42% at 0% 0%, color-mix(in srgb, var(--ptpn-green) 6%, transparent), transparent 72%),
-    radial-gradient(ellipse 42% 46% at 100% 0%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 72%),
-    var(--app-bg);
 }
 
 :root:not([data-theme="dark"]) .wi-detail-main,
@@ -5877,7 +5873,7 @@ select.wid-input {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px 32px;
   padding-bottom: 24px;
-  animation: wid-slidein 160ms ease-out;
+  animation: wid-slidein 160ms var(--ease-enter);
 }
 .wid-info-footer__block {
   display: flex;
@@ -5918,10 +5914,10 @@ select.wid-input {
   inset: 0;
   z-index: 240;
   background: rgba(0,0,0,.18);
-  animation: tpp-backdrop-in 160ms ease both;
+  animation: tpp-backdrop-in 160ms var(--ease-enter) both;
 }
 .tpp-backdrop--closing {
-  animation: tpp-backdrop-out 150ms ease both;
+  animation: tpp-backdrop-out 150ms var(--ease-exit) both;
 }
 
 /* Panel — same visual weight as .activity-panel / .thread-panel */
@@ -5942,7 +5938,7 @@ select.wid-input {
   animation: tpp-panel-in 200ms cubic-bezier(0.22,1,0.36,1) both;
 }
 .tpp-panel--closing {
-  animation: tpp-panel-out 150ms ease both;
+  animation: tpp-panel-out 150ms var(--ease-exit) both;
 }
 
 /* Light-mode premium treatment — identical to .activity-panel rule in responsive.css */

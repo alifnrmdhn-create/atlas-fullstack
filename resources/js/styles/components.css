@@ -205,6 +205,11 @@
   background: var(--red-dim); color: var(--red);
   border: 1px solid var(--red-subtle);
 }
+.health-pill--OVERDUE, .health-pill--overdue {
+  background: var(--red-dim); color: var(--red);
+  border: 1px solid var(--red-subtle);
+  opacity: 0.75;
+}
 .health-pill--COMPLETED, .health-pill--completed {
   background: var(--blue-dim); color: var(--blue);
   border: 1px solid var(--blue-subtle);
@@ -246,7 +251,7 @@
   border-radius: var(--radius);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: background var(--transition), color var(--transition), border-color var(--transition), box-shadow var(--transition), transform var(--transition), opacity var(--transition);
   white-space: nowrap;
   text-decoration: none;
 }

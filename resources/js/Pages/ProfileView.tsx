@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 
 // ── Types ──────────────────────────────────────────────────────────────────

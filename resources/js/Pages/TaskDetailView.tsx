@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import type { FormEvent } from 'react'
 import { usePage } from '@inertiajs/react'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useDarkMode } from '../lib/useDarkMode'

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import type { FormEvent } from 'react'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import {
   type ResolvedTheme,

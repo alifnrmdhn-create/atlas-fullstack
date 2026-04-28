@@ -1,6 +1,6 @@
 import { useState, useEffect, useId } from 'react'
 import type { FormEvent } from 'react'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { api } from '../lib/api'
 

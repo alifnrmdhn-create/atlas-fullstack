@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Avatar, formatRelativeTime } from '../components/ui'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Avatar, formatRelativeTime, effectivePresenceSlug } from '../components/ui'
 import { api } from '../lib/api'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 
 // ── Types ────────────────────────────────────────────────────
 type RangeOption = '7d' | '30d' | '90d'
@@ -220,18 +220,22 @@ function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) 
 
 // ── Leaderboard row ───────────────────────────────────────────
 function LeaderRow({
-  user, maxMs, isSelected, onClick,
+  user, maxMs, isSelected, onClick, presenceMap,
 }: {
   user: ActivityUser
   maxMs: number
   isSelected: boolean
   onClick: () => void
+  presenceMap: Map<number, { status: string; lastActivityAt: string }>
 }) {
   const barPct = maxMs > 0 && user.totalDurationMs > 0
     ? Math.max(2, Math.round((user.totalDurationMs / maxMs) * 100))
     : 0
   const { text: lastText } = user.lastActiveAt ? formatRelativeTime(user.lastActiveAt) : { text: '—' }
   const rankClass = user.rank === 1 ? 'gold' : user.rank === 2 ? 'silver' : user.rank === 3 ? 'bronze' : ''
+
+  const p = presenceMap.get(user.userId)
+  const isOnline = p ? effectivePresenceSlug(p.status, p.lastActivityAt) === 'online' : false
 
   return (
     <button
@@ -245,7 +249,7 @@ function LeaderRow({
       <span className="activity-leader-row__avatar">
         <span className="activity-leader-row__avatar-wrap">
           <Avatar name={user.name} size={28} />
-          {user.isOnline && <span className="activity-leader-row__online-dot" />}
+          {isOnline && <span className="activity-leader-row__online-dot" />}
         </span>
       </span>
       <span className="activity-leader-row__info">
@@ -278,6 +282,11 @@ export function ActivityView() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const rangeRef = useRef(range)
   rangeRef.current = range
+
+  const presenceMap = useMemo(
+    () => new Map(presence.map(p => [p.userId, { status: p.status, lastActivityAt: p.lastActivityAt }])),
+    [presence],
+  )
 
   const fetchLeaderboard = useCallback((r: RangeOption, silent = false) => {
     abortRef.current?.abort()
@@ -411,6 +420,7 @@ export function ActivityView() {
               maxMs={maxMs}
               isSelected={selectedUserId === u.userId}
               onClick={() => setSelectedUserId(prev => prev === u.userId ? null : u.userId)}
+              presenceMap={presenceMap}
             />
           ))}
         </div>

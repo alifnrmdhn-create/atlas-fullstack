@@ -1,5 +1,24 @@
-/* ─── Dashboard View ─────────────────────────────────────────── */
-.view-dashboard { padding: 0 0 48px; }
+/* ─── Universal page surface ──────────────────────────────────────────────
+   Every direct child of `.workspace__content` is a page-level view.
+   They MUST be transparent so the workspace ambient gradient shows through
+   uniformly (top to bottom, regardless of content height). They MUST also
+   stretch (flex:1 + min-height:100%) so short pages don't expose the parent
+   bg as a visible "shelf" below the content.
+
+   This applies to all current views (.view-dashboard, .view-inbox,
+   .view-search, .view-roadmap, .view-programs, .view-channels, .view-workboard,
+   .view-profile, .view-settings, .view-admin-*, .view-risk-reports, etc.) AND
+   any future view added — no per-view CSS opt-in required. */
+.workspace__content > * {
+  background: transparent;
+  flex: 1;
+  min-height: 100%;
+}
+
+.view-dashboard,
+.view-inbox {
+  padding: 0 0 48px;
+}
 
 @keyframes panel-enter {
   from { opacity: 0; transform: translateY(5px); }
@@ -19,11 +38,10 @@
   color: var(--text-muted);
 }
 .view-dashboard .panel__title {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
 }
 
 .mini-donut {

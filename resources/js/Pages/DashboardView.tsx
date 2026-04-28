@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useWorkspace } from '../context/workspace'
+import { useState, useEffect, useMemo } from 'react'
+import { useWorkspace } from '../hooks/useWorkspace'
 import {
   Avatar,
   EmptyState,
@@ -10,8 +10,10 @@ import {
   SkeletonStack,
   StatCard,
   SvgIcon,
+  effectivePresenceSlug,
 } from '../components/ui'
 import { formatKpiValue, getKpiFillPercent } from '../lib/kpi'
+import { getProgramHealthDisplay } from '../lib/programStatus'
 import { api } from '../lib/api'
 
 type ActivityUser = {
@@ -84,6 +86,7 @@ export function DashboardView() {
     kpis,
     workGroups,
     currentUser,
+    presence,
     overviewStatus,
     normalizeHealthStatus,
     formatStatusLabel,
@@ -91,6 +94,11 @@ export function DashboardView() {
     openProgramWorkspace,
     openTaskWorkspace,
   } = useWorkspace()
+
+  const presenceMap = useMemo(
+    () => new Map(presence.map(p => [p.userId, { status: p.status, lastActivityAt: p.lastActivityAt }])),
+    [presence],
+  )
 
   const role = currentUser?.roleType?.toUpperCase() ?? ''
   // Strategic view: BOD, KADIV, ADMIN, SUPERADMIN see the full portfolio + steering panels
@@ -166,11 +174,18 @@ export function DashboardView() {
   }
 
   const { summary, dimensions, recentActivity } = dashboard
-  const healthMix = {
-    green: programs.filter((p) => p.healthStatus === 'GREEN').length,
-    yellow: programs.filter((p) => p.healthStatus === 'YELLOW').length,
-    red: programs.filter((p) => p.healthStatus === 'RED').length,
-  }
+  const healthMix = programs.reduce(
+    (acc, p) => {
+      const { tone } = getProgramHealthDisplay(p)
+      if (tone === 'on-track')  acc.onTrack++
+      else if (tone === 'at-risk')   acc.atRisk++
+      else if (tone === 'terlambat') acc.terlambat++
+      else if (tone === 'overdue')   acc.overdue++
+      else if (tone === 'selesai')   acc.selesai++
+      return acc
+    },
+    { onTrack: 0, atRisk: 0, terlambat: 0, overdue: 0, selesai: 0 },
+  )
   const avgProgress = programs.length
     ? Math.round(programs.reduce((sum, program) => sum + program.progressPercent, 0) / programs.length)
     : 0
@@ -225,16 +240,16 @@ export function DashboardView() {
           </div>
           <div className="dashboard-health-strip">
             <div className="dashboard-health-chip dashboard-health-chip--green">
-              <strong>{healthMix.green}</strong>
-              <span>on track</span>
+              <strong>{healthMix.onTrack}</strong>
+              <span>On Track</span>
             </div>
             <div className="dashboard-health-chip dashboard-health-chip--yellow">
-              <strong>{healthMix.yellow}</strong>
-              <span>at risk</span>
+              <strong>{healthMix.atRisk}</strong>
+              <span>At Risk</span>
             </div>
             <div className="dashboard-health-chip dashboard-health-chip--red">
-              <strong>{healthMix.red}</strong>
-              <span>critical</span>
+              <strong>{healthMix.terlambat + healthMix.overdue}</strong>
+              <span>Terlambat</span>
             </div>
           </div>
         </div>
@@ -252,10 +267,10 @@ export function DashboardView() {
         />
         <StatCard
           icon="shield"
-          label="Programs Off Track"
-          value={healthMix.red}
-          hint={healthMix.red > 0 ? 'Memerlukan eskalasi' : 'Semua program aman'}
-          tone={healthMix.red > 0 ? 'critical' : 'positive'}
+          label="Program Terlambat"
+          value={healthMix.terlambat + healthMix.overdue}
+          hint={(healthMix.terlambat + healthMix.overdue) > 0 ? 'Memerlukan eskalasi' : 'Semua program aman'}
+          tone={(healthMix.terlambat + healthMix.overdue) > 0 ? 'critical' : 'positive'}
         />
         {kpisAtRisk > 0 && (
           <StatCard icon="target" label="KPI Below Target" value={kpisAtRisk} hint="KPI di bawah 80% target" tone="warn" />
@@ -279,23 +294,22 @@ export function DashboardView() {
             </div>
             <div className="program-grid">
               {dimensions.programs.map((prog) => {
-                const health = normalizeHealthStatus(prog.healthStatus)
-                const statusClass = health === 'GREEN' ? 'on-track' : health === 'YELLOW' ? 'at-risk' : 'off-track'
+                const { tone, slug } = getProgramHealthDisplay(prog)
 
                 return (
                   <button
                     className="program-card"
-                    data-health={health}
+                    data-health={tone}
                     key={prog.id}
                     onClick={() => openProgramWorkspace(prog.id)}
                   >
                     <div className="program-card__top">
                       <h4 className="program-card__name">{prog.name}</h4>
-                      <span className="program-card__dot" data-status={statusClass} />
+                      <span className="program-card__dot" data-status={slug} />
                     </div>
                     <div className="program-card__progress">
                       <div className="progress-bar-track program-card__progress-track">
-                        <div className={`progress-bar-fill ${statusClass}`} style={{ width: `${prog.progressPercent}%` }} />
+                        <div className={`progress-bar-fill ${slug}`} style={{ width: `${prog.progressPercent}%` }} />
                       </div>
                       <span className="program-card__pct">{prog.progressPercent}%</span>
                     </div>
@@ -590,7 +604,7 @@ export function DashboardView() {
                       <span>{prog.progressPercent}% progress</span>
                     </div>
                     <div className="signal-row__right">
-                      <HealthPill status={normalizeHealthStatus(prog.healthStatus)} />
+                      <HealthPill status={getProgramHealthDisplay(prog).tone === 'overdue' ? 'OVERDUE' : normalizeHealthStatus(prog.healthStatus)} />
                     </div>
                   </button>
                 )
@@ -725,11 +739,14 @@ export function DashboardView() {
                 <EmptyState compact icon="users" title="Belum ada data sesi" text="Data aktivitas pengguna akan tampil di sini." />
               ) : (
                 <div className="team-activity-list">
-                  {teamActivity.map(u => (
+                  {teamActivity.map(u => {
+                    const p = presenceMap.get(u.userId)
+                    const isOnline = p ? effectivePresenceSlug(p.status, p.lastActivityAt) === 'online' : false
+                    return (
                     <div className="team-activity-row" key={u.userId}>
                       <div className="team-activity-row__avatar">
                         <Avatar name={u.name} size={26} />
-                        {u.isOnline && <span className="team-activity-row__online-dot" />}
+                        {isOnline && <span className="team-activity-row__online-dot" />}
                       </div>
                       <div className="team-activity-row__body">
                         <span className="team-activity-row__name">{u.name}</span>
@@ -740,7 +757,8 @@ export function DashboardView() {
                         <span className="team-activity-row__sessions">{u.sessionCount} sesi</span>
                       </div>
                     </div>
-                  ))}
+                  )
+                  })}
                 </div>
               )}
             </div>

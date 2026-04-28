@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\Kelompok;
+use App\Enums\PilarStrategis;
 use App\Support\FiltersByUserScope;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,7 +16,7 @@ class Program extends Model
     const UPDATED_AT = 'updatedAt';
 
     protected $guarded = ['id'];
-    protected $appends = ['picPersonIds'];
+    protected $appends = ['picPersonIds', 'workstreamCount'];
     protected $hidden  = ['coPics'];
 
     /** Kolom pemilik yang dipakai untuk user-scope filter. */
@@ -31,6 +33,8 @@ class Program extends Model
         'archivedAt' => 'datetime',
         'createdAt' => 'datetime',
         'updatedAt' => 'datetime',
+        'kelompok' => Kelompok::class,
+        'pilarStrategis' => PilarStrategis::class,
     ];
 
     public function owner()
@@ -57,5 +61,16 @@ class Program extends Model
             return $this->coPics->pluck('userId')->map(fn ($id) => (int) $id)->values()->all();
         }
         return [];
+    }
+
+    public function getWorkstreamCountAttribute(): int
+    {
+        if (array_key_exists('workstreams_count', $this->attributes)) {
+            return (int) $this->attributes['workstreams_count'];
+        }
+        if ($this->relationLoaded('workstreams')) {
+            return $this->workstreams->count();
+        }
+        return 0;
     }
 }

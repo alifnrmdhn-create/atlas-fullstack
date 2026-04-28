@@ -1,7 +1,6 @@
 import {
   createContext,
   useCallback,
-  useContext,
   useEffect,
   useEffectEvent,
   useMemo,
@@ -9,9 +8,10 @@ import {
   useState,
 } from 'react'
 import type { Dispatch, FormEvent, ReactNode, SetStateAction } from 'react'
-import { api, realtime, sessionStorage } from '../lib/api'
+import { api, sessionStorage } from '../lib/api'
 import { useAuth as useInertiaAuth } from '../hooks/useAuth'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
+import { useRealtimeEvents } from '../hooks/useRealtimeEvents'
 import type {
   AuthUser,
   Blocker,
@@ -28,6 +28,7 @@ import type {
   PresenceUser,
   Program,
   ProgramDetail,
+  ProgramSummaryPayload,
   SavedSearch,
   SearchResult,
   SystemStatus,
@@ -105,6 +106,7 @@ export interface WorkspaceContextValue {
   // Workspace data
   dashboard: DashboardPayload | null
   myWork: MyWorkPayload | null
+  programSummary: ProgramSummaryPayload | null
   channels: ChannelSummary[]
   setChannels: Dispatch<SetStateAction<ChannelSummary[]>>
   programs: Program[]
@@ -272,8 +274,12 @@ function appendComposerSnippet(
   })
 }
 
+function realtimePayload<T>(data: unknown): T | null {
+  return data && typeof data === 'object' ? (data as T) : null
+}
+
 // ── Context ───────────────────────────────────────────────
-const WorkspaceContext = createContext<WorkspaceContextValue>(null!)
+export const WorkspaceContext = createContext<WorkspaceContextValue>(null!)
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const navigate = useInertiaNavigate()
@@ -311,6 +317,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // Workspace data
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null)
   const [myWork, setMyWork] = useState<MyWorkPayload | null>(null)
+  const [programSummary, setProgramSummary] = useState<ProgramSummaryPayload | null>(null)
   const [channels, setChannels] = useState<ChannelSummary[]>([])
   const [programs, setPrograms] = useState<Program[]>([])
   const [workGroups, setWorkGroups] = useState<WorkGroup[]>([])
@@ -367,9 +374,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const typingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   // Debounce timer for marking active channel as read when SSE messages arrive
   const markReadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // SSE reconnect counter — incrementing re-runs the SSE effect
-  const [sseKey, setSseKey] = useState(0)
-  const sseReconnectDelayRef = useRef(1000)
+  const domainRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [programDetail, setProgramDetail] = useState<ProgramDetail | null>(null)
   const [workstreamDetail, setWorkstreamDetail] = useState<WorkstreamDetail | null>(null)
   const [taskDetail, setTaskDetail] = useState<TaskDetail | null>(null)
@@ -457,7 +462,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     typingTimersRef.current.forEach((t) => clearTimeout(t))
     typingTimersRef.current.clear()
 
-    setDashboard(null); setChannels([]); setPrograms([]); setWorkGroups([])
+    setDashboard(null); setMyWork(null); setProgramSummary(null); setChannels([]); setPrograms([]); setWorkGroups([])
     setKpis([]); setApmsKpis([]); setApmsConnected(false); setApmsLinkedPrograms({}); setBlockers([]); setPresence([]); setNotifications([])
     setSavedSearches([]); setSystemStatus(null); setSearchResults([])
     setSearchTotal(0); setSelectedChannelId(null); setSelectedThreadId(null)
@@ -510,62 +515,80 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const loadOverview = useEffectEvent(async (mode: 'initial' | 'refresh' = 'refresh') => {
     setOverviewStatus({ loading: mode === 'initial', refreshing: mode === 'refresh', message: null })
 
-    const results = await Promise.allSettled([
-      api.get<DashboardApiPayload>('/dashboard'),
-      api.get<CollectionResponse<ChannelSummary>>('/channels'),
-      api.get<CollectionResponse<Program>>('/programs'),
-      api.get<TasksResponse>('/tasks'),
-      api.get<CollectionResponse<Kpi>>('/kpis'),
-      api.get<CollectionResponse<Blocker>>('/blockers'),
-      api.get<{ users: PresenceUser[] }>('/users/presence'),
-      api.get<NotificationsResponse>('/notifications?read=all'),
-      api.get<{ data: SavedSearch[] }>('/search/saved'),
-      api.get<SystemStatus>('/system/status'),
-      api.get<{ data: MyWorkPayload }>('/my-work'),
-      api.get<ApmsKpiResponse>('/apms/kpi'),
-    ])
+    try {
+      const results = await Promise.allSettled([
+        api.get<DashboardApiPayload>('/dashboard'),
+        api.get<CollectionResponse<ChannelSummary>>('/channels'),
+        api.get<CollectionResponse<Program>>('/programs'),
+        api.get<TasksResponse>('/tasks'),
+        api.get<CollectionResponse<Kpi>>('/kpis'),
+        api.get<CollectionResponse<Blocker>>('/blockers'),
+        api.get<{ users: PresenceUser[] }>('/users/presence'),
+        api.get<NotificationsResponse>('/notifications?read=all'),
+        api.get<{ data: SavedSearch[] }>('/search/saved'),
+        api.get<SystemStatus>('/system/status'),
+        api.get<{ data: MyWorkPayload }>('/my-work'),
+        api.get<ApmsKpiResponse>('/apms/kpi'),
+        api.get<ProgramSummaryPayload>('/organization/program-summary'),
+      ])
 
-    const [dashR, chR, progR, wiR, kpiR, blkR, presR, notifR, ssR, sysR, mwR, apmsR] = results
+      const [dashR, chR, progR, wiR, kpiR, blkR, presR, notifR, ssR, sysR, mwR, apmsR, psR] = results
 
-    if (dashR.status === 'fulfilled') setDashboard(normalizeDashboardPayload(dashR.value))
-    if (mwR.status === 'fulfilled') setMyWork(mwR.value.data)
-    if (chR.status === 'fulfilled') {
-      const loadedChannels = chR.value.data
-      // Override unreadCount to 0 for the currently open channel — user is actively watching it
-      const patched = loadedChannels.map((c) =>
-        c.id === selectedChannelId ? { ...c, unreadCount: 0 } : c
-      )
-      setChannels(patched)
-      setSelectedChannelId((cur) => {
-        // Validate saved/current channel still exists in the list
-        if (cur != null && loadedChannels.some((c) => c.id === cur)) return cur
-        // Fall back to first channel
-        return loadedChannels[0]?.id ?? null
+      if (dashR.status === 'fulfilled') setDashboard(normalizeDashboardPayload(dashR.value))
+      if (mwR.status === 'fulfilled') setMyWork(mwR.value.data)
+      if (psR.status === 'fulfilled') setProgramSummary(psR.value)
+      if (chR.status === 'fulfilled') {
+        const loadedChannels = chR.value.data
+        // Override unreadCount to 0 for the currently open channel — user is actively watching it
+        const patched = loadedChannels.map((c) =>
+          c.id === selectedChannelId ? { ...c, unreadCount: 0 } : c
+        )
+        setChannels(patched)
+        setSelectedChannelId((cur) => {
+          // Validate saved/current channel still exists in the list
+          if (cur != null && loadedChannels.some((c) => c.id === cur)) return cur
+          // Fall back to first channel
+          return loadedChannels[0]?.id ?? null
+        })
+      }
+      if (progR.status === 'fulfilled') {
+        setPrograms(progR.value.data)
+      }
+      if (wiR.status === 'fulfilled') {
+        setWorkGroups(wiR.value.groups)
+      }
+      if (kpiR.status === 'fulfilled') setKpis(kpiR.value.data)
+      if (apmsR.status === 'fulfilled') {
+        setApmsKpis(apmsR.value.data)
+        setApmsConnected(apmsR.value.meta.connected)
+        setApmsLinkedPrograms(apmsR.value.linkedPrograms ?? {})
+        setApmsLastFetchedAt(new Date().toISOString())
+      }
+      if (blkR.status === 'fulfilled') setBlockers(blkR.value.data)
+      if (presR.status === 'fulfilled') setPresence(presR.value.users)
+      if (notifR.status === 'fulfilled') setNotifications(notifR.value.notifications)
+      if (ssR.status === 'fulfilled') setSavedSearches(ssR.value.data)
+      if (sysR.status === 'fulfilled') setSystemStatus(sysR.value)
+
+      const hasCoreData = dashR.status === 'fulfilled' || psR.status === 'fulfilled' || progR.status === 'fulfilled'
+      const failedCount = results.filter((result) => result.status === 'rejected').length
+      const syncedAt = Date.now()
+      if (hasCoreData) {
+        setLastSyncedAt(new Date(syncedAt).toISOString())
+        setNextRefreshAt(syncedAt + 5 * 60 * 1000)
+      }
+      setOverviewStatus({
+        loading: false,
+        refreshing: false,
+        message: failedCount > 0 && !hasCoreData
+          ? 'Sebagian data workspace gagal dimuat. Coba refresh halaman.'
+          : null,
       })
+    } catch {
+      setOverviewStatus({ loading: false, refreshing: false, message: 'Workspace gagal dimuat. Coba refresh halaman.' })
+    } finally {
+      setOverviewStatus((cur) => ({ ...cur, loading: false, refreshing: false }))
     }
-    if (progR.status === 'fulfilled') {
-      setPrograms(progR.value.data)
-    }
-    if (wiR.status === 'fulfilled') {
-      setWorkGroups(wiR.value.groups)
-    }
-    if (kpiR.status === 'fulfilled') setKpis(kpiR.value.data)
-    if (apmsR.status === 'fulfilled') {
-      setApmsKpis(apmsR.value.data)
-      setApmsConnected(apmsR.value.meta.connected)
-      setApmsLinkedPrograms(apmsR.value.linkedPrograms ?? {})
-      setApmsLastFetchedAt(new Date().toISOString())
-    }
-    if (blkR.status === 'fulfilled') setBlockers(blkR.value.data)
-    if (presR.status === 'fulfilled') setPresence(presR.value.users)
-    if (notifR.status === 'fulfilled') setNotifications(notifR.value.notifications)
-    if (ssR.status === 'fulfilled') setSavedSearches(ssR.value.data)
-    if (sysR.status === 'fulfilled') setSystemStatus(sysR.value)
-
-    setOverviewStatus({ loading: false, refreshing: false, message: null })
-    const syncedAt = Date.now()
-    setLastSyncedAt(new Date(syncedAt).toISOString())
-    setNextRefreshAt(syncedAt + 5 * 60 * 1000)
   })
 
   const refreshChannel = useEffectEvent(async (
@@ -577,19 +600,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       const [detail, msgs] = await Promise.all([
         api.get<ChannelDetailResponse>(`/channels/${channelId}`),
-        api.get<{ messages: ChannelMessage[]; total: number }>(
+        api.get<{ data: ChannelMessage[]; total: number }>(
           `/channels/${channelId}/messages?limit=40&offset=0&includeThreads=true`,
         ),
       ])
       setChannelMembers(detail.members)
-      setMessages(msgs.messages)
+      setMessages(msgs.data ?? [])
       const resolvedThread = threadId ?? selectedThreadId
       if (resolvedThread) {
-        const threadData = await api.get<{ parentMessage: ChannelMessage; replies: ChannelMessage[] }>(
+        const threadData = await api.get<{ data: { parent: ChannelMessage; replies: ChannelMessage[] } }>(
           `/channels/${channelId}/messages/${resolvedThread}/thread`,
         )
-        setThreadParent(threadData.parentMessage)
-        setThreadReplies(threadData.replies)
+        setThreadParent(threadData.data?.parent ?? null)
+        setThreadReplies(threadData.data?.replies ?? [])
       } else {
         setThreadParent(null)
         setThreadReplies([])
@@ -899,12 +922,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   })
 
   // ── Channel message event handlers ───────────────────────
-  const handleMessageCreated = useEffectEvent((event: { channelId: number; message: ChannelMessage }) => {
+  const handleMessageCreated = useEffectEvent((event: { channelId: number; message: ChannelMessage & { author?: { name?: string; roleType?: string } } }) => {
     if (event.channelId !== selectedChannelId) return
+    // Normalize: backend sends author relationship, frontend uses authorName/authorRole
+    const msg: ChannelMessage = {
+      ...event.message,
+      reactions: event.message.reactions ?? {},
+      authorName: event.message.authorName ?? event.message.author?.name,
+      authorRole: event.message.authorRole ?? event.message.author?.roleType,
+    }
     setMessages((prev) => {
       // Deduplicate: skip if a message with same id already exists
-      if (prev.some((m) => m.id === event.message.id)) return prev
-      return [...prev, event.message]
+      if (prev.some((m) => m.id === msg.id)) return prev
+      return [...prev, msg]
     })
     // Update sidebar lastMessage
     setChannels((prev) => prev.map((c) =>
@@ -978,29 +1008,34 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const handleMessageUpdated = useEffectEvent((event: { channelId: number; message: ChannelMessage }) => {
+  const handleMessageUpdated = useEffectEvent((event: { channelId: number; message: ChannelMessage & { author?: { name?: string; roleType?: string } } }) => {
+    const msg: ChannelMessage = {
+      ...event.message,
+      reactions: event.message.reactions ?? {},
+      authorName: event.message.authorName ?? event.message.author?.name,
+      authorRole: event.message.authorRole ?? event.message.author?.roleType,
+    }
     setChannels((prev) => prev.map((channel) => {
-      if (channel.id !== event.channelId || channel.lastMessage?.id !== event.message.id) {
+      if (channel.id !== event.channelId || channel.lastMessage?.id !== msg.id) {
         return channel
       }
-
       return {
         ...channel,
         lastMessage: {
-          id: event.message.id,
-          userId: event.message.userId,
-          content: event.message.content,
-          createdAt: event.message.createdAt,
-          isDeletedForEveryone: event.message.isDeletedForEveryone,
+          id: msg.id,
+          userId: msg.userId,
+          content: msg.content,
+          createdAt: msg.createdAt,
+          isDeletedForEveryone: msg.isDeletedForEveryone,
         },
       }
     }))
 
     if (event.channelId !== selectedChannelId) return
-    const patch = (m: ChannelMessage) => m.id === event.message.id ? { ...m, ...event.message } : m
+    const patch = (m: ChannelMessage) => m.id === msg.id ? { ...m, ...msg } : m
     setMessages((prev) => prev.map(patch))
     setThreadReplies((prev) => prev.map(patch))
-    if (threadParent?.id === event.message.id) setThreadParent((p) => p ? { ...p, ...event.message } : p)
+    if (threadParent?.id === msg.id) setThreadParent((p) => p ? { ...p, ...msg } : p)
   })
 
   const handleMessagePinned = useEffectEvent((event: { channelId: number; messageId: number; isPinned: boolean }) => {
@@ -1089,185 +1124,151 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  useEffect(() => {
+  // ── Realtime subscriptions ───────────────────────────────
+  const scheduleDomainRefresh = useEffectEvent(() => {
     if (authStatus !== 'signed_in') return
-    if (!realtime.enabled()) return
-    const streamUrl = realtime.streamUrl()
-    if (!streamUrl) return
-    const es = new EventSource(streamUrl)
+    if (domainRefreshTimerRef.current) return
+    domainRefreshTimerRef.current = setTimeout(() => {
+      domainRefreshTimerRef.current = null
+      void loadOverview('refresh')
+      if (selectedProgramIdRef.current) void loadProgramDetail(selectedProgramIdRef.current)
+      if (selectedTaskIdRef.current) void loadTaskDetail(selectedTaskIdRef.current)
+      if (selectedWorkstreamIdRef.current) void loadWorkstreamDetail(selectedWorkstreamIdRef.current)
+    }, 600)
+  })
 
-    const parse = <T,>(event: MessageEvent<string>): T | null => {
-      try { return JSON.parse(event.data) as T } catch { return null }
-    }
+  const handleNotificationCreated = useEffectEvent((event: { notification: NotificationItem }) => {
+    setNotifications((prev) => {
+      if (prev.some((n) => n.id === event.notification.id)) return prev
+      return [event.notification, ...prev]
+    })
+    setNotifToasts((prev) => {
+      if (prev.some((n) => n.id === event.notification.id)) return prev
+      const next = [event.notification, ...prev]
+      return next.length > 4 ? next.slice(0, 4) : next
+    })
+  })
 
-    es.addEventListener('workspace:update', ((e: MessageEvent<string>) => {
-      const d: RealtimeSnapshot | null = parse(e)
-      if (d) handleRealtimeSnapshot(d)
-    }) as EventListener)
-    es.addEventListener('workspace:ready', () => setLastSyncedAt(new Date().toISOString()))
-
-    // ── Message events ──────────────────────────────────────
-    es.addEventListener('channel:message:created', ((e: MessageEvent<string>) => {
-      const d: { channelId: number; message: ChannelMessage } | null = parse(e)
-      if (d) handleMessageCreated(d)
-    }) as EventListener)
-    es.addEventListener('channel:message:updated', ((e: MessageEvent<string>) => {
-      const d: { channelId: number; message: ChannelMessage } | null = parse(e)
-      if (d) handleMessageUpdated(d)
-    }) as EventListener)
-    es.addEventListener('channel:message:deleted', ((e: MessageEvent<string>) => {
-      const d: { channelId: number; messageId: number; parentMessageId?: number; newReplyCount?: number } | null = parse(e)
-      if (d) handleMessageDeleted(d)
-    }) as EventListener)
-    es.addEventListener('channel:message:pinned', ((e: MessageEvent<string>) => {
-      const d: { channelId: number; messageId: number; isPinned: boolean } | null = parse(e)
-      if (d) handleMessagePinned(d)
-    }) as EventListener)
-    es.addEventListener('channel:reaction:changed', ((e: MessageEvent<string>) => {
-      const d: { channelId: number; messageId: number; reactions: Record<string, number[]> } | null = parse(e)
-      if (d) handleReactionChanged(d)
-    }) as EventListener)
-    es.addEventListener('channel:thread:reply', ((e: MessageEvent<string>) => {
-      const d: { channelId: number; parentId: number; reply: ChannelMessage; newReplyCount: number } | null = parse(e)
-      if (d) handleThreadReply(d)
-    }) as EventListener)
-
-    // ── Notification events (mentions, etc.) ────────────────
-    es.addEventListener('notification:created', ((e: MessageEvent<string>) => {
-      const d: { notification: NotificationItem } | null = parse(e)
-      if (d) {
-        setNotifications((prev) => {
-          if (prev.some((n) => n.id === d.notification.id)) return prev
-          return [d.notification, ...prev]
-        })
-        setNotifToasts((prev) => {
-          if (prev.some((n) => n.id === d.notification.id)) return prev
-          // Max 4 toast sekaligus — buang yang paling lama jika sudah penuh
-          const next = [d.notification, ...prev]
-          return next.length > 4 ? next.slice(0, 4) : next
-        })
+  const handlePresenceUpdated = useEffectEvent((event: { userId: number; status: string; statusEmoji?: string; statusMessage?: string; lastActivityAt: string }) => {
+    setPresence((prev) => prev.map((p) => {
+      if (p.userId !== event.userId) return p
+      return {
+        ...p,
+        status: event.status as PresenceUser['status'],
+        ...(event.statusEmoji !== undefined ? { statusEmoji: event.statusEmoji } : {}),
+        ...(event.statusMessage !== undefined ? { statusMessage: event.statusMessage } : {}),
+        lastActivityAt: event.lastActivityAt,
       }
-    }) as EventListener)
+    }))
+  })
 
-    // ── Channel lifecycle events ────────────────────────────
-    es.addEventListener('channel:channel:created', ((e: MessageEvent<string>) => {
-      const d: { channel: ChannelSummary } | null = parse(e)
-      if (d) handleChannelCreated(d)
-    }) as EventListener)
-    es.addEventListener('channel:channel:updated', ((e: MessageEvent<string>) => {
-      const d: { channel: ChannelSummary } | null = parse(e)
-      if (d) handleChannelUpdated(d)
-    }) as EventListener)
-    es.addEventListener('channel:channel:archived', ((e: MessageEvent<string>) => {
-      const d: { channelId: number } | null = parse(e)
-      if (d) handleChannelArchived(d)
-    }) as EventListener)
+  const handlePresenceActivity = useEffectEvent((event: { userId: number; lastActivityAt: string }) => {
+    setPresence((prev) => prev.map((p) =>
+      p.userId === event.userId ? { ...p, lastActivityAt: event.lastActivityAt } : p
+    ))
+  })
 
-    // ── Typing indicators ───────────────────────────────────
-    es.addEventListener('channel:typing:start', ((e: MessageEvent<string>) => {
-      const d: { channelId: number; userId: number; userName: string } | null = parse(e)
-      if (d) handleTypingStart(d)
-    }) as EventListener)
-    es.addEventListener('channel:typing:stop', ((e: MessageEvent<string>) => {
-      const d: { channelId: number; userId: number } | null = parse(e)
-      if (d) handleTypingStop(d)
-    }) as EventListener)
+  const handleDomainChanged = useEffectEvent(() => {
+    scheduleDomainRefresh()
+  })
 
-    // ── Presence events ─────────────────────────────────────
-    es.addEventListener('presence:updated', ((e: MessageEvent<string>) => {
-      const d: { userId: number; status: string; statusEmoji?: string; statusMessage?: string; lastActivityAt: string } | null = parse(e)
-      if (!d) return
-      setPresence((prev) => prev.map((p) => {
-        if (p.userId !== d.userId) return p
-        return {
-          ...p,
-          status: d.status as PresenceUser['status'],
-          // Only overwrite emoji/message if explicitly sent in the event
-          ...(d.statusEmoji !== undefined ? { statusEmoji: d.statusEmoji } : {}),
-          ...(d.statusMessage !== undefined ? { statusMessage: d.statusMessage } : {}),
-          lastActivityAt: d.lastActivityAt,
-        }
-      }))
-    }) as EventListener)
-    es.addEventListener('presence:activity', ((e: MessageEvent<string>) => {
-      const d: { userId: number; lastActivityAt: string } | null = parse(e)
-      if (!d) return
-      setPresence((prev) => prev.map((p) =>
-        p.userId === d.userId ? { ...p, lastActivityAt: d.lastActivityAt } : p
-      ))
-    }) as EventListener)
+  const handleMeetingChanged = useEffectEvent(() => {
+    scheduleDomainRefresh()
+    setMeetingRefreshKey((k) => k + 1)
+  })
 
-    // ── Domain entity events (programs, workstreams, work items, KPI,
-    //    blockers, meetings, monthly reports, comments) ──────────────
-    // Semua mutation lintas modul memancarkan event taksonomi entity:<type>:changed
-    // Frontend menerjemahkan ke debounced refetch overview dan (jika ada) detail
-    // yang sedang terbuka. Debounce 600 ms mencegah refetch storm saat banyak
-    // mutation datang bersamaan (mis. bulk import atau chain update).
-    const domainRefreshTimer = { current: null as ReturnType<typeof setTimeout> | null }
-    const scheduleDomainRefresh = () => {
-      if (domainRefreshTimer.current) return
-      domainRefreshTimer.current = setTimeout(() => {
-        domainRefreshTimer.current = null
-        void loadOverview('refresh')
-        // Refresh detail view yang sedang aktif
-        if (selectedProgramIdRef.current) void loadProgramDetail(selectedProgramIdRef.current)
-        if (selectedTaskIdRef.current) void loadTaskDetail(selectedTaskIdRef.current)
-        if (selectedWorkstreamIdRef.current) void loadWorkstreamDetail(selectedWorkstreamIdRef.current)
-      }, 600)
-    }
+  const handleGridChanged = useEffectEvent(() => {
+    scheduleDomainRefresh()
+    setGridRefreshTick((k) => k + 1)
+  })
 
-    const MEETING_EVENTS = ['meeting:changed', 'meeting:rsvp-changed', 'meeting:action-changed', 'meeting:decision-changed']
+  const handleAssignmentChanged = useEffectEvent(() => {
+    scheduleDomainRefresh()
+    setAssignmentRefreshTick((k) => k + 1)
+  })
 
-    const DOMAIN_EVENTS = [
-      'program:changed',
-      'workstream:changed',
-      'task:changed',
-      'subtask:changed',
-      'blocker:changed',
-      'kpi:changed',
-      'risk:changed',
-      ...MEETING_EVENTS,
-      'report:changed',
-      'assignment:changed',
-      'comment:changed',
-    ]
-    DOMAIN_EVENTS.forEach((evt) => {
-      es.addEventListener(evt, (() => scheduleDomainRefresh()) as EventListener)
-    })
-    // Meeting events additionally bump the dedicated refresh key so MeetingDetailPanel
-    // can re-fetch action items and decisions without waiting for the full overview refresh
-    MEETING_EVENTS.forEach((evt) => {
-      es.addEventListener(evt, (() => setMeetingRefreshKey((k) => k + 1)) as EventListener)
-    })
-    // Execution Grid refresh — task/phase/subtask mutations need the grid to re-fetch
-    const GRID_EVENTS = ['task:changed', 'subtask:changed', 'phase:changed', 'workstream:changed']
-    GRID_EVENTS.forEach((evt) => {
-      es.addEventListener(evt, (() => setGridRefreshTick((k) => k + 1)) as EventListener)
-    })
-    // Assignments — dedicated ticker agar view /penugasan bisa refetch tanpa menunggu overview
-    es.addEventListener('assignment:changed', (() => setAssignmentRefreshTick((k) => k + 1)) as EventListener)
+  useRealtimeEvents({
+    'workspace:update': (data) => {
+      const event = realtimePayload<RealtimeSnapshot>(data)
+      if (event) handleRealtimeSnapshot(event)
+    },
+    'workspace:ready': () => setLastSyncedAt(new Date().toISOString()),
+    'channel:message:created': (data) => {
+      const event = realtimePayload<{ channelId: number; message: ChannelMessage }>(data)
+      if (event) handleMessageCreated(event)
+    },
+    'channel:message:updated': (data) => {
+      const event = realtimePayload<{ channelId: number; message: ChannelMessage }>(data)
+      if (event) handleMessageUpdated(event)
+    },
+    'channel:message:deleted': (data) => {
+      const event = realtimePayload<{ channelId: number; messageId: number; parentMessageId?: number; newReplyCount?: number }>(data)
+      if (event) handleMessageDeleted(event)
+    },
+    'channel:message:pinned': (data) => {
+      const event = realtimePayload<{ channelId: number; messageId: number; isPinned: boolean }>(data)
+      if (event) handleMessagePinned(event)
+    },
+    'channel:reaction:changed': (data) => {
+      const event = realtimePayload<{ channelId: number; messageId: number; reactions: Record<string, number[]> }>(data)
+      if (event) handleReactionChanged(event)
+    },
+    'channel:thread:reply': (data) => {
+      const event = realtimePayload<{ channelId: number; parentId: number; reply: ChannelMessage; newReplyCount: number }>(data)
+      if (event) handleThreadReply(event)
+    },
+    'notification:created': (data) => {
+      const event = realtimePayload<{ notification: NotificationItem }>(data)
+      if (event) handleNotificationCreated(event)
+    },
+    'channel:channel:created': (data) => {
+      const event = realtimePayload<{ channel: ChannelSummary }>(data)
+      if (event) handleChannelCreated(event)
+    },
+    'channel:channel:updated': (data) => {
+      const event = realtimePayload<{ channel: ChannelSummary }>(data)
+      if (event) handleChannelUpdated(event)
+    },
+    'channel:channel:archived': (data) => {
+      const event = realtimePayload<{ channelId: number }>(data)
+      if (event) handleChannelArchived(event)
+    },
+    'channel:typing:start': (data) => {
+      const event = realtimePayload<{ channelId: number; userId: number; userName: string }>(data)
+      if (event) handleTypingStart(event)
+    },
+    'channel:typing:stop': (data) => {
+      const event = realtimePayload<{ channelId: number; userId: number }>(data)
+      if (event) handleTypingStop(event)
+    },
+    'presence:updated': (data) => {
+      const event = realtimePayload<{ userId: number; status: string; statusEmoji?: string; statusMessage?: string; lastActivityAt: string }>(data)
+      if (event) handlePresenceUpdated(event)
+    },
+    'presence:activity': (data) => {
+      const event = realtimePayload<{ userId: number; lastActivityAt: string }>(data)
+      if (event) handlePresenceActivity(event)
+    },
+    'program:changed': handleDomainChanged,
+    'blocker:changed': handleDomainChanged,
+    'kpi:changed': handleDomainChanged,
+    'risk:changed': handleDomainChanged,
+    'report:changed': handleDomainChanged,
+    'comment:changed': handleDomainChanged,
+    'workstream:changed': handleGridChanged,
+    'phase:changed': handleGridChanged,
+    'task:changed': handleGridChanged,
+    'subtask:changed': handleGridChanged,
+    'meeting:changed': handleMeetingChanged,
+    'meeting:rsvp-changed': handleMeetingChanged,
+    'meeting:action-changed': handleMeetingChanged,
+    'meeting:decision-changed': handleMeetingChanged,
+    'assignment:changed': handleAssignmentChanged,
+  })
 
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-    es.onopen = () => {
-      // Reset backoff as soon as connection is established
-      sseReconnectDelayRef.current = 1000
-    }
-    es.onerror = () => {
-      es.close()
-      // Exponential backoff reconnect (1s → 2s → 4s … capped at 30s)
-      reconnectTimer = setTimeout(() => {
-        sseReconnectDelayRef.current = Math.min(sseReconnectDelayRef.current * 2, 30000)
-        setSseKey((k) => k + 1)
-      }, sseReconnectDelayRef.current)
-    }
-    es.addEventListener('workspace:ready', () => {
-      sseReconnectDelayRef.current = 1000
-    })
-    return () => {
-      es.close()
-      if (reconnectTimer) clearTimeout(reconnectTimer)
-    }
-  }, [authStatus, sseKey])
+  useEffect(() => () => {
+    if (domainRefreshTimerRef.current) clearTimeout(domainRefreshTimerRef.current)
+  }, [])
 
   // ── Sync presenceDraft with current user's actual status (once) ──────
   useEffect(() => {
@@ -1380,7 +1381,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     handleLogin, handleLogout, handleForgotPassword, signOutToEntry,
     logoutPending, requestLogout, cancelLogout,
     navRailCollapsed, setNavRailCollapsed, userMenuSurface, toggleUserMenu, closeUserMenu,
-    dashboard, myWork, channels, setChannels, programs, workGroups, setWorkGroups,
+    dashboard, myWork, programSummary, channels, setChannels, programs, workGroups, setWorkGroups,
     kpis, apmsKpis, apmsConnected, apmsLinkedPrograms, apmsLastFetchedAt, refreshApmsKpis, blockers, presence, setPresence, notifications, notifToasts, dismissToast, savedSearches, systemStatus,
     selectedChannelId, setSelectedChannelId, selectedThreadId, setSelectedThreadId,
     selectedProgramId, setSelectedProgramId, selectedTaskId, setSelectedTaskId,
@@ -1410,8 +1411,4 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>
-}
-
-export function useWorkspace() {
-  return useContext(WorkspaceContext)
 }

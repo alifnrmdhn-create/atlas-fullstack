@@ -4,7 +4,7 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "concurrently -n \"vite,laravel\" -c \"cyan,green\" \"vite\" \"sh scripts/serve.sh\"",
+        "dev": "concurrently -n \"vite,laravel\" -c \"cyan,green\" \"sh scripts/vite.sh\" \"sh scripts/serve.sh\"",
         "smoke:browser": "node scripts/browser-smoke.mjs",
         "smoke:workflow": "node scripts/browser-smoke.mjs",
         "typecheck": "tsc --noEmit --ignoreDeprecations 6.0",

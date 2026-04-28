@@ -34,3 +34,41 @@ export function getProgramDisplayStatus(
   if (s === 'ON_HOLD')                   return { label: 'Ditahan',           tone: 'hold',      slug: 'in-review' }
   return { label: 'Berjalan',            tone: 'running',                      slug: 'in-progress' }
 }
+
+// ── Program Health Display ────────────────────────────────────────────────────
+// Maps the computed healthStatus (GREEN/YELLOW/RED) to vocabulary that aligns
+// with the monitoring document terminology used by Direktorat KMR.
+// Storage stays GREEN/YELLOW/RED; only the display label changes.
+
+export type ProgramHealthTone = 'on-track' | 'at-risk' | 'terlambat' | 'overdue' | 'selesai'
+
+export type ProgramHealthDisplay = {
+  label: string
+  tone: ProgramHealthTone
+  /** CSS class suffix for health-pill */
+  slug: string
+  isOverdue: boolean
+}
+
+export function getProgramHealthDisplay(program: {
+  healthStatus?: string | null
+  status?: string | null
+  targetEndDate?: string | null
+}): ProgramHealthDisplay {
+  const isCompleted = program.status === 'COMPLETED'
+  if (isCompleted) {
+    return { label: 'Selesai', tone: 'selesai', slug: 'completed', isOverdue: false }
+  }
+
+  const isOverdue =
+    !!program.targetEndDate && new Date(program.targetEndDate) < new Date() && !isCompleted
+
+  if (isOverdue) {
+    return { label: 'Lewat Tenggat', tone: 'overdue', slug: 'overdue', isOverdue: true }
+  }
+
+  const h = program.healthStatus?.toUpperCase()
+  if (h === 'GREEN')  return { label: 'On Track',   tone: 'on-track',  slug: 'green',  isOverdue: false }
+  if (h === 'RED')    return { label: 'Terlambat',  tone: 'terlambat', slug: 'red',    isOverdue: false }
+  return               { label: 'At Risk',    tone: 'at-risk',   slug: 'yellow', isOverdue: false }
+}

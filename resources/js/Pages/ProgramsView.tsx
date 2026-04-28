@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useId } from 'react'
 import { createPortal } from 'react-dom'
 import type { FormEvent } from 'react'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { getProgramDisplayStatus } from '../lib/programStatus'
 import {
@@ -78,11 +78,11 @@ const approvalBadge = (status?: string | null) => {
 const healthStatusLabel = (status: 'GREEN' | 'YELLOW' | 'RED') => {
   if (status === 'GREEN') return 'On Track'
   if (status === 'YELLOW') return 'At Risk'
-  return 'Off Track'
+  return 'Terlambat'
 }
 
-const workstreamSummaryLabel = (count: number) => {
-  if (count <= 0) return 'Belum ada workstream'
+const workstreamSummaryLabel = (count: number | undefined | null) => {
+  if (!count || count <= 0) return 'Belum ada workstream'
   return `${count} workstream`
 }
 
@@ -162,7 +162,7 @@ export function ProgramsView() {
   const closeKebab = useCallback(() => setKebabMenu(null), [])
 
   // ── Edit Program modal ────────────────────────────────────────────────
-  type EditProgram = { id: number; name: string; description: string; status: string; priority: string; startDate: string; targetEndDate: string; ownerId: number | null; approvalStatus: string | null }
+  type EditProgram = { id: number; name: string; description: string; status: string; priority: string; startDate: string; targetEndDate: string; ownerId: number | null; approvalStatus: string | null; kelompok: string; pilarStrategis: string; progresTerkini: string; dukunganDibutuhkan: string }
   const [editProgram, setEditProgram] = useState<EditProgram | null>(null)
   const [epSaving, setEpSaving] = useState(false)
   const [epError, setEpError] = useState<string | null>(null)
@@ -173,7 +173,7 @@ export function ProgramsView() {
   const closeEditProgram = useCallback(() => closeOverlay('edit-program', () => { setEditProgram(null); setEpError(null); setEpUserDirectory([]) }), [closeOverlay])
   useEscKey(closeEditProgram, !!editProgram)
 
-  const openEditProgram = (prog: { id: number; name: string; description?: string; status: string; priority: string; startDate?: string; targetEndDate?: string; ownerId?: number | null; approvalStatus?: string | null }) => {
+  const openEditProgram = (prog: { id: number; name: string; description?: string; status: string; priority: string; startDate?: string; targetEndDate?: string; ownerId?: number | null; approvalStatus?: string | null; kelompok?: string | null; pilarStrategis?: string | null; progresTerkini?: string | null; dukunganDibutuhkan?: string | null }) => {
     setEditProgram({
       id: prog.id,
       name: prog.name,
@@ -184,6 +184,10 @@ export function ProgramsView() {
       targetEndDate: prog.targetEndDate ? prog.targetEndDate.slice(0, 10) : '',
       ownerId: prog.ownerId ?? null,
       approvalStatus: prog.approvalStatus ?? null,
+      kelompok: prog.kelompok ?? '',
+      pilarStrategis: prog.pilarStrategis ?? '',
+      progresTerkini: prog.progresTerkini ?? '',
+      dukunganDibutuhkan: prog.dukunganDibutuhkan ?? '',
     })
     setKebabMenu(null)
     // Pre-load user directory so it's ready when form opens
@@ -207,6 +211,10 @@ export function ProgramsView() {
         startDate: editProgram.startDate,
         targetEndDate: editProgram.targetEndDate,
         ...(editProgram.ownerId != null ? { ownerId: editProgram.ownerId } : {}),
+        kelompok: editProgram.kelompok || undefined,
+        pilarStrategis: editProgram.pilarStrategis || undefined,
+        progresTerkini: editProgram.progresTerkini.trim() || undefined,
+        dukunganDibutuhkan: editProgram.dukunganDibutuhkan.trim() || undefined,
       })
       closeEditProgram()
       await loadOverview('refresh')
@@ -283,8 +291,12 @@ export function ProgramsView() {
     code: '', name: '', description: '',
     status: 'IN_PROGRESS', priority: 'MEDIUM',
     startDate: '', targetEndDate: '',
+    kelompok: '' as string,
+    pilarStrategis: '' as string,
   })
   const [cpOwnerId, setCpOwnerId] = useState<number | null>(null)
+  const [cpOwnerUnitId, setCpOwnerUnitId] = useState<number | null>(null)
+  const [cpUnits, setCpUnits] = useState<Array<{ id: number; name: string; code: string }>>([])
   const [cpStep, setCpStep] = useState<1 | 2>(1)
   const [cpKpiCodes, setCpKpiCodes] = useState<string[]>([])
   const [cpKpiSearch, setCpKpiSearch] = useState('')
@@ -303,7 +315,9 @@ export function ProgramsView() {
     setCpKpiDropdownOpen(false)
     setCpHasNoApmsKpi(false)
     setCpOwnerId(null)
-    setCpForm({ code: '', name: '', description: '', status: 'IN_PROGRESS', priority: 'MEDIUM', startDate: '', targetEndDate: '' })
+    setCpOwnerUnitId(null)
+    setCpUnits([])
+    setCpForm({ code: '', name: '', description: '', status: 'IN_PROGRESS', priority: 'MEDIUM', startDate: '', targetEndDate: '', kelompok: '', pilarStrategis: '' })
     setCpCodeManuallyEdited(false)
   }), [closeOverlay])
 
@@ -332,8 +346,11 @@ export function ProgramsView() {
         startDate: cpForm.startDate,
         targetEndDate: cpForm.targetEndDate,
         ownerId: cpOwnerId ?? currentUser.id,
+        ownerUnitId: cpOwnerUnitId ?? currentUser.unit?.id ?? undefined,
         apmsKpiCodes: cpKpiCodes.length > 0 ? cpKpiCodes : undefined,
         hasNoApmsKpi: cpHasNoApmsKpi || undefined,
+        kelompok: cpForm.kelompok || undefined,
+        pilarStrategis: cpForm.pilarStrategis || undefined,
       })
       closeCpModal()
       await loadOverview('refresh')
@@ -420,7 +437,7 @@ export function ProgramsView() {
   } else {
     laneGroups = ['GREEN', 'YELLOW', 'RED'].map(h => ({
       key: h,
-      label: h === 'GREEN' ? 'On Track' : h === 'YELLOW' ? 'At Risk' : 'Off Track',
+      label: h === 'GREEN' ? 'On Track' : h === 'YELLOW' ? 'At Risk' : 'Terlambat',
       tone: h.toLowerCase(),
       items: filteredLane.filter(p => normalizeHealthStatus(p.healthStatus) === h),
     })).filter(g => g.items.length > 0)
@@ -501,7 +518,14 @@ export function ProgramsView() {
             <span className="role-monitoring-badge">Monitoring</span>
           )}
           {roleAccess.canCreateProgram && (
-            <button className="toolbar-action-btn" onClick={() => setShowCreateProgram(true)}>
+            <button className="toolbar-action-btn" onClick={() => {
+              setShowCreateProgram(true)
+              if (cpUnits.length === 0) {
+                void api.get<{ data: Array<{ id: number; name: string; code: string }> }>('/organization/units')
+                  .then(r => setCpUnits(r.data ?? []))
+                  .catch(() => {})
+              }
+            }}>
               + New Program
             </button>
           )}
@@ -585,12 +609,7 @@ export function ProgramsView() {
                         const deadlineInfo = days !== null ? formatDaysLabel(days) : null
                         const approvalInfo = approvalBadge(prog.approvalStatus)
                         const healthTone = sc === 'on-track' ? 'green' : sc === 'at-risk' ? 'yellow' : 'red'
-                        const primaryTone = approvalInfo ? approvalInfo.tone : healthTone
-                        const primaryLabel = approvalInfo?.label ?? healthLabel
-                        // Sub-line: compact secondary indicator, consistent slot height
-                        // - approval mode → dot + health label (compact, not "Health: X")
-                        // - health mode → blocker count or empty (preserves height via CSS min-height)
-                        const stateSub = approvalInfo ? null : (bCount > 0 ? `${bCount} blocker aktif` : null)
+                        const stateSub = bCount > 0 ? `${bCount} blocker aktif` : null
                         const isOwner = (prog as { ownerId?: number }).ownerId === currentUser?.id
                         const showActions = roleAccess.canEditProgram(isOwner) || roleAccess.canArchiveProgram(isOwner)
                         return (
@@ -609,6 +628,16 @@ export function ProgramsView() {
                                   <strong>{prog.name}</strong>
                                   <div className="program-row__meta">
                                     <span className="program-row__meta-primary">{workstreamSummaryLabel(prog.workstreamCount)}</span>
+                                    {prog.kelompok && (
+                                      <span className="program-row__badge program-row__badge--kelompok">
+                                        {prog.kelompok === 'SCORECARD' ? 'Scorecard' : 'Non SC'}
+                                      </span>
+                                    )}
+                                    {prog.pilarStrategis && (
+                                      <span className="program-row__badge program-row__badge--pilar">
+                                        {prog.pilarStrategis.replace(/_/g, ' ')}
+                                      </span>
+                                    )}
                                     {deadlineInfo && (
                                       <span className={`program-deadline program-deadline--${deadlineInfo.tone}`}>
                                         {deadlineInfo.label}
@@ -618,15 +647,14 @@ export function ProgramsView() {
                                 </div>
                               </div>
                               <div className="program-row__state">
-                                <span className={`program-row__status-pill program-row__status-pill--${primaryTone}`}>
-                                  {primaryLabel}
+                                <span className={`program-row__status-pill program-row__status-pill--${healthTone}`}>
+                                  {healthLabel}
                                 </span>
                                 <span className={`program-row__state-sub${!approvalInfo && !stateSub ? ' program-row__state-sub--empty' : ''}`}>
                                   {approvalInfo ? (
-                                    <>
-                                      <span className={`program-row__health-dot program-row__health-dot--${healthTone}`} />
-                                      {healthLabel}
-                                    </>
+                                    <span className={`program-row__approval-tag program-row__approval-tag--${approvalInfo.tone}`}>
+                                      {approvalInfo.label}
+                                    </span>
                                   ) : stateSub ?? ' '}
                                 </span>
                               </div>
@@ -1390,6 +1418,34 @@ export function ProgramsView() {
                       </div>
                     </div>
                   </section>
+                  <div className="program-form-grid program-form-grid--equal">
+                    <div className="form-field">
+                      <label>Kelompok</label>
+                      <select
+                        className="form-input"
+                        onChange={e => setCpForm(f => ({ ...f, kelompok: e.target.value }))}
+                        value={cpForm.kelompok}
+                      >
+                        <option value="">— Pilih kelompok —</option>
+                        <option value="SCORECARD">Scorecard</option>
+                        <option value="NON_SCORECARD">Non Scorecard</option>
+                      </select>
+                    </div>
+                    <div className="form-field">
+                      <label>Pilar Strategis</label>
+                      <select
+                        className="form-input"
+                        onChange={e => setCpForm(f => ({ ...f, pilarStrategis: e.target.value }))}
+                        value={cpForm.pilarStrategis}
+                      >
+                        <option value="">— Pilih pilar —</option>
+                        <option value="ENABLER">Enabler</option>
+                        <option value="SPENDING_BETTER">Spending Better</option>
+                        <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="form-field">
                     <label>PIC Utama</label>
                     {cpUserDirectory.length === 0 ? (
@@ -1418,6 +1474,26 @@ export function ProgramsView() {
                       </select>
                     )}
                   </div>
+                  {cpUnits.length > 0 && (
+                    <div className="form-field">
+                      <label>Divisi Pemilik</label>
+                      <select
+                        className="form-input"
+                        onChange={e => setCpOwnerUnitId(e.target.value ? Number(e.target.value) : null)}
+                        value={cpOwnerUnitId ?? currentUser?.unit?.id ?? ''}
+                      >
+                        <option value="">— Auto (dari unit Anda) —</option>
+                        {cpUnits.map(u => (
+                          <option key={u.id} value={u.id}>
+                            {u.code} — {u.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="form-field__hint">
+                        Default: divisi Anda ({currentUser?.unit?.code ?? 'tidak diketahui'})
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <div className="modal__footer">
                   <button
@@ -1701,6 +1777,58 @@ export function ProgramsView() {
                         ))}
                       </select>
                     )}
+                  </div>
+
+                  <div className="prog-form-grid prog-form-grid--equal">
+                    <div className="form-field">
+                      <label>Kelompok</label>
+                      <select
+                        className="form-input"
+                        onChange={e => setEditProgram(p => p ? { ...p, kelompok: e.target.value } : p)}
+                        value={editProgram.kelompok}
+                      >
+                        <option value="">— Pilih kelompok —</option>
+                        <option value="SCORECARD">Scorecard</option>
+                        <option value="NON_SCORECARD">Non Scorecard</option>
+                      </select>
+                    </div>
+                    <div className="form-field">
+                      <label>Pilar Strategis</label>
+                      <select
+                        className="form-input"
+                        onChange={e => setEditProgram(p => p ? { ...p, pilarStrategis: e.target.value } : p)}
+                        value={editProgram.pilarStrategis}
+                      >
+                        <option value="">— Pilih pilar —</option>
+                        <option value="ENABLER">Enabler</option>
+                        <option value="SPENDING_BETTER">Spending Better</option>
+                        <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-field">
+                    <label>Progres Terkini</label>
+                    <textarea
+                      className="composer__input prog-modal-textarea"
+                      maxLength={2000}
+                      onChange={e => setEditProgram(p => p ? { ...p, progresTerkini: e.target.value } : p)}
+                      placeholder="Apa yang sudah diselesaikan atau sedang berjalan?"
+                      rows={3}
+                      value={editProgram.progresTerkini}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Dukungan yang Dibutuhkan</label>
+                    <textarea
+                      className="composer__input prog-modal-textarea"
+                      maxLength={2000}
+                      onChange={e => setEditProgram(p => p ? { ...p, dukunganDibutuhkan: e.target.value } : p)}
+                      placeholder="Dukungan, eskalasi, atau keputusan yang diperlukan"
+                      rows={2}
+                      value={editProgram.dukunganDibutuhkan}
+                    />
                   </div>
                 </div>
                 <div className="modal__footer">

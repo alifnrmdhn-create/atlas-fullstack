@@ -155,12 +155,16 @@ export type CommentItem = {
   authorRole?: string
 }
 
+export type Kelompok = 'SCORECARD' | 'NON_SCORECARD'
+export type PilarStrategis = 'ENABLER' | 'SPENDING_BETTER' | 'INNOVATIVE_FINANCING'
+
 export type Program = {
   id: number
   code: string
   name: string
   description?: string
   ownerId?: number
+  ownerUnitId?: number
   status: string
   priority: string
   progressPercent: number
@@ -180,6 +184,10 @@ export type Program = {
   approvalStatus?: string
   rejectionNote?: string
   submittedById?: number
+  kelompok?: Kelompok | null
+  pilarStrategis?: PilarStrategis | null
+  progresTerkini?: string | null
+  dukunganDibutuhkan?: string | null
 }
 
 export type Task = {
@@ -193,12 +201,13 @@ export type Task = {
   isBlocked: boolean
   blockedReason?: string
   targetCompletion?: string
+  actualCompletion?: string | null
   createdAt?: string
   updatedAt?: string
   blockerCount: number
   commentsCount: number
   createdByUnitId?: number
-  workstream?: { id: number; name: string; program?: { id: number; code: string; name: string; healthStatus?: HealthStatus; approvalStatus?: string } }
+  workstream?: { id: number; name: string; program?: { id: number; code: string; name: string; healthStatus?: HealthStatus; approvalStatus?: string; ownerUnitId?: number } }
   assignee?: UserSummary
 }
 
@@ -208,6 +217,7 @@ export type ProgramDetail = {
   name: string
   description?: string
   ownerId: number
+  ownerUnitId?: number
   status: string
   priority: string
   progressPercent: number
@@ -223,6 +233,10 @@ export type ProgramDetail = {
   rejectionNote?: string
   submittedById?: number
   submittedByName?: string | null
+  kelompok?: Kelompok | null
+  pilarStrategis?: PilarStrategis | null
+  progresTerkini?: string | null
+  dukunganDibutuhkan?: string | null
   readiness?: {
     hasWorkstream: boolean
     hasTask: boolean
@@ -463,6 +477,161 @@ export type ActivityItem = {
   action: string
   description?: string
   changeTimestamp: string
+}
+
+// ── Program Summary (Executive Dashboard) ────────────────────────────────────
+
+export type ProgramHealthToneKey = 'on_track' | 'at_risk' | 'terlambat' | 'overdue' | 'selesai'
+
+export type DivisiProgramCounts = {
+  total: number
+  onTrack: number
+  atRisk: number
+  terlambat: number
+  overdue: number
+  selesai: number
+  pctOnTrack: number
+  pctAtRisk: number
+  pctTerlambat: number
+  pctSelesai: number
+}
+
+export type DivisiProgramSummary = DivisiProgramCounts & {
+  unit: { id: number | null; name: string; code: string }
+}
+
+export type EarlyWarningProgram = {
+  id: number
+  code: string
+  name: string
+  divisi: string
+  divisiName: string
+  healthTone: ProgramHealthToneKey
+  healthLabel: string
+  targetEndDate: string | null
+  daysRemaining: number | null
+  progressPercent: number
+  kelompok: Kelompok | null
+  pilarStrategis: PilarStrategis | null
+  progresTerkini: string | null
+  dukunganDibutuhkan: string | null
+}
+
+export type DivisiTaskLoad = {
+  kind: 'unit' | 'person'
+  subjectRole: 'leader' | 'pool' | null
+  unit: { id: number | null; name: string; code: string } | null
+  person: { id: number; name: string; positionTitle: string | null; avatarUrl: string | null; roleType: string } | null
+  head: { id: number; name: string; positionTitle: string | null; avatarUrl: string | null } | null
+  isRollup: boolean
+  criticalThreshold: number
+  minSampleForCritical: number
+  total: number
+  active: number
+  done: number
+  blocked: number
+  backlog: number
+  overdue: number
+  onTimeCount: number
+  lateCount: number
+  onTimeRate: number | null
+  /** For pool members: top assigners by task count (desc, max 3). */
+  assignerBreakdown: Array<{ id: number; name: string; count: number }> | null
+}
+
+export type ScorecardHealth = DivisiProgramCounts & {
+  kelompok: 'SCORECARD' | 'NON_SCORECARD'
+}
+
+export type DeadlineCluster = {
+  label: string
+  total: number
+  atRisk: number
+  onTrack: number
+}
+
+export type NeedsActionItem = {
+  id: number
+  code: string
+  name: string
+  reason: string
+  tag: 'approval' | 'blocker' | 'support'
+  divisi: string
+}
+
+export type StagnantProgram = {
+  id: number
+  code: string
+  name: string
+  daysIdle: number
+  tone: ProgramHealthToneKey
+  divisi: string
+}
+
+export type BlockerSignal = {
+  unitId: number | null
+  code: string
+  critical: number
+  high: number
+  medium: number
+  total: number
+}
+
+export type KpiHealthPayload = {
+  total: number
+  red: number
+  yellow: number
+  green: number
+  byPilar: Array<{ pilar: string; red: number; yellow: number; green: number; total: number }>
+}
+
+export type MomentumPayload = {
+  programsCompletedLast30d: number
+  newProgramsLast30d: number
+  tasksCompletedThisWeek: number
+  stagnantCount: number
+  activeRate: number
+  stagnantPrograms: StagnantProgram[]
+}
+
+export type VelocityPayload = {
+  comparedTo: string
+  daysAgo: number
+  total: number
+  onTrack: number
+  atRisk: number
+  terlambat: number
+  selesai: number
+  byDivisi: Array<{ code: string; onTrack: number; atRisk: number }>
+} | null
+
+export type ProgramScope = {
+  role: string
+  level: 'portfolio' | 'directorate' | 'unit'
+  name: string | null
+  unitCount: number
+}
+
+export type ProgramSummaryPayload = {
+  scope: ProgramScope
+  summary: DivisiProgramCounts
+  byDivisi: DivisiProgramSummary[]
+  earlyWarning: EarlyWarningProgram[]
+  taskLoad: DivisiTaskLoad[]
+  scorecardHealth: ScorecardHealth[]
+  deadlineClusters: DeadlineCluster[]
+  needsAction: NeedsActionItem[]
+  stagnation: StagnantProgram[]
+  blockerSignal: BlockerSignal[]
+  kpiHealth: KpiHealthPayload
+  momentum: MomentumPayload
+  velocity: VelocityPayload
+  trendSeries: Array<{ date: string; total: number; onTrack: number; atRisk: number; terlambat: number; pctOnTrack: number }>
+  programsForChart: Array<{
+    id: number; code: string; name: string
+    progressPercent: number; daysRemaining: number | null
+    healthTone: ProgramHealthToneKey; divisi: string
+  }>
 }
 
 export type DashboardPayload = {

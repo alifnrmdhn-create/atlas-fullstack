@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { InlineNotice, SectionState, SkeletonBlock, SkeletonStack } from '../components/ui'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 

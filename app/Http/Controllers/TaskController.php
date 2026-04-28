@@ -27,7 +27,7 @@ class TaskController extends Controller
         $tasks = Task::query()
             ->with([
                 'workstream:id,code,name,programId',
-                'workstream.program:id,code,name,healthStatus,approvalStatus',
+                'workstream.program:id,code,name,healthStatus,approvalStatus,ownerUnitId',
                 'assignee:id,name,roleType,avatarUrl',
             ])
             ->orderBy('targetCompletion')

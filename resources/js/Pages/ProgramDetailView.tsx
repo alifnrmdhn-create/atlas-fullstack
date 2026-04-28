@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { FormEvent } from 'react'
 import { usePage } from '@inertiajs/react'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { api, extractErrorMessage } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { formatKpiValue, getKpiFillPercent } from '../lib/kpi'
@@ -1225,6 +1225,57 @@ export function ProgramDetailView() {
                       )}
                     </div>
                   </section>
+
+                  {/* ── Info Strategis panel ── */}
+                  {(detail.kelompok || detail.pilarStrategis || detail.progresTerkini || detail.dukunganDibutuhkan) && (
+                  <section className="wid-panel">
+                    <div className="wid-panel__head wid-panel__head--compact">
+                      <h3 className="wid-panel__title">
+                        <span className="wid-panel__icon">{PIcon.layers}</span>
+                        Info Strategis
+                      </h3>
+                      <button
+                        aria-expanded={!sidebarCollapsed.strategic}
+                        aria-label={sidebarCollapsed.strategic ? 'Buka panel' : 'Tutup panel'}
+                        className={`wid-panel__collapse${sidebarCollapsed.strategic ? ' is-collapsed' : ''}`}
+                        onClick={() => toggleSidebar('strategic')}
+                        type="button"
+                      >
+                        {PIcon.chevron}
+                      </button>
+                    </div>
+                    <div className={`wid-panel__body${sidebarCollapsed.strategic ? ' is-collapsed' : ''}`}>
+                      {detail.kelompok && (
+                        <div className="wi-sidebar-row">
+                          <span className="wi-sidebar-label">Kelompok</span>
+                          <span className="wi-sidebar-value">
+                            {detail.kelompok === 'SCORECARD' ? 'Scorecard' : 'Non Scorecard'}
+                          </span>
+                        </div>
+                      )}
+                      {detail.pilarStrategis && (
+                        <div className="wi-sidebar-row" style={{ marginTop: 6 }}>
+                          <span className="wi-sidebar-label">Pilar</span>
+                          <span className="wi-sidebar-value">
+                            {detail.pilarStrategis.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                      )}
+                      {detail.progresTerkini && (
+                        <div className="wi-sidebar-row wi-sidebar-row--block" style={{ marginTop: 8 }}>
+                          <span className="wi-sidebar-label">Progres Terkini</span>
+                          <p className="wi-sidebar-value wi-sidebar-value--prose">{detail.progresTerkini}</p>
+                        </div>
+                      )}
+                      {detail.dukunganDibutuhkan && (
+                        <div className="wi-sidebar-row wi-sidebar-row--block" style={{ marginTop: 8 }}>
+                          <span className="wi-sidebar-label">Dukungan Dibutuhkan</span>
+                          <p className="wi-sidebar-value wi-sidebar-value--prose">{detail.dukunganDibutuhkan}</p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                  )}
 
                   {/* ── Channel panel ── */}
                   <section className="wid-panel">

@@ -1,8 +1,9 @@
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
-import { useState, useEffect, useRef, type CSSProperties } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Blocker, ChannelSummary, FocusPolicy, Meeting, MyWorkDecision, NotificationItem, Program, Task } from '../types'
+import { ActionPanel, actionPanelTitleFor } from '../components/ActionPanel'
 
 type FocusBlock = {
   id: number
@@ -14,6 +15,21 @@ type FocusBlock = {
 
 type FocusItemKind = 'task' | 'blocker' | 'program' | 'approval' | 'mention' | 'dm' | 'meeting' | 'focus' | 'notification'
 type FocusScope = 'all' | 'action' | 'risk' | 'communication' | 'schedule'
+
+/**
+ * Urgency model — kind-driven, restraint-first. Replaces the generic
+ * red/yellow/green tone palette which color-coded everything indiscriminately.
+ *
+ *   critical — must act today. Blockers, overdue tasks, RED programs.
+ *   warn     — soon. Tasks due today/tomorrow, YELLOW programs.
+ *   decide   — decision pending. Approvals.
+ *   info     — awareness only. Mentions, DMs, notifications, meetings.
+ *
+ * Visual rule: only `critical` and `warn` get tinted accents. `decide` gets
+ * indigo accent. `info` stays fully neutral — color is reserved for genuine
+ * urgency, not status enumeration.
+ */
+type Urgency = 'critical' | 'warn' | 'decide' | 'info'
 
 type FocusItem = {
   id: string
@@ -27,7 +43,7 @@ type FocusItem = {
   nextCue: string
   actionLabel: string
   score: number
-  tone: 'red' | 'yellow' | 'green' | 'indigo' | 'neutral'
+  urgency: Urgency
   chip?: string
   evidence?: string[]
   entityId?: number
@@ -45,34 +61,6 @@ type NotificationGroup = {
   items: NotificationItem[]
   unreadCount: number
 }
-
-const PERSON_AVATAR_PALETTE = [
-  { bg: 'var(--purple-dim)', fg: 'var(--purple-ink)', ring: 'var(--purple-subtle)' },
-  { bg: 'var(--blue-dim)', fg: 'var(--blue-ink)', ring: 'var(--blue-subtle)' },
-  { bg: 'var(--green-dim)', fg: 'var(--green-ink)', ring: 'var(--green-subtle)' },
-  { bg: 'var(--yellow-dim)', fg: 'var(--yellow-ink)', ring: 'var(--yellow-subtle)' },
-  { bg: 'var(--red-dim)', fg: 'var(--red-ink)', ring: 'var(--red-subtle)' },
-  { bg: 'var(--cyan-dim)', fg: 'var(--cyan-ink)', ring: 'var(--cyan-subtle)' },
-] as const
-
-const HEALTH_TONES = {
-  RED: { bg: 'var(--red-dim)', fg: 'var(--red-ink)', bar: 'var(--red)' },
-  YELLOW: { bg: 'var(--yellow-dim)', fg: 'var(--yellow-ink)', bar: 'var(--yellow)' },
-  GREEN: { bg: 'var(--green-dim)', fg: 'var(--green-ink)', bar: 'var(--green)' },
-} as const
-
-const SEVERITY_TONES = {
-  CRITICAL: { bg: 'var(--red-dim)', fg: 'var(--red-ink)', border: 'var(--red-subtle)' },
-  HIGH: { bg: 'var(--yellow-dim)', fg: 'var(--yellow-ink)', border: 'var(--yellow-subtle)' },
-  MEDIUM: { bg: 'var(--blue-dim)', fg: 'var(--blue-ink)', border: 'var(--blue-subtle)' },
-  LOW: { bg: 'var(--green-dim)', fg: 'var(--green-ink)', border: 'var(--green-subtle)' },
-} as const
-
-const NEUTRAL_TONE = { bg: 'var(--gray-dim)', fg: 'var(--gray-ink)', border: 'var(--gray-subtle)' } as const
-const SOFT_SURFACE = 'var(--surface-overlay-soft)'
-const TRACK_BG = 'var(--surface-quiet)'
-const PRIORITY_PREVIEW_LIMIT = 3
-const SECTION_PREVIEW_LIMIT = 2
 
 const FOCUS_SCOPE_LABEL: Record<FocusScope, string> = {
   all: 'Semua',
@@ -97,220 +85,10 @@ const NOTIF_TYPE_LABEL: Record<string, string> = {
   DEADLINE_APPROACHING: 'Deadline', DM_RECEIVED: 'DM',
 }
 
-const toneVars = (vars: Record<string, string | number | undefined>): CSSProperties =>
-  vars as CSSProperties
-
-// Section accent colors — only used on headers, NOT on items
-const SECTION_BORDER: Record<string, string> = {
-  priority: 'var(--yellow)',
-  assigned: 'var(--indigo)',
-  blocker:  'var(--red)',
-  atrisk:   'var(--yellow)',
-  mention:  'var(--indigo)',
-  notif:    'var(--text-muted)',
-}
-
-// Section icons — small SVG per section type
-const SECTION_ICON: Record<string, React.ReactNode> = {
-  priority: (
-    <svg fill="none" height="13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9" viewBox="0 0 16 16" width="13">
-      <path d="M8.5 1.8 3 9h4l-.8 5.2L13 6.8H9l-.5-5z" />
-    </svg>
-  ),
-  assigned: (
-    <svg fill="none" height="13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9" viewBox="0 0 16 16" width="13">
-      <rect height="11" rx="2" width="11" x="2.5" y="2.5" />
-      <path d="m5.5 8 2 2 3-3.5" />
-    </svg>
-  ),
-  blocker: (
-    <svg fill="none" height="13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9" viewBox="0 0 16 16" width="13">
-      <circle cx="8" cy="8" r="5.5" />
-      <path d="m4.1 4.1 7.8 7.8" />
-    </svg>
-  ),
-  atrisk: (
-    <svg fill="none" height="13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9" viewBox="0 0 16 16" width="13">
-      <path d="M8 2 1.5 13.5h13L8 2z" />
-      <path d="M8 6.5v3.5M8 11.5v.5" />
-    </svg>
-  ),
-  mention: (
-    <svg fill="none" height="13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9" viewBox="0 0 16 16" width="13">
-      <circle cx="8" cy="8" r="2.5" />
-      <path d="M10.5 8A2.5 2.5 0 0 0 8 5.5m0 5a2.5 2.5 0 0 0 2.5-2.5M13.5 8a5.5 5.5 0 1 1-5.5-5.5" />
-      <path d="M13.5 5.5V8h-2.5" />
-    </svg>
-  ),
-  notif: (
-    <svg fill="none" height="13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9" viewBox="0 0 16 16" width="13">
-      <path d="M8 2a4.5 4.5 0 0 1 4.5 4.5V9l1 2H2.5l1-2V6.5A4.5 4.5 0 0 1 8 2z" />
-      <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" />
-    </svg>
-  ),
-}
-
-// ── Status avatar icons (SVG inline) ───────────────────────────────────────
-
-function IconTask({ color }: { color: string }) {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2.5" y="2.5" width="11" height="11" rx="2" />
-      <path d="m5.5 8 2 2 3-3.5" />
-    </svg>
-  )
-}
-function IconBlock({ color }: { color: string }) {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="8" cy="8" r="5.5" />
-      <path d="m4.1 4.1 7.8 7.8" />
-    </svg>
-  )
-}
-function IconProgram({ color }: { color: string }) {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="2" width="10" height="12" rx="1.5" />
-      <path d="M5.5 6h5M5.5 9h5M5.5 12h3" />
-    </svg>
-  )
-}
-
-/** Colored status avatar — replaces border-left for work items, blockers, programs */
-function StatusAvatar({
-  bg, shape = 'rounded', children,
-}: {
-  bg: string; shape?: 'circle' | 'rounded'; children: React.ReactNode
-}) {
-  return (
-    <div
-      className="fokus-avatar"
-      style={toneVars({
-        '--fokus-avatar-bg': bg,
-        '--fokus-avatar-radius': shape === 'circle' ? '999px' : '9px',
-      })}
-    >
-      {children}
-    </div>
-  )
-}
-
-/** Person avatar for notifications — warm pastel palette with ring */
-function PersonAvatar({ name, seed }: { name: string; seed: number }) {
-  const initials = name.split(' ').slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase() || '?'
-  const tone = PERSON_AVATAR_PALETTE[seed % PERSON_AVATAR_PALETTE.length]
-  return (
-    <div
-      className="fokus-avatar fokus-avatar--person"
-      style={toneVars({
-        '--fokus-avatar-bg': tone.bg,
-        '--fokus-avatar-fg': tone.fg,
-        '--fokus-avatar-ring': tone.ring,
-        '--fokus-avatar-size': '36px',
-        '--fokus-avatar-radius': '999px',
-      })}
-    >
-      {initials}
-    </div>
-  )
-}
-
-/** Progress bar — neutral, single color */
-function Bar({
-  value,
-  track = 'var(--panel-border)',
-  fill = 'var(--text-muted)',
-}: {
-  value: number
-  track?: string
-  fill?: string
-}) {
-  return (
-    <div className="fokus-progress" style={toneVars({ '--fokus-progress-track': track })}>
-      <div
-        className="fokus-progress__fill"
-        style={toneVars({
-          '--fokus-progress-fill': fill,
-          '--fokus-progress-value': `${Math.min(100, value)}%`,
-        })}
-      />
-    </div>
-  )
-}
-
-/** Section group header with icon + collapse toggle */
-function SectionHeader({
-  section, title, count, onNav, collapsed = false, onToggle,
-}: {
-  section: string; title: string; count: number; onNav?: () => void
-  collapsed?: boolean; onToggle?: () => void
-}) {
-  const accentColor = SECTION_BORDER[section] ?? 'var(--text-muted)'
-  return (
-    <div className="fokus-section-header">
-      {onToggle && (
-        <button className="fokus-section-toggle" onClick={onToggle} type="button">
-          <span className={`fokus-section-toggle__icon${collapsed ? ' fokus-section-toggle__icon--collapsed' : ''}`}>
-            <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 16 16" width="12">
-              <path d="m4 6 4 4 4-4" />
-            </svg>
-          </span>
-        </button>
-      )}
-      {SECTION_ICON[section] && (
-        <span className="fokus-section-header__icon" style={toneVars({ '--fokus-section-accent': accentColor })}>
-          {SECTION_ICON[section]}
-        </span>
-      )}
-      <span className="fokus-section-header__title">{title}</span>
-      {count > 0 && <span className="fokus-section-header__badge">{count}</span>}
-      {onNav && (
-        <button className="fokus-nav-link" onClick={onNav} type="button">
-          Lihat semua →
-        </button>
-      )}
-    </div>
-  )
-}
-
-function SectionEmpty({ text }: { text: string }) {
-  return (
-    <div className="fokus-empty">
-      <span className="fokus-empty__icon">✓</span>
-      <span>{text}</span>
-    </div>
-  )
-}
-
-function SectionMore({ hiddenCount, onClick, label = 'item lain disembunyikan sementara', actionLabel = 'Tampilkan di Focus →' }: { hiddenCount: number; onClick: () => void; label?: string; actionLabel?: string }) {
-  if (hiddenCount <= 0) return null
-  return (
-    <button className="fokus-section-more" onClick={onClick} type="button">
-      <span>{hiddenCount} {label}</span>
-      <span>{actionLabel}</span>
-    </button>
-  )
-}
-
-// ── Personal helpers ────────────────────────────────────────────────────────
-
-function getGreeting(): string {
-  const h = new Date().getHours()
-  if (h < 11) return 'Selamat pagi'
-  if (h < 15) return 'Selamat siang'
-  if (h < 18) return 'Selamat sore'
-  return 'Selamat malam'
-}
-
 function todayLabel(): string {
   return new Date().toLocaleDateString('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
-}
-
-function nameInitials(name: string): string {
-  return name.split(' ').slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase() || '?'
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -499,6 +277,16 @@ function taskFocusItem(task: Task, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): 
             ? `Prioritas ${task.priority.toLowerCase()}`
             : 'Task aktif yang menunggu progres Anda'
 
+  // Urgency: derived from due/blocked context, NOT from healthStatus —
+  // a task with healthGreen but 7 days overdue is critical, not "ok".
+  const dueDays = daysUntil(task.targetCompletion)
+  const urgency: Urgency =
+    task.isBlocked ? 'critical' :
+    dueDays !== null && dueDays < 0 ? 'critical' :
+    dueDays !== null && dueDays <= 1 ? 'warn' :
+    task.healthStatus === 'RED' ? 'warn' :
+    'info'
+
   return {
     id: `task-${task.id}`,
     kind: 'task',
@@ -511,7 +299,7 @@ function taskFocusItem(task: Task, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): 
     nextCue: task.isBlocked ? 'Selesaikan blocker sebelum progres lanjut' : due ? due : idle ? 'Update status agar risiko tidak tersembunyi' : 'Update progres berikutnya',
     actionLabel: task.isBlocked ? 'Buka blocker →' : 'Kerjakan →',
     score,
-    tone: task.isBlocked || task.healthStatus === 'RED' ? 'red' : task.healthStatus === 'YELLOW' ? 'yellow' : 'green',
+    urgency,
     chip: due ?? idle ?? task.status.replace(/_/g, ' '),
     evidence: focusEvidence([
       task.isBlocked && 'Blocked',
@@ -562,7 +350,9 @@ function blockerFocusItem(blocker: Blocker, policy: FocusPolicy = DEFAULT_FOCUS_
     nextCue: ageText ? 'Prioritaskan karena blocker sudah menua' : program ? `Dampaknya tersambung ke ${program.code}` : 'Follow up hambatan sampai ada owner',
     actionLabel: 'Follow up →',
     score,
-    tone: blocker.severity === 'CRITICAL' || blocker.severity === 'HIGH' ? 'red' : 'yellow',
+    // Blockers are intrinsically critical — by definition something is blocked.
+    // Severity scales the score, not the urgency category.
+    urgency: 'critical',
     chip: ageText ?? SEV_LABEL[blocker.severity] ?? blocker.severity,
     evidence: focusEvidence([
       SEV_LABEL[blocker.severity] ?? blocker.severity,
@@ -595,7 +385,7 @@ function programFocusItem(program: Program, isStrategic: boolean): FocusItem {
     nextCue: program.healthStatus === 'RED' ? 'Butuh intervensi atau keputusan cepat' : 'Pantau sebelum berubah merah',
     actionLabel: isStrategic ? 'Review program →' : 'Cek program →',
     score,
-    tone: program.healthStatus === 'RED' ? 'red' : 'yellow',
+    urgency: program.healthStatus === 'RED' ? 'critical' : program.healthStatus === 'YELLOW' ? 'warn' : 'info',
     chip: `${program.progressPercent}%`,
     evidence: focusEvidence([
       `Health ${program.healthStatus}`,
@@ -634,7 +424,7 @@ function approvalFocusItem(program: ApprovalCandidate, role: string, policy: Foc
     nextCue: role === 'KASUBDIV' || isKadivApproval ? 'Putuskan agar bottleneck selesai' : 'Ajukan supaya masuk alur approval',
     actionLabel: hasDecisionSignal && program.decisionType === 'SUBMIT_PROGRAM' ? 'Ajukan →' : role === 'KASUBDIV' || isKadivApproval ? 'Review →' : 'Ajukan →',
     score: approvalScore,
-    tone: 'yellow',
+    urgency: 'decide',
     chip: 'Approval',
     evidence: focusEvidence([
       `Peran ${label}`,
@@ -675,7 +465,7 @@ function notificationFocusItem(notification: NotificationItem): FocusItem {
     nextCue: notification.impact ?? notificationNextCue(notification),
     actionLabel: `${notification.actionLabel ?? (notification.type === 'DM_RECEIVED' ? 'Balas' : 'Buka')} →`,
     score: (isHighSignal ? 66 : requiresAction ? 54 : 42) + recencyScore(notification.createdAt),
-    tone: isHighSignal ? 'yellow' : notification.type === 'MENTION' || notification.type === 'DM_RECEIVED' ? 'indigo' : 'neutral',
+    urgency: isHighSignal && notification.type !== 'MENTION' && notification.type !== 'DM_RECEIVED' ? 'warn' : 'info',
     chip: NOTIF_TYPE_LABEL[notification.type] ?? notification.type,
     evidence: focusEvidence([
       NOTIF_TYPE_LABEL[notification.type] ?? notification.type,
@@ -701,7 +491,7 @@ function dmFocusItem(channel: ChannelSummary): FocusItem {
     nextCue: 'Balas untuk membuka konteks kerja',
     actionLabel: 'Balas →',
     score: 58 + Math.min(18, channel.unreadCount * 4) + recencyScore(channel.lastMessage?.createdAt),
-    tone: 'indigo',
+    urgency: 'info',
     chip: `${channel.unreadCount} baru`,
     evidence: focusEvidence([
       `${channel.unreadCount} pesan`,
@@ -747,10 +537,156 @@ function groupNotifications(items: NotificationItem[]): NotificationGroup[] {
 
 function focusItemMatchesScope(item: FocusItem, scope: FocusScope): boolean {
   if (scope === 'all') return true
-  if (scope === 'action') return item.kind === 'task' || item.kind === 'blocker' || item.kind === 'approval' || (item.kind === 'notification' && item.tone !== 'neutral')
-  if (scope === 'risk') return item.kind === 'program' || item.kind === 'blocker' || item.tone === 'red' || item.tone === 'yellow'
+  if (scope === 'action') return item.kind === 'task' || item.kind === 'blocker' || item.kind === 'approval' || (item.kind === 'notification' && item.urgency !== 'info')
+  if (scope === 'risk') return item.kind === 'program' || item.kind === 'blocker' || item.urgency === 'critical' || item.urgency === 'warn'
   if (scope === 'communication') return item.kind === 'mention' || item.kind === 'dm' || (item.kind === 'notification' && item.section === 'mention')
   return item.kind === 'meeting' || item.kind === 'focus'
+}
+
+/** Verb-driven CTA per item kind. Primary CTA only for genuinely urgent items. */
+function ctaFor(item: FocusItem): { label: string; primary: boolean } {
+  if (item.kind === 'blocker')                       return { label: 'Tangani',     primary: true  }
+  if (item.kind === 'approval')                      return { label: 'Putuskan',    primary: true  }
+  if (item.kind === 'task')                          return { label: 'Kerjakan',    primary: item.urgency === 'critical' }
+  if (item.kind === 'program')                       return { label: 'Tinjau',      primary: false }
+  if (item.kind === 'mention' || item.kind === 'dm') return { label: 'Balas',       primary: false }
+  if (item.kind === 'meeting' || item.kind === 'focus') return { label: 'Buka jadwal', primary: false }
+  return { label: 'Lihat', primary: false }
+}
+
+/** Map item.kind to a per-kind icon. Replaces section-based icon (which was generic). */
+const KIND_ICON: Record<FocusItemKind, React.ReactNode> = {
+  task: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="2.5" />
+      <path d="m5.5 8 2 2 3.5-4" />
+    </svg>
+  ),
+  blocker: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      <circle cx="8" cy="8" r="6" />
+      <path d="M3.8 3.8l8.4 8.4" />
+    </svg>
+  ),
+  approval: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 2.5 13.5 5l-7 7H4v-2.5l7-7z" />
+      <path d="M9.5 4 12 6.5" />
+    </svg>
+  ),
+  program: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="2.5" width="10" height="11" rx="1.5" />
+      <path d="M5.5 6h5M5.5 9h5M5.5 12h3" />
+    </svg>
+  ),
+  mention: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="2.5" />
+      <path d="M10.5 8a2.5 2.5 0 0 0-2.5-2.5M13.5 8a5.5 5.5 0 1 1-5.5-5.5" />
+      <path d="M13.5 5.5V8h-2.5" />
+    </svg>
+  ),
+  dm: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 10a2 2 0 0 1-2 2H5l-3 3V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6z" />
+    </svg>
+  ),
+  meeting: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="12" height="11" rx="1.5" />
+      <path d="M5 1.5v3M11 1.5v3M2 7h12" />
+    </svg>
+  ),
+  focus: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="6" />
+      <circle cx="8" cy="8" r="2.5" />
+    </svg>
+  ),
+  notification: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 2a4.5 4.5 0 0 1 4.5 4.5V9l1 2H2.5l1-2V6.5A4.5 4.5 0 0 1 8 2z" />
+      <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" />
+    </svg>
+  ),
+}
+
+// ── Item presentation ──────────────────────────────────────────────────────
+
+/** Hero card — Linear-style: just left rail + typography hierarchy.
+ *  No icon BG pill, no border tint, no colored chips. Color = 1 rail line. */
+function FokusHeroCard({
+  item,
+  onAction,
+}: {
+  item: FocusItem
+  onAction: (item: FocusItem, rank?: number) => void
+}) {
+  const cta = ctaFor(item)
+  return (
+    <article className={`fokus-hero-card fokus-hero-card--${item.urgency}`}>
+      <span className="fokus-hero-card__icon" aria-hidden="true">
+        {KIND_ICON[item.kind]}
+      </span>
+      <div className="fokus-hero-card__body">
+        <h4 className="fokus-hero-card__title">{item.title}</h4>
+        <p className="fokus-hero-card__meta">{item.meta}</p>
+        <p className="fokus-hero-card__reason">
+          {item.impact ? <><strong>{item.impact}.</strong> {item.reason}</> : item.reason}
+        </p>
+      </div>
+      <button
+        type="button"
+        className={`fokus-cta fokus-cta--lg${cta.primary ? ' fokus-cta--primary' : ''}`}
+        onClick={() => onAction(item, 1)}
+      >
+        {cta.label}
+      </button>
+    </article>
+  )
+}
+
+/** Compact row — Linear-style restraint:
+ *  - Icon: small SVG, no background pill
+ *  - Title: black, bold
+ *  - Meta: single muted line. Chip only if it adds info NOT already in reason.
+ *  - Color: ONE signal — left rail. No colored chip. Critical = inline red text via class. */
+function FokusItemRow({
+  item,
+  rank,
+  onAction,
+  muted = false,
+}: {
+  item: FocusItem
+  rank: number
+  onAction: (item: FocusItem, rank?: number) => void
+  muted?: boolean
+}) {
+  const cta = ctaFor(item)
+  // Dedupe: if chip text already appears in reason, drop it.
+  const showChip = item.chip && !item.reason.toLowerCase().includes(item.chip.toLowerCase())
+  return (
+    <li className={`fokus-row fokus-row--${item.urgency}${muted ? ' fokus-row--muted' : ''}`}>
+      <span className="fokus-row__icon" aria-hidden="true">
+        {KIND_ICON[item.kind]}
+      </span>
+      <div className="fokus-row__body">
+        <div className="fokus-row__title">{item.title}</div>
+        <div className="fokus-row__meta">
+          {showChip && <><span className="fokus-row__chip">{item.chip}</span> · </>}
+          <span>{item.reason}</span>
+        </div>
+      </div>
+      <button
+        type="button"
+        className={`fokus-cta fokus-cta--sm${cta.primary ? ' fokus-cta--primary' : ''}`}
+        onClick={() => onAction(item, rank)}
+      >
+        {cta.label}
+      </button>
+    </li>
+  )
 }
 
 // ── Main view ───────────────────────────────────────────────────────────────
@@ -758,8 +694,8 @@ function focusItemMatchesScope(item: FocusItem, scope: FocusScope): boolean {
 export function InboxView() {
   const {
     notifications, markNotificationRead, loadOverview,
-    programs, myWork, channels,
-    currentUser, formatDate, setSelectedProgramId, setSelectedTaskId, setSelectedChannelId,
+    programs, myWork, channels, programSummary, openProgramWorkspace,
+    currentUser, setSelectedProgramId, setSelectedTaskId, setSelectedChannelId,
   } = useWorkspace()
   const navigate = useInertiaNavigate()
 
@@ -814,14 +750,6 @@ export function InboxView() {
     ? programs.filter(p => p.healthStatus === 'RED' || p.healthStatus === 'YELLOW')
     : (myWork?.programs ?? [])
 
-  // ── Sidebar programs ───────────────────────────────────────────────────────
-  // BOD/KADIV: all programs sorted by health (worst first)
-  // Others: only owned programs
-  const HEALTH_ORDER: Record<string, number> = { RED: 0, YELLOW: 1, GREEN: 2 }
-  const sidebarProgs = isStrategic
-    ? [...programs].sort((a, b) => (HEALTH_ORDER[a.healthStatus] ?? 3) - (HEALTH_ORDER[b.healthStatus] ?? 3))
-    : (myWork?.programs ?? programs.filter(p => p.owner?.id === currentUser?.id))
-
   // ── Notifications ──────────────────────────────────────────────────────────
   const MENTION_TYPES = new Set(['MENTION', 'APPROVAL', 'DM_RECEIVED'])
   const mentions = notifications.filter(n =>
@@ -859,51 +787,7 @@ export function InboxView() {
     ch.type === 'PRIVATE' && ch.name?.startsWith('dm-') && (ch.unreadCount ?? 0) > 0
   )
 
-  const totalActions = myTasks.length + myBlockers.length + myAtRisk.length + mentions.length + pendingApprovalPrograms.length + unreadDms.length + actionableOtherUnread.length
-
-  // ── Collapsible sections ──────────────────────────────────────────────────
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
-  const [expandedPreview, setExpandedPreview] = useState<Set<string>>(new Set())
   const [focusScope, setFocusScope] = useState<FocusScope>('all')
-  const isCollapsed = (key: string) => collapsed.has(key)
-  const isPreviewExpanded = (key: string) => expandedPreview.has(key)
-  const toggleSection = (key: string) => setCollapsed(prev => {
-    const next = new Set(prev)
-    if (next.has(key)) { next.delete(key) } else { next.add(key) }
-    return next
-  })
-  const expandPreview = (key: string) => setExpandedPreview(prev => {
-    const next = new Set(prev)
-    next.add(key)
-    return next
-  })
-
-  // ── Personal context ──────────────────────────────────────────────────────
-  const firstName = (() => {
-    const name = currentUser?.name
-    if (!name) return 'Anda'
-    if (role === 'BOD') return name
-    const parts = name.split(' ')
-    if (parts[0].length <= 2 || parts[0].endsWith('.')) return name
-    return parts[0]
-  })()
-  const greeting  = getGreeting()
-
-  const criticalCount = myBlockers.filter(b => b.severity === 'CRITICAL').length
-  const redItemCount  = myTasks.filter(i => i.healthStatus === 'RED').length
-
-  const contextSummary =
-    criticalCount > 0 ? `${criticalCount} blocker kritis perlu ditangani segera` :
-    redItemCount  > 0 ? `${redItemCount} item dalam kondisi kritis` :
-    totalActions  > 0 ? `${totalActions} hal menunggu tindakan Anda` :
-    'Semua item beres hari ini ✓'
-
-  // Weekly progress: completed items from myWork
-  const weeklyCompleted = myTasks.filter(i => i.status === 'COMPLETED' || i.status === 'IN_REVIEW').length
-  const weeklyTotal = myTasks.length
-
-  // User avatar color from stable token palette
-  const userTone = PERSON_AVATAR_PALETTE[(currentUser?.id ?? 42) % PERSON_AVATAR_PALETTE.length]
 
   // ── Today's meetings ────────────────────────────────────────────────────
   const [todayMeetings, setTodayMeetings] = useState<Meeting[]>([])
@@ -960,7 +844,7 @@ export function InboxView() {
         nextCue: isOngoing ? 'Masuk sekarang atau cek hasil diskusi' : 'Siapkan konteks sebelum agenda dimulai',
         actionLabel: 'Buka jadwal →',
         score: isOngoing ? 72 : 44 + recencyScore(meeting.startAt),
-        tone: isOngoing ? 'green' : 'neutral',
+        urgency: isOngoing ? 'warn' : 'info',
         chip: isOngoing ? 'Berlangsung' : 'Meeting',
         evidence: focusEvidence([
           isOngoing ? 'Sedang berlangsung' : 'Agenda hari ini',
@@ -987,7 +871,7 @@ export function InboxView() {
         nextCue: isActive ? 'Gunakan slot ini untuk satu aksi utama' : 'Amankan waktu dari distraksi',
         actionLabel: 'Buka jadwal →',
         score: isActive ? 70 : 38,
-        tone: isActive ? 'indigo' : 'neutral',
+        urgency: isActive ? 'warn' : 'info',
         chip: isActive ? 'Aktif' : 'Fokus',
         evidence: focusEvidence([
           isActive ? 'Slot aktif' : 'Slot hari ini',
@@ -1016,71 +900,7 @@ export function InboxView() {
       .sort((a, b) => b.score - a.score)
   })()
   const scopedRankedFocusItems = rankedFocusItems.filter(item => focusItemMatchesScope(item, focusScope))
-  const topFocusItems = scopedRankedFocusItems.slice(0, PRIORITY_PREVIEW_LIMIT)
-  const surfacedFocusIds = new Set(topFocusItems.map(item => item.id))
-  const surfacedNotificationIds = new Set(
-    topFocusItems
-      .map(item => item.notificationId)
-      .filter((id): id is number => typeof id === 'number')
-  )
-  const surfacedPreviewText = 'Item utama sudah muncul di Prioritas Hari Ini'
 
-  function previewItems<T>(items: T[], key: string): T[] {
-    return isPreviewExpanded(key) ? items : items.slice(0, SECTION_PREVIEW_LIMIT)
-  }
-
-  const dueSoonTasks = myTasks.filter(task => {
-    const days = daysUntil(task.targetCompletion)
-    return days != null && days <= focusPolicy.due.upcomingWindowDays
-  })
-  const overdueTasks = myTasks.filter(task => {
-    const days = daysUntil(task.targetCompletion)
-    return days != null && days < 0
-  })
-  const idleTasks = myTasks.filter(task => idleScore(task.updatedAt ?? task.createdAt, focusPolicy) > 0)
-  const agingBlockers = myBlockers.filter(blocker => {
-    const days = daysSince(blocker.createdAt)
-    return days != null && days >= focusPolicy.blockerAging.watchAfterDays
-  })
-  const prioritySignals = [
-    { label: 'Lewat tenggat', value: overdueTasks.length },
-    { label: 'Task idle', value: idleTasks.length },
-    { label: 'Blocker menua', value: agingBlockers.length },
-    { label: 'Approval menahan alur', value: pendingApprovalPrograms.length },
-  ].filter(signal => signal.value > 0)
-  const priorityPolicyNotes = [
-    focusPolicy.profile ? `Kebijakan: ${focusPolicy.profile}` : null,
-    `Overdue naik per hari`,
-    `Idle >= ${focusPolicy.idle.watchAfterDays} hari`,
-    `Blocker >= ${focusPolicy.blockerAging.watchAfterDays} hari`,
-    'Approval Kadiv = high blocking',
-  ].filter((note): note is string => Boolean(note))
-  const decisionRows = [
-    {
-      label: 'Aksi prioritas',
-      value: pendingApprovalPrograms.length + myBlockers.length + dueSoonTasks.length + actionableOtherUnread.length,
-      color: 'var(--red)',
-      icon: SECTION_ICON.priority,
-    },
-    {
-      label: 'Risiko perlu pantau',
-      value: myAtRisk.length + criticalCount,
-      color: 'var(--yellow)',
-      icon: SECTION_ICON.atrisk,
-    },
-    {
-      label: 'Komunikasi',
-      value: mentionGroups.length + unreadDms.length,
-      color: 'var(--indigo)',
-      icon: SECTION_ICON.mention,
-    },
-    {
-      label: 'Jadwal hari ini',
-      value: todayMeetings.length + todayFocusBlocks.length,
-      color: 'var(--green)',
-      icon: SECTION_ICON.notif,
-    },
-  ] as { label: string; value: number; color: string; icon: React.ReactNode }[]
   const focusScopeOptions = (['all', 'action', 'risk', 'communication', 'schedule'] as FocusScope[]).map(scope => ({
     scope,
     label: FOCUS_SCOPE_LABEL[scope],
@@ -1088,33 +908,6 @@ export function InboxView() {
       ? rankedFocusItems.length
       : rankedFocusItems.filter(item => focusItemMatchesScope(item, scope)).length,
   }))
-
-  const previewMeetings = todayMeetings.filter(item => !surfacedFocusIds.has(`meeting-${item.id}`))
-  const previewFocusBlocks = todayFocusBlocks.filter(item => !surfacedFocusIds.has(`focus-${item.id}`))
-  const previewUnreadDms = unreadDms.filter(item => !surfacedFocusIds.has(`dm-${item.id}`))
-  const previewPendingApprovals = pendingApprovalPrograms.filter(item => !surfacedFocusIds.has(`approval-${item.id}`))
-  const previewAtRisk = myAtRisk.filter(item => !surfacedFocusIds.has(`program-${item.id}`))
-  const previewTasks = myTasks.filter(item => !surfacedFocusIds.has(`task-${item.id}`))
-  const previewBlockers = myBlockers.filter(item => !surfacedFocusIds.has(`blocker-${item.id}`))
-  const previewMentionGroups = mentionGroups.filter(group => !surfacedNotificationIds.has(group.latest.id))
-  const scopedOtherUnreadGroups = focusScope === 'action' ? actionableOtherGroups : otherUnreadGroups
-  const scopedOtherUnreadCount = focusScope === 'action' ? actionableOtherUnread.length : otherUnread.length
-  const previewOtherUnreadGroups = scopedOtherUnreadGroups.filter(group => !surfacedNotificationIds.has(group.latest.id))
-
-  const visibleMeetings = previewItems(previewMeetings, 'meetings')
-  const visibleFocusBlocks = previewItems(previewFocusBlocks, 'focus')
-  const visibleUnreadDms = previewItems(previewUnreadDms, 'dms')
-  const visiblePendingApprovals = previewItems(previewPendingApprovals, 'approval')
-  const visibleAtRisk = previewItems(previewAtRisk, 'atrisk')
-  const visibleTasks = previewItems(previewTasks, 'assigned')
-  const visibleBlockers = previewItems(previewBlockers, 'blocker')
-  const visibleMentionGroups = previewItems(previewMentionGroups, 'mention')
-  const visibleOtherUnreadGroups = previewItems(previewOtherUnreadGroups, 'notif')
-  const showActionScope = focusScope === 'all' || focusScope === 'action'
-  const showRiskScope = focusScope === 'all' || focusScope === 'risk'
-  const showCommunicationScope = focusScope === 'all' || focusScope === 'communication'
-  const showScheduleScope = focusScope === 'all' || focusScope === 'schedule'
-  const showBlockerScope = focusScope === 'all' || focusScope === 'action' || focusScope === 'risk'
 
   const handleMarkAllRead = async () => {
     if (markingAll) return
@@ -1187,718 +980,160 @@ export function InboxView() {
     navigate('/fokus')
   }
 
+  // ── Daily progress: completed today (status COMPLETED + updatedAt within today) ──
+  const todayStart = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime() })()
+  const todayCompletedCount = myTasks.filter(t =>
+    (t.status === 'COMPLETED' || t.status === 'IN_REVIEW') &&
+    t.updatedAt && new Date(t.updatedAt).getTime() >= todayStart
+  ).length
+
+  // ── Urgency buckets: rank-based ──
+  // Sekarang  = top 1 (the hero)
+  // Hari Ini  = next 5 (rank 2–6) — what realistically completes today
+  // Bisa Ditunda = remaining (rank 7+), collapsed by default
+  const nowItem    = scopedRankedFocusItems[0] ?? null
+  const todayItems = scopedRankedFocusItems.slice(1, 6)
+  const laterItems = scopedRankedFocusItems.slice(6)
+  const remainingCount = scopedRankedFocusItems.length
+
+  const [laterOpen, setLaterOpen] = useState(false)
+
   return (
     <div className="view-inbox">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Fokus</h2>
         <div className="view-toolbar__sep" />
-        <span className="fokus-context-line">
-          {totalActions > 0
-            ? <><strong>{totalActions}</strong> item menunggu tindakan Anda</>
-            : 'Semua item sudah beres ✓'}
+        <span className="view-toolbar__greeting">
+          {todayLabel()}
+          {todayCompletedCount > 0 && (
+            <span className="view-toolbar__insight">
+              {' · '}{todayCompletedCount} selesai hari ini
+            </span>
+          )}
         </span>
-        {(mentions.length > 0 || otherUnread.length > 0) && (
-          <button className="inbox-mark-all-btn" disabled={markingAll} onClick={() => void handleMarkAllRead()}>
-            {markingAll ? 'Marking…' : 'Tandai semua dibaca'}
-          </button>
-        )}
+        <div className="view-toolbar__right">
+          {(mentions.length > 0 || otherUnread.length > 0) && (
+            <button className="hd-tb-btn" disabled={markingAll} onClick={() => void handleMarkAllRead()}>
+              {markingAll ? 'Marking…' : 'Tandai semua dibaca'}
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="inbox-workspace">
+      <div className="fokus-page">
 
-        {/* ── Main feed ── */}
-        <div className="inbox-main">
+        {/* ── 1. Eksekutif: Perlu Tindakan (program-level decisions) ── */}
+        {(programSummary?.needsAction.length ?? 0) > 0 && (
+          <ActionPanel
+            items={programSummary!.needsAction}
+            onOpen={openProgramWorkspace}
+            title={actionPanelTitleFor(programSummary!.scope)}
+          />
+        )}
 
-          {totalActions === 0 && otherUnread.length === 0 && (
-            <div className="fokus-feed">
-              <div className="fokus-hero">
-                <div
-                  className="fokus-hero__avatar"
-                  style={toneVars({
-                    '--fokus-hero-avatar-bg': userTone.bg,
-                    '--fokus-hero-avatar-fg': userTone.fg,
-                  })}
-                >
-                  {nameInitials(currentUser?.name ?? '?')}
-                </div>
-                <div className="fokus-hero__text">
-                  <div className="fokus-hero__greeting">{greeting}, <strong>{firstName}</strong></div>
-                  <div className="fokus-hero__date">
-                    {todayLabel()}
-                    <span className="fokus-hero__sep">·</span>
-                    <span>{contextSummary}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="fokus-empty-state">
-                <div className="fokus-empty-state__copy">
-                  Semua task dan notifikasi sudah beres untuk hari ini.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {totalActions > 0 || otherUnread.length > 0 ? (
-            <div className="fokus-feed">
-
-              {/* ── Hero greeting — inside the feed panel ── */}
-              <div className="fokus-hero">
-                <div
-                  className="fokus-hero__avatar"
-                  style={toneVars({
-                    '--fokus-hero-avatar-bg': userTone.bg,
-                    '--fokus-hero-avatar-fg': userTone.fg,
-                  })}
-                >
-                  {nameInitials(currentUser?.name ?? '?')}
-                </div>
-                <div className="fokus-hero__text">
-                  <div className="fokus-hero__greeting">{greeting}, <strong>{firstName}</strong></div>
-                  <div className="fokus-hero__date">
-                    {todayLabel()}
-                    <span className="fokus-hero__sep">·</span>
-                    <span className={criticalCount > 0 ? 'fokus-hero__alert' : ''}>
-                      {contextSummary}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="fokus-scope-strip" aria-label="Mode baca Focus">
-                {focusScopeOptions.map(option => (
-                  <button
-	                    aria-pressed={focusScope === option.scope}
-	                    className={`fokus-scope-pill${focusScope === option.scope ? ' is-active' : ''}`}
-	                    key={option.scope}
-	                    onClick={() => handleFocusScopeChange(option.scope, option.count)}
-	                    type="button"
-	                  >
-                    <span>{option.label}</span>
-                    <strong>{option.count}</strong>
-                  </button>
-                ))}
-              </div>
-
-              {/* ── Priority layer: cross-section ranking without replacing the existing feed ── */}
-              {topFocusItems.length > 0 && (
-                <>
-                  <div className="fokus-priority-spot">
-                    <span className="fokus-priority-spot__lightning">{SECTION_ICON.priority}</span>
-                    <span className="fokus-priority-spot__title">
-                      Prioritas utama{focusScope === 'all' ? '' : ` ${FOCUS_SCOPE_LABEL[focusScope].toLowerCase()}`}: {topFocusItems[0].title}
-                    </span>
-                    <span className="fokus-priority-spot__badge">{topFocusItems[0].chip ?? 'Action'}</span>
-                  </div>
-                  <SectionHeader section="priority" title="Prioritas Hari Ini" count={scopedRankedFocusItems.length} collapsed={isCollapsed('priority')} onToggle={() => toggleSection('priority')} />
-                  {!isCollapsed('priority') && topFocusItems.map((item, index) => (
-                    <button className={`fokus-item fokus-item--priority fokus-item--priority-${item.tone}`} key={item.id} onClick={() => handleFocusItemClick(item, index + 1)}>
-                      <StatusAvatar bg={SOFT_SURFACE} shape={item.kind === 'mention' || item.kind === 'dm' ? 'circle' : 'rounded'}>
-                        {SECTION_ICON[item.section]}
-                      </StatusAvatar>
-                      <div className="fokus-item__body">
-                        <div className="fokus-item__titlerow">
-                          <span className="fokus-item__title">{item.title}</span>
-                          {item.chip && (
-                            <span className="fokus-chip fokus-chip--tone" style={toneVars({
-                              '--fokus-chip-bg':
-                                item.tone === 'red' ? SEVERITY_TONES.CRITICAL.bg :
-                                item.tone === 'yellow' ? HEALTH_TONES.YELLOW.bg :
-                                item.tone === 'green' ? HEALTH_TONES.GREEN.bg :
-                                item.tone === 'indigo' ? 'var(--indigo-dim)' :
-                                NEUTRAL_TONE.bg,
-                              '--fokus-chip-fg':
-                                item.tone === 'red' ? SEVERITY_TONES.CRITICAL.fg :
-                                item.tone === 'yellow' ? HEALTH_TONES.YELLOW.fg :
-                                item.tone === 'green' ? HEALTH_TONES.GREEN.fg :
-                                item.tone === 'indigo' ? 'var(--indigo)' :
-                                NEUTRAL_TONE.fg,
-                            })}>{item.chip}</span>
-                          )}
-                        </div>
-                        <div className="fokus-item__meta">{item.meta}</div>
-                        <div className="fokus-item__reason">
-                          {item.impact ? `${item.impact} · ${item.reason}` : item.reason}
-                        </div>
-                        {item.evidence && item.evidence.length > 0 && (
-                          <div className="fokus-item__evidence" aria-label="Alasan item ini diprioritaskan">
-                            {item.evidence.map(signal => (
-                              <span key={signal}>{signal}</span>
-                            ))}
-                          </div>
-                        )}
-                        <div className="fokus-item__cue-row">
-                          <span>{item.roleCue}</span>
-                          <span>{item.nextCue}</span>
-                        </div>
-                      </div>
-                      <span className="fokus-item__aside fokus-item__aside--label">{item.actionLabel}</span>
-                    </button>
-                  ))}
-                  {!isCollapsed('priority') && (
-                    <SectionMore
-                      hiddenCount={Math.max(0, scopedRankedFocusItems.length - topFocusItems.length)}
-                      label="prioritas lain muncul di section bawah"
-                      actionLabel="Lanjut scan ↓"
-                      onClick={() => document.querySelector('.fokus-section-header:nth-of-type(3)')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                    />
-                  )}
-                </>
-              )}
-
-              {topFocusItems.length === 0 && focusScope !== 'all' && (
-                <SectionEmpty text={`Tidak ada item untuk mode ${FOCUS_SCOPE_LABEL[focusScope].toLowerCase()} saat ini`} />
-              )}
-
-              {/* ── Meeting Hari Ini ─────────────────────────────────────────────── */}
-              {showScheduleScope && todayMeetings.length > 0 && (
-                <>
-                  <SectionHeader section="notif" title="Meeting Hari Ini" count={todayMeetings.length} onNav={() => navigate('/jadwal')} collapsed={isCollapsed('meetings')} onToggle={() => toggleSection('meetings')} />
-                  {!isCollapsed('meetings') && (visibleMeetings.length === 0 ? <SectionEmpty text={surfacedPreviewText} /> : visibleMeetings.map(m => {
-                    const start = new Date(m.startAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                    const end   = new Date(m.endAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                    const isOngoing = m.status === 'ONGOING'
-                    return (
-                      <button className="fokus-item" key={m.id} onClick={() => navigate('/jadwal')}>
-                        <StatusAvatar bg={isOngoing ? HEALTH_TONES.GREEN.bg : SOFT_SURFACE} shape="rounded">
-                          <svg fill="none" height="15" stroke={isOngoing ? HEALTH_TONES.GREEN.bar : 'var(--text-muted)'} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="15">
-                            <rect height="11" rx="1.5" width="12" x="2" y="3" />
-                            <path d="M5 1.5v3M11 1.5v3M2 7h12" />
-                          </svg>
-                        </StatusAvatar>
-                        <div className="fokus-item__body">
-                          <div className="fokus-item__titlerow">
-                            <span className="fokus-item__title">{m.title}</span>
-                            {isOngoing && (
-                              <span
-                                className="fokus-chip fokus-chip--tone"
-                                style={toneVars({
-                                  '--fokus-chip-bg': HEALTH_TONES.GREEN.bg,
-                                  '--fokus-chip-fg': HEALTH_TONES.GREEN.fg,
-                                })}
-                              >
-                                Berlangsung
-                              </span>
-                            )}
-                          </div>
-                          <div className="fokus-item__meta">
-                            <span className="fokus-status-tag">{start} – {end}</span>
-                            {m.location && <span className="fokus-item__meta-detail">· {m.location}</span>}
-                          </div>
-                        </div>
-                        <span className="fokus-item__aside fokus-item__aside--label">
-                          {MEETING_TYPE_LABEL[m.meetingType] ?? m.meetingType}
-                        </span>
-                      </button>
-                    )
-                  }))}
-                  {!isCollapsed('meetings') && <SectionMore hiddenCount={previewMeetings.length - visibleMeetings.length} onClick={() => expandPreview('meetings')} />}
-                </>
-              )}
-
-              {/* ── Section: Waktu Fokus Hari Ini ────────────────────────────────── */}
-              {showScheduleScope && todayFocusBlocks.length > 0 && (
-                <>
-                  <SectionHeader section="notif" title="Waktu Fokus Saya" count={todayFocusBlocks.length} onNav={() => navigate('/jadwal')} collapsed={isCollapsed('focus')} onToggle={() => toggleSection('focus')} />
-                  {!isCollapsed('focus') && (visibleFocusBlocks.length === 0 ? <SectionEmpty text={surfacedPreviewText} /> : visibleFocusBlocks.map(fb => {
-                    const start = new Date(fb.startAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                    const end   = new Date(fb.endAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                    const now = Date.now()
-                    const isActive = now >= new Date(fb.startAt).getTime() && now <= new Date(fb.endAt).getTime()
-                    return (
-                      <button className="fokus-item" key={fb.id} onClick={() => navigate('/jadwal')}>
-                        <StatusAvatar bg="var(--purple-dim)" shape="rounded">
-                          <svg fill="none" height="15" stroke="var(--purple-ink)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="15">
-                            <circle cx="8" cy="8" r="6" />
-                            <circle cx="8" cy="8" r="2.5" />
-                            <path d="M8 2v1.5M8 12.5V14M2 8h1.5M12.5 8H14" />
-                          </svg>
-                        </StatusAvatar>
-                        <div className="fokus-item__body">
-                          <div className="fokus-item__titlerow">
-                            <span className="fokus-item__title">{fb.title}</span>
-                            {isActive && (
-                              <span
-                                className="fokus-chip fokus-chip--tone"
-                                style={toneVars({
-                                  '--fokus-chip-bg': 'var(--purple-dim)',
-                                  '--fokus-chip-fg': 'var(--purple-ink)',
-                                })}
-                              >
-                                Aktif
-                              </span>
-                            )}
-                          </div>
-                          <div className="fokus-item__meta">
-                            <span className="fokus-status-tag">{start} – {end}</span>
-                            {fb.note && <span className="fokus-item__meta-detail">· {fb.note}</span>}
-                          </div>
-                        </div>
-                        <span className="fokus-item__aside fokus-item__aside--label">Fokus</span>
-                      </button>
-                    )
-                  }))}
-                  {!isCollapsed('focus') && <SectionMore hiddenCount={previewFocusBlocks.length - visibleFocusBlocks.length} onClick={() => expandPreview('focus')} />}
-                </>
-              )}
-
-              {/* ── Section: Pesan Langsung Belum Dibaca ─────────────────────────── */}
-              {showCommunicationScope && unreadDms.length > 0 && (
-                <>
-                  <SectionHeader section="mention" title="Pesan Langsung" count={unreadDms.length} onNav={() => navigate('/channels')} collapsed={isCollapsed('dms')} onToggle={() => toggleSection('dms')} />
-                  {!isCollapsed('dms') && (visibleUnreadDms.length === 0 ? <SectionEmpty text={surfacedPreviewText} /> : visibleUnreadDms.map(ch => {
-                    const partnerName = ch.description && ch.description !== 'Direct message'
-                      ? ch.description
-                      : (ch.lastMessage?.content ? ch.name : ch.name)
-                    return (
-                      <button
-                        className="fokus-item"
-                        key={ch.id}
-                        onClick={() => { setSelectedChannelId(ch.id); navigate('/channels') }}
-                      >
-                        <StatusAvatar bg="var(--indigo-dim)" shape="circle">
-                          <svg fill="none" height="15" stroke="var(--indigo)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="15">
-                            <path d="M14 10a2 2 0 0 1-2 2H5l-3 3V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z" />
-                          </svg>
-                        </StatusAvatar>
-                        <div className="fokus-item__body">
-                          <div className="fokus-item__titlerow">
-                            <span className="fokus-item__title">{partnerName}</span>
-                            {(ch.unreadCount ?? 0) > 0 && (
-                              <span
-                                className="fokus-chip fokus-chip--tone"
-                                style={toneVars({ '--fokus-chip-bg': 'var(--indigo-dim)', '--fokus-chip-fg': 'var(--indigo)' })}
-                              >
-                                {ch.unreadCount} baru
-                              </span>
-                            )}
-                          </div>
-                          {ch.lastMessage && (
-                            <div className="fokus-item__meta">
-                              <span className="fokus-item__meta-detail">{ch.lastMessage.content.slice(0, 60)}{ch.lastMessage.content.length > 60 ? '…' : ''}</span>
-                            </div>
-                          )}
-                        </div>
-                        <span className="fokus-item__aside fokus-item__aside--label">Balas →</span>
-                      </button>
-                    )
-                  }))}
-                  {!isCollapsed('dms') && <SectionMore hiddenCount={previewUnreadDms.length - visibleUnreadDms.length} onClick={() => expandPreview('dms')} />}
-                </>
-              )}
-
-              {/* ── Section: Program Perlu Persetujuan ────────────────────────────── */}
-              {showActionScope && pendingApprovalPrograms.length > 0 && (
-                <>
-                  <SectionHeader
-                    section="approval"
-                    title={explicitDecisionPrograms.length > 0 ? 'Keputusan Saya' : role === 'KASUBDIV' ? 'Persetujuan Kasub' : role === 'KADIV' ? 'Persetujuan Kadiv' : 'Program Belum Diajukan'}
-                    count={pendingApprovalPrograms.length}
-                    onNav={() => navigate('/programs')}
-                    collapsed={isCollapsed('approval')}
-                    onToggle={() => toggleSection('approval')}
-                  />
-                  {!isCollapsed('approval') && (visiblePendingApprovals.length === 0 ? <SectionEmpty text={surfacedPreviewText} /> : visiblePendingApprovals.map(prog => (
-                    <button className="fokus-item" key={prog.id} onClick={() => goToProgram(prog.id)}>
-                      <StatusAvatar bg="var(--yellow-dim)" shape="rounded">
-                        <svg fill="none" height="15" stroke="var(--yellow-ink)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="15">
-                          <path d="M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2z"/><path d="M8 6v3M8 11h.01"/>
-                        </svg>
-                      </StatusAvatar>
-                      <div className="fokus-item__body">
-                        <div className="fokus-item__titlerow">
-                          <span className="fokus-item__title">{prog.name}</span>
-                        </div>
-                        <div className="fokus-item__meta">
-                          <span className="code-badge fokus-code-badge">{prog.code}</span>
-                          <span className="fokus-status-tag">
-                            {prog.approvalStatus === 'PENDING_KASUB' ? 'Menunggu Kasub' :
-                             prog.approvalStatus === 'PENDING_KADIV' ? 'Menunggu Kadiv' :
-                             'Draft'}
-                          </span>
-                        </div>
-                        {'decisionReason' in prog && (
-                          <div className="fokus-item__impact">{prog.decisionReason}</div>
-                        )}
-                      </div>
-                      <span className="fokus-item__aside fokus-item__aside--label">Review →</span>
-                    </button>
-                  )))}
-                  {!isCollapsed('approval') && <SectionMore hiddenCount={previewPendingApprovals.length - visiblePendingApprovals.length} onClick={() => expandPreview('approval')} />}
-                </>
-              )}
-
-              {/* ── Sections: order is role-aware ─────────────────────────────────── */}
-              {/* BOD/KADIV: Programs → Blockers → Tasks */}
-              {/* Others   : Tasks → Blockers → Programs */}
-
-              {/* Section: Program Perlu Perhatian — strategic roles only (BOD/KADIV first) */}
-              {showRiskScope && isStrategic && (
-                <>
-                  <SectionHeader section="atrisk" title="Program Perlu Perhatian" count={myAtRisk.length} onNav={() => navigate('/programs')} collapsed={isCollapsed('atrisk')} onToggle={() => toggleSection('atrisk')} />
-                  {!isCollapsed('atrisk') && (myAtRisk.length === 0 ? <SectionEmpty text="Semua program dalam kondisi sehat ✓" /> :
-                    visibleAtRisk.length === 0 ? <SectionEmpty text={surfacedPreviewText} /> :
-                    visibleAtRisk.map(prog => {
-                      const hc = HEALTH_TONES[prog.healthStatus as keyof typeof HEALTH_TONES] ?? HEALTH_TONES.GREEN
-                      return (
-                        <button className="fokus-item" key={prog.id} onClick={() => goToProgram(prog.id)}>
-                          <StatusAvatar bg={SOFT_SURFACE} shape="rounded"><IconProgram color={hc.fg} /></StatusAvatar>
-                          <div className="fokus-item__body">
-                            <div className="fokus-item__titlerow">
-                              <span className="fokus-item__title">{prog.name}</span>
-                            </div>
-                            <div className="fokus-item__meta">
-                              <span className="code-badge fokus-code-badge">{prog.code}</span>
-                              <span className="fokus-status-tag">{prog.status.replace(/_/g, ' ')}</span>
-                            </div>
-                            <Bar value={prog.progressPercent} fill={hc.bar} track={TRACK_BG} />
-                          </div>
-                          <span className="fokus-item__aside fokus-item__aside--metric">
-                            {prog.progressPercent}%
-                          </span>
-                        </button>
-                      )
-                    })
-                  )}
-                  {!isCollapsed('atrisk') && <SectionMore hiddenCount={previewAtRisk.length - visibleAtRisk.length} onClick={() => expandPreview('atrisk')} />}
-                </>
-              )}
-
-              {/* Section: Ditugaskan ke Saya */}
-              {showActionScope && (
-                <>
-                  <SectionHeader section="assigned" title="Ditugaskan ke Saya" count={myTasks.length} onNav={() => navigate('/execution')} collapsed={isCollapsed('assigned')} onToggle={() => toggleSection('assigned')} />
-                  {!isCollapsed('assigned') && (myTasks.length === 0 ? <SectionEmpty text={`Tidak ada task aktif untuk ${firstName} saat ini`} /> :
-                    visibleTasks.length === 0 ? <SectionEmpty text={surfacedPreviewText} /> :
-                    visibleTasks.map(item => {
-                      const hc = HEALTH_TONES[item.healthStatus as keyof typeof HEALTH_TONES] ?? HEALTH_TONES.GREEN
-                      return (
-                        <button className="fokus-item" key={item.id} onClick={() => goToTask(item.id)}>
-                          <StatusAvatar bg={SOFT_SURFACE} shape="rounded"><IconTask color={hc.fg} /></StatusAvatar>
-                          <div className="fokus-item__body">
-                            <div className="fokus-item__titlerow">
-                              <span className="fokus-item__title">{item.title}</span>
-                              {item.isBlocked && <span className="fokus-chip fokus-chip--blocked">Blocked</span>}
-                            </div>
-                            <div className="fokus-item__meta">
-                              <span className="code-badge fokus-code-badge">{item.code}</span>
-                              {item.workstream?.program?.code ? `${item.workstream.program.code} · ` : ''}
-                              {item.workstream?.name}
-                              {' '}
-                              <span className="fokus-status-tag">{item.status.replace(/_/g, ' ')}</span>
-                            </div>
-                            {item.workstream?.program?.healthStatus && item.workstream.program.healthStatus !== 'GREEN' && (
-                              <div className="fokus-item__impact">
-                                Terkait program {item.workstream.program.code} yang berstatus {item.workstream.program.healthStatus}
-                              </div>
-                            )}
-                            <Bar value={item.percentComplete} fill={hc.bar} track={TRACK_BG} />
-                          </div>
-                          <span className="fokus-item__aside fokus-item__aside--metric">
-                            {item.percentComplete}%
-                          </span>
-                        </button>
-                      )
-                    })
-                  )}
-                  {!isCollapsed('assigned') && <SectionMore hiddenCount={previewTasks.length - visibleTasks.length} onClick={() => expandPreview('assigned')} />}
-                </>
-              )}
-
-              {/* Section: Blocker Aktif */}
-              {showBlockerScope && (
-                <>
-                  <SectionHeader section="blocker" title="Blocker Aktif" count={myBlockers.length} onNav={() => navigate('/execution')} collapsed={isCollapsed('blocker')} onToggle={() => toggleSection('blocker')} />
-                  {!isCollapsed('blocker') && (myBlockers.length === 0 ? <SectionEmpty text={`Tidak ada blocker aktif untuk ${firstName} hari ini ✓`} /> :
-                    visibleBlockers.length === 0 ? <SectionEmpty text={surfacedPreviewText} /> :
-                    visibleBlockers.map(b => {
-                      const sc = SEVERITY_TONES[b.severity as keyof typeof SEVERITY_TONES] ?? SEVERITY_TONES.MEDIUM
-                      return (
-                        <button className="fokus-item" key={b.id} onClick={() => goToTask(b.taskId)}>
-                          <StatusAvatar bg={SOFT_SURFACE} shape="circle"><IconBlock color={sc.fg} /></StatusAvatar>
-                          <div className="fokus-item__body">
-                            <div className="fokus-item__titlerow">
-                              <span className="fokus-item__title">{b.title}</span>
-                            </div>
-                            <div className="fokus-item__meta">
-                              <span className="code-badge fokus-code-badge">{b.code}</span>
-                              {b.task?.code && <span>{b.task.code} · </span>}
-                              <span className="fokus-status-tag">{b.status.replace(/_/g, ' ')}</span>
-                              {' '}
-                              <span className="fokus-item__sev-label" style={toneVars({ '--fokus-tone-fg': sc.fg })}>{SEV_LABEL[b.severity] ?? b.severity}</span>
-                            </div>
-                            {b.task?.workstream?.program && (
-                              <div className="fokus-item__impact">
-                                Dampak ke {b.task.workstream.program.code} · {b.task.workstream.program.name}
-                              </div>
-                            )}
-                          </div>
-                          <span className="fokus-item__aside fokus-item__aside--symbol">
-                            {b.status === 'RESOLVED' ? '✓' : '—'}
-                          </span>
-                        </button>
-                      )
-                    })
-                  )}
-                  {!isCollapsed('blocker') && <SectionMore hiddenCount={previewBlockers.length - visibleBlockers.length} onClick={() => expandPreview('blocker')} />}
-                </>
-              )}
-
-              {/* Section: Program Berisiko — non-strategic roles (after tasks/blockers) */}
-              {showRiskScope && !isStrategic && (
-                <>
-                  <SectionHeader section="atrisk" title="Program Saya yang Berisiko" count={myAtRisk.length} onNav={() => navigate('/programs')} collapsed={isCollapsed('atrisk')} onToggle={() => toggleSection('atrisk')} />
-                  {!isCollapsed('atrisk') && (myAtRisk.length === 0 ? <SectionEmpty text={`Semua program ${firstName} dalam kondisi sehat ✓`} /> :
-                    visibleAtRisk.length === 0 ? <SectionEmpty text={surfacedPreviewText} /> :
-                    visibleAtRisk.map(prog => {
-                      const hc = HEALTH_TONES[prog.healthStatus as keyof typeof HEALTH_TONES] ?? HEALTH_TONES.GREEN
-                      return (
-                        <button className="fokus-item" key={prog.id} onClick={() => goToProgram(prog.id)}>
-                          <StatusAvatar bg={SOFT_SURFACE} shape="rounded"><IconProgram color={hc.fg} /></StatusAvatar>
-                          <div className="fokus-item__body">
-                            <div className="fokus-item__titlerow">
-                              <span className="fokus-item__title">{prog.name}</span>
-                            </div>
-                            <div className="fokus-item__meta">
-                              <span className="code-badge fokus-code-badge">{prog.code}</span>
-                              <span className="fokus-status-tag">{prog.status.replace(/_/g, ' ')}</span>
-                            </div>
-                            <Bar value={prog.progressPercent} fill={hc.bar} track={TRACK_BG} />
-                          </div>
-                          <span className="fokus-item__aside fokus-item__aside--metric">
-                            {prog.progressPercent}%
-                          </span>
-                        </button>
-                      )
-                    })
-                  )}
-                  {!isCollapsed('atrisk') && <SectionMore hiddenCount={previewAtRisk.length - visibleAtRisk.length} onClick={() => expandPreview('atrisk')} />}
-                </>
-              )}
-
-              {/* ── 4. Mention & Approval ── */}
-              {showCommunicationScope && (
-                <>
-                  <SectionHeader section="mention" title="Mention & Approval" count={mentions.length} collapsed={isCollapsed('mention')} onToggle={() => toggleSection('mention')} />
-                  {!isCollapsed('mention') && (mentions.length === 0 ? <SectionEmpty text={`Tidak ada mention atau approval untuk ${firstName}`} /> :
-                    visibleMentionGroups.length === 0 ? <SectionEmpty text={surfacedPreviewText} /> :
-                    visibleMentionGroups.map((group, idx) => {
-                      const n = group.latest
-                      const chipStyle = n.type === 'APPROVAL'
-                        ? { background: HEALTH_TONES.YELLOW.bg, color: HEALTH_TONES.YELLOW.fg }
-                        : { background: HEALTH_TONES.GREEN.bg,  color: HEALTH_TONES.GREEN.fg }
-                      return (
-                        <button className="fokus-item fokus-item--mention" key={group.id} onClick={() => void handleNotifGroupClick(group)}>
-                          <PersonAvatar name={n.source.split('·')[0].trim()} seed={n.id + idx} />
-                          <div className="fokus-item__body">
-                            <div className="fokus-item__titlerow">
-                              <span className="fokus-item__author">{n.source.split('·')[0].trim()}</span>
-                              <span className="fokus-chip fokus-chip--inline fokus-chip--tone" style={toneVars({ '--fokus-chip-bg': chipStyle.background, '--fokus-chip-fg': chipStyle.color })}>{NOTIF_TYPE_LABEL[n.type] ?? n.type}</span>
-                              {group.items.length > 1 && <span className="fokus-chip fokus-chip--inline">{group.items.length} update</span>}
-                              <time className="fokus-item__time">{formatDate(n.createdAt)}</time>
-                            </div>
-                            {n.source.includes('·') && (
-                              <div className="fokus-item__source">{n.source.split('·').slice(1).join('·').trim()}</div>
-                            )}
-                            <p className="fokus-item__msg">{n.message}</p>
-                          </div>
-                        </button>
-                      )
-                    })
-                  )}
-                  {!isCollapsed('mention') && <SectionMore hiddenCount={previewMentionGroups.length - visibleMentionGroups.length} onClick={() => expandPreview('mention')} />}
-                </>
-              )}
-
-              {/* ── 5. Notifikasi Lainnya ── */}
-              {(focusScope === 'all' || focusScope === 'action') && scopedOtherUnreadCount > 0 && <>
-                <SectionHeader section="notif" title="Notifikasi Lainnya" count={scopedOtherUnreadCount} collapsed={isCollapsed('notif')} onToggle={() => toggleSection('notif')} />
-                {!isCollapsed('notif') && (visibleOtherUnreadGroups.length === 0 ? <SectionEmpty text={surfacedPreviewText} /> : visibleOtherUnreadGroups.map((group, idx) => {
-                  const n = group.latest
-                  return (
-                    <button className="fokus-item" key={group.id} onClick={() => void handleNotifGroupClick(group)}>
-                      <PersonAvatar name={n.source.split('·')[0].trim()} seed={n.id + idx + 60} />
-                      <div className="fokus-item__body">
-                        <div className="fokus-item__titlerow">
-                          <span className="fokus-item__author">{n.source.split('·')[0].trim()}</span>
-                          {group.items.length > 1 && <span className="fokus-chip fokus-chip--inline">{group.items.length} update</span>}
-                          <time className="fokus-item__time">{formatDate(n.createdAt)}</time>
-                        </div>
-                        {n.source.includes('·') && (
-                          <div className="fokus-item__source">{n.source.split('·').slice(1).join('·').trim()}</div>
-                        )}
-                        <p className="fokus-item__msg">{n.message}</p>
-                      </div>
-                      <span className="fokus-chip fokus-chip--tone" style={toneVars({ '--fokus-chip-bg': NEUTRAL_TONE.bg, '--fokus-chip-fg': NEUTRAL_TONE.fg })}>
-                        {NOTIF_TYPE_LABEL[n.type] ?? n.type}
-                      </span>
-                    </button>
-                  )
-                }))}
-                {!isCollapsed('notif') && <SectionMore hiddenCount={previewOtherUnreadGroups.length - visibleOtherUnreadGroups.length} onClick={() => expandPreview('notif')} />}
-              </>}
-
-            </div>
-          ) : null}
-
+        {/* ── 2. Hari Anda — compact day strip ── */}
+        <div className="fokus-day">
+          <div className="fokus-day__title">
+            Hari Anda
+            <span className="fokus-day__date">{todayLabel()}</span>
+          </div>
+          <div className="fokus-day__stats">
+            <span className={`fokus-day__stat${todayCompletedCount > 0 ? ' fokus-day__stat--done' : ''}`}>
+              <strong>{todayCompletedCount}</strong> selesai
+            </span>
+            <span className="fokus-day__sep" />
+            <span className="fokus-day__stat">
+              <strong>{remainingCount}</strong> sisa
+            </span>
+          </div>
         </div>
 
-        {/* ── Sidebar ── */}
-        <aside className="inbox-sidebar right-rail">
+        {/* ── 3. Scope strip — filter pill ── */}
+        <div className="fokus-scope-strip" aria-label="Mode baca Focus">
+          {focusScopeOptions.map(option => (
+            <button
+              aria-pressed={focusScope === option.scope}
+              className={`fokus-scope-pill${focusScope === option.scope ? ' is-active' : ''}`}
+              key={option.scope}
+              onClick={() => handleFocusScopeChange(option.scope, option.count)}
+              type="button"
+            >
+              <span>{option.label}</span>
+              <strong>{option.count}</strong>
+            </button>
+          ))}
+        </div>
 
-          <div className="section-block">
-            <div className="section-header">
-              <h3 className="section-title fokus-sidebar-title">Ringkasan</h3>
+        {/* ── 4. SEKARANG — top item as hero card ── */}
+        {nowItem && (
+          <section className="fokus-bucket fokus-bucket--now">
+            <div className="fokus-bucket__head">
+              <h3 className="fokus-bucket__label">Sekarang</h3>
             </div>
-            <div className="fokus-stats-list">
-              {decisionRows.map(({ label, value, color, icon }) => (
-                <div
-                  className="fokus-stats-row"
-                  key={label}
-                  style={toneVars({
-                    '--fokus-stats-icon': value > 0 ? color : 'var(--text-muted)',
-                    '--fokus-stats-value': value > 0 ? color : 'var(--text-strong)',
-                  })}
-                >
-                  <span className="fokus-stats-row__icon">{icon}</span>
-                  <span className="fokus-stats-row__label">{label}</span>
-                  <span className="fokus-stats-row__val">{value}</span>
-                </div>
-              ))}
+            <FokusHeroCard item={nowItem} onAction={handleFocusItemClick} />
+          </section>
+        )}
+
+        {/* ── 5. HARI INI — next 5 items ── */}
+        {todayItems.length > 0 && (
+          <section className="fokus-bucket">
+            <div className="fokus-bucket__head">
+              <h3 className="fokus-bucket__label">Hari Ini</h3>
+              <span className="fokus-bucket__count">{todayItems.length}</span>
             </div>
-
-            {topFocusItems[0] && (
-              <div className="fokus-next-action">
-                <div className="fokus-next-action__label">Fokus berikutnya</div>
-                <button className="fokus-next-action__button" onClick={() => handleFocusItemClick(topFocusItems[0], 1)}>
-                  <span className="fokus-next-action__title">{topFocusItems[0].title}</span>
-                  <span className="fokus-next-action__reason">{topFocusItems[0].nextCue}</span>
-                </button>
-              </div>
-            )}
-
-            {topFocusItems.length > 1 && (
-              <div className="fokus-plan">
-                <div className="fokus-plan__label">Rencana 30 menit</div>
-                {topFocusItems.map((item, index) => (
-                  <button className="fokus-plan__row" key={item.id} onClick={() => handleFocusItemClick(item, index + 1)} type="button">
-                    <span className="fokus-plan__step">{index + 1}</span>
-                    <span className="fokus-plan__body">
-                      <span className="fokus-plan__title">{item.actionLabel.replace(' →', '')}</span>
-                      <span className="fokus-plan__cue">{item.title}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {prioritySignals.length > 0 && (
-              <div className="fokus-signal-list">
-                <div className="fokus-signal-list__label">Sinyal prioritas</div>
-                {prioritySignals.map(signal => (
-                  <div className="fokus-signal-list__row" key={signal.label}>
-                    <span>{signal.label}</span>
-                    <strong>{signal.value}</strong>
-                  </div>
-                ))}
-                <div className="fokus-policy-note">
-                  {priorityPolicyNotes.map(note => (
-                    <span key={note}>{note}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Weekly progress */}
-            <div className="fokus-weekly-progress">
-              <div className="fokus-weekly-progress__header">
-                <span>Progres minggu ini</span>
-                <span className="fokus-weekly-progress__count">{weeklyCompleted}/{weeklyTotal}</span>
-              </div>
-              <div className="fokus-weekly-progress__track">
-                <div
-                  className="fokus-weekly-progress__fill"
-                  style={{ width: `${weeklyTotal > 0 ? Math.min(100, Math.round((weeklyCompleted / weeklyTotal) * 100)) : 0}%` }}
+            <ul className="fokus-bucket__list">
+              {todayItems.map((item, idx) => (
+                <FokusItemRow
+                  key={item.id}
+                  item={item}
+                  rank={idx + 2}
+                  onAction={handleFocusItemClick}
                 />
-              </div>
-              <div className="fokus-weekly-progress__sub">
-                {weeklyCompleted} task diselesaikan minggu ini
-              </div>
-            </div>
-          </div>
-
-          <div className="section-block">
-            <div className="section-header">
-              <h3 className="section-title fokus-sidebar-title">
-                {isStrategic ? 'Portfolio Programs' : 'Program Saya'}
-              </h3>
-              <span className="section-badge">{sidebarProgs.length}</span>
-            </div>
-            <div className="fokus-sidebar-list">
-              {sidebarProgs.slice(0, 5).map(prog => {
-                const hc = HEALTH_TONES[prog.healthStatus as keyof typeof HEALTH_TONES]
-                return (
-                  <button
-                    className="list-row fokus-sidebar-program"
-                    key={prog.id}
-                    onClick={() => goToProgram(prog.id)}
-                    style={toneVars({
-                      '--fokus-program-accent': hc?.bar ?? NEUTRAL_TONE.fg,
-                      '--fokus-program-progress': `${Math.min(100, prog.progressPercent)}%`,
-                      '--fokus-program-track': TRACK_BG,
-                    })}
-                  >
-                    <span className="fokus-sidebar-program__dot" />
-                    <div className="fokus-sidebar-program__body">
-                      <div className="fokus-sidebar-program__name">
-                        {prog.name}
-                      </div>
-                      <div className="fokus-sidebar-program__track">
-                        <div className="fokus-sidebar-program__fill" />
-                      </div>
-                    </div>
-                    <span className="fokus-sidebar-program__pct">{prog.progressPercent}%</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="section-block">
-            <div className="section-header">
-              <h3 className="section-title fokus-sidebar-title">Aksi Cepat</h3>
-            </div>
-            <div className="fokus-quicklinks">
-              {((isStrategic ? [
-                ['Dashboard', '/dashboard',
-                  <svg key="db" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="14"><rect height="5" rx="1" width="6" x="2" y="2" /><rect height="8" rx="1" width="6" x="2" y="9" /><rect height="5" rx="1" width="5" x="9" y="2" /><rect height="8" rx="1" width="5" x="9" y="9" /></svg>],
-                ['Semua Program', '/programs',
-                  <svg key="pr" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="14"><rect height="11" rx="1.5" width="10" x="3" y="2.5" /><path d="M6 2.5h4v2H6zM5.5 7h5M5.5 10h5" /></svg>],
-                ['Jadwal Meeting', '/jadwal',
-                  <svg key="sc" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="14"><rect height="11" rx="1.5" width="12" x="2" y="3" /><path d="M5 1.5v3M11 1.5v3M2 7h12" /></svg>],
-                ['Channels', '/channels',
-                  <svg key="ch" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="14"><path d="M14 10a2 2 0 0 1-2 2H5l-3 3V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z" /></svg>],
-              ] : [
-                ['Tugas Saya', '/execution',
-                  <svg key="ex2" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="14"><rect height="11" rx="2" width="11" x="2.5" y="2.5" /><path d="m5.5 8 2 2 3-3.5" /></svg>],
-                ['Jadwal Meeting', '/jadwal',
-                  <svg key="sc" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="14"><rect height="11" rx="1.5" width="12" x="2" y="3" /><path d="M5 1.5v3M11 1.5v3M2 7h12" /></svg>],
-                ['Channels', '/channels',
-                  <svg key="ch" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="14"><path d="M14 10a2 2 0 0 1-2 2H5l-3 3V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z" /></svg>],
-                ['Presence', '/presence',
-                  <svg key="ps" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="14"><circle cx="6" cy="5" r="2" /><circle cx="11" cy="5" r="2" /><path d="M1 14c0-2.8 2-4.5 5-4.5s5 1.7 5 4.5" /><path d="M11 10.5c1.5.3 3 1.5 3 3.5" /></svg>],
-              ]) as [string, string, React.ReactNode][]).map(([label, path, icon]) => (
-                <button className="fokus-quicklink" key={label} onClick={() => navigate(path)}>
-                  <span className="fokus-quicklink__icon">{icon}</span>
-                  <span className="fokus-quicklink__label">{label}</span>
-                  <span className="fokus-quicklink__arrow">
-                    <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 16 16" width="12"><path d="m6 3 5 5-5 5" /></svg>
-                  </span>
-                </button>
               ))}
-            </div>
-          </div>
+            </ul>
+          </section>
+        )}
 
-        </aside>
+        {/* ── 6. BISA DITUNDA — collapsed remainder ── */}
+        {laterItems.length > 0 && (
+          <section className="fokus-bucket fokus-bucket--later">
+            <button
+              type="button"
+              className="fokus-bucket__toggle"
+              onClick={() => setLaterOpen(open => !open)}
+              aria-expanded={laterOpen}
+            >
+              <span className={`fokus-bucket__chev${laterOpen ? ' is-open' : ''}`}>▸</span>
+              <h3 className="fokus-bucket__label">Bisa Ditunda</h3>
+              <span className="fokus-bucket__count">{laterItems.length}</span>
+            </button>
+            {laterOpen && (
+              <ul className="fokus-bucket__list">
+                {laterItems.map((item, idx) => (
+                  <FokusItemRow
+                    key={item.id}
+                    item={item}
+                    rank={idx + 7}
+                    onAction={handleFocusItemClick}
+                    muted
+                  />
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {/* ── 7. Empty state ── */}
+        {nowItem == null && todayItems.length === 0 && laterItems.length === 0 && (programSummary?.needsAction.length ?? 0) === 0 && (
+          <div className="fokus-zero">
+            <div className="fokus-zero__check" aria-hidden="true">✓</div>
+            <p className="fokus-zero__title">Antrian Anda beres</p>
+            <p className="fokus-zero__sub">
+              Tidak ada yang perlu ditangani sekarang. Saatnya istirahat atau cek <button type="button" className="fokus-zero__link" onClick={() => navigate('/')}>Home</button> untuk gambaran divisi.
+            </p>
+          </div>
+        )}
+
       </div>
 
       {toast && (

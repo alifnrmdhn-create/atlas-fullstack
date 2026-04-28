@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useEscKey } from '../hooks/useEscKey'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { PresenceRow, SectionState, Avatar, resolveEmoji, formatRelativeTime, effectivePresenceSlug } from '../components/ui'
 import { api } from '../lib/api'
@@ -38,8 +38,8 @@ type FilterMode = 'all' | 'active' | 'available' | 'mine'
 type Density    = 'comfortable' | 'compact'
 type SortMode   = 'status' | 'name'
 
-function isActive(u: PresenceUser)    { return u.status !== 'OFFLINE' }
-function isAvailable(u: PresenceUser) { return u.status === 'ONLINE' }
+function isActive(u: PresenceUser)    { return effectivePresenceSlug(u.status, u.lastActivityAt) !== 'offline' }
+function isAvailable(u: PresenceUser) { return effectivePresenceSlug(u.status, u.lastActivityAt) === 'online' }
 
 function statusBadge(status: PresenceStatus) {
   if (status === 'ONLINE')         return <span className="status-badge on-track">Online</span>
@@ -51,9 +51,9 @@ function statusBadge(status: PresenceStatus) {
 // ── Unit progress bar ────────────────────────────────────────
 function UnitProgressBar({ users }: { users: PresenceUser[] }) {
   const total  = users.length
-  const online = users.filter(u => u.status === 'ONLINE').length
-  const away   = users.filter(u => u.status === 'AWAY').length
-  const dnd    = users.filter(u => u.status === 'DO_NOT_DISTURB').length
+  const online = users.filter(u => effectivePresenceSlug(u.status, u.lastActivityAt) === 'online').length
+  const away   = users.filter(u => effectivePresenceSlug(u.status, u.lastActivityAt) === 'away').length
+  const dnd    = users.filter(u => effectivePresenceSlug(u.status, u.lastActivityAt) === 'do-not-disturb').length
   if (total === 0) return null
   const pct = (n: number) => `${Math.round((n / total) * 100)}%`
   return (
@@ -424,7 +424,7 @@ export function PresenceView() {
         for (const unit of dir.units) {
           const key = unitKeyFor(dir, unit)
           if (manuallyToggledUnits.current.has(key)) continue
-          if (unit.users.every(u => u.status === 'OFFLINE')) next.add(key); else next.delete(key)
+          if (unit.users.every(u => effectivePresenceSlug(u.status, u.lastActivityAt) === 'offline')) next.add(key); else next.delete(key)
         }
       }
       return next
@@ -434,8 +434,8 @@ export function PresenceView() {
       for (const dir of groups) {
         const key = dirKeyFor(dir)
         if (manuallyToggledDirs.current.has(key)) continue
-        const allOffline = dir.directMembers.every(p => p.status === 'OFFLINE')
-                        && dir.units.every(u => u.users.every(p => p.status === 'OFFLINE'))
+        const allOffline = dir.directMembers.every(p => effectivePresenceSlug(p.status, p.lastActivityAt) === 'offline')
+                        && dir.units.every(u => u.users.every(p => effectivePresenceSlug(p.status, p.lastActivityAt) === 'offline'))
         if (allOffline) next.add(key); else next.delete(key)
       }
       return next
@@ -482,11 +482,11 @@ export function PresenceView() {
     } catch { /* non-fatal */ }
   }
 
-  // ── Stats ─────────────────────────────────────────────────
-  const online  = presence.filter(u => u.status === 'ONLINE').length
-  const away    = presence.filter(u => u.status === 'AWAY').length
-  const dnd     = presence.filter(u => u.status === 'DO_NOT_DISTURB').length
-  const offline = presence.filter(u => u.status === 'OFFLINE').length
+  // ── Stats (use effective slug to match visual state) ──────
+  const online  = presence.filter(u => effectivePresenceSlug(u.status, u.lastActivityAt) === 'online').length
+  const away    = presence.filter(u => effectivePresenceSlug(u.status, u.lastActivityAt) === 'away').length
+  const dnd     = presence.filter(u => effectivePresenceSlug(u.status, u.lastActivityAt) === 'do-not-disturb').length
+  const offline = presence.filter(u => effectivePresenceSlug(u.status, u.lastActivityAt) === 'offline').length
 
   const applyPreset = (p: typeof PRESETS[number]) => {
     setPresenceDraft({ status: p.status, statusEmoji: p.emoji, statusMessage: p.message })
@@ -663,10 +663,10 @@ export function PresenceView() {
                     {dir.units.map(unit => {
                       const uKey            = unitKeyFor(dir, unit)
                       const isUnitCollapsed = collapsedUnits.has(uKey)
-                      const allOffline      = unit.users.every(u => u.status === 'OFFLINE')
+                      const allOffline      = unit.users.every(u => effectivePresenceSlug(u.status, u.lastActivityAt) === 'offline')
                       const sortMode        = unitSortMap.get(uKey) ?? 'status'
                       const activeUsers     = unit.users.filter(isActive)
-                      const offlineUsers    = unit.users.filter(u => u.status === 'OFFLINE')
+                      const offlineUsers    = unit.users.filter(u => !isActive(u))
                       const isOfflineExpanded = expandedOffline.has(uKey)
                       const visibleOffline  = isOfflineExpanded ? offlineUsers : offlineUsers.slice(0, OFFLINE_SHOW_DEFAULT)
                       const hiddenCount     = offlineUsers.length - OFFLINE_SHOW_DEFAULT

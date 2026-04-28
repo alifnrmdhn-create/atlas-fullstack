@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useId, useRef } from 'react'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import type { Meeting, MeetingType, PresenceStatus } from '../types'

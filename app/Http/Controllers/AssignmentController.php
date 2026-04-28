@@ -67,7 +67,7 @@ class AssignmentController extends Controller
             'title' => 'required|string|min:2|max:200',
             'description' => 'nullable|string|max:2000',
             'priority' => 'in:LOW,MEDIUM,HIGH,CRITICAL',
-            'dueDate' => 'nullable|date',
+            'dueDate' => 'required|date|after:today',
             'assigneeId' => 'required|integer',
             'watcherIds' => 'nullable|array',
             'watcherIds.*' => 'integer',

@@ -1,4 +1,4 @@
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from './useWorkspace'
 
 /**
  * Role-access hook — single source of truth for what the current user is

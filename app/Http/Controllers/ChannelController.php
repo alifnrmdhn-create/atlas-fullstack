@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Channel;
 use App\Models\ChannelMember;
 use App\Models\ChannelMessage;
+use App\Services\BroadcastService;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -125,6 +126,8 @@ class ChannelController extends Controller
             'isStarred' => true,
         ]);
 
+        BroadcastService::all('channel:channel:created', ['channel' => $channel]);
+
         if ($request->expectsJson()) {
             return response()->json(['data' => $channel], 201);
         }
@@ -141,8 +144,14 @@ class ChannelController extends Controller
         ]);
 
         Channel::query()->where('id', $id)->update($data);
+        $updated = Channel::findOrFail($id);
+
+        BroadcastService::toUsers('channel:channel:updated', ['channel' => $updated],
+            ChannelMember::where('channelId', $id)->pluck('userId')->all()
+        );
+
         if ($request->expectsJson()) {
-            return response()->json(['data' => Channel::findOrFail($id)]);
+            return response()->json(['data' => $updated]);
         }
 
         return back()->with('success', 'Channel diperbarui.');
@@ -150,7 +159,11 @@ class ChannelController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
+        $memberIds = ChannelMember::where('channelId', $id)->pluck('userId')->all();
         Channel::query()->where('id', $id)->update(['isArchived' => true]);
+
+        BroadcastService::toUsers('channel:channel:archived', ['channelId' => $id], $memberIds);
+
         if ($request->expectsJson()) {
             return response()->json(['ok' => true]);
         }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { ChannelsView } from './ChannelsView'
 import type { ChannelAttachment } from './ChannelsView'
 import { api, extractErrorMessage } from '../lib/api'

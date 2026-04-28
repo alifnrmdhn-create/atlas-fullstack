@@ -1553,7 +1553,8 @@ export function ChannelsView({
   const groupedMessages = useMemo(() => {
     const groups = new Map<string, ChannelMessage[]>()
     streamMessages.forEach((message) => {
-      const key = new Date(message.createdAt).toISOString().slice(0, 10)
+      const d = new Date(message.createdAt)
+      const key = isNaN(d.getTime()) ? 'unknown' : d.toISOString().slice(0, 10)
       const current = groups.get(key) ?? []
       current.push(message)
       groups.set(key, current)

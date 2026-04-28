@@ -4,7 +4,11 @@ type KpiTone = 'on-track' | 'at-risk' | 'off-track' | 'muted'
 
 const CURRENCY_PREFIX = /^rp\b\.?/i
 
-const formatKpiNumber = (value: number) => value.toLocaleString('id-ID')
+const formatKpiNumber = (value: number) => {
+  const n = Number(value)
+  if (isNaN(n)) return '0'
+  return n.toLocaleString('id-ID', { maximumFractionDigits: 2 })
+}
 
 const isCurrencyKpi = (unit?: string | null, dataType?: string | null) =>
   dataType === 'CURRENCY' || CURRENCY_PREFIX.test(unit?.trim() ?? '')
@@ -14,8 +18,8 @@ const getCurrencyScale = (unit?: string | null) => {
   return normalized || undefined
 }
 
-export function formatKpiValueParts(value?: number | null, unit?: string | null, dataType?: string | null) {
-  const numericValue = value ?? 0
+export function formatKpiValueParts(value?: number | string | null, unit?: string | null, dataType?: string | null) {
+  const numericValue = Number(value ?? 0)
 
   if (isCurrencyKpi(unit, dataType)) {
     const sign = numericValue < 0 ? '-' : ''

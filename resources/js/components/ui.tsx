@@ -1,3 +1,4 @@
+// @refresh reset
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import type { CommentItem, PresenceUser } from '../types'
@@ -384,11 +385,12 @@ export function Metric({ label, value }: { label: string; value: string }) {
 }
 
 const HEALTH_LABELS: Record<string, string> = {
-  GREEN: 'On Track',
-  YELLOW: 'At Risk',
-  RED: 'Off Track',
+  GREEN:   'On Track',
+  YELLOW:  'At Risk',
+  RED:     'Terlambat',
+  OVERDUE: 'Lewat Tenggat',
 }
-export function HealthPill({ status }: { status: 'GREEN' | 'YELLOW' | 'RED' }) {
+export function HealthPill({ status }: { status: 'GREEN' | 'YELLOW' | 'RED' | 'OVERDUE' }) {
   return (
     <span className={`health-pill health-pill--${status.toLowerCase()}`}>
       {HEALTH_LABELS[status] ?? status}
@@ -427,13 +429,15 @@ const PRESENCE_STATUS_LABEL: Record<string, string> = {
   OFFLINE: 'Offline',
 }
 
-const ACTIVE_THRESHOLD_MS = 5 * 60_000
+const ACTIVE_THRESHOLD_MS  = 5  * 60_000  // 5 min  → ONLINE demoted to away
+const OFFLINE_THRESHOLD_MS = 10 * 60_000  // 10 min → any non-OFFLINE demoted to offline (matches backend GhostCleanup)
 
 export function effectivePresenceSlug(status: string, lastActivityAt: string): string {
-  if (status === 'ONLINE') {
-    const msSince = Date.now() - new Date(lastActivityAt).getTime()
-    if (msSince > ACTIVE_THRESHOLD_MS) return 'away'
-  }
+  if (status === 'OFFLINE') return 'offline'
+  const msSince = Date.now() - new Date(lastActivityAt).getTime()
+  if (msSince > OFFLINE_THRESHOLD_MS) return 'offline'
+  if (msSince <= ACTIVE_THRESHOLD_MS && status !== 'DO_NOT_DISTURB') return 'online'
+  if (status === 'ONLINE' && msSince > ACTIVE_THRESHOLD_MS) return 'away'
   return status.toLowerCase().replace(/_/g, '-')
 }
 

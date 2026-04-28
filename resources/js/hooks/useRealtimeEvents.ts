@@ -4,6 +4,9 @@ import { RealtimeDispatcherContext } from '../contexts/RealtimeDispatcher'
 export type RealtimeHandler = (data: unknown, event: MessageEvent) => void
 
 export type RealtimeHandlers = Partial<{
+    'workspace:update': RealtimeHandler
+    'workspace:ready': RealtimeHandler
+    'workspace:reconnect': RealtimeHandler
     'program:changed': RealtimeHandler
     'workstream:changed': RealtimeHandler
     'phase:changed': RealtimeHandler
@@ -11,6 +14,7 @@ export type RealtimeHandlers = Partial<{
     'subtask:changed': RealtimeHandler
     'blocker:changed': RealtimeHandler
     'kpi:changed': RealtimeHandler
+    'risk:changed': RealtimeHandler
     'meeting:changed': RealtimeHandler
     'meeting:rsvp-changed': RealtimeHandler
     'meeting:action-changed': RealtimeHandler
@@ -24,12 +28,15 @@ export type RealtimeHandlers = Partial<{
     'presence:activity': RealtimeHandler
     'channel:message:created': RealtimeHandler
     'channel:message:updated': RealtimeHandler
+    'channel:message:deleted': RealtimeHandler
     'channel:reaction:changed': RealtimeHandler
     'channel:message:pinned': RealtimeHandler
+    'channel:thread:reply': RealtimeHandler
+    'channel:channel:created': RealtimeHandler
+    'channel:channel:updated': RealtimeHandler
+    'channel:channel:archived': RealtimeHandler
     'channel:typing:start': RealtimeHandler
     'channel:typing:stop': RealtimeHandler
-    'workspace:ready': RealtimeHandler
-    'workspace:reconnect': RealtimeHandler
 }>
 
 export type RealtimeEventType = keyof RealtimeHandlers

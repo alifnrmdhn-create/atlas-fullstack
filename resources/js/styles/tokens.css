@@ -6,7 +6,7 @@
 
   /* Sidebar — light, clean (Linear/Craft-inspired) */
   --sidebar-bg: #FFFFFF;
-  --sidebar-border: rgba(15,20,40,0.08);
+  --sidebar-border: rgba(15,20,40,0.12);
   --sidebar-text: #64748B;
   --sidebar-text-active: #FFFFFF;
   --sidebar-hover: rgba(15,20,40,0.06);
@@ -17,7 +17,7 @@
   /* App surface — layered depth system (neutral, drop blue tint) */
   --app-bg: #EEF2F6;
   --surface-0: #E6ECF2;   /* page canvas — was #E4EAF4 */
-  --surface-1: #F1F4F8;   /* inset / alternate rows — was #F0F4FA */
+  --surface-1: #E5EAF1;   /* inset / alternate rows / hover — slightly darker than canvas for visible feedback */
   --surface-2: #F8FAFC;   /* nested panels — was #F8FAFD */
   --surface-3: var(--surface-2);
   --surface: var(--panel);
@@ -126,8 +126,13 @@
 
   /* Topbar */
   --topbar-bg: color-mix(in srgb, var(--panel) 94%, var(--surface-2) 6%);
-  --topbar-border: rgba(15,20,40,0.09);
+  --topbar-border: rgba(15,20,40,0.13);
   --topbar-height: 52px;
+
+  /* Avatar — light mode (brand green tint) */
+  --avatar-bg: rgba(31,107,53,0.11);
+  --avatar-color: #1A5A2C;
+  --avatar-border: rgba(31,107,53,0.26);
 
   /* Misc */
   --radius: 10px;
@@ -137,6 +142,8 @@
   --radius-xl: 22px;
   --transition: 160ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --focus-ring-color: color-mix(in srgb, var(--indigo) 24%, transparent);
   --focus-ring-inset: 0 0 0 1px color-mix(in srgb, var(--panel) 88%, transparent);
   --focus-ring: var(--focus-ring-inset), 0 0 0 3px var(--focus-ring-color);

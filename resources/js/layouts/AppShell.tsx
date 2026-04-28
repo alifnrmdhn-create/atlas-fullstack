@@ -1,11 +1,12 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, startTransition } from 'react'
 import type { ReactNode } from 'react'
 import { Link, usePage } from '@inertiajs/react'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
+import { effectivePresenceSlug } from '../components/ui'
 
 type NavItem = {
   path: string
@@ -24,6 +25,15 @@ type SidebarTooltipState = {
   icon?: React.ReactElement
 }
 
+function IconHome() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.5 7.5L8 2.5l5.5 5" />
+      <path d="M3.5 7v6.5h9V7" />
+      <path d="M6.5 13.5v-3h3v3" />
+    </svg>
+  )
+}
 function IconDashboard() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
@@ -230,6 +240,7 @@ function prefetchRoute(path: string) {
     '/admin/roles': () => import('../Pages/AdminRolesView'),
     '/admin/users': () => import('../Pages/AdminUsersView'),
     '/channels': () => import('../Pages/ChannelsViewWrapper'),
+    '/': () => import('../Pages/HomeView'),
     '/dashboard': () => import('../Pages/DashboardView'),
     '/execution': () => import('../Pages/WorkboardView'),
     '/penugasan': () => import('../Pages/AssignmentsView'),
@@ -253,7 +264,7 @@ function prefetchRoute(path: string) {
 }
 
 function normalizeShellPath(pathname: string): string {
-  if (pathname === '/') return '/dashboard'
+  if (pathname === '/') return '/'
   if (pathname.startsWith('/programs/')) return '/programs'
   if (pathname.startsWith('/execution/tasks/')) return '/execution'
   if (pathname.startsWith('/assignments')) return '/penugasan'
@@ -495,7 +506,17 @@ export function AppShell({ children }: { children?: ReactNode }) {
   } = useWorkspace()
   const isAdmin = ADMIN_ROLES.has(currentUser?.roleType?.toLowerCase() ?? '')
   const role = currentUser?.roleType?.toUpperCase() ?? ''
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const shellRef = useRef<HTMLDivElement>(null)
+  const collapsedRef = useRef(false)
+  const [sidebarCollapsedView, setSidebarCollapsedView] = useState(false)
+
+  const toggleSidebar = () => {
+    const next = !collapsedRef.current
+    collapsedRef.current = next
+    shellRef.current?.classList.toggle('app-shell--collapsed', next)
+    if (!next) setTooltipState(null)
+    startTransition(() => setSidebarCollapsedView(next))
+  }
 
   const [tooltipState, setTooltipState] = useState<SidebarTooltipState | null>(null)
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -527,13 +548,16 @@ export function AppShell({ children }: { children?: ReactNode }) {
     .join('')
   const userRoleLabel = currentUser?.positionTitle ?? currentUser?.roleType ?? currentUser?.unit?.name ?? 'Pengguna'
 
-  // Resolve current user's live presence status for the avatar dot
-  const myPresenceStatus = currentUser
-    ? (presence.find((p) => p.userId === currentUser.id)?.status ?? 'OFFLINE')
-    : 'OFFLINE'
-  const dotClass = myPresenceStatus === 'ONLINE' ? 'sidebar__avatar-dot--online'
-    : myPresenceStatus === 'AWAY' ? 'sidebar__avatar-dot--away'
-    : myPresenceStatus === 'DO_NOT_DISTURB' ? 'sidebar__avatar-dot--dnd'
+  // Resolve current user's live activity for the avatar dot.
+  const myPresence = currentUser
+    ? presence.find((p) => p.userId === currentUser.id)
+    : undefined
+  const myPresenceSlug = myPresence
+    ? effectivePresenceSlug(myPresence.status, myPresence.lastActivityAt)
+    : 'offline'
+  const dotClass = myPresenceSlug === 'online' ? 'sidebar__avatar-dot--online'
+    : myPresenceSlug === 'away' ? 'sidebar__avatar-dot--away'
+    : myPresenceSlug === 'do-not-disturb' ? 'sidebar__avatar-dot--dnd'
     : 'sidebar__avatar-dot--offline'
 
   // Display name — BOD always gets full name; others get first name unless abbreviated
@@ -547,7 +571,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   })()
 
   const openTooltip = (anchor: HTMLElement, label: string, detail?: string, icon?: React.ReactElement) => {
-    if (!isSidebarCollapsed) return
+    if (!collapsedRef.current) return
     if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current)
     const rect = anchor.getBoundingClientRect()
     const preferredWidth = detail ? 246 : 196
@@ -566,10 +590,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const closeTooltip = () => {
     tooltipTimeoutRef.current = setTimeout(() => setTooltipState(null), 80)
   }
-
-  useEffect(() => {
-    if (!isSidebarCollapsed) setTooltipState(null)
-  }, [isSidebarCollapsed])
 
   const activeNotifications = notifications.filter(notification => notificationVisibleInDropdown(notification))
   const unreadCount = activeNotifications.filter(n => n.state === 'UNREAD').length
@@ -757,6 +777,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
   // ── Nav items palette ──────────────────────────────────────────────────────
   const NI = {
+    home:      { path: '/',          label: 'Home',             caption: 'Ringkasan eksekutif program kerja', icon: IconHome },
     dashboard: { path: '/dashboard', label: 'Dashboard',        caption: 'Executive command view',            icon: IconDashboard },
     roadmap:   { path: '/roadmap',   label: 'Roadmap',          caption: 'Visual program timeline',           icon: IconRoadmap   },
     programs:  { path: '/programs',  label: 'Programs',         caption: 'Portfolio orchestration',           icon: IconPrograms  },
@@ -776,8 +797,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
   } satisfies Record<string, NavItem>
 
   // ── Shared groups ──────────────────────────────────────────────────────────
-  const grpLaporan        = { label: 'Reports',  items: [NI.goals, NI.reports, NI.lapbul, NI.laprisiko] }
-  const grpLaporanStrategic = { label: 'Reports',  items: [NI.goals, NI.activity, NI.reports, NI.lapbul, NI.laprisiko] }
+  // Reports module hidden — to be revisited later
+  const grpLaporan        = { label: 'Reports',  items: [] as NavItem[] }
+  const grpLaporanStrategic = { label: 'Reports',  items: [] as NavItem[] }
   const grpKolab     = { label: 'Comms',      items: [NI.channels, NI.schedule, NI.search]         }
   const grpTim       = { label: 'Account',    items: [NI.presence, NI.profile, NI.settings]        }
   const grpAdmin     = {
@@ -830,7 +852,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
   // Page name for breadcrumb
   const PAGE_NAMES: Record<string, string> = {
-    '/': 'Dashboard', '/dashboard': 'Dashboard', '/programs': 'Programs',
+    '/': 'Home', '/dashboard': 'Dashboard', '/programs': 'Programs',
     '/goals': 'Goals & KPI', '/activity': 'Team Activity', '/execution': 'Execution', '/penugasan': 'Penugasan', '/reports': 'Analytics', '/laporan-bulanan': 'Monthly Reports', '/laporan-risiko': 'Risk Reports',
     '/fokus': 'Focus', '/channels': 'Channels', '/jadwal': 'Schedule', '/search': 'Search',
     '/presence': 'Presence', '/profile': 'Profile', '/settings': 'Settings',
@@ -846,7 +868,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   }
 
   return (
-    <div className={`app-shell${isSidebarCollapsed ? ' app-shell--collapsed' : ''}${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}`}>
+    <div className={`app-shell${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}`} ref={shellRef}>
       {/* ── Sidebar ── */}
       <aside className="sidebar">
         <div className="sidebar__header">
@@ -864,46 +886,52 @@ export function AppShell({ children }: { children?: ReactNode }) {
           </div>
           <button
             className="sidebar__collapse-btn"
-            onClick={() => setIsSidebarCollapsed((collapsed) => !collapsed)}
-            title={isSidebarCollapsed ? 'Expand' : 'Collapse'}
+            onClick={toggleSidebar}
+            title="Toggle sidebar"
             type="button"
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              {isSidebarCollapsed ? <path d="m3 2 3 3-3 3" /> : <path d="m7 2-3 3 3 3" />}
+              <path d="m7 2-3 3 3 3" />
             </svg>
           </button>
         </div>
 
         <nav className="sidebar__nav">
-          {/* Fokus — home entry point, always first */}
+          {/* Today — Home (organisasi) + Focus (personal), always at top */}
           {(() => {
-            const item = fokusItem
-            const isActive = activePath === item.path
-            const badge = item.badge?.()
+            const showHome = role === 'BOD' || role === 'KADIV' || role === 'KASUBDIV' || isAdmin
+            const todayItems: NavItem[] = showHome ? [NI.home, fokusItem] : [fokusItem]
             return (
               <div className="sidebar__fokus-wrap">
                 <p className="sidebar__group-label sidebar__group-label--home">Today</p>
-                <Link
-                  className={`sidebar__item sidebar__item--home${isActive ? ' sidebar__item--active' : ''}`}
-                  data-tooltip={item.label}
-                  href={item.path}
-                  onMouseEnter={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon()) }}
-                  onMouseLeave={closeTooltip}
-                  onFocus={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon()) }}
-                  onBlur={closeTooltip}
-                  aria-current={isActive ? 'page' : undefined}
-                >
-                  <span className="sidebar__item-icon">{item.icon()}</span>
-                  <span className="sidebar__item-label">{item.label}</span>
-                  {badge && badge > 0 ? (
-                    <span className="sidebar__badge">{badge > 99 ? '99+' : badge}</span>
-                  ) : null}
-                </Link>
+                {todayItems.map((item) => {
+                  const isActive = activePath === item.path
+                  const badge = item.badge?.()
+                  return (
+                    <Link
+                      key={item.path}
+                      className={`sidebar__item sidebar__item--home${isActive ? ' sidebar__item--active' : ''}`}
+                      data-tooltip={item.label}
+                      href={item.path}
+                      onMouseEnter={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon()) }}
+                      onMouseLeave={closeTooltip}
+                      onFocus={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon()) }}
+                      onBlur={closeTooltip}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      <span className="sidebar__item-icon">{item.icon()}</span>
+                      <span className="sidebar__item-label">{item.label}</span>
+                      {badge && badge > 0 ? (
+                        <span className="sidebar__badge">{badge > 99 ? '99+' : badge}</span>
+                      ) : null}
+                    </Link>
+                  )
+                })}
               </div>
             )
           })()}
 
-          {navGroups.map((group) => (
+          {navGroups.filter((group) => group.items.length > 0).map((group) => (
             <div
               className={`sidebar__group sidebar__group--separated${group.label === 'Tim' ? ' sidebar__group--tim' : ''}`}
               key={group.label}
@@ -956,7 +984,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
           </Link>
         </div>
 
-        {isSidebarCollapsed && tooltipState ? (
+        {sidebarCollapsedView && tooltipState ? (
           <div
             className={`sidebar__tooltip sidebar__tooltip--${tooltipState.placement}`}
             style={{ top: tooltipState.top, left: tooltipState.left }}

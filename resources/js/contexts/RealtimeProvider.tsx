@@ -1,11 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { usePresencePing } from '../hooks/usePresencePing'
 import { realtime } from '../lib/api'
 import { RealtimeDispatcher, RealtimeDispatcherContext } from './RealtimeDispatcher'
 
-type RefreshTicks = {
+export type RefreshTicks = {
     program: number
     workstream: number
     phase: number
@@ -37,6 +37,7 @@ const TICK_MAP: Record<string, keyof RefreshTicks> = {
     'subtask:changed':            'subtask',
     'blocker:changed':            'blocker',
     'kpi:changed':                'kpi',
+    'risk:changed':               'report',
     'meeting:changed':            'meeting',
     'meeting:rsvp-changed':       'meeting',
     'meeting:action-changed':     'meeting',
@@ -50,19 +51,25 @@ const TICK_MAP: Record<string, keyof RefreshTicks> = {
     'presence:activity':          'presence',
     'channel:message:created':    'channel',
     'channel:message:updated':    'channel',
+    'channel:message:deleted':    'channel',
     'channel:reaction:changed':   'channel',
     'channel:message:pinned':     'channel',
+    'channel:thread:reply':       'channel',
+    'channel:channel:created':    'channel',
+    'channel:channel:updated':    'channel',
+    'channel:channel:archived':   'channel',
 }
 
 // Semua event types yang di-listen dari SSE stream
 const EVENT_TYPES = Object.keys(TICK_MAP).concat([
+    'workspace:update',
     'channel:typing:start', 'channel:typing:stop',
     'workspace:ready', 'workspace:reconnect',
 ])
 
-type RealtimeContextValue = { ticks: RefreshTicks }
+export type RealtimeContextValue = { ticks: RefreshTicks }
 
-const RealtimeContext = createContext<RealtimeContextValue | null>(null)
+export const RealtimeContext = createContext<RealtimeContextValue | null>(null)
 
 /**
  * Single-owner SSE EventSource + ticks aggregator + presence ping.
@@ -137,10 +144,4 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
             </RealtimeContext.Provider>
         </RealtimeDispatcherContext.Provider>
     )
-}
-
-export function useRealtime(): RealtimeContextValue {
-    const ctx = useContext(RealtimeContext)
-    if (!ctx) throw new Error('useRealtime harus dipakai di dalam <RealtimeProvider>')
-    return ctx
 }

@@ -11,11 +11,11 @@ class RiskReportKRI extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
-        'targetValue' => 'decimal:6',
-        'actualValue' => 'decimal:6',
-        'thresholdWarning' => 'decimal:6',
-        'thresholdCritical' => 'decimal:6',
-        'prevMonthValue' => 'decimal:6',
+        'targetValue' => 'float',
+        'actualValue' => 'float',
+        'thresholdWarning' => 'float',
+        'thresholdCritical' => 'float',
+        'prevMonthValue' => 'float',
         'higherIsBetter' => 'boolean',
     ];
 }

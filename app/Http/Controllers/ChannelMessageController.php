@@ -8,6 +8,7 @@ use App\Models\ChannelMessage;
 use App\Models\ChannelMessageHidden;
 use App\Models\Notification;
 use App\Models\User;
+use App\Services\BroadcastService;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -85,6 +86,25 @@ class ChannelMessageController extends Controller
             $this->processMentions($channelId, $userId, $data['content'], $message->id);
         });
 
+        $message->load('author:id,name,avatarUrl,roleType,positionTitle');
+        $memberIds = $this->memberIds($channelId);
+
+        if (!empty($data['parentMessageId'])) {
+            // Thread reply — emit specialized event so thread panels update
+            $newReplyCount = ChannelMessage::where('id', $data['parentMessageId'])->value('replyCount') ?? 0;
+            BroadcastService::toUsers('channel:thread:reply', [
+                'channelId' => $channelId,
+                'parentId' => $data['parentMessageId'],
+                'reply' => $message,
+                'newReplyCount' => $newReplyCount,
+            ], $memberIds);
+        } else {
+            BroadcastService::toUsers('channel:message:created', [
+                'channelId' => $channelId,
+                'message' => $message,
+            ], $memberIds);
+        }
+
         if ($request->expectsJson()) {
             return response()->json(['data' => $message], 201);
         }
@@ -111,8 +131,14 @@ class ChannelMessageController extends Controller
             'searchableText' => strtolower($data['content']),
         ]);
 
+        $fresh = $msg->fresh()->load('author:id,name,avatarUrl,roleType,positionTitle');
+        BroadcastService::toUsers('channel:message:updated', [
+            'channelId' => $channelId,
+            'message' => $fresh,
+        ], $this->memberIds($channelId));
+
         if ($request->expectsJson()) {
-            return response()->json(['data' => $msg->fresh()]);
+            return response()->json(['data' => $fresh]);
         }
 
         return back()->with('success', 'Pesan diedit.');
@@ -143,6 +169,12 @@ class ChannelMessageController extends Controller
                 'deletedForEveryoneBy' => $userId,
                 'content' => '[Pesan dihapus]',
             ]);
+
+            BroadcastService::toUsers('channel:message:deleted', [
+                'channelId' => $channelId,
+                'messageId' => $messageId,
+                'parentMessageId' => $msg->parentMessageId,
+            ], $this->memberIds($channelId));
         }
 
         if ($request->expectsJson()) {
@@ -178,7 +210,7 @@ class ChannelMessageController extends Controller
     public function addReaction(Request $request, int $channelId, int $messageId): JsonResponse|RedirectResponse
     {
         $data = $request->validate(['emoji' => 'required|string|max:10']);
-        $this->toggleReaction($messageId, $request->user()->id, $data['emoji'], false);
+        $this->toggleReaction($channelId, $messageId, $request->user()->id, $data['emoji'], false);
 
         if ($request->expectsJson()) {
             return response()->json(['data' => ChannelMessage::findOrFail($messageId)]);
@@ -190,7 +222,7 @@ class ChannelMessageController extends Controller
     // DELETE /channels/:channelId/messages/:messageId/reactions/:emoji
     public function removeReaction(Request $request, int $channelId, int $messageId, string $emoji): JsonResponse|RedirectResponse
     {
-        $this->toggleReaction($messageId, $request->user()->id, $emoji, true);
+        $this->toggleReaction($channelId, $messageId, $request->user()->id, $emoji, true);
 
         if ($request->expectsJson()) {
             return response()->json(['data' => ChannelMessage::findOrFail($messageId)]);
@@ -205,6 +237,12 @@ class ChannelMessageController extends Controller
         $msg = ChannelMessage::where('channelId', $channelId)->findOrFail($messageId);
         $msg->update(['isPinned' => !$msg->isPinned]);
 
+        BroadcastService::toUsers('channel:message:pinned', [
+            'channelId' => $channelId,
+            'messageId' => $messageId,
+            'isPinned' => $msg->isPinned,
+        ], $this->memberIds($channelId));
+
         if ($request->expectsJson()) {
             return response()->json(['data' => $msg->fresh()]);
         }
@@ -214,7 +252,7 @@ class ChannelMessageController extends Controller
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private function toggleReaction(int $messageId, int $userId, string $emoji, bool $remove): void
+    private function toggleReaction(int $channelId, int $messageId, int $userId, string $emoji, bool $remove): void
     {
         $msg = ChannelMessage::findOrFail($messageId);
         $reactions = $msg->reactions ?? [];
@@ -235,6 +273,17 @@ class ChannelMessageController extends Controller
         }
 
         $msg->update(['reactions' => $reactions]);
+
+        BroadcastService::toUsers('channel:reaction:changed', [
+            'channelId' => $channelId,
+            'messageId' => $messageId,
+            'reactions' => $reactions,
+        ], $this->memberIds($channelId));
+    }
+
+    private function memberIds(int $channelId): array
+    {
+        return ChannelMember::where('channelId', $channelId)->pluck('userId')->all();
     }
 
     private function processMentions(int $channelId, int $senderId, string $content, int $messageId): void

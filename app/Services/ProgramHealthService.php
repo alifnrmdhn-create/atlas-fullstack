@@ -17,6 +17,9 @@ use App\Models\Workstream;
  */
 class ProgramHealthService
 {
+    const CRITICAL_MULTIPLIER = 0.8;
+    const WARNING_MULTIPLIER  = 0.95;
+
     public function recompute(int $programId): string
     {
         [$workstreams, $kpis] = [
@@ -62,10 +65,10 @@ class ProgramHealthService
         return $health;
     }
 
-    private function kpiStatus(float $actual, float $target, ?float $critical, ?float $warning): string
+    public static function kpiStatus(float $actual, float $target, ?float $critical, ?float $warning): string
     {
-        $c = $critical ?? $target * 0.8;
-        $w = $warning  ?? $target * 0.95;
+        $c = $critical ?? $target * self::CRITICAL_MULTIPLIER;
+        $w = $warning  ?? $target * self::WARNING_MULTIPLIER;
         if ($actual <= $c) return 'RED';
         if ($actual <= $w) return 'YELLOW';
         return 'GREEN';

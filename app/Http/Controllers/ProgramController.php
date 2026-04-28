@@ -99,12 +99,14 @@ class ProgramController extends Controller
 
         $redCount = $yellowCount = 0;
         foreach ($kpis as $k) {
-            $actual = (float) $k->actualValue;
-            $target = (float) $k->targetValue;
-            $critical = $k->criticalThreshold !== null ? (float) $k->criticalThreshold : $target * 0.8;
-            $warning  = $k->warningThreshold  !== null ? (float) $k->warningThreshold  : $target * 0.95;
-            if ($actual <= $critical) $redCount++;
-            elseif ($actual <= $warning) $yellowCount++;
+            $status = ProgramHealthService::kpiStatus(
+                (float) $k->actualValue,
+                (float) $k->targetValue,
+                $k->criticalThreshold !== null ? (float) $k->criticalThreshold : null,
+                $k->warningThreshold  !== null ? (float) $k->warningThreshold  : null,
+            );
+            if ($status === 'RED')    $redCount++;
+            elseif ($status === 'YELLOW') $yellowCount++;
         }
 
         $kpiHealth = $kpis->isEmpty() ? null
@@ -132,6 +134,7 @@ class ProgramController extends Controller
 
     public function kpiLinks(Request $request, int $id)
     {
+        $this->programService->assertAccess($request->user(), $id);
         $links = ProgramKpiLink::query()->where('programId', $id)->orderBy('createdAt')->get();
         return response()->json(['data' => $links]);
     }
@@ -152,11 +155,15 @@ class ProgramController extends Controller
             'status' => 'nullable|string|max:40',
             'priority' => 'in:LOW,MEDIUM,HIGH,CRITICAL',
             'ownerId' => 'nullable|integer|exists:User,id',
-            'ownerUnitId' => 'nullable|integer',
+            'ownerUnitId' => 'nullable|integer|exists:OrganizationalUnit,id',
             'budgetIdr' => 'nullable|numeric',
             'picPersonIds' => 'nullable|array',
             'picPersonIds.*' => 'integer|exists:User,id',
             'hasNoApmsKpi' => 'nullable|boolean',
+            'kelompok' => 'nullable|in:SCORECARD,NON_SCORECARD',
+            'pilarStrategis' => 'nullable|in:ENABLER,SPENDING_BETTER,INNOVATIVE_FINANCING',
+            'progresTerkini' => 'nullable|string|max:2000',
+            'dukunganDibutuhkan' => 'nullable|string|max:2000',
         ]);
 
         $program = $this->programService->create($request->user(), $data);
@@ -180,19 +187,27 @@ class ProgramController extends Controller
             return $this->validationError($request, 'Program sedang dalam proses persetujuan dan tidak dapat diubah.');
         }
 
+        // Inject existing startDate so targetEndDate can be validated against it even when not in request
+        $request->mergeIfMissing(['startDate' => $program->startDate?->toDateString()]);
+
         $data = $request->validate([
             'name' => 'sometimes|string|max:200',
             'description' => 'nullable|string|max:2000',
             'strategicObjective' => 'nullable|string|max:1000',
             'startDate' => 'sometimes|date',
-            'targetEndDate' => 'sometimes|date',
+            'targetEndDate' => 'sometimes|date|after_or_equal:startDate',
             'priority' => 'sometimes|in:LOW,MEDIUM,HIGH,CRITICAL',
             'budgetIdr' => 'nullable|numeric',
             'picPersonIds' => 'nullable|array',
             'picPersonIds.*' => 'integer|exists:User,id',
+            'kelompok' => 'nullable|in:SCORECARD,NON_SCORECARD',
+            'pilarStrategis' => 'nullable|in:ENABLER,SPENDING_BETTER,INNOVATIVE_FINANCING',
+            'progresTerkini' => 'nullable|string|max:2000',
+            'dukunganDibutuhkan' => 'nullable|string|max:2000',
         ]);
 
         $program = $this->programService->update($id, $data);
+        $this->healthService->recompute($id);
         BroadcastService::program($id, 'updated');
 
         if ($request->expectsJson()) {

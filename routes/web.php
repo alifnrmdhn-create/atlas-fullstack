@@ -29,7 +29,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/', fn () => Inertia::render('DashboardView'))->name('home');
+    Route::get('/', fn () => Inertia::render('HomeView'))->name('home');
     Route::get('/dashboard', [WorkspaceController::class, 'dashboard'])->name('dashboard');
     Route::get('/roadmap', fn () => Inertia::render('RoadmapView'))->name('roadmap');
     Route::get('/execution', fn () => Inertia::render('WorkboardView'))->name('execution');
@@ -261,7 +261,8 @@ Route::middleware('auth')->group(function () {
 
     // ── Organization ──────────────────────────────────────────────────────────
     Route::prefix('organization')->name('organization.')->group(function () {
-        Route::get('/hierarchy',  [OrganizationController::class, 'hierarchy'])->name('hierarchy');
+        Route::get('/hierarchy',       [OrganizationController::class, 'hierarchy'])->name('hierarchy');
+        Route::get('/program-summary', [OrganizationController::class, 'programSummary'])->name('program-summary');
 
         Route::get('/directorates',       [OrganizationController::class, 'directorates'])->name('directorates.index');
         Route::post('/directorates',      [OrganizationController::class, 'storeDirectorate'])->name('directorates.store');
@@ -281,8 +282,9 @@ Route::middleware('auth')->group(function () {
     });
 
     // ── Real-time SSE + Presence ──────────────────────────────────────────────
-    Route::get('/realtime/stream', [RealtimeController::class, 'stream'])->name('realtime.stream');
-    Route::post('/realtime/ping',  [RealtimeController::class, 'ping'])->name('realtime.ping');
+    Route::get('/realtime/stream',                  [RealtimeController::class, 'stream'])->name('realtime.stream');
+    Route::post('/realtime/ping',                   [RealtimeController::class, 'ping'])->name('realtime.ping');
+    Route::post('/realtime/typing/{channelId}',     [RealtimeController::class, 'typing'])->name('realtime.typing');
 
     // ── Monthly Reports ───────────────────────────────────────────────────────
     Route::prefix('monthly-reports')->name('monthly-reports.')->group(function () {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { HealthPill, SectionState } from '../components/ui'
 
 type ReportTab = 'kpi' | 'leaderboard'

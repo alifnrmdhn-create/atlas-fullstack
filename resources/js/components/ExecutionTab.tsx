@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '../lib/api'
 import type { ExecutionGridData, ExecutionWorkstreamSummary } from '../types'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { ExecutionGrid } from './ExecutionGrid'
 import { SectionState, SkeletonStack } from './ui'
 

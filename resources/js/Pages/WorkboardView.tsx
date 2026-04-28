@@ -13,7 +13,7 @@ import {
 } from '@dnd-kit/core'
 import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core'
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import {
   HealthPill,
@@ -64,6 +64,11 @@ function CardFace({
         {item.isBlocked ? (
           <span className="work-card__blocked">BLOCKED</span>
         ) : null}
+        {item.status === 'COMPLETED' && item.targetCompletion && item.actualCompletion && (
+          <span className={`work-card__ontime work-card__ontime--${new Date(item.actualCompletion) <= new Date(item.targetCompletion) ? 'ok' : 'late'}`}>
+            {new Date(item.actualCompletion) <= new Date(item.targetCompletion) ? '✓ Tepat waktu' : '⚠ Terlambat'}
+          </span>
+        )}
         <span className="work-card__footer-meta">
           {item.percentComplete}%{item.assignee ? ` · ${item.assignee.name.split(' ')[0]}` : ''}
         </span>
@@ -145,7 +150,11 @@ export function WorkboardView() {
   const { url } = usePage()
   const navigate = useInertiaNavigate()
 
-  // Read ?programId from URL on first mount — set filter automatically
+  // Drill-down filters from URL — set by Kapasitas Tim cards on Home
+  const [boardFilterAssigneeId, setBoardFilterAssigneeId] = useState<number | null>(null)
+  const [boardFilterOwnerUnitId, setBoardFilterOwnerUnitId] = useState<number | null>(null)
+
+  // Read URL filters on first mount
   const didConsumeUrlFilter = useRef(false)
   useEffect(() => {
     if (didConsumeUrlFilter.current) return
@@ -153,6 +162,10 @@ export function WorkboardView() {
     const params = new URLSearchParams(url.split('?')[1] ?? '')
     const pid = params.get('programId')
     if (pid) setBoardFilterProgramId(Number(pid))
+    const aid = params.get('assigneeId')
+    if (aid) setBoardFilterAssigneeId(Number(aid))
+    const uid = params.get('ownerUnitId')
+    if (uid) setBoardFilterOwnerUnitId(Number(uid))
   }, [url])
 
   // Default myItemsOnly respects role: KADIV/KASUBDIV/BOD default to full view
@@ -235,8 +248,16 @@ export function WorkboardView() {
     boardFilterWorkstreamId
       ? items.filter(i => i.workstream?.id === boardFilterWorkstreamId)
       : items
+  const byAssignee = (items: typeof workGroups[0]['items']) =>
+    boardFilterAssigneeId
+      ? items.filter(i => i.assignee?.id === boardFilterAssigneeId)
+      : items
+  const byOwnerUnit = (items: typeof workGroups[0]['items']) =>
+    boardFilterOwnerUnitId
+      ? items.filter(i => i.workstream?.program?.ownerUnitId === boardFilterOwnerUnitId)
+      : items
   const applyBoardFilters = (items: typeof workGroups[0]['items']) =>
-    byWorkstream(byProgram(items))
+    byOwnerUnit(byAssignee(byWorkstream(byProgram(items))))
 
   const rawItems = workGroups.flatMap(g => g.items)
   const allItems = applyBoardFilters(

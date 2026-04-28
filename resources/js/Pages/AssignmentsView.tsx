@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { api, extractErrorMessage } from '../lib/api'
 import { useEscKey } from '../hooks/useEscKey'
 import { useAnimatedClose } from '../hooks/useAnimatedClose'
@@ -887,6 +887,14 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
               <div><dt>Tenggat</dt><dd style={{ padding: 0 }}>
                 <span className={`pg-due-inline pg-due-inline--${due.tone}`}>{due.label}</span>
                 {a.dueDate && <small>{new Date(a.dueDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</small>}
+                {a.completedAt && a.dueDate && (
+                  <small style={{ marginTop: 2, display: 'block', fontWeight: 600, color: new Date(a.completedAt) <= new Date(a.dueDate) ? 'var(--green)' : 'var(--red)' }}>
+                    {new Date(a.completedAt) <= new Date(a.dueDate) ? '✓ Selesai tepat waktu' : '⚠ Selesai melewati tenggat'}
+                  </small>
+                )}
+                <small style={{ color: 'var(--text-muted)', marginTop: 1, display: 'block' }}>
+                  Ditetapkan oleh: {a.assigner.name}
+                </small>
               </dd></div>
               {a.relatedProgram && (<div><dt>Program</dt><dd>[{a.relatedProgram.code}] {a.relatedProgram.name}</dd></div>)}
               <div><dt>Dibuat</dt><dd>{new Date(a.createdAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</dd></div>
@@ -1052,7 +1060,7 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
         description: description.trim() || undefined,
         assigneeId: Number(assigneeId),
         priority,
-        dueDate: dueDate || undefined,
+        dueDate,
         evidenceRequired,
         isPrivate: canTogglePrivate ? isPrivate : false,
       })
@@ -1093,8 +1101,15 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
                 </select>
               </label>
               <label className="pg-form__field">
-                <span>Tenggat</span>
-                <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                <span>Tenggat <span style={{ color: 'var(--red)', fontWeight: 700 }}>*</span></span>
+                <input
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  required
+                  type="date"
+                  value={dueDate}
+                />
+                <span className="pg-form__hint">Pemberi tugas menetapkan tenggat waktu</span>
               </label>
             </div>
             <div className="pg-form__field">
@@ -1112,7 +1127,7 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
         </div>
         <div className="modal__footer">
           <button className="btn btn--ghost btn--sm" onClick={() => onClose()} type="button" disabled={busy}>Batal</button>
-          <button className="toolbar-action-btn" type="submit" disabled={busy || !title.trim() || !assigneeId}>
+          <button className="toolbar-action-btn" type="submit" disabled={busy || !title.trim() || !assigneeId || !dueDate}>
             {busy ? 'Menyimpan…' : 'Tugaskan'}
           </button>
         </div>
@@ -1123,7 +1138,7 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
 
 // ── Styles — minimal, hanya override/tambahan assignment-spesifik ────────
 const PENUGASAN_CSS = `
-.view-penugasan { display: flex; flex-direction: column; height: 100%; background: var(--app-bg); overflow: hidden; }
+.view-penugasan { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 .view-penugasan .workboard-workspace { padding: 16px 20px 20px; overflow-x: auto; overflow-y: auto; flex: 1; }
 
 /* Card flag untuk assignment-specific (PERLU RESPON / KLARIFIKASI) — pakai slot .work-card__blocked */
@@ -1256,6 +1271,7 @@ const PENUGASAN_CSS = `
 .pg-form input:focus, .pg-form select:focus, .pg-form textarea:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px var(--indigo-dim); }
 .pg-form textarea { resize: vertical; min-height: 64px; }
 .pg-form__row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; }
+.pg-form__hint { font-size: 10.5px; color: var(--text-muted); font-style: italic; }
 
 @keyframes pgFade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pgFadeOut { from { opacity: 1; } to { opacity: 0; } }

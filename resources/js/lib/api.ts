@@ -15,6 +15,11 @@
  */
 
 const API_BASE_URL = '/'
+const DEFAULT_TIMEOUT_MS = 15_000
+
+type ApiRequestInit = RequestInit & {
+    timeoutMs?: number
+}
 
 function getCookie(name: string): string | null {
     if (typeof document === 'undefined') return null
@@ -53,13 +58,38 @@ function buildHeaders(init?: RequestInit): Headers {
     return headers
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
     const url = path.startsWith('/') ? path : `${API_BASE_URL}${path}`
-    const response = await fetch(url, {
-        ...init,
-        credentials: 'same-origin',
-        headers: buildHeaders(init),
-    })
+    const { timeoutMs = DEFAULT_TIMEOUT_MS, signal, ...fetchInit } = init
+    const controller = new AbortController()
+    const timeout = timeoutMs > 0
+        ? window.setTimeout(() => controller.abort(), timeoutMs)
+        : null
+    const abortFromCaller = () => controller.abort()
+
+    if (signal) {
+        if (signal.aborted) controller.abort()
+        else signal.addEventListener('abort', abortFromCaller, { once: true })
+    }
+
+    let response: Response
+    try {
+        response = await fetch(url, {
+            ...fetchInit,
+            credentials: 'same-origin',
+            headers: buildHeaders(fetchInit),
+            signal: controller.signal,
+        })
+    } catch (error) {
+        const timedOut = controller.signal.aborted && !signal?.aborted
+        if (timedOut) {
+            throw new ApiRequestError(408, `Request timeout setelah ${Math.round(timeoutMs / 1000)} detik: ${path}`)
+        }
+        throw error
+    } finally {
+        if (timeout) window.clearTimeout(timeout)
+        signal?.removeEventListener('abort', abortFromCaller)
+    }
 
     if (!response.ok) {
         let payload: { error?: string; message?: string; errors?: unknown } | null = null
@@ -101,7 +131,7 @@ export const api = {
         method: 'DELETE', body: body ? JSON.stringify(body) : undefined,
     }),
     upload: <T>(path: string, formData: FormData) => request<T>(path, {
-        method: 'POST', body: formData,
+        method: 'POST', body: formData, timeoutMs: 120_000,
     }),
 }
 

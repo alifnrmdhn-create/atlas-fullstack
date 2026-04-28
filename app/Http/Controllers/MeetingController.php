@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\OrgScope;
 use App\Models\Blocker;
 use App\Models\Meeting;
 use App\Models\MeetingActionItem;
@@ -140,22 +141,21 @@ class MeetingController extends Controller
 
     public function suggestions(Request $request)
     {
-        $userId = $request->user()->id;
-        $role = $request->user()->roleType;
-        $isStrategic = in_array(strtoupper($role), ['BOD', 'KADIV', 'ADMIN', 'SUPERADMIN'], true);
+        $user = $request->user();
+        $userId = $user->id;
+        $orgScope = OrgScope::forUser($user);
+        $role = $orgScope->role;
+        // STAF/OFFICER/ASISTEN see only their owned at-risk programs (personal queue).
+        // KADIV/KASUBDIV see at-risk programs in their org scope (managerial queue).
+        // BOD/ADMIN see portfolio-wide.
+        $personalOnly = !$orgScope->isExecutive && !in_array($role, ['KADIV', 'KASUBDIV'], true);
 
-        $programWhere = fn ($q) => $q
+        $programs = Program::query()
             ->whereIn('healthStatus', ['RED', 'YELLOW'])
-            ->whereNotIn('status', ['COMPLETED', 'CANCELLED']);
-
-        if (!$isStrategic) {
-            $programWhere = fn ($q) => $q
-                ->whereIn('healthStatus', ['RED', 'YELLOW'])
-                ->whereNotIn('status', ['COMPLETED', 'CANCELLED'])
-                ->where('ownerId', $userId);
-        }
-
-        $programs = Program::where($programWhere)
+            ->whereNotIn('status', ['COMPLETED', 'CANCELLED'])
+            ->when($personalOnly, fn ($q) => $q->where('ownerId', $userId))
+            ->when(!$orgScope->isExecutive && !$personalOnly,
+                fn ($q) => $q->whereIn('ownerUnitId', $orgScope->unitIds ?: [0]))
             ->select('id','name','code','healthStatus','progressPercent','ownerId')
             ->orderByRaw('CASE "healthStatus" WHEN \'RED\' THEN 1 WHEN \'YELLOW\' THEN 2 ELSE 3 END')
             ->orderBy('progressPercent')

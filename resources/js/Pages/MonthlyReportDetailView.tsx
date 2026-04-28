@@ -6,7 +6,7 @@ import {
   Bar, BarChart, CartesianGrid, Cell, ComposedChart,
   LabelList, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { useWorkspace } from '../context/workspace'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useDialogFocus } from '../hooks/useDialogFocus'

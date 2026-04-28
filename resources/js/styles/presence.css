@@ -456,7 +456,7 @@
   border: 1px solid var(--panel-border);
   border-radius: 6px;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
 .activity-range-tab:hover { background: var(--panel); color: var(--text); }
 .activity-range-tab.is-active {
@@ -476,7 +476,7 @@
   background: var(--panel);
   color: var(--text-muted);
   cursor: pointer;
-  transition: all var(--transition);
+  transition: background var(--transition), color var(--transition);
 }
 .activity-refresh-btn:hover { background: var(--surface-1); color: var(--text); }
 

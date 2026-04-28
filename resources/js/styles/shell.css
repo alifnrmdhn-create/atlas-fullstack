@@ -4,7 +4,7 @@
   grid-template-columns: var(--sidebar-width) 1fr;
   height: 100vh;
   overflow: hidden;
-  transition: grid-template-columns 160ms ease;
+  transition: grid-template-columns 200ms cubic-bezier(0.4, 0, 0.2, 1);
   background: var(--app-bg);
   animation: app-shell-enter 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -40,7 +40,7 @@
   box-shadow: 0 1px 0 var(--sidebar-border);
   background: linear-gradient(to bottom, var(--indigo-dim), transparent);
 }
-.sidebar__brand { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; transition: gap 160ms ease; }
+.sidebar__brand { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; transition: gap 160ms cubic-bezier(0.4, 0, 0.2, 1); }
 .sidebar__brand-mark {
   width: 32px;
   height: 32px;
@@ -55,7 +55,7 @@
   flex-shrink: 0;
   box-shadow: var(--panel-shadow-md);
 }
-.sidebar__brand-name { display: flex; align-items: center; min-width: 0; overflow: hidden; transition: opacity 160ms ease, width 160ms ease; }
+.sidebar__brand-name { display: flex; align-items: center; min-width: 0; overflow: hidden; transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms; }
 .sidebar__brand-title {
   font-size: 16px;
   font-weight: 700;
@@ -80,7 +80,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+  transition: background 160ms cubic-bezier(0.4, 0, 0.2, 1), color 160ms cubic-bezier(0.4, 0, 0.2, 1), border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .sidebar__collapse-btn:hover { color: var(--text-strong); background: var(--surface-1); border-color: var(--panel-border-strong); }
 .sidebar__collapse-btn:focus-visible,
@@ -123,44 +123,42 @@
   padding: 2px 10px 5px;
   white-space: nowrap;
   overflow: hidden;
-  transition: opacity 160ms ease;
+  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms;
   opacity: 0.6;
 }
 
-/* ①⑤ Nav item — border-left accent pattern */
+/* Nav item — Linear/Notion-style restraint:
+ *   - default: muted text + faint icon
+ *   - hover:   subtle neutral bg, no border tint
+ *   - active:  slightly darker neutral bg + bold text + full-opacity icon
+ *   No brand color at any state. Color reserved for badges (counts) only. */
 .sidebar__item {
   display: flex;
   align-items: center;
   gap: 8px;
   min-height: 30px;
-  padding: 6px 10px 6px 8px;
-  border-radius: 8px;
-  border-left: 2px solid transparent;
+  padding: 6px 10px;
+  border-radius: 7px;
   color: var(--sidebar-text);
   text-decoration: none;
   font-size: var(--type-small);
   font-weight: 500;
   overflow: hidden;
-  transition: background 150ms ease, color 150ms ease, border-color 150ms ease,
-              padding 160ms ease, gap 160ms ease;
+  transition: background 120ms ease, color 120ms ease;
   position: relative;
 }
 .sidebar__item:hover {
   background: var(--surface-1);
   color: var(--text-strong);
-  border-left-color: var(--indigo-mid);
 }
-/* ① Active — neutral pill + green left border + green icon (PTPN identity preserved) */
 .sidebar__item--active {
   background: var(--surface-overlay);
   color: var(--text-strong);
   font-weight: 600;
-  border-left-color: var(--indigo);
 }
 .sidebar__item--active:hover {
   background: var(--surface-overlay-strong);
   color: var(--text-strong);
-  border-left-color: var(--indigo);
 }
 .sidebar__item-icon {
   width: 16px;
@@ -169,20 +167,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.65;
-  transition: color 150ms ease, opacity 150ms ease;
+  opacity: 0.6;
+  transition: opacity 120ms ease;
 }
-.sidebar__item:hover .sidebar__item-icon { opacity: 0.85; }
-.sidebar__item--active .sidebar__item-icon { opacity: 1; color: var(--indigo); }
+.sidebar__item:hover .sidebar__item-icon { opacity: 0.9; }
+.sidebar__item--active .sidebar__item-icon { opacity: 1; }
 .sidebar__item-label {
   flex: 1;
   min-width: 0;
-  width: 100%;
   opacity: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: opacity 160ms ease, width 160ms ease;
+  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms;
 }
 
 /* ③ Badge — consistent brand green */
@@ -195,6 +192,8 @@
   padding: 1px 6px;
   border-radius: 10px;
   flex-shrink: 0;
+  overflow: hidden;
+  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms;
 }
 .sidebar__item--active .sidebar__badge {
   background: var(--indigo-mid);
@@ -214,11 +213,10 @@
   padding: 7px 10px;
   border-radius: 8px;
   overflow: hidden;
-  transition: background 150ms ease;
   cursor: pointer;
   text-decoration: none;
   border-left: 2px solid transparent;
-  transition: background 150ms, border-color 150ms;
+  transition: background 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .sidebar__user:hover {
   background: var(--surface-1);
@@ -256,7 +254,7 @@
 .sidebar__avatar-dot--away    { background: var(--yellow); }
 .sidebar__avatar-dot--dnd     { background: var(--red); }
 .sidebar__avatar-dot--offline { background: var(--text-muted); }
-.sidebar__user-info { flex: 1; overflow: hidden; min-width: 0; }
+.sidebar__user-info { flex: 1; overflow: hidden; min-width: 0; transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms; }
 .sidebar__user-name {
   display: block;
   font-size: 12px;
@@ -372,11 +370,13 @@
 .app-shell--collapsed .sidebar__brand-name {
   width: 0;
   opacity: 0;
+  transition: opacity 100ms cubic-bezier(0.4, 0, 0.2, 1), width 0s 100ms;
 }
 .app-shell--collapsed .sidebar__group-label {
   opacity: 0;
   height: 0;
   padding: 0;
+  transition: opacity 100ms cubic-bezier(0.4, 0, 0.2, 1), height 0s 100ms, padding 0s 100ms;
 }
 .app-shell--collapsed .sidebar__item {
   justify-content: center;
@@ -385,10 +385,20 @@
 .app-shell--collapsed .sidebar__item-label {
   width: 0;
   opacity: 0;
+  transition: opacity 100ms cubic-bezier(0.4, 0, 0.2, 1), width 0s 100ms;
 }
-.app-shell--collapsed .sidebar__badge,
+.app-shell--collapsed .sidebar__badge {
+  max-width: 0;
+  opacity: 0;
+  padding: 0;
+  margin: 0;
+  transition: opacity 100ms cubic-bezier(0.4, 0, 0.2, 1), max-width 0s 100ms, padding 0s 100ms, margin 0s 100ms;
+}
 .app-shell--collapsed .sidebar__user-info {
-  display: none;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: opacity 100ms cubic-bezier(0.4, 0, 0.2, 1), max-width 0s 100ms;
 }
 .app-shell--collapsed .sidebar__user {
   justify-content: center;
@@ -398,6 +408,9 @@
   position: absolute;
   right: 7px;
   background: var(--panel);
+}
+.app-shell--collapsed .sidebar__collapse-btn svg {
+  transform: scaleX(-1);
 }
 
 /* ══ Workspace ════════════════════════════════════════════════ */
@@ -432,6 +445,7 @@
 
 :root:not([data-theme="dark"]) .sidebar__collapse-btn {
   background: color-mix(in srgb, var(--surface-2) 80%, var(--panel) 20%);
+  border-color: color-mix(in srgb, var(--panel-border-strong) 62%, transparent);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 78%, transparent);
 }
 
@@ -441,22 +455,27 @@
 }
 
 :root:not([data-theme="dark"]) .sidebar__item:hover {
-  background: color-mix(in srgb, var(--surface-2) 72%, var(--indigo-dim) 28%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--indigo) 8%, transparent);
+  background: var(--surface-1);
 }
 
 :root:not([data-theme="dark"]) .sidebar__item--active {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--indigo) 14%, transparent), color-mix(in srgb, var(--surface-2) 86%, transparent) 68%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--indigo) 12%, transparent), 0 10px 18px color-mix(in srgb, var(--indigo) 10%, transparent);
+  background: var(--indigo-dim);
+  color: var(--indigo);
+  border-left-color: var(--indigo);
 }
 
 :root:not([data-theme="dark"]) .sidebar__item--active:hover {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--indigo) 16%, transparent), color-mix(in srgb, var(--surface-2) 84%, transparent) 68%);
+  background: var(--indigo-mid);
+  color: var(--indigo-dark);
+}
+
+:root:not([data-theme="dark"]) .sidebar__item--active .sidebar__item-icon {
+  color: var(--indigo);
+  opacity: 1;
 }
 
 :root:not([data-theme="dark"]) .sidebar__user:hover {
-  background: color-mix(in srgb, var(--surface-2) 72%, var(--indigo-dim) 28%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--indigo) 8%, transparent);
+  background: var(--surface-1);
 }
 
 .workspace__content {
@@ -538,7 +557,7 @@
   font-size: var(--type-small);
   color: var(--text);
   outline: none;
-  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  transition: border-color 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1), background 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .topbar__search-input::placeholder { color: var(--text-muted); }
 .topbar__search-input:hover {
@@ -577,7 +596,7 @@
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), background 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .topbar__quick-create:hover {
   background: var(--indigo-dark);
@@ -598,7 +617,7 @@
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+  transition: background 160ms cubic-bezier(0.4, 0, 0.2, 1), color 160ms cubic-bezier(0.4, 0, 0.2, 1), border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .topbar__notif-btn:hover {
   background: var(--surface-1);
@@ -660,7 +679,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: fade-in 140ms ease;
+  animation: fade-in 140ms var(--ease-enter);
 }
 .topbar__notif-popover-head {
   display: flex;
@@ -684,7 +703,7 @@
   cursor: pointer;
   padding: 2px 5px;
   border-radius: 4px;
-  transition: color 140ms ease, background 140ms ease;
+  transition: color 140ms cubic-bezier(0.4, 0, 0.2, 1), background 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .topbar__notif-mark-all:hover:not(:disabled) { color: var(--accent); background: var(--accent-dim); }
 .topbar__notif-mark-all:disabled { opacity: 0.5; cursor: default; }
@@ -711,7 +730,7 @@
   font-weight: 700;
   white-space: nowrap;
   box-shadow: inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .topbar__notif-filter-btn:hover {
   background: color-mix(in srgb, var(--surface-1) 86%, var(--green-dim));
@@ -808,7 +827,7 @@
   border-left: 2px solid transparent;
   text-align: left;
   cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .topbar__notif-item:hover {
   background: var(--surface-1);
@@ -845,7 +864,7 @@
   color: var(--text-muted);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 140ms ease, background 140ms ease, color 140ms ease, border-color 140ms ease;
+  transition: opacity 140ms cubic-bezier(0.4, 0, 0.2, 1), background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .topbar__notif-row:hover .topbar__notif-dismiss,
 .topbar__notif-dismiss:focus-visible {
@@ -978,7 +997,7 @@
   color: var(--text);
   cursor: pointer;
   text-align: center;
-  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), border-color 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .topbar__notif-view-all:hover { background: var(--accent-dim); color: var(--accent); border-color: var(--accent-subtle); }
 
@@ -995,7 +1014,7 @@
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  transition: transform 160ms ease;
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .topbar__user-btn:hover {
   transform: translateY(-1px);
@@ -1044,7 +1063,7 @@
   min-width: 232px;
   z-index: 199;
   overflow: hidden;
-  animation: fade-in 140ms ease;
+  animation: fade-in 140ms var(--ease-enter);
 }
 .topbar__menu-identity {
   display: flex;
@@ -1124,7 +1143,10 @@
 }
 
 :root:not([data-theme="dark"]) .topbar__user-avatar {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--panel) 88%, transparent), 0 8px 16px color-mix(in srgb, var(--indigo) 10%, transparent);
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--topbar-bg) 96%, transparent),
+    0 0 0 2.5px rgba(31,107,53,0.20),
+    0 4px 10px color-mix(in srgb, var(--indigo) 8%, transparent);
 }
 
 :root:not([data-theme="dark"]) .topbar__menu-popover {
@@ -1275,7 +1297,7 @@
   border: none;
   text-align: left;
   cursor: pointer;
-  transition: background 140ms ease;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .notif-toast__body:hover { background: var(--surface-1); }
 
@@ -1350,7 +1372,7 @@
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  transition: color 140ms ease;
+  transition: color 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .notif-toast__close:hover { color: var(--text-strong); }
 

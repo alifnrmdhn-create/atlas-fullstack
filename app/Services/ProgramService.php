@@ -29,10 +29,8 @@ class ProgramService
         $scope = $this->scopeResolver->resolveUserScope($user);
 
         $query = Program::query()
-            ->with([
-                'owner:id,name,avatarUrl,roleType,unitId',
-                'workstreams:id,code,name,programId,status,healthStatus,progressPercent,targetCompletion',
-            ])
+            ->with(['owner:id,name,avatarUrl,roleType,unitId'])
+            ->withCount('workstreams')
             ->whereNull('archivedAt')
             ->whereIn('approvalStatus', ['ACTIVE', 'PENDING_KASUB', 'PENDING_KADIV', 'DRAFT']);
 
@@ -52,6 +50,7 @@ class ProgramService
     {
         return Program::query()
             ->with(['owner:id,name'])
+            ->withCount('workstreams')
             ->whereNotNull('archivedAt')
             ->orderBy('archivedAt', 'desc')
             ->get();
@@ -260,6 +259,7 @@ class ProgramService
             ...$data,
             'code' => $data['code'] ?? $code,
             'ownerId' => $ownerId,
+            'ownerUnitId' => $data['ownerUnitId'] ?? $user->unitId,
             'approvalStatus' => 'DRAFT',
             'submittedById' => $user->id,
             'progressPercent' => 0,

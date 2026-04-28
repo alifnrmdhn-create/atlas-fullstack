@@ -108,7 +108,14 @@ class TaskService
             }
         }
 
-        $task->update(['status' => $newStatus]);
+        $update = ['status' => $newStatus];
+        if ($newStatus === 'COMPLETED' && !$task->actualCompletion) {
+            $update['actualCompletion'] = now();
+        } elseif ($newStatus !== 'COMPLETED' && $task->status === 'COMPLETED') {
+            $update['actualCompletion'] = null;
+        }
+
+        $task->update($update);
         return $task->fresh();
     }
 
@@ -122,6 +129,9 @@ class TaskService
             $allowed = self::TRANSITIONS[$task->status] ?? [];
             if (in_array('COMPLETED', $allowed, true)) {
                 $data['status'] = 'COMPLETED';
+                if (!$task->actualCompletion) {
+                    $data['actualCompletion'] = now();
+                }
             }
         }
 
