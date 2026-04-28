@@ -490,6 +490,7 @@ export type DivisiProgramCounts = {
   terlambat: number
   overdue: number
   selesai: number
+  draft?: number       // program belum aktif (DRAFT/PENDING)
   pctOnTrack: number
   pctAtRisk: number
   pctTerlambat: number
@@ -583,6 +584,7 @@ export type KpiHealthPayload = {
   yellow: number
   green: number
   byPilar: Array<{ pilar: string; red: number; yellow: number; green: number; total: number }>
+  kpiTrend?: Array<{ date: string; pctGreen: number }>
 }
 
 export type MomentumPayload = {
@@ -612,11 +614,37 @@ export type ProgramScope = {
   unitCount: number
 }
 
+export type ControlAlert = {
+  id: number
+  code: string
+  title: string
+  status: string
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+  programId?: number | null
+  programCode?: string | null
+  programName?: string | null
+}
+
+export type TopBlockerProgram = {
+  id: number
+  name: string
+  progressPercent: number
+  blockerCount: number
+  healthStatus: string
+}
+
+export type CheckpointItem = {
+  id: number
+  code: string
+  title: string
+  targetCompletion: string
+  status: string
+}
+
 export type ProgramSummaryPayload = {
   scope: ProgramScope
   summary: DivisiProgramCounts
   byDivisi: DivisiProgramSummary[]
-  earlyWarning: EarlyWarningProgram[]
   taskLoad: DivisiTaskLoad[]
   scorecardHealth: ScorecardHealth[]
   deadlineClusters: DeadlineCluster[]
@@ -632,6 +660,10 @@ export type ProgramSummaryPayload = {
     progressPercent: number; daysRemaining: number | null
     healthTone: ProgramHealthToneKey; divisi: string
   }>
+  controls: ControlAlert[]
+  topBlockerPrograms: TopBlockerProgram[]
+  checkpoints: CheckpointItem[]
+  recentActivity: ActivityItem[]
 }
 
 export type DashboardPayload = {

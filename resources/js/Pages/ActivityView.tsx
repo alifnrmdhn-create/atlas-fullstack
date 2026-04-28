@@ -121,7 +121,7 @@ function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) 
     setLoading(true)
     api.get<{ data: ActivityDetail }>(`/analytics/user-activity/${userId}?range=${range}`)
       .then(res => setDetail(res.data))
-      .catch(() => setDetail(null))
+      .catch((err) => { console.error('[Atlas] Silent failure in ActivityView.tsx:', err); setDetail(null) })
       .finally(() => setLoading(false))
   }, [userId, range])
 
@@ -298,7 +298,7 @@ export function ActivityView() {
         setUsers(res.data.users)
         setLastFetched(new Date())
       })
-      .catch(() => {})
+      .catch((err) => console.error('[Atlas] Silent failure in ActivityView.tsx:', err))
       .finally(() => { if (!silent) setLoading(false) })
   }, [])
 

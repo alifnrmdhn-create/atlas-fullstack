@@ -1138,6 +1138,109 @@
 .metric__dot--green { background: var(--green); }
 .metric__dot--yellow { background: var(--yellow); }
 .metric__dot--red { background: var(--red); }
+.metric__schedule-gap {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+.metric__schedule-gap.behind { color: var(--red); }
+.metric__schedule-gap.ahead  { color: var(--green); }
+.metric__sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  margin-top: 2px;
+}
+
+/* ── Blocker callout di Ringkasan ── */
+.prog-blocker-callout {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--red-dim);
+  border: 1px solid color-mix(in srgb, var(--red) 20%, transparent);
+  border-radius: var(--radius-md);
+}
+.prog-blocker-callout__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.prog-blocker-callout__icon { color: var(--red); display: flex; }
+.prog-blocker-callout__title { font-size: 13px; font-weight: 700; color: var(--red); }
+.prog-blocker-callout__link {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--red);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+  opacity: 0.8;
+}
+.prog-blocker-callout__link:hover { opacity: 1; text-decoration: underline; }
+.prog-blocker-callout__list { display: flex; flex-direction: column; gap: 5px; }
+.prog-blocker-callout__item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+}
+.prog-blocker-callout__sev {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.prog-blocker-callout__desc {
+  color: var(--text-strong);
+  line-height: 1.4;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Progres Terkini callout ── */
+.prog-progress-note {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--surface-overlay-faint);
+  border-left: 3px solid var(--panel-border-strong);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+.prog-progress-note__label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 5px;
+}
+.prog-progress-note__text {
+  font-size: 13px;
+  color: var(--text-body);
+  line-height: 1.55;
+  margin: 0;
+}
+.prog-progress-note__support {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--panel-border);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.prog-progress-note__support strong {
+  color: var(--yellow);
+  font-weight: 600;
+}
 
 .program-kpi-health {
   margin-top: 14px;

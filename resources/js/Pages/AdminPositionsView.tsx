@@ -59,7 +59,7 @@ export function AdminPositionsView() {
     ]).then(([dr, ur]) => {
       setDirectorates(dr.data ?? [])
       setUnits(ur.data ?? [])
-    }).catch(() => {})
+    }).catch((err) => console.error('[Atlas] Silent failure in AdminPositionsView.tsx:', err))
   }, [])
 
   const emptyPosForm = { code: '', name: '', levelCode: 'BOD-4', roleType: 'ASISTEN', directorateId: '', divisionId: '', isActive: true }
@@ -201,7 +201,7 @@ export function AdminPositionsView() {
     if (userSearch.trim()) params.set('search', userSearch.trim())
     api.get<UsersResponse>(`/users?${params}`)
       .then(res => setUserOptions(res.data.slice(0, 50)))
-      .catch(() => setUserOptions([]))
+      .catch((err) => { console.error('[Atlas] Silent failure in AdminPositionsView.tsx:', err); setUserOptions([]) })
   }, [userSearch, assignTarget])
 
   const openAssign = (pos: PositionRecord) => {

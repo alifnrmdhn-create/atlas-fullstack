@@ -454,7 +454,7 @@ export function ScheduleView() {
   useEffect(() => {
     api.get<{ data: SuggestionItem[] }>('/meetings/suggestions')
       .then(res => setSuggestions(res.data ?? []))
-      .catch(() => setSuggestions([]))
+      .catch((err) => { console.error('[Atlas] Silent failure in ScheduleView.tsx:', err); setSuggestions([]) })
   }, [])
 
   const loadFocusBlocks = useCallback(() => {
@@ -464,7 +464,7 @@ export function ScheduleView() {
       : '/focus-blocks'
     api.get<{ data: FocusBlock[] }>(url)
       .then(res => setFocusBlocks(res.data ?? []))
-      .catch(() => setFocusBlocks([]))
+      .catch((err) => { console.error('[Atlas] Silent failure in ScheduleView.tsx:', err); setFocusBlocks([]) })
   }, [filter, personView])
 
   useEffect(() => { loadFocusBlocks() }, [loadFocusBlocks])
@@ -484,14 +484,14 @@ export function ScheduleView() {
     if (allUsers.length > 0) return
     api.get<{ data: UserOption[] }>('/users/directory')
       .then(res => setAllUsers(res.data ?? []))
-      .catch(() => setAllUsers([]))
+      .catch((err) => { console.error('[Atlas] Silent failure in ScheduleView.tsx:', err); setAllUsers([]) })
   }, [showCreate, allUsers.length])
 
   useEffect(() => {
     if (!showCreate) return
     api.get<{ data: ProgramOption[] }>('/programs')
       .then(res => setPrograms(res.data ?? []))
-      .catch(() => setPrograms([]))
+      .catch((err) => { console.error('[Atlas] Silent failure in ScheduleView.tsx:', err); setPrograms([]) })
   }, [showCreate])
 
   useEffect(() => {
@@ -528,7 +528,7 @@ export function ScheduleView() {
     if (showRsvpFor && allUsers.length === 0) {
       api.get<{ data: UserOption[] }>('/users/directory')
         .then(res => setAllUsers(res.data ?? []))
-        .catch(() => {})
+        .catch((err) => console.error('[Atlas] Silent failure in ScheduleView.tsx:', err))
     }
   }, [showRsvpFor, allUsers.length])
 
@@ -545,7 +545,7 @@ export function ScheduleView() {
             setAllUsers(res.data ?? [])
             setPersonOptions((res.data ?? []).filter(u => u.id !== currentUser?.id).slice(0, 30))
           })
-          .catch(() => {})
+          .catch((err) => console.error('[Atlas] Silent failure in ScheduleView.tsx:', err))
           .finally(() => setPersonSearchLoading(false))
       }
       return
@@ -1136,7 +1136,7 @@ export function ScheduleView() {
                   type="button"
                   className="decisions-registry__item"
                   onClick={() => {
-                    api.get<{ data: Meeting }>(`/meetings/${d.meetingId}`).then(res => setSelectedMeeting(res.data)).catch(() => {})
+                    api.get<{ data: Meeting }>(`/meetings/${d.meetingId}`).then(res => setSelectedMeeting(res.data)).catch((err) => console.error('[Atlas] Silent failure in ScheduleView.tsx:', err))
                   }}
                 >
                   <div className="decisions-registry__icon">⚖</div>

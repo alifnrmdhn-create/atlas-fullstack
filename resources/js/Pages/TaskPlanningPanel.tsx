@@ -100,7 +100,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
   useEffect(() => {
     api.get<{ data: DirectoryUser[] }>('/users/directory')
       .then(r => setDirectoryUsers(r.data ?? []))
-      .catch(() => {})
+      .catch((err) => console.error('[Atlas] Silent failure in TaskPlanningPanel.tsx:', err))
   }, [])
 
   // ── Draft state ───────────────────────────────────────────────────────────

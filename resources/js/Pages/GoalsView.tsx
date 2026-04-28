@@ -177,7 +177,7 @@ export function GoalsView() {
   const refreshKpis = useCallback(() => {
     api.get<{ data: Kpi[] }>('/kpis')
       .then(res => setKpis(res.data ?? []))
-      .catch(() => {})
+      .catch((err) => console.error('[Atlas] Silent failure in GoalsView.tsx:', err))
   }, [])
 
   // ── KPI create/edit modal ────────────────────────────────────────────────

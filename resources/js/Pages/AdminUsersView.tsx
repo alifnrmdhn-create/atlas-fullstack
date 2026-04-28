@@ -168,7 +168,7 @@ export function AdminUsersView() {
     if (!mutasiTarget || allPositions.length > 0) return
     api.get<PositionsResponse>('/organization/positions')
       .then(res => setAllPositions(res.data))
-      .catch(() => setAllPositions([]))
+      .catch((err) => { console.error('[Atlas] Silent failure in AdminUsersView.tsx:', err); setAllPositions([]) })
   }, [mutasiTarget, allPositions.length])
 
   // Filter positions by search

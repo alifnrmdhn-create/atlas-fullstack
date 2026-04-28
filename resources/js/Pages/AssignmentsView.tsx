@@ -161,7 +161,7 @@ export function AssignmentsView() {
   }, [scope, assignmentRefreshTick])
 
   useEffect(() => {
-    api.get<{ data: DirectoryUser[] }>('/users/directory').then(({ data }) => setDirectory(data)).catch(() => {})
+    api.get<{ data: DirectoryUser[] }>('/users/directory').then(({ data }) => setDirectory(data)).catch((err) => console.error('[Atlas] Silent failure in AssignmentsView.tsx:', err))
   }, [])
 
   useEffect(() => {

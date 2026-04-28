@@ -789,7 +789,7 @@ export function MonthlyReportDetailView() {
         return api.get<{ data: RiskReport }>(`/risk-reports/${found.id}`)
           .then(d => setRiskReport(d.data))
       })
-      .catch(() => setRiskReport(null))
+      .catch((err) => { console.error('[Atlas] Gagal memuat risk report:', err); setRiskReport(null) })
       .finally(() => setRiskLoading(false))
   }, [report])
 

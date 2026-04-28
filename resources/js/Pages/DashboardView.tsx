@@ -114,7 +114,7 @@ export function DashboardView() {
     setTeamActivity(null)
     api.get<{ data: { users: ActivityUser[] } }>(`/analytics/user-activity?range=${activityRange}`)
       .then(r => setTeamActivity(r.data.users.slice(0, 8)))
-      .catch(() => setTeamActivity([]))
+      .catch((err) => { console.error('[Atlas] Gagal memuat team activity:', err); setTeamActivity([]) })
   }, [isStrategic, activityRange])
 
   const greeting = getGreeting()
@@ -255,6 +255,20 @@ export function DashboardView() {
         </div>
       </div>
 
+      {/* Narrative headline — sinyal utama sebelum detail */}
+      <div className={`dashboard-lede${(healthMix.terlambat + healthMix.overdue) > 0 ? ' dashboard-lede--alert' : healthMix.atRisk > 0 ? ' dashboard-lede--warn' : ' dashboard-lede--ok'}`}>
+        <strong className="dashboard-lede__headline">
+          {(healthMix.terlambat + healthMix.overdue) > 0
+            ? `${healthMix.terlambat + healthMix.overdue} program terlambat`
+            : healthMix.atRisk > 0
+            ? `${healthMix.atRisk} program berisiko`
+            : 'Portfolio sehat'}
+        </strong>
+        <span className="dashboard-lede__sub">
+          {healthMix.onTrack} on track · {healthMix.atRisk} at risk · {healthMix.terlambat + healthMix.overdue} terlambat · rata-rata {avgProgress}%
+        </span>
+      </div>
+
       <div className="dashboard-stats">
         <StatCard icon="stack" label="Programs Aktif" value={summary.activePrograms} hint={`${summary.totalPrograms} total`} />
         <StatCard icon="trend" label="Avg Progress" value={avgProgress} hint="Rata-rata progress portfolio" tone="positive" />
@@ -282,42 +296,55 @@ export function DashboardView() {
 
       <div className="dashboard-grid">
         <div className="dashboard-col">
-          <div className="panel">
-            <div className="panel__header">
-              <div className="dashboard-panel-title">
-                <h3 className="panel__title">Portfolio Overview</h3>
+          {(() => {
+            const attn = dimensions.programs.filter(p => {
+              const { tone } = getProgramHealthDisplay(p)
+              return tone === 'terlambat' || tone === 'overdue' || tone === 'at-risk'
+            })
+            if (attn.length === 0) return (
+              <div className="panel">
+                <div className="panel__header">
+                  <h3 className="panel__title">Program Bermasalah</h3>
+                </div>
+                <p className="hd-panel-empty">Tidak ada program yang butuh perhatian saat ini.</p>
               </div>
-              <div className="panel__header-meta">
-                <span className="section-badge">{programs.length} programs</span>
-                <span className="section-badge">Avg {avgProgress}%</span>
+            )
+            return (
+              <div className="panel">
+                <div className="panel__header">
+                  <h3 className="panel__title">Program Bermasalah</h3>
+                  <div className="panel__header-meta">
+                    <span className="section-badge section-badge--red">{attn.length} program</span>
+                    <span className="section-badge">{programs.length} total</span>
+                  </div>
+                </div>
+                <div className="program-grid">
+                  {attn.map((prog) => {
+                    const { tone, slug } = getProgramHealthDisplay(prog)
+                    return (
+                      <button
+                        className="program-card"
+                        data-health={tone}
+                        key={prog.id}
+                        onClick={() => openProgramWorkspace(prog.id)}
+                      >
+                        <div className="program-card__top">
+                          <h4 className="program-card__name">{prog.name}</h4>
+                          <span className="program-card__dot" data-status={slug} />
+                        </div>
+                        <div className="program-card__progress">
+                          <div className="progress-bar-track program-card__progress-track">
+                            <div className={`progress-bar-fill ${slug}`} style={{ width: `${prog.progressPercent}%` }} />
+                          </div>
+                          <span className="program-card__pct">{prog.progressPercent}%</span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-            <div className="program-grid">
-              {dimensions.programs.map((prog) => {
-                const { tone, slug } = getProgramHealthDisplay(prog)
-
-                return (
-                  <button
-                    className="program-card"
-                    data-health={tone}
-                    key={prog.id}
-                    onClick={() => openProgramWorkspace(prog.id)}
-                  >
-                    <div className="program-card__top">
-                      <h4 className="program-card__name">{prog.name}</h4>
-                      <span className="program-card__dot" data-status={slug} />
-                    </div>
-                    <div className="program-card__progress">
-                      <div className="progress-bar-track program-card__progress-track">
-                        <div className={`progress-bar-fill ${slug}`} style={{ width: `${prog.progressPercent}%` }} />
-                      </div>
-                      <span className="program-card__pct">{prog.progressPercent}%</span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+            )
+          })()}
 
           {isStrategic && <div className="panel">
             <div className="panel__header">

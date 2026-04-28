@@ -6,6 +6,7 @@ use App\Auth\OrgScope;
 use App\Models\Blocker;
 use App\Models\Directorate;
 use App\Models\KpiDefinition;
+use App\Models\KpiValue;
 use App\Services\ProgramSnapshotService;
 use App\Models\OrganizationalUnit;
 use App\Models\Position;
@@ -86,6 +87,7 @@ class OrganizationController extends Controller
         // Without this scope, KADIV/KASUBDIV would incorrectly see all programs.
         $programQuery = Program::query()
             ->whereNull('archivedAt')
+            ->where('status', '!=', 'CANCELLED')
             ->whereIn('approvalStatus', ['ACTIVE', 'COMPLETED', 'DRAFT', 'PENDING_KASUB', 'PENDING_KADIV']);
 
         if (!$isExecutive) {
@@ -95,7 +97,7 @@ class OrganizationController extends Controller
         $programs = $programQuery
             ->select([
                 'id', 'code', 'name', 'ownerUnitId', 'healthStatus', 'status',
-                'targetEndDate', 'progressPercent', 'approvalStatus', 'updatedAt',
+                'startDate', 'targetEndDate', 'progressPercent', 'approvalStatus', 'updatedAt',
                 'kelompok', 'pilarStrategis', 'progresTerkini', 'dukunganDibutuhkan',
             ])
             ->with('owner:id,name')
@@ -124,32 +126,7 @@ class OrganizationController extends Controller
         // Overall summary
         $overallCounts = $this->buildCounts($classified);
 
-        // Early warning: overdue + terlambat + at_risk, sorted by nearest deadline, max 15
-        $earlyWarning = $classified
-            ->whereIn('healthTone', ['overdue', 'terlambat', 'at_risk'])
-            ->filter(fn ($p) => $p['status'] !== 'COMPLETED')
-            ->sortBy(fn ($p) => $p['targetEndDate'] ?? '9999-12-31')
-            ->take(15)
-            ->map(function ($p) use ($now, $units) {
-                $endDate = $p['targetEndDate'] ? Carbon::parse($p['targetEndDate']) : null;
-                $unit = $units->firstWhere('id', $p['ownerUnitId']);
-                return [
-                    'id' => $p['id'],
-                    'code' => $p['code'],
-                    'name' => $p['name'],
-                    'divisi' => $unit?->code ?? '-',
-                    'divisiName' => $unit?->name ?? 'Belum Ditetapkan',
-                    'healthTone' => $p['healthTone'],
-                    'healthLabel' => $p['healthLabel'],
-                    'targetEndDate' => $p['targetEndDate'],
-                    'daysRemaining' => $endDate ? (int) $now->diffInDays($endDate, false) : null,
-                    'progressPercent' => $p['progressPercent'],
-                    'kelompok' => $p['kelompok'],
-                    'pilarStrategis' => $p['pilarStrategis'],
-                    'progresTerkini' => $p['progresTerkini'],
-                    'dukunganDibutuhkan' => $p['dukunganDibutuhkan'],
-                ];
-            })->values();
+        // earlyWarning dihapus — digantikan oleh programsForChart yang sorted by urgency
 
         // ── Task load — scoped by viewer role's span of control ────────────
         // KADIV     → sub-units (children) of viewer's unit + roll-up of own division
@@ -218,6 +195,8 @@ class OrganizationController extends Controller
         $criticalBlockers = Blocker::query()
             ->whereNull('resolvedAt')
             ->whereIn('severity', ['CRITICAL', 'HIGH'])
+            ->when(!$isExecutive, fn ($q) => $q->whereIn('createdByUnitId', $unitIds))
+            ->limit(20)
             ->with('task.workstream.program:id,code,name,ownerUnitId')
             ->get()
             ->map(fn ($b) => $b->task?->workstream?->program)
@@ -338,6 +317,8 @@ class OrganizationController extends Controller
         $tasksCompletedThisWeek = Task::query()
             ->where('status', 'COMPLETED')
             ->where('actualCompletion', '>=', $now->copy()->subDays(7))
+            ->when(!$isExecutive, fn ($q) => $q->whereHas('workstream.program',
+                fn ($q2) => $q2->whereIn('ownerUnitId', $unitIds)))
             ->count();
 
         $stagnantCount = $stagnantPrograms->count();
@@ -360,22 +341,204 @@ class OrganizationController extends Controller
         $velocity = $snapshotService->velocity($overallCounts, $byDivisi->toArray());
         $trendSeries = $snapshotService->trendSeries(14);
 
-        // ── Programs for scatter chart (all active, not just at-risk) ────────
+        // ── Task counts per program — single aggregation query, no N+1 ────────
+        $chartProgramIds = $classified
+            ->filter(fn ($p) => $p['status'] !== 'COMPLETED' && $p['status'] !== 'CANCELLED')
+            ->pluck('id')->all();
+
+        $taskCountsByProgram = \DB::table('WorkItem')
+            ->join('Initiative', 'WorkItem.initiativeId', '=', 'Initiative.id')
+            ->whereIn('Initiative.programId', $chartProgramIds)
+            ->whereNotIn('WorkItem.status', ['CANCELLED'])
+            ->selectRaw('"Initiative"."programId", COUNT(*) as total, SUM(CASE WHEN "WorkItem".status IN (\'COMPLETED\', \'IN_REVIEW\') THEN 1 ELSE 0 END) as done')
+            ->groupBy('Initiative.programId')
+            ->get()
+            ->keyBy('programId');
+
+        // ── Programs for list panel — all non-completed, regardless of approval status ────
         $programsForChart = $classified
-            ->filter(fn ($p) => $p['status'] !== 'COMPLETED' && $p['approvalStatus'] === 'ACTIVE')
-            ->map(function ($p) use ($now, $units) {
-                $endDate = $p['targetEndDate'] ? Carbon::parse($p['targetEndDate']) : null;
-                $unit = $units->firstWhere('id', $p['ownerUnitId']);
+            ->filter(fn ($p) => $p['status'] !== 'COMPLETED' && $p['status'] !== 'CANCELLED')
+            ->map(function ($p) use ($now, $units, $taskCountsByProgram) {
+                $startDate = $p['startDate'] ? Carbon::parse($p['startDate']) : null;
+                $endDate   = $p['targetEndDate'] ? Carbon::parse($p['targetEndDate']) : null;
+                $unit      = $units->firstWhere('id', $p['ownerUnitId']);
+
+                // Time elapsed %: how much of the planned timeline has been consumed
+                $timeElapsedPct = null;
+                if ($startDate && $endDate && $endDate->gt($startDate)) {
+                    $totalDays   = $startDate->diffInDays($endDate);
+                    $elapsedDays = $now->gt($startDate)
+                        ? min($startDate->diffInDays($now), $totalDays)
+                        : 0; // program belum dimulai
+                    $timeElapsedPct = $totalDays > 0
+                        ? min(100, max(0, (int) round($elapsedDays / $totalDays * 100)))
+                        : null;
+                }
+
+                $updatedAt = isset($p['updated_at']) ? Carbon::parse($p['updated_at'])
+                           : (isset($p['updatedAt']) ? Carbon::parse($p['updatedAt']) : null);
+
                 return [
                     'id'              => $p['id'],
                     'code'            => $p['code'],
                     'name'            => $p['name'],
                     'progressPercent' => $p['progressPercent'],
                     'daysRemaining'   => $endDate ? (int) $now->diffInDays($endDate, false) : null,
+                    'targetEndDate'   => $endDate ? $endDate->format('d M Y') : null,
                     'healthTone'      => $p['healthTone'],
                     'divisi'          => $unit?->code ?? '-',
+                    'timeElapsedPct'  => $timeElapsedPct,
+                    'daysIdle'        => $updatedAt ? (int) $updatedAt->diffInDays($now) : null,
+                    'ownerName'       => $p['owner']['name'] ?? null,
+                    'taskTotal'       => (int) ($taskCountsByProgram[$p['id']]->total ?? 0),
+                    'taskDone'        => (int) ($taskCountsByProgram[$p['id']]->done ?? 0),
                 ];
             })
+            ->values();
+
+        // ── 9. Control Alerts (open blockers sorted by severity) ─────────────
+        $controls = Blocker::query()
+            ->whereIn('status', ['OPEN', 'IN_PROGRESS'])
+            ->when(!$isExecutive, fn ($q) => $q->whereIn('createdByUnitId', $unitIds))
+            ->orderByRaw("CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END")
+            ->limit(10)
+            ->with('task.workstream.program:id,code,name')
+            ->get(['id', 'code', 'title', 'status', 'severity'])
+            ->map(fn ($b) => [
+                'id'          => $b->id,
+                'code'        => $b->code,
+                'title'       => $b->title,
+                'status'      => $b->status,
+                'severity'    => $b->severity,
+                'programId'   => $b->task?->workstream?->program?->id,
+                'programCode' => $b->task?->workstream?->program?->code,
+                'programName' => $b->task?->workstream?->program?->name,
+            ])
+            ->values();
+
+        // ── 10. Top Blocker Programs (top 4 by open blocker count) ────────────
+        $blockersByProgram = Blocker::query()
+            ->whereIn('status', ['OPEN', 'IN_PROGRESS'])
+            ->whereHas('task.workstream.program', fn ($q) =>
+                $q->whereNull('archivedAt')
+                  ->when(!$isExecutive, fn ($q2) => $q2->whereIn('ownerUnitId', $unitIds))
+            )
+            ->with('task.workstream.program:id,name,progressPercent,healthStatus,ownerUnitId')
+            ->get()
+            ->filter(fn ($b) => $b->task?->workstream?->program !== null)
+            ->groupBy(fn ($b) => $b->task->workstream->program->id);
+
+        $topBlockerPrograms = $blockersByProgram
+            ->map(function ($blockers) {
+                $program = $blockers->first()->task->workstream->program;
+                return [
+                    'id'              => $program->id,
+                    'name'            => $program->name,
+                    'progressPercent' => $program->progressPercent ?? 0,
+                    'blockerCount'    => $blockers->count(),
+                    'healthStatus'    => $program->healthStatus ?? 'YELLOW',
+                ];
+            })
+            ->sortByDesc('blockerCount')
+            ->take(4)
+            ->values();
+
+        // ── 11. Checkpoints (upcoming & overdue tasks, max 5 critical) ────────
+        $checkpoints = Task::query()
+            ->whereNotIn('status', ['COMPLETED', 'CANCELLED'])
+            ->whereNotNull('targetCompletion')
+            ->when(!$isExecutive, fn ($q) => $q->whereHas('workstream.program',
+                fn ($q2) => $q2->whereIn('ownerUnitId', $unitIds)))
+            ->where('targetCompletion', '<=', $now->copy()->addDays(30)->toDateString())
+            ->orderByRaw('CASE WHEN "targetCompletion" < CURRENT_DATE THEN 0 ELSE 1 END, "targetCompletion" ASC')
+            ->limit(5)
+            ->get(['id', 'code', 'title', 'targetCompletion', 'status'])
+            ->values();
+
+        // ── 12. KPI Portfolio Trend (pctGreen per measurement date, last 14 periods) ─
+        $kpiIds = $kpis->pluck('id')->all();
+        $kpiTrend = [];
+        if (!empty($kpiIds)) {
+            $kpiDefsById = $kpis->keyBy('id');
+            $kpiValues = KpiValue::query()
+                ->whereIn('kpiDefinitionId', $kpiIds)
+                ->where('measurementDate', '>=', $now->copy()->subDays(60))
+                ->orderBy('measurementDate')
+                ->get(['kpiDefinitionId', 'measurementDate', 'actualValue']);
+
+            $byDate = $kpiValues->groupBy(fn ($v) => $v->measurementDate->toDateString());
+            $kpiTrend = $byDate->map(function ($vals, $date) use ($kpiDefsById) {
+                $green = 0; $total = 0;
+                foreach ($vals as $v) {
+                    $def = $kpiDefsById->get($v->kpiDefinitionId);
+                    if (!$def) continue;
+                    $actual  = (float) $v->actualValue;
+                    $warning = $def->warningThreshold !== null ? (float) $def->warningThreshold : (float) $def->targetValue * 0.95;
+                    if ($actual > $warning) $green++;
+                    $total++;
+                }
+                return ['date' => $date, 'pctGreen' => $total > 0 ? (int) round($green / $total * 100) : 0];
+            })->values()->sortBy('date')->take(14)->values()->all();
+        }
+
+        // ── 13. Recent Activity (synthetic feed: programs + kpi measurements + blockers) ─
+        $recentProgramActivity = $programs
+            ->filter(fn ($p) => $p->updatedAt && $p->updatedAt->gte($now->copy()->subDays(7)))
+            ->sortByDesc('updatedAt')
+            ->take(5)
+            ->map(fn ($p) => [
+                'id'              => $p->id,
+                'entityType'      => 'PROGRAM',
+                'entityId'        => $p->id,
+                'action'          => match($p->approvalStatus) {
+                    'ACTIVE'       => 'STATUS_CHANGED',
+                    'COMPLETED'    => 'STATUS_CHANGED',
+                    'PENDING_KASUB', 'PENDING_KADIV' => 'CREATED',
+                    default        => 'STATUS_CHANGED',
+                },
+                'description'     => $p->name . ' diperbarui',
+                'changeTimestamp' => $p->updatedAt->toISOString(),
+            ]);
+
+        $recentKpiActivity = collect([]);
+        if (!empty($kpiIds)) {
+            $recentKpiActivity = KpiValue::query()
+                ->whereIn('kpiDefinitionId', $kpiIds)
+                ->where('createdAt', '>=', $now->copy()->subDays(7))
+                ->with('kpiDefinition:id,name,programId')
+                ->orderByDesc('createdAt')
+                ->take(5)
+                ->get()
+                ->map(fn ($v) => [
+                    'id'              => $v->id,
+                    'entityType'      => 'PROGRAM',
+                    'entityId'        => $v->kpiDefinition?->programId ?? 0,
+                    'action'          => 'MEASURED',
+                    'description'     => ($v->kpiDefinition?->name ?? 'KPI') . ' diukur',
+                    'changeTimestamp' => $v->createdAt->toISOString(),
+                ]);
+        }
+
+        $recentBlockerActivity = Blocker::query()
+            ->when(!$isExecutive, fn ($q) => $q->whereIn('createdByUnitId', $unitIds))
+            ->where('createdAt', '>=', $now->copy()->subDays(7))
+            ->orderByDesc('createdAt')
+            ->take(5)
+            ->get(['id', 'title', 'code', 'createdAt'])
+            ->map(fn ($b) => [
+                'id'              => $b->id,
+                'entityType'      => 'TASK',
+                'entityId'        => $b->id,
+                'action'          => 'BLOCKER_ADDED',
+                'description'     => $b->title ?? ($b->code ? "Blocker {$b->code}" : 'Blocker baru ditambahkan'),
+                'changeTimestamp' => $b->createdAt->toISOString(),
+            ]);
+
+        $recentActivity = $recentProgramActivity
+            ->concat($recentKpiActivity)
+            ->concat($recentBlockerActivity)
+            ->sortByDesc('changeTimestamp')
+            ->take(5)
             ->values();
 
         return response()->json([
@@ -385,20 +548,23 @@ class OrganizationController extends Controller
                 'name'      => $scopeName,
                 'unitCount' => count($unitIds),
             ],
-            'summary'         => $overallCounts,
-            'byDivisi'        => $byDivisi,
-            'earlyWarning'    => $earlyWarning,
-            'taskLoad'        => $taskLoad,
-            'scorecardHealth' => $scorecardHealth,
-            'deadlineClusters'=> $deadlineClusters,
-            'needsAction'     => $needsAction,
-            'stagnation'      => $stagnantPrograms,
-            'blockerSignal'   => $blockerSignal,
-            'kpiHealth'       => $kpiHealth,
-            'momentum'        => $momentum,
+            'summary'           => $overallCounts,
+            'byDivisi'          => $byDivisi,
+            'taskLoad'          => $taskLoad,
+            'scorecardHealth'   => $scorecardHealth,
+            'deadlineClusters'  => $deadlineClusters,
+            'needsAction'       => $needsAction,
+            'stagnation'        => $stagnantPrograms,
+            'blockerSignal'     => $blockerSignal,
+            'kpiHealth'         => array_merge($kpiHealth, ['kpiTrend' => $kpiTrend]),
+            'momentum'          => $momentum,
             'velocity'          => $velocity,
             'trendSeries'       => $trendSeries,
             'programsForChart'  => $programsForChart,
+            'controls'          => $controls,
+            'topBlockerPrograms'=> $topBlockerPrograms,
+            'checkpoints'       => $checkpoints,
+            'recentActivity'    => $recentActivity,
         ]);
     }
 
@@ -690,6 +856,8 @@ class OrganizationController extends Controller
     private function classifyProgramHealth(Program $p, Carbon $now): string
     {
         if ($p->status === 'COMPLETED') return 'selesai';
+        // DRAFT/PENDING programs not yet in execution — don't mix with operational health
+        if (!in_array($p->approvalStatus, ['ACTIVE', 'COMPLETED'])) return 'draft';
         if ($p->targetEndDate && $now->gt($p->targetEndDate)) return 'overdue';
         if ($p->healthStatus === 'RED') return 'terlambat';
         if ($p->healthStatus === 'GREEN') return 'on_track';
@@ -716,8 +884,11 @@ class OrganizationController extends Controller
         $terlambat = $programs->where('healthTone', 'terlambat')->count();
         $overdue   = $programs->where('healthTone', 'overdue')->count();
         $selesai   = $programs->where('healthTone', 'selesai')->count();
+        $draft     = $programs->where('healthTone', 'draft')->count();
 
-        $pct = fn (int $n) => $total > 0 ? round($n / $total * 100) : 0;
+        // Operational total: excludes draft (not yet in execution)
+        $operational = $total - $draft;
+        $pct = fn (int $n) => $operational > 0 ? round($n / $operational * 100) : 0;
 
         return [
             'total'        => $total,
@@ -726,6 +897,7 @@ class OrganizationController extends Controller
             'terlambat'    => $terlambat,
             'overdue'      => $overdue,
             'selesai'      => $selesai,
+            'draft'        => $draft,        // pipeline — belum aktif
             'pctOnTrack'   => $pct($onTrack),
             'pctAtRisk'    => $pct($atRisk),
             'pctTerlambat' => $pct($terlambat + $overdue),

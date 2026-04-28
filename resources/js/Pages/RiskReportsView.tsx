@@ -227,7 +227,7 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
   useEffect(() => {
     api.get<{ data: OrgUnit[] }>('/organization/units')
       .then(j => setUnits(j.data ?? []))
-      .catch(() => {})
+      .catch((err) => console.error('[Atlas] Silent failure in RiskReportsView.tsx:', err))
   }, [])
 
   const save = async () => {

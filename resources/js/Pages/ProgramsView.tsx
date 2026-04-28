@@ -118,7 +118,7 @@ export function ProgramsView() {
     setTimelineLoading(true)
     api.get<{ data: TimelineGanttProgram[] }>('/programs/timeline-all')
       .then(res => setTimelineData(res.data ?? []))
-      .catch(() => setTimelineData([]))
+      .catch((err) => { console.error('[Atlas] Gagal memuat timeline program:', err); setTimelineData([]) })
       .finally(() => setTimelineLoading(false))
   }, [])
 
@@ -134,7 +134,7 @@ export function ProgramsView() {
     setPulseLoading(true)
     api.get<{ data: ExecutionPulse }>('/programs/execution-pulse')
       .then(res => setPulse(res.data ?? null))
-      .catch(() => setPulse(null))
+      .catch((err) => { console.error('[Atlas] Gagal memuat execution pulse:', err); setPulse(null) })
       .finally(() => setPulseLoading(false))
   }, [])
 
@@ -194,7 +194,7 @@ export function ProgramsView() {
     setEpDirLoading(true)
     void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null }> }>('/users/directory')
       .then(r => setEpUserDirectory(r.data ?? []))
-      .catch(() => {})
+      .catch((err) => console.error('[Atlas] Gagal memuat user directory (EP):', err))
       .finally(() => setEpDirLoading(false))
   }
 
@@ -264,7 +264,7 @@ export function ProgramsView() {
     setArchivedLoading(true)
     api.get<{ data: ArchivedProgram[] }>('/programs/archived')
       .then(res => setArchivedPrograms(res.data ?? []))
-      .catch(() => setArchivedPrograms([]))
+      .catch((err) => { console.error('[Atlas] Gagal memuat program arsip:', err); setArchivedPrograms([]) })
       .finally(() => setArchivedLoading(false))
   }, [])
 
@@ -523,7 +523,7 @@ export function ProgramsView() {
               if (cpUnits.length === 0) {
                 void api.get<{ data: Array<{ id: number; name: string; code: string }> }>('/organization/units')
                   .then(r => setCpUnits(r.data ?? []))
-                  .catch(() => {})
+                  .catch((err) => console.error('[Atlas] Gagal memuat unit list:', err))
               }
             }}>
               + New Program
@@ -594,7 +594,9 @@ export function ProgramsView() {
                   <div className="section-header">
                     <div>
                       <h3 className="section-title">Portfolio Roster</h3>
-                      <p className="section-subtitle">Pilih program untuk membuka detail, workstream, dan diskusi.</p>
+                      <p className="section-subtitle">
+                        {healthMix.green} on track · {healthMix.yellow} at risk · {healthMix.red} terlambat · rata-rata {avgProgress}%
+                      </p>
                     </div>
                     <span className="section-badge">{filteredPortfolio.length} programs</span>
                   </div>
@@ -628,19 +630,14 @@ export function ProgramsView() {
                                   <strong>{prog.name}</strong>
                                   <div className="program-row__meta">
                                     <span className="program-row__meta-primary">{workstreamSummaryLabel(prog.workstreamCount)}</span>
-                                    {prog.kelompok && (
-                                      <span className="program-row__badge program-row__badge--kelompok">
-                                        {prog.kelompok === 'SCORECARD' ? 'Scorecard' : 'Non SC'}
-                                      </span>
-                                    )}
-                                    {prog.pilarStrategis && (
-                                      <span className="program-row__badge program-row__badge--pilar">
-                                        {prog.pilarStrategis.replace(/_/g, ' ')}
-                                      </span>
-                                    )}
                                     {deadlineInfo && (
                                       <span className={`program-deadline program-deadline--${deadlineInfo.tone}`}>
                                         {deadlineInfo.label}
+                                      </span>
+                                    )}
+                                    {bCount > 0 && (
+                                      <span className="program-row__badge program-row__badge--blocker">
+                                        {bCount} blocker
                                       </span>
                                     )}
                                   </div>
@@ -861,45 +858,7 @@ export function ProgramsView() {
                 </div>
               )}
 
-              {/* KPI Watch */}
-              {kpis.length > 0 && (
-                <div className="section-block">
-                  <div className="section-header">
-                    <div>
-                      <h3 className="section-title">KPI Watch</h3>
-                      <p className="section-subtitle">Portfolio health signals dan sinyal KPI.</p>
-                    </div>
-                    <span className="section-badge">{kpis.length} indicators</span>
-                  </div>
-                  <div className="kpi-grid">
-                    {kpis.map(kpi => {
-                      const pct = getKpiFillPercent(kpi.actualValue, kpi.targetValue)
-                      const fillClass = pct >= 100 ? 'on-track' : pct >= 80 ? 'at-risk' : 'off-track'
-                      const statusLabel = fillClass === 'on-track' ? 'On Track' : fillClass === 'at-risk' ? 'At Risk' : 'Off Track'
-                      const actualDisplay = formatKpiValueParts(kpi.actualValue ?? 0, kpi.unitOfMeasure, kpi.dataType)
-                      const targetDisplay = formatKpiValue(kpi.targetValue, kpi.unitOfMeasure, kpi.dataType)
-                      return (
-                        <div className="kpi-tile" key={kpi.id}>
-                          <div className="kpi-tile__top">
-                            <span className="kpi-tile__name">{kpi.name}</span>
-                            <span className={`status-badge ${fillClass}`}>{statusLabel}</span>
-                          </div>
-                          <div className="kpi-tile__value">
-                            {actualDisplay.valueText}
-                            {actualDisplay.unitText ? <span className="kpi-tile__unit">{actualDisplay.unitText === '%' ? actualDisplay.unitText : ` ${actualDisplay.unitText}`}</span> : null}
-                          </div>
-                          <div className="kpi-tile__target">
-                            Target: {targetDisplay}
-                          </div>
-                          <div className="progress-bar-track">
-                            <div className={`progress-bar-fill ${fillClass}`} style={{ width: `${Math.min(pct, 100)}%` }} />
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+              {/* KPI Watch dipindah ke Home — lihat tab Home untuk analisis KPI */}
             </>
           )}
 
@@ -1454,7 +1413,7 @@ export function ProgramsView() {
                         onClick={() => {
                           void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null }> }>('/users/directory')
                             .then(r => setCpUserDirectory(r.data ?? []))
-                            .catch(() => {})
+                            .catch((err) => console.error('[Atlas] Gagal memuat user directory (CP):', err))
                         }}
                         type="button"
                       >

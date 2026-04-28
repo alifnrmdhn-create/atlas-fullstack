@@ -277,14 +277,19 @@ export function ProgramDetailView() {
   // ── Blockers (from execution pulse) ──────────────────────────────────
   const [blockers, setBlockers] = useState<PulseBlocker[]>([])
   const [blockersLoading, setBlockersLoading] = useState(false)
+  const [blockersError, setBlockersError] = useState(false)
 
   useEffect(() => {
     setBlockersLoading(true)
+    setBlockersError(false)
     api.get<{ data: { activeBlockers: PulseBlocker[] } }>('/programs/execution-pulse')
       .then(res => setBlockers(
         (res.data?.activeBlockers ?? []).filter(b => b.task.workstream.program.id === numId)
       ))
-      .catch(() => setBlockers([]))
+      .catch((err) => {
+        console.error('[Atlas] Gagal memuat blocker program:', err)
+        setBlockersError(true)
+      })
       .finally(() => setBlockersLoading(false))
   }, [numId])
 
@@ -301,7 +306,10 @@ export function ProgramDetailView() {
     setIniDetailLoading(true)
     api.get<{ data: WorkstreamDetail }>(`/workstreams/${selectedIniId}`)
       .then(res => setIniDetail(res.data))
-      .catch(() => setIniDetail(null))
+      .catch((err) => {
+        console.error('[Atlas] Gagal memuat detail workstream:', err)
+        setIniDetail(null)
+      })
       .finally(() => setIniDetailLoading(false))
   }, [selectedIniId])
 
@@ -352,7 +360,7 @@ export function ProgramDetailView() {
     if (userDirectory.length === 0) {
       void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null }> }>('/users/directory')
         .then(r => setUserDirectory(r.data ?? []))
-        .catch(() => {})
+        .catch((err) => console.error('[Atlas] Gagal memuat user directory:', err))
     }
     setShowEdit(true)
   }
@@ -452,7 +460,7 @@ export function ProgramDetailView() {
     if (userDirectory.length === 0) {
       void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null }> }>('/users/directory')
         .then(r => setUserDirectory(r.data ?? []))
-        .catch(() => {})
+        .catch((err) => console.error('[Atlas] Gagal memuat user directory:', err))
     }
     setShowEditIni(true)
   }
@@ -924,11 +932,39 @@ export function ProgramDetailView() {
                       : kpiYellowCount >= 1 ? 'YELLOW'
                       : 'GREEN'
                     const kpiHealthLabel = kpiHealth === 'RED' ? 'Merah' : kpiHealth === 'YELLOW' ? 'Kuning' : 'Hijau'
+
+                    // Schedule health — progress vs waktu terpakai
+                    const scheduleHealth = (() => {
+                      if (!detail.startDate || !detail.targetEndDate) return null
+                      const start = new Date(detail.startDate).getTime()
+                      const end   = new Date(detail.targetEndDate).getTime()
+                      const now   = Date.now()
+                      if (end <= start) return null
+                      const total   = end - start
+                      const elapsed = Math.min(Math.max(now - start, 0), total)
+                      const pctTime = Math.round(elapsed / total * 100)
+                      const gap     = detail.progressPercent - pctTime
+                      return { pctTime, gap }
+                    })()
+
                     const cols = kpiHealth !== null ? 4 : 3
                     return (
                       <>
                         <div className={`detail-metrics detail-metrics--${cols}`}>
-                          <Metric label="Progress" value={`${detail.progressPercent}%`} />
+                          <div className="metric">
+                            <span className="metric__label">Progress</span>
+                            <span className="metric__value">
+                              {detail.progressPercent}%
+                              {scheduleHealth && (
+                                <span className={`metric__schedule-gap${scheduleHealth.gap < -10 ? ' behind' : scheduleHealth.gap > 10 ? ' ahead' : ''}`}>
+                                  {scheduleHealth.gap > 0 ? `+${scheduleHealth.gap}pp` : `${scheduleHealth.gap}pp`}
+                                </span>
+                              )}
+                            </span>
+                            {scheduleHealth && (
+                              <span className="metric__sub">{scheduleHealth.pctTime}% waktu terpakai</span>
+                            )}
+                          </div>
                           <Metric label="Alignment" value={`${detail.strategicAlignment}%`} />
                           <Metric label="Workstream" value={`${(detail.workstreams ?? []).length}`} />
                           {kpiHealth !== null && (
@@ -998,6 +1034,65 @@ export function ProgramDetailView() {
                     )
                   })()}
                 </div>
+
+                {/* ── Blocker callout — visible di Ringkasan tanpa perlu pindah tab ── */}
+                {blockersError && (
+                  <div className="prog-blocker-callout prog-blocker-callout--error">
+                    <div className="prog-blocker-callout__head">
+                      <span className="prog-blocker-callout__icon">{PIcon.blocker}</span>
+                      <strong className="prog-blocker-callout__title">Gagal memuat data blocker</strong>
+                      <button
+                        type="button"
+                        className="prog-blocker-callout__link"
+                        onClick={() => setActiveTab('blocker')}
+                      >
+                        Coba di tab Hambatan →
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {!blockersError && blockers.length > 0 && (
+                  <div className="prog-blocker-callout">
+                    <div className="prog-blocker-callout__head">
+                      <span className="prog-blocker-callout__icon">{PIcon.blocker}</span>
+                      <strong className="prog-blocker-callout__title">{blockers.length} blocker aktif</strong>
+                      <button
+                        type="button"
+                        className="prog-blocker-callout__link"
+                        onClick={() => setActiveTab('blocker')}
+                      >
+                        Lihat semua →
+                      </button>
+                    </div>
+                    <div className="prog-blocker-callout__list">
+                      {blockers.slice(0, 3).map(b => {
+                        const sevColor = b.severity === 'CRITICAL' || b.severity === 'HIGH'
+                          ? 'var(--red)' : b.severity === 'MEDIUM' ? 'var(--yellow)' : 'var(--text-muted)'
+                        return (
+                          <div key={b.id} className="prog-blocker-callout__item">
+                            <span className="prog-blocker-callout__sev" style={{ color: sevColor }}>
+                              {b.severity}
+                            </span>
+                            <span className="prog-blocker-callout__desc">{b.title}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Progres Terkini — prominent untuk program aktif ── */}
+                {detail.progresTerkini && detail.approvalStatus === 'ACTIVE' && (
+                  <div className="prog-progress-note">
+                    <span className="prog-progress-note__label">Progres Terkini</span>
+                    <p className="prog-progress-note__text">{detail.progresTerkini}</p>
+                    {detail.dukunganDibutuhkan && (
+                      <div className="prog-progress-note__support">
+                        <strong>Dukungan dibutuhkan:</strong> {detail.dukunganDibutuhkan}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* ── Pending hint (approval-wait states only) ── */}
                 {detail.approvalStatus && ['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus) && (
@@ -1368,7 +1463,7 @@ export function ProgramDetailView() {
                     if (userDirectory.length === 0) {
                       void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null }> }>('/users/directory')
                         .then(r => setUserDirectory(r.data ?? []))
-                        .catch(() => {})
+                        .catch((err) => console.error('[Atlas] Gagal memuat user directory:', err))
                     }
                     setShowCreateIni(true)
                   }} type="button">

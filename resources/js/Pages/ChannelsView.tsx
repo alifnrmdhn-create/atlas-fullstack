@@ -727,7 +727,7 @@ export function ChannelsView({
     })
       .then((r) => r.json() as Promise<{ data: UnfurlData }>)
       .then(({ data }) => setUnfurlCache((prev) => new Map(prev).set(url, data)))
-      .catch(() => setUnfurlCache((prev) => new Map(prev).set(url, 'error')))
+      .catch((err) => { console.error('[Atlas] Gagal unfurl URL:', err); setUnfurlCache((prev) => new Map(prev).set(url, 'error')) })
   }
 
   // Extract first URL from message content

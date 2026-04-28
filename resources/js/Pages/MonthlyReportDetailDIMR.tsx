@@ -519,7 +519,7 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
     if (!report.id) return
     api.get<{ data: typeof ytdSeries }>(`/risk-reports/${report.id}/ytd`)
       .then(d => { if (d?.data) setYtdSeries(d.data) })
-      .catch(() => {})
+      .catch((err) => console.error('[Atlas] Silent failure in MonthlyReportDetailDIMR.tsx:', err))
   }, [report.id])
 
   // Scroll spy

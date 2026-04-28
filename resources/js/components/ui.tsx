@@ -536,9 +536,20 @@ export function PresenceRow({
           <HighlightText text={userName} query={highlightQuery} />
         </div>
         <div className="presence-row__sub">
-          {subParts.join(' · ')}
-          {!compact && (
-            <span className={`presence-row__time presence-row__time--${timeTone}`}>· {timeText}</span>
+          {subParts.map((part, i) => (
+            <span key={i}>
+              {i > 0 && <span className="presence-row__sep">·</span>}
+              {part}
+            </span>
+          ))}
+          {!compact && subParts.length > 0 && (
+            <>
+              <span className="presence-row__sep">·</span>
+              <span className={`presence-row__time presence-row__time--${timeTone}`}>{timeText}</span>
+            </>
+          )}
+          {!compact && subParts.length === 0 && (
+            <span className={`presence-row__time presence-row__time--${timeTone}`}>{timeText}</span>
           )}
         </div>
       </div>

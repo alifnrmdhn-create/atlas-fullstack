@@ -150,7 +150,7 @@ function HoverCard({
     navigator.clipboard.writeText(email).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    }).catch(() => {})
+    }).catch((err) => console.error('[Atlas] Silent failure in PresenceView.tsx:', err))
   }
 
   return createPortal(

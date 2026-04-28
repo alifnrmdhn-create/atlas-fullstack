@@ -165,7 +165,7 @@ export function ProfileView() {
     setActivityLoading(true)
     api.get<{ data: ActivityData }>(`/analytics/user-activity/${currentUser.id}?range=${activityRange}`)
       .then(r => setActivityData(r.data))
-      .catch(() => setActivityData(null))
+      .catch((err) => { console.error('[Atlas] Silent failure in ProfileView.tsx:', err); setActivityData(null) })
       .finally(() => setActivityLoading(false))
   }, [currentUser?.id, activityRange])
 

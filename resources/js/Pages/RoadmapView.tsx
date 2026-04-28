@@ -33,7 +33,7 @@ export function RoadmapView() {
     setTimelineLoading(true)
     api.get<{ data: TimelineGanttProgram[] }>('/programs/timeline-all')
       .then(res => setTimelineData(res.data ?? []))
-      .catch(() => setTimelineData([]))
+      .catch((err) => { console.error('[Atlas] Silent failure in RoadmapView.tsx:', err); setTimelineData([]) })
       .finally(() => setTimelineLoading(false))
   }, [])
 

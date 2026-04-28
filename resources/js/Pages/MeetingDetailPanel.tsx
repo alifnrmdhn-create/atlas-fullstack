@@ -354,7 +354,7 @@ export function MeetingDetailPanel({
       // Prep packet — non-blocking, load separately
       api.get<{ data: PrepPacket }>(`/meetings/${meeting.id}/prep`)
         .then(res => { setPrep(res.data); setPrepUnavailable(false) })
-        .catch(() => setPrepUnavailable(true))
+        .catch((err) => { console.error('[Atlas] Silent failure in MeetingDetailPanel.tsx:', err); setPrepUnavailable(true) })
     } finally {
       setLoadingData(false)
     }
@@ -386,14 +386,14 @@ export function MeetingDetailPanel({
     if (!showAIForm || allUsers.length > 0) return
     api.get<{ data: UserOption[] }>('/users/directory')
       .then(res => setAllUsers(res.data ?? []))
-      .catch(() => {})
+      .catch((err) => console.error('[Atlas] Silent failure in MeetingDetailPanel.tsx:', err))
   }, [showAIForm, allUsers.length])
 
   useEffect(() => {
     if (!pushItem || workstreams.length > 0) return
     api.get<{ data: WorkstreamOption[] }>('/workstreams')
       .then(res => setWorkstreams(res.data ?? []))
-      .catch(() => {})
+      .catch((err) => console.error('[Atlas] Silent failure in MeetingDetailPanel.tsx:', err))
   }, [pushItem, workstreams.length])
 
   useEffect(() => {

@@ -635,6 +635,9 @@ function FokusHeroCard({
         <p className="fokus-hero-card__reason">
           {item.impact ? <><strong>{item.impact}.</strong> {item.reason}</> : item.reason}
         </p>
+        {item.nextCue && (
+          <p className="fokus-hero-card__next">→ {item.nextCue}</p>
+        )}
       </div>
       <button
         type="button"
@@ -805,7 +808,7 @@ export function InboxView() {
         mine.sort((a, b) => a.startAt.localeCompare(b.startAt))
         setTodayMeetings(mine)
       })
-      .catch(() => {})
+      .catch((err) => console.error('[Atlas] Gagal memuat jadwal meeting hari ini:', err))
   }, [currentUser?.id])
 
   const MEETING_TYPE_LABEL: Record<string, string> = {
@@ -825,7 +828,7 @@ export function InboxView() {
         const blocks = (res.data ?? []).sort((a, b) => a.startAt.localeCompare(b.startAt))
         setTodayFocusBlocks(blocks)
       })
-      .catch(() => {})
+      .catch((err) => console.error('[Atlas] Gagal memuat focus blocks hari ini:', err))
   }, [currentUser?.id])
 
   const rankedFocusItems = (() => {
@@ -899,14 +902,19 @@ export function InboxView() {
     ]
       .sort((a, b) => b.score - a.score)
   })()
-  const scopedRankedFocusItems = rankedFocusItems.filter(item => focusItemMatchesScope(item, focusScope))
+  // Dedup: approval items already shown in ActionPanel don't need to appear in the focus list
+  const actionPanelIds = new Set((programSummary?.needsAction ?? []).map(n => n.id))
+  const deduplicatedItems = rankedFocusItems.filter(item =>
+    item.kind !== 'approval' || !actionPanelIds.has(item.entityId ?? -1)
+  )
+  const scopedRankedFocusItems = deduplicatedItems.filter(item => focusItemMatchesScope(item, focusScope))
 
   const focusScopeOptions = (['all', 'action', 'risk', 'communication', 'schedule'] as FocusScope[]).map(scope => ({
     scope,
     label: FOCUS_SCOPE_LABEL[scope],
     count: scope === 'all'
-      ? rankedFocusItems.length
-      : rankedFocusItems.filter(item => focusItemMatchesScope(item, scope)).length,
+      ? deduplicatedItems.length
+      : deduplicatedItems.filter(item => focusItemMatchesScope(item, scope)).length,
   }))
 
   const handleMarkAllRead = async () => {
@@ -994,7 +1002,6 @@ export function InboxView() {
   const nowItem    = scopedRankedFocusItems[0] ?? null
   const todayItems = scopedRankedFocusItems.slice(1, 6)
   const laterItems = scopedRankedFocusItems.slice(6)
-  const remainingCount = scopedRankedFocusItems.length
 
   const [laterOpen, setLaterOpen] = useState(false)
 
@@ -1031,24 +1038,7 @@ export function InboxView() {
           />
         )}
 
-        {/* ── 2. Hari Anda — compact day strip ── */}
-        <div className="fokus-day">
-          <div className="fokus-day__title">
-            Hari Anda
-            <span className="fokus-day__date">{todayLabel()}</span>
-          </div>
-          <div className="fokus-day__stats">
-            <span className={`fokus-day__stat${todayCompletedCount > 0 ? ' fokus-day__stat--done' : ''}`}>
-              <strong>{todayCompletedCount}</strong> selesai
-            </span>
-            <span className="fokus-day__sep" />
-            <span className="fokus-day__stat">
-              <strong>{remainingCount}</strong> sisa
-            </span>
-          </div>
-        </div>
-
-        {/* ── 3. Scope strip — filter pill ── */}
+        {/* ── 2. Scope strip — filter pill ── */}
         <div className="fokus-scope-strip" aria-label="Mode baca Focus">
           {focusScopeOptions.map(option => (
             <button
@@ -1064,7 +1054,7 @@ export function InboxView() {
           ))}
         </div>
 
-        {/* ── 4. SEKARANG — top item as hero card ── */}
+        {/* ── 3. SEKARANG — top item as hero card ── */}
         {nowItem && (
           <section className="fokus-bucket fokus-bucket--now">
             <div className="fokus-bucket__head">
@@ -1074,7 +1064,7 @@ export function InboxView() {
           </section>
         )}
 
-        {/* ── 5. HARI INI — next 5 items ── */}
+        {/* ── 4. HARI INI — next 5 items ── */}
         {todayItems.length > 0 && (
           <section className="fokus-bucket">
             <div className="fokus-bucket__head">
@@ -1094,7 +1084,7 @@ export function InboxView() {
           </section>
         )}
 
-        {/* ── 6. BISA DITUNDA — collapsed remainder ── */}
+        {/* ── 5. BISA DITUNDA — collapsed remainder ── */}
         {laterItems.length > 0 && (
           <section className="fokus-bucket fokus-bucket--later">
             <button
@@ -1123,7 +1113,7 @@ export function InboxView() {
           </section>
         )}
 
-        {/* ── 7. Empty state ── */}
+        {/* ── 6. Empty state ── */}
         {nowItem == null && todayItems.length === 0 && laterItems.length === 0 && (programSummary?.needsAction.length ?? 0) === 0 && (
           <div className="fokus-zero">
             <div className="fokus-zero__check" aria-hidden="true">✓</div>

@@ -45,6 +45,11 @@ class RealtimeController extends Controller
         $this->markOnline($user->id);
 
         return response()->stream(function () use ($user) {
+            // Release session file lock immediately — file-based sessions block
+            // concurrent requests from the same browser until the lock is freed.
+            // Auth data is already captured in $user above, so this is safe.
+            session()->save();
+
             // Disable PHP output buffering + time limit
             @set_time_limit(self::STREAM_TTL_SECONDS + 30);
             @ini_set('output_buffering', 'off');
