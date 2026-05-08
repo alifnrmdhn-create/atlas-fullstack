@@ -1,0 +1,136 @@
+/* M2 — Topbar additions: breadcrumb dropdown trigger, contextual action,
+ * quick-jump menu. Scoped to new classes only; existing rules in shell.css
+ * for .topbar__breadcrumb-page (now a <button>) still apply for color/weight.
+ */
+
+/* Breadcrumb trigger — keep visual identical to old <span>, add chevron + hover */
+.topbar__breadcrumb-page--trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  border-radius: var(--radius-sm, 6px);
+  font: inherit;
+  color: var(--text-strong);
+  font-weight: var(--w-semibold);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.topbar__breadcrumb-page--trigger:hover,
+.topbar__breadcrumb-page--trigger[data-state='open'] {
+  background: var(--surface-1);
+}
+.topbar__breadcrumb-page--trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.topbar__breadcrumb-page--trigger > svg {
+  color: var(--text-muted);
+  transition: transform 160ms ease;
+}
+.topbar__breadcrumb-page--trigger[data-state='open'] > svg {
+  transform: rotate(180deg);
+}
+
+/* Quick-jump dropdown content */
+.topbar-quickjump {
+  min-width: 240px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--panel);
+  border: 0.5px solid var(--panel-border);
+  border-radius: var(--radius-md, 10px);
+  box-shadow: var(--panel-shadow-md);
+  font-size: var(--type-small);
+  color: var(--text);
+  z-index: 1000;
+  animation: tqj-in 120ms cubic-bezier(0.2, 0, 0, 1);
+}
+@keyframes tqj-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.topbar-quickjump__label {
+  display: block;
+  padding: 8px 10px 4px;
+  font-size: var(--type-xs);
+  font-weight: var(--w-semibold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.topbar-quickjump__sep {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--panel-border);
+}
+
+.topbar-quickjump__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+.topbar-quickjump__item[data-highlighted] {
+  background: var(--surface-1);
+  color: var(--text-strong);
+}
+.topbar-quickjump__item[data-active] {
+  color: var(--indigo);
+  font-weight: var(--w-medium);
+}
+.topbar-quickjump__item-check {
+  color: var(--indigo);
+  flex-shrink: 0;
+}
+
+/* Contextual action button */
+.topbar__action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  background: var(--indigo);
+  color: var(--text-inverse);
+  border: 0.5px solid var(--indigo-dark);
+  border-radius: var(--radius-sm, 6px);
+  font-size: var(--type-small);
+  font-weight: var(--w-medium);
+  text-decoration: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 8px;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+.topbar__action-btn:hover {
+  background: var(--indigo-dark);
+}
+.topbar__action-btn:active {
+  transform: translateY(0.5px);
+}
+.topbar__action-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.topbar__action-btn > svg {
+  flex-shrink: 0;
+}
+
+/* Hide action button on narrow viewports — Right cluster (theme/notif/avatar) takes priority */
+@media (max-width: 900px) {
+  .topbar__action-btn > span { display: none; }
+  .topbar__action-btn { padding: 0 8px; }
+}

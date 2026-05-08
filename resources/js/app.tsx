@@ -40,6 +40,7 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
 }
 
 import './styles/tokens.css'
+import './design-system/tokens.css'
 import './styles/reset.css'
 import './styles/shell.css'
 import './styles/components.css'
@@ -57,6 +58,7 @@ import './styles/pica.css'
 import './styles/pilot-metrics.css'
 import './styles/thresholds.css'
 import './styles/responsive.css'
+import './styles/topbar-extras.css'
 
 import { hydrateThemePreference } from './lib/theme'
 

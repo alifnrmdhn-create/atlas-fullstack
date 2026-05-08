@@ -9,6 +9,9 @@ import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { effectivePresenceSlug } from '../components/ui'
 import { applyThemePreference, getThemeSnapshot } from '../lib/theme'
 import type { ResolvedTheme } from '../lib/theme'
+import { Breadcrumb } from '../components/Breadcrumb'
+import { TopbarAction } from '../components/TopbarAction'
+import { TOPBAR_ACTIONS } from '../lib/topbar-config'
 
 type NavItem = {
   path: string
@@ -889,7 +892,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const grpPerfFull   = { label: 'Performance',  items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfSaya] }
   const grpPerfMid    = { label: 'Performance',  items: [NI.perfDivisi, NI.perfSaya] }
   const grpPerfMin    = { label: 'Performance',  items: [NI.perfSaya] }
-  const grpPelaporan  = { label: 'Pelaporan',    items: [NI.lapbul, NI.laprisiko] }
+  // Pelaporan dihilangkan sementara dari sidebar — routes tetap reachable via
+  // deep link (/laporan-bulanan, /laporan-risiko). Re-enable dengan kembalikan
+  // items: [NI.lapbul, NI.laprisiko]
+  const grpPelaporan  = { label: 'Pelaporan',    items: [] as NavItem[] }
   const grpAct        = { label: 'Tindak Lanjut', items: [NI.schedule] }
   const grpKolab      = { label: 'Komunikasi',   items: [NI.channels, NI.search] }
   const grpAkun       = { label: 'Akun',         items: [NI.presence, NI.profile, NI.settings] }
@@ -1112,12 +1118,12 @@ export function AppShell({ children }: { children?: ReactNode }) {
       {/* ── Main workspace ── */}
       <div className="workspace" id="workspace-modal-root">
         <header className="topbar">
-          {/* Breadcrumb */}
-          <nav className="topbar__breadcrumb" aria-label="breadcrumb">
-            <span className="topbar__breadcrumb-workspace">PTPN III</span>
-            <span className="topbar__breadcrumb-sep">/</span>
-            <span className="topbar__breadcrumb-page">{currentPage}</span>
-          </nav>
+          {/* Breadcrumb (with quick-jump dropdown) */}
+          <Breadcrumb
+            workspace="PTPN III"
+            currentLabel={currentPage}
+            currentPath={activePath}
+          />
 
           {/* Breadcrumb / search divider */}
           <div className="topbar__breadcrumb-divider" aria-hidden="true" />
@@ -1139,6 +1145,11 @@ export function AppShell({ children }: { children?: ReactNode }) {
             />
             <kbd className="topbar__search-kbd">⌘K</kbd>
           </form>
+
+          {/* Contextual action (route-aware) */}
+          {TOPBAR_ACTIONS[activePath] ? (
+            <TopbarAction action={TOPBAR_ACTIONS[activePath]} page={activePath} />
+          ) : null}
 
           {/* Right cluster */}
           <div className="topbar__right">
