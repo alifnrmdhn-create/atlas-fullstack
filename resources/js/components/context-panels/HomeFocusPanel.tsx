@@ -1,33 +1,65 @@
 import { Link } from '@inertiajs/react'
 import { AlertCircle, Calendar, Pin, ArrowRight } from 'lucide-react'
+import { useWorkspace } from '../../hooks/useWorkspace'
 
 /**
  * Home context panel — "Fokus hari ini".
  *
- * M6 first cut renders a static structure that mirrors the alert strip
- * already on HomeViewV2. Wiring real Inertia shared props lands in M6.1
- * once HomeViewV2 exposes the data centrally (currently it computes
- * counts inline). The visual + interaction patterns stabilise here first.
+ * Reads the same programSummary that HomeViewV2 uses, so counts here
+ * stay in sync with the alert strip on the main page. When Home is
+ * still loading, the panel shows a low-noise empty state instead of
+ * placeholder zeros.
  */
 export function HomeFocusPanel() {
+  const { programSummary } = useWorkspace()
+
+  if (!programSummary) {
+    return (
+      <Section icon={<AlertCircle size={13} />} title="Butuh perhatian">
+        <p className="context-panel__empty">Memuat ringkasan…</p>
+      </Section>
+    )
+  }
+
+  const { summary, controls, needsAction } = programSummary
+  const terlambatCount = summary.terlambat + summary.overdue
+  const criticalControls = (controls ?? []).filter(
+    (c) => c.severity === 'CRITICAL' || c.severity === 'HIGH',
+  ).length
+  const decisionCount = needsAction.length
+
+  const hasAttention = terlambatCount > 0 || criticalControls > 0 || decisionCount > 0
+
   return (
     <>
-      <Section icon={<AlertCircle size={13} />} title="Butuh perhatian" tone="danger">
-        <FocusItem
-          label="3 program terlambat"
-          meta="butuh intervensi"
-          href="/programs?status=terlambat"
-        />
-        <FocusItem
-          label="2 kontrol kritis terbuka"
-          meta="risk"
-          href="/laporan-risiko"
-        />
-        <FocusItem
-          label="2 hal butuh keputusan"
-          meta="approval"
-          href="/fokus"
-        />
+      <Section icon={<AlertCircle size={13} />} title="Butuh perhatian" tone={hasAttention ? 'danger' : undefined}>
+        {hasAttention ? (
+          <>
+            {terlambatCount > 0 ? (
+              <FocusItem
+                label={`${terlambatCount} program terlambat`}
+                meta="butuh intervensi"
+                href="/programs?status=terlambat"
+              />
+            ) : null}
+            {criticalControls > 0 ? (
+              <FocusItem
+                label={`${criticalControls} kontrol kritis terbuka`}
+                meta="risk"
+                href="/laporan-risiko"
+              />
+            ) : null}
+            {decisionCount > 0 ? (
+              <FocusItem
+                label={`${decisionCount} hal butuh keputusan`}
+                meta="approval"
+                href="/fokus"
+              />
+            ) : null}
+          </>
+        ) : (
+          <p className="context-panel__empty">Tidak ada item mendesak hari ini.</p>
+        )}
       </Section>
 
       <Section icon={<Calendar size={13} />} title="Jadwal hari ini">

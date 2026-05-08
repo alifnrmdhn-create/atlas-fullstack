@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useId } from 'react'
+import { useState, useEffect, useCallback, useId, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import type { FormEvent } from 'react'
+import { usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { getProgramDisplayStatus } from '../lib/programStatus'
@@ -18,6 +19,7 @@ import { useEscKey } from '../hooks/useEscKey'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import { ExecutionTab } from '../components/ExecutionTab'
 import { MonitoringMatrix } from '../components/MonitoringMatrix'
+import './ProgramsView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -110,6 +112,26 @@ export function ProgramsView() {
   const [laneSearch, setLaneSearch] = useState('')
   const [portfolioSearch, setPortfolioSearch] = useState('')
   const [approvalFilter, setApprovalFilter] = useState<'all' | 'needs_action'>('all')
+
+  // ── URL-driven filters from Context Panel (M6.1) ───────────────────────────
+  // Status values in the URL stay human-readable (on_track | at_risk | terlambat)
+  // for shareable links; we map to the internal GREEN/YELLOW/RED here.
+  const { url } = usePage()
+  const urlStatusFilter = useMemo<Set<'GREEN' | 'YELLOW' | 'RED'>>(() => {
+    const qs = url.split('?')[1] ?? ''
+    const raw = new URLSearchParams(qs).get('status') ?? ''
+    const map: Record<string, 'GREEN' | 'YELLOW' | 'RED'> = {
+      on_track: 'GREEN',
+      at_risk: 'YELLOW',
+      terlambat: 'RED',
+    }
+    const out = new Set<'GREEN' | 'YELLOW' | 'RED'>()
+    for (const v of raw.split(',').filter(Boolean)) {
+      const mapped = map[v]
+      if (mapped) out.add(mapped)
+    }
+    return out
+  }, [url])
 
   // ── Timeline data ──────────────────────────────────────────────────────
   const [timelineData, setTimelineData] = useState<TimelineGanttProgram[]>([])
@@ -404,17 +426,21 @@ export function ProgramsView() {
     return p.approvalStatus === 'DRAFT' && p.submittedById === currentUser?.id
   })
 
+  const matchesUrlStatus = (p: typeof programs[number]) =>
+    urlStatusFilter.size === 0 || urlStatusFilter.has(normalizeHealthStatus(p.healthStatus) as 'GREEN' | 'YELLOW' | 'RED')
+
   const filteredPortfolio = programs.filter(p => {
     const matchesSearch = !portfolioSearch ||
       p.name.toLowerCase().includes(portfolioSearch.toLowerCase()) ||
       p.code.toLowerCase().includes(portfolioSearch.toLowerCase())
     const matchesApproval = approvalFilter === 'all' || needsActionPrograms.some(n => n.id === p.id)
-    return matchesSearch && matchesApproval
+    return matchesSearch && matchesApproval && matchesUrlStatus(p)
   })
 
   const filteredLane = programs.filter(p =>
-    !laneSearch || p.name.toLowerCase().includes(laneSearch.toLowerCase()) ||
-    p.code.toLowerCase().includes(laneSearch.toLowerCase())
+    (!laneSearch || p.name.toLowerCase().includes(laneSearch.toLowerCase()) ||
+     p.code.toLowerCase().includes(laneSearch.toLowerCase())) &&
+    matchesUrlStatus(p)
   )
   const filteredTimeline = timelineData.filter(p =>
     !laneSearch || p.name.toLowerCase().includes(laneSearch.toLowerCase()) ||
@@ -468,7 +494,8 @@ export function ProgramsView() {
     (pulse?.atRiskWorkstreams.length ?? 0) + (pulse?.stagnantItems.length ?? 0)
 
   return (
-    <div className="view-programs">
+    <div className="ds programs-v2 view-programs">
+      <div className="programs-v2__inner">
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Programs</h2>
@@ -1850,6 +1877,7 @@ export function ProgramsView() {
 
       {/* Kebab dropdown + backdrop — di-render via portal ke document.body
           agar tidak ter-clip oleh overflow:hidden/auto di ancestor mana pun */}
+      </div>
       {kebabMenu !== null && createPortal(
         <>
           <div className="kebab-close-backdrop" onClick={closeKebab} />
