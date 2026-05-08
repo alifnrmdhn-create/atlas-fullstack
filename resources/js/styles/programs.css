@@ -1088,6 +1088,22 @@
   line-height: 1;
 }
 
+.ws-budget {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--panel-bg-2, var(--panel-bg));
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.ws-budget__spent {
+  color: var(--text-body);
+  font-weight: 500;
+}
+
 .workstream-delete-confirm {
   margin: -4px 0 4px;
   display: flex;

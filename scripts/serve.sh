@@ -3,11 +3,11 @@ IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null ||
 PHP_BIN=${PHP_BIN:-php}
 echo ""
 echo "  Laravel app:"
-echo "  Local:   http://localhost:8000"
+echo "  Local:   http://localhost:9000"
 if [ -n "$IP" ]; then
-  echo "  Network: http://$IP:8000"
+  echo "  Network: http://$IP:9000"
 fi
 echo "  PHP:     $PHP_BIN"
 echo ""
-export PHP_CLI_SERVER_WORKERS=8
-exec "$PHP_BIN" artisan serve --host=0.0.0.0 --no-reload
+export PHP_CLI_SERVER_WORKERS=4
+exec "$PHP_BIN" artisan serve --host=0.0.0.0 --port=9000 --no-reload

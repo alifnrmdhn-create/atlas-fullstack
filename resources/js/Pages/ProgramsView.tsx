@@ -17,10 +17,11 @@ import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import { ExecutionTab } from '../components/ExecutionTab'
+import { MonitoringMatrix } from '../components/MonitoringMatrix'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type ProgramTab = 'portfolio' | 'timeline' | 'execution' | 'pulse' | 'risiko' | 'archive'
+type ProgramTab = 'portfolio' | 'timeline' | 'monitoring' | 'pulse' | 'risiko' | 'archive'
 type PortfolioView = 'list' | 'kanban' | 'table'
 type TimelineView = 'lanes' | 'gantt'
 type LaneGrouping = 'status' | 'priority' | 'health'
@@ -478,7 +479,7 @@ export function ProgramsView() {
           {([
             ['portfolio', 'Portofolio'],
             ['timeline',  'Timeline'],
-            ['execution', 'Execution Grid'],
+            ['monitoring', 'Monitoring'],
             ['pulse',     'Pulse'],
             ['risiko',    'Risiko'],
           ] as [ProgramTab, string][]).map(([t, label]) => (
@@ -963,25 +964,10 @@ export function ProgramsView() {
             </>
           )}
 
-          {/* ── TAB: EXECUTION GRID ─────────────────────────────────────── */}
-          {tab === 'execution' && (
+          {/* ── TAB: MONITORING MATRIX ──────────────────────────────────── */}
+          {tab === 'monitoring' && (
             <div className="programs-section-stack">
-              {programs.length === 0 ? (
-                <SectionState
-                  icon="📋"
-                  title="Belum ada program"
-                  text="Buat program terlebih dahulu untuk melihat Execution Grid workstream-nya."
-                />
-              ) : (
-                <ExecutionTab
-                  programId={selectedProgramId ?? programs[0]?.id ?? 1}
-                  programName={
-                    (selectedProgramId
-                      ? programs.find((p) => p.id === selectedProgramId)?.name
-                      : programs[0]?.name) ?? undefined
-                  }
-                />
-              )}
+              <MonitoringMatrix />
             </div>
           )}
 

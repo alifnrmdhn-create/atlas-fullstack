@@ -2,14 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Blocker;
+use App\Models\KpiDefinition;
 use App\Models\MonthlyReport;
 use App\Models\MonthlyReportApproval;
 use App\Models\MonthlyReportFile;
 use App\Models\MonthlyReportMetric;
 use App\Models\Program;
+use App\Models\ProgramProgressLog;
+use App\Models\Task;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use App\Support\RolePolicy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -60,6 +66,15 @@ class MonthlyReportController extends Controller
         ]);
     }
 
+    /** Pastikan user boleh mengakses report: unit sama, atau KADIV/Admin ke atas. */
+    private function assertReportAccess(\App\Models\User $user, MonthlyReport $report): void
+    {
+        $role = strtoupper($user->roleType ?? '');
+        if (RolePolicy::isAdminOrAbove($role) || $role === 'KADIV') return;
+        if ($user->unitId && $user->unitId === $report->unitId) return;
+        abort(403, 'Anda tidak memiliki akses ke laporan ini.');
+    }
+
     public function show(Request $request, int $id)
     {
         $report = MonthlyReport::with([
@@ -69,6 +84,8 @@ class MonthlyReportController extends Controller
             'files.uploadedBy:id,name',
             'approvals.approver:id,name,roleType',
         ])->findOrFail($id);
+
+        $this->assertReportAccess($request->user(), $report);
 
         $linkedPrograms = !empty($report->linkedProgramIds)
             ? Program::whereIn('id', $report->linkedProgramIds)->get(['id','code','name'])->all()
@@ -85,6 +102,135 @@ class MonthlyReportController extends Controller
             'report' => $report,
             'linkedPrograms' => $linkedPrograms,
         ]);
+    }
+
+    public function autoDraft(Request $request, int $id): JsonResponse
+    {
+        $report = MonthlyReport::findOrFail($id);
+        $this->assertReportAccess($request->user(), $report);
+
+        if (empty($report->linkedProgramIds)) {
+            return response()->json(['data' => [], 'note' => 'Tidak ada program yang terhubung ke laporan ini.']);
+        }
+
+        $linkedIds = is_array($report->linkedProgramIds) ? $report->linkedProgramIds : [];
+        if (empty($linkedIds)) {
+            return response()->json(['data' => [], 'note' => 'Tidak ada program yang terhubung ke laporan ini.']);
+        }
+
+        $programs = Program::whereIn('id', $linkedIds)
+            ->get(['id', 'code', 'name', 'healthStatus', 'progressPercent']);
+
+        $year       = $report->year;
+        $month      = $report->month;
+        $monthStart = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $monthEnd   = $monthStart->copy()->endOfMonth();
+        $monthPrefix = $year . '-' . str_pad((string) $month, 2, '0', STR_PAD_LEFT);
+
+        // ── Batch semua data sekaligus — hindari N+1 ─────────────────────────
+
+        // 1. Progress logs bulan ini per program (ambil latest per programId)
+        $progressLogs = ProgramProgressLog::query()
+            ->whereIn('programId', $linkedIds)
+            ->where(function ($q) use ($monthPrefix, $monthStart, $monthEnd) {
+                $q->where('period', $monthPrefix)
+                  ->orWhereBetween('createdAt', [$monthStart, $monthEnd]);
+            })
+            ->orderBy('createdAt', 'desc')
+            ->get()
+            ->unique('programId')   // ambil satu (terbaru) per program
+            ->keyBy('programId');
+
+        // 2. Task stats per program dalam satu query
+        $taskStats = Task::query()
+            ->join('Initiative', 'WorkItem.initiativeId', '=', 'Initiative.id')
+            ->whereIn('Initiative.programId', $linkedIds)
+            ->selectRaw('"Initiative"."programId", COUNT(*) as total, SUM(CASE WHEN "WorkItem"."status" = \'COMPLETED\' THEN 1 ELSE 0 END) as completed')
+            ->groupBy('Initiative.programId')
+            ->get()
+            ->keyBy('programId');
+
+        // 3. Task IDs per program untuk blocker lookup
+        $tasksByProgram = Task::query()
+            ->join('Initiative', 'WorkItem.initiativeId', '=', 'Initiative.id')
+            ->whereIn('Initiative.programId', $linkedIds)
+            ->select('WorkItem.id', 'Initiative.programId')
+            ->get()
+            ->groupBy('programId');
+
+        // Build reverse map taskId → programId sekali, O(1) lookup per blocker
+        $taskProgramMap = $tasksByProgram
+            ->flatMap(fn ($tasks, $pid) => $tasks->mapWithKeys(fn ($t) => [$t->id => $pid]))
+            ->all();
+
+        $allTaskIds = array_keys($taskProgramMap);
+
+        // 4. Blocker count per program — open blockers yang exist pada bulan ini
+        $blockerCounts = Blocker::query()
+            ->whereIn('workItemId', $allTaskIds)
+            ->where('status', 'OPEN')
+            ->where('createdAt', '<=', $monthEnd)
+            ->pluck('workItemId')
+            ->groupBy(fn ($taskId) => $taskProgramMap[$taskId] ?? null)
+            ->filter(fn ($group, $key) => $key !== null)
+            ->map->count();
+
+        // 5. KPI per program
+        $kpisByProgram = KpiDefinition::query()
+            ->whereIn('programId', $linkedIds)
+            ->whereNotNull('actualValue')
+            ->whereNotNull('targetValue')
+            ->get(['programId', 'name', 'actualValue', 'targetValue', 'unitOfMeasure'])
+            ->groupBy('programId');
+
+        // ── Assemble hasil ───────────────────────────────────────────────────
+        $drafts = [];
+        foreach ($programs as $program) {
+            $pid   = $program->id;
+            $stats = $taskStats->get($pid);
+            $log   = $progressLogs->get($pid);
+            $kpis  = $kpisByProgram->get($pid, collect());
+
+            $kpiSummary = $kpis->map(function ($k) {
+                $target = (float) $k->targetValue;
+                return [
+                    'name'   => $k->name,
+                    'actual' => (float) $k->actualValue,
+                    'target' => $target,
+                    'unit'   => $k->unitOfMeasure,
+                    'pct'    => $target !== 0.0 ? round((float) $k->actualValue / $target * 100, 1) : null,
+                ];
+            })->values()->all();
+
+            $healthLabel = match($program->healthStatus) {
+                'GREEN'  => 'On Track',
+                'YELLOW' => 'At Risk',
+                'RED'    => 'Terlambat',
+                default  => $program->healthStatus ?? 'Tidak diketahui',
+            };
+
+            $drafts[] = [
+                'programId'       => $pid,
+                'code'            => $program->code,
+                'name'            => $program->name,
+                'healthStatus'    => $program->healthStatus,
+                'healthLabel'     => $healthLabel,
+                'progressPercent' => $program->progressPercent ?? 0,
+                'totalTasks'      => (int) ($stats->total ?? 0),
+                'completedTasks'  => (int) ($stats->completed ?? 0),
+                'activeBlockers'  => (int) ($blockerCounts->get($pid, 0)),
+                'latestLog'       => $log ? [
+                    'period'             => $log->period,
+                    'healthAtTime'       => $log->healthAtTime,
+                    'narrative'          => $log->narrative,
+                    'kendala'            => $log->kendala,
+                    'dukunganDibutuhkan' => $log->dukunganDibutuhkan,
+                ] : null,
+                'kpis' => $kpiSummary,
+            ];
+        }
+
+        return response()->json(['data' => $drafts]);
     }
 
     // ── Mutations ────────────────────────────────────────────────────────────

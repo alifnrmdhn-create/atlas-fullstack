@@ -13,7 +13,6 @@ class Blocker extends Model
 
     protected $casts = [
         'relatedBlockerIds' => 'array',
-        'linkedWorkItemIds' => 'array',
         'resolvedAt' => 'datetime',
         'createdAt' => 'datetime',
         'updatedAt' => 'datetime',

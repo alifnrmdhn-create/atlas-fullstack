@@ -855,9 +855,9 @@ class OrganizationController extends Controller
 
     private function classifyProgramHealth(Program $p, Carbon $now): string
     {
-        if ($p->status === 'COMPLETED') return 'selesai';
+        if ($p->status === 'COMPLETED' || $p->approvalStatus === 'COMPLETED') return 'selesai';
         // DRAFT/PENDING programs not yet in execution — don't mix with operational health
-        if (!in_array($p->approvalStatus, ['ACTIVE', 'COMPLETED'])) return 'draft';
+        if (empty($p->approvalStatus) || !in_array($p->approvalStatus, ['ACTIVE', 'COMPLETED'])) return 'draft';
         if ($p->targetEndDate && $now->gt($p->targetEndDate)) return 'overdue';
         if ($p->healthStatus === 'RED') return 'terlambat';
         if ($p->healthStatus === 'GREEN') return 'on_track';
@@ -920,7 +920,7 @@ class OrganizationController extends Controller
 
     public function storeDirectorate(Request $request): JsonResponse|RedirectResponse
     {
-        Gate: RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
         $data = $request->validate([
             'code' => 'required|string|min:2|max:40|unique:Directorate,code',
             'name' => 'required|string|min:2|max:120',

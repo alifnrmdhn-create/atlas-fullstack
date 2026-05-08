@@ -32,7 +32,7 @@ class ProgramService
             ->with(['owner:id,name,avatarUrl,roleType,unitId'])
             ->withCount('workstreams')
             ->whereNull('archivedAt')
-            ->whereIn('approvalStatus', ['ACTIVE', 'PENDING_KASUB', 'PENDING_KADIV', 'DRAFT']);
+            ->whereIn('approvalStatus', ['ACTIVE', 'PENDING_KASUB', 'PENDING_KADIV', 'DRAFT', 'COMPLETED']);
 
         if ($scope->allowsAllUsers()) {
             return $query->orderBy('createdAt', 'desc')->get();
@@ -44,6 +44,28 @@ class ProgramService
             $q->whereIn('id', $membershipIds)
               ->orWhereIn('ownerId', $scope->userIds);
         })->orderBy('createdAt', 'desc')->get();
+    }
+
+    public function listForUserPaginated(User $user, int $perPage = 50): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        $scope = $this->scopeResolver->resolveUserScope($user);
+
+        $query = Program::query()
+            ->with(['owner:id,name,avatarUrl,roleType,unitId'])
+            ->withCount('workstreams')
+            ->whereNull('archivedAt')
+            ->whereIn('approvalStatus', ['ACTIVE', 'PENDING_KASUB', 'PENDING_KADIV', 'DRAFT', 'COMPLETED'])
+            ->orderBy('createdAt', 'desc');
+
+        if (!$scope->allowsAllUsers()) {
+            $membershipIds = $this->membershipResolver->getProgramIdsViaMembership($user->id);
+            $query->where(function (Builder $q) use ($scope, $membershipIds) {
+                $q->whereIn('id', $membershipIds)
+                  ->orWhereIn('ownerId', $scope->userIds);
+            });
+        }
+
+        return $query->paginate($perPage);
     }
 
     public function listArchived(User $user): Collection

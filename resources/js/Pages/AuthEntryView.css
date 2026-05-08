@@ -108,7 +108,7 @@
   --auth-badge-border: color-mix(in srgb, var(--panel-border-strong) 48%, transparent);
   --auth-badge-shadow: 0 10px 24px color-mix(in srgb, var(--panel-border-strong) 32%, transparent);
   --auth-badge-text: var(--blue-ink);
-  --auth-eyebrow: var(--blue-ink);
+  --auth-eyebrow: var(--text-muted);
   --auth-desc: var(--gray-ink);
   --auth-highlight-bg: color-mix(in srgb, var(--panel) 66%, transparent);
   --auth-highlight-border: color-mix(in srgb, var(--panel-border-strong) 64%, transparent);
@@ -159,16 +159,16 @@
   --auth-toggle-hover-bg: color-mix(in srgb, var(--panel-border) 90%, var(--surface-quiet) 10%);
   --auth-toggle-color: var(--gray-ink);
   --auth-toggle-hover-color: var(--text);
-  --auth-submit-bg: linear-gradient(135deg, var(--blue) 0%, color-mix(in srgb, var(--blue) 78%, var(--text-inverse) 22%) 40%, var(--ptpn-green) 100%);
+  --auth-submit-bg: var(--ptpn-green);
   --auth-submit-shadow:
-    0 20px 34px color-mix(in srgb, var(--blue) 24%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 28%, transparent);
+    0 20px 34px color-mix(in srgb, var(--ptpn-green) 28%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 22%, transparent);
   --auth-submit-hover-shadow:
-    0 24px 44px color-mix(in srgb, var(--blue) 28%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 28%, transparent);
+    0 24px 44px color-mix(in srgb, var(--ptpn-green) 32%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 22%, transparent);
   --auth-submit-active-shadow:
-    0 10px 18px color-mix(in srgb, var(--blue) 14%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 20%, transparent);
+    0 10px 18px color-mix(in srgb, var(--ptpn-green) 16%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 16%, transparent);
   --auth-submit-overlay: linear-gradient(180deg, color-mix(in srgb, var(--text-inverse) 14%, transparent), transparent 46%);
   --auth-submit-success-bg: linear-gradient(135deg, var(--green) 0%, color-mix(in srgb, var(--green) 72%, var(--ptpn-green) 28%) 100%);
   --auth-spinner-border: color-mix(in srgb, var(--text-inverse) 32%, transparent);
@@ -436,11 +436,9 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 10px;
-  font-size: 0.73rem;
-  font-weight: 700;
+  font-size: 0.76rem;
+  font-weight: 600;
   color: var(--auth-highlight-label);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .auth-panel__highlight-label::before {

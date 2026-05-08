@@ -6,11 +6,16 @@ use App\Support\FiltersByUserScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Maps to database table `WorkItem` (Prisma @@map).
+ * Frontend and API use the terms "task" or "step".
+ * FK: WorkItem.initiativeId → Initiative.id (workstream)
+ * See NAMING_CONVENTION.md for full mapping.
+ */
 class Task extends Model
 {
     use FiltersByUserScope;
 
-    /** Physical table name di DB (Prisma @@map). */
     protected $table = 'WorkItem';
     const CREATED_AT = 'createdAt';
     const UPDATED_AT = 'updatedAt';
