@@ -569,14 +569,17 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const isAdmin = ADMIN_ROLES.has(currentUser?.roleType?.toLowerCase() ?? '')
   const role = currentUser?.roleType?.toUpperCase() ?? ''
   const shellRef = useRef<HTMLDivElement>(null)
-  const collapsedRef = useRef(false)
-  const [sidebarCollapsedView, setSidebarCollapsedView] = useState(false)
+  const [sidebarCollapsedView, setSidebarCollapsedView] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('atlas.sidebarCollapsed') === 'true'
+  })
+  const collapsedRef = useRef(sidebarCollapsedView)
 
   const toggleSidebar = () => {
     const next = !collapsedRef.current
     collapsedRef.current = next
-    shellRef.current?.classList.toggle('app-shell--collapsed', next)
     if (!next) setTooltipState(null)
+    try { localStorage.setItem('atlas.sidebarCollapsed', String(next)) } catch {}
     startTransition(() => setSidebarCollapsedView(next))
   }
 
@@ -977,7 +980,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   }
 
   return (
-    <div className={`app-shell${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}`} ref={shellRef}>
+    <div className={`app-shell${sidebarCollapsedView ? ' app-shell--collapsed' : ''}${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}`} ref={shellRef}>
       {/* ── Sidebar ── */}
       <aside className="sidebar">
         <div className="sidebar__header">

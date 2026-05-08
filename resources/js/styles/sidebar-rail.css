@@ -1,0 +1,61 @@
+/* M5 — Rail mode visual upgrades.
+ *
+ * Existing collapse infrastructure in shell.css handles width, label hiding,
+ * etc. This file layers polish on top: brand-coloured active bar at the
+ * left edge, subtle group separators (since section labels are hidden in
+ * rail mode), and a slightly stronger collapse-button affordance.
+ *
+ * Expanded mode is untouched.
+ */
+
+/* Active indicator: 3px brand bar at left edge of icon (replaces the
+ * gray background fill which doesn't read well in narrow rail). */
+.app-shell--collapsed .sidebar__item--active {
+  background: transparent;
+  position: relative;
+}
+.app-shell--collapsed .sidebar__item--active:hover {
+  background: var(--surface-overlay-soft);
+}
+.app-shell--collapsed .sidebar__item--active::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--indigo);
+}
+.app-shell--collapsed .sidebar__item--active .sidebar__item-icon {
+  color: var(--indigo);
+  opacity: 1;
+}
+
+/* Sidebar nav group spacing — when labels collapse to height: 0, the
+ * groups visually merge. Restore breathing room with a hairline separator. */
+.app-shell--collapsed .sidebar__group + .sidebar__group {
+  border-top: 0.5px solid var(--panel-border-soft);
+  margin-top: 6px;
+  padding-top: 6px;
+}
+
+/* Collapse-toggle button — give it a tooltip-like hover hint. The button
+ * already exists; this just tightens visual states. */
+.sidebar__collapse-btn {
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.sidebar__collapse-btn:hover {
+  background: var(--surface-1);
+  color: var(--text-strong);
+}
+.sidebar__collapse-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Smooth the sidebar width transition so the rail toggle doesn't snap. */
+.app-shell {
+  transition: grid-template-columns 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
