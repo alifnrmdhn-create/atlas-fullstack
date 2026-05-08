@@ -233,6 +233,37 @@
 .context-panel__dot--green { background: var(--green); }
 .context-panel__dot--amber { background: var(--yellow); }
 .context-panel__dot--red   { background: var(--red); }
+.context-panel__dot--blue  { background: var(--blue); }
+.context-panel__dot--gray  { background: var(--gray); }
+
+/* Year pill row — Monthly Reports panel */
+.context-panel__year-row {
+  display: flex;
+  gap: 4px;
+  padding: 0 4px;
+}
+.context-panel__year-pill {
+  flex: 1;
+  padding: 6px 0;
+  background: var(--surface-1);
+  border: 0.5px solid var(--panel-border);
+  border-radius: var(--radius-sm, 6px);
+  font-family: var(--font-mono);
+  font-size: var(--type-small);
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.context-panel__year-pill:hover {
+  background: var(--panel);
+  border-color: var(--panel-border-strong);
+}
+.context-panel__year-pill.is-active {
+  background: var(--indigo-dim);
+  border-color: var(--indigo-mid);
+  color: var(--indigo-dark);
+  font-weight: var(--w-semibold);
+}
 
 .context-panel__reset {
   background: transparent;
