@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useId, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import type { FormEvent } from 'react'
-import { usePage } from '@inertiajs/react'
+import { usePage, router } from '@inertiajs/react'
+import { X as IconX } from 'lucide-react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { getProgramDisplayStatus } from '../lib/programStatus'
@@ -606,6 +607,25 @@ export function ProgramsView() {
                 onChange={e => setLaneSearch(e.target.value)} placeholder="Filter program…" />
             </>
           )}
+        </div>
+      )}
+
+      {urlStatusFilter.size > 0 && (
+        <div className="programs-filter-banner" role="status" aria-live="polite">
+          <span className="programs-filter-banner__label">Filter dari panel:</span>
+          {Array.from(urlStatusFilter).map((s) => (
+            <span key={s} className={`programs-filter-banner__chip programs-filter-banner__chip--${s.toLowerCase()}`}>
+              {s === 'GREEN' ? 'On Track' : s === 'YELLOW' ? 'At Risk' : 'Terlambat'}
+            </span>
+          ))}
+          <button
+            type="button"
+            className="programs-filter-banner__reset"
+            onClick={() => router.visit('/programs', { preserveState: true, preserveScroll: true, replace: true })}
+          >
+            <IconX size={11} aria-hidden="true" />
+            Reset
+          </button>
         </div>
       )}
 
