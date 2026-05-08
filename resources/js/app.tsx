@@ -55,6 +55,7 @@ import './styles/misc-views.css'
 import './styles/performance.css'
 import './styles/pica.css'
 import './styles/pilot-metrics.css'
+import './styles/thresholds.css'
 import './styles/responsive.css'
 
 import { hydrateThemePreference } from './lib/theme'

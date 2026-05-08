@@ -345,8 +345,8 @@ class PerformanceController extends Controller
             abort(403, 'Anda tidak punya akses ke commitment ledger user ini.');
         }
 
-        $lookbackWeeks = (int) config('atlas-thresholds.commitment_ledger.lookback_weeks', 12);
-        $streakMin = (int) config('atlas-thresholds.commitment_ledger.streak_min_hit_rate_pct', 80);
+        $lookbackWeeks = (int) setting('commitment_ledger.lookback_weeks', 12);
+        $streakMin = (int) setting('commitment_ledger.streak_min_hit_rate_pct', 80);
 
         $startDate = now()->startOfWeek()->subWeeks($lookbackWeeks);
 

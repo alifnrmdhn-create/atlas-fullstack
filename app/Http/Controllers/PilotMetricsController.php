@@ -39,7 +39,7 @@ class PilotMetricsController extends Controller
     {
         $this->ensureAdmin($request);
         $metrics = $this->computeMetrics();
-        $criteria = config('atlas-thresholds.pilot_dkm_success_criteria', []);
+        $criteria = setting('pilot_dkm_success_criteria', config('atlas-thresholds.pilot_dkm_success_criteria', []));
 
         return Inertia::render('AdminPilotMetricsView', compact('metrics', 'criteria'));
     }
@@ -49,7 +49,7 @@ class PilotMetricsController extends Controller
         $this->ensureAdmin($request);
         return response()->json([
             'data' => $this->computeMetrics(),
-            'criteria' => config('atlas-thresholds.pilot_dkm_success_criteria', []),
+            'criteria' => setting('pilot_dkm_success_criteria', config('atlas-thresholds.pilot_dkm_success_criteria', [])),
         ]);
     }
 

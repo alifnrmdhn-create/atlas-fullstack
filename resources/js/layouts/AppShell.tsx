@@ -270,6 +270,7 @@ function prefetchRoute(path: string) {
     '/admin/roles': () => import('../Pages/AdminRolesView'),
     '/admin/users': () => import('../Pages/AdminUsersView'),
     '/admin/pilot-metrics': () => import('../Pages/AdminPilotMetricsView'),
+    '/admin/thresholds': () => import('../Pages/AdminThresholdsView'),
     '/channels': () => import('../Pages/ChannelsViewWrapper'),
     '/': () => import('../Pages/HomeView'),
     '/dashboard': () => import('../Pages/DashboardView'),
@@ -900,6 +901,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
       { path: '/admin/users',          label: 'Users',          caption: 'Manajemen pengguna',         icon: IconUsers     },
       { path: '/admin/roles',          label: 'Roles',          caption: 'Peran & permission matrix',  icon: IconRoles     },
       { path: '/admin/pilot-metrics',  label: 'Pilot Metrics',  caption: 'Pilot DKM dashboard (Sprint 4)', icon: IconReports },
+      ...(role === 'SUPERADMIN' ? [
+        { path: '/admin/thresholds',   label: 'Thresholds',     caption: 'Tuning angka sistem (live)',     icon: IconSettings },
+      ] : []),
     ],
   }
 

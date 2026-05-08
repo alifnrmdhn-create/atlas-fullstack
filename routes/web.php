@@ -9,6 +9,7 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\EscalationController;
 use App\Http\Controllers\ExecutionGridController;
 use App\Http\Controllers\PerformanceController;
+use App\Http\Controllers\AdminThresholdsController;
 use App\Http\Controllers\PilotMetricsController;
 use App\Http\Controllers\KpiController;
 use App\Http\Controllers\MeetingController;
@@ -61,6 +62,11 @@ Route::middleware('auth')->group(function () {
     // Post-MVP — Pilot DKM metrics dashboard (admin-only)
     Route::get('/admin/pilot-metrics',     [PilotMetricsController::class, 'index'])->name('admin.pilot-metrics');
     Route::get('/admin/pilot-metrics/api', [PilotMetricsController::class, 'api'])->name('admin.pilot-metrics.api');
+
+    // Post-MVP — Dynamic threshold settings (superadmin-only)
+    Route::get('/admin/thresholds',        [AdminThresholdsController::class, 'index'])->name('admin.thresholds');
+    Route::patch('/admin/thresholds',      [AdminThresholdsController::class, 'update'])->name('admin.thresholds.update');
+    Route::post('/admin/thresholds/reset', [AdminThresholdsController::class, 'reset'])->name('admin.thresholds.reset');
     Route::get('/admin/orgs', fn () => Inertia::render('AdminOrgsView'))->name('admin.orgs');
     Route::get('/admin/users', fn () => Inertia::render('AdminUsersView'))->name('admin.users');
     Route::get('/admin/positions', fn () => Inertia::render('AdminPositionsView'))->name('admin.positions');

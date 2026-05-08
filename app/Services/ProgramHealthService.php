@@ -90,8 +90,8 @@ class ProgramHealthService
         $overdueCount = $tasks->filter(fn ($t) => $t->targetCompletion < $now)->count();
         $ratio = $overdueCount / $tasks->count();
 
-        $redThreshold = (float) config('atlas-thresholds.auto_health.red_overdue_ratio', 0.30);
-        $yellowThreshold = (float) config('atlas-thresholds.auto_health.yellow_overdue_ratio', 0.10);
+        $redThreshold = (float) setting('auto_health.red_overdue_ratio', 0.30);
+        $yellowThreshold = (float) setting('auto_health.yellow_overdue_ratio', 0.10);
 
         if ($ratio >= $redThreshold) return 'RED';
         if ($ratio >= $yellowThreshold) return 'YELLOW';
@@ -106,8 +106,8 @@ class ProgramHealthService
             ->whereNotIn('status', ['RESOLVED'])
             ->count();
 
-        $redThreshold = (int) config('atlas-thresholds.auto_health.red_blocker_count', 3);
-        $yellowThreshold = (int) config('atlas-thresholds.auto_health.yellow_blocker_count', 1);
+        $redThreshold = (int) setting('auto_health.red_blocker_count', 3);
+        $yellowThreshold = (int) setting('auto_health.yellow_blocker_count', 1);
 
         if ($count >= $redThreshold) return 'RED';
         if ($count >= $yellowThreshold) return 'YELLOW';

@@ -781,7 +781,7 @@ class WorkspaceController extends Controller
     public function inboxToday(Request $request): JsonResponse
     {
         $userId = $request->user()->id;
-        $ttl = config('atlas-thresholds.inbox_today.cache_ttl_seconds', 60);
+        $ttl = (int) setting('inbox_today.cache_ttl_seconds', 60);
         $cacheKey = "atlas.inbox_today.user.{$userId}";
 
         $payload = Cache::remember($cacheKey, $ttl, function () use ($userId) {

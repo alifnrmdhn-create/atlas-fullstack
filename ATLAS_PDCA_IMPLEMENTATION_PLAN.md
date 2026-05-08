@@ -44,9 +44,9 @@
 - ✅ **Onboarding tour Shepherd.js** — selesai 2026-05-08, 4 tour wired (escalation-inbox, clear-path-button, triage-panel, commitment-ledger)
 - ✅ **Pilot metrics dashboard admin** — selesai 2026-05-08, `/admin/pilot-metrics` dengan auto-evaluate vs criteria
 - ✅ **ForecastBadge extension ke KolegialDetail + DivisiView** — selesai 2026-05-08, pakai shared `lib/forecast.ts` helper
+- ✅ **Threshold workshop → Dynamic Settings UI** — selesai 2026-05-08, `/admin/thresholds` (superadmin only) untuk live tuning tanpa restart. Workshop formal tidak lagi blocker; default values bisa di-tune empiris pasca-pilot via UI.
 - **Sprint 6 (Real KPI Integration)** — sumber data belum confirmed; integrasi `KpiDefinition` aktual menggantikan dummy data
 - **Forecast seasonal adjustment** — pair dengan Sprint 6 (data riil)
-- **Threshold workshop dengan stakeholder** — dokumen `docs/sprint0-threshold-workshop.md` siap, pending session dengan Pak Iswahyudi
 
 ### Pilot Activation Checklist (DKM)
 1. Set `.env`: `FEATURE_CLEAR_THE_PATH=DKM`
