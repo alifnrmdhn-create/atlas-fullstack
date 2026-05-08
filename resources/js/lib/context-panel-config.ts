@@ -13,6 +13,7 @@ import type { ComponentType } from 'react'
 import { HomeFocusPanel } from '../components/context-panels/HomeFocusPanel'
 import { ProgramsFilterPanel } from '../components/context-panels/ProgramsFilterPanel'
 import { ScorecardInsightPanel } from '../components/context-panels/ScorecardInsightPanel'
+import { ReportsAnalyticsPanel } from '../components/context-panels/ReportsAnalyticsPanel'
 
 export type ContextPanelDef = {
   /** Title shown in the panel header. */
@@ -26,6 +27,7 @@ export const CONTEXT_PANELS: Record<string, ContextPanelDef> = {
   '/': { title: 'Fokus hari ini', Component: HomeFocusPanel },
   '/programs': { title: 'Filter Programs', Component: ProgramsFilterPanel },
   '/performance/scorecard': { title: 'Insight Scorecard', Component: ScorecardInsightPanel },
+  '/reports': { title: 'Insight Analytics', Component: ReportsAnalyticsPanel },
 }
 
 /** Routes that suppress the panel even when the prefix would match (e.g.,

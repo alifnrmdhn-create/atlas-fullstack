@@ -299,6 +299,85 @@
   color: var(--red);
 }
 
+/* Source chip — Reports panel */
+.context-panel__source-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill, 9999px);
+  background: var(--surface-1);
+  border: 1px solid var(--panel-border);
+  font-size: var(--type-xs);
+  color: var(--text-muted);
+}
+.context-panel__source-chip--live {
+  background: var(--green-dim);
+  border-color: var(--green-subtle);
+  color: var(--green-ink);
+}
+
+/* Leaderboard mini row — Reports panel */
+.context-panel__leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  font-size: var(--type-small);
+}
+.context-panel__leaderboard-medal {
+  flex-shrink: 0;
+  font-size: var(--type-body);
+  line-height: 1;
+  width: 18px;
+  text-align: center;
+}
+.context-panel__leaderboard-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.context-panel__leaderboard-name {
+  font-weight: var(--w-medium);
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.context-panel__leaderboard-bar {
+  height: 4px;
+  background: var(--surface-1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.context-panel__leaderboard-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 200ms ease;
+}
+.context-panel__leaderboard-fill--green { background: var(--green); }
+.context-panel__leaderboard-fill--amber { background: var(--yellow); }
+.context-panel__leaderboard-fill--red   { background: var(--red); }
+.context-panel__leaderboard-score {
+  font-family: var(--font-mono);
+  font-size: var(--type-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* Inline icon prefix for focus items */
+.context-panel__focus-icon-inline {
+  display: inline-flex;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.context-panel__focus-item:hover .context-panel__focus-icon-inline {
+  color: var(--indigo);
+}
+
 /* Hide the panel entirely on narrow viewports — pages drop back to
  * 2-column shell, panel content reachable via menu button (deferred to
  * mobile pass in M6.1 per migration plan). */
