@@ -12,7 +12,9 @@ import type { ResolvedTheme } from '../lib/theme'
 import { Breadcrumb } from '../components/Breadcrumb'
 import { TopbarAction } from '../components/TopbarAction'
 import { CommandPalette } from '../components/CommandPalette'
+import { ContextPanel } from '../components/ContextPanel'
 import { TOPBAR_ACTIONS } from '../lib/topbar-config'
+import { resolveContextPanel } from '../lib/context-panel-config'
 
 type NavItem = {
   path: string
@@ -554,6 +556,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const { url } = usePage()
   const pathname = url.split('?')[0] || '/'
   const activePath = normalizeShellPath(pathname)
+  const hasContextPanel = resolveContextPanel(activePath, pathname) !== null
   const navigate = useInertiaNavigate()
   const {
     userMenuSurface, toggleUserMenu, closeUserMenu,
@@ -980,7 +983,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   }
 
   return (
-    <div className={`app-shell${sidebarCollapsedView ? ' app-shell--collapsed' : ''}${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}`} ref={shellRef}>
+    <div className={`app-shell${sidebarCollapsedView ? ' app-shell--collapsed' : ''}${hasContextPanel ? ' app-shell--with-panel' : ''}${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}`} ref={shellRef}>
       {/* ── Sidebar ── */}
       <aside className="sidebar">
         <div className="sidebar__header">
@@ -1114,6 +1117,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
           </div>
         ) : null}
       </aside>
+
+      {/* ── Context panel (route-aware, opt-out per resolver) ── */}
+      <ContextPanel />
 
       {/* ── Main workspace ── */}
       <div className="workspace" id="workspace-modal-root">
