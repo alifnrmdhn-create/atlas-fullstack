@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, useId, useRef } from 'react'
+import { useState, useCallback, useEffect, useId, useMemo, useRef } from 'react'
+import { usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useDialogFocus } from '../hooks/useDialogFocus'
@@ -61,6 +62,23 @@ export function MonthlyReportsView() {
   const [reports, setReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState<string | null>(null)
+
+  // Sync year + status filter from URL (?year=, ?status=) — written by Context Panel.
+  // Status is applied client-side; year drives the API call via existing `load()`.
+  const { url } = usePage()
+  const urlStatusFilter = useMemo<Set<string>>(() => {
+    const qs = url.split('?')[1] ?? ''
+    const raw = new URLSearchParams(qs).get('status') ?? ''
+    return new Set(raw.split(',').filter(Boolean))
+  }, [url])
+  useEffect(() => {
+    const qs = url.split('?')[1] ?? ''
+    const rawYear = new URLSearchParams(qs).get('year')
+    const yearNum = rawYear ? Number(rawYear) : NaN
+    if (Number.isFinite(yearNum) && YEARS.includes(yearNum) && yearNum !== year) {
+      setYear(yearNum)
+    }
+  }, [url, year])
 
   const [modal, setModal]   = useState<null | 'create' | 'upload'>(null)
   const [uploadId, setUploadId] = useState<number | null>(null)
@@ -127,11 +145,16 @@ export function MonthlyReportsView() {
   const drafts   = reports.filter(r => r.status === 'DRAFT').length
   const total    = reports.length
 
+  // Apply URL status filter only to the rendered list, not the summary counts.
+  const visibleReports = urlStatusFilter.size > 0
+    ? reports.filter(r => urlStatusFilter.has(r.status))
+    : reports
+
   const unitGroups = canSeeAll
-    ? [...new Map(reports.map(r => [r.unitId, r.unit])).entries()]
-        .map(([uid, unit]) => ({ unit, rows: reports.filter(r => r.unitId === uid) }))
+    ? [...new Map(visibleReports.map(r => [r.unitId, r.unit])).entries()]
+        .map(([uid, unit]) => ({ unit, rows: visibleReports.filter(r => r.unitId === uid) }))
         .sort((a, b) => a.unit.name.localeCompare(b.unit.name))
-    : [{ unit: myUnit ?? { id: 0, code: '', name: '' }, rows: reports }]
+    : [{ unit: myUnit ?? { id: 0, code: '', name: '' }, rows: visibleReports }]
 
   return (
     <div className="view-mr">

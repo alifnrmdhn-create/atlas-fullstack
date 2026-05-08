@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { usePage } from '@inertiajs/react'
 import { api } from '../lib/api'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
@@ -39,6 +40,18 @@ export function RiskReportsView() {
   const [yearFilter, setYearFilter] = useState<number>(new Date().getFullYear())
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [showCreate, setShowCreate] = useState(false)
+
+  // Sync filters from URL (?year=, ?status=) — written by the Context Panel.
+  const { url } = usePage()
+  useEffect(() => {
+    const qs = url.split('?')[1] ?? ''
+    const params = new URLSearchParams(qs)
+    const rawYear = params.get('year')
+    const yearNum = rawYear ? Number(rawYear) : NaN
+    if (Number.isFinite(yearNum)) setYearFilter(yearNum)
+    const rawStatus = params.get('status')
+    setStatusFilter(rawStatus && ['DRAFT', 'SUBMITTED', 'APPROVED'].includes(rawStatus) ? rawStatus : 'all')
+  }, [url])
 
   const loadReports = () => {
     setLoading(true)
