@@ -6,6 +6,7 @@ import type { Blocker, ChannelSummary, FocusPolicy, Meeting, MyWorkDecision, Not
 import { ActionPanel, actionPanelTitleFor } from '../components/ActionPanel'
 import { CollapsibleSection, AgingIndicator } from '../components/ui'
 import { useFeatureFlag } from '../hooks/useFeatureFlag'
+import { useOnboardingTour } from '../hooks/useOnboardingTour'
 import { EscalationTriagePanel, type EscalationRequest as EscalationRequestType } from '../components/Escalation'
 
 // Sprint 2 — Komitmen Hari Ini section
@@ -115,6 +116,9 @@ function EscalationSections({ currentUserId }: { currentUserId: number }) {
   const [loading, setLoading] = useState(true)
   const [activeTriage, setActiveTriage] = useState<EscalationRequestType | null>(null)
 
+  // Trigger tour saat fitur enabled & data sudah loaded (ada/tidak ada items)
+  useOnboardingTour('escalation-inbox', { trigger: enabled && !loading })
+
   const refresh = () => {
     if (!enabled) return
     setLoading(true)
@@ -137,6 +141,7 @@ function EscalationSections({ currentUserId }: { currentUserId: number }) {
 
   return (
     <>
+      <div data-tour="escalation-incoming">
       <CollapsibleSection
         title="Permintaan Clear the Path Saya"
         count={incomingPending.length}
@@ -157,7 +162,9 @@ function EscalationSections({ currentUserId }: { currentUserId: number }) {
           </div>
         )}
       </CollapsibleSection>
+      </div>
 
+      <div data-tour="escalation-mine">
       <CollapsibleSection
         title="Eskalasi yang Saya Ajukan"
         count={mineActive.length}
@@ -178,6 +185,7 @@ function EscalationSections({ currentUserId }: { currentUserId: number }) {
           </div>
         )}
       </CollapsibleSection>
+      </div>
 
       {activeTriage && (
         <EscalationTriagePanel

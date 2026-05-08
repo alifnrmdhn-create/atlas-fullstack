@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { usePage, Link } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
+import { ForecastBadge } from '../../components/ui'
+import { computeForecast } from '../../lib/forecast'
 
 type KpiItem = {
   kode: string
@@ -217,6 +219,12 @@ export default function KolegialDetailView() {
                   <div className="perf-kpi-row__right">
                     <span className="perf-kpi-row__skor">{item.skor.toFixed(1)}</span>
                     <span className="perf-kpi-row__bobot">bobot {item.bobot}%</span>
+                    {(() => {
+                      const f = computeForecast({
+                        periode, target: item.target, realisasi: item.realisasi, polaritas: item.polaritas,
+                      })
+                      return f ? <ForecastBadge value={f.value} status={f.status} /> : null
+                    })()}
                   </div>
                 </div>
               )

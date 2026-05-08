@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { useFeatureFlag } from '../../hooks/useFeatureFlag'
+import { useOnboardingTour } from '../../hooks/useOnboardingTour'
 import { api } from '../../lib/api'
 import { ForecastBadge } from '../../components/ui'
+import { computeForecastFromStrings } from '../../lib/forecast'
 
 type KpiItem = {
   no: number
@@ -58,6 +60,9 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Trigger tour pertama kali user lihat ledger
+  useOnboardingTour('commitment-ledger', { trigger: enabled && !!data })
+
   useEffect(() => {
     if (!enabled) { setLoading(false); return }
     let cancelled = false
@@ -81,7 +86,7 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
         </div>
       )}
       {!loading && !error && data && (
-        <div className="ledger-card">
+        <div className="ledger-card" data-tour="commitment-ledger">
           <div className="ledger-summary">
             <div className="ledger-summary__metric">
               <span className="ledger-summary__label">Consistency ({data.lookbackWeeks} minggu)</span>
@@ -127,37 +132,6 @@ function scoreColor(val: number): 'green' | 'yellow' | 'red' {
   if (val >= 100) return 'green'
   if (val >= 80) return 'yellow'
   return 'red'
-}
-
-/**
- * Sprint 5 — Forecast linear berdasarkan periode YTD.
- * Asumsi periode MM/YYYY (mis. "Maret 2026" → bulan ke-3). Forecast = realisasi * (12 / monthsElapsed).
- * Status berbasis polarity:
- *   maximize: forecast >= target = green; >= 0.9 target = yellow; else red
- *   minimize: forecast <= target = green; <= 1.1 target = yellow; else red
- *
- * NOTE: linear extrapolation tidak cocok untuk KPI musiman (mis. produksi sawit).
- * Sprint 6 akan introduce seasonal adjustment.
- */
-function computeForecast(item: KpiItem): { value: number; status: 'green' | 'yellow' | 'red' | 'muted' } | null {
-  const periodMonth = item.periode.match(/Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember/)
-  if (!periodMonth) return null
-  const monthIndex = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'].indexOf(periodMonth[0]) + 1
-  if (monthIndex < 1 || monthIndex > 12) return null
-  const target = parseFloat(item.sasaran.replace(',', '.'))
-  const actual = parseFloat(item.realisasi.replace(',', '.'))
-  if (isNaN(target) || isNaN(actual)) return null
-
-  const forecast = actual * (12 / monthIndex)
-  let status: 'green' | 'yellow' | 'red' = 'green'
-  if (item.polaritas === 'maximize') {
-    if (forecast < target * 0.9) status = 'red'
-    else if (forecast < target) status = 'yellow'
-  } else {
-    if (forecast > target * 1.1) status = 'red'
-    else if (forecast > target) status = 'yellow'
-  }
-  return { value: forecast, status }
 }
 
 function realisasiFillPct(sasaran: string, realisasi: string, polaritas: 'maximize' | 'minimize'): number {
@@ -256,7 +230,12 @@ export default function IndividuDetailView() {
                     </span>
                     <span className="perf-kpi-card__pill perf-kpi-card__pill--periode">{item.periode}</span>
                     {(() => {
-                      const f = computeForecast(item)
+                      const f = computeForecastFromStrings({
+                        periode: item.periode,
+                        sasaran: item.sasaran,
+                        realisasi: item.realisasi,
+                        polaritas: item.polaritas,
+                      })
                       return f ? <ForecastBadge value={f.value} status={f.status} /> : null
                     })()}
                   </div>

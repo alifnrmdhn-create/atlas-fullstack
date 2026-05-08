@@ -736,6 +736,23 @@ class WorkspaceController extends Controller
         return response()->json(['users' => $this->presenceQuery()->get()]);
     }
 
+    /**
+     * Post-MVP — Mark onboarding tour completed.
+     * Body: { tourId: string }. Tour ID disimpan di User.toursCompleted JSON
+     * dengan timestamp ISO. Idempotent — kalau sudah ada, update timestamp.
+     */
+    public function markTourCompleted(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'tourId' => 'required|string|max:50',
+        ]);
+        $user = $request->user();
+        $current = $user->toursCompleted ?? [];
+        $current[$data['tourId']] = now()->toIso8601String();
+        $user->update(['toursCompleted' => $current]);
+        return response()->json(['data' => $current]);
+    }
+
     public function updateMyStatus(Request $request): JsonResponse
     {
         $data = $request->validate([

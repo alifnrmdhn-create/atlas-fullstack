@@ -4,7 +4,7 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "concurrently -n \"vite,laravel\" -c \"cyan,green\" \"sh scripts/vite.sh\" \"sh scripts/serve.sh\"",
+        "dev": "concurrently --kill-others -n \"vite,laravel\" -c \"cyan,green\" \"sh scripts/vite.sh\" \"sh scripts/serve.sh\"",
         "smoke:browser": "node scripts/browser-smoke.mjs",
         "smoke:workflow": "node scripts/browser-smoke.mjs",
         "typecheck": "tsc --noEmit --ignoreDeprecations 6.0",
@@ -31,6 +31,7 @@
         "react": "^19.2.5",
         "react-dom": "^19.2.5",
         "recharts": "^3.8.1",
+        "shepherd.js": "^15.2.2",
         "typescript": "^6.0.3",
         "zustand": "^5.0.12"
     },

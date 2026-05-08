@@ -51,6 +51,7 @@ class HandleInertiaRequests extends Middleware
                     'unitId' => $user->unitId,
                     'directorateId' => $user->directorateId,
                     'managerUserId' => $user->managerUserId,
+                    'toursCompleted' => $user->toursCompleted ?? [],
                 ] : null,
             ],
             'flash' => [

@@ -12,6 +12,7 @@
 import { useEffect, useId, useState } from 'react'
 import { api } from '../lib/api'
 import { useFeatureFlag } from '../hooks/useFeatureFlag'
+import { useOnboardingTour } from '../hooks/useOnboardingTour'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { AgingIndicator, SidePanel } from './ui'
 
@@ -67,6 +68,9 @@ export function EscalationButton({
   const enabled = useFeatureFlag('clear-the-path')
   const [open, setOpen] = useState(false)
 
+  // Trigger tour saat tombol pertama kali render (first time user lihat fitur)
+  useOnboardingTour('clear-path-button', { trigger: enabled })
+
   if (!enabled) return null
 
   return (
@@ -76,6 +80,7 @@ export function EscalationButton({
         className={`btn btn--ghost ${size === 'sm' ? 'btn--sm' : ''}`}
         onClick={() => setOpen(true)}
         title="Eskalasi ke atasan langsung"
+        data-tour="escalation-button"
       >
         <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M7 12V2M3 6l4-4 4 4" />
@@ -217,6 +222,9 @@ export function EscalationTriagePanel({
   const [mode, setMode] = useState<TriageMode>('view')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Trigger tour saat panel pertama kali dibuka
+  useOnboardingTour('triage-panel', { trigger: true })
 
   const isTarget = request.escalatedToId === currentUserId
   const isRequester = request.requestedById === currentUserId

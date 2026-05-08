@@ -41,11 +41,11 @@
 - **Linear forecast labeled honest** — disclaimer eksplisit di tooltip "Akan disempurnakan Sprint 6 dengan seasonal adjustment".
 
 ### Yang Belum Selesai (Deferred Post-MVP)
+- ✅ **Onboarding tour Shepherd.js** — selesai 2026-05-08, 4 tour wired (escalation-inbox, clear-path-button, triage-panel, commitment-ledger)
+- ✅ **Pilot metrics dashboard admin** — selesai 2026-05-08, `/admin/pilot-metrics` dengan auto-evaluate vs criteria
+- ✅ **ForecastBadge extension ke KolegialDetail + DivisiView** — selesai 2026-05-08, pakai shared `lib/forecast.ts` helper
 - **Sprint 6 (Real KPI Integration)** — sumber data belum confirmed; integrasi `KpiDefinition` aktual menggantikan dummy data
-- **Onboarding tour Shepherd.js** — foundation `User.toursCompleted` JSON column siap; implementasi UI ditunda
-- **Pilot metrics dashboard admin** — backend ledger siap, query manual sufficient untuk MVP analytics
 - **Forecast seasonal adjustment** — pair dengan Sprint 6 (data riil)
-- **ForecastBadge extension ke KolegialDetail + DivisiView** — pattern siap, ekstensi langsung
 - **Threshold workshop dengan stakeholder** — dokumen `docs/sprint0-threshold-workshop.md` siap, pending session dengan Pak Iswahyudi
 
 ### Pilot Activation Checklist (DKM)

@@ -9,6 +9,7 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\EscalationController;
 use App\Http\Controllers\ExecutionGridController;
 use App\Http\Controllers\PerformanceController;
+use App\Http\Controllers\PilotMetricsController;
 use App\Http\Controllers\KpiController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\MonthlyReportController;
@@ -57,6 +58,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', fn () => Inertia::render('SettingsView'))->name('settings');
     Route::post('/auth/change-password', [WorkspaceController::class, 'changePassword'])->name('auth.change-password');
     Route::get('/playbook', fn () => Inertia::render('PlaybookView'))->name('playbook');
+    // Post-MVP — Pilot DKM metrics dashboard (admin-only)
+    Route::get('/admin/pilot-metrics',     [PilotMetricsController::class, 'index'])->name('admin.pilot-metrics');
+    Route::get('/admin/pilot-metrics/api', [PilotMetricsController::class, 'api'])->name('admin.pilot-metrics.api');
     Route::get('/admin/orgs', fn () => Inertia::render('AdminOrgsView'))->name('admin.orgs');
     Route::get('/admin/users', fn () => Inertia::render('AdminUsersView'))->name('admin.users');
     Route::get('/admin/positions', fn () => Inertia::render('AdminPositionsView'))->name('admin.positions');
@@ -71,6 +75,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/users/directory', [WorkspaceController::class, 'usersDirectory'])->name('users.directory');
     Route::get('/users/presence', [WorkspaceController::class, 'usersPresence'])->name('users.presence');
     Route::put('/users/me/status', [WorkspaceController::class, 'updateMyStatus'])->name('users.me.status');
+    Route::post('/users/me/tours-completed', [WorkspaceController::class, 'markTourCompleted'])->name('users.me.tours-completed');
     Route::patch('/users/{id}', [WorkspaceController::class, 'updateUser'])->name('users.update');
     Route::get('/inbox/today', [WorkspaceController::class, 'inboxToday'])->name('inbox.today');
     Route::get('/notifications', [WorkspaceController::class, 'notifications'])->name('notifications.index');

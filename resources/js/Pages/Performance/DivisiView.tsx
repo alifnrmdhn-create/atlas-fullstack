@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
-import { DataSourceBadge } from '../../components/ui'
+import { DataSourceBadge, ForecastBadge } from '../../components/ui'
+import { computeForecastFromStrings } from '../../lib/forecast'
 
 type KpiItem = {
   no: number
@@ -164,6 +165,12 @@ export default function DivisiView() {
                         {item.polaritas === 'maximize' ? '↑ Maximize' : '↓ Minimize'}
                       </span>
                       <span className="perf-kpi-card__pill perf-kpi-card__pill--periode">{periode}</span>
+                      {(() => {
+                        const f = computeForecastFromStrings({
+                          periode, sasaran: item.sasaran, realisasi: item.realisasi, polaritas: item.polaritas,
+                        })
+                        return f ? <ForecastBadge value={f.value} status={f.status} /> : null
+                      })()}
                     </div>
                     <div className="perf-kpi-card__realisasi">
                       <div className="perf-kpi-card__val-block">

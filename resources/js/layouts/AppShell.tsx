@@ -269,6 +269,7 @@ function prefetchRoute(path: string) {
     '/admin/positions': () => import('../Pages/AdminPositionsView'),
     '/admin/roles': () => import('../Pages/AdminRolesView'),
     '/admin/users': () => import('../Pages/AdminUsersView'),
+    '/admin/pilot-metrics': () => import('../Pages/AdminPilotMetricsView'),
     '/channels': () => import('../Pages/ChannelsViewWrapper'),
     '/': () => import('../Pages/HomeView'),
     '/dashboard': () => import('../Pages/DashboardView'),
@@ -894,10 +895,11 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const grpAdmin      = {
     label: 'Admin',
     items: [
-      { path: '/admin/orgs',       label: 'Companies', caption: 'Entitas & hierarki org',     icon: IconOrg       },
-      { path: '/admin/positions',  label: 'Positions', caption: 'Manajemen jabatan',          icon: IconPositions },
-      { path: '/admin/users',      label: 'Users',     caption: 'Manajemen pengguna',         icon: IconUsers     },
-      { path: '/admin/roles',      label: 'Roles',     caption: 'Peran & permission matrix',  icon: IconRoles     },
+      { path: '/admin/orgs',           label: 'Companies',      caption: 'Entitas & hierarki org',     icon: IconOrg       },
+      { path: '/admin/positions',      label: 'Positions',      caption: 'Manajemen jabatan',          icon: IconPositions },
+      { path: '/admin/users',          label: 'Users',          caption: 'Manajemen pengguna',         icon: IconUsers     },
+      { path: '/admin/roles',          label: 'Roles',          caption: 'Peran & permission matrix',  icon: IconRoles     },
+      { path: '/admin/pilot-metrics',  label: 'Pilot Metrics',  caption: 'Pilot DKM dashboard (Sprint 4)', icon: IconReports },
     ],
   }
 
