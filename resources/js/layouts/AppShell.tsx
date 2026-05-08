@@ -893,10 +893,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const grpPerfFull   = { label: 'Performance',  items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfSaya] }
   const grpPerfMid    = { label: 'Performance',  items: [NI.perfDivisi, NI.perfSaya] }
   const grpPerfMin    = { label: 'Performance',  items: [NI.perfSaya] }
-  // Pelaporan dihilangkan sementara dari sidebar — routes tetap reachable via
-  // deep link (/laporan-bulanan, /laporan-risiko). Re-enable dengan kembalikan
-  // items: [NI.lapbul, NI.laprisiko]
-  const grpPelaporan  = { label: 'Pelaporan',    items: [] as NavItem[] }
   const grpAct        = { label: 'Tindak Lanjut', items: [NI.schedule] }
   const grpKolab      = { label: 'Komunikasi',   items: [NI.channels, NI.search] }
   const grpAkun       = { label: 'Akun',         items: [NI.presence, NI.profile, NI.settings] }
@@ -923,7 +919,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     if (role === 'BOD' || role === 'KADIV') {
       return [
         grpPlan, grpDo,
-        grpPerfFull, grpPelaporan,
+        grpPerfFull,
         grpAct,
         grpKolab, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
@@ -932,7 +928,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     if (role === 'KASUBDIV') {
       return [
         grpPlan, grpDo,
-        grpPerfMid, grpPelaporan,
+        grpPerfMid,
         grpAct,
         grpKolab, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
@@ -942,7 +938,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
       return [
         grpDo,
         { label: 'Perencanaan', items: [NI.programs] }, // read-only context
-        grpPerfMin, grpPelaporan,
+        grpPerfMin,
         grpAct,
         grpKolab, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
@@ -951,7 +947,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     // Default: full nav (SUPERADMIN, ADMIN, unknown role)
     return [
       grpPlan, grpDo,
-      grpPerfFull, grpPelaporan,
+      grpPerfFull,
       grpAct,
       grpKolab, grpAkun,
       ...(isAdmin ? [grpAdmin] : []),

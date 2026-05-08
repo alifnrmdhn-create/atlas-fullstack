@@ -4,11 +4,8 @@ import { router } from '@inertiajs/react'
 import { Command } from 'cmdk'
 import { Search, Sun, Moon, ArrowRight, Plus, Download } from 'lucide-react'
 import { useEscKey } from '../hooks/useEscKey'
-import {
-  QUICK_JUMP_SECTIONS,
-  TOPBAR_ACTIONS,
-  TOPBAR_ACTION_EVENT,
-} from '../lib/topbar-config'
+import { NAV_SECTIONS } from '../lib/nav-config'
+import { TOPBAR_ACTIONS, TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import type { ResolvedTheme } from '../lib/theme'
 
 type Props = {
@@ -22,7 +19,7 @@ type Props = {
  * Global ⌘K command palette.
  *
  * Sections:
- *   - Navigasi   → all top-level pages (uses QUICK_JUMP_SECTIONS)
+ *   - Navigasi   → all top-level pages (uses NAV_SECTIONS)
  *   - Aksi       → toggle theme + contextual actions from TOPBAR_ACTIONS
  *   - Pencarian  → fallback to /search?q=… when query is non-empty
  *
@@ -85,7 +82,7 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
 
           {/* Navigasi */}
           <Command.Group heading="Navigasi" className="cmdk-group">
-            {QUICK_JUMP_SECTIONS.flatMap((section) =>
+            {NAV_SECTIONS.flatMap((section) =>
               section.items.map((item) => (
                 <Command.Item
                   key={item.path}

@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { ChevronDown, Check } from 'lucide-react'
-import { QUICK_JUMP_SECTIONS } from '../lib/topbar-config'
+import { NAV_SECTIONS } from '../lib/nav-config'
 
 type BreadcrumbProps = {
   workspace: string
@@ -40,7 +40,7 @@ export function Breadcrumb({ workspace, currentLabel, currentPath }: BreadcrumbP
             sideOffset={6}
             collisionPadding={12}
           >
-            {QUICK_JUMP_SECTIONS.map((section, idx) => (
+            {NAV_SECTIONS.map((section, idx) => (
               <DropdownMenu.Group key={section.label}>
                 {idx > 0 ? (
                   <DropdownMenu.Separator className="topbar-quickjump__sep" />

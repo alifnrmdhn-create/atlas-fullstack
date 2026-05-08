@@ -1,14 +1,18 @@
-/* Topbar configuration — adaptive per route.
+/* Topbar action configuration — adaptive contextual button per route.
  *
- * Each route can define:
- *   - action: contextual button rendered to the right of the search field.
- *     Implemented as a custom DOM event so pages can opt-in to handle it
- *     without AppShell importing any page-level state. If no page listens,
- *     the button still renders (visual proof of route-awareness) but does
- *     nothing — pages will be wired progressively.
+ * Nav data (sections, items, normalizer) lives in lib/nav-config.ts now.
  *
- * Quick-jump destinations are grouped by section, mirroring sidebar
- * structure. Used by the breadcrumb dropdown.
+ * Pages opt-in to handle actions by listening for TOPBAR_ACTION_EVENT:
+ *   useEffect(() => {
+ *     const handler = (e: CustomEvent<{ id: string; page: string }>) => {
+ *       if (e.detail.id === 'program.new') openCreateModal()
+ *     }
+ *     window.addEventListener('atlas:topbar-action', handler as EventListener)
+ *     return () => window.removeEventListener('atlas:topbar-action', handler as EventListener)
+ *   }, [])
+ *
+ * Both the topbar action button and the command palette dispatch this
+ * same event, so a single page-level listener serves both entry points.
  */
 
 export type TopbarAction = {
@@ -16,7 +20,7 @@ export type TopbarAction = {
   label: string
   /** Optional href — when set, the button is a Link instead of dispatching an event. */
   href?: string
-  /** Optional icon name from Lucide (e.g., "Plus", "Download"). */
+  /** Optional icon name from Lucide. */
   icon?: 'Plus' | 'Download' | 'Share2' | 'Filter'
 }
 
@@ -36,83 +40,4 @@ export const TOPBAR_ACTIONS: Record<string, TopbarAction> = {
   '/admin/roles': { id: 'role.new', label: 'Role Baru', icon: 'Plus' },
 }
 
-export type QuickJumpItem = {
-  path: string
-  label: string
-}
-
-export type QuickJumpSection = {
-  label: string
-  items: QuickJumpItem[]
-}
-
-/** Sidebar-aligned quick-jump groups for breadcrumb dropdown. */
-export const QUICK_JUMP_SECTIONS: QuickJumpSection[] = [
-  {
-    label: 'Today',
-    items: [
-      { path: '/', label: 'Home' },
-      { path: '/fokus', label: 'Focus' },
-    ],
-  },
-  {
-    label: 'Perencanaan',
-    items: [{ path: '/programs', label: 'Programs' }],
-  },
-  {
-    label: 'Eksekusi',
-    items: [
-      { path: '/execution', label: 'Execution' },
-      { path: '/penugasan', label: 'Penugasan' },
-    ],
-  },
-  {
-    label: 'Performance',
-    items: [
-      { path: '/performance/scorecard', label: 'Scorecard' },
-      { path: '/performance/kolegial', label: 'KPI Direktorat' },
-      { path: '/performance/divisi', label: 'KPI Divisi' },
-      { path: '/performance/me', label: 'KPI Saya' },
-    ],
-  },
-  {
-    label: 'Pelaporan',
-    items: [
-      { path: '/laporan-bulanan', label: 'Laporan Bulanan' },
-      { path: '/laporan-risiko', label: 'Laporan Risiko' },
-      { path: '/reports', label: 'Analytics' },
-    ],
-  },
-  {
-    label: 'Tindak Lanjut',
-    items: [{ path: '/jadwal', label: 'Rapat Koordinasi' }],
-  },
-  {
-    label: 'Komunikasi',
-    items: [
-      { path: '/channels', label: 'Channels' },
-      { path: '/search', label: 'Search' },
-    ],
-  },
-  {
-    label: 'Akun',
-    items: [
-      { path: '/presence', label: 'Presence' },
-      { path: '/profile', label: 'Profile' },
-      { path: '/settings', label: 'Settings' },
-    ],
-  },
-]
-
-/**
- * Custom event name dispatched when contextual action is clicked.
- * Pages can listen via:
- *   useEffect(() => {
- *     const handler = (e: CustomEvent<{ id: string }>) => {
- *       if (e.detail.id === 'program.new') openCreateModal()
- *     }
- *     window.addEventListener('atlas:topbar-action', handler as EventListener)
- *     return () => window.removeEventListener('atlas:topbar-action', handler as EventListener)
- *   }, [])
- */
 export const TOPBAR_ACTION_EVENT = 'atlas:topbar-action'
