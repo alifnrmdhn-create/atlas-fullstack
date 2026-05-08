@@ -162,11 +162,6 @@ class EscalationController extends Controller
             $this->createNotification($targetId, 'CLEAR_PATH_REQUESTED', $r,
                 "{$user->name} meminta dukungan: {$r->title}");
 
-            BroadcastService::toUsers('notification:created', [
-                'type' => 'CLEAR_PATH_REQUESTED',
-                'escalationId' => $r->id,
-            ], [$targetId]);
-
             return $r;
         });
 
@@ -198,6 +193,15 @@ class EscalationController extends Controller
         $newTarget = User::find($data['reroutedToId']);
         if (!$newTarget) {
             return response()->json(['message' => 'User target reroute tidak ditemukan.'], 422);
+        }
+
+        // Apply same cross-direktorat policy yang dipakai store() — requester
+        // tetap user asli (bukan yang reroute), supaya tidak bypass policy via reroute.
+        $requester = User::find($req->requestedById);
+        if ($requester && !$this->orgChain->canEscalateAcrossDirectorate($requester, $newTarget)) {
+            return response()->json([
+                'message' => 'Tidak diizinkan reroute lintas direktorat untuk requester awal.',
+            ], 422);
         }
 
         DB::transaction(function () use ($req, $newTarget, $data, $user) {
@@ -325,5 +329,11 @@ class EscalationController extends Controller
             'createdAt' => now(),
             'state' => 'UNREAD',
         ]);
+
+        // Push via SSE — tanpa ini, recipient harus reload untuk lihat notif
+        BroadcastService::toUsers('notification:created', [
+            'type' => $type,
+            'escalationId' => $req->id,
+        ], [$userId]);
     }
 }

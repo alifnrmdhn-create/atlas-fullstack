@@ -772,7 +772,7 @@ class WorkspaceController extends Controller
     /**
      * Sprint 2 — Inbox "Hari Ini": agregat semua komitmen user dengan due ≤ today.
      * Sumber:
-     *   - Task (assignedToId, targetCompletion ≤ end of today, status not COMPLETED/CANCELLED)
+     *   - Task (assignedTo, targetCompletion ≤ end of today, status not COMPLETED/CANCELLED)
      *   - MeetingActionItem (assignedToId, dueDate ≤ end of today, status != COMPLETED)
      *   - Assignment (assignedTo, dueDate ≤ end of today, status not COMPLETED/CANCELLED)
      *
@@ -788,7 +788,7 @@ class WorkspaceController extends Controller
             $today = now()->endOfDay();
 
             $tasks = Task::query()
-                ->where('assignedToId', $userId)
+                ->where('assignedTo', $userId)
                 ->whereNotNull('targetCompletion')
                 ->where('targetCompletion', '<=', $today)
                 ->whereNotIn('status', ['COMPLETED', 'CANCELLED', 'DONE'])

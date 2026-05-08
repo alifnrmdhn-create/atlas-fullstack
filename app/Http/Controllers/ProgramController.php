@@ -329,6 +329,12 @@ class ProgramController extends Controller
                     'createdAt' => now(),
                     'state' => 'UNREAD',
                 ]);
+
+                // SSE push agar notif muncul real-time tanpa reload
+                BroadcastService::toUsers('notification:created', [
+                    'type' => 'PROGRAM_TASKS_ASSIGNED',
+                    'programId' => $program->id,
+                ], [(int) $userId]);
             }
         });
     }

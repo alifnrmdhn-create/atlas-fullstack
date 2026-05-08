@@ -69,12 +69,15 @@ class PilotMetricsController extends Controller
             return $this->emptyMetrics('Tidak ada user aktif di direktorat DKM.');
         }
 
-        // 1. Avg time-to-disposition (committed/declined items only)
+        // 1. Avg time-to-disposition (committed/declined items only).
+        // Bug-fix: bungkus committedAt/resolvedAt OR di nested where supaya
+        // tidak pecahin AND chain.
         $disposed = EscalationRequest::query()
             ->whereIn('requestedById', $dkmUserIds)
             ->whereIn('status', ['COMMITTED', 'IN_PROGRESS', 'CLEARED', 'DECLINED'])
-            ->whereNotNull('committedAt')
-            ->orWhereNotNull('resolvedAt')
+            ->where(function ($q) {
+                $q->whereNotNull('committedAt')->orWhereNotNull('resolvedAt');
+            })
             ->get(['requestedAt', 'committedAt', 'resolvedAt', 'status']);
 
         $dispositionDays = $disposed
