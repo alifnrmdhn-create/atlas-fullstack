@@ -4,6 +4,100 @@ import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useState, useEffect, useRef } from 'react'
 import type { Blocker, ChannelSummary, FocusPolicy, Meeting, MyWorkDecision, NotificationItem, Program, Task } from '../types'
 import { ActionPanel, actionPanelTitleFor } from '../components/ActionPanel'
+import { CollapsibleSection, AgingIndicator } from '../components/ui'
+import { useFeatureFlag } from '../hooks/useFeatureFlag'
+import { EscalationTriagePanel, type EscalationRequest as EscalationRequestType } from '../components/Escalation'
+
+// Sprint 2 — Komitmen Hari Ini section
+type CommitmentItem = {
+  kind: 'task' | 'action_item' | 'assignment'
+  id: number
+  title: string
+  status: string
+  due: string
+  meetingId?: number
+}
+type CommitmentPayload = {
+  items: CommitmentItem[]
+  count: number
+  breakdown: { task: number; action_item: number; assignment: number }
+}
+
+function CommitmentTodaySection() {
+  const navigate = useInertiaNavigate()
+  const [data, setData] = useState<CommitmentPayload | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    api.get<CommitmentPayload>('/inbox/today')
+      .then(payload => { if (!cancelled) { setData(payload); setLoading(false) } })
+      .catch(err => { if (!cancelled) { setError(err?.message || 'Gagal memuat'); setLoading(false) } })
+    return () => { cancelled = true }
+  }, [])
+
+  const handleClick = (item: CommitmentItem) => {
+    if (item.kind === 'task') navigate(`/execution/tasks/${item.id}`)
+    else if (item.kind === 'assignment') navigate(`/penugasan`)
+    else if (item.kind === 'action_item' && item.meetingId) navigate(`/jadwal`)
+  }
+
+  const kindLabel: Record<CommitmentItem['kind'], string> = {
+    task: 'Task',
+    action_item: 'Action Item',
+    assignment: 'Penugasan',
+  }
+
+  return (
+    <CollapsibleSection
+      title="Komitmen Hari Ini"
+      count={data?.count ?? 0}
+      summary={data ? `${data.breakdown.task} task · ${data.breakdown.action_item} action · ${data.breakdown.assignment} penugasan` : undefined}
+      defaultOpen
+      persistKey="inbox.commitment-today"
+    >
+      {loading && (
+        <div style={{ padding: '8px 0', fontSize: 12, color: 'var(--text-muted)' }}>Memuat…</div>
+      )}
+      {error && (
+        <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--red, #c33)' }}>
+          Gagal memuat komitmen: {error}
+        </div>
+      )}
+      {!loading && !error && data && data.items.length === 0 && (
+        <div style={{ padding: '12px', fontSize: 13, color: 'var(--text-muted)' }}>
+          Tidak ada komitmen mendesak hari ini. Nice — fokus ke yang penting tapi belum genting.
+        </div>
+      )}
+      {!loading && !error && data && data.items.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {data.items.map(item => (
+            <button
+              key={`${item.kind}-${item.id}`}
+              type="button"
+              onClick={() => handleClick(item)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px 10px', border: '1px solid var(--panel-border)',
+                borderRadius: 8, background: 'var(--panel)', cursor: 'pointer',
+                textAlign: 'left', font: 'inherit', color: 'var(--text)',
+              }}
+            >
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '2px 6px',
+                borderRadius: 4, background: 'var(--surface-2)', color: 'var(--text-muted)',
+                textTransform: 'uppercase', letterSpacing: '0.04em',
+              }}>{kindLabel[item.kind]}</span>
+              <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{item.title}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.status}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </CollapsibleSection>
+  )
+}
 
 type FocusBlock = {
   id: number
@@ -11,6 +105,124 @@ type FocusBlock = {
   startAt: string
   endAt: string
   note?: string
+}
+
+// Sprint 4 — Escalation sections (Clear the Path)
+function EscalationSections({ currentUserId }: { currentUserId: number }) {
+  const enabled = useFeatureFlag('clear-the-path')
+  const [incoming, setIncoming] = useState<EscalationRequestType[]>([])
+  const [mine, setMine] = useState<EscalationRequestType[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeTriage, setActiveTriage] = useState<EscalationRequestType | null>(null)
+
+  const refresh = () => {
+    if (!enabled) return
+    setLoading(true)
+    Promise.all([
+      api.get<{ data: EscalationRequestType[] }>('/escalations?filter=incoming'),
+      api.get<{ data: EscalationRequestType[] }>('/escalations?filter=mine'),
+    ]).then(([a, b]) => {
+      setIncoming(a.data)
+      setMine(b.data)
+      setLoading(false)
+    }).catch(() => setLoading(false))
+  }
+
+  useEffect(() => { refresh() }, [enabled])
+
+  if (!enabled) return null
+
+  const incomingPending = incoming.filter(e => e.status === 'REQUESTED')
+  const mineActive = mine.filter(e => !['CLEARED', 'DECLINED'].includes(e.status))
+
+  return (
+    <>
+      <CollapsibleSection
+        title="Permintaan Clear the Path Saya"
+        count={incomingPending.length}
+        defaultOpen
+        persistKey="inbox.escalation-incoming"
+      >
+        {loading && incoming.length === 0 ? (
+          <div style={{ padding: '8px 0', fontSize: 12, color: 'var(--text-muted)' }}>Memuat…</div>
+        ) : incomingPending.length === 0 ? (
+          <div style={{ padding: '12px', fontSize: 13, color: 'var(--text-muted)' }}>
+            Tidak ada permintaan menunggu. Tim Anda lancar — bagus.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {incomingPending.map(req => (
+              <EscalationRowButton key={req.id} request={req} onClick={() => setActiveTriage(req)} />
+            ))}
+          </div>
+        )}
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Eskalasi yang Saya Ajukan"
+        count={mineActive.length}
+        defaultOpen={false}
+        persistKey="inbox.escalation-mine"
+      >
+        {loading && mine.length === 0 ? (
+          <div style={{ padding: '8px 0', fontSize: 12, color: 'var(--text-muted)' }}>Memuat…</div>
+        ) : mineActive.length === 0 ? (
+          <div style={{ padding: '12px', fontSize: 13, color: 'var(--text-muted)' }}>
+            Belum ada eskalasi aktif dari Anda.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {mineActive.map(req => (
+              <EscalationRowButton key={req.id} request={req} onClick={() => setActiveTriage(req)} showStatus />
+            ))}
+          </div>
+        )}
+      </CollapsibleSection>
+
+      {activeTriage && (
+        <EscalationTriagePanel
+          request={activeTriage}
+          currentUserId={currentUserId}
+          onClose={() => setActiveTriage(null)}
+          onUpdated={(next) => {
+            setActiveTriage(next)
+            refresh()
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+function EscalationRowButton({
+  request, onClick, showStatus,
+}: {
+  request: EscalationRequestType
+  onClick: () => void
+  showStatus?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
+        border: '1px solid var(--panel-border)', borderRadius: 8, background: 'var(--panel)',
+        cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'var(--text)',
+      }}
+    >
+      <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{request.title}</span>
+      {showStatus && (
+        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+          {request.status === 'REQUESTED' ? 'Menunggu' :
+           request.status === 'COMMITTED' ? 'Di-commit' :
+           request.status === 'IN_PROGRESS' ? 'Berjalan' :
+           request.status === 'REROUTED' ? 'Diteruskan' : request.status}
+        </span>
+      )}
+      <AgingIndicator days={request.agingDays} showText />
+    </button>
+  )
 }
 
 type FocusItemKind = 'task' | 'blocker' | 'program' | 'approval' | 'mention' | 'dm' | 'meeting' | 'focus' | 'notification'
@@ -1028,6 +1240,12 @@ export function InboxView() {
       </div>
 
       <div className="fokus-page">
+
+        {/* ── 0a. Sprint 2 — Komitmen Hari Ini (data-driven dari /inbox/today) ── */}
+        <CommitmentTodaySection />
+
+        {/* ── 0b. Sprint 4 — Clear the Path sections (DKM pilot via feature flag) ── */}
+        {currentUser?.id && <EscalationSections currentUserId={currentUser.id} />}
 
         {/* ── 1. Eksekutif: Perlu Tindakan (program-level decisions) ── */}
         {(programSummary?.needsAction.length ?? 0) > 0 && (

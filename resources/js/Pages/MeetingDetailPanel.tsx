@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useId, useRef } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import { PicaCompositePanel } from '../components/PicaCompositePanel'
 import type { Meeting, MeetingType, PresenceStatus } from '../types'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -766,6 +767,27 @@ export function MeetingDetailPanel({
               Jadwalkan Ulang
             </button>
           )}
+          {/* Sprint 5 — Check→Act bridge: post-meeting → ProgressLog */}
+          {isCompleted && meeting.linkedProgramId && (
+            <button
+              className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--info"
+              onClick={() => {
+                const decisionsList = decisions.length > 0 ? '\n\nKeputusan:\n' + decisions.map(d => `- ${d.decision}`).join('\n') : ''
+                const actionList = actionItems.length > 0 ? '\n\nAction Items:\n' + actionItems.map(a => `- ${a.title}`).join('\n') : ''
+                const meetingDate = new Date(meeting.startAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                const ctx = {
+                  narrative: `Hasil rapat koordinasi "${meeting.title}" (${meetingDate}).${decisionsList}${actionList}`,
+                  meetingTitle: meeting.title,
+                  meetingDate: meeting.startAt,
+                }
+                sessionStorage.setItem(`atlas:progress-log-prefill.${meeting.linkedProgramId}`, JSON.stringify(ctx))
+                window.location.href = `/programs/${meeting.linkedProgramId}`
+              }}
+              title="Catat ringkasan rapat ini sebagai ProgressLog program"
+            >
+              → ProgressLog
+            </button>
+          )}
           {!isOrganizer && !isCancelled && !isPostponed && !isCompleted && (
             <span className="meeting-detail__readonly-hint" title="Hanya organizer yang dapat mengubah rapat ini">
               Hanya baca
@@ -1103,6 +1125,29 @@ export function MeetingDetailPanel({
               </button>
             </div>
           )}
+        </div>
+
+        {/* ── Sprint 3 — PICA Composite Panel ── */}
+        {/* Auto-expanded saat RAPAT_KOORDINASI dengan linkedProgramId; collapsed di tipe lain */}
+        <div className="meeting-detail__section">
+          <PicaCompositePanel
+            meetingId={meeting.id}
+            meetingType={meeting.meetingType}
+            linkedProgramId={meeting.linkedProgramId ?? null}
+            isOrganizer={isOrganizer}
+            onCreateActionItem={(prefill) => {
+              setAiForm({
+                title: prefill.title,
+                assignedToId: '',
+                dueDate: '',
+              })
+              setShowAIForm(true)
+              // Scroll ke form action item agar user lihat
+              setTimeout(() => {
+                document.querySelector('.meeting-action-items')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }, 50)
+            }}
+          />
         </div>
 
         {/* ── Action Items ── */}

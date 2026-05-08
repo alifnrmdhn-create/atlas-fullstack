@@ -188,6 +188,7 @@ export type Program = {
   pilarStrategis?: PilarStrategis | null
   progresTerkini?: string | null
   dukunganDibutuhkan?: string | null
+  autoHealthComputedAt?: string | null
 }
 
 export type Task = {
@@ -237,6 +238,7 @@ export type ProgramDetail = {
   pilarStrategis?: PilarStrategis | null
   progresTerkini?: string | null
   dukunganDibutuhkan?: string | null
+  autoHealthComputedAt?: string | null
   readiness?: {
     hasWorkstream: boolean
     hasTask: boolean

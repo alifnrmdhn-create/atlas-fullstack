@@ -605,6 +605,28 @@
 }
 
 /* Icon buttons */
+.topbar__theme-btn {
+  width: 32px;
+  height: 32px;
+  background: var(--panel);
+  border: 0.5px solid var(--panel-border);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: background 160ms cubic-bezier(0.4, 0, 0.2, 1), color 160ms cubic-bezier(0.4, 0, 0.2, 1), border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.topbar__theme-btn:hover {
+  background: var(--surface-1);
+  color: var(--text-strong);
+}
+.topbar__theme-icon {
+  width: 18px;
+  height: 18px;
+}
+
 .topbar__notif-btn {
   position: relative;
   width: 32px;
@@ -1131,6 +1153,17 @@
   background: linear-gradient(135deg, var(--indigo) 0%, color-mix(in srgb, var(--indigo) 78%, var(--ptpn-green) 22%) 100%);
 }
 
+:root:not([data-theme="dark"]) .topbar__theme-btn {
+  background: color-mix(in srgb, var(--surface-2) 78%, var(--panel) 22%);
+  border-color: color-mix(in srgb, var(--panel-border) 82%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 76%, transparent);
+}
+
+:root:not([data-theme="dark"]) .topbar__theme-btn:hover {
+  background: color-mix(in srgb, var(--surface-2) 60%, var(--indigo-dim) 40%);
+  border-color: color-mix(in srgb, var(--indigo) 12%, transparent);
+}
+
 :root:not([data-theme="dark"]) .topbar__notif-btn {
   background: color-mix(in srgb, var(--surface-2) 78%, var(--panel) 22%);
   border-color: color-mix(in srgb, var(--panel-border) 82%, transparent);
@@ -1392,3 +1425,203 @@
   box-shadow: 0 12px 40px color-mix(in srgb, var(--panel-border-strong) 22%, transparent),
               0 2px 8px  color-mix(in srgb, var(--panel-border-strong) 10%, transparent);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * CollapsibleSection (Sprint 2 — primitive)
+ * ───────────────────────────────────────────────────────────────────────── */
+.collapsible-section {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+  overflow: hidden;
+}
+.collapsible-section + .collapsible-section { margin-top: 12px; }
+.collapsible-section__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+  font: inherit;
+}
+.collapsible-section__header:hover { background: color-mix(in srgb, var(--surface-2) 35%, transparent); }
+.collapsible-section__chevron {
+  display: inline-flex;
+  transition: transform .15s ease;
+  color: var(--text-muted);
+}
+.collapsible-section.is-collapsed .collapsible-section__chevron { transform: rotate(-90deg); }
+.collapsible-section__title { font-size: 13px; font-weight: 600; flex: 0 0 auto; }
+.collapsible-section__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+.collapsible-section__summary {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.collapsible-section__body {
+  padding: 8px 14px 14px;
+  border-top: 1px solid var(--panel-border);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * DataSourceBadge (Sprint 2 — primitive)
+ * ───────────────────────────────────────────────────────────────────────── */
+.data-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--panel-border);
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+  color: var(--text-muted);
+  cursor: help;
+}
+.data-source-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.data-source-badge--dummy { color: #9b6b00; border-color: color-mix(in srgb, #9b6b00 35%, var(--panel-border)); }
+.data-source-badge--partial { color: #1a6dbc; }
+.data-source-badge--live { color: #1f7a3f; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * SidePanel (Sprint 4 — primitive)
+ * ───────────────────────────────────────────────────────────────────────── */
+.side-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, black 36%, transparent);
+  z-index: 60;
+  animation: side-panel-fade .15s ease;
+}
+.side-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--side-panel-width, 420px);
+  max-width: 95vw;
+  background: var(--panel);
+  border-left: 1px solid var(--panel-border);
+  box-shadow: -8px 0 32px color-mix(in srgb, black 16%, transparent);
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  animation: side-panel-slide-in .18s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes side-panel-fade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes side-panel-slide-in { from { transform: translateX(100%) } to { transform: translateX(0) } }
+.side-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.side-panel__title { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.side-panel__subtitle { margin: 2px 0 0; font-size: 12px; color: var(--text-muted); }
+.side-panel__close {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: inline-flex;
+}
+.side-panel__close:hover { background: var(--surface-2); color: var(--text); }
+.side-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.side-panel__footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--panel-border);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Mobile: full-screen */
+@media (max-width: 768px) {
+  .side-panel {
+    width: 100vw;
+    max-width: 100vw;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * AgingIndicator (Sprint 4 — primitive)
+ * ───────────────────────────────────────────────────────────────────────── */
+.aging-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--panel-border);
+  background: var(--surface-2);
+}
+.aging-indicator__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.aging-indicator--green  { color: #1f7a3f; border-color: color-mix(in srgb, #1f7a3f 22%, var(--panel-border)); }
+.aging-indicator--yellow { color: #9b6b00; border-color: color-mix(in srgb, #9b6b00 22%, var(--panel-border)); }
+.aging-indicator--orange { color: #d97706; border-color: color-mix(in srgb, #d97706 28%, var(--panel-border)); background: color-mix(in srgb, #d97706 6%, var(--surface-2)); }
+.aging-indicator--red    { color: #c5302d; border-color: color-mix(in srgb, #c5302d 35%, var(--panel-border)); background: color-mix(in srgb, #c5302d 8%, var(--surface-2)); }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * ForecastBadge (Sprint 5)
+ * ───────────────────────────────────────────────────────────────────────── */
+.forecast-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border: 1px dashed var(--panel-border);
+  background: color-mix(in srgb, var(--surface-2) 50%, transparent);
+  cursor: help;
+}
+.forecast-badge__icon { font-size: 11px; }
+.forecast-badge--green  { color: #1f7a3f; border-color: color-mix(in srgb, #1f7a3f 30%, var(--panel-border)); }
+.forecast-badge--yellow { color: #9b6b00; border-color: color-mix(in srgb, #9b6b00 30%, var(--panel-border)); }
+.forecast-badge--red    { color: #c5302d; border-color: color-mix(in srgb, #c5302d 35%, var(--panel-border)); }
+.forecast-badge--muted  { color: var(--text-muted); }

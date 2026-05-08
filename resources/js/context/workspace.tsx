@@ -1172,6 +1172,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     scheduleDomainRefresh()
   })
 
+  // Sprint 3 — Bridge blocker SSE event ke window event agar PicaCompositePanel
+  // (dan komponen lain) bisa subscribe tanpa harus tap workspace context.
+  const handleBlockerChanged = useEffectEvent((data: unknown) => {
+    scheduleDomainRefresh()
+    const event = realtimePayload<{ id: number; action: string }>(data)
+    if (event && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('atlas:blocker:changed', { detail: event }))
+    }
+  })
+
   const handleMeetingChanged = useEffectEvent(() => {
     scheduleDomainRefresh()
     setMeetingRefreshKey((k) => k + 1)
@@ -1250,7 +1260,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (event) handlePresenceActivity(event)
     },
     'program:changed': handleDomainChanged,
-    'blocker:changed': handleDomainChanged,
+    'blocker:changed': handleBlockerChanged,
     'kpi:changed': handleDomainChanged,
     'risk:changed': handleDomainChanged,
     'report:changed': handleDomainChanged,

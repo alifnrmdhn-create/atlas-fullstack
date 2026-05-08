@@ -27,3 +27,11 @@ Schedule::command('atlas:cleanup-broadcast-events')
     ->everyMinute()
     ->withoutOverlapping()
     ->runInBackground();
+
+// Sprint 5 — Re-compute auto health untuk semua program aktif tiap 30 menit.
+// Penting karena task-overdue & blocker-aging signals berubah karena waktu,
+// bukan event mutation.
+Schedule::command('atlas:compute-health')
+    ->everyThirtyMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();

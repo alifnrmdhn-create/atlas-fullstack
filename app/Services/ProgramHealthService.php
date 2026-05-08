@@ -2,18 +2,22 @@
 
 namespace App\Services;
 
+use App\Models\Blocker;
 use App\Models\KpiDefinition;
 use App\Models\Program;
+use App\Models\Task;
 use App\Models\Workstream;
 
 /**
  * Port dari backend/src/domain/programHealth.ts → recomputeProgramHealth().
  *
- * Logika:
- *   1. Ambil workstream aktif (bukan COMPLETED/CANCELLED) → worst healthStatus
- *   2. Ambil KPI yang punya actualValue → hitung status per-KPI vs threshold
- *   3. Composite = worst(workstreamHealth, kpiHealth)
- *   4. Update Program.healthStatus
+ * Sprint 5 update — sekarang composite dari 4 signal:
+ *   1. Workstream worst healthStatus
+ *   2. KPI deviation vs threshold
+ *   3. Task overdue ratio (NEW)        — threshold di config/atlas-thresholds
+ *   4. Open blocker count (NEW)        — threshold di config/atlas-thresholds
+ *
+ * Tetap update Program.healthStatus + autoHealthComputedAt timestamp.
  */
 class ProgramHealthService
 {
@@ -58,11 +62,56 @@ class ProgramHealthService
             elseif ($yellowCount >= 1)  $kpiHealth = 'YELLOW';
         }
 
-        $health = $this->worst($wsHealth, $kpiHealth);
+        $taskHealth = $this->computeTaskOverdueHealth($programId);
+        $blockerHealth = $this->computeBlockerHealth($programId);
 
-        Program::query()->where('id', $programId)->update(['healthStatus' => $health]);
+        $health = $this->worst($this->worst($wsHealth, $kpiHealth), $this->worst($taskHealth, $blockerHealth));
+
+        Program::query()->where('id', $programId)->update([
+            'healthStatus' => $health,
+            'autoHealthComputedAt' => now(),
+        ]);
 
         return $health;
+    }
+
+    /** Sprint 5 — task overdue ratio signal. */
+    private function computeTaskOverdueHealth(int $programId): string
+    {
+        $tasks = Task::query()
+            ->whereHas('workstream', fn ($q) => $q->where('programId', $programId))
+            ->whereNotIn('status', ['COMPLETED', 'DONE', 'CANCELLED'])
+            ->whereNotNull('targetCompletion')
+            ->get(['targetCompletion', 'actualCompletion']);
+
+        if ($tasks->isEmpty()) return 'GREEN';
+
+        $now = now();
+        $overdueCount = $tasks->filter(fn ($t) => $t->targetCompletion < $now)->count();
+        $ratio = $overdueCount / $tasks->count();
+
+        $redThreshold = (float) config('atlas-thresholds.auto_health.red_overdue_ratio', 0.30);
+        $yellowThreshold = (float) config('atlas-thresholds.auto_health.yellow_overdue_ratio', 0.10);
+
+        if ($ratio >= $redThreshold) return 'RED';
+        if ($ratio >= $yellowThreshold) return 'YELLOW';
+        return 'GREEN';
+    }
+
+    /** Sprint 5 — open blocker count signal. */
+    private function computeBlockerHealth(int $programId): string
+    {
+        $count = Blocker::query()
+            ->whereHas('task.workstream', fn ($q) => $q->where('programId', $programId))
+            ->whereNotIn('status', ['RESOLVED'])
+            ->count();
+
+        $redThreshold = (int) config('atlas-thresholds.auto_health.red_blocker_count', 3);
+        $yellowThreshold = (int) config('atlas-thresholds.auto_health.yellow_blocker_count', 1);
+
+        if ($count >= $redThreshold) return 'RED';
+        if ($count >= $yellowThreshold) return 'YELLOW';
+        return 'GREEN';
     }
 
     public static function kpiStatus(float $actual, float $target, ?float $critical, ?float $warning): string

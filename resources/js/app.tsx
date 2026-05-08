@@ -52,6 +52,8 @@ import './styles/wi-detail.css'
 import './styles/channels.css'
 import './styles/presence.css'
 import './styles/misc-views.css'
+import './styles/performance.css'
+import './styles/pica.css'
 import './styles/responsive.css'
 
 import { hydrateThemePreference } from './lib/theme'

@@ -24,6 +24,7 @@ class User extends Model implements AuthenticatableContract
     protected $casts = [
         'isActive' => 'boolean',
         'preferences' => 'array',
+        'toursCompleted' => 'array',
         'createdAt' => 'datetime',
         'updatedAt' => 'datetime',
     ];

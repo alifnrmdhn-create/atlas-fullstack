@@ -206,8 +206,76 @@ class MeetingController extends Controller
         $meeting = Meeting::with('attendees:meetingId,userId')->findOrFail($id);
         $this->assertAccess($meeting, $request->user()->id, $request->user()->roleType);
 
+        return response()->json(['data' => $this->buildContinuity($meeting)]);
+    }
+
+    /**
+     * Sprint 3 — PICA Composite View Context.
+     *
+     * Endpoint untuk panel PICA di MeetingDetail. Hanya relevan untuk meeting
+     * bertipe RAPAT_KOORDINASI dengan linkedProgramId.
+     *
+     * Return composite dari 3 sumber existing (tidak ada storage baru):
+     *   - openBlockers       : Problem + Issue (rootCause) + Countermeasure (resolution)
+     *   - latestProgressLog  : narrative + kendala + dukunganDibutuhkan
+     *   - continuity         : action items unresolved dari rapat sebelumnya
+     */
+    public function picaContext(Request $request, int $id): JsonResponse
+    {
+        $meeting = Meeting::with('attendees:meetingId,userId')->findOrFail($id);
+        $this->assertAccess($meeting, $request->user()->id, $request->user()->roleType);
+
+        if (!$meeting->linkedProgramId) {
+            return response()->json([
+                'data' => null,
+                'note' => 'Meeting tidak ter-link ke program. Panel PICA hanya relevan untuk RAPAT_KOORDINASI dengan linked program.',
+            ]);
+        }
+
+        $programId = $meeting->linkedProgramId;
+
+        // 1. Open Blockers — via task.workstream.programId
+        // Eager load: task + assignee + creator (untuk render row PICA)
+        $blockers = Blocker::query()
+            ->whereHas('task.workstream', fn ($q) => $q->where('programId', $programId))
+            ->whereNotIn('status', ['RESOLVED'])
+            ->with([
+                'task:id,title,initiativeId',
+                'assignee:id,name,roleType,positionTitle',
+                'creator:id,name',
+            ])
+            ->orderByRaw("CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END")
+            ->orderBy('createdAt')
+            ->limit(50)
+            ->get([
+                'id', 'code', 'title', 'description', 'severity', 'status',
+                'rootCause', 'resolution', 'workItemId', 'assignedTo',
+                'createdBy', 'createdAt', 'updatedAt',
+            ]);
+
+        // 2. Latest progress log — periode terbaru
+        $latestLog = \App\Models\ProgramProgressLog::query()
+            ->where('programId', $programId)
+            ->orderByDesc('createdAt')
+            ->first(['id', 'period', 'healthAtTime', 'narrative', 'kendala', 'dukunganDibutuhkan', 'createdById', 'createdByName', 'createdAt']);
+
+        // 3. Continuity — re-use logic dari continuity() method
+        $continuity = $this->buildContinuity($meeting);
+
+        return response()->json([
+            'data' => [
+                'openBlockers' => $blockers,
+                'latestProgressLog' => $latestLog,
+                'continuity' => $continuity,
+            ],
+        ]);
+    }
+
+    /** Helper: build continuity payload (extracted dari continuity() method). */
+    private function buildContinuity(Meeting $meeting): array
+    {
         $prevMeeting = Meeting::query()
-            ->where('id', '!=', $id)
+            ->where('id', '!=', $meeting->id)
             ->where('startAt', '<', $meeting->startAt)
             ->whereIn('status', ['COMPLETED', 'SCHEDULED', 'ONGOING'])
             ->where(fn ($q) => $meeting->linkedProgramId
@@ -215,10 +283,10 @@ class MeetingController extends Controller
                 : $q->where('meetingType', $meeting->meetingType)->where('organizerId', $meeting->organizerId)
             )
             ->orderBy('startAt', 'desc')
-            ->first(['id','title','startAt']);
+            ->first(['id', 'title', 'startAt']);
 
         if (!$prevMeeting) {
-            return response()->json(['data' => ['previousMeeting' => null, 'unresolvedItems' => [], 'completionRate' => null]]);
+            return ['previousMeeting' => null, 'unresolvedItems' => [], 'completionRate' => null, 'totalItems' => 0];
         }
 
         $allItems = MeetingActionItem::where('meetingId', $prevMeeting->id)->orderBy('createdAt')->get();
@@ -228,9 +296,9 @@ class MeetingController extends Controller
             : null;
 
         $assignedIds = $unresolved->pluck('assignedToId')->filter()->unique();
-        $userMap = User::whereIn('id', $assignedIds)->get(['id','name','avatarUrl','roleType'])->keyBy('id');
+        $userMap = User::whereIn('id', $assignedIds)->get(['id', 'name', 'avatarUrl', 'roleType'])->keyBy('id');
 
-        return response()->json(['data' => [
+        return [
             'previousMeeting' => $prevMeeting,
             'unresolvedItems' => $unresolved->map(fn ($i) => [
                 ...$i->toArray(),
@@ -238,7 +306,7 @@ class MeetingController extends Controller
             ])->values()->all(),
             'completionRate' => $completionRate,
             'totalItems' => $allItems->count(),
-        ]]);
+        ];
     }
 
     public function listActionItems(Request $request, int $id)

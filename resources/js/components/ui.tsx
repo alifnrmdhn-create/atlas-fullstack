@@ -1,5 +1,5 @@
 // @refresh reset
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { CommentItem, PresenceUser } from '../types'
 
@@ -646,6 +646,226 @@ export function SkeletonStack({
         <SkeletonBlock height={index === 0 ? 16 : 12} key={`${width}-${index}`} width={`${width}%`} />
       ))}
     </div>
+  )
+}
+
+// ── CollapsibleSection ────────────────────────────────────────────────────
+// Sprint 2: extract pattern dari TaskDetailView ke primitive reusable.
+// Persist state ke localStorage saat persistKey diberikan.
+const COLLAPSE_STORAGE_PREFIX = 'atlas.collapsible.v1.'
+
+function readCollapsedPref(persistKey?: string): boolean | null {
+  if (!persistKey) return null
+  try {
+    const raw = localStorage.getItem(COLLAPSE_STORAGE_PREFIX + persistKey)
+    if (raw === null) return null
+    return raw === '1'
+  } catch { return null }
+}
+
+function writeCollapsedPref(persistKey: string, collapsed: boolean) {
+  try { localStorage.setItem(COLLAPSE_STORAGE_PREFIX + persistKey, collapsed ? '1' : '0') } catch {}
+}
+
+export function CollapsibleSection({
+  title,
+  count,
+  summary,
+  defaultOpen = true,
+  persistKey,
+  children,
+  className = '',
+}: {
+  title: string
+  count?: number
+  summary?: string
+  defaultOpen?: boolean
+  persistKey?: string
+  children: ReactNode
+  className?: string
+}) {
+  const initialCollapsed = (() => {
+    const stored = readCollapsedPref(persistKey)
+    if (stored !== null) return stored
+    return !defaultOpen
+  })()
+  const [collapsed, setCollapsed] = useState(initialCollapsed)
+
+  useEffect(() => {
+    if (persistKey) writeCollapsedPref(persistKey, collapsed)
+  }, [collapsed, persistKey])
+
+  return (
+    <section className={`collapsible-section ${collapsed ? 'is-collapsed' : 'is-open'} ${className}`.trim()}>
+      <button
+        type="button"
+        className="collapsible-section__header"
+        aria-expanded={!collapsed}
+        onClick={() => setCollapsed(c => !c)}
+      >
+        <span className="collapsible-section__chevron" aria-hidden="true">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m2 4 3 3 3-3" />
+          </svg>
+        </span>
+        <strong className="collapsible-section__title">{title}</strong>
+        {typeof count === 'number' && (
+          <span className="collapsible-section__count">{count}</span>
+        )}
+        {summary && <span className="collapsible-section__summary">{summary}</span>}
+      </button>
+      {!collapsed && <div className="collapsible-section__body">{children}</div>}
+    </section>
+  )
+}
+
+// ── SidePanel ──────────────────────────────────────────────────────────────
+// Sprint 4: slide-in dari kanan untuk triage UX (Linear/Asana style).
+// Mobile (<768px): jadi full-screen modal.
+// Pakai useEscKey untuk close on Escape.
+export function SidePanel({
+  open,
+  onClose,
+  title,
+  subtitle,
+  children,
+  footer,
+  width = 420,
+}: {
+  open: boolean
+  onClose: () => void
+  title: string
+  subtitle?: string
+  children: ReactNode
+  footer?: ReactNode
+  width?: number
+}) {
+  // ESC key close
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [open, onClose])
+
+  if (!open) return null
+  return (
+    <>
+      <div className="side-panel-backdrop" onClick={onClose} aria-hidden="true" />
+      <aside
+        className="side-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="side-panel-title"
+        style={{ '--side-panel-width': `${width}px` } as React.CSSProperties}
+      >
+        <header className="side-panel__header">
+          <div>
+            <h3 id="side-panel-title" className="side-panel__title">{title}</h3>
+            {subtitle && <p className="side-panel__subtitle">{subtitle}</p>}
+          </div>
+          <button
+            type="button"
+            className="side-panel__close"
+            onClick={onClose}
+            aria-label="Tutup panel"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M2 2 12 12M12 2 2 12" />
+            </svg>
+          </button>
+        </header>
+        <div className="side-panel__body">{children}</div>
+        {footer && <footer className="side-panel__footer">{footer}</footer>}
+      </aside>
+    </>
+  )
+}
+
+// ── AgingIndicator ─────────────────────────────────────────────────────────
+// Sprint 4: warna decay subtle berdasarkan threshold dari config/atlas-thresholds.
+// Default thresholds (kalau tidak diberikan props):
+//   green  < 3 hari
+//   yellow 3–6 hari
+//   orange 7–13 hari
+//   red    14+ hari
+export function AgingIndicator({
+  days,
+  thresholds = { yellow: 3, orange: 7, red: 14 },
+  showText = true,
+  className = '',
+}: {
+  days: number
+  thresholds?: { yellow: number; orange: number; red: number }
+  showText?: boolean
+  className?: string
+}) {
+  const tone =
+    days >= thresholds.red    ? 'red'    :
+    days >= thresholds.orange ? 'orange' :
+    days >= thresholds.yellow ? 'yellow' : 'green'
+  const label = days === 0 ? 'baru saja' : `${days} hari`
+  return (
+    <span
+      className={`aging-indicator aging-indicator--${tone} ${className}`.trim()}
+      title={`Aging: ${days} hari`}
+    >
+      <span className="aging-indicator__dot" aria-hidden="true" />
+      {showText && <span className="aging-indicator__label">{label}</span>}
+    </span>
+  )
+}
+
+// ── ForecastBadge ──────────────────────────────────────────────────────────
+// Sprint 5: linear forecast indicator (honest labeled).
+// Tidak menerima props ramai — terima value + status + method label.
+export function ForecastBadge({
+  value,
+  status,
+  method = 'Estimasi linear berdasarkan capaian YTD. Tidak memperhitungkan musim/seasonality. Akan disempurnakan di Sprint 6.',
+  className = '',
+}: {
+  value: number | string
+  status: 'green' | 'yellow' | 'red' | 'muted'
+  method?: string
+  className?: string
+}) {
+  return (
+    <span
+      className={`forecast-badge forecast-badge--${status} ${className}`.trim()}
+      title={method}
+    >
+      <span className="forecast-badge__icon" aria-hidden="true">↗</span>
+      <span className="forecast-badge__label">Forecast {typeof value === 'number' ? value.toFixed(1) : value}</span>
+    </span>
+  )
+}
+
+// ── DataSourceBadge ────────────────────────────────────────────────────────
+// Sprint 2: label honest untuk data dummy/non-real. Hilang saat data riil
+// terintegrasi (Sprint 6).
+export function DataSourceBadge({
+  type = 'dummy',
+  tooltip,
+  className = '',
+}: {
+  type?: 'dummy' | 'partial' | 'live'
+  tooltip?: string
+  className?: string
+}) {
+  const label = type === 'dummy' ? 'Demo' : type === 'partial' ? 'Sebagian' : 'Live'
+  const defaultTooltip = type === 'dummy'
+    ? 'Data demo. Integrasi data riil di milestone Sprint 6.'
+    : type === 'partial' ? 'Sebagian data riil, sebagian demo.' : 'Data live dari sistem.'
+  return (
+    <span
+      className={`data-source-badge data-source-badge--${type} ${className}`.trim()}
+      title={tooltip || defaultTooltip}
+      aria-label={tooltip || defaultTooltip}
+    >
+      <span className="data-source-badge__dot" aria-hidden="true" />
+      {label}
+    </span>
   )
 }
 

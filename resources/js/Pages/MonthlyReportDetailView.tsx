@@ -19,6 +19,28 @@ import {
 } from '../types/monthlyReports'
 import './MonthlyReportDetail.css'
 
+// ── Auto-Draft types ──────────────────────────────────────────────────────────
+
+type AutoDraftProgram = {
+  programId: number
+  code: string
+  name: string
+  healthStatus: string | null
+  healthLabel: string
+  progressPercent: number
+  totalTasks: number
+  completedTasks: number
+  activeBlockers: number
+  latestLog: {
+    period: string
+    healthAtTime: string
+    narrative: string
+    kendala: string | null
+    dukunganDibutuhkan: string | null
+  } | null
+  kpis: Array<{ name: string; actual: number; target: number; unit: string | null; pct: number | null }>
+}
+
 // ── On-track summary pill ─────────────────────────────────────────────────────
 
 function OnTrackPill({ metrics }: { metrics: Metric[] }) {
@@ -757,11 +779,13 @@ export function MonthlyReportDetailView() {
   const [riskReport, setRiskReport] = useState<RiskReport | null>(null)
   const [riskLoading, setRiskLoading] = useState(false)
 
-  const [modal, setModal]             = useState<null | 'upload' | 'approve' | 'narrative'>(null)
+  const [modal, setModal]             = useState<null | 'upload' | 'approve' | 'narrative' | 'auto-draft'>(null)
   const [approveForm, setApproveForm] = useState({ action: 'APPROVED', note: '' })
   const [narrativeForm, setNarrativeForm] = useState({ narrativeSummary: '', highlights: '' })
   const [busy, setBusy]       = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [autoDraftData, setAutoDraftData] = useState<AutoDraftProgram[] | null>(null)
+  const [autoDraftLoading, setAutoDraftLoading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const loadReport = useCallback(() => {
@@ -777,6 +801,24 @@ export function MonthlyReportDetailView() {
   }, [reportId])
 
   useEffect(() => { loadReport() }, [loadReport])
+
+  // Sprint 5 — auto-fetch suggestion saat report DRAFT dan narrative belum ada.
+  // User langsung lihat ada draft otomatis tersedia (anti-ABS forcing soft).
+  useEffect(() => {
+    if (!report) return
+    const isDraft = report.status === 'DRAFT'
+    const isEmpty = !report.narrativeSummary && !report.highlights
+    if (isDraft && isEmpty && !autoDraftData && !autoDraftLoading) {
+      void (async () => {
+        setAutoDraftLoading(true)
+        try {
+          const res = await api.get<{ data: AutoDraftProgram[] }>(`/monthly-reports/${report.id}/auto-draft`)
+          setAutoDraftData(res.data ?? [])
+        } catch { /* silent — user bisa fetch manual */ }
+        finally { setAutoDraftLoading(false) }
+      })()
+    }
+  }, [report, autoDraftData, autoDraftLoading])
 
   // ── For DIMR reports: fetch the risk report counterpart ──
   useEffect(() => {
@@ -858,6 +900,54 @@ export function MonthlyReportDetailView() {
     finally { setBusy(false) }
   }
 
+  async function loadAutoDraft() {
+    if (!report) return
+    setAutoDraftLoading(true)
+    try {
+      const res = await api.get<{ data: AutoDraftProgram[] }>(`/monthly-reports/${report.id}/auto-draft`)
+      setAutoDraftData(res.data ?? [])
+      setModal('auto-draft')
+    } catch (e) {
+      console.error('[Atlas] Gagal memuat auto-draft:', e)
+    } finally {
+      setAutoDraftLoading(false)
+    }
+  }
+
+  function applyAutoDraft() {
+    if (!autoDraftData || autoDraftData.length === 0) return
+
+    // Build narrative summary from program data
+    const lines: string[] = []
+    autoDraftData.forEach(p => {
+      const taskLine = p.totalTasks > 0
+        ? `${p.completedTasks}/${p.totalTasks} task selesai (${Math.round(p.completedTasks / p.totalTasks * 100)}%)`
+        : 'Belum ada task'
+      const blockerLine = p.activeBlockers > 0 ? `, ${p.activeBlockers} blocker aktif` : ''
+      lines.push(`[${p.code}] ${p.name}: ${p.progressPercent}% progress, ${p.healthLabel} — ${taskLine}${blockerLine}.`)
+      if (p.latestLog?.narrative) {
+        lines.push(`  Update terakhir (${p.latestLog.period}): ${p.latestLog.narrative}`)
+      }
+    })
+
+    // Build highlights from blockers and kendala
+    const highlightLines: string[] = []
+    autoDraftData.forEach(p => {
+      if (p.latestLog?.kendala) {
+        highlightLines.push(`[${p.code}] Kendala: ${p.latestLog.kendala}`)
+      }
+      if (p.latestLog?.dukunganDibutuhkan) {
+        highlightLines.push(`[${p.code}] Dukungan: ${p.latestLog.dukunganDibutuhkan}`)
+      }
+    })
+
+    setNarrativeForm({
+      narrativeSummary: lines.join('\n'),
+      highlights: highlightLines.join('\n'),
+    })
+    setModal('narrative')
+  }
+
   function scrollTo(sectionId: string, key: typeof activeSection) {
     setActiveSection(key)
     document.getElementById(`section-${sectionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -935,6 +1025,11 @@ export function MonthlyReportDetailView() {
             <>
               <button className="mrd-btn" onClick={() => setModal('upload')}>↑ Upload Excel</button>
               <button className="mrd-btn" onClick={() => setModal('narrative')}>✏ Narasi</button>
+              {(report.linkedPrograms ?? []).length > 0 && (
+                <button className="mrd-btn" disabled={autoDraftLoading} onClick={() => void loadAutoDraft()}>
+                  {autoDraftLoading ? '⟳ Memuat…' : '⬇ Import Atlas'}
+                </button>
+              )}
               {(finMetrics.length + opsMetrics.length) > 0 && (
                 <button className="mrd-btn primary" disabled={busy} onClick={() => void doSubmit()}>
                   Submit →
@@ -1178,6 +1273,62 @@ export function MonthlyReportDetailView() {
                 placeholder="Capaian dan catatan penting…" />
             </div>
           </section>
+        </Modal>
+      )}
+
+      {modal === 'auto-draft' && autoDraftData && (
+        <Modal
+          title="Preview Import dari Atlas"
+          onClose={() => setModal(null)}
+          footer={
+            <>
+              <button className="btn" onClick={() => setModal(null)} type="button">Batal</button>
+              <button className="btn btn--primary" onClick={applyAutoDraft} type="button">
+                Gunakan sebagai Draft Narasi
+              </button>
+            </>
+          }
+        >
+          {autoDraftData.length === 0 ? (
+            <p className="mrd-auto-draft__empty">Tidak ada data program yang bisa diimport. Pastikan program sudah dikaitkan ke laporan ini.</p>
+          ) : (
+            <div className="mrd-auto-draft">
+              <p className="mrd-auto-draft__intro">Data berikut akan digunakan sebagai draft narasi laporan. Anda masih bisa mengedit sebelum menyimpan.</p>
+              {autoDraftData.map(p => (
+                <div key={p.programId} className="mrd-auto-draft__card">
+                  <div className="mrd-auto-draft__card-header">
+                    <span className="code-badge">{p.code}</span>
+                    <strong className="mrd-auto-draft__card-name">{p.name}</strong>
+                    <span className={`badge badge--${p.healthStatus === 'GREEN' ? 'green' : p.healthStatus === 'RED' ? 'red' : 'yellow'}`}>
+                      {p.healthLabel}
+                    </span>
+                    <span className="mrd-auto-draft__pct">{p.progressPercent}%</span>
+                  </div>
+                  <div className="mrd-auto-draft__stats">
+                    <span>Task: {p.completedTasks}/{p.totalTasks} selesai</span>
+                    {p.activeBlockers > 0 && <span className="mrd-auto-draft__blocker">{p.activeBlockers} blocker aktif</span>}
+                  </div>
+                  {p.latestLog && (
+                    <div className="mrd-auto-draft__log">
+                      <span className="mrd-auto-draft__log-period">{p.latestLog.period}</span>
+                      <p className="mrd-auto-draft__log-text">{p.latestLog.narrative}</p>
+                      {p.latestLog.kendala && <p className="mrd-auto-draft__kendala"><strong>Kendala:</strong> {p.latestLog.kendala}</p>}
+                    </div>
+                  )}
+                  {p.kpis.length > 0 && (
+                    <div className="mrd-auto-draft__kpis">
+                      {p.kpis.slice(0, 3).map((k, i) => (
+                        <span key={i} className="mrd-auto-draft__kpi-chip">
+                          {k.name}: {k.actual}{k.unit ? ` ${k.unit}` : ''} / {k.target}
+                          {k.pct !== null && ` (${k.pct}%)`}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </Modal>
       )}
     </div>

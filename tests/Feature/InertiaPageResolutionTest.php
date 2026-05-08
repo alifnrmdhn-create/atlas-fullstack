@@ -57,7 +57,7 @@ class InertiaPageResolutionTest extends TestCase
     public static function inertiaIndexPages(): array
     {
         return [
-            'home dashboard' => ['/', 'DashboardView'],
+            'home' => ['/', 'HomeView'],
             'dashboard alias' => ['/dashboard', 'DashboardView'],
             'roadmap alias' => ['/roadmap', 'RoadmapView'],
             'execution alias' => ['/execution', 'WorkboardView'],

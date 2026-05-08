@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\FeatureFlagService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -56,6 +57,8 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
+            // Sprint 4 — feature flags resolved per user (DKM scoping etc.)
+            'features' => FeatureFlagService::resolveAllForUser($user),
         ];
     }
 }

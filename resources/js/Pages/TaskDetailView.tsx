@@ -5,6 +5,7 @@ import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useDarkMode } from '../lib/useDarkMode'
+import { EscalationButton } from '../components/Escalation'
 import { tonePalette } from '../lib/statusColors'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import { useEscKey } from '../hooks/useEscKey'
@@ -1637,6 +1638,17 @@ export function TaskDetailView() {
                         </div>
                       )}
                     </div>
+                    {!resolved && (
+                      <div style={{ marginTop: 4 }}>
+                        <EscalationButton
+                          sourceType="BLOCKER"
+                          sourceId={bl.id}
+                          prefillTitle={`Butuh dukungan: ${bl.title}`}
+                          prefillDescription={bl.description ?? undefined}
+                          size="sm"
+                        />
+                      </div>
+                    )}
                     {!roleAccess.isMonitoringOnly && (
                       <div className="wid-bl-actions">
                         <button className="wid-bl-actionbtn" onClick={() => setBlEditTarget(t => t?.id === bl.id ? null : { id: bl.id, title: bl.title, description: bl.description ?? '', severity: bl.severity })} title="Edit" type="button">

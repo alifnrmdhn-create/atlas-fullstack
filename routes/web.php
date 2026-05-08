@@ -6,6 +6,9 @@ use App\Http\Controllers\BlockerController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\ChannelMessageController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\EscalationController;
+use App\Http\Controllers\ExecutionGridController;
+use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\KpiController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\MonthlyReportController;
@@ -30,6 +33,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     Route::get('/', fn () => Inertia::render('HomeView'))->name('home');
+    // /dashboard tetap dipertahankan: endpoint ini juga melayani JSON API yang
+    // dipakai HomeView (lihat resources/js/context/workspace.tsx). Kita hanya
+    // menghapus item dari sidebar; halaman Inertia tetap accessible via deep link.
     Route::get('/dashboard', [WorkspaceController::class, 'dashboard'])->name('dashboard');
     Route::get('/roadmap', fn () => Inertia::render('RoadmapView'))->name('roadmap');
     Route::get('/execution', fn () => Inertia::render('WorkboardView'))->name('execution');
@@ -66,6 +72,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/users/presence', [WorkspaceController::class, 'usersPresence'])->name('users.presence');
     Route::put('/users/me/status', [WorkspaceController::class, 'updateMyStatus'])->name('users.me.status');
     Route::patch('/users/{id}', [WorkspaceController::class, 'updateUser'])->name('users.update');
+    Route::get('/inbox/today', [WorkspaceController::class, 'inboxToday'])->name('inbox.today');
     Route::get('/notifications', [WorkspaceController::class, 'notifications'])->name('notifications.index');
     Route::put('/notifications/read-all', [WorkspaceController::class, 'readAllNotifications'])->name('notifications.read-all');
     Route::put('/notifications/{id}/read', [WorkspaceController::class, 'readNotification'])->name('notifications.read');
@@ -93,6 +100,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/archived',      [ProgramController::class, 'archived'])->name('archived');
         Route::get('/timeline-all',  [ProgramController::class, 'timelineAll'])->name('timeline-all');
         Route::get('/execution-pulse',[ProgramController::class, 'executionPulse'])->name('execution-pulse');
+        Route::get('/execution-matrix', [ExecutionGridController::class, 'executionMatrix'])->name('execution-matrix');
 
         Route::get('/{id}',          [ProgramController::class, 'show'])->name('show');
         Route::put('/{id}',          [ProgramController::class, 'update'])->name('update');
@@ -107,11 +115,17 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{id}/restore', [ProgramController::class, 'restore'])->name('restore');
 
         // Sub-resources
+        Route::get('/{id}/execution-grid',      [ExecutionGridController::class, 'executionGrid'])->name('execution-grid');
+        Route::get('/{id}/execution-grid.xlsx', [ExecutionGridController::class, 'exportXlsx'])->name('execution-grid.xlsx');
         Route::get('/{id}/health',        [ProgramController::class, 'health'])->name('health');
         Route::get('/{id}/workstreams',   [ProgramController::class, 'workstreams'])->name('workstreams');
         Route::get('/{id}/kpi-links',     [ProgramController::class, 'kpiLinks'])->name('kpi-links.index');
         Route::post('/{id}/kpi-links',    [ProgramController::class, 'addKpiLink'])->name('kpi-links.store');
         Route::delete('/{id}/kpi-links/{code}', [ProgramController::class, 'removeKpiLink'])->name('kpi-links.destroy');
+        Route::post('/{id}/kpi-internal',  [ProgramController::class, 'storeKpiInternal'])->name('kpi-internal.store');
+        Route::get('/{id}/approval-log',   [ProgramController::class, 'approvalLog'])->name('approval-log');
+        Route::get('/{id}/progress-log',   [ProgramController::class, 'progressLog'])->name('progress-log.index');
+        Route::post('/{id}/progress-log',  [ProgramController::class, 'storeProgressLog'])->name('progress-log.store');
     });
 
     // ── Tasks ─────────────────────────────────────────────────────────────────
@@ -154,6 +168,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/{id}/status',   [BlockerController::class, 'updateStatus'])->name('status');
         Route::patch('/{id}',        [BlockerController::class, 'update'])->name('update');
         Route::delete('/{id}',       [BlockerController::class, 'destroy'])->name('destroy');
+        // Sprint 3 — inline edit countermeasure dari panel PICA (tidak ubah status)
+        Route::patch('/{id}/resolution', [BlockerController::class, 'updateResolution'])->name('resolution');
     });
 
     // ── Assignments (Penugasan) ───────────────────────────────────────────────
@@ -257,6 +273,9 @@ Route::middleware('auth')->group(function () {
 
         // Continuity
         Route::get('/{id}/continuity',  [MeetingController::class, 'continuity'])->name('continuity');
+
+        // Sprint 3 — PICA Composite View Context
+        Route::get('/{id}/pica-context', [MeetingController::class, 'picaContext'])->name('pica-context');
     });
 
     // ── Organization ──────────────────────────────────────────────────────────
@@ -296,6 +315,32 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/upload',  [MonthlyReportController::class, 'upload'])->name('upload');
         Route::post('/{id}/submit',  [MonthlyReportController::class, 'submit'])->name('submit');
         Route::post('/{id}/approve', [MonthlyReportController::class, 'approve'])->name('approve');
+        Route::get('/{id}/auto-draft', [MonthlyReportController::class, 'autoDraft'])->name('auto-draft');
+    });
+
+    // ── Performance (KPI) ────────────────────────────────────────────────────
+    Route::prefix('performance')->name('performance.')->group(function () {
+        Route::get('/kolegial',           [PerformanceController::class, 'kolegial'])->name('kolegial');
+        Route::get('/kolegial/{slug}',    [PerformanceController::class, 'kolegialDetail'])->name('kolegial.detail');
+        Route::get('/scorecard',          [PerformanceController::class, 'scorecard'])->name('scorecard');
+        // KPI Divisi & KPI Saya — diperkenalkan Sprint 1; full implementation Sprint 2.
+        Route::get('/divisi/{kode?}',     [PerformanceController::class, 'divisi'])->name('divisi');
+        Route::get('/me',                 [PerformanceController::class, 'me'])->name('me');
+        Route::get('/individu',           [PerformanceController::class, 'individu'])->name('individu');
+        Route::get('/individu/{id}',      [PerformanceController::class, 'individuDetail'])->name('individu.detail');
+        // Sprint 4 — Commitment Ledger
+        Route::get('/individu/{id}/ledger', [PerformanceController::class, 'commitmentLedger'])->name('individu.ledger');
+    });
+
+    // ── Escalations (Sprint 4 — Clear the Path) ───────────────────────────────
+    Route::prefix('escalations')->name('escalations.')->group(function () {
+        Route::get('/',              [EscalationController::class, 'index'])->name('index');
+        Route::post('/',             [EscalationController::class, 'store'])->name('store');
+        Route::get('/{id}',          [EscalationController::class, 'show'])->name('show');
+        Route::post('/{id}/commit',  [EscalationController::class, 'commit'])->name('commit');
+        Route::post('/{id}/reroute', [EscalationController::class, 'reroute'])->name('reroute');
+        Route::post('/{id}/decline', [EscalationController::class, 'decline'])->name('decline');
+        Route::post('/{id}/resolve', [EscalationController::class, 'resolve'])->name('resolve');
     });
 
     // ── Risk Reports ──────────────────────────────────────────────────────────

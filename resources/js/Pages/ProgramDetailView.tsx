@@ -10,6 +10,7 @@ import { useDarkMode } from '../lib/useDarkMode'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { sc as colors } from '../lib/statusColors'
 import { useRoleAccess } from '../hooks/useRoleAccess'
+import { EscalationButton } from '../components/Escalation'
 import {
   HealthPill,
   Metric,
@@ -86,6 +87,8 @@ type WorkstreamRow = {
   startDate: string | null; targetCompletion: string
   description?: string; picPersonIds?: number[]; primaryPicPersonId?: number | null
   picPersons?: Array<{ id: number; name: string }>
+  budgetIdr?: number | null
+  budgetSpent?: number | null
 }
 
 type TaskItem = {
@@ -169,6 +172,88 @@ export function ProgramDetailView() {
   }
 
   useEffect(() => { void loadDetail() }, [numId])
+
+  // ── Approval Log ─────────────────────────────────────────────────────
+  type ApprovalLogEntry = {
+    id: number; action: string; fromStatus: string | null; toStatus: string
+    byUserName: string | null; note: string | null; createdAt: string
+  }
+  const [approvalLog, setApprovalLog] = useState<ApprovalLogEntry[]>([])
+  const [approvalLogLoading, setApprovalLogLoading] = useState(false)
+  const loadApprovalLog = useCallback(async () => {
+    if (!numId) return
+    setApprovalLogLoading(true)
+    try {
+      const res = await api.get<{ data: ApprovalLogEntry[] }>(`/programs/${numId}/approval-log`)
+      setApprovalLog(res.data ?? [])
+    } catch { /* no-op */ } finally {
+      setApprovalLogLoading(false)
+    }
+  }, [numId])
+
+  // ── Progress Log ──────────────────────────────────────────────────────
+  type ProgressLogEntry = {
+    id: number
+    programId: number
+    period: string
+    healthAtTime: 'on_track' | 'at_risk' | 'terlambat' | 'overdue'
+    narrative: string
+    kendala: string | null
+    dukunganDibutuhkan: string | null
+    createdById: number
+    createdByName: string | null
+    createdAt: string
+  }
+  const [progressLog, setProgressLog] = useState<ProgressLogEntry[]>([])
+  const [progressLogLoading, setProgressLogLoading] = useState(false)
+  const [showProgressForm, setShowProgressForm] = useState(false)
+  const [progressForm, setProgressForm] = useState({
+    period: (() => {
+      // ISO 8601 week: minggu yang berisi Kamis pertama bulan Januari adalah W01
+      const now = new Date()
+      const thursday = new Date(now)
+      thursday.setDate(now.getDate() - ((now.getDay() + 6) % 7) + 3) // Kamis minggu ini
+      const jan4 = new Date(thursday.getFullYear(), 0, 4) // 4 Jan selalu di W01
+      const week = 1 + Math.round((thursday.getTime() - jan4.getTime()) / 604800000)
+      return `${thursday.getFullYear()}-W${String(week).padStart(2, '0')}`
+    })(),
+    healthAtTime: 'on_track' as const,
+    narrative: '',
+    kendala: '',
+    dukunganDibutuhkan: '',
+  })
+  const [progressFormSaving, setProgressFormSaving] = useState(false)
+
+  const loadProgressLog = useCallback(async () => {
+    setProgressLogLoading(true)
+    try {
+      const res = await api.get<{ data: ProgressLogEntry[] }>(`/programs/${numId}/progress-log`)
+      setProgressLog(res.data ?? [])
+    } finally {
+      setProgressLogLoading(false)
+    }
+  }, [numId])
+
+  const submitProgressLog = async () => {
+    if (!progressForm.narrative.trim()) return
+    setProgressFormSaving(true)
+    try {
+      const res = await api.post<{ data: ProgressLogEntry }>(`/programs/${numId}/progress-log`, progressForm)
+      setProgressLog(prev => {
+        const existing = prev.findIndex(e => e.period === res.data.period)
+        if (existing >= 0) {
+          const updated = [...prev]
+          updated[existing] = res.data
+          return updated
+        }
+        return [res.data, ...prev]
+      })
+      setShowProgressForm(false)
+      setProgressForm(f => ({ ...f, narrative: '', kendala: '', dukunganDibutuhkan: '' }))
+    } finally {
+      setProgressFormSaving(false)
+    }
+  }
 
   // ── KPI APMS Links ────────────────────────────────────────────────────
   const [kpiLinks, setKpiLinks] = useState<ProgramKpiLink[]>([])
@@ -295,6 +380,33 @@ export function ProgramDetailView() {
 
   // ── Tabs ──────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<DetailTab>('ringkasan')
+
+  useEffect(() => {
+    if (activeTab === 'ringkasan') {
+      void loadApprovalLog()
+      void loadProgressLog()
+    }
+  }, [activeTab, loadApprovalLog, loadProgressLog])
+
+  // ── Sprint 5 — Check→Act bridge: prefill ProgressLog dari meeting context ──
+  useEffect(() => {
+    if (typeof window === 'undefined' || !numId) return
+    const key = `atlas:progress-log-prefill.${numId}`
+    const raw = sessionStorage.getItem(key)
+    if (!raw) return
+    try {
+      const ctx = JSON.parse(raw) as { narrative?: string; kendala?: string; meetingTitle?: string; meetingDate?: string }
+      setProgressForm(f => ({
+        ...f,
+        narrative: ctx.narrative ?? f.narrative,
+        kendala: ctx.kendala ?? f.kendala,
+      }))
+      setShowProgressForm(true)
+      sessionStorage.removeItem(key)
+    } catch {
+      sessionStorage.removeItem(key)
+    }
+  }, [numId])
 
   // ── Workstream sub-detail ─────────────────────────────────────────────
   const [selectedIniId, setSelectedIniId] = useState<number | null>(null)
@@ -713,7 +825,7 @@ export function ProgramDetailView() {
   const tabDefs: [DetailTab, string][] = [
     ['ringkasan',  'Ringkasan'],
     ['workstream', 'Struktur'],
-    ['execution',  'Jadwal Mingguan'],
+    ['execution',  'Jadwal'],
     ['blocker',    'Hambatan'],
     ['kpi',        'KPI APMS'],
   ]
@@ -782,6 +894,14 @@ export function ProgramDetailView() {
           <div className="wi-detail-titlebar__meta">
             <span className="code-badge wi-detail-titlebar__code">{detail.code}</span>
             <HealthPill status={normalizeHealthStatus(detail.healthStatus)} />
+            {detail.autoHealthComputedAt && (
+              <span
+                style={{ fontSize: 10.5, color: 'var(--text-muted)', cursor: 'help' }}
+                title={`Auto-derived dari workstream + KPI + task overdue + open blockers. Last computed: ${new Date(detail.autoHealthComputedAt).toLocaleString('id-ID')}`}
+              >
+                ⓘ auto
+              </span>
+            )}
             <span className="wi-detail-titlebar__priority">
               <span className={`work-card__dot work-card__dot--${detail.priority.toLowerCase()}`} />
               {detail.priority}
@@ -1081,14 +1201,185 @@ export function ProgramDetailView() {
                   </div>
                 )}
 
-                {/* ── Progres Terkini — prominent untuk program aktif ── */}
-                {detail.progresTerkini && detail.approvalStatus === 'ACTIVE' && (
-                  <div className="prog-progress-note">
-                    <span className="prog-progress-note__label">Progres Terkini</span>
-                    <p className="prog-progress-note__text">{detail.progresTerkini}</p>
-                    {detail.dukunganDibutuhkan && (
-                      <div className="prog-progress-note__support">
-                        <strong>Dukungan dibutuhkan:</strong> {detail.dukunganDibutuhkan}
+                {/* ── Progress Log ── */}
+                {detail.approvalStatus === 'ACTIVE' && (
+                  <div className="wi-section">
+                    <div className="wi-section__header">
+                      <h3 className="wi-section__title">{PIcon.activity} Riwayat Progress</h3>
+                      <button
+                        className="wi-btn wi-btn--sm wi-btn--outline"
+                        onClick={() => setShowProgressForm(v => !v)}
+                      >
+                        {showProgressForm ? 'Tutup' : '+ Update Progress'}
+                      </button>
+                    </div>
+
+                    {showProgressForm && (
+                      <div className="prog-progress-form">
+                        <div className="prog-progress-form__row">
+                          <label className="prog-progress-form__label">Periode</label>
+                          <input
+                            type="text"
+                            className="wi-input"
+                            value={progressForm.period}
+                            onChange={e => setProgressForm(f => ({ ...f, period: e.target.value }))}
+                            placeholder="2026-W17"
+                          />
+                        </div>
+                        <div className="prog-progress-form__row">
+                          <label className="prog-progress-form__label">Health</label>
+                          <select
+                            className="wi-input"
+                            value={progressForm.healthAtTime}
+                            onChange={e => setProgressForm(f => ({ ...f, healthAtTime: e.target.value as ProgressLogEntry['healthAtTime'] }))}
+                          >
+                            <option value="on_track">On Track</option>
+                            <option value="at_risk">At Risk</option>
+                            <option value="terlambat">Terlambat</option>
+                            <option value="overdue">Lewat Tenggat</option>
+                          </select>
+                        </div>
+                        <div className="prog-progress-form__row">
+                          <label className="prog-progress-form__label">Progres Terkini *</label>
+                          <textarea
+                            className="wi-input"
+                            rows={3}
+                            value={progressForm.narrative}
+                            onChange={e => setProgressForm(f => ({ ...f, narrative: e.target.value }))}
+                            placeholder="Ceritakan perkembangan program minggu ini..."
+                          />
+                        </div>
+                        <div className="prog-progress-form__row">
+                          <label className="prog-progress-form__label">Kendala</label>
+                          <textarea
+                            className="wi-input"
+                            rows={2}
+                            value={progressForm.kendala}
+                            onChange={e => setProgressForm(f => ({ ...f, kendala: e.target.value }))}
+                            placeholder="Hambatan yang dihadapi (opsional)"
+                          />
+                        </div>
+                        <div className="prog-progress-form__row">
+                          <label className="prog-progress-form__label">Dukungan Dibutuhkan</label>
+                          <textarea
+                            className="wi-input"
+                            rows={2}
+                            value={progressForm.dukunganDibutuhkan}
+                            onChange={e => setProgressForm(f => ({ ...f, dukunganDibutuhkan: e.target.value }))}
+                            placeholder="Support yang diperlukan dari stakeholder (opsional)"
+                          />
+                        </div>
+                        <div className="prog-progress-form__actions">
+                          <button
+                            className="wi-btn wi-btn--primary wi-btn--sm"
+                            onClick={submitProgressLog}
+                            disabled={progressFormSaving || !progressForm.narrative.trim()}
+                          >
+                            {progressFormSaving ? 'Menyimpan…' : 'Simpan Update'}
+                          </button>
+                          <button
+                            className="wi-btn wi-btn--ghost wi-btn--sm"
+                            onClick={() => setShowProgressForm(false)}
+                          >
+                            Batal
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {progressLogLoading && progressLog.length === 0 ? (
+                      <p className="hd-muted" style={{ fontSize: 12 }}>Memuat…</p>
+                    ) : progressLog.length === 0 ? (
+                      <p className="hd-muted" style={{ fontSize: 12 }}>Belum ada update progress. Klik &quot;+ Update Progress&quot; untuk mulai.</p>
+                    ) : (
+                      <div className="prog-progress-log">
+                        {progressLog.map(entry => {
+                          const healthLabel: Record<string, string> = {
+                            on_track: 'On Track', at_risk: 'At Risk', terlambat: 'Terlambat', overdue: 'Lewat Tenggat',
+                          }
+                          const healthTone: Record<string, string> = {
+                            on_track: 'positive', at_risk: 'warning', terlambat: 'danger', overdue: 'danger',
+                          }
+                          const tone = healthTone[entry.healthAtTime] ?? 'default'
+                          const date = new Date(entry.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                          return (
+                            <div key={entry.id} className={`prog-progress-log__entry prog-progress-log__entry--${tone}`}>
+                              <div className="prog-progress-log__header">
+                                <span className="prog-progress-log__period">{entry.period}</span>
+                                <span className={`prog-progress-log__health prog-progress-log__health--${tone}`}>
+                                  {healthLabel[entry.healthAtTime] ?? entry.healthAtTime}
+                                </span>
+                                <span className="prog-progress-log__meta">{entry.createdByName} · {date}</span>
+                              </div>
+                              <p className="prog-progress-log__narrative">{entry.narrative}</p>
+                              {entry.kendala && (
+                                <div className="prog-progress-log__kendala">
+                                  <strong>Kendala:</strong> {entry.kendala}
+                                </div>
+                              )}
+                              {entry.dukunganDibutuhkan && (
+                                <div className="prog-progress-log__support">
+                                  <strong>Dukungan dibutuhkan:</strong> {entry.dukunganDibutuhkan}
+                                  <div style={{ marginTop: 6 }}>
+                                    <EscalationButton
+                                      sourceType="PROGRESS_LOG"
+                                      sourceId={entry.id}
+                                      prefillTitle={`Dukungan untuk ${entry.period}`}
+                                      prefillDescription={entry.dukunganDibutuhkan}
+                                      linkedProgramId={numId}
+                                      size="sm"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Approval History Log ── */}
+                {(approvalLog.length > 0 || approvalLogLoading) && (
+                  <div className="wi-section">
+                    <div className="wi-section__header">
+                      <h3 className="wi-section__title">{PIcon.activity} Riwayat Persetujuan</h3>
+                    </div>
+                    {approvalLogLoading && approvalLog.length === 0 ? (
+                      <p className="hd-muted" style={{ fontSize: 12 }}>Memuat…</p>
+                    ) : (
+                      <div className="prog-approval-log">
+                        {approvalLog.map((entry) => {
+                          const actionLabel: Record<string, string> = {
+                            SUBMITTED: 'Diajukan', APPROVED: 'Disetujui',
+                            REJECTED: 'Ditolak', ACTIVATED: 'Diaktifkan', COMPLETED: 'Diselesaikan',
+                          }
+                          const actionTone: Record<string, string> = {
+                            SUBMITTED: 'info', APPROVED: 'positive',
+                            REJECTED: 'danger', ACTIVATED: 'positive', COMPLETED: 'positive',
+                          }
+                          const tone = actionTone[entry.action] ?? 'default'
+                          const label = actionLabel[entry.action] ?? entry.action
+                          const date = new Date(entry.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                          return (
+                            <div key={entry.id} className={`prog-approval-log__entry prog-approval-log__entry--${tone}`}>
+                              <span className="prog-approval-log__dot" />
+                              <div className="prog-approval-log__body">
+                                <span className="prog-approval-log__action">{label}</span>
+                                {entry.toStatus && (
+                                  <span className="prog-approval-log__status">→ {entry.toStatus.replace(/_/g, ' ')}</span>
+                                )}
+                                <span className="prog-approval-log__meta">
+                                  {entry.byUserName} · {date}
+                                </span>
+                                {entry.note && (
+                                  <p className="prog-approval-log__note">{entry.note}</p>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
                   </div>
@@ -1420,7 +1711,7 @@ export function ProgramDetailView() {
                     <div className="wid-panel__head wid-panel__head--compact">
                       <h3 className="wid-panel__title">
                         <span className="wid-panel__icon">{PIcon.chart}</span>
-                        Jadwal Mingguan
+                        Jadwal
                       </h3>
                     </div>
                     <div className="wid-panel__body">
@@ -1529,6 +1820,14 @@ export function ProgramDetailView() {
                                     </span>
                                   )
                                 })()}
+                              {ini.budgetIdr != null && (
+                                <span className="ws-budget">
+                                  Anggaran: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(ini.budgetIdr))}
+                                  {ini.budgetSpent != null && ini.budgetSpent > 0 && (
+                                    <span className="ws-budget__spent"> · Terpakai: {Math.round(Number(ini.budgetSpent) / Number(ini.budgetIdr) * 100)}%</span>
+                                  )}
+                                </span>
+                              )}
                               </span>
                             </div>
                             <div className="workstream-row__progress">
@@ -1762,7 +2061,7 @@ export function ProgramDetailView() {
                                             onClick={() => setActiveTab('execution')}
                                             type="button"
                                           >
-                                            Lihat di Jadwal Mingguan →
+                                            Lihat di Jadwal →
                                           </button>
                                         </div>
                                       )}

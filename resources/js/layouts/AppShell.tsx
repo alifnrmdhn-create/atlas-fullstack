@@ -7,6 +7,8 @@ import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { effectivePresenceSlug } from '../components/ui'
+import { applyThemePreference, getThemeSnapshot } from '../lib/theme'
+import type { ResolvedTheme } from '../lib/theme'
 
 type NavItem = {
   path: string
@@ -69,6 +71,34 @@ function IconRoadmap() {
       <path d="M2 4h12" />
       <path d="M2 8h9" />
       <path d="M2 12h6" />
+    </svg>
+  )
+}
+function IconKpiKolegial() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="5.5" />
+      <path d="M8 8 8 4.5" />
+      <path d="M8 8 11 9.5" />
+      <circle cx="8" cy="8" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+function IconScorecard() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 1.5l1.4 3.2 3.6.4-2.6 2.4.7 3.5L8 9.2l-3.1 1.8.7-3.5L3 5.1l3.6-.4z" />
+      <path d="M4 13.5h8" />
+      <path d="M6 13.5v-2M10 13.5v-2" />
+    </svg>
+  )
+}
+function IconKpiIndividu() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6" cy="5" r="2.5" />
+      <path d="M1.5 13.5c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" />
+      <path d="M10.5 7.5h4M10.5 10h3M10.5 12.5h2" />
     </svg>
   )
 }
@@ -256,6 +286,10 @@ function prefetchRoute(path: string) {
     '/reports': () => import('../Pages/ReportsView'),
     '/search': () => import('../Pages/SearchView'),
     '/settings': () => import('../Pages/SettingsView'),
+    '/performance/scorecard': () => import('../Pages/Performance/ScorecardView'),
+    '/performance/kolegial':  () => import('../Pages/Performance/KolegialView'),
+    '/performance/divisi':    () => import('../Pages/Performance/DivisiView'),
+    '/performance/individu':  () => import('../Pages/Performance/IndividuView'),
   }
 
   void loaders[route]?.().catch(() => {
@@ -273,6 +307,11 @@ function normalizeShellPath(pathname: string): string {
   if (pathname.startsWith('/monthly-reports') || pathname.startsWith('/laporan-bulanan/')) return '/laporan-bulanan'
   if (pathname.startsWith('/risk-reports') || pathname.startsWith('/laporan-risiko/')) return '/laporan-risiko'
   if (pathname.startsWith('/organization')) return '/admin/orgs'
+  if (pathname.startsWith('/performance/kolegial')) return '/performance/kolegial'
+  if (pathname.startsWith('/performance/scorecard')) return '/performance/scorecard'
+  if (pathname.startsWith('/performance/divisi')) return '/performance/divisi'
+  if (pathname.startsWith('/performance/me')) return '/performance/me'
+  if (pathname.startsWith('/performance/individu')) return '/performance/individu'
   return pathname
 }
 
@@ -302,6 +341,10 @@ const ACTION_NOTIF_TYPES = new Set([
   'REPORT_NEEDS_REVISION',
   'DEADLINE_APPROACHING',
   'TASK_ASSIGNED',
+  // Sprint 4 — Clear the Path
+  'CLEAR_PATH_REQUESTED',
+  // Sprint 4 — carryover threshold (action item belum selesai berulang)
+  'CARRYOVER_THRESHOLD',
 ])
 
 const NOTIF_FALLBACK_CONTEXT: Record<string, { roleImpact: string; impact: string }> = {
@@ -313,6 +356,14 @@ const NOTIF_FALLBACK_CONTEXT: Record<string, { roleImpact: string; impact: strin
   PROGRAM_NEEDS_APPROVAL: { roleImpact: 'Anda approver program', impact: 'Program belum bisa lanjut tanpa approval' },
   REPORT_NEEDS_REVISION: { roleImpact: 'Anda perlu memperbaiki laporan', impact: 'Siklus review tertahan sampai revisi masuk' },
   TASK_ASSIGNED: { roleImpact: 'Anda PIC tugas', impact: 'Menunggu tindak lanjut dari Anda' },
+  // Sprint 4 — Clear the Path
+  CLEAR_PATH_REQUESTED: { roleImpact: 'Anda diminta membersihkan hambatan', impact: 'Tim menunggu disposition (Commit / Reroute / Decline)' },
+  CLEAR_PATH_COMMITTED:  { roleImpact: 'Permintaan Anda di-commit atasan', impact: 'Hambatan akan dibersihkan sesuai komitmen' },
+  CLEAR_PATH_CLEARED:    { roleImpact: 'Hambatan sudah dibersihkan', impact: 'Anda bisa lanjut eksekusi' },
+  // Sprint 4 — carryover
+  CARRYOVER_THRESHOLD: { roleImpact: 'Action item Anda berulang carry-over', impact: 'Pertimbangkan eskalasi atau re-scope' },
+  // Sprint 5 — Plan→Do handoff
+  PROGRAM_TASKS_ASSIGNED: { roleImpact: 'Tugas baru di pipeline Anda', impact: 'Program aktif, mulai eksekusi' },
 }
 
 function isActionNotification(type: string): boolean {
@@ -328,6 +379,11 @@ function notificationIntentLabel(notification: NotificationItem): string {
   if (notification.type === 'REPORT_NEEDS_REVISION') return 'Revisi'
   if (notification.type === 'DEADLINE_APPROACHING') return 'Cek deadline'
   if (notification.type === 'TASK_ASSIGNED') return 'Kerjakan'
+  if (notification.type === 'CLEAR_PATH_REQUESTED') return 'Disposition'
+  if (notification.type === 'CLEAR_PATH_COMMITTED') return 'Lihat komitmen'
+  if (notification.type === 'CLEAR_PATH_CLEARED') return 'Lanjut eksekusi'
+  if (notification.type === 'CARRYOVER_THRESHOLD') return 'Tinjau ulang'
+  if (notification.type === 'PROGRAM_TASKS_ASSIGNED') return 'Buka pipeline'
   return 'Cek detail'
 }
 
@@ -598,6 +654,23 @@ export function AppShell({ children }: { children?: ReactNode }) {
   ).length
 
   // ── Notification dropdown ──────────────────────────────────────────────────
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => getThemeSnapshot().resolved)
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const snapshot = (e as CustomEvent<{ resolved: ResolvedTheme }>).detail
+      if (snapshot?.resolved) setResolvedTheme(snapshot.resolved)
+    }
+    window.addEventListener('atlas:themechange', handler)
+    return () => window.removeEventListener('atlas:themechange', handler)
+  }, [])
+
+  const toggleTheme = () => {
+    const next = resolvedTheme === 'dark' ? 'light' : 'dark'
+    applyThemePreference(next)
+    setResolvedTheme(next)
+  }
+
   const [notifDropOpen, setNotifDropOpen] = useState(false)
   const [markingAllRead, setMarkingAllRead] = useState(false)
   const [notifDropView, setNotifDropView] = useState<NotificationDropView>('all')
@@ -624,6 +697,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
     REPORT_AWAITING_APPROVAL: 'Laporan', REPORT_APPROVED: 'Laporan',
     REPORT_REJECTED: 'Laporan', REPORT_NEEDS_REVISION: 'Laporan',
     DEADLINE_APPROACHING: 'Deadline', DM_RECEIVED: 'DM',
+    CLEAR_PATH_REQUESTED: 'Clear the Path', CLEAR_PATH_COMMITTED: 'Clear the Path',
+    CLEAR_PATH_CLEARED: 'Clear the Path', CARRYOVER_THRESHOLD: 'Carryover',
+    PROGRAM_TASKS_ASSIGNED: 'Pipeline',
   }
 
   const NOTIF_TYPE_COLOR: Record<string, string> = {
@@ -632,6 +708,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
     PROGRAM_REJECTED: 'notif-type--danger', REPORT_REJECTED: 'notif-type--danger',
     REPORT_NEEDS_REVISION: 'notif-type--warn', DEADLINE_APPROACHING: 'notif-type--warn',
     DM_RECEIVED: 'notif-type--mention',
+    CLEAR_PATH_REQUESTED: 'notif-type--approval', CARRYOVER_THRESHOLD: 'notif-type--warn',
+    CLEAR_PATH_CLEARED: 'notif-type--success' as string,
   }
 
   function formatNotifTime(dateString: string): string {
@@ -776,9 +854,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const fokusItem: NavItem = { path: '/fokus', label: 'Focus', caption: 'Tasks, mentions, and items awaiting you', icon: IconInbox, badge: () => unreadCount }
 
   // ── Nav items palette ──────────────────────────────────────────────────────
+  // Sidebar mengikuti siklus PDCA: Today → Plan → Do → Check (Performance + Pelaporan) → Act → Komunikasi → Akun
   const NI = {
     home:      { path: '/',          label: 'Home',             caption: 'Ringkasan eksekutif program kerja', icon: IconHome },
-    dashboard: { path: '/dashboard', label: 'Dashboard',        caption: 'Executive command view',            icon: IconDashboard },
     roadmap:   { path: '/roadmap',   label: 'Roadmap',          caption: 'Visual program timeline',           icon: IconRoadmap   },
     programs:  { path: '/programs',  label: 'Programs',         caption: 'Portfolio orchestration',           icon: IconPrograms  },
     execution: { path: '/execution', label: 'Execution',        caption: 'Kanban delivery board',             icon: IconExecution },
@@ -788,21 +866,32 @@ export function AppShell({ children }: { children?: ReactNode }) {
     reports:   { path: '/reports',    label: 'Analytics',     caption: 'KPI, program health & leaderboard',         icon: IconReports  },
     lapbul:    { path: '/laporan-bulanan', label: 'Monthly Reports', caption: 'Periodic division report documents', icon: IconMonthlyReports },
     laprisiko: { path: '/laporan-risiko',  label: 'Risk Reports',    caption: 'Laporan risiko bulanan BUMN 5×5',   icon: IconRiskReports    },
+    perfScorecard: { path: '/performance/scorecard', label: 'Scorecard',       caption: 'Ranking capaian direktorat & divisi',  icon: IconScorecard    },
+    perfDirektorat:{ path: '/performance/kolegial',  label: 'KPI Direktorat',  caption: 'Capaian KPI bersama jajaran direksi',  icon: IconKpiKolegial  },
+    perfDivisi:    { path: '/performance/divisi',    label: 'KPI Divisi',      caption: 'Capaian KPI level divisi',             icon: IconKpiKolegial  },
+    perfSaya:      { path: '/performance/me',        label: 'KPI Saya',        caption: 'KPI individual saya',                  icon: IconKpiIndividu  },
+    perfIndividu:  { path: '/performance/individu',  label: 'KPI Individu',    caption: 'Browse KPI individual karyawan',       icon: IconKpiIndividu  },
     channels:  { path: '/channels',  label: 'Channels',         caption: 'Team collaboration',                icon: IconChannels, badge: () => totalUnreadChannels },
-    schedule:  { path: '/jadwal',    label: 'Schedule',         caption: 'Meetings & team coordination',      icon: IconSchedule  },
+    schedule:  { path: '/jadwal',    label: 'Rapat Koordinasi', caption: 'Rapat koordinasi & cadence tim',    icon: IconSchedule  },
     search:    { path: '/search',    label: 'Search',           caption: 'Discover decisions fast',           icon: IconSearch    },
     presence:  { path: '/presence',  label: 'Presence',         caption: 'Live team availability',            icon: IconPresence  },
     profile:   { path: '/profile',   label: 'Profile',          caption: 'Account & position hierarchy',      icon: IconProfile   },
     settings:  { path: '/settings',  label: 'Settings',         caption: 'Workspace preferences',             icon: IconSettings  },
   } satisfies Record<string, NavItem>
 
-  // ── Shared groups ──────────────────────────────────────────────────────────
-  // Reports module hidden — to be revisited later
-  const grpLaporan        = { label: 'Reports',  items: [] as NavItem[] }
-  const grpLaporanStrategic = { label: 'Reports',  items: [] as NavItem[] }
-  const grpKolab     = { label: 'Comms',      items: [NI.channels, NI.schedule, NI.search]         }
-  const grpTim       = { label: 'Account',    items: [NI.presence, NI.profile, NI.settings]        }
-  const grpAdmin     = {
+  // ── Shared groups (PDCA-aligned) ───────────────────────────────────────────
+  const grpPlan       = { label: 'Perencanaan',  items: [NI.programs] }
+  const grpDo         = { label: 'Eksekusi',     items: [NI.execution, NI.penugasan] }
+  // Performance hierarchy: Scorecard → KPI Direktorat → KPI Divisi → KPI Saya
+  // KASUBDIV: hanya KPI Divisi & KPI Saya. OFFICER/ASISTEN: hanya KPI Saya.
+  const grpPerfFull   = { label: 'Performance',  items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfSaya] }
+  const grpPerfMid    = { label: 'Performance',  items: [NI.perfDivisi, NI.perfSaya] }
+  const grpPerfMin    = { label: 'Performance',  items: [NI.perfSaya] }
+  const grpPelaporan  = { label: 'Pelaporan',    items: [NI.lapbul, NI.laprisiko] }
+  const grpAct        = { label: 'Tindak Lanjut', items: [NI.schedule] }
+  const grpKolab      = { label: 'Komunikasi',   items: [NI.channels, NI.search] }
+  const grpAkun       = { label: 'Akun',         items: [NI.presence, NI.profile, NI.settings] }
+  const grpAdmin      = {
     label: 'Admin',
     items: [
       { path: '/admin/orgs',       label: 'Companies', caption: 'Entitas & hierarki org',     icon: IconOrg       },
@@ -812,53 +901,64 @@ export function AppShell({ children }: { children?: ReactNode }) {
     ],
   }
 
-  // ── Role-aware nav groups ──────────────────────────────────────────────────
-  // BOD / KADIV  → strategic layer first
-  // KASUBDIV     → middle layer: Programs first, Dashboard as context
-  // OFFICER/ASISTEN → execution-first
-  // Default      → full nav (SUPERADMIN, ADMIN, unknown)
+  // ── Role-aware nav groups (PDCA flow) ──────────────────────────────────────
+  // BOD / KADIV       → semua: Plan, Do, Performance lengkap, Pelaporan, Act, Komunikasi
+  // KASUBDIV          → Plan, Do, Performance mid (KPI Divisi + KPI Saya), Pelaporan, Act
+  // OFFICER/ASISTEN   → Do prioritas, Plan read, KPI Saya saja, Pelaporan read, Act
+  // Default (Admin)   → full nav
   const navGroups: { label: string; items: NavItem[] }[] = (() => {
     if (role === 'BOD' || role === 'KADIV') {
       return [
-        { label: 'Strategic',  items: [NI.dashboard, NI.programs] },
-        { label: 'Execution',  items: [NI.execution, NI.penugasan] },
-        grpLaporanStrategic, grpKolab, grpTim,
+        grpPlan, grpDo,
+        grpPerfFull, grpPelaporan,
+        grpAct,
+        grpKolab, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
       ]
     }
     if (role === 'KASUBDIV') {
       return [
-        { label: 'Strategic',  items: [NI.programs, NI.dashboard] },
-        { label: 'Execution',  items: [NI.execution, NI.penugasan] },
-        grpLaporanStrategic, grpKolab, grpTim,
+        grpPlan, grpDo,
+        grpPerfMid, grpPelaporan,
+        grpAct,
+        grpKolab, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
       ]
     }
     if (role === 'OFFICER' || role === 'ASISTEN') {
       return [
-        { label: 'Execution',  items: [NI.execution, NI.penugasan, NI.programs] },
-        grpLaporan, grpKolab, grpTim,
+        grpDo,
+        { label: 'Perencanaan', items: [NI.programs] }, // read-only context
+        grpPerfMin, grpPelaporan,
+        grpAct,
+        grpKolab, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
       ]
     }
-    // Default: full nav (SUPERADMIN, ADMIN, unknown)
+    // Default: full nav (SUPERADMIN, ADMIN, unknown role)
     return [
-      { label: 'Strategic',  items: [NI.dashboard, NI.programs] },
-      { label: 'Execution',  items: [NI.execution, NI.penugasan] },
-      grpLaporanStrategic, grpKolab, grpTim,
+      grpPlan, grpDo,
+      grpPerfFull, grpPelaporan,
+      grpAct,
+      grpKolab, grpAkun,
       ...(isAdmin ? [grpAdmin] : []),
     ]
   })()
 
   // Page name for breadcrumb
   const PAGE_NAMES: Record<string, string> = {
-    '/': 'Home', '/dashboard': 'Dashboard', '/programs': 'Programs',
+    '/': 'Home', '/programs': 'Programs',
     '/goals': 'Goals & KPI', '/activity': 'Team Activity', '/execution': 'Execution', '/penugasan': 'Penugasan', '/reports': 'Analytics', '/laporan-bulanan': 'Monthly Reports', '/laporan-risiko': 'Risk Reports',
-    '/fokus': 'Focus', '/channels': 'Channels', '/jadwal': 'Schedule', '/search': 'Search',
+    '/fokus': 'Focus', '/channels': 'Channels', '/jadwal': 'Rapat Koordinasi', '/search': 'Search',
     '/presence': 'Presence', '/profile': 'Profile', '/settings': 'Settings',
     '/admin/users': 'Users', '/admin/positions': 'Positions',
     '/admin/orgs': 'Companies', '/admin/roles': 'Roles & Permissions',
     '/playbook': 'Playbook',
+    '/performance/scorecard': 'Scorecard',
+    '/performance/kolegial': 'KPI Direktorat',
+    '/performance/divisi': 'KPI Divisi',
+    '/performance/me': 'KPI Saya',
+    '/performance/individu': 'KPI Individu',
   }
   const currentPage = PAGE_NAMES[activePath] ?? PAGE_NAMES[pathname] ?? 'ATLAS'
 
@@ -1036,6 +1136,26 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
           {/* Right cluster */}
           <div className="topbar__right">
+            {/* Theme toggle */}
+            <button
+              aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="topbar__theme-btn"
+              onClick={toggleTheme}
+              title={resolvedTheme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+              type="button"
+            >
+              {resolvedTheme === 'dark' ? (
+                <svg aria-hidden="true" className="topbar__theme-icon" fill="none" height="18" viewBox="0 0 18 18" width="18">
+                  <circle cx="9" cy="9" r="3.5" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.22 3.22l1.42 1.42M13.36 13.36l1.42 1.42M3.22 14.78l1.42-1.42M13.36 4.64l1.42-1.42" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
+                </svg>
+              ) : (
+                <svg aria-hidden="true" className="topbar__theme-icon" fill="none" height="18" viewBox="0 0 18 18" width="18">
+                  <path d="M15.5 10.5A7 7 0 0 1 7.5 2.5a7.002 7.002 0 1 0 8 8Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+                </svg>
+              )}
+            </button>
+
             {/* Notification bell */}
             <div className="topbar__notif-menu" ref={notifDropRef}>
               <button

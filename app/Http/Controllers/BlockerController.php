@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Blocker;
 use App\Models\Task;
+use App\Services\BroadcastService;
 use App\Services\ProgramHealthService;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
@@ -140,6 +141,64 @@ class BlockerController extends Controller
         }
 
         return back()->with('success', 'Blocker diperbarui.');
+    }
+
+    /**
+     * Sprint 3 — Inline edit countermeasure dari panel PICA.
+     *
+     * Mengubah Blocker.resolution tanpa mengubah status (beda dengan
+     * updateStatus yang trigger RESOLVED). Permission: organizer meeting,
+     * blocker assignee, blocker creator, atau KADIV+.
+     *
+     * Optimistic locking: client kirim `expectedUpdatedAt` (ISO). Kalau
+     * tidak match, return 409 — frontend wajib refresh + merge.
+     */
+    public function updateResolution(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+        if (RolePolicy::isReadOnly($user->roleType)) {
+            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+        }
+
+        $blocker = Blocker::findOrFail($id);
+
+        $canEdit = RolePolicy::isAdminOrAbove($user->roleType)
+            || RolePolicy::norm($user->roleType) === 'kadiv'
+            || $blocker->createdBy === $user->id
+            || $blocker->assignedTo === $user->id;
+
+        if (!$canEdit) {
+            abort(403, 'Hanya pembuat, assignee, atau KADIV+ yang dapat mengubah countermeasure.');
+        }
+
+        $data = $request->validate([
+            'resolution'        => 'required|string|max:2000',
+            'expectedUpdatedAt' => 'nullable|date',
+        ]);
+
+        // Optimistic locking — protect against concurrent edit
+        if (!empty($data['expectedUpdatedAt'])) {
+            $serverIso = $blocker->updatedAt?->toIso8601String();
+            $clientIso = (new \DateTimeImmutable($data['expectedUpdatedAt']))->format(\DateTimeInterface::ATOM);
+            if ($serverIso && $serverIso !== $clientIso) {
+                return response()->json([
+                    'message' => 'Perubahan rekan kerja masuk lebih dulu. Refresh untuk lihat versi terbaru.',
+                    'currentResolution' => $blocker->resolution,
+                    'currentUpdatedAt'  => $serverIso,
+                ], 409);
+            }
+        }
+
+        $blocker->update(['resolution' => $data['resolution']]);
+
+        // Broadcast ke semua user — frontend filter berdasarkan blocker.id
+        BroadcastService::blocker($blocker->id, 'resolution-updated', [
+            'resolution' => $blocker->resolution,
+            'updatedBy'  => ['id' => $user->id, 'name' => $user->name],
+            'updatedAt'  => $blocker->updatedAt?->toIso8601String(),
+        ]);
+
+        return response()->json(['data' => $blocker->fresh()]);
     }
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse

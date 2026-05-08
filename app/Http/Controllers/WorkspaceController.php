@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Auth\OrgScope;
+use App\Models\Assignment;
 use App\Models\Blocker;
 use App\Models\Channel;
 use App\Models\ChannelMessage;
 use App\Models\EntityPic;
 use App\Models\KpiDefinition;
 use App\Models\Meeting;
+use App\Models\MeetingActionItem;
 use App\Models\Notification;
 use App\Models\Position;
 use App\Models\Program;
@@ -19,6 +21,7 @@ use App\Models\UserStatus;
 use App\Models\Workstream;
 use App\Services\BroadcastService;
 use App\Services\ProgramHealthService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -664,6 +667,8 @@ class WorkspaceController extends Controller
             'ownerId' => 'nullable|integer|exists:User,id',
             'picPersonIds' => 'nullable|array',
             'primaryPicPersonId' => 'nullable|integer',
+            'budgetIdr' => 'nullable|numeric',
+            'budgetSpent' => 'nullable|numeric',
         ]);
 
         $picPersonIds = $data['picPersonIds'] ?? [];
@@ -699,6 +704,8 @@ class WorkspaceController extends Controller
             'ownerId' => 'nullable|integer|exists:User,id',
             'picPersonIds' => 'nullable|array',
             'primaryPicPersonId' => 'nullable|integer',
+            'budgetIdr' => 'nullable|numeric',
+            'budgetSpent' => 'nullable|numeric',
         ]);
 
         $picPersonIds = array_key_exists('picPersonIds', $data) ? $data['picPersonIds'] : null;
@@ -743,6 +750,91 @@ class WorkspaceController extends Controller
         );
 
         return response()->json(['data' => $status]);
+    }
+
+    /**
+     * Sprint 2 — Inbox "Hari Ini": agregat semua komitmen user dengan due ≤ today.
+     * Sumber:
+     *   - Task (assignedToId, targetCompletion ≤ end of today, status not COMPLETED/CANCELLED)
+     *   - MeetingActionItem (assignedToId, dueDate ≤ end of today, status != COMPLETED)
+     *   - Assignment (assignedTo, dueDate ≤ end of today, status not COMPLETED/CANCELLED)
+     *
+     * Cache 60 detik per user untuk mengurangi DB pressure saat reload.
+     */
+    public function inboxToday(Request $request): JsonResponse
+    {
+        $userId = $request->user()->id;
+        $ttl = config('atlas-thresholds.inbox_today.cache_ttl_seconds', 60);
+        $cacheKey = "atlas.inbox_today.user.{$userId}";
+
+        $payload = Cache::remember($cacheKey, $ttl, function () use ($userId) {
+            $today = now()->endOfDay();
+
+            $tasks = Task::query()
+                ->where('assignedToId', $userId)
+                ->whereNotNull('targetCompletion')
+                ->where('targetCompletion', '<=', $today)
+                ->whereNotIn('status', ['COMPLETED', 'CANCELLED', 'DONE'])
+                ->orderBy('targetCompletion')
+                ->limit(50)
+                ->get(['id', 'title', 'status', 'targetCompletion', 'initiativeId'])
+                ->map(fn ($t) => [
+                    'kind'  => 'task',
+                    'id'    => $t->id,
+                    'title' => $t->title,
+                    'status' => $t->status,
+                    'due'   => $t->targetCompletion,
+                ]);
+
+            $actionItems = MeetingActionItem::query()
+                ->where('assignedToId', $userId)
+                ->whereNotNull('dueDate')
+                ->where('dueDate', '<=', $today)
+                ->where('status', '!=', 'COMPLETED')
+                ->orderBy('dueDate')
+                ->limit(50)
+                ->get(['id', 'title', 'status', 'dueDate', 'meetingId'])
+                ->map(fn ($a) => [
+                    'kind'  => 'action_item',
+                    'id'    => $a->id,
+                    'title' => $a->title,
+                    'status' => $a->status,
+                    'due'   => $a->dueDate,
+                    'meetingId' => $a->meetingId,
+                ]);
+
+            $assignments = Assignment::query()
+                ->where('assigneeId', $userId)
+                ->whereNotNull('dueDate')
+                ->where('dueDate', '<=', $today)
+                ->whereNotIn('status', ['SELESAI', 'DITOLAK', 'DIBATALKAN', 'COMPLETED', 'CANCELLED'])
+                ->orderBy('dueDate')
+                ->limit(50)
+                ->get(['id', 'title', 'status', 'dueDate'])
+                ->map(fn ($x) => [
+                    'kind'  => 'assignment',
+                    'id'    => $x->id,
+                    'title' => $x->title,
+                    'status' => $x->status,
+                    'due'   => $x->dueDate,
+                ]);
+
+            $items = $tasks->concat($actionItems)->concat($assignments)
+                ->sortBy('due')
+                ->values();
+
+            return [
+                'items' => $items,
+                'count' => $items->count(),
+                'breakdown' => [
+                    'task' => $tasks->count(),
+                    'action_item' => $actionItems->count(),
+                    'assignment' => $assignments->count(),
+                ],
+            ];
+        });
+
+        return response()->json($payload);
     }
 
     public function notifications(Request $request): JsonResponse

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Blocker;
 use App\Models\KpiDefinition;
 use App\Models\Program;
+use App\Models\ProgramApprovalLog;
+use App\Models\ProgramProgressLog;
 use App\Models\ProgramKpiLink;
 use App\Services\BroadcastService;
 use App\Services\ProgramHealthService;
@@ -13,6 +15,7 @@ use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -40,14 +43,28 @@ class ProgramController extends Controller
 
     public function index(Request $request)
     {
+        if ($request->expectsJson() && $request->query('page')) {
+            $paginated = $this->programService->listForUserPaginated(
+                $request->user(),
+                (int) $request->query('perPage', 50)
+            );
+            return response()->json([
+                'data' => $paginated->items(),
+                'meta' => [
+                    'total'       => $paginated->total(),
+                    'perPage'     => $paginated->perPage(),
+                    'currentPage' => $paginated->currentPage(),
+                    'lastPage'    => $paginated->lastPage(),
+                ],
+            ]);
+        }
+
         $programs = $this->programService->listForUser($request->user());
         if ($request->expectsJson()) {
             return response()->json(['data' => $programs, 'total' => $programs->count()]);
         }
 
-        return Inertia::render('ProgramsView', [
-            'programs' => $programs,
-        ]);
+        return Inertia::render('ProgramsView', ['programs' => $programs]);
     }
 
     public function archived(Request $request)
@@ -91,11 +108,13 @@ class ProgramController extends Controller
     public function health(Request $request, int $id)
     {
         $this->programService->assertAccess($request->user(), $id);
-        $program = Program::query()->where('id', $id)->first(['healthStatus', 'progressPercent']);
-        $kpis = KpiDefinition::query()
-            ->where('programId', $id)
-            ->whereNotNull('actualValue')
-            ->get(['actualValue', 'targetValue', 'warningThreshold', 'criticalThreshold']);
+        $program = Program::query()->where('id', $id)->first(['id', 'healthStatus', 'progressPercent']);
+        $kpis = $program
+            ? $program->kpis()
+                ->whereNotNull('actualValue')
+                ->whereNotNull('targetValue')
+                ->get(['actualValue', 'targetValue', 'warningThreshold', 'criticalThreshold'])
+            : collect();
 
         $redCount = $yellowCount = 0;
         foreach ($kpis as $k) {
@@ -248,8 +267,10 @@ class ProgramController extends Controller
             return $this->validationError($request, 'KADIV/Admin gunakan tombol "Mulai Eksekusi" untuk mengaktifkan program.');
         }
 
+        $prevStatus = $program->approvalStatus;
         $nextStatus = $role === 'KASUBDIV' ? 'PENDING_KADIV' : 'PENDING_KASUB';
         $program->update(['approvalStatus' => $nextStatus, 'rejectionNote' => null, 'submittedById' => $user->id]);
+        ProgramApprovalLog::record($id, 'SUBMITTED', $prevStatus, $nextStatus, $user->id, $user->name);
         BroadcastService::program($id, 'updated', ['approvalStatus' => $nextStatus]);
 
         if ($request->expectsJson()) {
@@ -269,8 +290,13 @@ class ProgramController extends Controller
         if ($program->approvalStatus !== 'DRAFT') {
             return $this->validationError($request, 'Hanya program DRAFT yang dapat diaktifkan.');
         }
+        $prevStatus = $program->approvalStatus;
         $program->update(['approvalStatus' => 'ACTIVE', 'rejectionNote' => null]);
+        ProgramApprovalLog::record($id, 'ACTIVATED', $prevStatus, 'ACTIVE', $request->user()->id, $request->user()->name);
         BroadcastService::program($id, 'approved');
+
+        // Sprint 5 — Plan→Do handoff
+        $this->notifyTaskAssignees($program);
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $program->fresh()]);
@@ -279,15 +305,50 @@ class ProgramController extends Controller
         return back()->with('success', 'Program diaktifkan — eksekusi dimulai.');
     }
 
+    /**
+     * Sprint 5 — Plan→Do handoff. Saat program jadi ACTIVE, kirim notifikasi
+     * ke setiap user yang punya task di-assign di program tsb. Group per user
+     * (1 notif per user yang berisi count tasks), bukan 1 notif per task.
+     */
+    private function notifyTaskAssignees(Program $program): void
+    {
+        rescue(function () use ($program) {
+            $taskRows = \App\Models\Task::query()
+                ->whereHas('workstream', fn ($q) => $q->where('programId', $program->id))
+                ->whereNotNull('assignedTo')
+                ->get(['assignedTo']);
+
+            $byUser = $taskRows->groupBy('assignedTo');
+            foreach ($byUser as $userId => $tasks) {
+                $count = $tasks->count();
+                \App\Models\Notification::create([
+                    'userId' => $userId,
+                    'type' => 'PROGRAM_TASKS_ASSIGNED',
+                    'message' => "Program {$program->name} aktif. {$count} tugas di pipeline Anda.",
+                    'source' => "program:{$program->id}",
+                    'createdAt' => now(),
+                    'state' => 'UNREAD',
+                ]);
+            }
+        });
+    }
+
     public function approve(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $program = Program::findOrFail($id);
         $role = strtoupper($request->user()->roleType);
 
-        if ($program->approvalStatus === 'PENDING_KASUB' && $role === 'KASUBDIV') {
+        $prevStatus = $program->approvalStatus;
+        $user = $request->user();
+
+        if ($prevStatus === 'PENDING_KASUB' && $role === 'KASUBDIV') {
             $program->update(['approvalStatus' => 'PENDING_KADIV']);
-        } elseif ($program->approvalStatus === 'PENDING_KADIV' && in_array($role, ['KADIV', 'ADMIN', 'SUPERADMIN'], true)) {
+            ProgramApprovalLog::record($id, 'APPROVED', $prevStatus, 'PENDING_KADIV', $user->id, $user->name);
+        } elseif ($prevStatus === 'PENDING_KADIV' && in_array($role, ['KADIV', 'ADMIN', 'SUPERADMIN'], true)) {
             $program->update(['approvalStatus' => 'ACTIVE']);
+            ProgramApprovalLog::record($id, 'APPROVED', $prevStatus, 'ACTIVE', $user->id, $user->name);
+            // Sprint 5 — Plan→Do handoff (KADIV approval triggers ACTIVE)
+            $this->notifyTaskAssignees($program);
         } else {
             abort(403, 'Anda tidak memiliki izin untuk menyetujui program ini pada tahap ini');
         }
@@ -314,7 +375,9 @@ class ProgramController extends Controller
 
         if (!$canReject) abort(403, 'Anda tidak memiliki izin untuk menolak program ini');
 
+        $prevStatus = $program->approvalStatus;
         $program->update(['approvalStatus' => 'DRAFT', 'rejectionNote' => $data['note']]);
+        ProgramApprovalLog::record($id, 'REJECTED', $prevStatus, 'DRAFT', $request->user()->id, $request->user()->name, $data['note']);
         BroadcastService::program($id, 'rejected');
 
         if ($request->expectsJson()) {
@@ -389,5 +452,105 @@ class ProgramController extends Controller
         }
 
         return back()->with('success', 'Link KPI dihapus.');
+    }
+
+    public function approvalLog(Request $request, int $id): JsonResponse
+    {
+        $this->programService->assertAccess($request->user(), $id);
+        $log = ProgramApprovalLog::query()
+            ->where('programId', $id)
+            ->orderBy('createdAt', 'desc')
+            ->get();
+
+        return response()->json(['data' => $log]);
+    }
+
+    public function progressLog(Request $request, int $id): JsonResponse
+    {
+        $this->programService->assertAccess($request->user(), $id);
+        $logs = ProgramProgressLog::query()
+            ->where('programId', $id)
+            ->orderBy('createdAt', 'desc')
+            ->get();
+
+        return response()->json(['data' => $logs]);
+    }
+
+    public function storeProgressLog(Request $request, int $id): JsonResponse
+    {
+        $this->programService->assertAccess($request->user(), $id);
+
+        $data = $request->validate([
+            // YYYY-W01..W53 atau YYYY-01..12 (bulan valid saja)
+            'period'             => ['required', 'string', 'regex:/^\d{4}-(W(?:0[1-9]|[1-4]\d|5[0-3])|0[1-9]|1[0-2])$/'],
+            'healthAtTime'       => 'required|in:on_track,at_risk,terlambat,overdue',
+            'narrative'          => 'required|string|max:3000',
+            'kendala'            => 'nullable|string|max:2000',
+            'dukunganDibutuhkan' => 'nullable|string|max:2000',
+        ]);
+
+        $user = $request->user();
+
+        $log = DB::transaction(function () use ($id, $data, $user) {
+            // firstOrCreate mempertahankan createdById asli saat entry diupdate
+            $log = ProgramProgressLog::firstOrCreate(
+                ['programId' => $id, 'period' => $data['period']],
+                ['createdById' => $user->id, 'createdByName' => $user->name]
+            );
+            $log->fill([
+                'healthAtTime'       => $data['healthAtTime'],
+                'narrative'          => $data['narrative'],
+                'kendala'            => $data['kendala'] ?? null,
+                'dukunganDibutuhkan' => $data['dukunganDibutuhkan'] ?? null,
+            ])->save();
+
+            // Backward-compat: sync ke field Program agar tampil di legacy views
+            Program::where('id', $id)->update([
+                'progresTerkini'     => $data['narrative'],
+                'dukunganDibutuhkan' => $data['dukunganDibutuhkan'] ?? null,
+            ]);
+
+            return $log;
+        });
+
+        BroadcastService::program($id, 'updated', ['progressUpdated' => true]);
+
+        return response()->json(['data' => $log], 201);
+    }
+
+    public function storeKpiInternal(Request $request, int $id): JsonResponse|RedirectResponse
+    {
+        $this->programService->assertAccess($request->user(), $id);
+
+        $data = $request->validate([
+            'code'            => 'required|string|min:2|max:40|unique:KpiDefinition,code',
+            'name'            => 'required|string|min:2|max:120',
+            'targetValue'     => 'required|numeric',
+            'unitOfMeasure'   => 'nullable|string|max:30',
+            'reviewFrequency' => 'in:WEEKLY,MONTHLY,QUARTERLY,ANNUALLY',
+        ]);
+
+        $unit = $data['unitOfMeasure'] ?? null;
+        $dataType = str_starts_with(strtolower($unit ?? ''), 'rp') ? 'CURRENCY'
+            : (($unit === '%' || str_contains(strtolower($unit ?? ''), 'persen')) ? 'PERCENTAGE' : 'NUMERIC');
+
+        $kpi = KpiDefinition::create([
+            'code'             => strtoupper($data['code']),
+            'name'             => $data['name'],
+            'targetValue'      => $data['targetValue'],
+            'unitOfMeasure'    => $unit,
+            'reviewFrequency'  => $data['reviewFrequency'] ?? 'MONTHLY',
+            'dataType'         => $dataType,
+            'metricType'       => 'INTERNAL',
+            'isLeadingIndicator' => false,
+            'isActive'         => true,
+            'programId'        => $id,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $kpi], 201);
+        }
+
+        return back()->with('success', 'KPI internal dibuat.');
     }
 }

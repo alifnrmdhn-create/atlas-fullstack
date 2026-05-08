@@ -1,0 +1,291 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * PICA Composite Panel — Sprint 3
+ * Loaded by app.tsx; scoped to .pica-* classes only.
+ * ───────────────────────────────────────────────────────────────────────── */
+
+.pica-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Continuity strip ─────────────────────────────────────────────────── */
+.pica-continuity {
+  border: 1px solid var(--panel-border);
+  border-left: 3px solid var(--accent, #4a7);
+  background: color-mix(in srgb, var(--surface-2) 40%, transparent);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.pica-continuity--empty {
+  border-left-color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pica-continuity__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.pica-continuity__label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.pica-continuity__meeting {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.pica-continuity__rate {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+.pica-continuity__rate--green  { color: #1f7a3f; background: color-mix(in srgb, #1f7a3f 12%, transparent); }
+.pica-continuity__rate--yellow { color: #9b6b00; background: color-mix(in srgb, #9b6b00 12%, transparent); }
+.pica-continuity__rate--red    { color: #c5302d; background: color-mix(in srgb, #c5302d 12%, transparent); }
+.pica-continuity__rate--muted  { color: var(--text-muted); }
+.pica-continuity__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pica-continuity__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 0;
+}
+.pica-continuity__item-status {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+.pica-continuity__item-title { flex: 1; }
+.pica-continuity__item-assignee { font-size: 11px; color: var(--text-muted); }
+
+/* ── PICA grid ────────────────────────────────────────────────────────── */
+.pica-grid {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.pica-grid__head {
+  display: grid;
+  grid-template-columns: 1.4fr 1.4fr 1.6fr 1.2fr;
+  gap: 1px;
+  background: var(--panel-border);
+  padding: 0;
+}
+.pica-grid__head > div {
+  background: var(--surface-2);
+  padding: 8px 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.pica-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1.4fr 1.6fr 1.2fr;
+  gap: 1px;
+  background: var(--panel-border);
+}
+.pica-row + .pica-row { margin-top: 1px; }
+
+.pica-cell {
+  background: var(--panel);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  min-width: 0;
+}
+.pica-cell__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pica-cell__sev {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.pica-cell__code {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-family: var(--font-mono, monospace);
+}
+.pica-cell__title {
+  font-weight: 600;
+  line-height: 1.3;
+}
+.pica-cell__text { line-height: 1.4; }
+.pica-cell__meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.pica-cell__meta-faint {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.pica-cell__edit-btn {
+  align-self: flex-start;
+  font-size: 11.5px;
+  padding: 3px 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent, #4a7);
+  cursor: pointer;
+  margin-top: 4px;
+}
+.pica-cell__edit-btn:hover {
+  background: color-mix(in srgb, var(--surface-2) 50%, transparent);
+}
+.pica-cell__editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pica-cell__textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 12.5px;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  resize: vertical;
+  min-height: 60px;
+}
+.pica-cell__textarea:focus {
+  outline: 2px solid var(--accent, #4a7);
+  outline-offset: -1px;
+}
+.pica-cell__conflict {
+  font-size: 11px;
+  color: #c5302d;
+  background: color-mix(in srgb, #c5302d 8%, transparent);
+  padding: 4px 6px;
+  border-radius: 3px;
+}
+.pica-cell__editor-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.pica-cell__action-btn {
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border: 1px solid var(--accent, #4a7);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent, #4a7);
+  cursor: pointer;
+  align-self: flex-start;
+}
+.pica-cell__action-btn:hover { background: color-mix(in srgb, var(--accent, #4a7) 8%, transparent); }
+.pica-cell__hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+.pica-empty {
+  text-align: center;
+  padding: 18px 12px;
+  border: 1px dashed var(--panel-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-2) 30%, transparent);
+}
+.pica-empty strong { display: block; font-size: 13px; margin-bottom: 4px; }
+.pica-empty p { font-size: 12px; color: var(--text-muted); margin: 0; }
+
+/* ── ProgressLog footer ──────────────────────────────────────────────── */
+.pica-progress-log {
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--surface-2) 25%, transparent);
+}
+.pica-progress-log__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.pica-progress-log__label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.pica-progress-log__period {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.pica-progress-log__row {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  padding: 3px 0;
+  align-items: flex-start;
+}
+.pica-progress-log__row-label {
+  flex: 0 0 130px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
+/* ── Mobile: stack 1-kolom ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .pica-grid__head { display: none; }
+  .pica-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .pica-cell {
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .pica-cell::before {
+    content: attr(data-label);
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .pica-cell--problem::before { content: 'Problem'; }
+  .pica-cell--issue::before { content: 'Issue'; }
+  .pica-cell--countermeasure::before { content: 'Countermeasure'; }
+  .pica-cell--action::before { content: 'Action'; }
+}
