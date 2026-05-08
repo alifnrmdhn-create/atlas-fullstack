@@ -1,2 +1,40 @@
-/* ATLAS tidak pakai Tailwind — semua styling via CSS custom di resources/js/styles/ */
-/* File ini sengaja kosong; CSS diimport dari app.tsx. */
+/* ATLAS — Tailwind 4 utilities only (no preflight)
+ *
+ * Strategy: import utilities + theme layers only, skip the `base` layer
+ * (preflight) to avoid clashing with the existing reset.css and the
+ * vanilla CSS in resources/js/styles/. This lets us adopt Tailwind utility
+ * classes incrementally without rewriting any current component.
+ *
+ * Theme tokens below are bridged from the existing design-system tokens
+ * (resources/js/design-system/tokens.css) so utilities like `bg-brand-600`
+ * resolve to the same color as `var(--ds-brand-600)`. Single source of
+ * truth stays in design-system/tokens.css; this file just re-exposes them
+ * to Tailwind's utility generator.
+ *
+ * Migration: M1 — foundation only. Subsequent milestones (M2+) extend
+ * @theme as new utilities are needed.
+ */
+
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@theme {
+  /* ── Fonts ─────────────────────────────────────────────── */
+  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', 'JetBrains Mono', monospace;
+
+  /* ── Brand: PTPN green (mirrors --ds-brand-*) ──────────── */
+  --color-brand-50:  #ECF7F0;
+  --color-brand-100: #D2EAD9;
+  --color-brand-500: #2E8B4E;
+  --color-brand-600: #1F6B35;
+  --color-brand-700: #185627;
+
+  /* ── Radii (mirrors --ds-radius-*) ─────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+}
