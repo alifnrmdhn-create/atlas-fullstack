@@ -240,27 +240,6 @@ function IconSchedule() {
     </svg>
   )
 }
-function IconMonthlyReports() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="1.5" width="12" height="13" rx="1.5" />
-      <path d="M5 1.5v2M11 1.5v2" />
-      <path d="M5 7h6M5 10h4" />
-      <circle cx="11.5" cy="10.5" r="2.5" fill="none" />
-      <path d="M11.5 9v1.5l1 1" />
-    </svg>
-  )
-}
-
-function IconRiskReports() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 2L14 13H2L8 2z" />
-      <path d="M8 6v3.5M8 11v.5" strokeWidth="1.5" />
-    </svg>
-  )
-}
-
 const ADMIN_ROLES = new Set(['superadmin', 'admin'])
 const prefetchedRoutes = new Set<string>()
 
@@ -562,7 +541,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
     userMenuSurface, toggleUserMenu, closeUserMenu,
     currentUser, totalUnreadChannels,
     overviewStatus, loadOverview,
-    query, setQuery, runSearch,
     handleLogout, notifications, markNotificationRead,
     notifToasts, dismissToast,
     setSelectedProgramId, setSelectedTaskId, setSelectedChannelId,
@@ -588,7 +566,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
   const [tooltipState, setTooltipState] = useState<SidebarTooltipState | null>(null)
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const [paletteOpen, setPaletteOpen] = useState(false)
   useEffect(() => {
@@ -876,8 +853,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
     goals:     { path: '/goals',      label: 'Goals & KPI',   caption: 'Manage KPI organisasi & tracking capaian',  icon: IconGoals    },
     activity:  { path: '/activity',   label: 'Team Activity', caption: 'Leaderboard sesi & aktivitas harian tim',   icon: IconActivity },
     reports:   { path: '/reports',    label: 'Analytics',     caption: 'KPI, program health & leaderboard',         icon: IconReports  },
-    lapbul:    { path: '/laporan-bulanan', label: 'Monthly Reports', caption: 'Periodic division report documents', icon: IconMonthlyReports },
-    laprisiko: { path: '/laporan-risiko',  label: 'Risk Reports',    caption: 'Laporan risiko bulanan BUMN 5×5',   icon: IconRiskReports    },
     perfScorecard: { path: '/performance/scorecard', label: 'Scorecard',       caption: 'Ranking capaian direktorat & divisi',  icon: IconScorecard    },
     perfDirektorat:{ path: '/performance/kolegial',  label: 'KPI Direktorat',  caption: 'Capaian KPI bersama jajaran direksi',  icon: IconKpiKolegial  },
     perfDivisi:    { path: '/performance/divisi',    label: 'KPI Divisi',      caption: 'Capaian KPI level divisi',             icon: IconKpiKolegial  },
@@ -976,11 +951,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
     '/performance/individu': 'KPI Individu',
   }
   const currentPage = PAGE_NAMES[activePath] ?? PAGE_NAMES[pathname] ?? 'ATLAS'
-
-  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    void runSearch(query)
-  }
 
   return (
     <div className={`app-shell${sidebarCollapsedView ? ' app-shell--collapsed' : ''}${hasContextPanel ? ' app-shell--with-panel' : ''}${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}`} ref={shellRef}>
