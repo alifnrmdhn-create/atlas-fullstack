@@ -59,6 +59,7 @@ import './styles/pilot-metrics.css'
 import './styles/thresholds.css'
 import './styles/responsive.css'
 import './styles/topbar-extras.css'
+import './styles/command-palette.css'
 
 import { hydrateThemePreference } from './lib/theme'
 

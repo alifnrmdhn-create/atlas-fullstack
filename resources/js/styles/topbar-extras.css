@@ -134,3 +134,34 @@
   .topbar__action-btn > span { display: none; }
   .topbar__action-btn { padding: 0 8px; }
 }
+
+/* Search-as-trigger: button styled like the original search input */
+.topbar__search--trigger {
+  height: 32px;
+  padding: 0 38px 0 32px;
+  background: transparent;
+  border: 0.5px solid transparent;
+  border-radius: 8px;
+  color: var(--text-muted);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+.topbar__search--trigger:hover {
+  background: var(--surface-1);
+  border-color: var(--panel-border);
+}
+.topbar__search--trigger:focus-visible {
+  outline: none;
+  border-color: var(--indigo);
+  background: var(--panel);
+  box-shadow: 0 0 0 3px var(--indigo-dim);
+}
+.topbar__search-placeholder {
+  flex: 1;
+  font-size: var(--type-small);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

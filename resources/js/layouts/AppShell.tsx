@@ -11,6 +11,7 @@ import { applyThemePreference, getThemeSnapshot } from '../lib/theme'
 import type { ResolvedTheme } from '../lib/theme'
 import { Breadcrumb } from '../components/Breadcrumb'
 import { TopbarAction } from '../components/TopbarAction'
+import { CommandPalette } from '../components/CommandPalette'
 import { TOPBAR_ACTIONS } from '../lib/topbar-config'
 
 type NavItem = {
@@ -583,12 +584,12 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
+  const [paletteOpen, setPaletteOpen] = useState(false)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        searchInputRef.current?.focus()
-        searchInputRef.current?.select()
+        setPaletteOpen((o) => !o)
       }
     }
     window.addEventListener('keydown', handler)
@@ -1128,23 +1129,22 @@ export function AppShell({ children }: { children?: ReactNode }) {
           {/* Breadcrumb / search divider */}
           <div className="topbar__breadcrumb-divider" aria-hidden="true" />
 
-          {/* Command search */}
-          <form className="topbar__search" onSubmit={handleSearchSubmit}>
+          {/* Command palette trigger (looks like a search field) */}
+          <button
+            type="button"
+            className="topbar__search topbar__search--trigger"
+            onClick={() => setPaletteOpen(true)}
+            aria-label="Buka command palette"
+          >
             <span className="topbar__search-icon">
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                 <circle cx="5.5" cy="5.5" r="4" />
                 <path d="m9 9 3 3" />
               </svg>
             </span>
-            <input
-              className="topbar__search-input"
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari program, aktivitas, blockers…"
-              ref={searchInputRef}
-              value={query}
-            />
+            <span className="topbar__search-placeholder">Cari program, aktivitas, blockers…</span>
             <kbd className="topbar__search-kbd">⌘K</kbd>
-          </form>
+          </button>
 
           {/* Contextual action (route-aware) */}
           {TOPBAR_ACTIONS[activePath] ? (
@@ -1415,6 +1415,13 @@ export function AppShell({ children }: { children?: ReactNode }) {
           })}
         </div>
       )}
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        resolvedTheme={resolvedTheme}
+        onToggleTheme={toggleTheme}
+      />
     </div>
   )
 }
