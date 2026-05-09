@@ -1,0 +1,429 @@
+/* AssignmentsView — surface polish.
+ * Mirrors WorkboardView treatment (both are kanban boards).
+ */
+
+.assignments-v2 {
+  display: block;
+  background: var(--ds-surface-page);
+  min-height: 100vh;
+  width: 100%;
+  /* Override legacy .view-penugasan flex+overflow that hides content */
+  overflow: visible !important;
+  height: auto !important;
+}
+
+.assignments-v2__inner {
+  display: block;
+  padding: 24px 32px 48px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Override the inline PENUGASAN_CSS workspace padding/overflow */
+.assignments-v2 .workboard-workspace {
+  padding: 0 !important;
+  overflow: visible !important;
+  background: transparent;
+}
+
+/* ─── Toolbar ───────────────────────────────────────────── */
+
+.assignments-v2 .view-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 0 16px;
+  margin-bottom: 16px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  flex-wrap: wrap;
+  height: auto;
+  overflow: visible;
+}
+
+.assignments-v2 .view-toolbar__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: -0.015em;
+  color: var(--ds-text-primary);
+  line-height: 1.2;
+  font-family: var(--ds-font-sans);
+}
+
+.assignments-v2 .view-toolbar__sep {
+  display: none;
+}
+
+.assignments-v2 .view-toolbar__subtitle {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+  flex: 0 1 auto;
+}
+
+.assignments-v2 .view-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+/* ─── Segmented toggles ─────────────────────────────────── */
+
+.assignments-v2 .view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--ds-neutral-100);
+  border-radius: var(--ds-radius-md);
+  border: 0;
+  box-shadow: none;
+  margin: 0 !important;
+}
+
+.assignments-v2 .view-toggle-btn {
+  height: 28px;
+  padding: 0 12px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+              color var(--ds-duration-fast) var(--ds-ease-standard);
+  box-shadow: none;
+}
+
+.assignments-v2 .view-toggle-btn:hover {
+  color: var(--ds-text-primary);
+}
+
+.assignments-v2 .view-toggle-btn.active {
+  background: var(--indigo-dim);
+  color: var(--indigo);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+/* ─── Stats ─────────────────────────────────────────────── */
+
+.assignments-v2 .view-toolbar__stats,
+.assignments-v2 .wb-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding-left: 12px;
+  border-left: 1px solid var(--ds-border-subtle);
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.assignments-v2 .view-toolbar__stats em,
+.assignments-v2 .wb-stats em {
+  color: var(--ds-text-tertiary);
+  font-style: normal;
+  font-weight: var(--ds-weight-regular);
+  margin-left: 2px;
+}
+
+.assignments-v2 .text-yellow { color: var(--ds-amber-600); }
+.assignments-v2 .text-red    { color: var(--ds-red-600); }
+.assignments-v2 .text-green  { color: var(--ds-green-600); }
+
+/* ─── Action button ─────────────────────────────────────── */
+
+.assignments-v2 .toolbar-action-btn {
+  height: 32px;
+  padding: 0 14px;
+  background: var(--ds-brand-600);
+  color: var(--ds-text-on-brand);
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+  box-shadow: none;
+}
+
+.assignments-v2 .toolbar-action-btn:hover {
+  background: var(--ds-brand-700);
+}
+
+/* ─── Rollback banner ───────────────────────────────────── */
+
+.assignments-v2 .board-rollback-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: var(--ds-red-50);
+  border: 1px solid var(--ds-red-500);
+  border-radius: var(--ds-radius-md);
+  color: var(--ds-red-600);
+  font-size: var(--ds-text-13);
+}
+
+.assignments-v2 .board-rollback-banner__icon { font-size: 16px; }
+
+.assignments-v2 .board-rollback-banner__msg {
+  font-weight: var(--ds-weight-semibold);
+}
+
+/* ─── Workboard wrappers ────────────────────────────────── */
+
+.assignments-v2 .workboard-main {
+  background: transparent;
+  padding: 0;
+}
+
+/* ─── Kanban board ──────────────────────────────────────── */
+
+.assignments-v2 .kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(260px, 1fr));
+  gap: 12px;
+  background: transparent;
+  padding: 0;
+}
+
+@media (max-width: 1100px) {
+  .assignments-v2 .kanban-board {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+.assignments-v2 .kanban-col {
+  background: var(--ds-surface-sunken);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+  box-shadow: none;
+}
+
+.assignments-v2 .kanban-col--collapsed { min-height: 44px; }
+
+.assignments-v2 .kanban-col__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: var(--ds-radius-lg) var(--ds-radius-lg) 0 0;
+  text-align: left;
+  width: 100%;
+  position: relative;
+}
+
+.assignments-v2 .kanban-col--collapsed .kanban-col__header {
+  border-bottom: 0;
+  border-radius: var(--ds-radius-lg);
+}
+
+.assignments-v2 .kanban-col__header:hover {
+  background: var(--ds-surface-hover);
+}
+
+.assignments-v2 .kanban-col__header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--ds-neutral-300);
+}
+
+.assignments-v2 .kanban-col__header--backlog::before     { background: var(--ds-neutral-300); }
+.assignments-v2 .kanban-col__header--in_progress::before { background: var(--ds-amber-500); }
+.assignments-v2 .kanban-col__header--in_review::before   { background: #A855F7; }
+.assignments-v2 .kanban-col__header--completed::before   { background: var(--ds-green-500); }
+.assignments-v2 .kanban-col__header--blocked::before     { background: var(--ds-red-500); }
+
+.assignments-v2 .kanban-col__label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.assignments-v2 .kanban-col__caret {
+  font-size: 10px;
+  color: var(--ds-text-tertiary);
+}
+
+.assignments-v2 .kanban-col__label {
+  font-size: 12px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.assignments-v2 .section-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  font-size: 11px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.assignments-v2 .kanban-col__body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.assignments-v2 .kanban-col__empty,
+.assignments-v2 .kanban-col__empty--dashed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  padding: 16px;
+  border: 1px dashed var(--ds-border-default);
+  border-radius: var(--ds-radius-md);
+  font-size: 11px;
+  color: var(--ds-text-tertiary);
+  background: transparent;
+  text-align: center;
+}
+
+/* ─── Work card (assignments use .work-card too) ─────────── */
+
+.assignments-v2 .work-card {
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color var(--ds-duration-fast) var(--ds-ease-standard),
+              transform var(--ds-duration-fast) var(--ds-ease-standard),
+              box-shadow var(--ds-duration-fast) var(--ds-ease-standard);
+  box-shadow: none;
+}
+
+.assignments-v2 .work-card:hover {
+  border-color: var(--ds-border-strong);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+}
+
+.assignments-v2 .work-card--blocked {
+  border-color: var(--ds-red-500);
+  box-shadow: inset 2px 0 0 0 var(--ds-red-500);
+}
+
+.assignments-v2 .work-card--blocked:hover {
+  box-shadow: inset 2px 0 0 0 var(--ds-red-500),
+              0 2px 4px rgba(0, 0, 0, 0.06),
+              0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.assignments-v2 .work-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.assignments-v2 .work-card__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 6px;
+  background: var(--ds-neutral-400);
+}
+
+.assignments-v2 .work-card__dot--low      { background: var(--ds-neutral-400); }
+.assignments-v2 .work-card__dot--medium   { background: var(--ds-amber-500); }
+.assignments-v2 .work-card__dot--high     { background: #EA580C; }
+.assignments-v2 .work-card__dot--critical { background: var(--ds-red-500); }
+
+.assignments-v2 .work-card__title {
+  margin: 0;
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-14);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-primary);
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+  flex: 1 1 auto;
+}
+
+.assignments-v2 .work-card__context {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--ds-text-tertiary);
+}
+
+.assignments-v2 .work-card__context-prog {
+  font-family: var(--ds-font-mono);
+  font-size: 10px;
+  color: var(--ds-text-tertiary);
+}
+
+.assignments-v2 .work-card__context-sep {
+  color: var(--ds-text-disabled);
+}
+
+.assignments-v2 .work-card__context-ini {
+  color: var(--ds-text-secondary);
+}
+
+/* Code badges + assignment-specific flags inherit the inline PENUGASAN_CSS,
+ * but ensure the badges look modern in this scope */
+.assignments-v2 .work-card .code-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 5px;
+  background: transparent;
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-sm);
+  font-family: var(--ds-font-mono);
+  font-size: 9px;
+  color: var(--ds-text-tertiary);
+}
+
+/* Empty state */
+.assignments-v2 .pen-empty,
+.assignments-v2 [class*="empty-state"] {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--ds-text-tertiary);
+  font-size: var(--ds-text-13);
+}

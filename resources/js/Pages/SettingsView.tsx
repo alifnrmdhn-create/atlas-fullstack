@@ -11,6 +11,7 @@ import {
   getStoredThemePreference,
   subscribeThemeChange,
 } from '../lib/theme'
+import './SettingsView.css'
 
 // ── Nav items ──────────────────────────────────────────────────────────────
 
@@ -374,7 +375,8 @@ export function SettingsView() {
   ]
 
   return (
-    <div className="view-settings">
+    <div className="ds settings-v2 view-settings">
+      <div className="settings-v2__inner">
 
       {/* Page header */}
       <div className="view-toolbar">
@@ -713,6 +715,7 @@ export function SettingsView() {
           )}
 
         </div>
+      </div>
       </div>
     </div>
   )

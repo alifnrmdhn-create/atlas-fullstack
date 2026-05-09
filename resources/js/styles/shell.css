@@ -1,11 +1,15 @@
-/* ─── AppShell ───────────────────────────────────────────────── */
+/* ─── AppShell — FLOATING PANEL pattern (Stripe Dashboard) ───────────────
+ * Both sidebar & workspace are lifted panels with border-radius + shadow.
+ * Canvas (--app-bg) shows through as a subtle gutter around panels. */
 .app-shell {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
+  column-gap: 8px;
+  padding: 8px;
   height: 100vh;
   overflow: hidden;
   transition: grid-template-columns 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  background: var(--app-bg);
+  background: var(--shell-canvas);
   animation: app-shell-enter 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes app-shell-enter {
@@ -16,76 +20,308 @@
   grid-template-columns: var(--sidebar-width-collapsed) 1fr;
 }
 
-/* ══ Sidebar ══════════════════════════════════════════════════ */
+/* ══ Sidebar — DARK FLOATING PANEL (Stripe Dashboard pattern) ════════════
+ * Lifted dark navy slate panel with border-radius + drop shadow + full border.
+ * Sits on light canvas with subtle gutter all around. */
 .sidebar {
-  background: var(--sidebar-bg);
+  background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-end) 100%);
+  color: var(--sidebar-text);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 100;
-  height: 100vh;
-  box-shadow: 1px 0 0 var(--sidebar-border), var(--panel-shadow-md);
+  height: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--sidebar-border-strong);
+  box-shadow:
+    0 18px 40px rgba(15,20,40,0.20),
+    0 6px 14px rgba(15,20,40,0.12),
+    0 1px 0 rgba(255,255,255,0.04) inset;
 }
 
-/* ⑥ Brand header — subtle premium treatment */
+/* ⑥ Brand header — premium dark identity area with workspace tagline.
+ * Collapse button anchored top-right (Linear pattern) — saves footer space. */
 .sidebar__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: relative;
   height: var(--topbar-height);
-  padding: 0 10px 0 12px;
+  padding: 0 8px 0 14px;
   flex-shrink: 0;
   gap: 8px;
-  box-shadow: 0 1px 0 var(--sidebar-border);
-  background: linear-gradient(to bottom, var(--indigo-dim), transparent);
+  border-bottom: 1px solid var(--sidebar-border);
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--ptpn-green) 4%, transparent) 0%,
+    transparent 60%);
 }
-.sidebar__brand { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; transition: gap 160ms cubic-bezier(0.4, 0, 0.2, 1); }
+/* Collapse toggle — top-right of sidebar header. Icon-only, hover-reveal. */
+.sidebar__collapse-toggle {
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--sidebar-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 140ms cubic-bezier(0.4, 0, 0.2, 1), background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sidebar__header:hover .sidebar__collapse-toggle,
+.sidebar__collapse-toggle:focus-visible { opacity: 1; }
+.sidebar__collapse-toggle:hover {
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text-strong);
+}
+.sidebar__collapse-toggle:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.app-shell--collapsed .sidebar__collapse-toggle {
+  opacity: 0.55; /* always visible when collapsed so user knows how to expand */
+}
+.app-shell--collapsed .sidebar__collapse-toggle:hover { opacity: 1; }
+.app-shell--collapsed .sidebar__collapse-toggle svg {
+  transform: scaleX(-1);
+}
+.sidebar__brand { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; transition: gap 160ms cubic-bezier(0.4, 0, 0.2, 1); }
 .sidebar__brand-mark {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, var(--ptpn-green) 0%, var(--indigo) 50%, var(--accent) 100%);
-  color: var(--text-inverse);
-  border-radius: 9px;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, var(--ptpn-green) 0%, color-mix(in srgb, var(--ptpn-green) 70%, #0a4d20 30%) 100%);
+  color: #ffffff;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
   font-weight: 800;
   flex-shrink: 0;
-  box-shadow: var(--panel-shadow-md);
+  box-shadow:
+    0 6px 16px color-mix(in srgb, var(--ptpn-green) 40%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 0 -1px 0 rgba(0,0,0,0.18);
+  position: relative;
 }
-.sidebar__brand-name { display: flex; align-items: center; min-width: 0; overflow: hidden; transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms; }
+.sidebar__brand-mark::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.16) 0%, transparent 55%);
+  pointer-events: none;
+}
+.sidebar__brand-name {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+  gap: 2px;
+  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms;
+}
 .sidebar__brand-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--text-strong);
+  color: var(--sidebar-text-strong);
   white-space: nowrap;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.10em;
   line-height: 1;
+  font-feature-settings: 'cv11' on, 'ss01' on;
+  background: linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, #ffffff 78%, var(--ptpn-green) 22%) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.sidebar__brand-tagline {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sidebar-text-muted);
+  line-height: 1;
+  white-space: nowrap;
+  font-feature-settings: 'tnum';
 }
 .sidebar__brand-sub {
   display: none;
 }
-.sidebar__collapse-btn {
-  width: 22px;
-  height: 22px;
-  background: var(--panel);
-  border: 0.5px solid var(--panel-border);
-  color: var(--text-muted);
+.sidebar__footer {
+  border-top: 1px solid var(--sidebar-border);
+  padding: 6px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative; /* containing block for .sidebar__user-popover */
+}
+
+/* User mini-card — Slack/Linear/Notion footer pattern. Click → opens menu */
+.sidebar__user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 9px;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
   cursor: pointer;
-  padding: 0;
-  border-radius: 5px;
+  text-align: left;
+  color: var(--sidebar-text-strong);
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+.sidebar__user-card:hover {
+  background: rgba(255,255,255,0.05);
+}
+.sidebar__user-card[aria-expanded="true"] {
+  background: var(--sidebar-active-bg);
+}
+.sidebar__user-card:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.sidebar__user-card-avatar {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ptpn-green) 0%, color-mix(in srgb, var(--ptpn-green) 70%, #0a4d20 30%) 100%);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
   flex-shrink: 0;
-  transition: background 160ms cubic-bezier(0.4, 0, 0.2, 1), color 160ms cubic-bezier(0.4, 0, 0.2, 1), border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.10),
+    0 4px 10px color-mix(in srgb, var(--ptpn-green) 32%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.18);
+  font-feature-settings: 'cv11' on;
+  letter-spacing: 0.02em;
 }
-.sidebar__collapse-btn:hover { color: var(--text-strong); background: var(--surface-1); border-color: var(--panel-border-strong); }
-.sidebar__collapse-btn:focus-visible,
+.sidebar__user-card-status {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 1.5px solid var(--sidebar-bg-end);
+  box-shadow: 0 0 0 2px color-mix(in srgb, #22c55e 28%, transparent), 0 0 8px color-mix(in srgb, #22c55e 50%, transparent);
+}
+.sidebar__user-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms;
+}
+.sidebar__user-card-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sidebar-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+.sidebar__user-card-role {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--sidebar-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+.sidebar__user-card-chev {
+  color: var(--sidebar-text-muted);
+  opacity: 0.6;
+  flex-shrink: 0;
+  transition: opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sidebar__user-card:hover .sidebar__user-card-chev { opacity: 1; }
+
+/* User dropdown — dark surface matching sidebar */
+.sidebar__user-popover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 6px;
+  right: 6px;
+  background: linear-gradient(180deg, #1a2235 0%, #131b2d 100%);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 20px 40px rgba(0,0,0,0.36),
+    0 4px 10px rgba(0,0,0,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+  z-index: 199;
+  overflow: hidden;
+  animation: fade-in 140ms var(--ease-enter);
+}
+.sidebar__user-popover-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 13px;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--ptpn-green) 14%, transparent) 0%,
+    transparent 100%);
+}
+.sidebar__user-popover-identity strong { display: block; font-size: 12.5px; font-weight: 700; color: var(--sidebar-text-strong); }
+.sidebar__user-popover-identity span { display: block; font-size: 11px; color: var(--sidebar-text-muted); margin-top: 2px; }
+.sidebar__user-popover-avatar {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--ptpn-green) 0%, color-mix(in srgb, var(--ptpn-green) 70%, #0a4d20 30%) 100%);
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.10), inset 0 1px 0 rgba(255,255,255,0.18);
+}
+.sidebar__user-popover-divider { height: 1px; background: rgba(255,255,255,0.06); }
+.sidebar__user-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 13px;
+  background: none;
+  border: none;
+  font-size: 0.84rem;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition), color var(--transition);
+}
+.sidebar__user-popover-item:hover { background: rgba(255,255,255,0.05); color: var(--sidebar-text-strong); }
+.sidebar__user-popover-item--danger { color: #fca5a5; }
+.sidebar__user-popover-item--danger:hover { background: rgba(239,68,68,0.14); color: #fecaca; }
+.sidebar__user-popover-item-kbd {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--sidebar-text-muted);
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
 .sidebar__item:focus-visible,
-.sidebar__user:focus-visible {
+.sidebar__user-card:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
@@ -99,33 +335,67 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 200ms ease;
 }
-.sidebar__nav::-webkit-scrollbar { width: 0; }
-.sidebar__group { display: flex; flex-direction: column; gap: 1px; }
+.sidebar__nav:hover { scrollbar-color: rgba(255,255,255,0.12) transparent; }
+.sidebar__nav::-webkit-scrollbar { width: 4px; }
+.sidebar__nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar__nav::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; transition: background 200ms ease; }
+.sidebar__nav:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+.sidebar__nav:hover::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+.sidebar__group { display: flex; flex-direction: column; gap: 3px; }
 
 /* Fokus — ungrouped top item */
 .sidebar__fokus-wrap {
   padding-bottom: 4px;
 }
 
-/* ④ Group separation — more breathing room */
+/* ④ Group separation — pure breathing room. PDCA color bar + uppercase label
+ * already deliver clear section break; hairline divider would add noise. */
 .sidebar__group--separated {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--sidebar-border);
+  margin-top: 18px;
+}
+/* Admin sits in a settings tier — visually demoted from daily-nav groups */
+.sidebar__group--admin {
+  margin-top: 26px;
+}
+.sidebar__group--admin .sidebar__group-label {
+  opacity: 0.55;
 }
 .sidebar__group-label {
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  padding: 2px 10px 5px;
+  color: var(--sidebar-text-muted);
+  padding: 0 14px 6px;
   white-space: nowrap;
   overflow: hidden;
   transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms;
-  opacity: 0.6;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
+/* PDCA section accent — slim 2px vertical bar di kiri label.
+ * Aligned to label cap height (8px) with subtle rounded ends. */
+.sidebar__group-label::before {
+  content: '';
+  width: 2px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--ptpn-green);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+.sidebar__group--plan .sidebar__group-label::before    { background: var(--blue); }
+.sidebar__group--do .sidebar__group-label::before      { background: var(--yellow); }
+.sidebar__group--check .sidebar__group-label::before   { background: var(--ptpn-green); }
+.sidebar__group--act .sidebar__group-label::before     { background: var(--red); }
+.sidebar__group--utility .sidebar__group-label::before { background: var(--text-muted); opacity: 0.4; }
+.sidebar__group--admin .sidebar__group-label::before   { background: var(--text-muted); opacity: 0.35; }
 
 /* Nav item — Linear/Notion-style restraint:
  *   - default: muted text + faint icon
@@ -135,43 +405,70 @@
 .sidebar__item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 30px;
-  padding: 6px 10px;
-  border-radius: 7px;
+  gap: 10px;
+  min-height: 34px;
+  padding: 8px 11px;
+  border-radius: 8px;
   color: var(--sidebar-text);
   text-decoration: none;
   font-size: var(--type-small);
   font-weight: 500;
   overflow: hidden;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), transform 140ms cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  font-feature-settings: 'cv11' on, 'tnum';
 }
 .sidebar__item:hover {
-  background: var(--surface-1);
-  color: var(--text-strong);
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text-strong);
+  transform: translateX(2px);
 }
 .sidebar__item--active {
-  background: var(--surface-overlay);
-  color: var(--text-strong);
+  background: linear-gradient(135deg,
+    var(--sidebar-active-bg) 0%,
+    color-mix(in srgb, var(--sidebar-active-bg) 60%, transparent) 100%);
+  color: var(--sidebar-text-active);
   font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.sidebar__item--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 2.5px;
+  border-radius: 0 2px 2px 0;
+  background: var(--ptpn-green);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--ptpn-green) 55%, transparent);
 }
 .sidebar__item--active:hover {
-  background: var(--surface-overlay-strong);
-  color: var(--text-strong);
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--ptpn-green) 36%, transparent) 0%,
+    color-mix(in srgb, var(--ptpn-green) 22%, transparent) 100%);
+  color: var(--sidebar-text-active);
+  transform: none;
 }
 .sidebar__item-icon {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.6;
-  transition: opacity 120ms ease;
+  opacity: 0.55;
+  color: var(--sidebar-text);
+  transition: opacity 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-.sidebar__item:hover .sidebar__item-icon { opacity: 0.9; }
-.sidebar__item--active .sidebar__item-icon { opacity: 1; }
+.sidebar__item:hover .sidebar__item-icon {
+  opacity: 1;
+  color: var(--sidebar-text-strong);
+}
+.sidebar__item--active .sidebar__item-icon {
+  opacity: 1;
+  color: var(--sidebar-text-active);
+}
 .sidebar__item-label {
   flex: 1;
   min-width: 0;
@@ -181,99 +478,58 @@
   white-space: nowrap;
   transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms;
 }
+/* Sub-group label (legacy) — flattened in M6.6, KPI items now sit directly
+ * under "Performance" group label. Style retained for any future use. */
+.sidebar__subgroup-label {
+  display: none;
+}
 
-/* ③ Badge — consistent brand green */
+/* Utility-tier items within a workspace group (Profile, Settings — personal,
+ * not collab). Visually demoted via opacity; full strength on hover/active. */
+.sidebar__item--utility { opacity: 0.7; }
+.sidebar__item--utility:hover,
+.sidebar__item--utility.sidebar__item--active { opacity: 1; }
+
+/* ③ Badge — count metadata. Two flavors:
+ *    - default (count): subtle muted pill — informational
+ *    - urgent (unread/action): brand green pill — calls attention */
 .sidebar__badge {
   margin-left: auto;
-  background: var(--indigo-dim);
-  color: var(--indigo);
-  font-size: 0.69rem;
+  background: rgba(255,255,255,0.06);
+  color: var(--sidebar-text-muted);
+  font-size: 10px;
   font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 10px;
+  padding: 1px 7px;
+  min-width: 18px;
+  text-align: center;
+  border-radius: 9px;
   flex-shrink: 0;
   overflow: hidden;
-  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms;
+  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms, background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1);
+  font-feature-settings: 'tnum' on;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.sidebar__item:hover .sidebar__badge {
+  background: rgba(255,255,255,0.10);
+  color: var(--sidebar-text-strong);
 }
 .sidebar__item--active .sidebar__badge {
-  background: var(--indigo-mid);
-  color: var(--indigo);
+  background: rgba(110,231,161,0.18);
+  color: var(--sidebar-text-active);
+}
+/* Urgent variant — brand green saturated, glow */
+.sidebar__badge--urgent {
+  background: var(--ptpn-green);
+  color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(110,231,161,0.32), 0 2px 6px color-mix(in srgb, var(--ptpn-green) 50%, transparent);
+}
+.sidebar__item:hover .sidebar__badge--urgent {
+  background: color-mix(in srgb, var(--ptpn-green) 92%, white);
+  color: #ffffff;
 }
 
-/* ② User footer — clickable, presence-aware */
-.sidebar__footer {
-  padding: 8px 8px 10px;
-  border-top: 1px solid var(--sidebar-border);
-  flex-shrink: 0;
-}
-.sidebar__user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
-  border-radius: 8px;
-  overflow: hidden;
-  cursor: pointer;
-  text-decoration: none;
-  border-left: 2px solid transparent;
-  transition: background 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.sidebar__user:hover {
-  background: var(--surface-1);
-  border-left-color: var(--indigo-mid);
-}
-.sidebar__avatar-wrap {
-  position: relative;
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-}
-.sidebar__avatar {
-  width: 30px;
-  height: 30px;
-  background: var(--avatar-bg);
-  color: var(--avatar-color);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  border: 1.5px solid var(--avatar-border);
-}
-.sidebar__avatar-dot {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  border: 1.5px solid var(--sidebar-bg);
-}
-.sidebar__avatar-dot--online  { background: var(--green); }
-.sidebar__avatar-dot--away    { background: var(--yellow); }
-.sidebar__avatar-dot--dnd     { background: var(--red); }
-.sidebar__avatar-dot--offline { background: var(--text-muted); }
-.sidebar__user-info { flex: 1; overflow: hidden; min-width: 0; transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms; }
-.sidebar__user-name {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-strong);
-  line-height: 1.3;
-  word-break: break-word;
-}
-.sidebar__user-role {
-  display: block;
-  font-size: 10px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 1px;
-}
-
-/* Tooltip (collapsed) */
+/* Tooltip (collapsed) — dark theme styling matching sidebar surface */
 .sidebar__tooltip {
   position: fixed;
   z-index: 300;
@@ -283,22 +539,23 @@
   min-width: 188px;
   max-width: 246px;
   padding: 12px 14px;
-  background:
-    linear-gradient(180deg, var(--surface-1) 0%, var(--panel) 100%);
-  border: 1px solid var(--panel-border-strong);
-  border-radius: 16px;
+  background: linear-gradient(180deg, #1a2235 0%, #131b2d 100%);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px;
   transform: translateY(-50%);
   pointer-events: auto;
   white-space: normal;
-  box-shadow: var(--panel-shadow-xl);
-  backdrop-filter: blur(14px);
+  box-shadow:
+    0 16px 36px rgba(0,0,0,0.32),
+    0 4px 10px rgba(0,0,0,0.20),
+    inset 0 1px 0 rgba(255,255,255,0.06);
 }
 .sidebar__tooltip::before {
   content: '';
   position: absolute;
   inset: 1px;
-  border-radius: 15px;
-  background: linear-gradient(180deg, var(--surface-overlay-soft), transparent 60%);
+  border-radius: 11px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 60%);
   pointer-events: none;
 }
 .sidebar__tooltip-copy,
@@ -311,17 +568,31 @@
   min-width: 0;
 }
 .sidebar__tooltip-copy > strong {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.88rem;
   line-height: 1.2;
-  color: var(--text-strong);
+  color: var(--sidebar-text-strong);
   letter-spacing: -0.01em;
+}
+.sidebar__tooltip-copy > strong > kbd {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--sidebar-text-muted);
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  white-space: nowrap;
 }
 .sidebar__tooltip-copy > span {
   display: block;
   font-size: 0.79rem;
   line-height: 1.45;
-  color: var(--text-muted);
+  color: var(--sidebar-text);
   margin-top: 4px;
 }
 .sidebar__tooltip-icon {
@@ -332,9 +603,9 @@
   height: 30px;
   border-radius: 10px;
   flex-shrink: 0;
-  background: var(--surface-overlay);
-  color: var(--indigo);
-  box-shadow: inset 0 0 0 1px var(--panel-border);
+  background: rgba(110,231,161,0.14);
+  color: var(--sidebar-text-active);
+  box-shadow: inset 0 0 0 1px rgba(110,231,161,0.20);
 }
 .sidebar__tooltip-icon svg {
   width: 15px;
@@ -345,8 +616,8 @@
   top: 50%;
   width: 10px;
   height: 10px;
-  background: var(--panel);
-  border: 1px solid var(--panel-border-strong);
+  background: #131b2d;
+  border: 1px solid rgba(255,255,255,0.10);
   transform: translateY(-50%) rotate(45deg);
 }
 .sidebar__tooltip--right .sidebar__tooltip-arrow {
@@ -361,122 +632,133 @@
 }
 
 /* Collapsed state */
+/* ════ Collapsed mode — semua elemen TRUE-CENTER di sidebar 60px ════════
+ * Strategy: hide hidden-flex-items via `display: none` (bukan width:0),
+ * set gap:0 supaya tidak ada residual space, padding rata kiri-kanan. */
 .app-shell--collapsed .sidebar__header {
-  padding: 0 6px;
-}
-.app-shell--collapsed .sidebar__brand {
+  padding: 0;
   justify-content: center;
 }
-.app-shell--collapsed .sidebar__brand-name {
-  width: 0;
-  opacity: 0;
-  transition: opacity 100ms cubic-bezier(0.4, 0, 0.2, 1), width 0s 100ms;
+.app-shell--collapsed .sidebar__brand {
+  gap: 0;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 100%;
 }
-.app-shell--collapsed .sidebar__group-label {
+.app-shell--collapsed .sidebar__brand-name {
+  display: none;
+}
+/* Collapse-toggle disembunyikan saat collapsed — brand mark itself jadi
+ * click-target untuk expand (cursor pointer + hover scale). User juga punya
+ * keyboard shortcut ⌘\ sebagai alternatif. */
+.app-shell--collapsed .sidebar__collapse-toggle {
+  display: none;
+}
+.app-shell--collapsed .sidebar__group-label,
+.app-shell--collapsed .sidebar__subgroup-label {
   opacity: 0;
   height: 0;
   padding: 0;
   transition: opacity 100ms cubic-bezier(0.4, 0, 0.2, 1), height 0s 100ms, padding 0s 100ms;
 }
+.app-shell--collapsed .sidebar__nav {
+  gap: 4px;
+  padding: 12px 6px 8px;
+}
 .app-shell--collapsed .sidebar__item {
+  gap: 0;
   justify-content: center;
-  padding: 7px 0;
-}
-.app-shell--collapsed .sidebar__item-label {
-  width: 0;
-  opacity: 0;
-  transition: opacity 100ms cubic-bezier(0.4, 0, 0.2, 1), width 0s 100ms;
-}
-.app-shell--collapsed .sidebar__badge {
-  max-width: 0;
-  opacity: 0;
-  padding: 0;
+  padding: 9px 0;
+  min-height: 38px;
+  border-radius: 9px;
   margin: 0;
-  transition: opacity 100ms cubic-bezier(0.4, 0, 0.2, 1), max-width 0s 100ms, padding 0s 100ms, margin 0s 100ms;
 }
-.app-shell--collapsed .sidebar__user-info {
-  max-width: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: opacity 100ms cubic-bezier(0.4, 0, 0.2, 1), max-width 0s 100ms;
+/* Collapsed: hide green bar (too thin to read at 60px width), use full bg accent instead */
+.app-shell--collapsed .sidebar__item--active::before { display: none; }
+.app-shell--collapsed .sidebar__item--active {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--ptpn-green) 32%, transparent) 0%,
+    color-mix(in srgb, var(--ptpn-green) 18%, transparent) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 0 0 1px color-mix(in srgb, var(--ptpn-green) 30%, transparent);
 }
-.app-shell--collapsed .sidebar__user {
+/* Brand mark di collapsed — sama dengan expanded (28px), centered properly.
+ * Click → expand sidebar (handler di AppShell.tsx). */
+.app-shell--collapsed .sidebar__brand-mark {
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.app-shell--collapsed .sidebar__brand-mark:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--ptpn-green) 50%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.28);
+}
+.app-shell--collapsed .sidebar__item-label,
+.app-shell--collapsed .sidebar__badge {
+  display: none;
+}
+.app-shell--collapsed .sidebar__footer {
+  padding: 8px 0;
+  align-items: center;
+}
+.app-shell--collapsed .sidebar__user-card {
+  gap: 0;
   justify-content: center;
-  padding: 4px 0;
+  padding: 6px 0;
+  width: 44px;
 }
-.app-shell--collapsed .sidebar__collapse-btn {
-  position: absolute;
-  right: 7px;
-  background: var(--panel);
+/* Avatar hover di collapsed — konsisten dengan brand mark (scale + glow) */
+.app-shell--collapsed .sidebar__user-card:hover {
+  background: transparent;
+  box-shadow: none;
 }
-.app-shell--collapsed .sidebar__collapse-btn svg {
-  transform: scaleX(-1);
+.app-shell--collapsed .sidebar__user-card:hover .sidebar__user-card-avatar {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.16),
+    0 8px 20px color-mix(in srgb, var(--ptpn-green) 50%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.28);
+}
+.sidebar__user-card-avatar {
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.app-shell--collapsed .sidebar__user-card-body,
+.app-shell--collapsed .sidebar__user-card-chev {
+  display: none;
+}
+.app-shell--collapsed .sidebar__user-popover {
+  left: calc(100% + 8px);
+  right: auto;
+  bottom: 6px;
+  width: 220px;
 }
 
-/* ══ Workspace ════════════════════════════════════════════════ */
+/* ══ Workspace — FLOATING PANEL pattern ════════════════════════════════
+ * Lifted panel with rounded corners + hairline border + subtle shadow.
+ * Canvas (--app-bg) shows through as gutter via app-shell padding. */
 .workspace {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  height: 100%;
   /* transform: translate(0,0) makes workspace the containing block for
-     position:fixed children — backdrop inset:0 covers workspace only,
-     not the sidebar. Identity transform has zero visual effect. */
+     position:fixed children — backdrop inset:0 covers workspace only. */
   transform: translate(0, 0);
-  /* Richer background: dual ambient gradients over the canvas */
-  background:
-    radial-gradient(ellipse 70% 60% at 2% 4%,  var(--ptpn-green-dim) 0%, transparent 100%),
-    radial-gradient(ellipse 60% 50% at 98% 96%, var(--indigo-dim) 0%, transparent 100%),
-    radial-gradient(ellipse 40% 40% at 50% 0%,  var(--accent-dim) 0%, transparent 100%),
-    var(--app-bg);
+  background: var(--panel);
+  border-radius: 14px;
+  border: 1px solid var(--panel-border);
+  box-shadow:
+    0 8px 20px rgba(15,20,40,0.06),
+    0 2px 4px rgba(15,20,40,0.04);
   min-width: 0;
 }
 
-:root:not([data-theme="dark"]) .sidebar {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 94%, var(--surface-2) 6%) 0%, color-mix(in srgb, var(--panel) 88%, var(--surface-2) 12%) 100%);
-}
+/* Sidebar uses dedicated dark surface in both light & dark themes (Stripe pattern).
+ * Color tokens (`--sidebar-bg`, `--sidebar-text`, etc.) carry the dark identity
+ * regardless of app theme. No light-mode override here. */
 
-:root:not([data-theme="dark"]) .sidebar__header {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--indigo) 8%, var(--panel) 92%) 0%, color-mix(in srgb, var(--panel) 96%, var(--surface-2) 4%) 100%);
-}
-
-:root:not([data-theme="dark"]) .sidebar__brand-mark {
-  box-shadow: 0 12px 24px color-mix(in srgb, var(--indigo) 16%, transparent), inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 18%, transparent);
-}
-
-:root:not([data-theme="dark"]) .sidebar__collapse-btn {
-  background: color-mix(in srgb, var(--surface-2) 80%, var(--panel) 20%);
-  border-color: color-mix(in srgb, var(--panel-border-strong) 62%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 78%, transparent);
-}
-
-:root:not([data-theme="dark"]) .sidebar__item {
-  border-left-width: 3px;
-  border-radius: 10px;
-}
-
-:root:not([data-theme="dark"]) .sidebar__item:hover {
-  background: var(--surface-1);
-}
-
-:root:not([data-theme="dark"]) .sidebar__item--active {
-  background: var(--indigo-dim);
-  color: var(--indigo);
-  border-left-color: var(--indigo);
-}
-
-:root:not([data-theme="dark"]) .sidebar__item--active:hover {
-  background: var(--indigo-mid);
-  color: var(--indigo-dark);
-}
-
-:root:not([data-theme="dark"]) .sidebar__item--active .sidebar__item-icon {
-  color: var(--indigo);
-  opacity: 1;
-}
-
-:root:not([data-theme="dark"]) .sidebar__user:hover {
-  background: var(--surface-1);
-}
 
 .workspace__content {
   flex: 1;
@@ -494,7 +776,10 @@
 .workspace__content::-webkit-scrollbar-thumb { background: var(--panel-border-strong); border-radius: 99px; }
 .workspace__content::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ══ Topbar ═══════════════════════════════════════════════════ */
+/* ══ Topbar ═══════════════════════════════════════════════════
+ * Pure System: shares canvas (--app-bg). Bottom hairline draws the boundary.
+ * No panel shadow — topbar feels structural with the rest of the page,
+ * not a separate elevated bar. */
 .topbar {
   height: var(--topbar-height);
   background: var(--topbar-bg);
@@ -506,10 +791,148 @@
   /* 9500 > backdrop (9000) so topbar stays above any modal overlay within workspace */
   z-index: 9500;
   flex-shrink: 0;
-  box-shadow: 0 1px 0 var(--topbar-border), var(--panel-shadow);
 }
 
-/* Breadcrumb */
+/* ── Slim utility bar: meta (date/period/live) + cmdk + spacer ─────
+ * Pure System: topbar shares canvas. Left holds context meta, right holds
+ * utility icons. No breadcrumb, no full-width search. */
+
+.topbar__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.topbar__meta-date {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  color: var(--text);
+}
+
+.topbar__meta-sep {
+  color: var(--panel-border);
+}
+
+.topbar__meta-period {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Live SSE indicator — tiny pulsing dot. Green when connected, gray when offline */
+.topbar__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 4px 0 6px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  border-left: 1px solid var(--panel-border);
+  margin-left: 2px;
+  height: 14px;
+}
+.topbar__live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  position: relative;
+  flex-shrink: 0;
+}
+.topbar__live--connected .topbar__live-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: var(--green);
+  opacity: 0.4;
+  animation: topbar-live-pulse 1800ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.topbar__live--disconnected .topbar__live-dot { background: var(--text-muted); opacity: 0.5; }
+.topbar__live--disconnected { color: var(--text-muted); opacity: 0.6; }
+@keyframes topbar-live-pulse {
+  0%   { transform: scale(0.6); opacity: 0.5; }
+  80%  { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+
+.topbar__spacer {
+  flex: 1 1 auto;
+}
+
+/* ⌘K command palette trigger — prominent search pill (Linear/Vercel pattern).
+ * Acts like an input field but opens the command palette on click. */
+.topbar__cmdk {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  width: 200px;
+  padding: 0 8px 0 11px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  border-radius: 9px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition);
+  flex-shrink: 0;
+}
+
+.topbar__cmdk-placeholder {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.005em;
+}
+
+.topbar__cmdk:hover {
+  background: var(--surface-1);
+  border-color: color-mix(in srgb, var(--ptpn-green) 22%, var(--panel-border-strong));
+  color: var(--text-strong);
+}
+.topbar__cmdk:hover .topbar__cmdk-placeholder {
+  color: color-mix(in srgb, var(--text-strong) 60%, var(--text-muted));
+}
+
+.topbar__cmdk:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.topbar__cmdk kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--surface-1);
+  border: 1px solid var(--panel-border);
+  font-feature-settings: 'tnum';
+}
+
+/* Breadcrumb (legacy — element no longer rendered in topbar but classes
+ * remain for any consumer that may still reference them) */
 .topbar__breadcrumb {
   display: flex;
   align-items: center;
@@ -604,6 +1027,96 @@
   transform: translateY(-1px);
 }
 
+/* Global Quick-Create button — anchored dropdown with universal create options */
+.topbar__quick-menu { position: relative; flex-shrink: 0; }
+.topbar__quick-btn {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: linear-gradient(135deg, var(--ptpn-green) 0%, color-mix(in srgb, var(--ptpn-green) 78%, var(--indigo-dark) 22%) 100%);
+  color: var(--text-inverse);
+  border-radius: 9px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), background 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 2px 6px color-mix(in srgb, var(--ptpn-green) 22%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 22%, transparent);
+}
+.topbar__quick-btn:hover {
+  box-shadow:
+    0 8px 18px color-mix(in srgb, var(--ptpn-green) 32%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
+  transform: translateY(-1px);
+}
+.topbar__quick-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.topbar__quick-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--panel-shadow-xl);
+  min-width: 244px;
+  z-index: 199;
+  overflow: hidden;
+  animation: fade-in 140ms var(--ease-enter);
+}
+.topbar__quick-popover-head {
+  padding: 9px 12px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.topbar__quick-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition);
+}
+.topbar__quick-item:hover { background: var(--surface-1); color: var(--text-strong); }
+.topbar__quick-item-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--ptpn-green-dim);
+  color: var(--ptpn-green);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.topbar__quick-item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.topbar__quick-item-title { font-size: 12.5px; font-weight: 600; color: var(--text-strong); line-height: 1.2; }
+.topbar__quick-item-sub { font-size: 10.5px; color: var(--text-muted); line-height: 1.2; }
+.topbar__quick-item-kbd {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface-1);
+  border: 1px solid var(--panel-border);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* Icon buttons */
 .topbar__theme-btn {
   width: 32px;
@@ -632,8 +1145,8 @@
   width: 32px;
   height: 32px;
   background: var(--panel);
-  border: 0.5px solid var(--panel-border);
-  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 9px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -643,6 +1156,7 @@
 }
 .topbar__notif-btn:hover {
   background: var(--surface-1);
+  border-color: color-mix(in srgb, var(--ptpn-green) 22%, var(--panel-border-strong));
   color: var(--text-strong);
 }
 .topbar__notif-icon {
@@ -675,6 +1189,22 @@
 }
 .topbar__notif-badge--info {
   background: var(--text-muted);
+}
+.topbar__notif-badge--urgent::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  background: var(--red);
+  opacity: 0.35;
+  animation: topbar-notif-pulse 2200ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+@keyframes topbar-notif-pulse {
+  0%   { transform: scale(0.85); opacity: 0.45; }
+  70%  { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
 }
 
 .topbar__divider {
@@ -1128,10 +1658,10 @@
 .topbar__menu-item--danger { color: var(--red); }
 .topbar__menu-item--danger:hover { background: var(--red-dim); }
 
-:root:not([data-theme="dark"]) .topbar {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 95%, var(--surface-2) 5%) 0%, color-mix(in srgb, var(--panel) 88%, var(--surface-2) 12%) 100%);
-  box-shadow: 0 1px 0 var(--topbar-border), 0 12px 24px color-mix(in srgb, var(--panel-border-strong) 12%, transparent);
-}
+/* Pure System: light-mode topbar inherits canvas via `--topbar-bg` token.
+ * Previous gradient + lift shadow would re-introduce a separate topbar
+ * surface, so they are intentionally omitted. The base `.topbar` rule
+ * (background: var(--topbar-bg); border-bottom hairline) carries the look. */
 
 :root:not([data-theme="dark"]) .topbar__search-input {
   background: color-mix(in srgb, var(--surface-2) 78%, var(--panel) 22%);

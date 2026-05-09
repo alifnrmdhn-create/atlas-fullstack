@@ -7,6 +7,7 @@ import { PresenceRow, SectionState, Avatar, resolveEmoji, formatRelativeTime, ef
 import { api } from '../lib/api'
 import type { PresenceStatus, PresenceUser } from '../types'
 import { ActivityView } from './ActivityView'
+import './PresenceView.css'
 
 type PresenceTab = 'kehadiran' | 'aktivitas'
 
@@ -498,7 +499,8 @@ export function PresenceView() {
   }
 
   return (
-    <div className="view-presence">
+    <div className="ds presence-v2 view-presence">
+      <div className="presence-v2__inner">
       {/* ── Toolbar ── */}
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Team Presence</h2>
@@ -867,6 +869,7 @@ export function PresenceView() {
       )}
 
       </>}
+      </div>
     </div>
   )
 }

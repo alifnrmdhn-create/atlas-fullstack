@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useId } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import './AdminViews.css'
 import { useEscKey } from '../hooks/useEscKey'
 
 type PositionDirectorate = { id: number; code: string; name: string }
@@ -249,7 +250,7 @@ export function AdminPositionsView() {
 
   if (!isAuthorized) {
     return (
-      <div className="view-admin-positions">
+      <div className="ds admin-v2 view-admin-positions">
         <div className="panel">
           <p className="text-muted text-sm admin-state-copy admin-state-copy--center">
             Akses ditolak. Halaman ini hanya untuk admin dan superadmin.
@@ -260,7 +261,7 @@ export function AdminPositionsView() {
   }
 
   return (
-    <div className="view-admin-positions">
+    <div className="ds admin-v2 view-admin-positions">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Manajemen Jabatan</h2>
         <div className="view-toolbar__sep" />

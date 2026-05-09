@@ -1,0 +1,185 @@
+/* ProgramDetailView — minimal surface polish.
+ * Same approach as TaskDetailView: only modernize page-level chrome.
+ * Internal wi-detail / prog-detail panels untouched.
+ */
+
+.program-detail-v2.prog-detail-page {
+  background: var(--ds-surface-page);
+  width: 100%;
+}
+
+/* ─── Breadcrumb header ───────────────────────────────── */
+
+.program-detail-v2 .wi-detail-header {
+  background: var(--ds-surface-card);
+  border-bottom: 1px solid var(--ds-border-subtle);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  box-shadow: none;
+}
+
+.program-detail-v2 .wi-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px 0 8px;
+  background: transparent;
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-md);
+  color: var(--ds-text-secondary);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+              color var(--ds-duration-fast) var(--ds-ease-standard);
+  box-shadow: none;
+}
+
+.program-detail-v2 .wi-detail-back:hover {
+  background: var(--ds-surface-hover);
+  color: var(--ds-text-primary);
+}
+
+.program-detail-v2 .wi-detail-back svg {
+  width: 12px;
+  height: 12px;
+}
+
+.program-detail-v2 .wi-detail-header__sep {
+  color: var(--ds-text-tertiary);
+  font-size: 12px;
+}
+
+.program-detail-v2 .wi-detail-header__crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.program-detail-v2 .wi-detail-header__crumb-code {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  background: transparent;
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-sm);
+  font-family: var(--ds-font-mono);
+  font-size: 10px;
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-text-tertiary);
+  letter-spacing: 0;
+  flex-shrink: 0;
+}
+
+.program-detail-v2 .wi-detail-header__crumb-name {
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.program-detail-v2 .wi-detail-header__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Header buttons (Board / Edit / Setujui / Tolak) */
+.program-detail-v2 .wi-detail-header__btn {
+  height: 28px;
+  padding: 0 12px;
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-md);
+  color: var(--ds-text-primary);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+              border-color var(--ds-duration-fast) var(--ds-ease-standard);
+  box-shadow: none;
+}
+
+.program-detail-v2 .wi-detail-header__btn:hover:not(:disabled) {
+  background: var(--ds-surface-hover);
+  border-color: var(--ds-border-strong);
+}
+
+.program-detail-v2 .wi-detail-header__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.program-detail-v2 .wi-detail-header__btn--danger {
+  color: var(--ds-red-600);
+  border-color: var(--ds-red-500);
+}
+
+.program-detail-v2 .wi-detail-header__btn--danger:hover:not(:disabled) {
+  background: var(--ds-red-50);
+  border-color: var(--ds-red-600);
+}
+
+/* Primary "Setujui" via .btn--primary */
+.program-detail-v2 .wi-detail-header__btn.btn--primary,
+.program-detail-v2 .btn--primary.wi-detail-header__btn {
+  background: var(--ds-brand-600);
+  color: var(--ds-text-on-brand);
+  border-color: var(--ds-brand-600);
+}
+
+.program-detail-v2 .wi-detail-header__btn.btn--primary:hover:not(:disabled),
+.program-detail-v2 .btn--primary.wi-detail-header__btn:hover:not(:disabled) {
+  background: var(--ds-brand-700);
+  border-color: var(--ds-brand-700);
+}
+
+/* Ghost variant */
+.program-detail-v2 .wi-detail-header__btn.btn--ghost,
+.program-detail-v2 .btn--ghost.wi-detail-header__btn {
+  background: transparent;
+  border-color: var(--ds-border-subtle);
+}
+
+/* Icon-only Board button */
+.program-detail-v2 .wi-detail-header__board-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-md);
+  color: var(--ds-text-secondary);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+              color var(--ds-duration-fast) var(--ds-ease-standard),
+              border-color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.program-detail-v2 .wi-detail-header__board-btn:hover {
+  background: var(--ds-surface-hover);
+  color: var(--ds-text-primary);
+  border-color: var(--ds-border-subtle);
+}
+
+.program-detail-v2 .wi-detail-header__board-btn svg {
+  width: 10px;
+  height: 10px;
+}

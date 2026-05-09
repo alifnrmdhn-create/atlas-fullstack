@@ -4,6 +4,7 @@ import { useWorkspace } from '../hooks/useWorkspace'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { api } from '../lib/api'
 import type { Kpi } from '../types'
+import './SmallPagesViews.css'
 
 // ── KPI form helpers ────────────────────────────────────────────────────────
 
@@ -283,7 +284,8 @@ export function GoalsView() {
   const offTrack = kpis.filter(k => normalizeHealthStatus(k.status) === 'RED').length
 
   return (
-    <div className="view-goals">
+    <div className="ds goals-v2 view-goals">
+      <div className="goals-v2__inner">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Goals & KPI</h2>
         <div className="view-toolbar__sep" />
@@ -616,6 +618,7 @@ export function GoalsView() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

@@ -34,7 +34,14 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/', fn () => Inertia::render('HomeView'))->name('home');
+    // Home — PDCA two-column dashboard (KPI Achievement + Leading Program).
+    // Legacy HomeView.tsx kept on disk for revert; reachable at /home-legacy.
+    Route::get('/', function (\App\Services\ScorecardSummaryService $scorecard) {
+        return Inertia::render('HomeViewV2', [
+            'scorecardSnapshot' => $scorecard->homeSnapshot(),
+        ]);
+    })->name('home');
+    Route::get('/home-legacy', fn () => Inertia::render('HomeView'))->name('home.legacy');
     // /dashboard tetap dipertahankan: endpoint ini juga melayani JSON API yang
     // dipakai HomeView (lihat resources/js/context/workspace.tsx). Kita hanya
     // menghapus item dari sidebar; halaman Inertia tetap accessible via deep link.
@@ -59,6 +66,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', fn () => Inertia::render('SettingsView'))->name('settings');
     Route::post('/auth/change-password', [WorkspaceController::class, 'changePassword'])->name('auth.change-password');
     Route::get('/playbook', fn () => Inertia::render('PlaybookView'))->name('playbook');
+    // Internal — design system preview (foundation primitives)
+    Route::get('/design-system', fn () => Inertia::render('DesignSystemView'))->name('design-system');
     // Post-MVP — Pilot DKM metrics dashboard (admin-only)
     Route::get('/admin/pilot-metrics',     [PilotMetricsController::class, 'index'])->name('admin.pilot-metrics');
     Route::get('/admin/pilot-metrics/api', [PilotMetricsController::class, 'api'])->name('admin.pilot-metrics.api');

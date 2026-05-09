@@ -1,0 +1,167 @@
+/* ATLAS Design System — Foundation Tokens
+ *
+ * Scope: prefixed with --ds-* to coexist with legacy tokens.css.
+ * Principles:
+ *   - One typeface (IBM Plex Sans + Plex Mono)
+ *   - Tight type scale (7 sizes)
+ *   - Neutral-led palette, semantic colors only for status
+ *   - Hairline borders, no ambient shadows
+ *   - Discrete spacing scale (no in-between values)
+ *
+ * Migration: components in design-system/primitives/ consume --ds-* only.
+ * Pages opt in by importing primitives, not by global override.
+ */
+
+:root {
+  /* ─── Typography ─────────────────────────────────────────── */
+  --ds-font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --ds-font-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', 'JetBrains Mono', monospace;
+
+  /* Size scale — 11 / 13 / 14 / 16 / 20 / 28 / 40 px */
+  --ds-text-11: 0.6875rem;  /* meta, code tokens */
+  --ds-text-13: 0.8125rem;  /* secondary, captions */
+  --ds-text-14: 0.875rem;   /* body */
+  --ds-text-16: 1rem;       /* card title */
+  --ds-text-20: 1.25rem;    /* section heading */
+  --ds-text-28: 1.75rem;    /* page title */
+  --ds-text-40: 2.5rem;     /* hero number */
+
+  /* Weights */
+  --ds-weight-regular: 400;
+  --ds-weight-medium: 500;
+  --ds-weight-semibold: 600;
+
+  /* Line height */
+  --ds-leading-tight: 1.2;   /* hero numbers, headings */
+  --ds-leading-snug: 1.4;    /* body */
+  --ds-leading-relaxed: 1.55; /* paragraph copy */
+
+  /* Letter spacing */
+  --ds-tracking-tight: -0.01em;  /* large display */
+  --ds-tracking-normal: 0;
+  --ds-tracking-wide: 0.04em;    /* uppercase micro labels */
+
+  /* ─── Color: Neutral scale ───────────────────────────────── */
+  /* Cool slate, neutral-led. Used for surfaces, borders, text. */
+  --ds-neutral-0:   #FFFFFF;
+  --ds-neutral-50:  #FAFAFA;
+  --ds-neutral-100: #F4F4F5;
+  --ds-neutral-200: #E4E4E7;
+  --ds-neutral-300: #D4D4D8;
+  --ds-neutral-400: #A1A1AA;
+  --ds-neutral-500: #71717A;
+  --ds-neutral-600: #52525B;
+  --ds-neutral-700: #3F3F46;
+  --ds-neutral-800: #27272A;
+  --ds-neutral-900: #18181B;
+  --ds-neutral-950: #09090B;
+
+  /* ─── Color: Brand ───────────────────────────────────────── */
+  /* PTPN green. Reserved for active state + 1 primary CTA per page. */
+  --ds-brand-50:  #ECF7F0;
+  --ds-brand-100: #D2EAD9;
+  --ds-brand-500: #2E8B4E;
+  --ds-brand-600: #1F6B35;  /* primary brand */
+  --ds-brand-700: #185627;
+
+  /* ─── Color: Semantic (status only — not decoration) ─────── */
+  --ds-red-50:    #FEF2F2;
+  --ds-red-500:   #DC2626;
+  --ds-red-600:   #B91C1C;
+
+  --ds-amber-50:  #FFFBEB;
+  --ds-amber-500: #D97706;
+  --ds-amber-600: #B45309;
+
+  --ds-green-50:  #F0FDF4;
+  --ds-green-500: #16A34A;
+  --ds-green-600: #15803D;
+
+  /* ─── Aliases: Surface / Text / Border ───────────────────── */
+  --ds-surface-page:    var(--ds-neutral-50);
+  --ds-surface-card:    var(--ds-neutral-0);
+  --ds-surface-sunken:  var(--ds-neutral-100);
+  --ds-surface-hover:   var(--ds-neutral-100);
+
+  --ds-text-primary:    var(--ds-neutral-900);
+  --ds-text-secondary:  var(--ds-neutral-600);
+  --ds-text-tertiary:   var(--ds-neutral-500);
+  --ds-text-disabled:   var(--ds-neutral-400);
+  --ds-text-on-brand:   var(--ds-neutral-0);
+
+  --ds-border-subtle:   var(--ds-neutral-200);
+  --ds-border-default:  var(--ds-neutral-300);
+  --ds-border-strong:   var(--ds-neutral-400);
+  --ds-border-focus:    var(--ds-brand-600);
+
+  /* ─── Spacing — discrete scale ───────────────────────────── */
+  --ds-space-1:  4px;
+  --ds-space-2:  8px;
+  --ds-space-3:  12px;
+  --ds-space-4:  16px;
+  --ds-space-5:  20px;
+  --ds-space-6:  24px;
+  --ds-space-8:  32px;
+  --ds-space-10: 40px;
+  --ds-space-14: 56px;
+  --ds-space-18: 72px;
+
+  /* ─── Layout ─────────────────────────────────────────────── */
+  /* Default policy: pages are full-bleed (no max-width cap). Grids inside
+   * pages should use auto-fill so they ADD columns on wider screens rather
+   * than letting individual cells stretch. This token exists only for the
+   * exceptional page that genuinely needs a content cap (e.g. settings forms,
+   * long-form copy). Default page chrome (PageShell) does not consume it. */
+  --ds-content-max: 1480px;
+
+  /* ─── Radii ──────────────────────────────────────────────── */
+  --ds-radius-sm: 4px;
+  --ds-radius-md: 6px;
+  --ds-radius-lg: 8px;
+  --ds-radius-xl: 12px;
+  --ds-radius-pill: 9999px;
+
+  /* ─── Elevation — only 2 levels ──────────────────────────── */
+  /* Flat by default. Use only for floating UI (modal, dropdown, tooltip). */
+  --ds-shadow-popover: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.08);
+  --ds-shadow-modal:   0 4px 12px rgba(0,0,0,0.06), 0 24px 48px rgba(0,0,0,0.12);
+
+  /* ─── Focus ring ─────────────────────────────────────────── */
+  --ds-ring-focus: 0 0 0 2px var(--ds-neutral-0), 0 0 0 4px var(--ds-brand-600);
+
+  /* ─── Motion ─────────────────────────────────────────────── */
+  --ds-duration-fast:   120ms;
+  --ds-duration-normal: 180ms;
+  --ds-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Dark mode reserved — not implementing in foundation week.
+ * When added: override neutral scale only, keep brand/semantic identical. */
+
+/* ─── Reset for design-system scope ──────────────────────── */
+.ds {
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-14);
+  line-height: var(--ds-leading-snug);
+  color: var(--ds-text-primary);
+  font-feature-settings: 'tnum' 1, 'cv11' 1; /* tabular figures + alt 1 */
+}
+
+.ds *,
+.ds *::before,
+.ds *::after {
+  box-sizing: border-box;
+}
+
+/* Tabular figures for any element classed .ds-num */
+.ds-num,
+.ds [data-num] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Mono utility */
+.ds-mono {
+  font-family: var(--ds-font-mono);
+  font-feature-settings: 'zero' 1;
+}

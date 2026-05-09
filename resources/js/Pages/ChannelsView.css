@@ -1,0 +1,69 @@
+/* ChannelsView — truly minimal surface polish.
+ * Page is 182KB Slack-clone with deep messaging logic. Don't touch internal
+ * channels list / message thread / composer — only modernize outermost
+ * page chrome (background + toolbar) so visual entry feels cohesive.
+ */
+
+.channels-v2 {
+  background: var(--ds-surface-page);
+  width: 100%;
+}
+
+/* ─── Toolbar ───────────────────────────────────────────── */
+
+.channels-v2 .view-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  background: var(--ds-surface-card);
+  border: 0;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  flex-wrap: wrap;
+  height: auto;
+  overflow: visible;
+}
+
+.channels-v2 .view-toolbar__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: -0.015em;
+  color: var(--ds-text-primary);
+  line-height: 1.2;
+  font-family: var(--ds-font-sans);
+}
+
+.channels-v2 .view-toolbar__sep { display: none; }
+
+.channels-v2 .view-toolbar__subtitle {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+  flex: 0 1 auto;
+}
+
+.channels-v2 .view-toolbar__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.channels-v2 .view-toolbar__stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0;
+  border: 0;
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-secondary);
+  font-variant-numeric: tabular-nums;
+  background: transparent;
+}
+
+.channels-v2 .view-toolbar__stats em {
+  color: var(--ds-text-tertiary);
+  font-style: normal;
+  font-weight: var(--ds-weight-regular);
+  margin-left: 2px;
+}

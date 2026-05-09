@@ -1,0 +1,101 @@
+/* ScheduleView — truly minimal surface polish.
+ * Page is 107KB calendar with deep meeting/RSVP logic. Don't touch internal
+ * meeting list / calendar grid / detail panel — only modernize outermost
+ * page chrome (background + toolbar).
+ */
+
+.schedule-v2 {
+  background: var(--ds-surface-page);
+  width: 100%;
+}
+
+/* ─── Toolbar ───────────────────────────────────────────── */
+
+.schedule-v2 .view-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  background: var(--ds-surface-card);
+  border: 0;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  flex-wrap: wrap;
+  height: auto;
+  overflow: visible;
+}
+
+.schedule-v2 .view-toolbar__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: -0.015em;
+  color: var(--ds-text-primary);
+  line-height: 1.2;
+  font-family: var(--ds-font-sans);
+}
+
+.schedule-v2 .view-toolbar__sep { display: none; }
+
+.schedule-v2 .view-toolbar__subtitle {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+  flex: 0 1 auto;
+}
+
+.schedule-v2 .view-toolbar__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Segmented toggles (Mendatang / Selesai / Saya Buat / Per Orang / Keputusan) */
+.schedule-v2 .view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--ds-neutral-100);
+  border-radius: var(--ds-radius-md);
+  border: 0;
+  box-shadow: none;
+}
+
+.schedule-v2 .view-toggle-btn {
+  height: 28px;
+  padding: 0 12px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
+  cursor: pointer;
+}
+
+.schedule-v2 .view-toggle-btn.active {
+  background: var(--indigo-dim);
+  color: var(--indigo);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+/* Action buttons */
+.schedule-v2 .toolbar-action-btn {
+  height: 32px;
+  padding: 0 14px;
+  background: var(--ds-brand-600);
+  color: var(--ds-text-on-brand);
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.schedule-v2 .toolbar-action-btn:hover {
+  background: var(--ds-brand-700);
+}

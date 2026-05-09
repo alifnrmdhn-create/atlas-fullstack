@@ -1,0 +1,387 @@
+/* SmallPagesViews — shared surface polish for Search, Goals, Roadmap, Playbook.
+ * Each page wraps outer with .ds + page-specific class
+ * (search-v2, goals-v2, roadmap-v2, playbook-v2).
+ */
+
+.search-v2,
+.goals-v2,
+.roadmap-v2,
+.playbook-v2 {
+  display: block;
+  background: var(--ds-surface-page);
+  min-height: 100vh;
+  width: 100%;
+}
+
+.search-v2__inner,
+.goals-v2__inner,
+.roadmap-v2__inner {
+  display: block;
+  padding: 32px 32px 48px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Playbook uses its own pb-workspace as outer; add inner padding via override */
+.playbook-v2.pb-workspace {
+  padding: 32px 32px 48px;
+}
+
+/* ─── Toolbar (shared across all four) ──────────────────── */
+
+.search-v2 .view-toolbar,
+.goals-v2 .view-toolbar,
+.roadmap-v2 .view-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 0 16px;
+  margin-bottom: 16px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  flex-wrap: wrap;
+  height: auto;
+  overflow: visible;
+}
+
+.search-v2 .view-toolbar__title,
+.goals-v2 .view-toolbar__title,
+.roadmap-v2 .view-toolbar__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: -0.015em;
+  color: var(--ds-text-primary);
+  line-height: 1.2;
+  font-family: var(--ds-font-sans);
+}
+
+.search-v2 .view-toolbar__sep,
+.goals-v2 .view-toolbar__sep,
+.roadmap-v2 .view-toolbar__sep {
+  display: none;
+}
+
+.search-v2 .view-toolbar__subtitle,
+.goals-v2 .view-toolbar__subtitle,
+.roadmap-v2 .view-toolbar__subtitle {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+  flex: 0 1 auto;
+}
+
+.search-v2 .view-toolbar__right,
+.goals-v2 .view-toolbar__right,
+.roadmap-v2 .view-toolbar__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.search-v2 .view-toolbar__stats,
+.goals-v2 .view-toolbar__stats,
+.roadmap-v2 .view-toolbar__stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 0 0 12px;
+  border: 0;
+  border-left: 1px solid var(--ds-border-subtle);
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-primary);
+  font-variant-numeric: tabular-nums;
+  background: transparent;
+}
+
+.search-v2 .view-toolbar__stats em,
+.goals-v2 .view-toolbar__stats em,
+.roadmap-v2 .view-toolbar__stats em {
+  color: var(--ds-text-tertiary);
+  font-style: normal;
+  font-weight: var(--ds-weight-regular);
+  margin-left: 2px;
+}
+
+/* Segmented toggle */
+.search-v2 .view-toggle,
+.goals-v2 .view-toggle,
+.roadmap-v2 .view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--ds-neutral-100);
+  border-radius: var(--ds-radius-md);
+  border: 0;
+  box-shadow: none;
+}
+
+.search-v2 .view-toggle-btn,
+.goals-v2 .view-toggle-btn,
+.roadmap-v2 .view-toggle-btn {
+  height: 28px;
+  padding: 0 12px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.search-v2 .view-toggle-btn.active,
+.goals-v2 .view-toggle-btn.active,
+.roadmap-v2 .view-toggle-btn.active {
+  background: var(--indigo-dim);
+  color: var(--indigo);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+/* Action buttons */
+.search-v2 .toolbar-action-btn,
+.goals-v2 .toolbar-action-btn,
+.roadmap-v2 .toolbar-action-btn {
+  height: 32px;
+  padding: 0 14px;
+  background: var(--ds-brand-600);
+  color: var(--ds-text-on-brand);
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.search-v2 .toolbar-action-btn:hover,
+.goals-v2 .toolbar-action-btn:hover,
+.roadmap-v2 .toolbar-action-btn:hover {
+  background: var(--ds-brand-700);
+}
+
+/* ─── Search-specific ────────────────────────────────── */
+
+.search-v2 .search-shell,
+.search-v2 .search-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .search-v2 .search-shell,
+  .search-v2 .search-page {
+    grid-template-columns: 1fr;
+  }
+}
+
+.search-v2 input[type="text"],
+.search-v2 input[type="search"] {
+  height: 40px;
+  padding: 0 16px;
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-md);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-14);
+  color: var(--ds-text-primary);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.search-v2 input:focus {
+  border-color: var(--ds-brand-600);
+  box-shadow: 0 0 0 1px var(--ds-brand-600);
+}
+
+.search-v2 .panel,
+.search-v2 .search-saved,
+.search-v2 .search-operators {
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  box-shadow: none;
+}
+
+/* ─── Goals-specific ─────────────────────────────────── */
+
+.goals-v2 .panel {
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: none;
+  margin-bottom: 16px;
+}
+
+.goals-v2 .panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ds-border-subtle);
+}
+
+.goals-v2 .panel__title {
+  margin: 0;
+  font-size: var(--ds-text-16);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-primary);
+}
+
+/* Stat pill row */
+.goals-v2 .goals-stat-row,
+.goals-v2 .kpi-stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.goals-v2 .goals-stat,
+.goals-v2 .kpi-stat {
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  padding: 14px 16px;
+}
+
+/* ─── Roadmap-specific ───────────────────────────────── */
+
+.roadmap-v2 .panel {
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: none;
+  margin-bottom: 12px;
+}
+
+.roadmap-v2 .lane-strip,
+.roadmap-v2 .timeline-row {
+  background: var(--ds-surface-card);
+  border-bottom: 1px solid var(--ds-border-subtle);
+}
+
+.roadmap-v2 .lane-strip:last-child,
+.roadmap-v2 .timeline-row:last-child {
+  border-bottom: 0;
+}
+
+/* ─── Playbook-specific ──────────────────────────────── */
+
+.playbook-v2 .pb-state {
+  padding: 32px 16px;
+  text-align: center;
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+}
+
+/* Playbook content cards/sections */
+.playbook-v2 .pb-section,
+.playbook-v2 .pb-card {
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  box-shadow: none;
+}
+
+.playbook-v2 h1,
+.playbook-v2 h2 {
+  font-family: var(--ds-font-sans);
+  letter-spacing: -0.015em;
+  color: var(--ds-text-primary);
+}
+
+.playbook-v2 h1 {
+  font-size: 28px;
+  font-weight: var(--ds-weight-semibold);
+}
+
+.playbook-v2 h2 {
+  font-size: 20px;
+  font-weight: var(--ds-weight-semibold);
+}
+
+.playbook-v2 h3 {
+  font-size: var(--ds-text-16);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-primary);
+}
+
+.playbook-v2 p,
+.playbook-v2 li {
+  font-size: var(--ds-text-14);
+  line-height: 1.6;
+  color: var(--ds-text-primary);
+}
+
+.playbook-v2 code,
+.playbook-v2 pre {
+  font-family: var(--ds-font-mono);
+  background: var(--ds-neutral-100);
+  border-radius: var(--ds-radius-sm);
+  padding: 2px 6px;
+  font-size: 12px;
+  color: var(--ds-text-primary);
+}
+
+.playbook-v2 pre {
+  padding: 12px 14px;
+  overflow-x: auto;
+  border: 1px solid var(--ds-border-subtle);
+}
+
+/* ─── Inputs (forms in Goals modal etc) ──────────────── */
+
+.search-v2 input[type="email"],
+.search-v2 input[type="number"],
+.search-v2 select,
+.search-v2 textarea,
+.goals-v2 input[type="text"],
+.goals-v2 input[type="email"],
+.goals-v2 input[type="number"],
+.goals-v2 select,
+.goals-v2 textarea,
+.roadmap-v2 input[type="text"],
+.roadmap-v2 select {
+  height: 36px;
+  padding: 0 12px;
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-md);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-14);
+  color: var(--ds-text-primary);
+  outline: none;
+  transition: border-color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.goals-v2 textarea {
+  height: auto;
+  min-height: 80px;
+  padding: 10px 12px;
+}
+
+.search-v2 input:focus,
+.goals-v2 input:focus,
+.goals-v2 select:focus,
+.goals-v2 textarea:focus,
+.roadmap-v2 input:focus,
+.roadmap-v2 select:focus {
+  border-color: var(--ds-brand-600);
+  box-shadow: 0 0 0 1px var(--ds-brand-600);
+}

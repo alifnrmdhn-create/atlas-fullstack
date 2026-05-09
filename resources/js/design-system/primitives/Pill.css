@@ -1,0 +1,107 @@
+.ds-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+  padding: 0 var(--ds-space-2);
+  border-radius: var(--ds-radius-pill);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-11);
+  font-weight: var(--ds-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.ds-pill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ds-pill__label {
+  display: inline-block;
+}
+
+/* ─── Variant: soft (filled background) ─────────────────── */
+.ds-pill--soft.ds-pill--neutral {
+  background: var(--ds-neutral-100);
+  color: var(--ds-text-secondary);
+}
+.ds-pill--soft.ds-pill--neutral .ds-pill__dot { background: var(--ds-neutral-500); }
+
+.ds-pill--soft.ds-pill--brand {
+  background: var(--ds-brand-50);
+  color: var(--ds-brand-700);
+}
+.ds-pill--soft.ds-pill--brand .ds-pill__dot { background: var(--ds-brand-600); }
+
+.ds-pill--soft.ds-pill--red {
+  background: var(--ds-red-50);
+  color: var(--ds-red-600);
+}
+.ds-pill--soft.ds-pill--red .ds-pill__dot { background: var(--ds-red-500); }
+
+.ds-pill--soft.ds-pill--amber {
+  background: var(--ds-amber-50);
+  color: var(--ds-amber-600);
+}
+.ds-pill--soft.ds-pill--amber .ds-pill__dot { background: var(--ds-amber-500); }
+
+.ds-pill--soft.ds-pill--green {
+  background: var(--ds-green-50);
+  color: var(--ds-green-600);
+}
+.ds-pill--soft.ds-pill--green .ds-pill__dot { background: var(--ds-green-500); }
+
+/* ─── Variant: outline (hairline border, transparent fill) ─── */
+.ds-pill--outline {
+  background: transparent;
+}
+
+.ds-pill--outline.ds-pill--neutral {
+  border-color: var(--ds-border-default);
+  color: var(--ds-text-secondary);
+}
+.ds-pill--outline.ds-pill--neutral .ds-pill__dot { background: var(--ds-neutral-500); }
+
+.ds-pill--outline.ds-pill--brand {
+  border-color: var(--ds-brand-500);
+  color: var(--ds-brand-700);
+}
+.ds-pill--outline.ds-pill--brand .ds-pill__dot { background: var(--ds-brand-600); }
+
+.ds-pill--outline.ds-pill--red {
+  border-color: var(--ds-red-500);
+  color: var(--ds-red-600);
+}
+.ds-pill--outline.ds-pill--red .ds-pill__dot { background: var(--ds-red-500); }
+
+.ds-pill--outline.ds-pill--amber {
+  border-color: var(--ds-amber-500);
+  color: var(--ds-amber-600);
+}
+.ds-pill--outline.ds-pill--amber .ds-pill__dot { background: var(--ds-amber-500); }
+
+.ds-pill--outline.ds-pill--green {
+  border-color: var(--ds-green-500);
+  color: var(--ds-green-600);
+}
+.ds-pill--outline.ds-pill--green .ds-pill__dot { background: var(--ds-green-500); }
+
+/* ─── Variant: mono (for code/ID tokens — DKSA-PSG-001) ───── */
+/* Compact by default — code tokens are reference metadata, should
+ * read like inline tags, not buttons. */
+.ds-pill--mono {
+  font-family: var(--ds-font-mono);
+  font-weight: var(--ds-weight-regular);
+  font-size: 10px;
+  letter-spacing: 0;
+  background: transparent;
+  border-color: var(--ds-border-subtle);
+  color: var(--ds-text-tertiary);
+  border-radius: var(--ds-radius-sm);
+  height: 18px;
+  padding: 0 5px;
+}

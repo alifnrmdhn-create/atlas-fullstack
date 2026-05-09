@@ -67,7 +67,9 @@ const EVENT_TYPES = Object.keys(TICK_MAP).concat([
     'workspace:ready', 'workspace:reconnect',
 ])
 
-export type RealtimeContextValue = { ticks: RefreshTicks }
+export type RealtimeStatus = 'connecting' | 'connected' | 'disconnected' | 'idle'
+
+export type RealtimeContextValue = { ticks: RefreshTicks; status: RealtimeStatus }
 
 export const RealtimeContext = createContext<RealtimeContextValue | null>(null)
 
@@ -83,13 +85,17 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     const enabled = user !== null && realtime.enabled()
 
     const [ticks, setTicks] = useState<RefreshTicks>(DEFAULT_TICKS)
+    const [status, setStatus] = useState<RealtimeStatus>('idle')
     const dispatcherRef = useRef<RealtimeDispatcher | null>(null)
     if (!dispatcherRef.current) dispatcherRef.current = new RealtimeDispatcher()
 
     usePresencePing(enabled)
 
     useEffect(() => {
-        if (!enabled) return
+        if (!enabled) {
+            setStatus('idle')
+            return
+        }
 
         const dispatcher = dispatcherRef.current!
         let source: EventSource | null = null
@@ -99,6 +105,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
         const connect = () => {
             if (cancelled) return
+            setStatus('connecting')
             source = new EventSource(realtime.streamUrl(), { withCredentials: true })
 
             for (const type of EVENT_TYPES) {
@@ -116,11 +123,12 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                 })
             }
 
-            source.onopen = () => { reconnectDelay = 1000 }
+            source.onopen = () => { reconnectDelay = 1000; setStatus('connected') }
             source.onerror = () => {
                 source?.close()
                 source = null
                 if (cancelled) return
+                setStatus('disconnected')
                 reconnectTimer = setTimeout(connect, reconnectDelay)
                 reconnectDelay = Math.min(reconnectDelay * 2, 30_000)
             }
@@ -132,10 +140,11 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
             cancelled = true
             if (reconnectTimer) clearTimeout(reconnectTimer)
             source?.close()
+            setStatus('idle')
         }
     }, [enabled])
 
-    const value = useMemo(() => ({ ticks }), [ticks])
+    const value = useMemo(() => ({ ticks, status }), [ticks, status])
 
     return (
         <RealtimeDispatcherContext.Provider value={dispatcherRef.current!}>

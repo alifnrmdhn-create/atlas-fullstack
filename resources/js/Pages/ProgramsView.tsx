@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useId, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import type { FormEvent } from 'react'
 import { usePage, router } from '@inertiajs/react'
-import { X as IconX } from 'lucide-react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { getProgramDisplayStatus } from '../lib/programStatus'
@@ -133,6 +132,38 @@ export function ProgramsView() {
     }
     return out
   }, [url])
+
+  const urlStaleOnly = useMemo<boolean>(() => {
+    const qs = url.split('?')[1] ?? ''
+    return new URLSearchParams(qs).get('stale') === '1'
+  }, [url])
+
+  const toggleStatusFilter = useCallback((tone: 'GREEN' | 'YELLOW' | 'RED') => {
+    const map = { GREEN: 'on_track', YELLOW: 'at_risk', RED: 'terlambat' } as const
+    const qs = url.split('?')[1] ?? ''
+    const params = new URLSearchParams(qs)
+    const cur = new Set((params.get('status') ?? '').split(',').filter(Boolean))
+    const v = map[tone]
+    if (cur.has(v)) cur.delete(v)
+    else cur.add(v)
+    if (cur.size > 0) params.set('status', Array.from(cur).join(','))
+    else params.delete('status')
+    const target = `/programs${params.toString() ? '?' + params.toString() : ''}`
+    router.visit(target, { preserveState: true, preserveScroll: true, replace: true })
+  }, [url])
+
+  const toggleStaleFilter = useCallback(() => {
+    const qs = url.split('?')[1] ?? ''
+    const params = new URLSearchParams(qs)
+    if (params.get('stale') === '1') params.delete('stale')
+    else params.set('stale', '1')
+    const target = `/programs${params.toString() ? '?' + params.toString() : ''}`
+    router.visit(target, { preserveState: true, preserveScroll: true, replace: true })
+  }, [url])
+
+  const resetFilters = useCallback(() => {
+    router.visit('/programs', { preserveState: true, preserveScroll: true, replace: true })
+  }, [])
 
   // ── Timeline data ──────────────────────────────────────────────────────
   const [timelineData, setTimelineData] = useState<TimelineGanttProgram[]>([])
@@ -497,135 +528,180 @@ export function ProgramsView() {
   return (
     <div className="ds programs-v2 view-programs">
       <div className="programs-v2__inner">
-      {/* ── Toolbar ─────────────────────────────────────────────────────── */}
-      <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Programs</h2>
-        <div className="view-toolbar__sep" />
-
-        {/* Main tabs */}
-        <div className="view-toggle">
-          {([
-            ['portfolio', 'Portofolio'],
-            ['timeline',  'Timeline'],
-            ['monitoring', 'Monitoring'],
-            ['pulse',     'Pulse'],
-            ['risiko',    'Risiko'],
-          ] as [ProgramTab, string][]).map(([t, label]) => (
-            <button
-              key={t}
-              className={`view-toggle-btn${tab === t ? ' active' : ''}`}
-              onClick={() => setTab(t)}
-            >
-              {label}
-              {t === 'pulse' && totalIssues > 0 && (
-                <span className={`program-tab-badge program-tab-badge--${riskPrograms > 0 ? 'critical' : 'warn'}`}>{totalIssues}</span>
-              )}
-            </button>
-          ))}
-          {roleAccess.canViewArchive && (
-            <button
-              className={`view-toggle-btn view-toggle-btn--muted${tab === 'archive' ? ' active' : ''}`}
-              onClick={() => setTab('archive')}
-            >
-              Arsip
-            </button>
-          )}
+      {/* ── Hero header ─────────────────────────────────────────────────── */}
+      <header className="programs-v2__hero">
+        <div className="programs-v2__hero-text">
+          <h1 className="programs-v2__title">Programs</h1>
+          <p className="programs-v2__subtitle">
+            {programs.length} program · rata-rata {avgProgress}% progress
+            {riskPrograms > 0 && (
+              <span className="programs-v2__subtitle-warn"> · {riskPrograms} high risk</span>
+            )}
+          </p>
         </div>
-
-        <div className="view-toolbar__right">
-          <div className="health-chips">
-            {healthMix.green > 0  && <span className="health-chip health-chip--green">{healthMix.green} On Track</span>}
-            {healthMix.yellow > 0 && <span className="health-chip health-chip--yellow">{healthMix.yellow} At Risk</span>}
-            {healthMix.red > 0    && <span className="health-chip health-chip--red">{healthMix.red} Critical</span>}
-          </div>
-          <div className="view-toolbar__stats">
-            <span>{programs.length} <em>programs</em></span>
-            <span>{avgProgress}% <em>avg</em></span>
-            {riskPrograms > 0 && <span className="text-red">{riskPrograms} <em>high risk</em></span>}
-          </div>
+        <div className="programs-v2__hero-actions">
           {roleAccess.isMonitoringOnly && (
             <span className="role-monitoring-badge">Monitoring</span>
           )}
           {roleAccess.canCreateProgram && (
-            <button className="toolbar-action-btn" onClick={() => {
-              setShowCreateProgram(true)
-              if (cpUnits.length === 0) {
-                void api.get<{ data: Array<{ id: number; name: string; code: string }> }>('/organization/units')
-                  .then(r => setCpUnits(r.data ?? []))
-                  .catch((err) => console.error('[Atlas] Gagal memuat unit list:', err))
-              }
-            }}>
-              + New Program
+            <button
+              className="programs-v2__cta"
+              onClick={() => {
+                setShowCreateProgram(true)
+                if (cpUnits.length === 0) {
+                  void api.get<{ data: Array<{ id: number; name: string; code: string }> }>('/organization/units')
+                    .then(r => setCpUnits(r.data ?? []))
+                    .catch((err) => console.error('[Atlas] Gagal memuat unit list:', err))
+                }
+              }}
+              type="button"
+            >
+              Program Baru
             </button>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* ── Sub-controls bar (only visible for tabs that need it) ── */}
+      {/* ── Tabs ────────────────────────────────────────────────────────── */}
+      <nav className="programs-v2__tabs" role="tablist" aria-label="Program views">
+        {([
+          ['portfolio', 'Portofolio'],
+          ['timeline',  'Timeline'],
+          ['monitoring', 'Monitoring'],
+          ['pulse',     'Pulse'],
+          ['risiko',    'Risiko'],
+        ] as [ProgramTab, string][]).map(([t, label]) => (
+          <button
+            key={t}
+            role="tab"
+            aria-selected={tab === t}
+            className={`programs-v2__tab${tab === t ? ' programs-v2__tab--active' : ''}`}
+            onClick={() => setTab(t)}
+            type="button"
+          >
+            <span>{label}</span>
+            {t === 'pulse' && totalIssues > 0 && (
+              <span className="programs-v2__tab-count">{totalIssues}</span>
+            )}
+          </button>
+        ))}
+        {roleAccess.canViewArchive && (
+          <button
+            role="tab"
+            aria-selected={tab === 'archive'}
+            className={`programs-v2__tab programs-v2__tab--muted${tab === 'archive' ? ' programs-v2__tab--active' : ''}`}
+            onClick={() => setTab('archive')}
+            type="button"
+          >
+            <span>Arsip</span>
+          </button>
+        )}
+      </nav>
+
+      {/* ── Controls bar — filters left, view+search right ──────────────── */}
       {(tab === 'portfolio' || tab === 'timeline') && (
-        <div className="programs-subbar">
-          {tab === 'portfolio' && (
-            <>
-              <div className="view-toggle">
-                {(['list', 'kanban', 'table'] as PortfolioView[]).map(mode => (
-                  <button key={mode} className={`view-toggle-btn${portfolioView === mode ? ' active' : ''}`}
-                    onClick={() => setPortfolioView(mode)}>
-                    {mode === 'list' ? '≡ List' : mode === 'kanban' ? '⊞ Board' : '☰ Table'}
-                  </button>
-                ))}
-              </div>
-              {needsActionPrograms.length > 0 && (
+        <div className="programs-controls">
+          <div className="programs-controls__filters" role="group" aria-label="Filter program">
+            {([
+              ['GREEN',  'On Track',  'green'],
+              ['YELLOW', 'At Risk',   'amber'],
+              ['RED',    'Terlambat', 'red'],
+            ] as const).map(([tone, label, toneClass]) => {
+              const active = urlStatusFilter.has(tone)
+              return (
                 <button
-                  className={`view-toggle-btn programs-approval-filter${approvalFilter === 'needs_action' ? ' active' : ''}`}
-                  onClick={() => setApprovalFilter(f => f === 'needs_action' ? 'all' : 'needs_action')}
+                  key={tone}
                   type="button"
+                  className={`programs-filter-chip programs-filter-chip--${toneClass}${active ? ' programs-filter-chip--active' : ''}`}
+                  aria-pressed={active}
+                  onClick={() => toggleStatusFilter(tone)}
                 >
-                  Perlu Persetujuan
-                  <span className="programs-approval-filter__count">{needsActionPrograms.length}</span>
+                  <span className="programs-filter-chip__dot" aria-hidden="true" />
+                  {label}
                 </button>
-              )}
-              <input className="view-toolbar__search" value={portfolioSearch}
-                onChange={e => setPortfolioSearch(e.target.value)} placeholder="Filter program…" />
-            </>
-          )}
-          {tab === 'timeline' && (
-            <>
-              <div className="view-toggle">
-                <button className={`view-toggle-btn${timelineView === 'lanes' ? ' active' : ''}`} onClick={() => setTimelineView('lanes')}>Lanes</button>
-                <button className={`view-toggle-btn${timelineView === 'gantt' ? ' active' : ''}`} onClick={() => setTimelineView('gantt')}>Gantt</button>
-              </div>
-              {timelineView === 'lanes' && (
+              )
+            })}
+            <button
+              type="button"
+              className={`programs-filter-chip programs-filter-chip--stale${urlStaleOnly ? ' programs-filter-chip--active' : ''}`}
+              aria-pressed={urlStaleOnly}
+              onClick={toggleStaleFilter}
+            >
+              Stale &gt;30 hari
+            </button>
+            {tab === 'portfolio' && needsActionPrograms.length > 0 && (
+              <button
+                type="button"
+                className={`programs-filter-chip programs-filter-chip--amber${approvalFilter === 'needs_action' ? ' programs-filter-chip--active' : ''}`}
+                aria-pressed={approvalFilter === 'needs_action'}
+                onClick={() => setApprovalFilter(f => f === 'needs_action' ? 'all' : 'needs_action')}
+              >
+                <span className="programs-filter-chip__dot" aria-hidden="true" />
+                Perlu Persetujuan
+                <span className="programs-filter-chip__count">{needsActionPrograms.length}</span>
+              </button>
+            )}
+            {(urlStatusFilter.size > 0 || urlStaleOnly || approvalFilter === 'needs_action') && (
+              <button
+                type="button"
+                className="programs-filter-reset"
+                onClick={() => {
+                  setApprovalFilter('all')
+                  resetFilters()
+                }}
+              >
+                Reset
+              </button>
+            )}
+          </div>
+
+          <div className="programs-controls__view">
+            {tab === 'portfolio' && (
+              <>
                 <div className="view-toggle">
-                  {(['status', 'priority', 'health'] as LaneGrouping[]).map(g => (
-                    <button key={g} className={`view-toggle-btn${laneGrouping === g ? ' active' : ''}`} onClick={() => setLaneGrouping(g)}>
-                      {g === 'status' ? 'Status' : g === 'priority' ? 'Prioritas' : 'Kesehatan'}
+                  {(['list', 'kanban', 'table'] as PortfolioView[]).map(mode => (
+                    <button key={mode} className={`view-toggle-btn${portfolioView === mode ? ' active' : ''}`}
+                      onClick={() => setPortfolioView(mode)}>
+                      {mode === 'list' ? 'List' : mode === 'kanban' ? 'Board' : 'Table'}
                     </button>
                   ))}
                 </div>
-              )}
-              <input className="view-toolbar__search" value={laneSearch}
-                onChange={e => setLaneSearch(e.target.value)} placeholder="Filter program…" />
+                <div className="programs-search">
+                  <svg className="programs-search__icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="6" cy="6" r="4.5" />
+                    <path d="m9.5 9.5 3 3" />
+                  </svg>
+                  <input className="programs-search__input" value={portfolioSearch}
+                    onChange={e => setPortfolioSearch(e.target.value)} placeholder="Cari program…" />
+                </div>
+              </>
+            )}
+            {tab === 'timeline' && (
+              <>
+                <div className="view-toggle">
+                  <button className={`view-toggle-btn${timelineView === 'lanes' ? ' active' : ''}`} onClick={() => setTimelineView('lanes')}>Lanes</button>
+                  <button className={`view-toggle-btn${timelineView === 'gantt' ? ' active' : ''}`} onClick={() => setTimelineView('gantt')}>Gantt</button>
+                </div>
+                {timelineView === 'lanes' && (
+                  <div className="view-toggle">
+                    {(['status', 'priority', 'health'] as LaneGrouping[]).map(g => (
+                      <button key={g} className={`view-toggle-btn${laneGrouping === g ? ' active' : ''}`} onClick={() => setLaneGrouping(g)}>
+                        {g === 'status' ? 'Status' : g === 'priority' ? 'Prioritas' : 'Kesehatan'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              <div className="programs-search">
+                <svg className="programs-search__icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="6" cy="6" r="4.5" />
+                  <path d="m9.5 9.5 3 3" />
+                </svg>
+                <input className="programs-search__input" value={laneSearch}
+                  onChange={e => setLaneSearch(e.target.value)} placeholder="Cari program…" />
+              </div>
             </>
           )}
-        </div>
-      )}
-
-      {urlStatusFilter.size > 0 && (
-        <div className="programs-filter-banner" role="status" aria-live="polite">
-          <span className="programs-filter-banner__label">Filter dari panel:</span>
-          {Array.from(urlStatusFilter).map((s) => (
-            <span key={s} className={`programs-filter-banner__chip programs-filter-banner__chip--${s.toLowerCase()}`}>
-              {s === 'GREEN' ? 'On Track' : s === 'YELLOW' ? 'At Risk' : 'Terlambat'}
-            </span>
-          ))}
-          <button
-            type="button"
-            className="programs-filter-banner__reset"
-            onClick={() => router.visit('/programs', { preserveState: true, preserveScroll: true, replace: true })}
-          >
-            <IconX size={11} aria-hidden="true" />
-            Reset
-          </button>
+          </div>
         </div>
       )}
 
@@ -638,18 +714,15 @@ export function ProgramsView() {
           {tab === 'portfolio' && (
             <>
               {portfolioView === 'list' && (
-                <div className="section-block">
-                  <div className="section-header">
-                    <div>
-                      <h3 className="section-title">Portfolio Roster</h3>
-                      <p className="section-subtitle">
-                        {healthMix.green} on track · {healthMix.yellow} at risk · {healthMix.red} terlambat · rata-rata {avgProgress}%
-                      </p>
-                    </div>
-                    <span className="section-badge">{filteredPortfolio.length} programs</span>
-                  </div>
+                <div className="section-block section-block--bare">
                   {filteredPortfolio.length > 0 ? (
                     <div className="program-roster">
+                      <div className="program-roster__header" aria-hidden="true">
+                        <span>Program</span>
+                        <span>Status</span>
+                        <span>Progress</span>
+                        <span>PIC</span>
+                      </div>
                       {filteredPortfolio.map((prog) => {
                         const health = normalizeHealthStatus(prog.healthStatus)
                         const sc = health === 'GREEN' ? 'on-track' : health === 'YELLOW' ? 'at-risk' : 'off-track'
@@ -659,7 +732,6 @@ export function ProgramsView() {
                         const deadlineInfo = days !== null ? formatDaysLabel(days) : null
                         const approvalInfo = approvalBadge(prog.approvalStatus)
                         const healthTone = sc === 'on-track' ? 'green' : sc === 'at-risk' ? 'yellow' : 'red'
-                        const stateSub = bCount > 0 ? `${bCount} blocker aktif` : null
                         const isOwner = (prog as { ownerId?: number }).ownerId === currentUser?.id
                         const showActions = roleAccess.canEditProgram(isOwner) || roleAccess.canArchiveProgram(isOwner)
                         return (
@@ -688,6 +760,11 @@ export function ProgramsView() {
                                         {bCount} blocker
                                       </span>
                                     )}
+                                    {approvalInfo && (
+                                      <span className={`program-row__approval-tag program-row__approval-tag--${approvalInfo.tone}`}>
+                                        {approvalInfo.label}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -695,27 +772,22 @@ export function ProgramsView() {
                                 <span className={`program-row__status-pill program-row__status-pill--${healthTone}`}>
                                   {healthLabel}
                                 </span>
-                                <span className={`program-row__state-sub${!approvalInfo && !stateSub ? ' program-row__state-sub--empty' : ''}`}>
-                                  {approvalInfo ? (
-                                    <span className={`program-row__approval-tag program-row__approval-tag--${approvalInfo.tone}`}>
-                                      {approvalInfo.label}
-                                    </span>
-                                  ) : stateSub ?? ' '}
-                                </span>
                               </div>
                               <div className="program-row__progress">
-                                <span className="program-row__eyebrow">Progress</span>
-                                <div className="program-row__progress-main">
-                                  <div className="progress-bar-track program-row__progress-track">
-                                    <div className={`progress-bar-fill ${sc}`} style={{ width: `${prog.progressPercent}%` }} />
+                                {prog.progressPercent > 0 ? (
+                                  <div className="program-row__progress-main">
+                                    <div className="progress-bar-track program-row__progress-track">
+                                      <div className={`progress-bar-fill ${sc}`} style={{ width: `${prog.progressPercent}%` }} />
+                                    </div>
+                                    <span className="program-row__progress-value">
+                                      {prog.progressPercent}%
+                                    </span>
                                   </div>
-                                  <span className="program-row__progress-value">
-                                    {prog.progressPercent}%
-                                  </span>
-                                </div>
+                                ) : (
+                                  <span className="program-row__progress-empty">Belum dimulai</span>
+                                )}
                               </div>
                               <div className="program-row__owner-block">
-                                <span className="program-row__eyebrow">PIC</span>
                                 <span className="program-row__owner" title={prog.owner?.name ?? 'Belum ditetapkan'}>
                                   {prog.owner?.name ?? 'Belum ditetapkan'}
                                 </span>
@@ -978,9 +1050,7 @@ export function ProgramsView() {
                                     <div
                                       className={`alignment-cell__fill alignment-cell__fill--${s.strategicAlignment >= 80 ? 'green' : s.strategicAlignment >= 60 ? 'yellow' : 'red'}`}
                                       style={{ height: `${s.strategicAlignment}%` }}
-                                    >
-                                      <span className={`alignment-cell__fill-label${s.strategicAlignment >= 20 ? ' alignment-cell__fill-label--visible' : ''}`}>{s.program}</span>
-                                    </div>
+                                    />
                                   </div>
                                   <span className="alignment-cell__label text-muted">{s.program}</span>
                                   <span className="alignment-cell__val">{s.strategicAlignment}%</span>
@@ -1075,7 +1145,7 @@ export function ProgramsView() {
                                 </div>
                               </div>
                               <span className="blocker-item__age">
-                                {b.daysOpen === 0 ? 'Today' : `${b.daysOpen}d`}
+                                {Math.round(b.daysOpen) === 0 ? 'Today' : `${Math.round(b.daysOpen)}d`}
                               </span>
                               <button
                                 className="btn btn--ghost blocker-item__action"
@@ -1128,7 +1198,7 @@ export function ProgramsView() {
                                 <span className="pulse-item__progress-value">{ini.progressPercent}%</span>
                               </div>
                               <span className={`pulse-item__state pulse-item__state--${urgencyTone}`}>
-                                {ini.daysRemaining <= 0 ? 'Overdue' : `${ini.daysRemaining}d left`}
+                                {Math.round(ini.daysRemaining) <= 0 ? 'Overdue' : `${Math.round(ini.daysRemaining)}d left`}
                               </span>
                             </div>
                           )
@@ -1167,7 +1237,7 @@ export function ProgramsView() {
                                 {w.percentComplete}%
                               </span>
                               <span className={`pulse-item__state pulse-item__state--${staleTone}`}>
-                                Stagnant {w.stagnantDays}d
+                                Stagnant {Math.round(w.stagnantDays)}d
                               </span>
                               <button
                                 className="btn btn--ghost blocker-item__action"

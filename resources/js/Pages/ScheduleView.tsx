@@ -5,6 +5,7 @@ import { useDialogFocus } from '../hooks/useDialogFocus'
 import type { Meeting, MeetingType, AttendeeRole, RsvpStatus } from '../types'
 import { MeetingDetailPanel } from './MeetingDetailPanel'
 import { useEscKey } from '../hooks/useEscKey'
+import './ScheduleView.css'
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -862,7 +863,7 @@ export function ScheduleView() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="view-schedule">
+    <div className="ds schedule-v2 view-schedule">
 
       {/* Toolbar */}
       <div className="view-toolbar">

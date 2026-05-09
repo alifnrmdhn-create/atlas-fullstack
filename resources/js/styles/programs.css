@@ -1479,69 +1479,44 @@
 .program-roster .list-row--off-track::before,
 .program-roster .list-row--critical::before  { background: var(--red); }
 
-/* Light mode: gradient wash yang sangat halus dari kiri, aligned ke health color */
-:root:not([data-theme="dark"]) .program-roster .list-row--on-track {
-  background:
-    linear-gradient(93deg, color-mix(in srgb, var(--green) 5%, transparent) 0%, transparent 38%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 90%, var(--surface-2) 10%) 0%, var(--panel) 100%);
-}
-:root:not([data-theme="dark"]) .program-roster .list-row--at-risk {
-  background:
-    linear-gradient(93deg, color-mix(in srgb, var(--yellow) 7%, transparent) 0%, transparent 38%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 90%, var(--surface-2) 10%) 0%, var(--panel) 100%);
-}
-:root:not([data-theme="dark"]) .program-roster .list-row--off-track,
-:root:not([data-theme="dark"]) .program-roster .list-row--critical {
-  background:
-    linear-gradient(93deg, color-mix(in srgb, var(--red) 5%, transparent) 0%, transparent 38%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 90%, var(--surface-2) 10%) 0%, var(--panel) 100%);
-}
-/* Hover state: wash sedikit lebih kuat */
-:root:not([data-theme="dark"]) .program-roster .list-row--on-track:hover {
-  background:
-    linear-gradient(93deg, color-mix(in srgb, var(--green) 8%, transparent) 0%, transparent 42%),
-    var(--surface-1);
-}
-:root:not([data-theme="dark"]) .program-roster .list-row--at-risk:hover {
-  background:
-    linear-gradient(93deg, color-mix(in srgb, var(--yellow) 10%, transparent) 0%, transparent 42%),
-    var(--surface-1);
-}
-:root:not([data-theme="dark"]) .program-roster .list-row--off-track:hover,
-:root:not([data-theme="dark"]) .program-roster .list-row--critical:hover {
-  background:
-    linear-gradient(93deg, color-mix(in srgb, var(--red) 7%, transparent) 0%, transparent 42%),
-    var(--surface-1);
+/* Pure System: status row visualization via colored left border (set by base
+ * rule) + clean canvas. NO gradient wash on bg — that pattern reads as "2018
+ * tinted card" and breaks the unified surface. Hover lifts to surface-1 only. */
+.program-roster .list-row--on-track,
+.program-roster .list-row--at-risk,
+.program-roster .list-row--off-track,
+.program-roster .list-row--critical {
+  background: var(--panel);
 }
 
-/* ── Light mode quality pass: richer hierarchy for program-heavy screens ── */
+.program-roster .list-row--on-track:hover,
+.program-roster .list-row--at-risk:hover,
+.program-roster .list-row--off-track:hover,
+.program-roster .list-row--critical:hover {
+  background: var(--surface-1);
+}
+
+/* Pure System: page header, toolbars, and search inputs share canvas.
+ * No radial/linear gradient overlays, no lift shadows — boundaries are
+ * drawn by 1px hairlines. */
 :root:not([data-theme="dark"]) .view-page-header {
-  background:
-    radial-gradient(ellipse 42% 150% at 0% 0%, color-mix(in srgb, var(--ptpn-green) 10%, transparent), transparent 72%),
-    radial-gradient(ellipse 38% 140% at 100% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 91%, var(--surface-2) 9%) 0%, var(--panel) 100%);
-  border-bottom-color: color-mix(in srgb, var(--panel-border-strong) 68%, transparent);
-  box-shadow:
-    0 1px 0 var(--panel-border),
-    0 18px 34px color-mix(in srgb, var(--panel-border-strong) 9%, transparent);
+  background: var(--app-bg);
+  border-bottom: 1px solid var(--panel-border-soft);
+  box-shadow: none;
 }
 
 :root:not([data-theme="dark"]) .programs-toolbar,
 :root:not([data-theme="dark"]) .view-toolbar,
 :root:not([data-theme="dark"]) .view-mode-bar {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 70%, var(--panel) 30%) 0%, var(--panel) 100%);
-  border-bottom-color: color-mix(in srgb, var(--panel-border-strong) 64%, transparent);
-  box-shadow:
-    0 1px 0 var(--panel-border),
-    0 12px 24px color-mix(in srgb, var(--panel-border-strong) 8%, transparent);
+  background: var(--app-bg);
+  border-bottom: 1px solid var(--panel-border-soft);
+  box-shadow: none;
 }
 
 :root:not([data-theme="dark"]) .view-toolbar__search {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 78%, transparent), color-mix(in srgb, var(--surface-1) 86%, transparent));
-  border-color: color-mix(in srgb, var(--panel-border-strong) 68%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 72%, transparent);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: none;
 }
 
 :root:not([data-theme="dark"]) .view-toolbar__search:focus {
@@ -1552,40 +1527,30 @@
     inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 72%, transparent);
 }
 
+/* Pure System: program row — flat panel + colored left border for status,
+ * subtle shadow for elevation. Status conveyed by border-left, not by bg
+ * gradient wash. */
 :root:not([data-theme="dark"]) .program-row {
   --program-row-accent: var(--indigo);
-  --program-row-wash: color-mix(in srgb, var(--indigo) 5%, transparent);
-  background:
-    linear-gradient(90deg, var(--program-row-wash), transparent 42%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 86%, var(--surface-2) 14%) 0%, var(--panel) 100%);
-  border-color: color-mix(in srgb, var(--panel-border) 78%, var(--program-row-accent) 22%);
-  border-left-color: var(--program-row-accent);
-  box-shadow:
-    var(--panel-shadow),
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 70%, transparent);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-left: 3px solid var(--program-row-accent);
+  box-shadow: none;
 }
 
 :root:not([data-theme="dark"]) .program-row:hover {
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--program-row-accent) 9%, transparent), transparent 48%),
-    linear-gradient(180deg, var(--surface-2) 0%, var(--panel) 100%);
-  border-top-color: color-mix(in srgb, var(--program-row-accent) 38%, var(--panel-border) 62%);
-  border-right-color: color-mix(in srgb, var(--program-row-accent) 38%, var(--panel-border) 62%);
-  border-bottom-color: color-mix(in srgb, var(--program-row-accent) 38%, var(--panel-border) 62%);
+  background: var(--surface-1);
+  border-color: var(--panel-border);
+  border-left-color: var(--program-row-accent);
 }
 
 :root:not([data-theme="dark"]) .program-row--active,
 :root:not([data-theme="dark"]) .program-row--selected,
 :root:not([data-theme="dark"]) .program-roster .list-row.program-row--active {
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--program-row-accent) 14%, transparent), transparent 54%),
-    linear-gradient(180deg, color-mix(in srgb, var(--indigo-dim) 56%, var(--panel) 44%) 0%, var(--panel) 100%);
-  border-top-color: color-mix(in srgb, var(--indigo) 38%, var(--panel-border) 62%);
-  border-right-color: color-mix(in srgb, var(--indigo) 38%, var(--panel-border) 62%);
-  border-bottom-color: color-mix(in srgb, var(--indigo) 38%, var(--panel-border) 62%);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--indigo) 14%, transparent),
-    var(--panel-shadow-md);
+  background: var(--indigo-dim);
+  border: 1px solid var(--indigo);
+  border-left: 3px solid var(--indigo);
+  box-shadow: none;
 }
 
 :root:not([data-theme="dark"]) .program-row--health-green {
@@ -1604,40 +1569,33 @@
 }
 
 :root:not([data-theme="dark"]) .program-row__num {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 74%, transparent), color-mix(in srgb, var(--surface-1) 82%, transparent));
-  border-color: color-mix(in srgb, var(--panel-border-strong) 54%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 68%, transparent);
+  background: var(--surface-1);
+  border-color: var(--panel-border);
+  box-shadow: none;
 }
 
+/* Pure System: kanban card — flat panel + colored top border for accent.
+ * Status conveyed by border-top color (not bg gradient). Hover via subtle
+ * surface shift. Active via brand tint background (not double-gradient). */
 :root:not([data-theme="dark"]) .kanban-card {
   --kanban-card-accent: var(--kanban-accent, var(--indigo));
-  --kanban-card-wash: color-mix(in srgb, var(--kanban-card-accent) 8%, transparent);
-  background:
-    linear-gradient(180deg, var(--kanban-card-wash), transparent 46%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, var(--surface-2) 12%) 0%, var(--panel) 100%);
-  border-color: color-mix(in srgb, var(--panel-border) 78%, var(--kanban-card-accent) 22%);
-  border-top-color: var(--kanban-card-accent);
-  box-shadow:
-    var(--panel-shadow),
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 70%, transparent);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-top: 3px solid var(--kanban-card-accent);
+  box-shadow: none;
 }
 
 :root:not([data-theme="dark"]) .kanban-card:hover {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--kanban-card-accent) 11%, transparent), transparent 50%),
-    linear-gradient(180deg, var(--surface-2) 0%, var(--panel) 100%);
-  border-color: color-mix(in srgb, var(--kanban-card-accent) 40%, var(--panel-border) 60%);
+  background: var(--surface-1);
+  border-color: var(--panel-border);
   border-top-color: var(--kanban-card-accent);
 }
 
 :root:not([data-theme="dark"]) .kanban-card--active {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--kanban-card-accent) 14%, transparent), transparent 58%),
-    linear-gradient(180deg, color-mix(in srgb, var(--indigo-dim) 58%, var(--panel) 42%) 0%, var(--panel) 100%);
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--indigo-mid) 62%, transparent),
-    var(--panel-shadow-md);
+  background: var(--indigo-dim);
+  border: 1px solid var(--indigo);
+  border-top: 3px solid var(--indigo);
+  box-shadow: none;
 }
 
 :root:not([data-theme="dark"]) .kanban-card--health-green {
@@ -1652,20 +1610,26 @@
   --kanban-card-wash: color-mix(in srgb, var(--red) 10%, transparent);
 }
 
-/* ── Blocker item: severity left-border accent ───────────────── */
+/* ── Blocker item: editorial row with severity left accent ─────
+ * Editorial pattern: row with bottom hairline (no card chrome), severity
+ * encoded by left-border 3px accent + tone-coded label. Hover = subtle bg. */
 .blocker-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: 8px;
-  background: var(--panel);
-  border: 1px solid var(--panel-border);
-  border-left-width: 3px;
-  border-left-color: var(--blocker-accent, var(--panel-border));
-  transition: box-shadow 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 12px;
+  padding: 12px 14px 12px 16px;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ds-border-subtle, var(--panel-border));
+  box-shadow: inset 3px 0 0 0 var(--blocker-accent, var(--panel-border));
+  transition: background 120ms ease;
 }
-.blocker-item:hover { box-shadow: var(--panel-shadow-md); }
+.blocker-item:last-child { border-bottom: 0; }
+.blocker-item:hover {
+  background: var(--ds-surface-hover, var(--surface-1));
+  box-shadow: inset 3px 0 0 0 var(--blocker-accent, var(--panel-border));
+}
 .blocker-item__body {
   flex: 1;
   min-width: 0;
@@ -1716,19 +1680,24 @@
   padding: 0 0 16px;
 }
 .program-filter-pill {
-  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
   border-radius: 99px;
   border: 1px solid var(--panel-border);
   background: transparent;
   color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--ds-font-sans);
   cursor: pointer;
-  transition: background 140ms, color 140ms, border-color 140ms;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 .program-filter-pill:hover {
   background: var(--surface-1);
   color: var(--text-strong);
+  border-color: var(--text-muted);
 }
 .program-filter-pill:focus-visible {
   outline: none;
@@ -1736,27 +1705,31 @@
 }
 .program-filter-pill--active,
 .program-filter-pill--active:hover {
-  background: var(--text-strong);
-  color: var(--panel-bg);
+  background: var(--surface-1);
+  color: var(--text-strong);
   border-color: var(--text-strong);
+  font-weight: 600;
 }
 .program-list-stack {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
 }
-.program-list-stack--tight { gap: 4px; }
+.program-list-stack--tight { gap: 0; }
+/* Pulse item — editorial row pattern, matches blocker-item style */
 .pulse-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: 8px;
-  background: var(--panel);
-  border: 1px solid var(--panel-border);
-  transition: box-shadow 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ds-border-subtle, var(--panel-border));
+  transition: background 120ms ease;
 }
-.pulse-item:hover { box-shadow: var(--panel-shadow-md); }
+.pulse-item:last-child { border-bottom: 0; }
+.pulse-item:hover { background: var(--ds-surface-hover, var(--surface-1)); }
 .pulse-item__status { flex-shrink: 0; }
 .pulse-item__body {
   flex: 1;

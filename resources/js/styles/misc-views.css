@@ -1285,8 +1285,9 @@
   color: var(--text-muted);
   transition: background 0.12s, color 0.12s;
 }
-.schedule-view-toggle__btn:hover { background: var(--panel); color: var(--text-strong); }
-.schedule-view-toggle__btn.active { background: var(--panel); color: var(--blue); box-shadow: var(--panel-shadow); }
+.schedule-view-toggle__btn:hover { background: var(--surface-1); color: var(--text-strong); }
+/* Pure System: brand-green-tint active pattern (unified with sidebar / view-toggle). */
+.schedule-view-toggle__btn.active { background: var(--indigo-dim); color: var(--indigo); font-weight: 600; }
 
 /* Calendar container */
 .schedule-cal {

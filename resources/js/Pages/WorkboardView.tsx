@@ -23,6 +23,7 @@ import type { Task } from '../types'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useRoleAccess } from '../hooks/useRoleAccess'
+import './WorkboardView.css'
 
 type BoardMode = 'kanban' | 'list' | 'blockers'
 
@@ -373,7 +374,8 @@ export function WorkboardView() {
   }
 
   return (
-    <div className="view-workboard">
+    <div className="ds workboard-v2 view-workboard">
+      <div className="workboard-v2__inner">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Execution Board</h2>
         <div className="view-toolbar__sep" />
@@ -645,6 +647,7 @@ export function WorkboardView() {
 
       </div>
 
+      </div>
       {/* ── Modal: Buat Work Item ────────────────────────────────────── */}
       {(showCreateWI || closingWIOverlay === 'create-wi') && (
         <div

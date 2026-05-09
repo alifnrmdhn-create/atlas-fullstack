@@ -221,14 +221,18 @@
 /* ── Page body container ───────────────────────────────────────────────────── */
 
 .dimr-content {
+  /* Full-bleed: no max-width. Halaman primer mengikuti lebar workspace
+   * (lihat pakem di components.css → .page-shell). */
   padding: 28px 32px;
   display: flex;
   flex-direction: column;
   gap: 36px;
-  max-width: 1280px;
   width: 100%;
-  margin: 0 auto;
   box-sizing: border-box;
+}
+
+@media (min-width: 1600px) {
+  .dimr-content { padding: 32px 48px; }
 }
 
 /* ── Section ───────────────────────────────────────────────────────────────── */

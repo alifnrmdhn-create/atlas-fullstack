@@ -1,0 +1,332 @@
+/* PresenceView — surface polish overlay */
+
+.presence-v2 {
+  display: block;
+  background: var(--ds-surface-page);
+  min-height: 100vh;
+  width: 100%;
+}
+
+.presence-v2__inner {
+  display: block;
+  padding: 32px 32px 48px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ─── Toolbar ───────────────────────────────────────────── */
+
+.presence-v2 .view-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 0 16px;
+  margin-bottom: 16px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  flex-wrap: wrap;
+  height: auto;
+  overflow: visible;
+}
+
+.presence-v2 .view-toolbar__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: -0.015em;
+  color: var(--ds-text-primary);
+  line-height: 1.2;
+  font-family: var(--ds-font-sans);
+}
+
+.presence-v2 .view-toolbar__sep { display: none; }
+
+.presence-v2 .view-toolbar__subtitle {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+  flex: 1 1 auto;
+}
+
+.presence-v2 .view-toolbar__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Stats with semantic dots */
+.presence-v2 .presence-toolbar-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: var(--ds-text-13);
+  font-variant-numeric: tabular-nums;
+}
+
+.presence-v2 .presence-toolbar-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ds-text-primary);
+}
+
+.presence-v2 .presence-toolbar-stat::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ds-neutral-400);
+}
+
+.presence-v2 .presence-toolbar-stat--online::before  { background: var(--ds-green-500); }
+.presence-v2 .presence-toolbar-stat--away::before    { background: var(--ds-amber-500); }
+.presence-v2 .presence-toolbar-stat--dnd::before     { background: var(--ds-red-500); }
+.presence-v2 .presence-toolbar-stat--offline::before { background: var(--ds-neutral-300); }
+
+.presence-v2 .presence-toolbar-stat em {
+  color: var(--ds-text-tertiary);
+  font-style: normal;
+  font-weight: var(--ds-weight-regular);
+}
+
+.presence-v2 .presence-sep {
+  color: var(--ds-text-disabled);
+  font-size: 12px;
+}
+
+/* ─── Tab nav ───────────────────────────────────────────── */
+
+.presence-v2 .presence-tab-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 16px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  width: 100%;
+  padding: 0;
+}
+
+.presence-v2 .presence-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
+  cursor: pointer;
+  transition: color var(--ds-duration-fast) var(--ds-ease-standard),
+              border-color var(--ds-duration-fast) var(--ds-ease-standard);
+  margin-bottom: -1px;
+}
+
+.presence-v2 .presence-tab-btn:hover {
+  color: var(--ds-text-primary);
+}
+
+.presence-v2 .presence-tab-btn.is-active {
+  color: var(--ds-brand-700);
+  border-bottom-color: var(--ds-brand-600);
+  font-weight: var(--ds-weight-semibold);
+}
+
+.presence-v2 .presence-tab-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ─── Content area ──────────────────────────────────────── */
+
+.presence-v2 .presence-content,
+.presence-v2 .presence-list {
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  padding: 0;
+  box-shadow: none;
+}
+
+.presence-v2 .presence-section {
+  border-bottom: 1px solid var(--ds-border-subtle);
+}
+
+.presence-v2 .presence-section:last-child {
+  border-bottom: 0;
+}
+
+.presence-v2 .presence-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  background: var(--ds-surface-sunken);
+  border-bottom: 1px solid var(--ds-border-subtle);
+  cursor: pointer;
+}
+
+.presence-v2 .presence-section__title {
+  font-size: 11px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.presence-v2 .presence-section__count {
+  font-size: 11px;
+  color: var(--ds-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Filter bar (search + filter pills) ─────────────────── */
+
+.presence-v2 .presence-filter-bar,
+.presence-v2 .presence-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  flex-wrap: wrap;
+}
+
+.presence-v2 .presence-search {
+  height: 30px;
+  padding: 0 12px;
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-md);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-primary);
+  outline: none;
+  flex: 1 1 220px;
+  max-width: 320px;
+}
+
+.presence-v2 .presence-search:focus {
+  border-color: var(--ds-brand-600);
+  box-shadow: 0 0 0 1px var(--ds-brand-600);
+}
+
+.presence-v2 .presence-filter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--ds-neutral-100);
+  border-radius: var(--ds-radius-md);
+}
+
+.presence-v2 .presence-filter-btn {
+  height: 26px;
+  padding: 0 10px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  font-family: var(--ds-font-sans);
+  font-size: 11px;
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
+  cursor: pointer;
+}
+
+.presence-v2 .presence-filter-btn.is-active {
+  background: var(--ds-surface-card);
+  color: var(--ds-text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* ─── Person row ───────────────────────────────────────── */
+
+.presence-v2 .presence-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.presence-v2 .presence-row:last-child {
+  border-bottom: 0;
+}
+
+.presence-v2 .presence-row:hover {
+  background: var(--ds-surface-hover);
+}
+
+.presence-v2 .presence-row.is-active,
+.presence-v2 .presence-row[data-active="true"] {
+  background: var(--ds-brand-50);
+}
+
+.presence-v2 .presence-row__name {
+  font-size: var(--ds-text-14);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-primary);
+}
+
+.presence-v2 .presence-row__sub {
+  font-size: 11px;
+  color: var(--ds-text-tertiary);
+}
+
+/* ─── Status side panel ─────────────────────────────────── */
+
+.presence-v2 .presence-side {
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  padding: 16px 18px;
+  box-shadow: none;
+}
+
+.presence-v2 .presence-side__title {
+  font-size: 11px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.presence-v2 .presence-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin: 0 -10px;
+  border-radius: var(--ds-radius-md);
+  cursor: pointer;
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-primary);
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.presence-v2 .presence-status-row:hover {
+  background: var(--ds-surface-hover);
+}
+
+/* ─── Hover card ───────────────────────────────────────── */
+
+.presence-v2 .presence-hover-card {
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-popover);
+  padding: 16px;
+}

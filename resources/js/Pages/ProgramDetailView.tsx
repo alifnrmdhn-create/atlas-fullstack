@@ -22,6 +22,7 @@ import type { ProgramDetail, ProgramKpiLink } from '../types'
 import { ExecutionTab } from '../components/ExecutionTab'
 import { TaskPlanningPanel } from './TaskPlanningPanel'
 import { getProgramDisplayStatus } from '../lib/programStatus'
+import './ProgramDetailView.css'
 
 // ── Icon bank (inline SVG) ─────────────────────────────────────────────────
 const PIcon = {
@@ -831,7 +832,7 @@ export function ProgramDetailView() {
   ]
 
   return (
-    <div className="prog-detail-page">
+    <div className="ds program-detail-v2 prog-detail-page">
       {/* ── Breadcrumb header ──────────────────────────────────────────── */}
       <div className="wi-detail-header">
         <button className="wi-detail-back" onClick={() => navigate('/programs')} type="button">

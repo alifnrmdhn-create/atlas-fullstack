@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
+import './ProfileView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -195,7 +196,7 @@ export function ProfileView() {
   const activeDaysCount = activityData?.dailyBreakdown.filter(day => day.durationMs > 0).length ?? 0
 
   if (loading) return (
-    <div className="view-profile">
+    <div className="ds profile-v2 view-profile">
       <div className="section-block profile-loading">
         <span className="profile-empty-note">Memuat profil…</span>
       </div>
@@ -216,7 +217,8 @@ export function ProfileView() {
     : 'Tidak ada atasan terdaftar.'
 
   return (
-    <div className="view-profile">
+    <div className="ds profile-v2 view-profile">
+      <div className="profile-v2__inner">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Profil Saya</h2>
         <div className="view-toolbar__sep" />
@@ -522,6 +524,7 @@ export function ProfileView() {
                   </div>
                 )}
         </section>
+      </div>
       </div>
     </div>
   )

@@ -1,0 +1,65 @@
+.ds-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+  font-family: var(--ds-font-sans);
+  color: var(--ds-text-primary);
+}
+
+.ds-stat__value-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ds-space-2);
+}
+
+.ds-stat__value {
+  font-weight: var(--ds-weight-semibold);
+  line-height: var(--ds-leading-tight);
+  letter-spacing: var(--ds-tracking-tight);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'cv11' 1;
+}
+
+.ds-stat__unit {
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-text-tertiary);
+}
+
+.ds-stat__label {
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-text-secondary);
+  line-height: var(--ds-leading-snug);
+}
+
+.ds-stat__caption {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+  line-height: var(--ds-leading-snug);
+  margin-top: var(--ds-space-1);
+}
+
+/* ─── Sizes ─────────────────────────────────────────────── */
+.ds-stat--md .ds-stat__value {
+  font-size: var(--ds-text-20);
+}
+
+.ds-stat--lg .ds-stat__value {
+  font-size: var(--ds-text-28);
+}
+
+.ds-stat--hero .ds-stat__value {
+  font-size: var(--ds-text-40);
+  font-weight: var(--ds-weight-semibold);
+}
+
+.ds-stat--hero .ds-stat__label {
+  font-size: var(--ds-text-14);
+}
+
+/* ─── Tones (only the value tints; label stays muted) ───── */
+.ds-stat--neutral .ds-stat__value { color: var(--ds-text-primary); }
+.ds-stat--red     .ds-stat__value { color: var(--ds-red-600); }
+.ds-stat--amber   .ds-stat__value { color: var(--ds-amber-600); }
+.ds-stat--green   .ds-stat__value { color: var(--ds-green-600); }

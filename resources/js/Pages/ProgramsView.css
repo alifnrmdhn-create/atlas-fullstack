@@ -12,117 +12,413 @@
 }
 
 .programs-v2__inner {
-  /* Full-bleed: no max-width. */
-  padding: 32px 32px 48px;
-  /* Override .view-programs flex: ensure inner is block-level so width and
-   * padding behave predictably regardless of legacy parent display rules. */
+  /* Left-anchored content with reasonable max-width. Workspace panel handles
+   * full-width gutter; content stays anchored to left so reading flow starts
+   * predictably. Wide viewports get right-side breathing room, not centered
+   * dead space on both sides. */
+  max-width: 1400px;
+  margin: 0;
+  padding: 24px 28px 40px;
   display: block;
 }
 
-/* ─── Toolbar — page header ──────────────────────────────── */
+/* ─── Hero header — editorial page identity ───────────────
+ *
+ * Pattern: title is the hero (editorial weight), subtitle quietly summarizes
+ * stats, primary CTA anchored right. No ornament, no chrome — content first.
+ */
 
-.programs-v2 .view-toolbar {
+.programs-v2 .programs-v2__hero {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  gap: 24px;
   padding: 0 0 16px;
-  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.programs-v2 .programs-v2__hero-text {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.programs-v2 .programs-v2__title {
+  margin: 0;
+  font-family: var(--ds-font-sans);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  color: var(--ds-text-primary);
+  line-height: 1.1;
+}
+
+.programs-v2 .programs-v2__subtitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ds-text-tertiary);
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+.programs-v2 .programs-v2__subtitle-warn {
+  color: var(--ds-red-600);
+  font-weight: 500;
+}
+
+.programs-v2 .programs-v2__hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.programs-v2 .programs-v2__cta {
+  height: 36px;
+  padding: 0 16px;
+  background: var(--ptpn-green);
+  color: var(--text-inverse);
+  border: 0;
+  border-radius: 8px;
+  font-family: var(--ds-font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.programs-v2 .programs-v2__cta:hover {
+  background: color-mix(in srgb, var(--ptpn-green) 88%, black);
+}
+
+.programs-v2 .programs-v2__cta:active {
+  transform: scale(0.98);
+}
+
+/* ─── Tabs — editorial underline pattern ─────────────────── */
+
+.programs-v2 .programs-v2__tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  margin: 0 0 24px;
+  border-bottom: 1px solid var(--ds-border-subtle);
+}
+
+.programs-v2 .programs-v2__tab {
+  position: relative;
+  height: 40px;
+  padding: 0 14px;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--ds-border-subtle);
-  flex-wrap: wrap;
-}
-
-.programs-v2 .view-toolbar__title {
-  margin: 0;
-  font-size: 22px;
-  font-weight: var(--ds-weight-semibold);
-  letter-spacing: -0.015em;
-  color: var(--ds-text-primary);
-  line-height: 1.2;
   font-family: var(--ds-font-sans);
-}
-
-.programs-v2 .view-toolbar__sep {
-  display: none;
-}
-
-.programs-v2 .view-toolbar__right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-  flex-wrap: wrap;
-}
-
-/* ─── Tab strip (.view-toggle inside header) ─────────────── */
-
-.programs-v2 .view-toggle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ds-text-secondary);
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 2px;
-  background: var(--ds-neutral-100);
-  border-radius: var(--ds-radius-md);
-  border: 0;
-  box-shadow: none;
+  gap: 8px;
+  transition: color 120ms ease;
 }
 
-.programs-v2 .view-toggle-btn {
-  height: 28px;
+.programs-v2 .programs-v2__tab:hover {
+  color: var(--ds-text-primary);
+}
+
+.programs-v2 .programs-v2__tab--active {
+  color: var(--ds-text-primary);
+  font-weight: 600;
+}
+
+.programs-v2 .programs-v2__tab--active::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--ptpn-green);
+  border-radius: 2px 2px 0 0;
+}
+
+.programs-v2 .programs-v2__tab--muted {
+  margin-left: auto;
+  opacity: 0.65;
+}
+
+.programs-v2 .programs-v2__tab--muted:hover { opacity: 1; }
+
+/* Tab count (Pulse) — quiet token, not an alarm */
+.programs-v2 .programs-v2__tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  background: var(--ds-neutral-100);
+  color: var(--ds-text-secondary);
+}
+
+.programs-v2 .programs-v2__tab--active .programs-v2__tab-count {
+  background: var(--ds-neutral-200);
+  color: var(--ds-text-primary);
+}
+
+/* ─── Sub-toolbar controls — refined segmented toggle ────────
+ *
+ * Editorial pattern: outline border (no bg fill), tight buttons. Active
+ * button uses subtle neutral fill — not a heavy shadow. Quieter than the
+ * old "filled wrapper + white shadow card" pattern. */
+
+.programs-v2 .programs-subbar {
+  align-items: center;
+  gap: 12px;
+}
+
+.programs-v2 .programs-subbar .view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--ds-border-default);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.programs-v2 .programs-subbar .view-toggle-btn {
+  height: 30px;
   padding: 0 12px;
   background: transparent;
   border: 0;
-  border-radius: var(--ds-radius-sm);
+  border-radius: 0;
   font-family: var(--ds-font-sans);
-  font-size: var(--ds-text-13);
-  font-weight: var(--ds-weight-medium);
+  font-size: 13px;
+  font-weight: 500;
   color: var(--ds-text-secondary);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
-              color var(--ds-duration-fast) var(--ds-ease-standard);
-  box-shadow: none;
+  transition: background 120ms ease, color 120ms ease;
 }
 
-.programs-v2 .view-toggle-btn:hover {
+.programs-v2 .programs-subbar .view-toggle-btn + .view-toggle-btn {
+  border-left: 1px solid var(--ds-border-default);
+}
+
+.programs-v2 .programs-subbar .view-toggle-btn:hover {
+  color: var(--ds-text-primary);
+  background: var(--ds-surface-hover);
+}
+
+.programs-v2 .programs-subbar .view-toggle-btn.active {
+  background: var(--ds-neutral-100);
+  color: var(--ds-text-primary);
+  font-weight: 600;
+}
+
+/* ─── Controls bar — filters left, view+search right ─────────
+ *
+ * Single horizontal strip consolidating what used to be two rows
+ * (filter chips + sub-toolbar). Filters on left grow naturally, view
+ * controls + search anchored right with margin-left:auto.
+ */
+
+.programs-v2 .programs-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 0 14px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  margin-bottom: 0;
+}
+
+.programs-v2 .programs-controls__filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.programs-v2 .programs-controls__view {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Legacy class retained for any other tab that still uses it */
+.programs-v2 .programs-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 16px;
+  flex-wrap: wrap;
+}
+
+.programs-v2 .programs-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 12px;
+  background: transparent;
+  border: 1px solid var(--ds-border-default);
+  border-radius: 99px;
+  font-family: var(--ds-font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-text-secondary);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.programs-v2 .programs-filter-chip:hover {
+  border-color: var(--ds-border-strong, var(--ds-text-secondary));
   color: var(--ds-text-primary);
 }
 
-.programs-v2 .view-toggle-btn.active {
-  background: var(--ds-surface-card);
+.programs-v2 .programs-filter-chip__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Color tone — applied to the dot indicator */
+.programs-v2 .programs-filter-chip--green .programs-filter-chip__dot { background: var(--ds-emerald-500, #10b981); }
+.programs-v2 .programs-filter-chip--amber .programs-filter-chip__dot { background: var(--ds-amber-500, #f59e0b); }
+.programs-v2 .programs-filter-chip--red   .programs-filter-chip__dot { background: var(--ds-red-500, #ef4444); }
+
+/* Active state — fill with tone, white text */
+.programs-v2 .programs-filter-chip--active {
   color: var(--ds-text-primary);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  font-weight: 600;
+  background: var(--ds-neutral-100);
+  border-color: var(--ds-text-secondary);
 }
 
-.programs-v2 .view-toggle-btn--muted {
-  opacity: 0.7;
+.programs-v2 .programs-filter-chip--green.programs-filter-chip--active {
+  background: color-mix(in srgb, var(--ds-emerald-500, #10b981) 12%, transparent);
+  border-color: var(--ds-emerald-500, #10b981);
+  color: var(--ds-emerald-700, #047857);
 }
 
-/* Tab badge (Pulse count) */
-.programs-v2 .program-tab-badge {
+.programs-v2 .programs-filter-chip--amber.programs-filter-chip--active {
+  background: color-mix(in srgb, var(--ds-amber-500, #f59e0b) 14%, transparent);
+  border-color: var(--ds-amber-500, #f59e0b);
+  color: var(--ds-amber-700, #b45309);
+}
+
+.programs-v2 .programs-filter-chip--red.programs-filter-chip--active {
+  background: color-mix(in srgb, var(--ds-red-500, #ef4444) 12%, transparent);
+  border-color: var(--ds-red-500, #ef4444);
+  color: var(--ds-red-700, #b91c1c);
+}
+
+.programs-v2 .programs-filter-chip--stale.programs-filter-chip--active {
+  background: var(--ds-neutral-200);
+  border-color: var(--ds-text-secondary);
+  color: var(--ds-text-primary);
+}
+
+/* Reset link — inline text button, only visible when filters are active */
+.programs-v2 .programs-filter-reset {
+  margin-left: 4px;
+  height: 28px;
+  padding: 0 8px;
+  background: transparent;
+  border: 0;
+  font-family: var(--ds-font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-text-secondary);
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+
+.programs-v2 .programs-filter-reset:hover {
+  color: var(--ds-text-primary);
+  text-decoration: underline;
+}
+
+/* Filter chip count badge — used by "Perlu Persetujuan" to show pending count */
+.programs-v2 .programs-filter-chip__count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 16px;
-  height: 16px;
+  min-width: 18px;
+  height: 18px;
   padding: 0 5px;
-  border-radius: var(--ds-radius-pill);
-  font-size: 10px;
-  font-weight: var(--ds-weight-semibold);
+  margin-left: 2px;
+  border-radius: 99px;
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  font-size: 11px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.programs-v2 .program-tab-badge--critical {
-  background: var(--ds-red-50);
-  color: var(--ds-red-600);
+/* ─── Search input — with icon affordance ────────────────────
+ * Pattern: thin outline with leading magnifier icon. Icon and input share
+ * background and focus ring as a single visual unit. */
+
+.programs-v2 .programs-search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 240px;
+  max-width: 340px;
+  height: 32px;
+  padding: 0 12px 0 32px;
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-default);
+  border-radius: 8px;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
-.programs-v2 .program-tab-badge--warn {
-  background: var(--ds-amber-50);
-  color: var(--ds-amber-600);
+.programs-v2 .programs-search:focus-within {
+  border-color: var(--ds-text-secondary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ds-text-secondary) 12%, transparent);
+}
+
+.programs-v2 .programs-search__icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ds-text-tertiary);
+  pointer-events: none;
+}
+
+.programs-v2 .programs-search__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font-family: var(--ds-font-sans);
+  font-size: 13px;
+  color: var(--ds-text-primary);
+}
+
+.programs-v2 .programs-search__input::placeholder {
+  color: var(--ds-text-tertiary);
 }
 
 /* ─── Health chips (right side of toolbar) ─────────────── */
@@ -310,52 +606,171 @@
 
 /* ─── Section block (Portfolio Roster, etc) ─────────────── */
 
-.programs-v2 .section-block {
-  background: var(--ds-surface-card);
-  border: 1px solid var(--ds-border-subtle);
-  border-radius: var(--ds-radius-lg);
-  padding: 4px;
-  margin-bottom: 16px;
+/* Section block — editorial canvas (no card containment).
+ *
+ * Pure System default: rows/content render directly on page bg, separated
+ * from above by spacing + optional section header. No bg fill, no border,
+ * no card chrome. Sections distinguish themselves via heading typography
+ * and vertical rhythm, not box decoration.
+ *
+ * Specificity bump (:root prefix + light-mode selector) is necessary because
+ * responsive.css defines `:root:not([data-theme="dark"]) .section-block` with
+ * higher specificity than `.programs-v2 .section-block`. Both selectors
+ * below ensure the editorial override wins in either theme. */
+.programs-v2 .section-block,
+.programs-v2 .section-block--bare,
+:root:not([data-theme="dark"]) .programs-v2 .section-block,
+:root:not([data-theme="dark"]) .programs-v2 .section-block--bare,
+:root[data-theme="dark"] .programs-v2 .section-block,
+:root[data-theme="dark"] .programs-v2 .section-block--bare {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 28px;
   box-shadow: none;
 }
 
 .programs-v2 .section-header {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 18px 14px;
-  border-bottom: 1px solid var(--ds-border-subtle);
+  padding: 0 0 12px;
+  border-bottom: 0;
   background: transparent;
 }
 
 .programs-v2 .section-title {
   margin: 0;
-  font-size: var(--ds-text-16);
-  font-weight: var(--ds-weight-semibold);
+  font-family: var(--ds-font-sans);
+  font-size: 18px;
+  font-weight: 600;
   color: var(--ds-text-primary);
-  letter-spacing: -0.005em;
+  letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
 .programs-v2 .section-subtitle {
   margin: 4px 0 0;
-  font-size: var(--ds-text-13);
+  font-size: 13px;
   color: var(--ds-text-tertiary);
   line-height: 1.4;
 }
 
+/* Section badge — quiet inline count, no pill bg */
 .programs-v2 .section-badge {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  padding: 0 9px;
-  border-radius: var(--ds-radius-pill);
-  background: var(--ds-neutral-100);
-  font-size: 11px;
-  font-weight: var(--ds-weight-medium);
-  color: var(--ds-text-secondary);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ds-text-tertiary);
   font-variant-numeric: tabular-nums;
+  background: transparent;
+  padding: 0;
+}
+
+.programs-v2 .section-badge--red {
+  color: var(--ds-red-600);
+}
+
+/* ─── Risiko tab — gov-table editorial overrides ──────────────
+ *
+ * Workflow status badges in this table are de-colored: workflow stage is a
+ * different semantic axis than health (already shown in HEALTH column with
+ * colored pills). Workflow gets neutral treatment so eye sees state-vs-stage
+ * cleanly.
+ */
+
+.programs-v2 .gov-table {
+  font-size: 13px;
+}
+
+.programs-v2 .gov-table th {
+  background: transparent;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  padding: 10px 14px 10px 0;
+  text-align: left;
+  font-weight: 500;
+  color: var(--ds-text-tertiary);
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.programs-v2 .gov-table th:first-child { padding-left: 0; }
+
+.programs-v2 .gov-table td {
+  padding: 14px 14px 14px 0;
+  border-bottom: 1px solid var(--ds-border-subtle);
+}
+
+.programs-v2 .gov-table td:first-child { padding-left: 0; }
+
+.programs-v2 .gov-table tr:hover td {
+  background: var(--ds-surface-hover);
+}
+
+/* Workflow status badge — neutral, not colored. Eye reserves color for
+ * the HEALTH column on the same row. */
+.programs-v2 .gov-table .badge {
+  background: var(--ds-neutral-100);
+  color: var(--ds-text-secondary);
+  border: 0;
+  font-weight: 500;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 99px;
+}
+
+/* ─── Pulse tab — section spacing tighter ───────────────────── */
+.programs-v2 .pulse-stack {
+  gap: 28px;
+}
+
+.programs-v2 .pulse-body {
+  padding-top: 4px;
+}
+
+/* ─── Timeline tab — roadmap-lane editorial override ──────────
+ *
+ * Drop card chrome (bg fill + border + radius) so lanes render directly on
+ * page canvas. Header keeps dot + label but loses its own bg fill — sits as
+ * a quiet section anchor. Specificity bumped to win against responsive.css
+ * theme-scoped overrides. */
+
+.programs-v2 .roadmap-lane,
+:root:not([data-theme="dark"]) .programs-v2 .roadmap-lane,
+:root[data-theme="dark"] .programs-v2 .roadmap-lane {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--ds-border-subtle);
+  border-radius: 0;
+  overflow: visible;
+  margin-bottom: 12px;
+}
+
+.programs-v2 .roadmap-lane__header {
+  background: transparent;
+  border-bottom: 0;
+  padding: 12px 0 10px;
+}
+
+.programs-v2 .roadmap-lane__header--on-hold {
+  background: transparent;
+}
+
+.programs-v2 .roadmap-lane__label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ds-text-primary);
+}
+
+.programs-v2 .roadmap-body {
+  padding: 0;
 }
 
 /* ─── Program roster (list rows) ─────────────────────────── */
@@ -403,25 +818,67 @@
   box-shadow: none;
 }
 
-.programs-v2 .program-row__main {
+/* Identity grows (1fr), state intrinsic ~140px, progress fixed cluster ~340px,
+ * owner intrinsic ~200px. This stops the progress column from exploding into
+ * empty space on wide viewports while keeping identity (name + meta) the
+ * dominant column. */
+/* Column header band — column labels above the rows. Same grid as rows
+ * so labels align with column content. Quiet typography (uppercase,
+ * letter-spaced) signals "this is a table header". */
+.programs-v2 .program-roster__header {
   display: grid;
-  grid-template-columns: minmax(280px, 1.6fr) 160px 1fr 160px;
+  grid-template-columns: minmax(280px, 1fr) 120px 200px 160px;
   gap: 20px;
   align-items: center;
-  padding: 14px 18px;
+  padding: 10px 18px 10px 18px;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ds-text-tertiary);
+}
+
+@media (max-width: 1280px) {
+  .programs-v2 .program-roster__header {
+    grid-template-columns: minmax(240px, 1fr) 110px 180px 150px;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .programs-v2 .program-roster__header {
+    grid-template-columns: minmax(220px, 1fr) 100px 140px 130px;
+    gap: 12px;
+  }
+}
+
+.programs-v2 .program-row__main {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 120px 200px 160px;
+  gap: 20px;
+  align-items: center;
+  padding: 8px 14px 8px 18px;
   background: transparent;
   border: 0;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
   flex: 1 1 0;
+  min-height: 56px;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1280px) {
   .programs-v2 .program-row__main {
-    grid-template-columns: minmax(220px, 1.5fr) 130px 1fr 130px;
-    gap: 14px;
-    padding: 12px 14px;
+    grid-template-columns: minmax(240px, 1fr) 110px 180px 150px;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .programs-v2 .program-row__main {
+    grid-template-columns: minmax(220px, 1fr) 100px 140px 130px;
+    gap: 12px;
   }
 }
 
@@ -436,18 +893,18 @@
 .programs-v2 .program-row__code {
   display: inline-flex;
   align-items: center;
-  height: 18px;
-  padding: 0 5px;
+  height: 20px;
+  padding: 0 7px;
   background: transparent;
   border: 1px solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-sm);
   font-family: var(--ds-font-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: var(--ds-weight-regular);
-  color: var(--ds-text-tertiary);
+  color: var(--ds-text-secondary);
   letter-spacing: 0;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .programs-v2 .program-row__info {
@@ -459,10 +916,11 @@
 
 .programs-v2 .program-row__info strong {
   font-family: var(--ds-font-sans);
-  font-size: var(--ds-text-14);
+  font-size: 15px;
   font-weight: var(--ds-weight-medium);
   color: var(--ds-text-primary);
   line-height: 1.3;
+  letter-spacing: -0.005em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -471,15 +929,16 @@
 .programs-v2 .program-row__meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ds-text-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
 .programs-v2 .program-row__meta-primary {
   color: var(--ds-text-tertiary);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .programs-v2 .program-deadline {
@@ -516,26 +975,27 @@
   color: var(--ds-text-tertiary);
 }
 
-/* State column (status pill + sub) */
+/* State column — single-line: just the status pill. Approval tag moved to
+ * identity meta line (workflow context belongs with metadata, not next to
+ * health pill). Single-line state lets row collapse to 50ish px instead of 70+. */
 .programs-v2 .program-row__state {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: flex-start;
+  align-items: center;
   min-width: 0;
 }
 
+/* Status pill — soft filled. Not loud (no full saturation), but solid
+ * enough to feel like a confident data label, not an outlined draft. */
 .programs-v2 .program-row__status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 20px;
-  padding: 0 9px;
-  border-radius: var(--ds-radius-pill);
-  font-size: 11px;
-  font-weight: var(--ds-weight-medium);
-  border: 1px solid transparent;
-  background: transparent;
+  gap: 6px;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 99px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border: 0;
   white-space: nowrap;
   letter-spacing: 0;
 }
@@ -545,23 +1005,24 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .programs-v2 .program-row__status-pill--green {
-  border-color: var(--ds-green-500);
-  color: var(--ds-green-600);
+  background: color-mix(in srgb, var(--ds-green-500) 14%, transparent);
+  color: var(--ds-green-700, #047857);
 }
 .programs-v2 .program-row__status-pill--green::before { background: var(--ds-green-500); }
 
 .programs-v2 .program-row__status-pill--yellow {
-  border-color: var(--ds-amber-500);
-  color: var(--ds-amber-600);
+  background: color-mix(in srgb, var(--ds-amber-500) 16%, transparent);
+  color: var(--ds-amber-700, #b45309);
 }
 .programs-v2 .program-row__status-pill--yellow::before { background: var(--ds-amber-500); }
 
 .programs-v2 .program-row__status-pill--red {
-  border-color: var(--ds-red-500);
-  color: var(--ds-red-600);
+  background: color-mix(in srgb, var(--ds-red-500) 14%, transparent);
+  color: var(--ds-red-700, #b91c1c);
 }
 .programs-v2 .program-row__status-pill--red::before { background: var(--ds-red-500); }
 
@@ -575,40 +1036,37 @@
   visibility: hidden;
 }
 
+/* Approval tag — inline metadata token. Sits in the meta line alongside
+ * workstream count, deadline, blocker count. Color encodes approval state.
+ * Lowercase signals "secondary workflow context", not primary state. */
 .programs-v2 .program-row__approval-tag {
   display: inline-flex;
   align-items: center;
-  height: 18px;
-  padding: 0 7px;
-  border-radius: var(--ds-radius-sm);
-  font-size: 10px;
-  font-weight: var(--ds-weight-medium);
+  font-size: 12px;
+  font-weight: 500;
   font-family: var(--ds-font-sans);
   background: transparent;
-  border: 1px solid transparent;
+  border: 0;
+  padding: 0;
+  text-transform: lowercase;
+  letter-spacing: 0;
 }
 
-.programs-v2 .program-row__approval-tag--yellow {
-  background: var(--ds-amber-50);
-  color: var(--ds-amber-600);
-}
+.programs-v2 .program-row__approval-tag--yellow { color: var(--ds-amber-600); }
+.programs-v2 .program-row__approval-tag--blue   { color: var(--ds-text-secondary); }
+.programs-v2 .program-row__approval-tag--red    { color: var(--ds-red-600); }
 
-.programs-v2 .program-row__approval-tag--blue {
-  background: var(--ds-neutral-100);
-  color: var(--ds-text-secondary);
-}
-
-.programs-v2 .program-row__approval-tag--red {
-  background: var(--ds-red-50);
-  color: var(--ds-red-600);
-}
-
-/* Progress column */
+/* Progress column — bar + value cluster fills column width.
+ * Bar takes remaining space, value pinned right with min-width so values
+ * align across rows. Empty state ("Belum dimulai") right-aligned to same
+ * x-coord as progress-value via margin-left: auto. */
 .programs-v2 .program-row__progress {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
   min-width: 0;
+}
+.programs-v2 .program-row__progress-main {
+  flex: 1;
 }
 
 .programs-v2 .program-row__eyebrow {
@@ -616,21 +1074,21 @@
   font-weight: var(--ds-weight-semibold);
   color: var(--ds-text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
 
 .programs-v2 .program-row__progress-main {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .programs-v2 .progress-bar-track,
 .programs-v2 .program-row__progress-track {
-  flex: 1;
-  height: 4px;
+  flex: 1 1 auto;
+  height: 5px;
   background: var(--ds-neutral-100);
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
   border: 0;
   box-shadow: none;
@@ -638,40 +1096,59 @@
 
 .programs-v2 .progress-bar-fill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: 3px;
   transition: width 480ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.programs-v2 .progress-bar-fill.on-track { background: var(--ds-green-500); }
-.programs-v2 .progress-bar-fill.at-risk  { background: var(--ds-amber-500); }
+.programs-v2 .progress-bar-fill.on-track  { background: var(--ds-green-500); }
+.programs-v2 .progress-bar-fill.at-risk   { background: var(--ds-amber-500); }
 .programs-v2 .progress-bar-fill.off-track { background: var(--ds-red-500); }
 
 .programs-v2 .program-row__progress-value {
   font-family: var(--ds-font-sans);
-  font-size: var(--ds-text-13);
-  font-weight: var(--ds-weight-semibold);
+  font-size: 15px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ds-text-primary);
-  min-width: 36px;
+  letter-spacing: -0.01em;
+  min-width: 44px;
   text-align: right;
 }
 
-/* Owner column */
+/* Empty progress — quiet but clearly visible "not started" hint.
+ * Sits at right of column to mirror progress-value position in non-empty rows. */
+.programs-v2 .program-row__progress-empty {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--ds-text-secondary);
+  font-style: normal;
+  opacity: 1;
+  white-space: nowrap;
+}
+
+/* Owner column — single line: name + optional copics chip */
 .programs-v2 .program-row__owner-block {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
 }
 
 .programs-v2 .program-row__owner {
   font-size: var(--ds-text-13);
-  font-weight: var(--ds-weight-medium);
+  font-weight: 500;
   color: var(--ds-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
+
+/* Eyebrow labels (PROGRESS / PIC) — removed in iter 3. CSS kept as
+ * defensive no-op in case other rows still reference the class. */
+.programs-v2 .program-row__eyebrow { display: none; }
 
 .programs-v2 .program-row__copics {
   display: inline-flex;

@@ -184,9 +184,19 @@
 /* ── Content area ────────────────────────────────────────────────────────── */
 
 .pb-content {
+  /* Full-bleed: no max-width on the column. Halaman primer ikut lebar
+   * workspace (lihat pakem di components.css → .page-shell). Untuk
+   * kenyamanan baca prose panjang, line-length dibatasi pada elemen teks
+   * di bawah, bukan pada container. */
   padding: 20px 48px 80px 40px;
   min-width: 0;
-  max-width: 900px;
+}
+
+.pb-content > p,
+.pb-content > ul,
+.pb-content > ol,
+.pb-content > blockquote {
+  max-width: 78ch;
 }
 
 /* Loading / error */

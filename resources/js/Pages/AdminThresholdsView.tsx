@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { usePage } from '@inertiajs/react'
 import { api } from '../lib/api'
+import './AdminViews.css'
 
 type FieldDef = {
   label: string
@@ -172,7 +173,7 @@ export default function AdminThresholdsView() {
   }
 
   return (
-    <div className="view-thresholds">
+    <div className="ds admin-v2 view-thresholds">
       <div className="perf-toolbar">
         <span className="perf-toolbar__title">Threshold Settings</span>
         <div className="perf-toolbar__sep" />

@@ -3,6 +3,7 @@ import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
+import './AdminViews.css'
 type UserUnit = { id: number; code: string; name: string }
 type UserDirectorate = { id: number; code: string; name: string }
 type UserPosition = { id: number; code: string; name: string; levelCode: string; roleType: string }
@@ -230,7 +231,7 @@ export function AdminUsersView() {
 
   if (!isAuthorized) {
     return (
-      <div className="view-admin-users">
+      <div className="ds admin-v2 view-admin-users">
         <div className="panel">
           <p className="text-muted text-sm admin-state-copy admin-state-copy--center">
             Akses ditolak. Halaman ini hanya untuk admin dan superadmin.
@@ -241,7 +242,7 @@ export function AdminUsersView() {
   }
 
   return (
-    <div className="view-admin-users">
+    <div className="ds admin-v2 view-admin-users">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Manajemen Pengguna</h2>
         <div className="view-toolbar__sep" />

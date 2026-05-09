@@ -8,6 +8,7 @@ import { CollapsibleSection, AgingIndicator } from '../components/ui'
 import { useFeatureFlag } from '../hooks/useFeatureFlag'
 import { useOnboardingTour } from '../hooks/useOnboardingTour'
 import { EscalationTriagePanel, type EscalationRequest as EscalationRequestType } from '../components/Escalation'
+import './FokusView.css'
 
 // Sprint 2 — Komitmen Hari Ini section
 type CommitmentItem = {
@@ -1226,26 +1227,29 @@ export function InboxView() {
   const [laterOpen, setLaterOpen] = useState(false)
 
   return (
-    <div className="view-inbox">
-      <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Fokus</h2>
-        <div className="view-toolbar__sep" />
-        <span className="view-toolbar__greeting">
-          {todayLabel()}
-          {todayCompletedCount > 0 && (
-            <span className="view-toolbar__insight">
-              {' · '}{todayCompletedCount} selesai hari ini
+    <div className="ds fokus-v2 view-inbox">
+      <div className="fokus-v2__inner">
+        <header className="fokus-v2__header">
+          <div className="fokus-v2__header-left">
+            <h1 className="fokus-v2__title">Fokus</h1>
+            <span className="fokus-v2__subtitle">
+              {todayLabel()}
+              {todayCompletedCount > 0 && ` · ${todayCompletedCount} selesai hari ini`}
             </span>
-          )}
-        </span>
-        <div className="view-toolbar__right">
-          {(mentions.length > 0 || otherUnread.length > 0) && (
-            <button className="hd-tb-btn" disabled={markingAll} onClick={() => void handleMarkAllRead()}>
-              {markingAll ? 'Marking…' : 'Tandai semua dibaca'}
-            </button>
-          )}
-        </div>
-      </div>
+          </div>
+          <div className="fokus-v2__header-actions">
+            {(mentions.length > 0 || otherUnread.length > 0) && (
+              <button
+                type="button"
+                className="fokus-v2__mark-all"
+                disabled={markingAll}
+                onClick={() => void handleMarkAllRead()}
+              >
+                {markingAll ? 'Marking…' : 'Tandai semua dibaca'}
+              </button>
+            )}
+          </div>
+        </header>
 
       <div className="fokus-page">
 
@@ -1350,6 +1354,7 @@ export function InboxView() {
           </div>
         )}
 
+      </div>
       </div>
 
       {toast && (

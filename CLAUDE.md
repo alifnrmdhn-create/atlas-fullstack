@@ -103,6 +103,7 @@ Tests baseline: 110/111 passing (1 pre-existing KPI decimal serialization unrela
 3. **Notification = Notification table + BroadcastService::toUsers** (selalu pasangan)
 4. **Feature flag setiap fitur eksperimental** — gate dengan `useFeatureFlag` di FE, `FeatureFlagService::isEnabled` di BE
 5. **Smart defaults > hard blocks** — auto-prefill, soft visibility, anti-bureaucracy
+6. **Page layout = full-bleed** — halaman primer WAJIB stretch lebar workspace. Dilarang `max-width` fixed + `margin: 0 auto` pada wrapper page-level (whitespace dari padding, bukan cap). Pakai canonical `.page-shell` + `.page-shell__inner` di `resources/js/styles/components.css` untuk halaman baru. Detail aturan + pengecualian (modal, prose, ellipsis) ada di komentar guardrail di file tersebut.
 
 ## Dokumen Reference
 

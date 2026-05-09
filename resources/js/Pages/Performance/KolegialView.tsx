@@ -1,6 +1,8 @@
-import { useState } from 'react'
-import { usePage } from '@inertiajs/react'
+import { Head, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
+import { Card, Pill, Stat } from '../../design-system'
+import { scoreTone, fillRatio } from './_shared'
+import './Performance.css'
 
 type Direktur = {
   kode: string
@@ -12,7 +14,7 @@ type Direktur = {
   perspektif?: string[]
 }
 
-type Stat = {
+type StatItem = {
   label: string
   value: string
   sub?: string
@@ -20,186 +22,169 @@ type Stat = {
 }
 
 type PageProps = {
-  stats: Stat[]
+  stats: StatItem[]
   dirut: Direktur
   direktur: Direktur[]
   periode: string
 }
 
-function scoreColor(val: number): 'green' | 'yellow' | 'red' {
-  if (val >= 100) return 'green'
-  if (val >= 80) return 'yellow'
-  return 'red'
-}
-
-function ScoreRing({ value, size = 52 }: { value: number; size?: number }) {
-  const r = (size - 7) / 2
-  const cx = size / 2
-  const circumference = 2 * Math.PI * r
-  const capped = Math.min(value / 110, 1)
-  const strokeDashoffset = circumference * (1 - capped)
-  const color = scoreColor(value)
-  const colorMap = { green: 'var(--green)', yellow: 'var(--yellow)', red: 'var(--red)' }
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
-      <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--surface-overlay-strong)" strokeWidth={6} />
-      <circle
-        cx={cx} cy={cx} r={r} fill="none"
-        stroke={colorMap[color]} strokeWidth={6}
-        strokeDasharray={circumference}
-        strokeDashoffset={strokeDashoffset}
-        strokeLinecap="round"
-        style={{ transform: `rotate(-90deg)`, transformOrigin: `${cx}px ${cx}px`, transition: 'stroke-dashoffset 600ms cubic-bezier(0.4,0,0.2,1)' }}
-      />
-    </svg>
-  )
-}
-
 const PERSPEKTIF_COLORS: Record<string, string> = {
-  'Ekonomi & Sosial':      'var(--green)',
-  'IMB':                   'var(--indigo)',
-  'Inovasi Model Bisnis':  'var(--indigo)',
-  'Teknologi':             'var(--cyan)',
-  'Investasi':             'var(--yellow)',
-  'Talenta':               'var(--purple)',
+  'Ekonomi & Sosial':     'var(--ds-green-500)',
+  'IMB':                   '#6366F1',
+  'Inovasi Model Bisnis':  '#6366F1',
+  'Teknologi':             '#06B6D4',
+  'Investasi':             'var(--ds-amber-500)',
+  'Talenta':               '#A855F7',
+}
+
+function statTone(c: StatItem['color']): 'green' | 'amber' | 'red' | 'neutral' {
+  if (c === 'green') return 'green'
+  if (c === 'yellow') return 'amber'
+  if (c === 'red') return 'red'
+  return 'neutral'
 }
 
 export default function KolegialView() {
   const { stats, dirut, direktur, periode } = usePage<PageProps>().props
   const navigate = useInertiaNavigate()
 
-  const dirutColor = scoreColor(dirut.nilai)
-  const barWidth = Math.min((dirut.nilai / 110) * 100, 100)
+  const dirutTone = scoreTone(dirut.nilai)
+  const dirutBar = fillRatio(dirut.nilai) * 100
 
   return (
-    <div className="view-performance">
-      {/* Toolbar */}
-      <div className="perf-toolbar">
-        <span className="perf-toolbar__title">KPI Kolegial</span>
-        <div className="perf-toolbar__sep" />
-        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>
-          Capaian bersama jajaran direksi
-        </span>
-        <div className="perf-toolbar__right">
-          <div className="perf-period-select">
-            <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
-              <rect x="1" y="2" width="12" height="11" rx="1.5" />
-              <path d="M1 6h12M5 2v2M9 2v2" />
-            </svg>
-            {periode}
-          </div>
-        </div>
-      </div>
-
-      <div className="perf-content">
-        {/* Stat cards */}
-        <div className="perf-stat-grid">
-          {stats.map((s) => (
-            <div key={s.label} className={`perf-stat${s.color !== 'muted' ? ` perf-stat--${s.color}` : ''}`}>
-              <span className="perf-stat__label">{s.label}</span>
-              <span className="perf-stat__value">{s.value}</span>
-              {s.sub && <span className="perf-stat__sub">{s.sub}</span>}
+    <>
+      <Head title="KPI Kolegial" />
+      <div className="ds perf">
+        <div className="perf__inner">
+          {/* ─── Header ──────────────────────────── */}
+          <header className="perf__header">
+            <div className="perf__header-left">
+              <h1 className="perf__title">KPI Kolegial</h1>
+              <span className="perf__subtitle">Capaian bersama jajaran direksi</span>
             </div>
-          ))}
-        </div>
-
-        {/* Direktur Utama hero */}
-        <div
-          className="perf-hero"
-          style={{ cursor: 'pointer' }}
-          onClick={() => navigate(`/performance/kolegial/${dirut.slug}`)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && navigate(`/performance/kolegial/${dirut.slug}`)}
-        >
-          <div className="perf-hero__ring">
-            <div className="perf-score-ring">
-              <ScoreRing value={dirut.nilai} size={64} />
-            </div>
-          </div>
-          <div className="perf-hero__info">
-            <div className="perf-hero__label">Direktur Utama</div>
-            <div className="perf-hero__name">{dirut.nama}</div>
-            <div className="perf-hero__jabatan">{dirut.jabatan}</div>
-            <div className="perf-hero__bar-wrap">
-              <div className="perf-hero__bar">
-                <div
-                  className={`perf-hero__bar-fill perf-hero__bar-fill--${dirutColor}`}
-                  style={{ width: `${barWidth}%` }}
-                />
-              </div>
-              <span className={`perf-hero__score-text perf-hero__score-text--${dirutColor}`}>
-                {dirut.nilai.toFixed(2)}%
+            <div className="perf__header-actions">
+              <span className="perf__period-pill">
+                <IconCalendar />
+                {periode}
               </span>
             </div>
-            {dirut.perspektif && (
-              <div className="perf-hero__perspektif">
-                {dirut.perspektif.map((p) => (
-                  <span
-                    key={p}
-                    className="perf-perspektif-pill"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                  >
-                    <span
-                      className="perf-perspektif-pill__dot"
-                      style={{ background: PERSPEKTIF_COLORS[p] ?? 'var(--text-muted)' }}
-                    />
-                    {p}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="perf-hero__right">
-            <span className={`badge badge--${dirutColor}`} style={{ fontSize: 13, fontWeight: 800 }}>
-              {dirut.nilai.toFixed(2)}%
-            </span>
-            <span className="perf-hero__kpi-count">{dirut.total_kpi} KPI</span>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Lihat detail →</span>
-          </div>
-        </div>
+          </header>
 
-        {/* 5 Direktur grid */}
-        <div>
-          <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: 8 }}>
-            KPI Individu Direktur
-          </div>
-          <div className="perf-director-grid">
-            {direktur.map((d) => {
-              const color = scoreColor(d.nilai)
-              const width = Math.min((d.nilai / 110) * 100, 100)
-              return (
-                <a
-                  key={d.kode}
-                  className="perf-director-card"
-                  href={`/performance/kolegial/${d.slug}`}
-                  onClick={(e) => { e.preventDefault(); navigate(`/performance/kolegial/${d.slug}`) }}
-                >
-                  <div className="perf-director-card__header">
-                    <div>
-                      <div className="perf-director-card__name">{d.nama}</div>
-                      <div className="perf-director-card__jabatan">{d.jabatan}</div>
-                    </div>
-                  </div>
-                  <div className={`perf-director-card__score perf-director-card__score--${color}`}>
-                    {d.nilai.toFixed(2)}%
-                  </div>
-                  <div className="perf-director-card__bar-row">
-                    <div className="perf-director-card__bar">
-                      <div
-                        className={`perf-director-card__bar-fill perf-director-card__bar-fill--${color}`}
-                        style={{ width: `${width}%` }}
+          {/* ─── Stat row ─────────────────────────── */}
+          <Card padding="lg" className="perf__section">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
+              {stats.map(s => (
+                <Stat
+                  key={s.label}
+                  size="lg"
+                  value={s.value}
+                  label={s.label}
+                  caption={s.sub}
+                  tone={statTone(s.color)}
+                />
+              ))}
+            </div>
+          </Card>
+
+          {/* ─── Direktur Utama hero ─────────────── */}
+          <Card
+            padding="lg"
+            className="perf__section perf-subject"
+            onClick={() => navigate(`/performance/kolegial/${dirut.slug}`)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="perf-subject__row">
+              <div className="perf-subject__meta">
+                <span className="perf-subject__eyebrow">{dirut.jabatan}</span>
+                <div className="perf-subject__name">{dirut.nama}</div>
+                <div className="perf-subject__chips">
+                  <Pill tone="neutral" variant="soft">{dirut.total_kpi} KPI</Pill>
+                  <Pill tone="neutral" variant="soft">{periode}</Pill>
+                  {dirut.perspektif?.map(p => (
+                    <span
+                      key={p}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        height: 20,
+                        padding: '0 8px',
+                        borderRadius: 'var(--ds-radius-pill)',
+                        background: 'var(--ds-neutral-100)',
+                        fontSize: 11,
+                        fontWeight: 500,
+                        color: 'var(--ds-text-secondary)',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          background: PERSPEKTIF_COLORS[p] ?? 'var(--ds-text-tertiary)',
+                        }}
                       />
+                      {p}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="perf-subject__score">
+                <span className="perf-subject__score-value" data-tone={dirutTone}>
+                  {dirut.nilai.toFixed(2)}<span style={{ fontSize: 14, color: 'var(--ds-text-tertiary)', marginLeft: 3, fontWeight: 500 }}>%</span>
+                </span>
+                <span className="perf-subject__score-label">Lihat detail →</span>
+              </div>
+            </div>
+            <div className="perf-subject__bar">
+              <div className="perf-subject__bar-fill" data-tone={dirutTone} style={{ width: `${dirutBar}%` }} />
+            </div>
+          </Card>
+
+          {/* ─── 5 Direktur grid ──────────────────── */}
+          <section className="perf__section">
+            <span className="perf__section-label">KPI Individu Direktur</span>
+            <div className="perf-direktur-grid">
+              {direktur.map(d => {
+                const tone = scoreTone(d.nilai)
+                const bar = fillRatio(d.nilai) * 100
+                return (
+                  <Card
+                    key={d.kode}
+                    padding="md"
+                    className="perf-direktorat"
+                    onClick={() => navigate(`/performance/kolegial/${d.slug}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="perf-direktorat__head">
+                      <div>
+                        <div className="perf-direktorat__name">{d.nama}</div>
+                        <div className="perf-rank__sub" style={{ marginTop: 2 }}>{d.jabatan}</div>
+                      </div>
+                      <span className="perf-direktorat__total" data-tone={tone}>
+                        {d.nilai.toFixed(2)}
+                      </span>
                     </div>
-                    <span className="perf-director-card__kpi-count">{d.total_kpi} KPI</span>
-                  </div>
-                </a>
-              )
-            })}
-          </div>
+                    <div className="perf-subject__bar" style={{ marginTop: 0 }}>
+                      <div className="perf-subject__bar-fill" data-tone={tone} style={{ width: `${bar}%` }} />
+                    </div>
+                    <div className="perf-rank__sub">{d.total_kpi} KPI</div>
+                  </Card>
+                )
+              })}
+            </div>
+          </section>
         </div>
       </div>
-    </div>
+    </>
+  )
+}
+
+function IconCalendar() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+      <rect x="1" y="2" width="12" height="11" rx="1.5" />
+      <path d="M1 6h12M5 2v2M9 2v2" />
+    </svg>
   )
 }

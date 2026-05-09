@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, startTransition } from 'react'
+import { Fragment, useEffect, useId, useRef, useState, startTransition } from 'react'
 import type { ReactNode } from 'react'
 import { Link, usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
@@ -6,14 +6,13 @@ import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
-import { effectivePresenceSlug } from '../components/ui'
+import { useRealtime } from '../hooks/useRealtime'
 import { applyThemePreference, getThemeSnapshot } from '../lib/theme'
 import type { ResolvedTheme } from '../lib/theme'
-import { Breadcrumb } from '../components/Breadcrumb'
 import { TopbarAction } from '../components/TopbarAction'
 import { CommandPalette } from '../components/CommandPalette'
 import { ContextPanel } from '../components/ContextPanel'
-import { TOPBAR_ACTIONS } from '../lib/topbar-config'
+import { TOPBAR_ACTIONS, TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import { resolveContextPanel } from '../lib/context-panel-config'
 
 type NavItem = {
@@ -22,6 +21,10 @@ type NavItem = {
   caption: string
   icon: () => React.ReactElement
   badge?: () => number
+  /** When true, badge is rendered as urgent (brand green) — used for unread/action items */
+  badgeUrgent?: boolean
+  /** Optional keyboard shortcut hint, shown in collapsed tooltip (e.g., "G H"). */
+  shortcut?: string
 }
 
 type SidebarTooltipState = {
@@ -31,6 +34,7 @@ type SidebarTooltipState = {
   left: number
   placement: 'right' | 'left'
   icon?: React.ReactElement
+  shortcut?: string
 }
 
 function IconHome() {
@@ -117,6 +121,23 @@ function IconReports() {
     </svg>
   )
 }
+function IconMonthlyReport() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="1.4" />
+      <path d="M5 1.5v2M11 1.5v2M2.5 6h11" />
+      <path d="m6 9.5 1.4 1.4L10.5 8" />
+    </svg>
+  )
+}
+function IconRiskReport() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 1.8 13.5 4v4.5c0 3-2.4 5-5.5 5.7C4.9 13.5 2.5 11.5 2.5 8.5V4Z" />
+      <path d="M8 6v3M8 11v0.2" />
+    </svg>
+  )
+}
 function IconInbox() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
@@ -155,14 +176,6 @@ function IconChannels() {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 2.5v11" />
       <path d="M4 3.5h8l-2.2 2.8L12 9H4" />
-    </svg>
-  )
-}
-function IconSearch() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="7" cy="7" r="4.5" />
-      <path d="m10.5 10.5 3 3" />
     </svg>
   )
 }
@@ -544,9 +557,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
     handleLogout, notifications, markNotificationRead,
     notifToasts, dismissToast,
     setSelectedProgramId, setSelectedTaskId, setSelectedChannelId,
-    presence,
     authStatus, logoutPending, requestLogout, cancelLogout,
+    programs, myWork,
   } = useWorkspace()
+  const { status: realtimeStatus } = useRealtime()
   const isAdmin = ADMIN_ROLES.has(currentUser?.roleType?.toLowerCase() ?? '')
   const role = currentUser?.roleType?.toUpperCase() ?? ''
   const shellRef = useRef<HTMLDivElement>(null)
@@ -568,19 +582,52 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false)
+  const [stickyTitleVisible, setStickyTitleVisible] = useState(false)
+  const quickCreateRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         setPaletteOpen((o) => !o)
       }
+      if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
+        e.preventDefault()
+        toggleSidebar()
+      }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEscKey(closeUserMenu, userMenuSurface === 'topbar')
+  useEscKey(() => setQuickCreateOpen(false), quickCreateOpen)
+  useEffect(() => {
+    if (!quickCreateOpen) return
+    const handler = (e: MouseEvent) => {
+      if (quickCreateRef.current && !quickCreateRef.current.contains(e.target as Node)) {
+        setQuickCreateOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [quickCreateOpen])
+
+  useEscKey(closeUserMenu, userMenuSurface !== null)
   useEscKey(cancelLogout, logoutPending)
+
+  // Sticky page title — fade in setelah user scroll melewati page heading.
+  // Tidak butuh IntersectionObserver per-page; cukup track scroll workspace.
+  useEffect(() => {
+    const main = document.querySelector<HTMLElement>('.workspace__content')
+    if (!main) return
+    const handler = () => {
+      setStickyTitleVisible(main.scrollTop > 96)
+    }
+    handler()
+    main.addEventListener('scroll', handler, { passive: true })
+    return () => main.removeEventListener('scroll', handler)
+  }, [pathname])
   const logoutDialogRef = useDialogFocus<HTMLDivElement>(logoutPending)
   const logoutTitleId = useId()
   const logoutDescId = useId()
@@ -591,31 +638,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('')
-  const userRoleLabel = currentUser?.positionTitle ?? currentUser?.roleType ?? currentUser?.unit?.name ?? 'Pengguna'
 
-  // Resolve current user's live activity for the avatar dot.
-  const myPresence = currentUser
-    ? presence.find((p) => p.userId === currentUser.id)
-    : undefined
-  const myPresenceSlug = myPresence
-    ? effectivePresenceSlug(myPresence.status, myPresence.lastActivityAt)
-    : 'offline'
-  const dotClass = myPresenceSlug === 'online' ? 'sidebar__avatar-dot--online'
-    : myPresenceSlug === 'away' ? 'sidebar__avatar-dot--away'
-    : myPresenceSlug === 'do-not-disturb' ? 'sidebar__avatar-dot--dnd'
-    : 'sidebar__avatar-dot--offline'
-
-  // Display name — BOD always gets full name; others get first name unless abbreviated
-  const displayName = (() => {
-    const name = currentUser?.name
-    if (!name) return 'Atlas User'
-    if (role === 'BOD') return name
-    const parts = name.split(' ')
-    if (parts[0].length <= 2 || parts[0].endsWith('.')) return name
-    return parts[0]
-  })()
-
-  const openTooltip = (anchor: HTMLElement, label: string, detail?: string, icon?: React.ReactElement) => {
+  const openTooltip = (anchor: HTMLElement, label: string, detail?: string, icon?: React.ReactElement, shortcut?: string) => {
     if (!collapsedRef.current) return
     if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current)
     const rect = anchor.getBoundingClientRect()
@@ -630,7 +654,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
       Math.max(rect.top + rect.height / 2, margin + 32),
       window.innerHeight - margin - 32,
     )
-    setTooltipState({ label, detail, top, left, placement, icon })
+    setTooltipState({ label, detail, top, left, placement, icon, shortcut })
   }
   const closeTooltip = () => {
     tooltipTimeoutRef.current = setTimeout(() => setTooltipState(null), 80)
@@ -840,44 +864,56 @@ export function AppShell({ children }: { children?: ReactNode }) {
     )
   }
 
-  const fokusItem: NavItem = { path: '/fokus', label: 'Focus', caption: 'Tasks, mentions, and items awaiting you', icon: IconInbox, badge: () => unreadCount }
+  const fokusItem: NavItem = { path: '/fokus', label: 'Focus', caption: 'Tasks, mentions, and items awaiting you', icon: IconInbox, badge: () => unreadCount, badgeUrgent: true, shortcut: 'G F' }
+  const programsCount = programs?.length ?? 0
+  const tasksCount = myWork?.tasks?.length ?? 0
 
   // ── Nav items palette ──────────────────────────────────────────────────────
-  // Sidebar mengikuti siklus PDCA: Today → Plan → Do → Check (Performance + Pelaporan) → Act → Komunikasi → Akun
+  // Sidebar mengikuti siklus PDCA per CLAUDE.md:
+  //   Today → Perencanaan (Plan) → Eksekusi (Do) → Performance (Check) →
+  //   Pelaporan (Check) → Tindak Lanjut (Act) → Komunikasi → Akun → Admin
+  // Single source of truth: lib/nav-config.ts. Labels & order mirror that file.
   const NI = {
-    home:      { path: '/',          label: 'Home',             caption: 'Ringkasan eksekutif program kerja', icon: IconHome },
-    roadmap:   { path: '/roadmap',   label: 'Roadmap',          caption: 'Visual program timeline',           icon: IconRoadmap   },
-    programs:  { path: '/programs',  label: 'Programs',         caption: 'Portfolio orchestration',           icon: IconPrograms  },
-    execution: { path: '/execution', label: 'Execution',        caption: 'Kanban delivery board',             icon: IconExecution },
-    penugasan: { path: '/penugasan', label: 'Assignment',       caption: 'Tugas harian di luar Program',       icon: IconAssignments },
-    goals:     { path: '/goals',      label: 'Goals & KPI',   caption: 'Manage KPI organisasi & tracking capaian',  icon: IconGoals    },
-    activity:  { path: '/activity',   label: 'Team Activity', caption: 'Leaderboard sesi & aktivitas harian tim',   icon: IconActivity },
-    reports:   { path: '/reports',    label: 'Analytics',     caption: 'KPI, program health & leaderboard',         icon: IconReports  },
+    home:        { path: '/',          label: 'Home',             caption: 'Ringkasan eksekutif program kerja', icon: IconHome,        shortcut: 'G H' },
+    roadmap:     { path: '/roadmap',   label: 'Roadmap',          caption: 'Visual program timeline',           icon: IconRoadmap    },
+    programs:    { path: '/programs',  label: 'Programs',         caption: 'Portfolio orchestration',           icon: IconPrograms,    shortcut: 'G P', badge: () => programsCount },
+    execution:   { path: '/execution', label: 'Execution',        caption: 'Kanban delivery board',             icon: IconExecution,   shortcut: 'G E', badge: () => tasksCount },
+    penugasan:   { path: '/penugasan', label: 'Penugasan',        caption: 'Tugas harian di luar Program',      icon: IconAssignments, shortcut: 'G A' },
+    goals:       { path: '/goals',      label: 'Goals & KPI',   caption: 'Manage KPI organisasi & tracking capaian',  icon: IconGoals    },
+    activity:    { path: '/activity',   label: 'Team Activity', caption: 'Leaderboard sesi & aktivitas harian tim',   icon: IconActivity },
+    laporanBulanan:{ path: '/laporan-bulanan', label: 'Laporan Bulanan', caption: 'Status & approval laporan bulanan',  icon: IconMonthlyReport },
+    laporanRisiko: { path: '/laporan-risiko',  label: 'Laporan Risiko',  caption: 'Status & approval laporan risiko',   icon: IconRiskReport    },
+    reports:       { path: '/reports',         label: 'Analytics',       caption: 'KPI, program health & leaderboard',  icon: IconReports       },
     perfScorecard: { path: '/performance/scorecard', label: 'Scorecard',       caption: 'Ranking capaian direktorat & divisi',  icon: IconScorecard    },
     perfDirektorat:{ path: '/performance/kolegial',  label: 'KPI Direktorat',  caption: 'Capaian KPI bersama jajaran direksi',  icon: IconKpiKolegial  },
     perfDivisi:    { path: '/performance/divisi',    label: 'KPI Divisi',      caption: 'Capaian KPI level divisi',             icon: IconKpiKolegial  },
     perfSaya:      { path: '/performance/me',        label: 'KPI Saya',        caption: 'KPI individual saya',                  icon: IconKpiIndividu  },
     perfIndividu:  { path: '/performance/individu',  label: 'KPI Individu',    caption: 'Browse KPI individual karyawan',       icon: IconKpiIndividu  },
-    channels:  { path: '/channels',  label: 'Channels',         caption: 'Team collaboration',                icon: IconChannels, badge: () => totalUnreadChannels },
-    schedule:  { path: '/jadwal',    label: 'Rapat Koordinasi', caption: 'Rapat koordinasi & cadence tim',    icon: IconSchedule  },
-    search:    { path: '/search',    label: 'Search',           caption: 'Discover decisions fast',           icon: IconSearch    },
-    presence:  { path: '/presence',  label: 'Presence',         caption: 'Live team availability',            icon: IconPresence  },
-    profile:   { path: '/profile',   label: 'Profile',          caption: 'Account & position hierarchy',      icon: IconProfile   },
-    settings:  { path: '/settings',  label: 'Settings',         caption: 'Workspace preferences',             icon: IconSettings  },
+    schedule:    { path: '/jadwal',    label: 'Rapat Koordinasi', caption: 'Rapat koordinasi & cadence tim',    icon: IconSchedule,    shortcut: 'G R' },
+    channels:    { path: '/channels',  label: 'Channels',         caption: 'Team collaboration',                icon: IconChannels,    shortcut: 'G C', badge: () => totalUnreadChannels, badgeUrgent: true },
+    presence:    { path: '/presence',  label: 'Presence',         caption: 'Live team availability',            icon: IconPresence   },
+    profile:     { path: '/profile',   label: 'Profile',          caption: 'Account & position hierarchy',      icon: IconProfile    },
+    settings:    { path: '/settings',  label: 'Settings',         caption: 'Workspace preferences',             icon: IconSettings   },
   } satisfies Record<string, NavItem>
 
-  // ── Shared groups (PDCA-aligned) ───────────────────────────────────────────
-  const grpPlan       = { label: 'Perencanaan',  items: [NI.programs] }
-  const grpDo         = { label: 'Eksekusi',     items: [NI.execution, NI.penugasan] }
-  // Performance hierarchy: Scorecard → KPI Direktorat → KPI Divisi → KPI Saya
+  // ── Sidebar groups — PDCA-aligned per CLAUDE.md ──────────────────────────
+  // Order: Perencanaan (Plan) → Eksekusi (Do) → Performance + Pelaporan (Check)
+  // → Tindak Lanjut (Act) → Komunikasi → Akun → Admin.
+  // KPI items sit flat under "Performance" (no nested sub-label "kpi" anymore).
+  const grpPerencanaan        = { label: 'Perencanaan', items: [NI.programs] }
+  const grpEksekusi           = { label: 'Eksekusi',    items: [NI.execution, NI.penugasan] }
+  const grpEksekusiReadOnly   = { label: 'Eksekusi',    items: [NI.execution, NI.penugasan] }
+  // Performance hierarchy: Scorecard → KPI Direktorat → KPI Divisi → KPI Saya.
   // KASUBDIV: hanya KPI Divisi & KPI Saya. OFFICER/ASISTEN: hanya KPI Saya.
-  const grpPerfFull   = { label: 'Performance',  items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfSaya] }
-  const grpPerfMid    = { label: 'Performance',  items: [NI.perfDivisi, NI.perfSaya] }
-  const grpPerfMin    = { label: 'Performance',  items: [NI.perfSaya] }
-  const grpAct        = { label: 'Tindak Lanjut', items: [NI.schedule] }
-  const grpKolab      = { label: 'Komunikasi',   items: [NI.channels, NI.search] }
-  const grpAkun       = { label: 'Akun',         items: [NI.presence, NI.profile, NI.settings] }
-  const grpAdmin      = {
+  const grpPerformanceFull    = { label: 'Performance', items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfSaya] }
+  const grpPerformanceMid     = { label: 'Performance', items: [NI.perfDivisi, NI.perfSaya] }
+  const grpPerformanceMin     = { label: 'Performance', items: [NI.perfSaya] }
+  const grpPelaporan          = { label: 'Pelaporan',   items: [NI.laporanBulanan, NI.laporanRisiko, NI.reports] }
+  const grpPelaporanReadOnly  = { label: 'Pelaporan',   items: [NI.laporanBulanan, NI.laporanRisiko] }
+  const grpTindakLanjut       = { label: 'Tindak Lanjut', items: [NI.schedule] }
+  const grpKomunikasi         = { label: 'Komunikasi', items: [NI.channels] }
+  const grpAkun               = { label: 'Akun',       items: [NI.presence, NI.profile, NI.settings] }
+  const grpAdmin = {
     label: 'Admin',
     items: [
       { path: '/admin/orgs',           label: 'Companies',      caption: 'Entitas & hierarki org',     icon: IconOrg       },
@@ -892,45 +928,36 @@ export function AppShell({ children }: { children?: ReactNode }) {
   }
 
   // ── Role-aware nav groups (PDCA flow) ──────────────────────────────────────
-  // BOD / KADIV       → semua: Plan, Do, Performance lengkap, Pelaporan, Act, Komunikasi
-  // KASUBDIV          → Plan, Do, Performance mid (KPI Divisi + KPI Saya), Pelaporan, Act
-  // OFFICER/ASISTEN   → Do prioritas, Plan read, KPI Saya saja, Pelaporan read, Act
+  // BOD / KADIV       → semua: Plan, Do, Performance lengkap, Pelaporan, Act, Komunikasi, Akun
+  // KASUBDIV          → Plan, Do, Performance mid (KPI Divisi + KPI Saya), Pelaporan, Act, Komunikasi, Akun
+  // OFFICER/ASISTEN   → Do prioritas, KPI Saya, Pelaporan read, Act, Komunikasi, Akun
   // Default (Admin)   → full nav
   const navGroups: { label: string; items: NavItem[] }[] = (() => {
     if (role === 'BOD' || role === 'KADIV') {
       return [
-        grpPlan, grpDo,
-        grpPerfFull,
-        grpAct,
-        grpKolab, grpAkun,
+        grpPerencanaan, grpEksekusi, grpPerformanceFull, grpPelaporan,
+        grpTindakLanjut, grpKomunikasi, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
       ]
     }
     if (role === 'KASUBDIV') {
       return [
-        grpPlan, grpDo,
-        grpPerfMid,
-        grpAct,
-        grpKolab, grpAkun,
+        grpPerencanaan, grpEksekusi, grpPerformanceMid, grpPelaporan,
+        grpTindakLanjut, grpKomunikasi, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
       ]
     }
     if (role === 'OFFICER' || role === 'ASISTEN') {
       return [
-        grpDo,
-        { label: 'Perencanaan', items: [NI.programs] }, // read-only context
-        grpPerfMin,
-        grpAct,
-        grpKolab, grpAkun,
+        grpEksekusiReadOnly, grpPerencanaan, grpPerformanceMin, grpPelaporanReadOnly,
+        grpTindakLanjut, grpKomunikasi, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
       ]
     }
     // Default: full nav (SUPERADMIN, ADMIN, unknown role)
     return [
-      grpPlan, grpDo,
-      grpPerfFull,
-      grpAct,
-      grpKolab, grpAkun,
+      grpPerencanaan, grpEksekusi, grpPerformanceFull, grpPelaporan,
+      grpTindakLanjut, grpKomunikasi, grpAkun,
       ...(isAdmin ? [grpAdmin] : []),
     ]
   })()
@@ -958,7 +985,15 @@ export function AppShell({ children }: { children?: ReactNode }) {
       <aside className="sidebar">
         <div className="sidebar__header">
           <div className="sidebar__brand">
-            <div className="sidebar__brand-mark">
+            <div
+              className="sidebar__brand-mark"
+              role={sidebarCollapsedView ? 'button' : undefined}
+              tabIndex={sidebarCollapsedView ? 0 : undefined}
+              aria-label={sidebarCollapsedView ? 'Buka sidebar' : undefined}
+              title={sidebarCollapsedView ? 'Buka sidebar (⌘\\)' : 'ATLAS'}
+              onClick={sidebarCollapsedView ? toggleSidebar : undefined}
+              onKeyDown={sidebarCollapsedView ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSidebar() } } : undefined}
+            >
               <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
                 <line x1="2.5" y1="18.5" x2="10" y2="2.5"/>
                 <line x1="17.5" y1="18.5" x2="10" y2="2.5"/>
@@ -967,16 +1002,20 @@ export function AppShell({ children }: { children?: ReactNode }) {
             </div>
             <div className="sidebar__brand-name">
               <span className="sidebar__brand-title" title="Advanced Transformation &amp; Leadership Alignment System">ATLAS</span>
+              <span className="sidebar__brand-tagline" aria-label="PTPN III Holding workspace">PTPN III · Holding</span>
             </div>
           </div>
           <button
-            className="sidebar__collapse-btn"
+            className="sidebar__collapse-toggle"
             onClick={toggleSidebar}
-            title="Toggle sidebar"
+            title={sidebarCollapsedView ? 'Buka sidebar (⌘\\)' : 'Tutup sidebar (⌘\\)'}
+            aria-label={sidebarCollapsedView ? 'Buka sidebar' : 'Tutup sidebar'}
             type="button"
           >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="m7 2-3 3 3 3" />
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="2" y="3" width="10" height="8" rx="1.5" />
+              <path d="M5.5 3v8" />
+              <path d="m9 5.5-1.5 1.5L9 8.5" />
             </svg>
           </button>
         </div>
@@ -988,7 +1027,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
             const todayItems: NavItem[] = showHome ? [NI.home, fokusItem] : [fokusItem]
             return (
               <div className="sidebar__fokus-wrap">
-                <p className="sidebar__group-label sidebar__group-label--home">Today</p>
                 {todayItems.map((item) => {
                   const isActive = activePath === item.path
                   const badge = item.badge?.()
@@ -998,16 +1036,16 @@ export function AppShell({ children }: { children?: ReactNode }) {
                       className={`sidebar__item sidebar__item--home${isActive ? ' sidebar__item--active' : ''}`}
                       data-tooltip={item.label}
                       href={item.path}
-                      onMouseEnter={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon()) }}
+                      onMouseEnter={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon(), item.shortcut) }}
                       onMouseLeave={closeTooltip}
-                      onFocus={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon()) }}
+                      onFocus={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon(), item.shortcut) }}
                       onBlur={closeTooltip}
                       aria-current={isActive ? 'page' : undefined}
                     >
                       <span className="sidebar__item-icon">{item.icon()}</span>
                       <span className="sidebar__item-label">{item.label}</span>
                       {badge && badge > 0 ? (
-                        <span className="sidebar__badge">{badge > 99 ? '99+' : badge}</span>
+                        <span className={`sidebar__badge${item.badgeUrgent ? ' sidebar__badge--urgent' : ''}`}>{badge > 99 ? '99+' : badge}</span>
                       ) : null}
                     </Link>
                   )
@@ -1016,57 +1054,164 @@ export function AppShell({ children }: { children?: ReactNode }) {
             )
           })()}
 
-          {navGroups.filter((group) => group.items.length > 0).map((group) => (
+          {navGroups.filter((group) => group.items.length > 0).map((group) => {
+            const pdcaTone = (
+              {
+                'Perencanaan':   'plan',
+                'Eksekusi':      'do',
+                'Performance':   'check',
+                'Pelaporan':     'check',
+                'Tindak Lanjut': 'act',
+                'Komunikasi':    'utility',
+                'Akun':          'utility',
+              } as Record<string, string>
+            )[group.label] ?? ''
+            return (
             <div
-              className={`sidebar__group sidebar__group--separated${group.label === 'Tim' ? ' sidebar__group--tim' : ''}`}
+              className={`sidebar__group sidebar__group--separated${pdcaTone ? ` sidebar__group--${pdcaTone}` : ''}${group.label === 'Admin' ? ' sidebar__group--admin' : ''}`}
               key={group.label}
             >
               <p className="sidebar__group-label">{group.label}</p>
               {group.items.map((item) => {
                 const isActive = activePath === item.path
                 const badge = item.badge?.()
+                const isUtility = item.path === '/profile' || item.path === '/settings'
                 return (
-                  <Link
-                    className={`sidebar__item${isActive ? ' sidebar__item--active' : ''}`}
-                    data-tooltip={item.label}
-                    key={item.path}
-                    href={item.path}
-                    onMouseEnter={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon()) }}
-                    onMouseLeave={closeTooltip}
-                    onFocus={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon()) }}
-                    onBlur={closeTooltip}
-                    aria-current={isActive ? 'page' : undefined}
-                  >
-                    <span className="sidebar__item-icon">{item.icon()}</span>
-                    <span className="sidebar__item-label">{item.label}</span>
-                    {badge && badge > 0 ? (
-                      <span className="sidebar__badge">{badge > 99 ? '99+' : badge}</span>
-                    ) : null}
-                  </Link>
+                  <Fragment key={item.path}>
+                    <Link
+                      className={`sidebar__item${isActive ? ' sidebar__item--active' : ''}${isUtility ? ' sidebar__item--utility' : ''}`}
+                      data-tooltip={item.label}
+                      href={item.path}
+                      onMouseEnter={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon(), item.shortcut) }}
+                      onMouseLeave={closeTooltip}
+                      onFocus={(e) => { prefetchRoute(item.path); openTooltip(e.currentTarget, item.label, item.caption, item.icon(), item.shortcut) }}
+                      onBlur={closeTooltip}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      <span className="sidebar__item-icon">{item.icon()}</span>
+                      <span className="sidebar__item-label">{item.label}</span>
+                      {badge && badge > 0 ? (
+                        <span className={`sidebar__badge${item.badgeUrgent ? ' sidebar__badge--urgent' : ''}`}>{badge > 99 ? '99+' : badge}</span>
+                      ) : null}
+                    </Link>
+                  </Fragment>
                 )
               })}
             </div>
-          ))}
+          )})}
         </nav>
 
         <div className="sidebar__footer">
-          <Link
-            className="sidebar__user"
-            href="/profile"
-            onMouseEnter={(e) => { prefetchRoute('/profile'); openTooltip(e.currentTarget, currentUser?.name ?? 'Atlas User', userRoleLabel, IconProfile()) }}
-            onMouseLeave={closeTooltip}
-            onFocus={(e) => { prefetchRoute('/profile'); openTooltip(e.currentTarget, currentUser?.name ?? 'Atlas User', userRoleLabel, IconProfile()) }}
-            onBlur={closeTooltip}
+          {/* User mini-card — clicking opens menu (anchored above) */}
+          <button
+            className="sidebar__user-card"
+            onClick={() => toggleUserMenu('sidebar')}
+            aria-expanded={userMenuSurface === 'sidebar'}
+            aria-haspopup="menu"
+            title={currentUser?.name ?? 'User menu'}
+            type="button"
           >
-            <div className="sidebar__avatar-wrap">
-              <div className="sidebar__avatar">{userInitials || 'AU'}</div>
-              <span className={`sidebar__avatar-dot ${dotClass}`} aria-hidden="true" />
-            </div>
-            <div className="sidebar__user-info">
-              <span className="sidebar__user-name" title={currentUser?.name}>{displayName}</span>
-              <span className="sidebar__user-role">{userRoleLabel}</span>
-            </div>
-          </Link>
+            <span className="sidebar__user-card-avatar">
+              {userInitials || 'AU'}
+              <span className="sidebar__user-card-status" aria-hidden="true" />
+            </span>
+            <span className="sidebar__user-card-body">
+              <span className="sidebar__user-card-name">{currentUser?.name ?? 'Atlas User'}</span>
+              <span className="sidebar__user-card-role">{
+                currentUser?.unit?.name
+                ?? (currentUser?.roleType
+                  ? currentUser.roleType.charAt(0).toUpperCase() + currentUser.roleType.slice(1).toLowerCase()
+                  : 'Member')
+              }</span>
+            </span>
+            <svg className="sidebar__user-card-chev" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m3 7.5 3-3 3 3" />
+            </svg>
+          </button>
+
+          {userMenuSurface === 'sidebar' ? (
+            <>
+              <div className="topbar__menu-backdrop" onClick={closeUserMenu} />
+              <div className="sidebar__user-popover" role="menu">
+                <div className="sidebar__user-popover-identity">
+                  <div className="sidebar__user-popover-avatar">{userInitials || 'AU'}</div>
+                  <div>
+                    <strong>{currentUser?.name}</strong>
+                    <span>{currentUser?.unit?.name ?? currentUser?.roleType}</span>
+                  </div>
+                </div>
+                <div className="sidebar__user-popover-divider" />
+                <button
+                  className="sidebar__user-popover-item"
+                  onClick={() => { toggleTheme(); closeUserMenu() }}
+                  type="button"
+                >
+                  {resolvedTheme === 'dark' ? (
+                    <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                      <circle cx="9" cy="9" r="3.5" />
+                      <path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.22 3.22l1.42 1.42M13.36 13.36l1.42 1.42M3.22 14.78l1.42-1.42M13.36 4.64l1.42-1.42" />
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15.5 10.5A7 7 0 0 1 7.5 2.5a7.002 7.002 0 1 0 8 8Z" />
+                    </svg>
+                  )}
+                  {resolvedTheme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+                </button>
+                <Link
+                  className="sidebar__user-popover-item"
+                  href="/playbook"
+                  onClick={closeUserMenu}
+                  onFocus={() => prefetchRoute('/playbook')}
+                  onMouseEnter={() => prefetchRoute('/playbook')}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="1" width="10" height="12" rx="1" />
+                    <path d="M5 4h4M5 7h4M5 10h2" />
+                  </svg>
+                  Playbook
+                </Link>
+                <Link
+                  className="sidebar__user-popover-item"
+                  href="/settings"
+                  onClick={closeUserMenu}
+                  onFocus={() => prefetchRoute('/settings')}
+                  onMouseEnter={() => prefetchRoute('/settings')}
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="8" cy="8" r="2.5" />
+                    <path d="M8 1.5v1.7M8 12.8v1.7M1.5 8h1.7M12.8 8h1.7M3.2 3.2l1.2 1.2M11.6 11.6l1.2 1.2M3.2 12.8l1.2-1.2M11.6 4.4l1.2-1.2" />
+                  </svg>
+                  Settings
+                </Link>
+                <div className="sidebar__user-popover-divider" />
+                <button
+                  className="sidebar__user-popover-item"
+                  onClick={() => { void loadOverview('refresh'); closeUserMenu() }}
+                  type="button"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+                    <path d="M12.5 7A5.5 5.5 0 1 1 7 1.5a5.5 5.5 0 0 1 4.5 2.3" />
+                    <path d="M10 1.5h3v3" />
+                  </svg>
+                  {overviewStatus.refreshing ? 'Menyegarkan…' : 'Refresh data'}
+                </button>
+                <div className="sidebar__user-popover-divider" />
+                <button
+                  className="sidebar__user-popover-item sidebar__user-popover-item--danger"
+                  onClick={() => { requestLogout(); closeUserMenu() }}
+                  type="button"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 7h7M9.5 4.5 12 7l-2.5 2.5" />
+                    <path d="M5 2H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2" />
+                  </svg>
+                  Sign out
+                </button>
+              </div>
+            </>
+          ) : null}
+
         </div>
 
         {sidebarCollapsedView && tooltipState ? (
@@ -1081,7 +1226,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
               <span className="sidebar__tooltip-icon" aria-hidden="true">{tooltipState.icon}</span>
             ) : null}
             <div className="sidebar__tooltip-copy">
-              <strong>{tooltipState.label}</strong>
+              <strong>
+                <span>{tooltipState.label}</span>
+                {tooltipState.shortcut ? <kbd>{tooltipState.shortcut}</kbd> : null}
+              </strong>
               {tooltipState.detail ? <span>{tooltipState.detail}</span> : null}
             </div>
           </div>
@@ -1094,60 +1242,141 @@ export function AppShell({ children }: { children?: ReactNode }) {
       {/* ── Main workspace ── */}
       <div className="workspace" id="workspace-modal-root">
         <header className="topbar">
-          {/* Breadcrumb (with quick-jump dropdown) */}
-          <Breadcrumb
-            workspace="PTPN III"
-            currentLabel={currentPage}
-            currentPath={activePath}
-          />
+          {/* ── Slim utility bar — date/period/live + sticky title + actions ──
+           * Pure System: no breadcrumb, no full-width search input. Topbar is
+           * a thin context strip sharing the sidebar's canvas. Sticky page
+           * title fades in once user scrolls past the page heading. */}
+          {(() => {
+            const now = new Date()
+            const dateStr = now.toLocaleDateString('id-ID', {
+              weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+            }).toUpperCase()
+            const monthShort = now.toLocaleDateString('id-ID', { month: 'short' }).toUpperCase()
+            const quarter = Math.floor(now.getMonth() / 3) + 1
+            // ISO-week (Mon=1) — week containing first Thursday of the year.
+            const tmp = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
+            const dayNum = tmp.getUTCDay() || 7
+            tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum)
+            const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1))
+            const weekOfYear = Math.ceil(((tmp.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+            // Week-of-month (Mon-aligned): which calendar-week of the current month today falls into.
+            const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+            const firstISO = firstOfMonth.getDay() || 7 // Mon=1 … Sun=7
+            const weekOfMonth = Math.ceil((now.getDate() + firstISO - 1) / 7)
+            const liveLabel = realtimeStatus === 'connected' ? 'LIVE'
+              : realtimeStatus === 'connecting' ? 'SYNCING'
+              : realtimeStatus === 'disconnected' ? 'OFFLINE'
+              : ''
+            const liveClass = realtimeStatus === 'connected' ? 'topbar__live--connected'
+              : realtimeStatus === 'disconnected' ? 'topbar__live--disconnected'
+              : 'topbar__live--connecting'
+            return (
+              <div className="topbar__meta">
+                <span className="topbar__meta-date">{dateStr}</span>
+                <span className="topbar__meta-sep" aria-hidden>·</span>
+                <span className="topbar__meta-period">
+                  Q{quarter} · WEEK-{weekOfMonth} {monthShort} · WEEK-{weekOfYear}
+                </span>
+                {liveLabel ? (
+                  <span
+                    className={`topbar__live ${liveClass}`}
+                    title={
+                      realtimeStatus === 'connected' ? 'Real-time aktif — data tersinkron'
+                      : realtimeStatus === 'connecting' ? 'Menyambung ke server real-time…'
+                      : realtimeStatus === 'disconnected' ? 'Koneksi real-time terputus — mencoba sambung ulang'
+                      : ''
+                    }
+                  >
+                    <span className="topbar__live-dot" aria-hidden="true" />
+                    {liveLabel}
+                  </span>
+                ) : null}
+              </div>
+            )
+          })()}
 
-          {/* Breadcrumb / search divider */}
-          <div className="topbar__breadcrumb-divider" aria-hidden="true" />
+          <div className="topbar__spacer" />
 
-          {/* Command palette trigger (looks like a search field) */}
-          <button
-            type="button"
-            className="topbar__search topbar__search--trigger"
-            onClick={() => setPaletteOpen(true)}
-            aria-label="Buka command palette"
-          >
-            <span className="topbar__search-icon">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                <circle cx="5.5" cy="5.5" r="4" />
-                <path d="m9 9 3 3" />
-              </svg>
-            </span>
-            <span className="topbar__search-placeholder">Cari program, aktivitas, blockers…</span>
-            <kbd className="topbar__search-kbd">⌘K</kbd>
-          </button>
-
-          {/* Contextual action (route-aware) */}
+          {/* Contextual page action (route-aware, primary CTA when defined) */}
           {TOPBAR_ACTIONS[activePath] ? (
             <TopbarAction action={TOPBAR_ACTIONS[activePath]} page={activePath} />
           ) : null}
 
+          {/* Global Quick-Create — universal "+" with mini-menu */}
+          <div className="topbar__quick-menu" ref={quickCreateRef}>
+            <button
+              type="button"
+              className="topbar__quick-btn"
+              onClick={() => setQuickCreateOpen(o => !o)}
+              aria-expanded={quickCreateOpen}
+              aria-haspopup="menu"
+              aria-label="Buat baru"
+              title="Buat baru"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <path d="M8 3.5v9M3.5 8h9" />
+              </svg>
+            </button>
+            {quickCreateOpen && (
+              <div className="topbar__quick-popover" role="menu">
+                <div className="topbar__quick-popover-head">Buat baru</div>
+                {([
+                  { id: 'task.new',       label: 'Task',       sub: 'di Workboard',          route: '/execution', icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2.5" width="10" height="11" rx="1.5"/><path d="m5.5 8 1.3 1.3L10 6.5"/></svg> },
+                  { id: 'program.new',    label: 'Program',    sub: 'portfolio baru',        route: '/programs',  icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2.5" width="10" height="11" rx="1.6"/><path d="M6 2.5h4v2H6z"/><path d="M5.5 7h5M5.5 10h5"/></svg> },
+                  { id: 'meeting.new',    label: 'Rapat',      sub: 'koordinasi',            route: '/jadwal',    icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M5 1.5v3M11 1.5v3M2 7h12"/></svg> },
+                  { id: 'assignment.new', label: 'Penugasan',  sub: 'di luar program',       route: '/penugasan', icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2.5" width="10" height="11" rx="1.5"/><path d="M6 2.5h4v2H6z"/><path d="M5.5 11.5h3"/></svg> },
+                ] as const).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="menuitem"
+                    className="topbar__quick-item"
+                    onClick={() => {
+                      setQuickCreateOpen(false)
+                      // Navigate first if not on the page, lalu dispatch action.
+                      // Page listeners pakai TOPBAR_ACTION_EVENT; mereka self-mount,
+                      // jadi kita kasih microtask delay untuk navigation in-flight.
+                      if (activePath !== item.route) {
+                        navigate(item.route)
+                        setTimeout(() => {
+                          window.dispatchEvent(new CustomEvent(TOPBAR_ACTION_EVENT, { detail: { id: item.id, page: item.route } }))
+                        }, 220)
+                      } else {
+                        window.dispatchEvent(new CustomEvent(TOPBAR_ACTION_EVENT, { detail: { id: item.id, page: item.route } }))
+                      }
+                    }}
+                    onMouseEnter={() => prefetchRoute(item.route)}
+                    onFocus={() => prefetchRoute(item.route)}
+                  >
+                    <span className="topbar__quick-item-icon" aria-hidden="true">{item.icon}</span>
+                    <span className="topbar__quick-item-body">
+                      <span className="topbar__quick-item-title">{item.label}</span>
+                      <span className="topbar__quick-item-sub">{item.sub}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ⌘K command palette — prominent search pill */}
+          <button
+            type="button"
+            className="topbar__cmdk"
+            onClick={() => setPaletteOpen(true)}
+            aria-label="Buka command palette (⌘K)"
+            title="Cari (⌘K)"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+              <circle cx="6" cy="6" r="4.5" />
+              <path d="m9.5 9.5 3 3" />
+            </svg>
+            <span className="topbar__cmdk-placeholder">Cari programs, tasks…</span>
+            <kbd>⌘K</kbd>
+          </button>
+
           {/* Right cluster */}
           <div className="topbar__right">
-            {/* Theme toggle */}
-            <button
-              aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              className="topbar__theme-btn"
-              onClick={toggleTheme}
-              title={resolvedTheme === 'dark' ? 'Mode terang' : 'Mode gelap'}
-              type="button"
-            >
-              {resolvedTheme === 'dark' ? (
-                <svg aria-hidden="true" className="topbar__theme-icon" fill="none" height="18" viewBox="0 0 18 18" width="18">
-                  <circle cx="9" cy="9" r="3.5" stroke="currentColor" strokeWidth="1.5" />
-                  <path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.22 3.22l1.42 1.42M13.36 13.36l1.42 1.42M3.22 14.78l1.42-1.42M13.36 4.64l1.42-1.42" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
-                </svg>
-              ) : (
-                <svg aria-hidden="true" className="topbar__theme-icon" fill="none" height="18" viewBox="0 0 18 18" width="18">
-                  <path d="M15.5 10.5A7 7 0 0 1 7.5 2.5a7.002 7.002 0 1 0 8 8Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
-                </svg>
-              )}
-            </button>
-
             {/* Notification bell */}
             <div className="topbar__notif-menu" ref={notifDropRef}>
               <button
@@ -1163,7 +1392,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                   <path d="M8.25 15.05c.3.76.95 1.25 1.75 1.25s1.45-.49 1.75-1.25" />
                 </svg>
                 {unreadCount > 0 && (
-                  <span className={`topbar__notif-badge${urgentCount > 0 ? '' : ' topbar__notif-badge--info'}`}>
+                  <span className={`topbar__notif-badge${urgentCount > 0 ? ' topbar__notif-badge--urgent' : ' topbar__notif-badge--info'}`}>
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -1254,73 +1483,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
               )}
             </div>
 
-            {/* User button */}
-            <div className="topbar__user-menu">
-              <button
-                className="topbar__user-btn"
-                onClick={() => toggleUserMenu('topbar')}
-                aria-expanded={userMenuSurface === 'topbar'}
-                aria-haspopup="menu"
-                title={currentUser?.name ?? 'User menu'}
-                type="button"
-              >
-                <span className="topbar__user-avatar-wrap">
-                  <span className="topbar__user-avatar">{userInitials || 'AU'}</span>
-                  <span className="topbar__user-status" aria-hidden="true" />
-                </span>
-              </button>
-
-              {userMenuSurface === 'topbar' ? (
-                <>
-                  <div className="topbar__menu-backdrop" onClick={closeUserMenu} />
-                  <div className="topbar__menu-popover" role="menu">
-                    <div className="topbar__menu-identity">
-                      <div className="topbar__menu-avatar">{userInitials || 'AU'}</div>
-                      <div>
-                        <strong>{currentUser?.name}</strong>
-                        <span>{currentUser?.unit?.name ?? currentUser?.roleType}</span>
-                      </div>
-                    </div>
-                    <div className="topbar__menu-divider" />
-                    <Link
-                      className="topbar__menu-item"
-                      href="/playbook"
-                      onClick={closeUserMenu}
-                      onFocus={() => prefetchRoute('/playbook')}
-                      onMouseEnter={() => prefetchRoute('/playbook')}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="2" y="1" width="10" height="12" rx="1" />
-                        <path d="M5 4h4M5 7h4M5 10h2" />
-                      </svg>
-                      Playbook
-                    </Link>
-                    <div className="topbar__menu-divider" />
-                    <button
-                      className="topbar__menu-item"
-                      onClick={() => { void loadOverview('refresh'); closeUserMenu() }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                        <path d="M12.5 7A5.5 5.5 0 1 1 7 1.5a5.5 5.5 0 0 1 4.5 2.3" />
-                        <path d="M10 1.5h3v3" />
-                      </svg>
-                      {overviewStatus.refreshing ? 'Menyegarkan…' : 'Refresh data'}
-                    </button>
-                    <div className="topbar__menu-divider" />
-                    <button
-                      className="topbar__menu-item topbar__menu-item--danger"
-                      onClick={() => { requestLogout(); closeUserMenu() }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                        <path d="M5 7h7M9.5 4.5 12 7l-2.5 2.5" />
-                        <path d="M5 2H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2" />
-                      </svg>
-                      Sign out
-                    </button>
-                  </div>
-                </>
-              ) : null}
-            </div>
           </div>
         </header>
 

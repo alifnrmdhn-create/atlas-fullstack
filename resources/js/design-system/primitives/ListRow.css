@@ -1,0 +1,90 @@
+.ds-list-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-4);
+  min-height: 48px;
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-border-subtle);
+  font-family: var(--ds-font-sans);
+  color: var(--ds-text-primary);
+  background: transparent;
+  transition: background-color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.ds-list-row:last-child {
+  border-bottom: none;
+}
+
+.ds-list-row--interactive {
+  cursor: pointer;
+}
+
+.ds-list-row--interactive:hover {
+  background: var(--ds-surface-hover);
+}
+
+.ds-list-row--interactive:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--ds-brand-600);
+}
+
+/* ─── Slots ─────────────────────────────────────────────── */
+.ds-list-row__leading {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.ds-list-row__text {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ds-list-row__primary {
+  font-size: var(--ds-text-14);
+  font-weight: var(--ds-weight-medium);
+  line-height: var(--ds-leading-snug);
+  color: var(--ds-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-list-row__secondary {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-secondary);
+  line-height: var(--ds-leading-snug);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-list-row__middle {
+  flex-shrink: 0;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+}
+
+.ds-list-row__trailing {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  color: var(--ds-text-secondary);
+  font-size: var(--ds-text-13);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Emphasis (for "needs attention" rows) ─────────────── */
+.ds-list-row--warning {
+  /* Subtle 2px left rule, no background tint — we want signal not decoration. */
+  box-shadow: inset 2px 0 0 0 var(--ds-amber-500);
+}
+
+.ds-list-row--danger {
+  box-shadow: inset 2px 0 0 0 var(--ds-red-500);
+}

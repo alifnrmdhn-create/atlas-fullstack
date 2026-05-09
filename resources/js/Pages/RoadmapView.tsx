@@ -3,6 +3,7 @@ import { useWorkspace } from '../hooks/useWorkspace'
 import { TimelineGantt } from '../components/TimelineGantt'
 import type { TimelineGanttProgram } from '../components/TimelineGantt'
 import { api } from '../lib/api'
+import './SmallPagesViews.css'
 
 type RoadmapGrouping = 'status' | 'priority' | 'health'
 type ViewMode = 'lanes' | 'timeline'
@@ -82,7 +83,8 @@ export function RoadmapView() {
   )
 
   return (
-    <div className="view-roadmap">
+    <div className="ds roadmap-v2 view-roadmap">
+      <div className="roadmap-v2__inner">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Program Roadmap</h2>
         <div className="view-toolbar__sep" />
@@ -215,6 +217,7 @@ export function RoadmapView() {
           )}
         </div>
       )}
+      </div>
     </div>
   )
 }

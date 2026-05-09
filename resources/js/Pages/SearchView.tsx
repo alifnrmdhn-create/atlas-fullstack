@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { InlineNotice, SectionState, SkeletonBlock, SkeletonStack } from '../components/ui'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
+import './SmallPagesViews.css'
 
 const SEARCH_PRESETS = [
   'blocker kritis',
@@ -70,7 +71,8 @@ export function SearchView() {
   const showEmptyState = !query && !searching && searchResults.length === 0
 
   return (
-    <div className="view-search">
+    <div className="ds search-v2 view-search">
+      <div className="search-v2__inner">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Search & Discovery</h2>
         <div className="view-toolbar__sep" />
@@ -270,6 +272,7 @@ export function SearchView() {
             </div>
           </div>
         </aside>
+      </div>
       </div>
     </div>
   )

@@ -1,3 +1,50 @@
+/* ═══════════════════════════════════════════════════════════════
+ * PAGE SHELL — pakem layout halaman ATLAS (GUARDRAIL)
+ * ═══════════════════════════════════════════════════════════════
+ * RULE (wajib diikuti semua halaman primer, lama maupun baru):
+ *
+ *   Halaman utama HARUS stretch mengikuti lebar workspace.
+ *   DILARANG memakai `max-width` fixed + `margin: 0 auto`
+ *   pada wrapper page-level — di layar ≥1440px / 2K / ultrawide
+ *   itu menyisakan whitespace kosong di kiri-kanan yang user
+ *   eksplisit tolak.
+ *
+ * Whitespace nyaman datang dari PADDING (gutter), bukan dari cap +
+ * auto-margin. Workspace container (`.workspace` di shell.css) sudah
+ * full-width; tugas page CSS hanya menambah padding internal.
+ *
+ * Pengecualian (boleh capped):
+ *   - Modal, dialog, tooltip, dropdown, command palette
+ *   - Sel/cell teks ellipsis (white-space: nowrap)
+ *   - Prose panjang (artikel/dokumen): cap di elemen teks (`p`, `ul`)
+ *     dengan `max-width: 78ch`, BUKAN di container
+ *   - Kolom kanan/kiri di multi-column layout boleh fixed-width
+ *
+ * Halaman baru: pakai class `.page-shell` + `.page-shell__inner`
+ * di bawah ini. Halaman lama yang sudah punya class scoped sendiri
+ * (mis. `.fokus-v2__inner`, `.perf__inner`, `.programs-v2__inner`,
+ * `.hv__inner`, `.admin-v2`) sudah comply — pertahankan polanya. */
+
+.page-shell {
+  width: 100%;
+  background: var(--app-bg);
+  min-height: 100vh;
+}
+
+.page-shell__inner {
+  width: 100%;
+  padding: 24px 32px 48px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1600px) {
+  .page-shell__inner { padding: 28px 48px 56px; }
+}
+
+@media (max-width: 980px) {
+  .page-shell__inner { padding: 16px 18px 40px; }
+}
+
 /* ─── Panel ──────────────────────────────────────────────────── */
 .panel {
   background: var(--panel);
@@ -459,19 +506,21 @@
   color: var(--text-muted);
 }
 
-/* ── Light mode shared polish: badges, progress, form fields, and empty states ── */
+/* Pure System: badges/pills are flat tinted-bg + colored text + 1px subtle
+ * border. Previous inset highlight + linear-gradient bg gave a "glossy 2018"
+ * feel that doesn't match the unified flat surface. Inset highlight removed;
+ * gradient bg on neutral badges flattened to plain surface. */
 :root:not([data-theme="dark"]) .badge,
 :root:not([data-theme="dark"]) .code-badge,
 :root:not([data-theme="dark"]) .priority-badge,
 :root:not([data-theme="dark"]) .severity-badge,
 :root:not([data-theme="dark"]) .health-pill {
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 58%, transparent);
+  box-shadow: none;
 }
 
 :root:not([data-theme="dark"]) .badge:not([class*="badge--"]),
 :root:not([data-theme="dark"]) .code-badge {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 74%, transparent), color-mix(in srgb, var(--surface-1) 88%, transparent));
+  background: var(--surface-1);
   border-color: color-mix(in srgb, var(--panel-border-strong) 44%, transparent);
 }
 

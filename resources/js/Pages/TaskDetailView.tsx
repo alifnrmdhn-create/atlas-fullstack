@@ -18,6 +18,7 @@ import {
   RichTextPreview,
 } from '../components/ui'
 import type { TaskDetail } from '../types'
+import './TaskDetailView.css'
 
 const STATUS_ORDER = ['BACKLOG', 'READY', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'COMPLETED']
 const STATUS_LABELS: Record<string, string> = {
@@ -947,7 +948,7 @@ export function TaskDetailView() {
   // ── Render ────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="wid-page">
+      <div className="ds task-detail-v2 wid-page">
         <div className="wid-topbar">
           <button className="wid-back" onClick={() => navigate('/execution')} type="button">
             {Icon.back} Execution Board
@@ -992,7 +993,7 @@ export function TaskDetailView() {
 
   if (loadError || !detail) {
     return (
-      <div className="wid-page">
+      <div className="ds task-detail-v2 wid-page">
         <div className="wid-topbar">
           <button className="wid-back" onClick={() => navigate('/execution')} type="button">
             {Icon.back} Execution Board
@@ -1065,7 +1066,7 @@ export function TaskDetailView() {
   const priorityTone = SEV_TONE[priority as keyof typeof SEV_TONE] ?? SEV_TONE.MEDIUM
 
   return (
-    <div className="wid-page">
+    <div className="ds task-detail-v2 wid-page">
 
       {/* ── Top action bar ────────────────────────────────────── */}
       <div className="wid-topbar">

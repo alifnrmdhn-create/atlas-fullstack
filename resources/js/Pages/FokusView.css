@@ -1,0 +1,282 @@
+/* FokusView (InboxView) — surface polish overlay.
+ *
+ * Strategy: don't modify legacy CSS. Wrap with .fokus-v2 + .ds and add
+ * higher-specificity overrides for the legacy classes that need refresh.
+ * Legacy components (ActionPanel, FokusHeroCard, FokusItemRow) keep their
+ * own styling — only page chrome and major sections are restyled here.
+ */
+
+.fokus-v2 {
+  background: var(--ds-surface-page);
+  min-height: 100vh;
+  width: 100%;
+}
+
+.fokus-v2__inner {
+  /* Full-bleed: no max-width. */
+  padding: 32px 32px 48px;
+}
+
+/* ─── Header ──────────────────────────────────────────────── */
+
+.fokus-v2__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--ds-border-subtle);
+}
+
+.fokus-v2__header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.fokus-v2__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: -0.015em;
+  color: var(--ds-text-primary);
+  line-height: 1.2;
+}
+
+.fokus-v2__subtitle {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+  white-space: nowrap;
+}
+
+.fokus-v2__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fokus-v2__mark-all {
+  height: 28px;
+  padding: 0 12px;
+  background: transparent;
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-md);
+  font-family: inherit;
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+              color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.fokus-v2__mark-all:hover:not(:disabled) {
+  background: var(--ds-surface-hover);
+  color: var(--ds-text-primary);
+}
+
+.fokus-v2__mark-all:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── fokus-page wrapper inside the polished shell ──────── */
+
+.fokus-v2 .fokus-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0;
+  background: transparent;
+}
+
+/* ─── Scope strip — restyled pills ──────────────────────── */
+
+.fokus-v2 .fokus-scope-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 0;
+  background: transparent;
+  border: 0;
+  margin-bottom: 4px;
+}
+
+.fokus-v2 .fokus-scope-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--ds-radius-pill);
+  background: transparent;
+  border: 1px solid var(--ds-border-subtle);
+  color: var(--ds-text-secondary);
+  font-family: inherit;
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+              border-color var(--ds-duration-fast) var(--ds-ease-standard),
+              color var(--ds-duration-fast) var(--ds-ease-standard);
+  box-shadow: none;
+}
+
+.fokus-v2 .fokus-scope-pill:hover {
+  background: var(--ds-surface-hover);
+  color: var(--ds-text-primary);
+  box-shadow: none;
+}
+
+/* Pure System: active pill follows brand-green-tint pattern (matches sidebar
+ * active state, view toggles, etc.) — single active language across the app. */
+.fokus-v2 .fokus-scope-pill.is-active {
+  background: var(--indigo-dim);
+  border-color: var(--indigo-mid);
+  color: var(--indigo);
+}
+
+.fokus-v2 .fokus-scope-pill strong {
+  font-size: 11px;
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.fokus-v2 .fokus-scope-pill.is-active strong {
+  opacity: 1;
+}
+
+/* ─── Bucket sections (Sekarang / Hari Ini / Bisa Ditunda) ─ */
+
+.fokus-v2 .fokus-bucket {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.fokus-v2 .fokus-bucket__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.fokus-v2 .fokus-bucket__label {
+  margin: 0;
+  font-size: 10px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+.fokus-v2 .fokus-bucket--now .fokus-bucket__label {
+  color: var(--ds-red-600);
+}
+
+.fokus-v2 .fokus-bucket__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-neutral-100);
+  font-size: 10px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.fokus-v2 .fokus-bucket__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.fokus-v2 .fokus-bucket__toggle {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.fokus-v2 .fokus-bucket__toggle:hover .fokus-bucket__label {
+  color: var(--ds-text-secondary);
+}
+
+.fokus-v2 .fokus-bucket__chev {
+  display: inline-block;
+  font-size: 9px;
+  color: var(--ds-text-tertiary);
+  transition: transform 120ms ease;
+}
+
+.fokus-v2 .fokus-bucket__chev.is-open {
+  transform: rotate(90deg);
+}
+
+/* ─── Empty state (zero box) ────────────────────────────── */
+
+.fokus-v2 .fokus-zero {
+  padding: 48px 24px;
+  text-align: center;
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+}
+
+.fokus-v2 .fokus-zero__check {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--ds-green-50);
+  color: var(--ds-green-600);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: var(--ds-weight-semibold);
+  margin-bottom: 12px;
+}
+
+.fokus-v2 .fokus-zero__title {
+  margin: 0 0 4px;
+  font-size: var(--ds-text-16);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-primary);
+}
+
+.fokus-v2 .fokus-zero__sub {
+  margin: 0;
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-secondary);
+}
+
+.fokus-v2 .fokus-zero__link {
+  background: transparent;
+  border: 0;
+  font: inherit;
+  color: var(--ds-brand-700);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

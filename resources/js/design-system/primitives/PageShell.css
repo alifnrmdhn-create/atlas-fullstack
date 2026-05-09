@@ -1,0 +1,97 @@
+/* PageShell — canonical responsive page wrapper.
+ * Single source of truth for page-level chrome (bg + max-width + padding).
+ *
+ * Force `display: block` to override any legacy `display: flex` that might
+ * be applied on a parent class — flex parent + cross-axis stretch can defeat
+ * margin: 0 auto centering on the inner.
+ */
+
+.ds-page-shell {
+  display: block;
+  background: var(--ds-surface-page);
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Full-bleed by default: content fills the available content area edge-to-edge.
+ * No max-width cap — empty side bands on wide monitors are considered waste.
+ * Internal grids should use auto-fill so they add columns on wider screens
+ * rather than stretching individual cells. */
+.ds-page-shell__inner {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Padding variants */
+.ds-page-shell--p-default .ds-page-shell__inner {
+  padding: 32px 32px 48px;
+}
+
+.ds-page-shell--p-compact .ds-page-shell__inner {
+  padding: 20px 24px 32px;
+}
+
+.ds-page-shell--p-none .ds-page-shell__inner {
+  padding: 0;
+}
+
+/* ─── PageHeader ──────────────────────────────────────────── */
+
+.ds-page-header {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--ds-border-subtle);
+}
+
+.ds-page-header__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ds-page-header__leading {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ds-page-header__title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ds-page-header__title {
+  margin: 0;
+  font-family: var(--ds-font-sans);
+  font-size: 22px;
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: -0.015em;
+  color: var(--ds-text-primary);
+  line-height: 1.2;
+}
+
+.ds-page-header__subtitle {
+  margin: 0;
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+  line-height: 1.4;
+}
+
+.ds-page-header__middle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ds-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}

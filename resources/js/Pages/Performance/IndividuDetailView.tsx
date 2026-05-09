@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
-import { usePage } from '@inertiajs/react'
+import { Head, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { useFeatureFlag } from '../../hooks/useFeatureFlag'
 import { useOnboardingTour } from '../../hooks/useOnboardingTour'
 import { api } from '../../lib/api'
+import { Card, Pill } from '../../design-system'
 import { ForecastBadge } from '../../components/ui'
 import { computeForecastFromStrings } from '../../lib/forecast'
+import { scoreTone, fillRatio, realisasiPercent } from './_shared'
+import './Performance.css'
 
 type KpiItem = {
   no: number
@@ -54,13 +57,19 @@ type LedgerData = {
   streakMinPct: number
 }
 
+function ledgerTone(pct: number | null): 'green' | 'amber' | 'red' | 'neutral' {
+  if (pct === null) return 'neutral'
+  if (pct >= 80) return 'green'
+  if (pct >= 60) return 'amber'
+  return 'red'
+}
+
 function CommitmentLedgerSection({ userId }: { userId: number }) {
   const enabled = useFeatureFlag('commitment-ledger')
   const [data, setData] = useState<LedgerData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Trigger tour pertama kali user lihat ledger
   useOnboardingTour('commitment-ledger', { trigger: enabled && !!data })
 
   useEffect(() => {
@@ -75,202 +84,225 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
   if (!enabled) return null
 
   return (
-    <div>
-      <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: 8 }}>
-        Komitmen Saya
-      </div>
-      {loading && <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '8px 0' }}>Memuat ledger…</div>}
+    <section className="perf__section">
+      <span className="perf__section-label">Komitmen Saya</span>
+      {loading && <div style={{ fontSize: 12, color: 'var(--ds-text-tertiary)', padding: '8px 0' }}>Memuat ledger…</div>}
       {error && (
-        <div style={{ fontSize: 12, color: 'var(--red, #c33)', padding: '8px 12px' }}>
-          {error}
-        </div>
+        <Card padding="md" style={{ borderColor: 'var(--ds-red-500)' }}>
+          <div style={{ fontSize: 13, color: 'var(--ds-red-600)' }}>{error}</div>
+        </Card>
       )}
       {!loading && !error && data && (
-        <div className="ledger-card" data-tour="commitment-ledger">
-          <div className="ledger-summary">
-            <div className="ledger-summary__metric">
-              <span className="ledger-summary__label">Consistency ({data.lookbackWeeks} minggu)</span>
-              <span className={`ledger-summary__value ledger-summary__value--${ledgerColor(data.hitRateAggregate)}`}>
-                {data.hitRateAggregate !== null ? `${data.hitRateAggregate.toFixed(1)}%` : '—'}
-              </span>
-            </div>
-            <div className="ledger-summary__metric">
-              <span className="ledger-summary__label">Streak ≥{data.streakMinPct}%</span>
-              <span className="ledger-summary__value">
-                {data.streak > 0 ? `${data.streak} minggu` : 'Belum ada'}
-              </span>
-            </div>
-          </div>
-          <div className="ledger-weeks">
-            {data.weeks.map(w => (
-              <div key={w.weekKey} className="ledger-week" title={`${w.weekKey}: ${w.hits}/${w.total} (${w.hitRate ?? 0}%)`}>
-                <div
-                  className={`ledger-week__bar ledger-week__bar--${ledgerColor(w.hitRate)}`}
-                  style={{ height: `${Math.max((w.hitRate ?? 0) / 110 * 100, 4)}%` }}
-                />
-                <span className="ledger-week__label">{w.weekKey.slice(-3)}</span>
+        <Card padding="md" data-tour="commitment-ledger">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: 32, marginBottom: 16 }}>
+            <div>
+              <div style={{
+                fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
+                letterSpacing: '0.06em', color: 'var(--ds-text-tertiary)', marginBottom: 4,
+              }}>
+                Consistency ({data.lookbackWeeks} minggu)
               </div>
-            ))}
+              <div style={{
+                fontSize: 24, fontWeight: 600,
+                fontVariantNumeric: 'tabular-nums',
+                color: `var(--ds-${ledgerTone(data.hitRateAggregate)}-600)`,
+              }}>
+                {data.hitRateAggregate !== null ? `${data.hitRateAggregate.toFixed(1)}%` : '—'}
+              </div>
+            </div>
+            <div>
+              <div style={{
+                fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
+                letterSpacing: '0.06em', color: 'var(--ds-text-tertiary)', marginBottom: 4,
+              }}>
+                Streak ≥{data.streakMinPct}%
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: 'var(--ds-text-primary)' }}>
+                {data.streak > 0 ? `${data.streak}` : '—'}
+                {data.streak > 0 && (
+                  <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--ds-text-tertiary)', marginLeft: 6 }}>
+                    minggu
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 64 }}>
+            {data.weeks.map(w => {
+              const t = ledgerTone(w.hitRate)
+              const colors = {
+                green: 'var(--ds-green-500)',
+                amber: 'var(--ds-amber-500)',
+                red: 'var(--ds-red-500)',
+                neutral: 'var(--ds-neutral-300)',
+              }
+              return (
+                <div
+                  key={w.weekKey}
+                  title={`${w.weekKey}: ${w.hits}/${w.total} (${w.hitRate ?? 0}%)`}
+                  style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}
+                >
+                  <div
+                    style={{
+                      width: '100%',
+                      height: `${Math.max((w.hitRate ?? 0) / 110 * 100, 6)}%`,
+                      background: colors[t],
+                      borderRadius: 2,
+                      minHeight: 4,
+                    }}
+                  />
+                  <span style={{ fontSize: 9, color: 'var(--ds-text-tertiary)' }}>{w.weekKey.slice(-3)}</span>
+                </div>
+              )
+            })}
+          </div>
+          <div style={{
+            fontSize: 11, color: 'var(--ds-text-tertiary)',
+            marginTop: 12, lineHeight: 1.5,
+          }}>
             Sumber: Tasks + Action Items + Penugasan dengan dueDate dalam window. Hit = selesai sebelum due.
           </div>
-        </div>
+        </Card>
       )}
-    </div>
+    </section>
   )
-}
-
-function ledgerColor(pct: number | null): 'green' | 'yellow' | 'red' | 'muted' {
-  if (pct === null) return 'muted'
-  if (pct >= 80) return 'green'
-  if (pct >= 60) return 'yellow'
-  return 'red'
-}
-
-function scoreColor(val: number): 'green' | 'yellow' | 'red' {
-  if (val >= 100) return 'green'
-  if (val >= 80) return 'yellow'
-  return 'red'
-}
-
-function realisasiFillPct(sasaran: string, realisasi: string, polaritas: 'maximize' | 'minimize'): number {
-  const t = parseFloat(sasaran.replace(',', '.'))
-  const r = parseFloat(realisasi.replace(',', '.'))
-  if (isNaN(t) || isNaN(r)) return 0
-  if (t === 0) return r === 0 ? 100 : 0
-  const ratio = polaritas === 'maximize' ? r / t : t / Math.max(Math.abs(r), 0.0001)
-  return Math.min(Math.abs(ratio) * 100, 110)
 }
 
 export default function IndividuDetailView() {
   const { karyawan, kpiItems, periode } = usePage<PageProps>().props
   const navigate = useInertiaNavigate()
 
-  const nilaiColor = scoreColor(karyawan.nilai)
-  const headerBarWidth = Math.min((karyawan.nilai / 110) * 100, 100)
+  const tone = scoreTone(karyawan.nilai)
+  const bar = fillRatio(karyawan.nilai) * 100
 
   return (
-    <div className="view-performance">
-      {/* Toolbar */}
-      <div className="perf-toolbar">
-        <button
-          className="perf-toolbar__back"
-          onClick={() => navigate('/performance/individu')}
-          type="button"
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="m8 2-4 4 4 4" />
-          </svg>
-          Kembali
-        </button>
-        <div className="perf-toolbar__sep" />
-        <span className="perf-toolbar__title">{karyawan.nama} ({karyawan.jumlah_kpi} KPI)</span>
-        <div className="perf-toolbar__right">
-          <span className={`badge badge--${nilaiColor}`} style={{ fontSize: 12, fontWeight: 700 }}>
-            Nilai {periode}: {karyawan.nilai.toFixed(2)}
-          </span>
-        </div>
-      </div>
-
-      <div className="perf-content">
-        {/* Header */}
-        <div className="perf-detail-header">
-          <div className="perf-detail-header__top">
-            <div className="perf-detail-header__meta">
-              <div className="perf-detail-header__name">{karyawan.nama}</div>
-              <div className="perf-detail-header__jabatan">{karyawan.jabatan}</div>
-              <span className="perf-detail-header__unit">{karyawan.unit}</span>
+    <>
+      <Head title={`KPI — ${karyawan.nama}`} />
+      <div className="ds perf">
+        <div className="perf__inner">
+          {/* ─── Header ──────────────────────────── */}
+          <header className="perf__header">
+            <div className="perf__header-left">
+              <button className="perf__back" onClick={() => navigate('/performance/individu')} type="button">
+                <IconBack />
+                Kembali
+              </button>
+              <h1 className="perf__title">{karyawan.nama}</h1>
             </div>
-            <div className="perf-detail-header__score-badge">
-              <div className={`perf-detail-header__score-value perf-detail-header__score-value--${nilaiColor}`}>
-                {karyawan.nilai.toFixed(2)}
-              </div>
-              <div className="perf-detail-header__score-label">Nilai {periode}</div>
+            <div className="perf__header-actions">
+              <span className="perf__period-pill">
+                <IconCalendar />
+                {periode}
+              </span>
             </div>
-          </div>
-          <div className="perf-detail-header__progress">
-            <div className="perf-detail-header__progress-bar">
-              <div
-                className={`perf-detail-header__progress-fill perf-detail-header__progress-fill--${nilaiColor}`}
-                style={{ width: `${headerBarWidth}%` }}
-              />
-            </div>
-          </div>
-          <div className="perf-detail-header__meta-row">
-            <span className="perf-detail-header__chip">{karyawan.jumlah_kpi} KPI items</span>
-            <span className="perf-detail-header__chip">Bobot total 100%</span>
-          </div>
-        </div>
+          </header>
 
-        {/* KPI items */}
-        <div>
-          <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: 8 }}>
-            Rincian KPI
-          </div>
-          {kpiItems.map((item) => {
-            const pct = realisasiFillPct(item.sasaran, item.realisasi, item.polaritas)
-            const itemColor = scoreColor(pct > 0 ? (item.skor / (item.bobot)) * 100 : 0)
-            const barWidth = Math.min(pct, 100)
-
-            return (
-              <div key={item.kode} className="perf-kpi-card">
-                <div className="perf-kpi-card__header">
-                  <span className="perf-kpi-card__num">{item.no}</span>
-                  <span className="perf-kpi-card__kode">{item.kode}</span>
-                  <span className="perf-kpi-card__bobot">Bobot {item.bobot}%</span>
-                  <span className="perf-kpi-card__title">{item.nama}</span>
-                  <span className="perf-kpi-card__skor">{item.skor.toFixed(2)}</span>
-                </div>
-                <div className="perf-kpi-card__body">
-                  <div className="perf-kpi-card__pills">
-                    <span className="perf-kpi-card__pill perf-kpi-card__pill--satuan">{item.satuan}</span>
-                    <span className={`perf-kpi-card__pill perf-kpi-card__pill--${item.polaritas === 'maximize' ? 'max' : 'min'}`}>
-                      {item.polaritas === 'maximize' ? '↑ Maximize' : '↓ Minimize'}
-                    </span>
-                    <span className="perf-kpi-card__pill perf-kpi-card__pill--periode">{item.periode}</span>
-                    {(() => {
-                      const f = computeForecastFromStrings({
-                        periode: item.periode,
-                        sasaran: item.sasaran,
-                        realisasi: item.realisasi,
-                        polaritas: item.polaritas,
-                      })
-                      return f ? <ForecastBadge value={f.value} status={f.status} /> : null
-                    })()}
-                  </div>
-
-                  <div className="perf-kpi-card__realisasi">
-                    <div className="perf-kpi-card__val-block">
-                      <span className="perf-kpi-card__val-label">Sasaran</span>
-                      <span className="perf-kpi-card__val">{item.sasaran}</span>
-                    </div>
-                    <span className="perf-kpi-card__arrow">→</span>
-                    <div className="perf-kpi-card__val-block perf-kpi-card__val-block--right">
-                      <span className="perf-kpi-card__val-label">Realisasi</span>
-                      <span className={`perf-kpi-card__val perf-kpi-card__val--${itemColor}`}>{item.realisasi}</span>
-                    </div>
-                  </div>
-
-                  <div className="perf-kpi-card__bar">
-                    <div
-                      className={`perf-kpi-card__bar-fill perf-kpi-card__bar-fill--${itemColor}`}
-                      style={{ width: `${barWidth}%` }}
-                    />
-                  </div>
-
-                  {item.definisi && (
-                    <div className="perf-kpi-card__definisi">{item.definisi}</div>
-                  )}
+          {/* ─── Subject card ─────────────────────── */}
+          <Card padding="lg" className="perf__section perf-subject">
+            <div className="perf-subject__row">
+              <div className="perf-subject__meta">
+                <span className="perf-subject__eyebrow">Individu</span>
+                <div className="perf-subject__name">{karyawan.nama}</div>
+                <div className="perf-subject__jabatan">{karyawan.jabatan}</div>
+                <div className="perf-subject__chips">
+                  <Pill variant="mono">{karyawan.unit}</Pill>
+                  <Pill tone="neutral" variant="soft">{karyawan.jumlah_kpi} KPI items</Pill>
+                  <Pill tone="neutral" variant="soft">Bobot total 100%</Pill>
                 </div>
               </div>
-            )
-          })}
-        </div>
+              <div className="perf-subject__score">
+                <span className="perf-subject__score-value" data-tone={tone}>
+                  {karyawan.nilai.toFixed(2)}
+                </span>
+                <span className="perf-subject__score-label">Nilai {periode}</span>
+              </div>
+            </div>
+            <div className="perf-subject__bar">
+              <div className="perf-subject__bar-fill" data-tone={tone} style={{ width: `${bar}%` }} />
+            </div>
+          </Card>
 
-        {/* Sprint 4 — Commitment Ledger */}
-        <CommitmentLedgerSection userId={Number(karyawan.id)} />
+          {/* ─── KPI list ─────────────────────────── */}
+          <section className="perf__section">
+            <span className="perf__section-label">Rincian KPI</span>
+            <div className="perf-kpi-list">
+              {kpiItems.map(item => {
+                const pct = realisasiPercent(item.sasaran, item.realisasi, item.polaritas)
+                const skorPct = item.bobot > 0 ? (item.skor / item.bobot) * 100 : 0
+                const itemTone = scoreTone(skorPct)
+                const barWidth = Math.min(pct, 100)
+                const forecast = computeForecastFromStrings({
+                  periode: item.periode,
+                  sasaran: item.sasaran,
+                  realisasi: item.realisasi,
+                  polaritas: item.polaritas,
+                })
+
+                return (
+                  <article key={item.kode} className="perf-kpi">
+                    <span className="perf-kpi__num">{item.no}</span>
+                    <div className="perf-kpi__main">
+                      <h3 className="perf-kpi__title">{item.nama}</h3>
+                      <div className="perf-kpi__meta">
+                        <Pill variant="mono">{item.kode}</Pill>
+                        <span className={`perf-kpi__meta-chip perf-kpi__meta-chip--${item.polaritas === 'maximize' ? 'max' : 'min'}`}>
+                          {item.polaritas === 'maximize' ? '↑ Maximize' : '↓ Minimize'}
+                        </span>
+                        <span className="perf-kpi__meta-chip">{item.satuan}</span>
+                        <span className="perf-kpi__meta-chip">{item.periode}</span>
+                        {forecast && <ForecastBadge value={forecast.value} status={forecast.status} />}
+                      </div>
+                      <div className="perf-kpi__realisasi">
+                        <div className="perf-kpi__realisasi-block">
+                          <span className="perf-kpi__realisasi-label">Sasaran</span>
+                          <span className="perf-kpi__realisasi-value">{item.sasaran}</span>
+                        </div>
+                        <span className="perf-kpi__realisasi-arrow">→</span>
+                        <div className="perf-kpi__realisasi-block">
+                          <span className="perf-kpi__realisasi-label">Realisasi</span>
+                          <span className="perf-kpi__realisasi-value" data-tone={itemTone}>{item.realisasi}</span>
+                        </div>
+                      </div>
+                      <div className="perf-kpi__bar">
+                        <div className="perf-kpi__bar-fill" data-tone={itemTone} style={{ width: `${barWidth}%` }} />
+                      </div>
+                      {item.definisi && (
+                        <p className="perf-kpi__definisi">{item.definisi}</p>
+                      )}
+                    </div>
+                    <div className="perf-kpi__right">
+                      <span className="perf-kpi__skor" style={{ color: `var(--ds-${itemTone}-600)` }}>
+                        {item.skor.toFixed(2)}
+                      </span>
+                      <span className="perf-kpi__bobot">Bobot {item.bobot}%</span>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          </section>
+
+          {/* ─── Commitment Ledger ──────────────── */}
+          <CommitmentLedgerSection userId={Number(karyawan.id)} />
+        </div>
       </div>
-    </div>
+    </>
+  )
+}
+
+function IconBack() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m8 2-4 4 4 4" />
+    </svg>
+  )
+}
+
+function IconCalendar() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+      <rect x="1" y="2" width="12" height="11" rx="1.5" />
+      <path d="M1 6h12M5 2v2M9 2v2" />
+    </svg>
   )
 }

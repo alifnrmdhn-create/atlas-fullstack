@@ -4022,13 +4022,11 @@
   color: var(--text);
   transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+/* Pure System: view-toggle active follows brand-green-tint pattern. */
 .view-toggle-btn.active {
-  background: var(--panel);
-  color: var(--text-strong);
-}
-
-:root:not([data-theme="dark"]) .view-toggle-btn.active {
-  box-shadow: var(--panel-shadow);
+  background: var(--indigo-dim);
+  color: var(--indigo);
+  font-weight: 600;
 }
 
 /* EMPTY STATES */

@@ -2,6 +2,7 @@ import { useState, useEffect, useId } from 'react'
 import type { FormEvent } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import './AdminViews.css'
 import { api } from '../lib/api'
 
 type DirectorateRecord = {
@@ -213,7 +214,7 @@ export function AdminOrgsView() {
 
   if (!isAuthorized) {
     return (
-      <div className="view-admin-orgs">
+      <div className="ds admin-v2 view-admin-orgs">
         <div className="panel">
           <p className="text-muted text-sm admin-state-copy admin-state-copy--center">
             Akses ditolak. Halaman ini hanya untuk admin dan superadmin.
@@ -224,7 +225,7 @@ export function AdminOrgsView() {
   }
 
   return (
-    <div className="view-admin-orgs">
+    <div className="ds admin-v2 view-admin-orgs">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Perusahaan &amp; Entitas Organisasi</h2>
         <div className="view-toolbar__sep" />

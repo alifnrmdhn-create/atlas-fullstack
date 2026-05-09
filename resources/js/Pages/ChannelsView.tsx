@@ -6,6 +6,7 @@ import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { extractErrorMessage } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
+import './ChannelsView.css'
 import {
   Avatar,
   EMOJI_SHORTCODES,
@@ -1567,7 +1568,7 @@ export function ChannelsView({
   }, [streamMessages])
 
   return (
-    <div className="view-channels">
+    <div className="ds channels-v2 view-channels">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Channels</h2>
         <div className="view-toolbar__sep" />

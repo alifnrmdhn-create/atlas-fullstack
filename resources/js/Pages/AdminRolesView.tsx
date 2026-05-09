@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
+import './AdminViews.css'
 
 type RoleConfig = {
   role: string
@@ -112,7 +113,7 @@ export function AdminRolesView() {
   }
 
   return (
-    <div className="view-admin-roles">
+    <div className="ds admin-v2 view-admin-roles">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Roles &amp; Permissions</h2>
         <div className="view-toolbar__sep" />

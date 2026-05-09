@@ -1,0 +1,202 @@
+/* TaskDetailView — minimal surface polish.
+ *
+ * Strategy: TaskDetail has its own well-developed wid-* design system in
+ * wi-detail.css (190KB). Don't touch internal hero/body/panels — they're
+ * coherent. Only modernize page-level chrome (outer bg + topbar) so users
+ * arriving from Workboard/Programs feel visual continuity.
+ */
+
+.task-detail-v2.wid-page {
+  background: var(--ds-surface-page);
+  /* Ensure full-bleed at the page level */
+  width: 100%;
+}
+
+/* ─── Topbar (back button + breadcrumb + actions) ───────── */
+
+.task-detail-v2 .wid-topbar {
+  background: var(--ds-surface-card);
+  border-bottom: 1px solid var(--ds-border-subtle);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  box-shadow: none;
+}
+
+.task-detail-v2 .wid-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px 0 8px;
+  background: transparent;
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-md);
+  color: var(--ds-text-secondary);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+              color var(--ds-duration-fast) var(--ds-ease-standard);
+  box-shadow: none;
+}
+
+.task-detail-v2 .wid-back:hover {
+  background: var(--ds-surface-hover);
+  color: var(--ds-text-primary);
+}
+
+.task-detail-v2 .wid-back svg {
+  width: 12px;
+  height: 12px;
+}
+
+.task-detail-v2 .wid-crumb-sep {
+  color: var(--ds-text-tertiary);
+  font-size: 12px;
+}
+
+.task-detail-v2 .wid-crumb-text {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-secondary);
+  font-weight: var(--ds-weight-medium);
+}
+
+.task-detail-v2 .wid-topbar__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.task-detail-v2 .wid-topbar__sep {
+  width: 1px;
+  height: 18px;
+  background: var(--ds-border-subtle);
+  margin: 0 4px;
+}
+
+/* Live badge */
+.task-detail-v2 .wid-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-green-50);
+  color: var(--ds-green-600);
+  font-size: 10px;
+  font-weight: var(--ds-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.task-detail-v2 .wid-live-badge svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* Icon buttons (search, link, help, edit, delete) */
+.task-detail-v2 .wid-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-md);
+  color: var(--ds-text-secondary);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+              color var(--ds-duration-fast) var(--ds-ease-standard),
+              border-color var(--ds-duration-fast) var(--ds-ease-standard);
+  box-shadow: none;
+}
+
+.task-detail-v2 .wid-iconbtn:hover {
+  background: var(--ds-surface-hover);
+  color: var(--ds-text-primary);
+  border-color: var(--ds-border-subtle);
+}
+
+.task-detail-v2 .wid-iconbtn--danger:hover {
+  background: var(--ds-red-50);
+  color: var(--ds-red-600);
+  border-color: var(--ds-red-500);
+}
+
+.task-detail-v2 .wid-iconbtn svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Keyboard hint */
+.task-detail-v2 .wid-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  min-width: 16px;
+  padding: 0 4px;
+  background: var(--ds-neutral-100);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: 3px;
+  font-family: var(--ds-font-mono);
+  font-size: 9px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-tertiary);
+}
+
+/* Confirm delete inline */
+.task-detail-v2 .wid-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--ds-red-50);
+  border: 1px solid var(--ds-red-500);
+  border-radius: var(--ds-radius-md);
+}
+
+.task-detail-v2 .wid-confirm__label {
+  font-size: 11px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-red-600);
+}
+
+.task-detail-v2 .wid-confirm__btn {
+  height: 22px;
+  padding: 0 8px;
+  background: transparent;
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-sm);
+  font-family: var(--ds-font-sans);
+  font-size: 11px;
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-primary);
+  cursor: pointer;
+}
+
+.task-detail-v2 .wid-confirm__btn:hover {
+  background: var(--ds-surface-hover);
+}
+
+.task-detail-v2 .wid-confirm__btn--danger {
+  background: var(--ds-red-600);
+  color: var(--ds-text-on-brand);
+  border-color: var(--ds-red-600);
+}
+
+.task-detail-v2 .wid-confirm__btn--danger:hover {
+  background: var(--ds-red-600);
+  filter: brightness(1.05);
+}

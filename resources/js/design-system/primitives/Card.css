@@ -1,0 +1,41 @@
+.ds-card {
+  border-radius: var(--ds-radius-lg);
+  border: 1px solid var(--ds-border-subtle);
+  background: var(--ds-surface-card);
+}
+
+.ds-card--sunken {
+  background: var(--ds-surface-sunken);
+  border-color: transparent;
+}
+
+/* Padding variants */
+.ds-card--p-none { padding: 0; }
+.ds-card--p-sm   { padding: var(--ds-space-3); }
+.ds-card--p-md   { padding: var(--ds-space-5); }
+.ds-card--p-lg   { padding: var(--ds-space-6); }
+
+/* Header / title / description */
+.ds-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+  margin-bottom: var(--ds-space-4);
+}
+
+.ds-card__title {
+  margin: 0;
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-16);
+  font-weight: var(--ds-weight-semibold);
+  line-height: var(--ds-leading-tight);
+  color: var(--ds-text-primary);
+}
+
+.ds-card__description {
+  margin: var(--ds-space-1) 0 0;
+  font-size: var(--ds-text-13);
+  line-height: var(--ds-leading-snug);
+  color: var(--ds-text-secondary);
+}

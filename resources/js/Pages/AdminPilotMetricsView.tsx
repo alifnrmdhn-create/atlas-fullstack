@@ -5,6 +5,7 @@
 import { usePage } from '@inertiajs/react'
 import { useState } from 'react'
 import { api } from '../lib/api'
+import './AdminViews.css'
 
 type StatusBreakdown = Record<string, number>
 
@@ -99,7 +100,7 @@ export default function AdminPilotMetricsView() {
   const evalTotal = [dispositionCmp, hitRateCmp, activeUsersCmp].filter(c => c !== 'unknown').length
 
   return (
-    <div className="view-pilot-metrics">
+    <div className="ds admin-v2 view-pilot-metrics">
       <div className="perf-toolbar">
         <span className="perf-toolbar__title">Pilot DKM — Metrics Dashboard</span>
         <div className="perf-toolbar__sep" />

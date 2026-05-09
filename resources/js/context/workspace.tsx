@@ -99,8 +99,8 @@ export interface WorkspaceContextValue {
   // Shell UI
   navRailCollapsed: boolean
   setNavRailCollapsed: Dispatch<SetStateAction<boolean>>
-  userMenuSurface: 'topbar' | null
-  toggleUserMenu: (surface: 'topbar') => void
+  userMenuSurface: 'topbar' | 'sidebar' | null
+  toggleUserMenu: (surface: 'topbar' | 'sidebar') => void
   closeUserMenu: () => void
 
   // Workspace data
@@ -312,7 +312,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       ? window.localStorage.getItem('atlas-nav-collapsed') === 'true'
       : false,
   )
-  const [userMenuSurface, setUserMenuSurface] = useState<'topbar' | null>(null)
+  const [userMenuSurface, setUserMenuSurface] = useState<'topbar' | 'sidebar' | null>(null)
 
   // Workspace data
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null)
@@ -453,7 +453,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // ── Auth helpers ─────────────────────────────────────────
   const closeUserMenu = () => setUserMenuSurface(null)
-  const toggleUserMenu = (surface: 'topbar') => {
+  const toggleUserMenu = (surface: 'topbar' | 'sidebar') => {
     setUserMenuSurface((cur) => (cur === surface ? null : surface))
   }
 

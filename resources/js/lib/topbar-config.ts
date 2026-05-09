@@ -24,9 +24,11 @@ export type TopbarAction = {
   icon?: 'Plus' | 'Download' | 'Share2' | 'Filter'
 }
 
-/** Map active route → contextual action. */
+/** Map active route → contextual action.
+ *
+ * NOTE: Pages can also render their own primary CTA in their page header
+ * (e.g., ProgramsView). When a page owns its CTA, omit the route here. */
 export const TOPBAR_ACTIONS: Record<string, TopbarAction> = {
-  '/programs': { id: 'program.new', label: 'Program Baru', icon: 'Plus' },
   '/execution': { id: 'task.new', label: 'Task Baru', icon: 'Plus' },
   '/penugasan': { id: 'assignment.new', label: 'Penugasan Baru', icon: 'Plus' },
   '/jadwal': { id: 'meeting.new', label: 'Rapat Baru', icon: 'Plus' },

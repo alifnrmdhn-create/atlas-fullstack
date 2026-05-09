@@ -1,0 +1,338 @@
+/* SettingsView — surface polish overlay */
+
+.settings-v2 {
+  display: block;
+  background: var(--ds-surface-page);
+  min-height: 100vh;
+  width: 100%;
+}
+
+.settings-v2__inner {
+  display: block;
+  padding: 32px 32px 48px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ─── Toolbar ───────────────────────────────────────────── */
+
+.settings-v2 .view-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 0 16px;
+  margin-bottom: 16px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  height: auto;
+  overflow: visible;
+}
+
+.settings-v2 .view-toolbar__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: -0.015em;
+  color: var(--ds-text-primary);
+  line-height: 1.2;
+  font-family: var(--ds-font-sans);
+}
+
+.settings-v2 .view-toolbar__sep { display: none; }
+
+.settings-v2 .view-toolbar__subtitle {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+}
+
+/* ─── Workspace layout ──────────────────────────────────── */
+
+.settings-v2 .settings-workspace {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  background: transparent;
+  padding: 0;
+}
+
+@media (max-width: 880px) {
+  .settings-v2 .settings-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Left nav ──────────────────────────────────────────── */
+
+.settings-v2 .settings-nav {
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  padding: 4px;
+  box-shadow: none;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.settings-v2 .settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+              color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.settings-v2 .settings-nav-item:hover {
+  background: var(--ds-surface-hover);
+  color: var(--ds-text-primary);
+}
+
+.settings-v2 .settings-nav-item.is-active {
+  background: var(--ds-brand-50);
+  color: var(--ds-brand-700);
+  font-weight: var(--ds-weight-semibold);
+}
+
+.settings-v2 .settings-nav-item svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ─── Content panel ─────────────────────────────────────── */
+
+.settings-v2 .settings-content {
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  padding: 24px 28px;
+  box-shadow: none;
+}
+
+.settings-v2 .settings-section {
+  margin-bottom: 24px;
+}
+
+.settings-v2 .settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-v2 .settings-section__title,
+.settings-v2 .settings-section-title {
+  margin: 0 0 4px;
+  font-size: var(--ds-text-16);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-primary);
+  letter-spacing: -0.005em;
+}
+
+.settings-v2 .settings-section__sub,
+.settings-v2 .settings-section-sub {
+  margin: 0 0 16px;
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+  line-height: 1.45;
+}
+
+/* ─── List rows ─────────────────────────────────────────── */
+
+.settings-v2 .settings-list,
+.settings-v2 .settings-list--compact {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-md);
+  overflow: hidden;
+}
+
+.settings-v2 .settings-list-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  background: transparent;
+}
+
+.settings-v2 .settings-list-row:last-child {
+  border-bottom: 0;
+}
+
+.settings-v2 .settings-list-row__label {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-secondary);
+  font-weight: var(--ds-weight-medium);
+}
+
+.settings-v2 .settings-value-text {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-primary);
+  font-family: var(--ds-font-mono);
+}
+
+/* ─── Cards ─────────────────────────────────────────────── */
+
+.settings-v2 .settings-card,
+.settings-v2 .settings-security-card {
+  padding: 16px 18px;
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-card);
+  margin-bottom: 12px;
+}
+
+.settings-v2 .settings-security-card__title {
+  font-size: var(--ds-text-14);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-primary);
+  margin-bottom: 12px;
+}
+
+/* ─── Feedback messages ─────────────────────────────────── */
+
+.settings-v2 .settings-feedback {
+  padding: 10px 12px;
+  border-radius: var(--ds-radius-md);
+  font-size: var(--ds-text-13);
+  margin-bottom: 12px;
+}
+
+.settings-v2 .settings-feedback--success {
+  background: var(--ds-green-50);
+  color: var(--ds-green-600);
+  border: 1px solid var(--ds-green-500);
+}
+
+.settings-v2 .settings-feedback--error {
+  background: var(--ds-red-50);
+  color: var(--ds-red-600);
+  border: 1px solid var(--ds-red-500);
+}
+
+/* ─── Inputs ────────────────────────────────────────────── */
+
+.settings-v2 input[type="text"],
+.settings-v2 input[type="email"],
+.settings-v2 input[type="password"],
+.settings-v2 select,
+.settings-v2 textarea {
+  height: 36px;
+  padding: 0 12px;
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-md);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-14);
+  color: var(--ds-text-primary);
+  outline: none;
+  transition: border-color var(--ds-duration-fast) var(--ds-ease-standard);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.settings-v2 textarea {
+  height: auto;
+  min-height: 80px;
+  padding: 10px 12px;
+}
+
+.settings-v2 input:focus,
+.settings-v2 select:focus,
+.settings-v2 textarea:focus {
+  border-color: var(--ds-brand-600);
+  box-shadow: 0 0 0 1px var(--ds-brand-600);
+}
+
+/* ─── Buttons ───────────────────────────────────────────── */
+
+.settings-v2 .settings-btn,
+.settings-v2 .settings-btn--primary,
+.settings-v2 .settings-save-btn {
+  height: 32px;
+  padding: 0 14px;
+  background: var(--ds-brand-600);
+  color: var(--ds-text-on-brand);
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.settings-v2 .settings-btn:hover:not(:disabled),
+.settings-v2 .settings-save-btn:hover:not(:disabled) {
+  background: var(--ds-brand-700);
+}
+
+.settings-v2 .settings-btn--secondary {
+  background: var(--ds-surface-card);
+  color: var(--ds-text-primary);
+  border: 1px solid var(--ds-border-default);
+}
+
+.settings-v2 .settings-btn--secondary:hover:not(:disabled) {
+  background: var(--ds-surface-hover);
+  border-color: var(--ds-border-strong);
+}
+
+.settings-v2 .settings-btn--ghost {
+  background: transparent;
+  color: var(--ds-text-secondary);
+  border: 1px solid transparent;
+}
+
+.settings-v2 .settings-btn--ghost:hover {
+  background: var(--ds-surface-hover);
+  color: var(--ds-text-primary);
+}
+
+.settings-v2 button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Toggle / segmented controls ───────────────────────── */
+
+.settings-v2 .settings-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--ds-neutral-100);
+  border-radius: var(--ds-radius-md);
+}
+
+.settings-v2 .settings-toggle-btn {
+  height: 26px;
+  padding: 0 10px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  font-family: var(--ds-font-sans);
+  font-size: 11px;
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
+  cursor: pointer;
+}
+
+.settings-v2 .settings-toggle-btn.is-active {
+  background: var(--ds-surface-card);
+  color: var(--ds-text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}

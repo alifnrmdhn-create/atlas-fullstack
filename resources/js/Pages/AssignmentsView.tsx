@@ -5,6 +5,7 @@ import { useEscKey } from '../hooks/useEscKey'
 import { useAnimatedClose } from '../hooks/useAnimatedClose'
 import { Avatar } from '../components/ui'
 import { DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import './AssignmentsView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Role = 'BOD' | 'KADIV' | 'KASUBDIV' | 'ASISTEN' | 'OFFICER' | 'ADMIN' | 'SUPERADMIN'
@@ -240,9 +241,10 @@ export function AssignmentsView() {
   }
 
   return (
-    <div className="view-penugasan">
+    <div className="ds assignments-v2 view-penugasan">
       <style>{PENUGASAN_CSS}</style>
 
+      <div className="assignments-v2__inner">
       {/* ── Toolbar (mirror view-workboard) ── */}
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Assignment Board</h2>
@@ -350,6 +352,8 @@ export function AssignmentsView() {
           <span>{toast}</span>
         </div>
       )}
+
+      </div>
 
       <DetailPanel
         assignment={selected}
