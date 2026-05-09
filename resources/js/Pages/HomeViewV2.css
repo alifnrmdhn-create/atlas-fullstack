@@ -1576,3 +1576,100 @@
   .hv__list-status { grid-area: status; justify-self: end; }
   .hv__list-bar    { display: none; }
 }
+
+/* ════════════════════════════════════════════════════════════════
+ * DARK MODE OVERRIDES
+ * ════════════════════════════════════════════════════════════════
+ * Light-mode mixes (5% red on white) translate to ~invisible on
+ * pitch-black canvas. Bump tone mixes, strengthen borders, and add
+ * subtle inset highlights to match the sidebar's premium dark feel. */
+
+/* Hero card — stronger tone tint, crisper border, inset highlight */
+[data-theme="dark"] .hv__pri-hero {
+  border-color: rgba(255,255,255,0.10);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+[data-theme="dark"] .hv__pri-hero[data-tone="red"] {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--red) 14%, var(--panel)) 0%,
+    color-mix(in srgb, var(--red) 5%, var(--panel)) 45%,
+    var(--panel) 75%);
+}
+
+[data-theme="dark"] .hv__pri-hero[data-tone="amber"] {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--yellow) 14%, var(--panel)) 0%,
+    color-mix(in srgb, var(--yellow) 5%, var(--panel)) 45%,
+    var(--panel) 75%);
+}
+
+[data-theme="dark"] .hv__pri-hero:hover {
+  border-color: rgba(255,255,255,0.18);
+  box-shadow:
+    0 14px 28px rgba(0,0,0,0.45),
+    0 3px 8px rgba(0,0,0,0.30),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* CTA pill — non-hover needs more presence on dark canvas */
+[data-theme="dark"] .hv__pri-hero-cta {
+  background: rgba(255,255,255,0.07);
+}
+
+/* Secondary rows — premium border + dark-appropriate hover shadow */
+[data-theme="dark"] .hv__pri-row {
+  border-color: rgba(255,255,255,0.07);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+}
+
+[data-theme="dark"] .hv__pri-row:hover {
+  border-color: rgba(255,255,255,0.16);
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.35),
+    0 1px 2px rgba(0,0,0,0.20),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* Celebration card — stronger green tint for visibility on dark */
+[data-theme="dark"] .hv__pri-celebration {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--indigo) 16%, var(--panel)) 0%,
+    color-mix(in srgb, var(--indigo) 6%, var(--panel)) 50%,
+    var(--panel) 100%);
+  border-color: color-mix(in srgb, var(--indigo) 28%, rgba(255,255,255,0.08));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+[data-theme="dark"] .hv__pri-celebration:hover {
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--indigo) 14%, rgba(0,0,0,0.4)),
+    0 2px 4px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* Real-time flash for dark mode — mix stronger because thin white overlays
+ * register weakly on near-black bg. @keyframes can't be nested in selectors,
+ * so we define a separate animation and swap it via theme attribute. */
+@keyframes hv-flash-dark {
+  0% {
+    background-color: transparent;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--indigo) 0%, transparent);
+  }
+  15% {
+    background-color: color-mix(in srgb, var(--indigo) 22%, transparent);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--indigo) 24%, transparent);
+  }
+  60% {
+    background-color: color-mix(in srgb, var(--indigo) 10%, transparent);
+    box-shadow: 0 0 0 9px color-mix(in srgb, var(--indigo) 6%, transparent);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 14px color-mix(in srgb, var(--indigo) 0%, transparent);
+  }
+}
+
+[data-theme="dark"] .hv__big.hv-flashing {
+  animation-name: hv-flash-dark;
+}
