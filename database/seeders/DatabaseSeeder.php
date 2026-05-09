@@ -81,5 +81,9 @@ class DatabaseSeeder extends Seeder
                 'updatedAt' => now(),
             ],
         );
+
+        $this->call([
+            ScorecardSeeder::class,
+        ]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ScorecardSummaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -9,6 +10,10 @@ use Inertia\Response;
 
 class PerformanceController extends Controller
 {
+    public function __construct(
+        private readonly ScorecardSummaryService $scorecard,
+    ) {}
+
     // ── Direktur list for lookup ───────────────────────────────────────────
     private array $direkturList = [
         'DIRUT' => ['kode' => 'DIRUT', 'nama' => 'Denaldy Mulino Mauna',     'jabatan' => 'Direktur Utama',                           'slug' => 'dirut'],
@@ -22,29 +27,55 @@ class PerformanceController extends Controller
     // ── KPI Kolegial Overview ─────────────────────────────────────────────
     public function kolegial(Request $request): Response
     {
-        $periode = $request->query('periode', '2026-03');
+        $periode = $request->query('periode') ?? now()->format('Y-m');
+        $grid = $this->scorecard->direktoratGrid($request->user(), $periode);
+
+        // total_kpi & perspektif extended metadata kept static — these are
+        // organizational facts not currently in the scorecard table; can be
+        // promoted to a separate table when KPI catalog UI lands (Phase 3).
+        $totalKpiByCode = ['DIRUT' => 12, 'DBS' => 10, 'DAS' => 10, 'DPP' => 18, 'DSU' => 10, 'DKM' => 10];
+        $perspektifByCode = ['DIRUT' => ['Ekonomi & Sosial', 'IMB', 'Teknologi', 'Investasi', 'Talenta']];
+
+        // Compute summary stats from the (scoped) grid
+        $totalKpi = array_sum(array_intersect_key($totalKpiByCode, array_flip(array_column($grid, 'kode'))));
+        $avgCapaian = count($grid) > 0
+            ? round(array_sum(array_column($grid, 'nilai')) / count($grid), 1)
+            : 0;
+        $memenuhi = count(array_filter($grid, fn ($d) => $d['nilai'] >= 100));
+        $belowTarget = array_values(array_filter($grid, fn ($d) => $d['nilai'] < 80));
 
         $stats = [
-            ['label' => 'Total KPI Kolegial', 'value' => '58',     'color' => 'muted'],
-            ['label' => 'Rata-rata Capaian',   'value' => '94.7%',  'color' => 'green'],
-            ['label' => 'Memenuhi Target',     'value' => '4',      'sub' => 'dari 6 direktur',              'color' => 'green'],
-            ['label' => 'Di Bawah Target',     'value' => '1',      'sub' => 'Dir. Produksi 65.6%',          'color' => 'red'],
+            ['label' => 'Total KPI Kolegial', 'value' => (string) $totalKpi,                    'color' => 'muted'],
+            ['label' => 'Rata-rata Capaian',  'value' => $avgCapaian . '%',                     'color' => $avgCapaian >= 90 ? 'green' : ($avgCapaian >= 80 ? 'amber' : 'red')],
+            ['label' => 'Memenuhi Target',    'value' => (string) $memenuhi,
+                'sub'   => 'dari ' . count($grid) . ' direktur',
+                'color' => $memenuhi === count($grid) ? 'green' : ($memenuhi >= count($grid) / 2 ? 'amber' : 'red'),
+            ],
+            ['label' => 'Di Bawah Target',    'value' => (string) count($belowTarget),
+                'sub'   => $belowTarget ? 'Dir. ' . explode(' ', $belowTarget[0]['nama'])[1] . ' ' . round($belowTarget[0]['nilai'], 1) . '%' : '—',
+                'color' => $belowTarget ? 'red' : 'green',
+            ],
         ];
 
-        $dirut = [
-            ...$this->direkturList['DIRUT'],
-            'nilai'       => 102.92,
-            'total_kpi'   => 12,
-            'perspektif'  => ['Ekonomi & Sosial', 'IMB', 'Teknologi', 'Investasi', 'Talenta'],
-        ];
+        // Build dirut + direktur arrays from grid (scoped). DIRUT first if present,
+        // others as the rest. KADIV/KASUBDIV scope returns just their own row.
+        $dirutRow = collect($grid)->firstWhere('kode', 'DIRUT');
+        $dirut = $dirutRow ? [
+            ...($this->direkturList[$dirutRow['kode']] ?? []),
+            'nilai'      => $dirutRow['nilai'],
+            'total_kpi'  => $totalKpiByCode[$dirutRow['kode']] ?? 0,
+            'perspektif' => $perspektifByCode[$dirutRow['kode']] ?? [],
+        ] : null;
 
-        $direktur = [
-            [...$this->direkturList['DBS'],  'nilai' => 99.13,  'total_kpi' => 10],
-            [...$this->direkturList['DAS'],  'nilai' => 99.66,  'total_kpi' => 10],
-            [...$this->direkturList['DPP'],  'nilai' => 65.58,  'total_kpi' => 18],
-            [...$this->direkturList['DSU'],  'nilai' => 101.86, 'total_kpi' => 10],
-            [...$this->direkturList['DKM'],  'nilai' => 101.85, 'total_kpi' => 10],
-        ];
+        $direktur = collect($grid)
+            ->filter(fn ($d) => $d['kode'] !== 'DIRUT')
+            ->map(fn ($d) => [
+                ...($this->direkturList[$d['kode']] ?? ['kode' => $d['kode'], 'nama' => $d['nama'], 'jabatan' => $d['nama'], 'slug' => strtolower($d['kode'])]),
+                'nilai'     => $d['nilai'],
+                'total_kpi' => $totalKpiByCode[$d['kode']] ?? 0,
+            ])
+            ->values()
+            ->all();
 
         return Inertia::render('Performance/KolegialView', compact('stats', 'dirut', 'direktur', 'periode'));
     }
@@ -64,69 +95,29 @@ class PerformanceController extends Controller
     // ── Scorecard Direktorat & Divisi ─────────────────────────────────────
     public function scorecard(Request $request): Response
     {
-        $periode = $request->query('periode', '2026-03');
+        $periode = $request->query('periode') ?? now()->format('Y-m');
+        $user = $request->user();
 
-        $topDirektorat = [
-            ['rank' => 1, 'nama' => 'Direktur Utama',                       'kode' => 'DIRUT', 'nilai' => 102.92],
-            ['rank' => 2, 'nama' => 'Direktur SDM & Umum',                  'kode' => 'DSU',   'nilai' => 101.86],
-            ['rank' => 3, 'nama' => 'Direktur Keuangan & Manajemen Risiko', 'kode' => 'DKM',   'nilai' => 101.85],
-        ];
+        $direktoratGrid = $this->scorecard->direktoratGrid($user, $periode);
+        $topDirektorat = $this->scorecard->topDirektorat($user, 3, $periode);
 
-        $topDivisi = [
-            ['rank' => 1, 'nama' => 'DMAS',  'sub' => 'Divisi Manajemen Aset',                      'nilai' => 104.40],
-            ['rank' => 2, 'nama' => 'DKSA',  'sub' => 'Divisi Keuangan Strategis dan Anggaran',     'nilai' => 102.27],
-            ['rank' => 3, 'nama' => 'DSPS',  'sub' => 'Divisi Strategi dan Pengembangan SDM',       'nilai' => 102.24],
-        ];
+        // topDivisi computed from grid — flatten all divisi rows in scope,
+        // sort by nilai desc, take top 3. Includes "sub" full name for display.
+        $allDivisi = collect($direktoratGrid)
+            ->flatMap(fn ($dir) => collect($dir['divisi'])->map(fn ($div) => [
+                'kode' => $div['kode'],
+                'sub'  => 'Divisi ' . $div['nama'],
+                'nilai' => $div['nilai'],
+            ]))
+            ->sortByDesc('nilai')
+            ->values();
 
-        $direktoratGrid = [
-            [
-                'kode' => 'DIRUT', 'nama' => 'Direktur Utama', 'nilai' => 102.92,
-                'divisi' => [
-                    ['kode' => 'DSPI', 'nama' => 'Satuan Pengawasan Intern',  'nilai' => 100.00],
-                    ['kode' => 'DSPN', 'nama' => 'Sekretariat Perusahaan',    'nilai' => 99.72],
-                ],
-            ],
-            [
-                'kode' => 'DBS', 'nama' => 'Direktur Bisnis', 'nilai' => 99.13,
-                'divisi' => [
-                    ['kode' => 'DSMK', 'nama' => 'Strategi & Manajemen Kinerja Korporasi', 'nilai' => 101.95],
-                    ['kode' => 'DPPN', 'nama' => 'Pemasaran dan Penjualan',                'nilai' => 97.84],
-                    ['kode' => 'DTDI', 'nama' => 'Transformasi Digital',                   'nilai' => 102.19],
-                ],
-            ],
-            [
-                'kode' => 'DAS', 'nama' => 'Direktur Aset', 'nilai' => 99.66,
-                'divisi' => [
-                    ['kode' => 'DHKM', 'nama' => 'Hubungan Kelembagaan & Hukum', 'nilai' => 97.27],
-                    ['kode' => 'DMAS', 'nama' => 'Manajemen Aset',               'nilai' => 104.40],
-                ],
-            ],
-            [
-                'kode' => 'DPP', 'nama' => 'Direktur Produksi & Pengembangan', 'nilai' => 65.58,
-                'divisi' => [
-                    ['kode' => 'DKSR', 'nama' => 'Kelapa Sawit dan Karet',                   'nilai' => 99.74],
-                    ['kode' => 'DATN', 'nama' => 'Aneka Tanaman',                             'nilai' => 64.19],
-                    ['kode' => 'PMKH', 'nama' => 'PMO Pengembangan Komoditi & Hilirisasi',   'nilai' => 101.00],
-                    ['kode' => 'PTPP', 'nama' => 'PMO Tanaman Pangan dan Peternakan',        'nilai' => 102.00],
-                ],
-            ],
-            [
-                'kode' => 'DSU', 'nama' => 'Direktur SDM & Umum', 'nilai' => 101.86,
-                'divisi' => [
-                    ['kode' => 'DSPS', 'nama' => 'Strategi dan Pengembangan SDM', 'nilai' => 102.24],
-                    ['kode' => 'DOPS', 'nama' => 'Operasional SDM',               'nilai' => 101.24],
-                    ['kode' => 'DPDU', 'nama' => 'Pengadaan dan Umum',            'nilai' => 100.94],
-                ],
-            ],
-            [
-                'kode' => 'DKM', 'nama' => 'Direktur Keuangan & MR', 'nilai' => 101.85,
-                'divisi' => [
-                    ['kode' => 'DKSA', 'nama' => 'Keuangan Strategis & Anggaran', 'nilai' => 102.27],
-                    ['kode' => 'DAPN', 'nama' => 'Akuntansi dan Perpajakan',       'nilai' => 100.86],
-                    ['kode' => 'DIMR', 'nama' => 'Manajemen Risiko',               'nilai' => 101.96],
-                ],
-            ],
-        ];
+        $topDivisi = $allDivisi->take(3)->map(fn ($d, $i) => [
+            'rank' => $i + 1,
+            'nama' => $d['kode'],
+            'sub'  => $d['sub'],
+            'nilai' => $d['nilai'],
+        ])->values()->all();
 
         return Inertia::render('Performance/ScorecardView', compact(
             'topDirektorat', 'topDivisi', 'direktoratGrid', 'periode'

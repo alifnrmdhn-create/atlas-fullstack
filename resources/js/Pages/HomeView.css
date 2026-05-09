@@ -1,4 +1,4 @@
-/* HomeViewV2 — flush typography-first layout.
+/* HomeView — flush typography-first layout.
  *
  * Design philosophy: restraint. No decorative card wrappers, no gradient mesh,
  * no glass effects. Single white surface. Sections separated by hairlines and
@@ -565,12 +565,17 @@
 
 /* ─── Hero card ────────────────────────────────────────────── */
 
+/* Hero card — neutral surface, tone signal carried entirely by the left
+ * rail (5px) and the icon. No background tint, no soft drop shadow. The
+ * earlier "tinted bg + tinted icon container + tinted rail + soft chrome"
+ * stack read as generic templated card; stripping back to one decisive
+ * tone marker reads more intentional and editorial. */
 .hv__pri-hero {
   position: relative;
   display: flex;
   align-items: stretch;
   padding: 0;
-  border-radius: 14px;
+  border-radius: 10px;
   border: 1px solid var(--panel-border);
   background: var(--panel);
   overflow: hidden;
@@ -578,9 +583,8 @@
   text-align: left;
   font-family: inherit;
   min-height: 200px;
-  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Without a context list (no rich item rows inside hero), shrink to natural
@@ -590,25 +594,8 @@
   min-height: 140px;
 }
 
-/* Faint tone tint via gradient — adds visual signal without noise.
- * Only the leading 30% gets the tint; rest fades to panel color. */
-.hv__pri-hero[data-tone="red"] {
-  background: linear-gradient(135deg,
-    color-mix(in srgb, var(--red) 5%, var(--panel)) 0%,
-    var(--panel) 55%);
-}
-
-.hv__pri-hero[data-tone="amber"] {
-  background: linear-gradient(135deg,
-    color-mix(in srgb, var(--yellow) 5%, var(--panel)) 0%,
-    var(--panel) 55%);
-}
-
 .hv__pri-hero:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 14px 28px var(--surface-overlay),
-    0 3px 8px var(--surface-overlay-soft);
+  transform: translateY(-1px);
   border-color: var(--panel-border-strong);
 }
 
@@ -617,14 +604,15 @@
   box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.35);
 }
 
+/* Rail span removed from layout (display: none). Vertical decorative bars
+ * read as templated AI-card pattern. Tone moved to card border-left. */
 .hv__pri-hero-rail {
-  width: 4px;
-  flex-shrink: 0;
-  align-self: stretch;
+  display: none;
 }
 
-.hv__pri-hero[data-tone="red"]   .hv__pri-hero-rail { background: var(--red); }
-.hv__pri-hero[data-tone="amber"] .hv__pri-hero-rail { background: var(--yellow); }
+/* Tone via card border-left only — structural, not decorative. */
+.hv__pri-hero[data-tone="red"]   { border-left: 3px solid var(--red); }
+.hv__pri-hero[data-tone="amber"] { border-left: 3px solid var(--yellow); }
 
 .hv__pri-hero-content {
   flex: 1;
@@ -637,30 +625,33 @@
 
 .hv__pri-hero-head {
   display: grid;
-  grid-template-columns: 48px 1fr;
-  gap: 16px;
+  grid-template-columns: 32px 1fr;
+  gap: 14px;
   align-items: start;
 }
 
+/* Icon — naked stroke glyph (no tinted container). The rose/yellow "pill"
+ * container was the dominant AI-slop pattern; replacing with bare colored
+ * icon brings the card more in line with Linear/Stripe — typographic tone
+ * via icon color, not via decorative chrome. */
 .hv__pri-hero-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   margin-top: 2px;
+  width: 28px;
+  height: 28px;
   transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .hv__pri-hero-icon > svg {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
 }
 
-.hv__pri-hero[data-tone="red"]   .hv__pri-hero-icon { background: var(--red-dim);    color: var(--red); }
-.hv__pri-hero[data-tone="amber"] .hv__pri-hero-icon { background: var(--yellow-dim); color: var(--yellow); }
+.hv__pri-hero[data-tone="red"]   .hv__pri-hero-icon { color: var(--red); }
+.hv__pri-hero[data-tone="amber"] .hv__pri-hero-icon { color: var(--yellow); }
 
 .hv__pri-hero:hover .hv__pri-hero-icon {
   transform: scale(1.06);
@@ -783,10 +774,10 @@
 .hv__pri-row {
   position: relative;
   display: grid;
-  grid-template-columns: 3px 28px 1fr 16px;
+  grid-template-columns: 20px 1fr 16px;
   gap: 12px;
   align-items: center;
-  padding: 14px 14px 14px 0;
+  padding: 14px;
   border-radius: 10px;
   border: 1px solid var(--panel-border-soft);
   background: var(--panel);
@@ -798,7 +789,6 @@
   min-height: 56px;
   max-height: 110px;
   transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1),
               border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -819,18 +809,19 @@
   box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.35);
 }
 
+/* Same treatment as hero — rail span removed from layout, tone via
+ * card border-left. display:none keeps the JSX backwards-compat. */
 .hv__pri-row-rail {
-  width: 3px;
-  align-self: stretch;
+  display: none;
 }
 
-.hv__pri-row[data-tone="red"]   .hv__pri-row-rail { background: var(--red); }
-.hv__pri-row[data-tone="amber"] .hv__pri-row-rail { background: var(--yellow); }
+.hv__pri-row[data-tone="red"]   { border-left: 3px solid var(--red); }
+.hv__pri-row[data-tone="amber"] { border-left: 3px solid var(--yellow); }
 
+/* Naked stroke icon — no tinted container. */
 .hv__pri-row-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 20px;
+  height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -838,8 +829,13 @@
   transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.hv__pri-row[data-tone="red"]   .hv__pri-row-icon { background: var(--red-dim);    color: var(--red); }
-.hv__pri-row[data-tone="amber"] .hv__pri-row-icon { background: var(--yellow-dim); color: var(--yellow); }
+.hv__pri-row-icon > svg {
+  width: 20px;
+  height: 20px;
+}
+
+.hv__pri-row[data-tone="red"]   .hv__pri-row-icon { color: var(--red); }
+.hv__pri-row[data-tone="amber"] .hv__pri-row-icon { color: var(--yellow); }
 
 .hv__pri-row:hover .hv__pri-row-icon {
   transform: scale(1.04);
@@ -1584,32 +1580,16 @@
  * pitch-black canvas. Bump tone mixes, strengthen borders, and add
  * subtle inset highlights to match the sidebar's premium dark feel. */
 
-/* Hero card — stronger tone tint, crisper border, inset highlight */
+/* Hero card — neutral panel in dark too. Tone signal stays in rail + icon
+ * (no bg tint that would compound with the dark surface). Crisper border
+ * and subtle inset highlight for the lift, no soft shadow. */
 [data-theme="dark"] .hv__pri-hero {
   border-color: rgba(255,255,255,0.10);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
 }
 
-[data-theme="dark"] .hv__pri-hero[data-tone="red"] {
-  background: linear-gradient(135deg,
-    color-mix(in srgb, var(--red) 14%, var(--panel)) 0%,
-    color-mix(in srgb, var(--red) 5%, var(--panel)) 45%,
-    var(--panel) 75%);
-}
-
-[data-theme="dark"] .hv__pri-hero[data-tone="amber"] {
-  background: linear-gradient(135deg,
-    color-mix(in srgb, var(--yellow) 14%, var(--panel)) 0%,
-    color-mix(in srgb, var(--yellow) 5%, var(--panel)) 45%,
-    var(--panel) 75%);
-}
-
 [data-theme="dark"] .hv__pri-hero:hover {
-  border-color: rgba(255,255,255,0.18);
-  box-shadow:
-    0 14px 28px rgba(0,0,0,0.45),
-    0 3px 8px rgba(0,0,0,0.30),
-    inset 0 1px 0 rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.20);
 }
 
 /* CTA pill — non-hover needs more presence on dark canvas */

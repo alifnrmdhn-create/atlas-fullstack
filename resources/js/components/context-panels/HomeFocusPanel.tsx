@@ -5,7 +5,7 @@ import { useWorkspace } from '../../hooks/useWorkspace'
 /**
  * Home context panel — "Fokus hari ini".
  *
- * Reads the same programSummary that HomeViewV2 uses, so counts here
+ * Reads the same programSummary that HomeView uses, so counts here
  * stay in sync with the alert strip on the main page. When Home is
  * still loading, the panel shows a low-noise empty state instead of
  * placeholder zeros.

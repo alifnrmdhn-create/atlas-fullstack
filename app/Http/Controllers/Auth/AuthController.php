@@ -52,7 +52,9 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->intended('/dashboard');
+        // Home V2 (/) is now the canonical landing page; /dashboard is legacy
+        // (still routable for power users via deep-link, not surfaced in UI).
+        return redirect()->intended('/');
     }
 
     public function logout(Request $request): RedirectResponse

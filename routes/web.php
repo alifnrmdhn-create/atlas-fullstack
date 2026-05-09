@@ -35,14 +35,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Home — PDCA two-column dashboard (KPI Achievement + Leading Program).
-    // Legacy HomeView.tsx kept on disk for revert; reachable at /home-legacy.
-    Route::get('/', function (\App\Services\ScorecardSummaryService $scorecard) {
-        return Inertia::render('HomeViewV2', [
-            'scorecardSnapshot' => $scorecard->homeSnapshot(),
+    Route::get('/', function (\Illuminate\Http\Request $request, \App\Services\ScorecardSummaryService $scorecard) {
+        return Inertia::render('HomeView', [
+            'scorecardSnapshot' => $scorecard->homeSnapshot($request->user()),
         ]);
     })->name('home');
-    Route::get('/home-legacy', fn () => Inertia::render('HomeView'))->name('home.legacy');
-    // /dashboard tetap dipertahankan: endpoint ini juga melayani JSON API yang
+    // /dashboard tetap dipertahankan: endpoint ini melayani JSON API yang
     // dipakai HomeView (lihat resources/js/context/workspace.tsx). Kita hanya
     // menghapus item dari sidebar; halaman Inertia tetap accessible via deep link.
     Route::get('/dashboard', [WorkspaceController::class, 'dashboard'])->name('dashboard');
