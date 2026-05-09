@@ -89,9 +89,218 @@ function useCountUp(target: number, opts: { duration?: number; delay?: number } 
   return value
 }
 
+/* ─── Flash-on-change hook ──────────────────────────────────
+ * Triggers a one-shot CSS animation on the target element when its
+ * tracked value changes (post-mount only — first render is skipped so
+ * count-up animation owns the initial reveal).
+ *
+ * Implementation: DOM ref + classList toggle + forced reflow. This is
+ * required because re-applying the same class doesn't restart a CSS
+ * animation; we have to remove → reflow → re-add to retrigger when
+ * the value changes again before the previous flash finishes. */
+function useFlashOnChange(
+  ref: React.RefObject<HTMLElement | null>,
+  value: number,
+  duration = 1500,
+) {
+  const prevRef = React.useRef(value)
+  const firstRenderRef = React.useRef(true)
+
+  React.useEffect(() => {
+    if (firstRenderRef.current) {
+      firstRenderRef.current = false
+      prevRef.current = value
+      return
+    }
+    if (prevRef.current === value) return
+    prevRef.current = value
+
+    const el = ref.current
+    if (!el) return
+
+    el.classList.remove('hv-flashing')
+    /* force reflow so re-adding the class restarts the animation */
+    void el.offsetHeight
+    el.classList.add('hv-flashing')
+
+    const t = setTimeout(() => el.classList.remove('hv-flashing'), duration)
+    return () => clearTimeout(t)
+  }, [value, duration, ref])
+}
+
+/* ─── Priority ranking ──────────────────────────────────────
+ * Score = base(tone) + magnitude + proximity + ownership.
+ *   base:        red 1000, amber 500
+ *   magnitude:   per-type multiplier × count (more items = more urgent)
+ *   proximity:   tlm only — how many days overdue the worst program is,
+ *                capped to avoid one ancient program dominating forever
+ *   ownership:   needsAction = always user's queue, small constant boost
+ *
+ * Highest score = hero. Sort descending; secondaries take the rest. */
+
+type PriorityCtx = {
+  tlm: number
+  belowTargetCount: number
+  needsActionCount: number
+  criticalControlCount: number
+  /** Most negative daysRemaining among overdue/terlambat programs (0 if none). */
+  mostOverdueDays: number
+}
+
+function priorityScore(p: { id: string; tone: 'red' | 'amber' }, ctx: PriorityCtx): number {
+  let score = p.tone === 'red' ? 1000 : 500
+
+  switch (p.id) {
+    case 'tlm':
+      score += ctx.tlm * 50
+      if (ctx.mostOverdueDays < 0) {
+        score += Math.min(Math.abs(ctx.mostOverdueDays) * 2, 100)
+      }
+      break
+    case 'belowTarget':
+      score += ctx.belowTargetCount * 30
+      break
+    case 'needsAction':
+      score += ctx.needsActionCount * 20 + 30 /* ownership boost */
+      break
+    case 'criticalControl':
+      score += ctx.criticalControlCount * 25
+      break
+  }
+
+  return score
+}
+
+/* ─── Narrative summary ─────────────────────────────────────
+ * Rule-based template engine. Generates a 1-2 sentence summary line
+ * shown below the greeting. Aligned with hero priority (same item that
+ * leads the hero card also leads the narrative) so the page reads as
+ * one coherent voice.
+ *
+ * Tone: formal-warm Indonesian (BUMN-appropriate). Always ends with a
+ * subtle posture suggestion ("perlu intervensi", "siap ditelaah") so
+ * the reader gets *meaning*, not just numbers. */
+
+type NarrativeCtx = {
+  dayOfWeek: number /* 0=Sunday, 6=Saturday */
+  tlm: number
+  belowTargetCount: number
+  belowTargetWorst: { nama: string; nilai: number; periode: string } | null
+  needsActionCount: number
+  criticalControlCount: number
+}
+
+function NarrativeNum({ children, tone = 'red' }: { children: ReactNode; tone?: 'red' | 'amber' | 'green' }) {
+  return <span className="hv__narrative-num" data-tone={tone}>{children}</span>
+}
+
+function buildNarrative(ctx: NarrativeCtx, heroId: string | null): ReactNode {
+  const {
+    dayOfWeek, tlm, belowTargetCount, belowTargetWorst,
+    needsActionCount, criticalControlCount,
+  } = ctx
+
+  /* Variant: zero-state (weekday vs weekend) */
+  if (heroId === null) {
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return <>Akhir pekan tenang — semua direktorat hijau dan tidak ada inisiatif tertunda.</>
+    }
+    return <>Hari ini terkendali — semua direktorat dalam target dan tidak ada keputusan tertunda.</>
+  }
+
+  /* Build "selain itu" mentions of non-hero open items, in priority order.
+   * Each mention is a short ReactNode fragment with tone-colored numbers. */
+  const otherMentions: ReactNode[] = []
+  if (heroId !== 'tlm' && tlm > 0) {
+    otherMentions.push(
+      <><NarrativeNum tone="red">{tlm} program</NarrativeNum> terlambat</>
+    )
+  }
+  if (heroId !== 'belowTarget' && belowTargetCount > 0 && belowTargetWorst) {
+    otherMentions.push(
+      <>KPI <strong>{belowTargetWorst.nama}</strong> turun</>
+    )
+  }
+  if (heroId !== 'needsAction' && needsActionCount > 0) {
+    otherMentions.push(
+      <><NarrativeNum tone="amber">{needsActionCount} keputusan</NarrativeNum> menunggu</>
+    )
+  }
+  if (heroId !== 'criticalControl' && criticalControlCount > 0) {
+    otherMentions.push(
+      <><NarrativeNum tone="amber">{criticalControlCount} kontrol kritis</NarrativeNum> terbuka</>
+    )
+  }
+
+  /* Render "Selain itu, X, Y, dan Z." with formal Indonesian conjunctions:
+   *   2 items  → "A dan B"          (no comma before "dan")
+   *   3+ items → "A, B, dan C"      (Oxford comma — formal BUMN preference) */
+  const others: ReactNode = otherMentions.length > 0 ? (
+    <>
+      {' Selain itu, '}
+      {otherMentions.map((item, i) => {
+        let separator = ''
+        if (i > 0) {
+          if (i === otherMentions.length - 1) {
+            separator = otherMentions.length === 2 ? ' dan ' : ', dan '
+          } else {
+            separator = ', '
+          }
+        }
+        return (
+          <React.Fragment key={i}>
+            {separator}
+            {item}
+          </React.Fragment>
+        )
+      })}
+      .
+    </>
+  ) : null
+
+  /* Hero-led narrative bodies */
+  switch (heroId) {
+    case 'tlm':
+      return (
+        <>
+          <NarrativeNum tone="red">{tlm} program</NarrativeNum> sudah melewati tenggat — perlu intervensi sebelum eskalasi lebih lanjut.{others}
+        </>
+      )
+    case 'belowTarget':
+      if (belowTargetWorst) {
+        return (
+          <>
+            KPI <strong>{belowTargetWorst.nama}</strong> turun ke{' '}
+            <NarrativeNum tone="red">{belowTargetWorst.nilai.toFixed(2)}%</NarrativeNum>{' '}
+            pada periode {belowTargetWorst.periode} — di bawah target.{others}
+          </>
+        )
+      }
+      return (
+        <>
+          <NarrativeNum tone="red">{belowTargetCount} direktorat</NarrativeNum> di bawah target periode ini — perlu telaah lebih dalam.{others}
+        </>
+      )
+    case 'needsAction':
+      return (
+        <>
+          <NarrativeNum tone="amber">{needsActionCount} hal</NarrativeNum> menunggu keputusan Anda di Fokus — approval dan eskalasi siap ditelaah.{others}
+        </>
+      )
+    case 'criticalControl':
+      return (
+        <>
+          <NarrativeNum tone="amber">{criticalControlCount} kontrol kritis</NarrativeNum> terbuka — risiko CRITICAL/HIGH belum tertutup.{others}
+        </>
+      )
+    default:
+      return null
+  }
+}
+
 /* ─── Page ──────────────────────────────────────────────────── */
 
-type PriorityIcon = 'alert' | 'trend-down' | 'approval' | 'shield'
+type PriorityIcon = 'alert' | 'trend-down' | 'approval' | 'shield' | 'check'
 
 type Priority = {
   id: string
@@ -149,6 +358,12 @@ function PriorityGlyph({ name }: { name: PriorityIcon }) {
           <path d="M12 3 L20 6 V13 C20 17 16 20 12 21 C8 20 4 17 4 13 V6 Z" />
           <line x1="12" y1="10" x2="12" y2="14" />
           <circle cx="12" cy="17" r="0.5" fill="currentColor" />
+        </svg>
+      )
+    case 'check':
+      return (
+        <svg {...common}>
+          <polyline points="4,12 10,18 20,7" />
         </svg>
       )
   }
@@ -215,6 +430,7 @@ export default function HomeViewV2() {
 
   const onTargetCount = scorecard.totalDirektorat - scorecard.belowTarget.length
   const actionCount = tlm + needsAction.length + criticalControlCount
+  const now = new Date()
 
   /* Count-up — delays aligned with section stagger fade-in (stats=260ms,
    * portfolio=380ms). Numbers tick up just as their section settles in. */
@@ -223,6 +439,20 @@ export default function HomeViewV2() {
   const totalAnim = useCountUp(summary.total, { delay: 300, duration: 700 })
   const avgKpiAnim = useCountUp(scorecard.avgDirektorat, { delay: 420, duration: 800 })
   const totalPortfolioAnim = useCountUp(summary.total, { delay: 420, duration: 700 })
+
+  /* Real-time flash — when these values change (via SSE or partial Inertia
+   * reload), the corresponding stat element flashes for 1.5s. First render
+   * is skipped (count-up handles the initial entry). */
+  const onTargetRef = React.useRef<HTMLSpanElement>(null)
+  const actionCountRef = React.useRef<HTMLSpanElement>(null)
+  const totalRef = React.useRef<HTMLSpanElement>(null)
+  const avgKpiRef = React.useRef<HTMLSpanElement>(null)
+  const totalPortfolioRef = React.useRef<HTMLSpanElement>(null)
+  useFlashOnChange(onTargetRef, onTargetCount)
+  useFlashOnChange(actionCountRef, actionCount)
+  useFlashOnChange(totalRef, summary.total)
+  useFlashOnChange(avgKpiRef, scorecard.avgDirektorat)
+  useFlashOnChange(totalPortfolioRef, summary.total)
 
   const priorities: Priority[] = []
   if (tlm > 0) {
@@ -288,6 +518,42 @@ export default function HomeViewV2() {
     })
   }
 
+  /* Rank by composite score — hero = top, rest = secondaries.
+   * Severity (tone) dominates; magnitude breaks ties within same tone. */
+  const mostOverdueDays = attentionPrograms
+    .filter(p => p.healthTone === 'overdue' || p.healthTone === 'terlambat')
+    .reduce((min, p) => (
+      p.daysRemaining !== null && p.daysRemaining < min ? p.daysRemaining : min
+    ), 0)
+
+  const priorityCtx: PriorityCtx = {
+    tlm,
+    belowTargetCount: scorecard.belowTarget.length,
+    needsActionCount: needsAction.length,
+    criticalControlCount,
+    mostOverdueDays,
+  }
+
+  const ranked = [...priorities].sort(
+    (a, b) => priorityScore(b, priorityCtx) - priorityScore(a, priorityCtx)
+  )
+  const heroPriority = ranked[0]
+  const secondaryPriorities = ranked.slice(1)
+
+  /* Narrative summary — aligned with hero so page voice stays coherent. */
+  const narrative = buildNarrative({
+    dayOfWeek: now.getDay(),
+    tlm,
+    belowTargetCount: scorecard.belowTarget.length,
+    belowTargetWorst: scorecard.belowTarget.length > 0 ? {
+      nama: scorecard.belowTarget[0].nama,
+      nilai: scorecard.belowTarget[0].nilai,
+      periode: scorecard.periode,
+    } : null,
+    needsActionCount: needsAction.length,
+    criticalControlCount,
+  }, heroPriority?.id ?? null)
+
   // Trend
   const trendValues = (trendSeries ?? []).slice(-14).map(t => t.pctOnTrack)
   const trendDelta = trendValues.length >= 2
@@ -296,8 +562,6 @@ export default function HomeViewV2() {
 
   // Status breakdown total — clamp to ≥1 for safe pct math
   const statusTotal = Math.max(summary.onTrack + summary.atRisk + tlm + draftPipeline, 1)
-
-  const now = new Date()
 
   return (
     <>
@@ -309,14 +573,19 @@ export default function HomeViewV2() {
            * slim topbar. Salin tautan / Ekspor moved to the actions row
            * next to greeting (kept available, just smaller footprint). */}
 
-          {/* ─── Greeting (display) — name in brand green ─ */}
-          <h1 className="hv__greeting">
-            {getGreeting()},{' '}
-            <span className="hv__greeting-name">
-              {currentUser?.name?.split(' ')[0] ?? 'Anda'}
-            </span>
-            .
-          </h1>
+          {/* ─── Greeting + narrative summary ────────────── */}
+          <div className="hv__greeting-block">
+            <h1 className="hv__greeting">
+              {getGreeting()},{' '}
+              <span className="hv__greeting-name">
+                {currentUser?.name?.split(' ')[0] ?? 'Anda'}
+              </span>
+              .
+            </h1>
+            {narrative && (
+              <p className="hv__narrative">{narrative}</p>
+            )}
+          </div>
 
           {/* ─── Stats row — number + visual context ────── */}
           <div className="hv__stats">
@@ -324,7 +593,7 @@ export default function HomeViewV2() {
               <span className="hv__eyebrow">
                 <span className="hv__eyebrow-dot" aria-hidden /> On target
               </span>
-              <span className="hv__big">
+              <span className="hv__big" ref={onTargetRef}>
                 {Math.round(onTargetAnim)}<span className="hv__big-denom">/{scorecard.totalDirektorat}</span>
               </span>
               {/* Discrete dots — one per direktorat, filled if on target */}
@@ -345,7 +614,7 @@ export default function HomeViewV2() {
               <span className="hv__eyebrow">
                 <span className="hv__eyebrow-dot" aria-hidden /> Perlu aksi
               </span>
-              <span className="hv__big">{Math.round(actionCountAnim)}</span>
+              <span className="hv__big" ref={actionCountRef}>{Math.round(actionCountAnim)}</span>
               {/* Breakdown chip row — visualizes what's inside the action count */}
               {actionCount > 0 && (
                 <span className="hv__stat-chips" aria-hidden>
@@ -364,7 +633,7 @@ export default function HomeViewV2() {
               <span className="hv__eyebrow">
                 <span className="hv__eyebrow-dot" aria-hidden /> Program aktif
               </span>
-              <span className="hv__big">{Math.round(totalAnim)}</span>
+              <span className="hv__big" ref={totalRef}>{Math.round(totalAnim)}</span>
               {/* Status composition track — one segment per program, colored by health */}
               <span className="hv__stat-track" aria-hidden>
                 {summary.onTrack > 0 && <span data-tone="green" style={{ flex: summary.onTrack }} />}
@@ -378,58 +647,59 @@ export default function HomeViewV2() {
             </div>
           </div>
 
-          {/* ─── Priorities — Hero + Secondaries ─────── */}
-          {priorities.length > 0 && (
-            <section className="hv__section">
-              <header className="hv__sec-head">
-                <h2 className="hv__sec-title">Yang penting hari ini</h2>
-                <span className="hv__sec-meta">{priorities.length} hal</span>
-              </header>
-              <div className="hv__pri-grid" data-count={priorities.length}>
-                {/* Hero — most severe priority gets full visual weight */}
-                {priorities[0] && (
-                  <button
-                    type="button"
-                    className="hv__pri-hero"
-                    data-tone={priorities[0].tone}
-                    onClick={priorities[0].onClick}
-                  >
-                    <span className="hv__pri-hero-rail" aria-hidden />
-                    <div className="hv__pri-hero-content">
-                      <div className="hv__pri-hero-head">
-                        <span className="hv__pri-hero-icon" aria-hidden>
-                          <PriorityGlyph name={priorities[0].icon} />
-                        </span>
-                        <div className="hv__pri-hero-text">
-                          <span className="hv__pri-hero-primary">{priorities[0].primary}</span>
-                          <span className="hv__pri-hero-secondary">{priorities[0].secondary}</span>
-                        </div>
-                      </div>
+          {/* ─── Priorities — Hero + Secondaries (or empty-state) ─────── */}
+          <section className="hv__section">
+            <header className="hv__sec-head">
+              <h2 className="hv__sec-title">
+                {ranked.length > 0 ? 'Yang penting hari ini' : 'Status hari ini'}
+              </h2>
+              <span className="hv__sec-meta">
+                {ranked.length > 0 ? `${ranked.length} hal` : 'terkendali'}
+              </span>
+            </header>
 
-                      {priorities[0].contextList && priorities[0].contextList.length > 0 && (
-                        <div className="hv__pri-hero-list">
-                          {priorities[0].contextList.map((item, idx) => (
-                            <div key={idx} className="hv__pri-hero-list-row">
-                              <span className="hv__pri-hero-list-code">{item.code}</span>
-                              <span className="hv__pri-hero-list-name">{item.name}</span>
-                              <span className="hv__pri-hero-list-meta">{item.meta}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="hv__pri-hero-cta">
-                        <span>{priorities[0].ctaLabel ?? 'Buka detail'}</span>
-                        <span aria-hidden className="hv__pri-hero-cta-arrow">→</span>
+            {heroPriority ? (
+              <div className="hv__pri-grid" data-count={ranked.length}>
+                <button
+                  type="button"
+                  className="hv__pri-hero"
+                  data-tone={heroPriority.tone}
+                  onClick={heroPriority.onClick}
+                >
+                  <span className="hv__pri-hero-rail" aria-hidden />
+                  <div className="hv__pri-hero-content">
+                    <div className="hv__pri-hero-head">
+                      <span className="hv__pri-hero-icon" aria-hidden>
+                        <PriorityGlyph name={heroPriority.icon} />
+                      </span>
+                      <div className="hv__pri-hero-text">
+                        <span className="hv__pri-hero-primary">{heroPriority.primary}</span>
+                        <span className="hv__pri-hero-secondary">{heroPriority.secondary}</span>
                       </div>
                     </div>
-                  </button>
-                )}
 
-                {/* Secondary rows — remaining priorities, slim format */}
-                {priorities.length > 1 && (
+                    {heroPriority.contextList && heroPriority.contextList.length > 0 && (
+                      <div className="hv__pri-hero-list">
+                        {heroPriority.contextList.map((item, idx) => (
+                          <div key={idx} className="hv__pri-hero-list-row">
+                            <span className="hv__pri-hero-list-code">{item.code}</span>
+                            <span className="hv__pri-hero-list-name">{item.name}</span>
+                            <span className="hv__pri-hero-list-meta">{item.meta}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="hv__pri-hero-cta">
+                      <span>{heroPriority.ctaLabel ?? 'Buka detail'}</span>
+                      <span aria-hidden className="hv__pri-hero-cta-arrow">→</span>
+                    </div>
+                  </div>
+                </button>
+
+                {secondaryPriorities.length > 0 && (
                   <div className="hv__pri-list">
-                    {priorities.slice(1).map(p => (
+                    {secondaryPriorities.map(p => (
                       <button
                         key={p.id}
                         type="button"
@@ -451,8 +721,34 @@ export default function HomeViewV2() {
                   </div>
                 )}
               </div>
-            </section>
-          )}
+            ) : (
+              /* Empty state — celebratory card. All clear, all green. */
+              <button
+                type="button"
+                className="hv__pri-celebration"
+                onClick={() => navigate('/performance/scorecard')}
+              >
+                <span className="hv__pri-celebration-rail" aria-hidden />
+                <div className="hv__pri-celebration-content">
+                  <span className="hv__pri-celebration-icon" aria-hidden>
+                    <PriorityGlyph name="check" />
+                  </span>
+                  <div className="hv__pri-celebration-text">
+                    <span className="hv__pri-celebration-primary">
+                      Semua tertangani — pertahankan momentum
+                    </span>
+                    <span className="hv__pri-celebration-secondary">
+                      Tidak ada program terlambat, KPI direktorat dalam target,
+                      approval &amp; kontrol kritis kosong.
+                    </span>
+                  </div>
+                  <span className="hv__pri-celebration-link" aria-hidden>
+                    Lihat scorecard <span>→</span>
+                  </span>
+                </div>
+              </button>
+            )}
+          </section>
 
           {/* ─── Kesehatan Portofolio (KPI + Program 2-col) ─ */}
           <section className="hv__section hv__portfolio">
@@ -472,7 +768,7 @@ export default function HomeViewV2() {
                 </header>
 
                 <div className="hv__col-headline">
-                  <span className="hv__big" data-tone={scorecardTone(scorecard.avgDirektorat)}>
+                  <span className="hv__big" data-tone={scorecardTone(scorecard.avgDirektorat)} ref={avgKpiRef}>
                     {avgKpiAnim.toFixed(2)}<span className="hv__big-unit">%</span>
                   </span>
                   <span className="hv__sub">
@@ -534,7 +830,7 @@ export default function HomeViewV2() {
                 </header>
 
                 <div className="hv__col-headline">
-                  <span className="hv__big" data-tone={tlm > 0 ? 'red' : 'neutral'}>
+                  <span className="hv__big" data-tone={tlm > 0 ? 'red' : 'neutral'} ref={totalPortfolioRef}>
                     {Math.round(totalPortfolioAnim)}
                   </span>
                   <span className="hv__sub">
@@ -697,15 +993,19 @@ function BreakRow({
   const reducedMotion = typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const [animatedPct, setAnimatedPct] = React.useState(reducedMotion ? pct : 0)
+  const firstMountRef = React.useRef(true)
 
   React.useEffect(() => {
     if (reducedMotion) {
       setAnimatedPct(pct)
       return
     }
-    /* Delay aligned with portfolio col stagger fade-in (380ms) + per-row offset.
-     * CSS already has transition: width 480ms — setState triggers the animation. */
-    const t = setTimeout(() => setAnimatedPct(pct), 460 + index * 80)
+    /* On first mount: stagger delay aligned with portfolio col fade-in.
+     * On subsequent updates (SSE): no delay — let the CSS transition (480ms)
+     * carry the animation immediately so live data feels responsive. */
+    const delay = firstMountRef.current ? 460 + index * 80 : 0
+    firstMountRef.current = false
+    const t = setTimeout(() => setAnimatedPct(pct), delay)
     return () => clearTimeout(t)
   }, [pct, index, reducedMotion])
 

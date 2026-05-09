@@ -148,10 +148,22 @@
   box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.35);
 }
 
-/* ─── Display greeting ────────────────────────────────────── */
+/* ─── Display greeting + narrative ───────────────────────── */
+
+/* Greeting block wraps the H1 and the narrative <p>. Margin bottom
+ * lives on the wrapper, not the H1, so spacing remains stable across
+ * narrative-present vs narrative-absent renders (and the stagger
+ * fade-in still treats greeting+narrative as one cascading element). */
+.hv__greeting-block {
+  margin-bottom: 32px;
+}
+
+@media (max-width: 980px) {
+  .hv__greeting-block { margin-bottom: 24px; }
+}
 
 .hv__greeting {
-  margin: 0 0 30px;
+  margin: 0;
   font-size: 35px;
   font-weight: 700;
   letter-spacing: -0.028em;
@@ -166,7 +178,40 @@
 }
 
 @media (max-width: 980px) {
-  .hv__greeting { font-size: 26px; margin-bottom: 22px; }
+  .hv__greeting { font-size: 26px; }
+}
+
+/* Narrative summary — 1-2 sentence line under the greeting that makes
+ * the data tangible. Restrained typography (15px regular weight) so it
+ * reads as supporting prose, not a UI label. Tone-colored numbers within
+ * carry the urgency without overwhelming the line. */
+.hv__narrative {
+  margin: 10px 0 0;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--text);
+  letter-spacing: -0.005em;
+  max-width: 78ch;
+}
+
+.hv__narrative strong {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.hv__narrative-num {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.hv__narrative-num[data-tone="red"]   { color: var(--red); }
+.hv__narrative-num[data-tone="amber"] { color: var(--yellow); }
+.hv__narrative-num[data-tone="green"] { color: var(--indigo); }
+
+@media (max-width: 980px) {
+  .hv__narrative { font-size: 14px; margin-top: 8px; }
 }
 
 /* ─── Universal eyebrow + dot system ──────────────────────── */
@@ -267,6 +312,37 @@
 .hv__big[data-tone="amber"]   { color: var(--yellow); }
 .hv__big[data-tone="red"]     { color: var(--red); }
 .hv__big[data-tone="neutral"] { color: var(--text-strong); }
+
+/* Real-time flash — applied via JS classList toggle when value changes
+ * post-mount. Soft indigo bg fill behind digits + ring expanding outward.
+ * Total 1500ms; most prominent at 15%, mostly faded by 60%. */
+@keyframes hv-flash {
+  0% {
+    background-color: transparent;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--indigo) 0%, transparent);
+  }
+  15% {
+    background-color: color-mix(in srgb, var(--indigo) 14%, transparent);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--indigo) 16%, transparent);
+  }
+  60% {
+    background-color: color-mix(in srgb, var(--indigo) 6%, transparent);
+    box-shadow: 0 0 0 9px color-mix(in srgb, var(--indigo) 4%, transparent);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 14px color-mix(in srgb, var(--indigo) 0%, transparent);
+  }
+}
+
+.hv__big.hv-flashing {
+  animation: hv-flash 1500ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hv__big.hv-flashing { animation: none; }
+}
 
 .hv__big-denom {
   font-size: 18px;
@@ -507,6 +583,13 @@
               border-color 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Without a context list (no rich item rows inside hero), shrink to natural
+ * size — empty middle gap between secondary text and CTA looks awkward
+ * otherwise. :has() is supported in Chrome 105+ / Safari 15.4+ / FF 121+. */
+.hv__pri-hero:not(:has(.hv__pri-hero-list)) {
+  min-height: 140px;
+}
+
 /* Faint tone tint via gradient — adds visual signal without noise.
  * Only the leading 30% gets the tint; rest fades to panel color. */
 .hv__pri-hero[data-tone="red"] {
@@ -713,10 +796,17 @@
   overflow: hidden;
   flex: 1;
   min-height: 56px;
+  max-height: 110px;
   transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1),
               box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1),
               border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* When only 1 secondary exists (data-count="2"), don't let it stretch
+ * to hero height — bloated single row looks awkward. Natural height,
+ * top-aligned. */
+.hv__pri-grid[data-count="2"] .hv__pri-list { align-self: start; }
+.hv__pri-grid[data-count="2"] .hv__pri-row { flex: 0 0 auto; }
 
 .hv__pri-row:hover {
   transform: translateY(-1px);
@@ -798,6 +888,136 @@
 @media (max-width: 980px) {
   .hv__pri-hero { min-height: 0; }
   .hv__pri-row { min-height: 0; }
+}
+
+/* ─── Celebration empty state ────────────────────────────────
+ * Rendered when there are no urgent priorities — all green. Visually
+ * lighter than the hero card (no looming shadow, calm green tint) but
+ * still interactive: clicks through to scorecard for context. */
+
+.hv__pri-celebration {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  padding: 0;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--indigo) 18%, var(--panel-border));
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--indigo) 6%, var(--panel)) 0%,
+    color-mix(in srgb, var(--indigo) 2%, var(--panel)) 60%,
+    var(--panel) 100%);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  width: 100%;
+  overflow: hidden;
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hv__pri-celebration:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--indigo) 8%, transparent),
+    0 2px 4px var(--surface-overlay-soft);
+  border-color: color-mix(in srgb, var(--indigo) 28%, var(--panel-border));
+}
+
+.hv__pri-celebration:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.35);
+}
+
+.hv__pri-celebration-rail {
+  width: 4px;
+  flex-shrink: 0;
+  align-self: stretch;
+  background: var(--indigo);
+}
+
+.hv__pri-celebration-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 18px;
+  align-items: center;
+  padding: 22px 24px;
+  min-width: 0;
+}
+
+.hv__pri-celebration-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--indigo) 12%, transparent);
+  color: var(--indigo);
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hv__pri-celebration-icon > svg {
+  width: 22px;
+  height: 22px;
+}
+
+.hv__pri-celebration:hover .hv__pri-celebration-icon {
+  transform: scale(1.06);
+}
+
+.hv__pri-celebration-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hv__pri-celebration-primary {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--text-strong);
+  line-height: 1.35;
+  letter-spacing: -0.012em;
+}
+
+.hv__pri-celebration-secondary {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.hv__pri-celebration-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--indigo);
+  letter-spacing: -0.005em;
+  flex-shrink: 0;
+}
+
+.hv__pri-celebration-link > span {
+  transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hv__pri-celebration:hover .hv__pri-celebration-link > span {
+  transform: translateX(3px);
+}
+
+@media (max-width: 720px) {
+  .hv__pri-celebration-content {
+    grid-template-columns: 40px 1fr;
+    gap: 14px;
+    padding: 18px 18px;
+  }
+  .hv__pri-celebration-link {
+    grid-column: 1 / -1;
+    margin-top: 6px;
+  }
 }
 
 /* ─── KPI Achievement / Program Aktif grid ────────────────── */
