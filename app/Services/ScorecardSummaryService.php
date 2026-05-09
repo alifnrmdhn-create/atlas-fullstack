@@ -98,8 +98,9 @@ class ScorecardSummaryService
      *   periode: string,
      * }
      */
-    public function homeSnapshot(string $periode = '2026-03'): array
+    public function homeSnapshot(?string $periode = null): array
     {
+        $periode = $periode ?? now()->format('Y-m');
         $grid = $this->direktoratGrid();
         $avg = count($grid) > 0
             ? round(array_sum(array_column($grid, 'nilai')) / count($grid), 2)
