@@ -46,11 +46,13 @@
   align-items: center;
   justify-content: space-between;
   position: relative;
-  height: var(--topbar-height);
+  /* Decoupled from --topbar-height: brand block needs more breathing room
+   * than a pure utility topbar. 60px gives ~14px padding top/bottom around
+   * the 32px content. Linear/Stripe sidebar headers use similar height. */
+  height: 60px;
   padding: 0 8px 0 14px;
   flex-shrink: 0;
   gap: 8px;
-  border-bottom: 1px solid var(--sidebar-border);
   background: linear-gradient(180deg,
     color-mix(in srgb, var(--ptpn-green) 4%, transparent) 0%,
     transparent 60%);
@@ -119,7 +121,7 @@
   justify-content: center;
   min-width: 0;
   overflow: hidden;
-  gap: 2px;
+  gap: 5px;
   transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms;
 }
 .sidebar__brand-title {
@@ -128,7 +130,7 @@
   color: var(--sidebar-text-strong);
   white-space: nowrap;
   letter-spacing: 0.10em;
-  line-height: 1;
+  line-height: 1.15;
   font-feature-settings: 'cv11' on, 'ss01' on;
   background: linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, #ffffff 78%, var(--ptpn-green) 22%) 100%);
   -webkit-background-clip: text;
@@ -141,7 +143,7 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--sidebar-text-muted);
-  line-height: 1;
+  line-height: 1.15;
   white-space: nowrap;
   font-feature-settings: 'tnum';
 }
