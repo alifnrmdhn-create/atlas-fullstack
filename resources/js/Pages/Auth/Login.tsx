@@ -107,7 +107,22 @@ export default function Login({ errors: pageErrors }: PageProps) {
 
                 {/* Right panel — form */}
                 <div className="auth-form-side">
+                    <img className="auth-form-side__map" src={indonesiaMap} alt="" aria-hidden="true" />
                     <div className="auth-form-container">
+                        <div className="auth-mobile-brand" aria-hidden="true">
+                            <div className="auth-panel__mark">
+                                <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                                    <line x1="2.5" y1="18.5" x2="10" y2="2.5" />
+                                    <line x1="17.5" y1="18.5" x2="10" y2="2.5" />
+                                    <line x1="6.3" y1="11.5" x2="13.7" y2="11.5" />
+                                </svg>
+                            </div>
+                            <div className="auth-mobile-brand__copy">
+                                <strong className="auth-panel__wordmark">ATLAS</strong>
+                                <span>Advanced Transformation &amp; Leadership Alignment System</span>
+                            </div>
+                        </div>
+
                         <div className="auth-form-header">
                             <span className="auth-form-header__eyebrow">Masuk ke ATLAS Workspace</span>
                             <p>Masuk dengan NIK atau User ID untuk membuka workspace kerja hari ini.</p>
