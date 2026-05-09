@@ -62,6 +62,25 @@ function dispatchThemeChange(snapshot: ThemeSnapshot) {
   window.dispatchEvent(new CustomEvent<ThemeSnapshot>(THEME_CHANGE_EVENT, { detail: snapshot }))
 }
 
+/* Coordinate global theme transition: while the swap happens, every
+ * element animates at the same duration/easing (160ms cubic-bezier).
+ * The CSS rule .theme-transitioning * { transition: ... !important }
+ * activates only while this class is on <html>. Class auto-removed
+ * after 180ms — normal per-element transitions resume for hover. */
+const THEME_TRANSITIONING_CLASS = 'theme-transitioning'
+const THEME_TRANSITION_DURATION_MS = 180
+let themeTransitionTimer: ReturnType<typeof setTimeout> | undefined
+
+function scheduleThemeTransition(root: HTMLElement) {
+  if (!canUseDom()) return
+  root.classList.add(THEME_TRANSITIONING_CLASS)
+  if (themeTransitionTimer !== undefined) clearTimeout(themeTransitionTimer)
+  themeTransitionTimer = setTimeout(() => {
+    root.classList.remove(THEME_TRANSITIONING_CLASS)
+    themeTransitionTimer = undefined
+  }, THEME_TRANSITION_DURATION_MS)
+}
+
 export function getThemeSnapshot(root: HTMLElement = document.documentElement): ThemeSnapshot {
   const preferenceAttr = root.getAttribute(THEME_PREFERENCE_ATTRIBUTE)
   const preference = isThemePreference(preferenceAttr) ? preferenceAttr : getStoredThemePreference()
@@ -76,6 +95,13 @@ export function applyThemePreference(
   const root = options?.root ?? document.documentElement
   const resolved = resolveThemePreference(preference)
   const snapshot = { preference, resolved }
+
+  /* Schedule unified transition BEFORE attribute swap. Skip on hydration
+   * (dispatch: false) — page load shouldn't animate from a non-existent
+   * previous state. */
+  if (options?.dispatch !== false) {
+    scheduleThemeTransition(root)
+  }
 
   root.setAttribute(THEME_ATTRIBUTE, resolved)
   root.setAttribute(THEME_PREFERENCE_ATTRIBUTE, preference)

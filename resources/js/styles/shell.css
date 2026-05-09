@@ -755,6 +755,25 @@
   min-width: 0;
 }
 
+/* Dark mode — workspace MATCHES canvas. With identical background and
+ * pitch-black surroundings, the panel border + shadow + inset highlight
+ * (which work great in light mode) become visible WHITE LINES against
+ * dark — visual noise that distracts. Strip them entirely; workspace is
+ * just a content area in dark mode. Cards inside (--panel) provide the
+ * only visible elevation hierarchy. */
+[data-theme="dark"] .workspace {
+  background: var(--app-bg);
+  border: 0;
+  box-shadow: none;
+}
+
+/* Sidebar border in dark — drop from 12% to 5% white. Sidebar still
+ * needs subtle chrome (it IS the navigation), but 12% reads as a hard
+ * white outline against pitch black. */
+[data-theme="dark"] .sidebar {
+  border-color: rgba(255,255,255,0.05);
+}
+
 /* Sidebar uses dedicated dark surface in both light & dark themes (Stripe pattern).
  * Color tokens (`--sidebar-bg`, `--sidebar-text`, etc.) carry the dark identity
  * regardless of app theme. No light-mode override here. */
