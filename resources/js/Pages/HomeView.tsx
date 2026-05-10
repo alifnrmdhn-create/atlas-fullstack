@@ -439,6 +439,15 @@ export default function HomeView() {
     })
     .slice(0, 6)
 
+  /* Selaras dengan slide 18 PPT DKMR — TOP 10 program aktif yang deadline-nya
+   * paling dekat, regardless of health. Filter: approvalStatus ACTIVE supaya
+   * draft tidak surface. Sort by daysRemaining ASC. Strict on deadline,
+   * berbeda dari attentionPrograms yang sort by health severity. */
+  const topDeadlinePrograms = [...programsForChart]
+    .filter(p => p.approvalStatus === 'ACTIVE' && p.daysRemaining != null)
+    .sort((a, b) => (a.daysRemaining ?? 9999) - (b.daysRemaining ?? 9999))
+    .slice(0, 10)
+
   /* "On track" stat — universal across roles. Was previously "X/Y direktorat
    * hijau" which only made sense for DIRUT (portfolio view); for everyone
    * else the metric was applied to the wrong scope. Now: programs on track
@@ -975,6 +984,59 @@ export default function HomeView() {
               )}
             </div>
           </section>
+
+          {/* ─── Program ketat deadline (slide 18 PPT) ──────────── */}
+          {topDeadlinePrograms.length > 0 && (
+            <section className="hv__section">
+              <header className="hv__sec-head">
+                <h2 className="hv__sec-title">Program ketat deadline</h2>
+                <span className="hv__sec-meta">Top {topDeadlinePrograms.length} · sort by hari tersisa</span>
+              </header>
+              <div className="hv__deadline-table">
+                <div className="hv__deadline-row hv__deadline-row--head">
+                  <span>Program</span>
+                  <span>Divisi</span>
+                  <span>Deadline</span>
+                  <span>Hari tersisa</span>
+                  <span>Progres terkini</span>
+                  <span>Dukungan dibutuhkan</span>
+                </div>
+                {topDeadlinePrograms.map(p => {
+                  const days = p.daysRemaining ?? 0
+                  const urgency: 'critical' | 'urgent' | 'soon' | 'ok' =
+                    days < 0 ? 'critical' : days <= 30 ? 'urgent' : days <= 90 ? 'soon' : 'ok'
+                  const daysLabel = days < 0
+                    ? `${Math.abs(days)} hari lewat`
+                    : days === 0 ? 'Hari ini'
+                    : `${days} hari lagi`
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="hv__deadline-row"
+                      onClick={() => openProgramWorkspace(p.id)}
+                    >
+                      <span className="hv__deadline-program">
+                        <span className="hv__deadline-code">{p.code}</span>
+                        <span className="hv__deadline-name">{p.name}</span>
+                      </span>
+                      <span className="hv__deadline-divisi">{p.divisi || '—'}</span>
+                      <span className="hv__deadline-date">{p.targetEndDate ?? '—'}</span>
+                      <span className="hv__deadline-countdown" data-urgency={urgency}>
+                        {daysLabel}
+                      </span>
+                      <span className="hv__deadline-progress" title={p.progresTerkini ?? ''}>
+                        {p.progresTerkini ? p.progresTerkini : <em className="hv__deadline-empty">—</em>}
+                      </span>
+                      <span className="hv__deadline-support" title={p.dukunganDibutuhkan ?? ''}>
+                        {p.dukunganDibutuhkan ? p.dukunganDibutuhkan : <em className="hv__deadline-empty">—</em>}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          )}
 
           {/* ─── Program butuh perhatian ──────────── */}
           {attentionPrograms.length > 0 && (

@@ -678,6 +678,15 @@ export type ProgramSummaryPayload = {
     id: number; code: string; name: string
     progressPercent: number; daysRemaining: number | null
     healthTone: ProgramHealthToneKey; divisi: string
+    targetEndDate?: string | null
+    timeElapsedPct?: number | null
+    daysIdle?: number | null
+    ownerName?: string | null
+    taskTotal?: number
+    taskDone?: number
+    progresTerkini?: string | null
+    dukunganDibutuhkan?: string | null
+    approvalStatus?: string | null
   }>
   controls: ControlAlert[]
   topBlockerPrograms: TopBlockerProgram[]

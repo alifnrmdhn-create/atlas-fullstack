@@ -1615,3 +1615,104 @@
 [data-theme="dark"] .hv__big.hv-flashing {
   animation-name: hv-flash-dark;
 }
+
+/* ── Program Ketat Deadline (slide 18 PPT DKMR) ─────────────────────────── */
+.hv__deadline-table {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--panel-border, #e5e7eb);
+  border: 1px solid var(--panel-border, #e5e7eb);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.hv__deadline-row {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1.5fr)   /* Program */
+    80px                   /* Divisi */
+    100px                  /* Deadline */
+    110px                  /* Hari tersisa */
+    minmax(160px, 1.4fr)   /* Progres */
+    minmax(140px, 1.2fr);  /* Dukungan */
+  gap: 12px;
+  padding: 10px 14px;
+  align-items: center;
+  background: var(--panel, #fff);
+  text-align: left;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+}
+.hv__deadline-row:hover {
+  background: var(--surface-2, #f9fafb);
+}
+.hv__deadline-row--head {
+  background: var(--surface-1, #f3f4f6);
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-muted, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: default;
+}
+.hv__deadline-row--head:hover {
+  background: var(--surface-1, #f3f4f6);
+}
+.hv__deadline-program {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.hv__deadline-code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.hv__deadline-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hv__deadline-divisi {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary, #6b7280);
+}
+.hv__deadline-date {
+  color: var(--text-secondary);
+}
+.hv__deadline-countdown {
+  font-weight: 600;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+}
+.hv__deadline-countdown[data-urgency="critical"] {
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+}
+.hv__deadline-countdown[data-urgency="urgent"] {
+  background: rgba(217, 119, 6, 0.12);
+  color: #d97706;
+}
+.hv__deadline-countdown[data-urgency="soon"] {
+  background: rgba(37, 99, 235, 0.10);
+  color: #2563eb;
+}
+.hv__deadline-progress,
+.hv__deadline-support {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hv__deadline-empty {
+  color: var(--text-muted);
+  font-style: normal;
+}
