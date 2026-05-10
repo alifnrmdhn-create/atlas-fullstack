@@ -492,6 +492,8 @@ class ProgramController extends Controller
             'healthAtTime'       => 'required|in:on_track,at_risk,terlambat,overdue',
             'narrative'          => 'required|string|max:3000',
             'kendala'            => 'nullable|string|max:2000',
+            'correctiveAction'   => 'nullable|string|max:2000',
+            'nextStep'           => 'nullable|string|max:2000',
             'dukunganDibutuhkan' => 'nullable|string|max:2000',
         ]);
 
@@ -507,6 +509,8 @@ class ProgramController extends Controller
                 'healthAtTime'       => $data['healthAtTime'],
                 'narrative'          => $data['narrative'],
                 'kendala'            => $data['kendala'] ?? null,
+                'correctiveAction'   => $data['correctiveAction'] ?? null,
+                'nextStep'           => $data['nextStep'] ?? null,
                 'dukunganDibutuhkan' => $data['dukunganDibutuhkan'] ?? null,
             ])->save();
 

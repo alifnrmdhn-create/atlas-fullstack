@@ -200,6 +200,8 @@ export function ProgramDetailView() {
     healthAtTime: 'on_track' | 'at_risk' | 'terlambat' | 'overdue'
     narrative: string
     kendala: string | null
+    correctiveAction: string | null
+    nextStep: string | null
     dukunganDibutuhkan: string | null
     createdById: number
     createdByName: string | null
@@ -221,6 +223,8 @@ export function ProgramDetailView() {
     healthAtTime: 'on_track' as const,
     narrative: '',
     kendala: '',
+    correctiveAction: '',
+    nextStep: '',
     dukunganDibutuhkan: '',
   })
   const [progressFormSaving, setProgressFormSaving] = useState(false)
@@ -250,7 +254,7 @@ export function ProgramDetailView() {
         return [res.data, ...prev]
       })
       setShowProgressForm(false)
-      setProgressForm(f => ({ ...f, narrative: '', kendala: '', dukunganDibutuhkan: '' }))
+      setProgressForm(f => ({ ...f, narrative: '', kendala: '', correctiveAction: '', nextStep: '', dukunganDibutuhkan: '' }))
     } finally {
       setProgressFormSaving(false)
     }
@@ -1251,13 +1255,33 @@ export function ProgramDetailView() {
                           />
                         </div>
                         <div className="prog-progress-form__row">
-                          <label className="prog-progress-form__label">Kendala</label>
+                          <label className="prog-progress-form__label">Kendala / Problem Identification</label>
                           <textarea
                             className="wi-input"
                             rows={2}
                             value={progressForm.kendala}
                             onChange={e => setProgressForm(f => ({ ...f, kendala: e.target.value }))}
-                            placeholder="Hambatan yang dihadapi (opsional)"
+                            placeholder="Hambatan yang dihadapi minggu ini (opsional)"
+                          />
+                        </div>
+                        <div className="prog-progress-form__row">
+                          <label className="prog-progress-form__label">Corrective Action</label>
+                          <textarea
+                            className="wi-input"
+                            rows={2}
+                            value={progressForm.correctiveAction}
+                            onChange={e => setProgressForm(f => ({ ...f, correctiveAction: e.target.value }))}
+                            placeholder="Tindakan korektif yang diambil untuk mengatasi kendala (opsional)"
+                          />
+                        </div>
+                        <div className="prog-progress-form__row">
+                          <label className="prog-progress-form__label">Next Step</label>
+                          <textarea
+                            className="wi-input"
+                            rows={2}
+                            value={progressForm.nextStep}
+                            onChange={e => setProgressForm(f => ({ ...f, nextStep: e.target.value }))}
+                            placeholder="Langkah selanjutnya & target periode berikutnya (opsional)"
                           />
                         </div>
                         <div className="prog-progress-form__row">
@@ -1316,6 +1340,16 @@ export function ProgramDetailView() {
                               {entry.kendala && (
                                 <div className="prog-progress-log__kendala">
                                   <strong>Kendala:</strong> {entry.kendala}
+                                </div>
+                              )}
+                              {entry.correctiveAction && (
+                                <div className="prog-progress-log__corrective">
+                                  <strong>Corrective action:</strong> {entry.correctiveAction}
+                                </div>
+                              )}
+                              {entry.nextStep && (
+                                <div className="prog-progress-log__nextstep">
+                                  <strong>Next step:</strong> {entry.nextStep}
                                 </div>
                               )}
                               {entry.dukunganDibutuhkan && (

@@ -6775,6 +6775,8 @@ select.wid-input {
 .prog-progress-log__meta { font-size: 11px; color: var(--text-muted, #9ca3af); margin-left: auto; }
 .prog-progress-log__narrative { font-size: 13px; color: var(--text-primary, #111827); margin: 0 0 4px; line-height: 1.5; }
 .prog-progress-log__kendala,
+.prog-progress-log__corrective,
+.prog-progress-log__nextstep,
 .prog-progress-log__support { font-size: 12px; color: var(--text-secondary, #6b7280); margin-top: 4px; }
 
 /* ── Monitoring Matrix ─────────────────────────────── */

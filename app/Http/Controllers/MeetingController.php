@@ -257,7 +257,7 @@ class MeetingController extends Controller
         $latestLog = \App\Models\ProgramProgressLog::query()
             ->where('programId', $programId)
             ->orderByDesc('createdAt')
-            ->first(['id', 'period', 'healthAtTime', 'narrative', 'kendala', 'dukunganDibutuhkan', 'createdById', 'createdByName', 'createdAt']);
+            ->first(['id', 'period', 'healthAtTime', 'narrative', 'kendala', 'correctiveAction', 'nextStep', 'dukunganDibutuhkan', 'createdById', 'createdByName', 'createdAt']);
 
         // 3. Continuity — re-use logic dari continuity() method
         $continuity = $this->buildContinuity($meeting);
