@@ -150,6 +150,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('tasks')->name('tasks.')->group(function () {
         Route::get('/',              [TaskController::class, 'index'])->name('index');
         Route::post('/',             [TaskController::class, 'store'])->name('store');
+        // Static routes (no {id}) must precede /{id} routes — Laravel matches top-down.
+        Route::get('/waiting-for-me', [TaskController::class, 'waitingForMe'])->name('waiting-for-me');
         Route::get('/{id}',          [TaskController::class, 'show'])->name('show');
         Route::patch('/{id}',        [TaskController::class, 'update'])->name('update');
         Route::delete('/{id}',       [TaskController::class, 'destroy'])->name('destroy');

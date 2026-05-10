@@ -163,6 +163,39 @@ class TaskController extends Controller
         return response()->json(['data' => $logs]);
     }
 
+    /**
+     * Daily PIC Workspace: tasks yang saat ini menunggu aksi dari user yang
+     * sedang login. Saat ini hanya satu kategori — task IN_REVIEW di
+     * workstream dimana user adalah owner (= reviewer default).
+     */
+    public function waitingForMe(Request $request): JsonResponse
+    {
+        $userId = $request->user()->id;
+
+        $reviewQueue = Task::query()
+            ->where('status', 'IN_REVIEW')
+            ->whereHas('workstream', fn ($q) => $q->where('ownerId', $userId))
+            ->with([
+                'workstream:id,name,programId,ownerId',
+                'workstream.program:id,code,name',
+                'assignee:id,name,avatarUrl',
+            ])
+            ->orderBy('targetCompletion')
+            ->get([
+                'id', 'code', 'title', 'status', 'priority',
+                'percentComplete', 'targetCompletion', 'assignedTo',
+                'initiativeId', 'isBlocked',
+            ]);
+
+        return response()->json([
+            'data' => $reviewQueue->map(fn ($t) => [
+                'kind'   => 'review',
+                'reason' => 'Task IN_REVIEW di workstream yang Anda pimpin — menunggu approve untuk mark COMPLETED.',
+                'task'   => $t,
+            ])->values(),
+        ]);
+    }
+
     public function updateProgress(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {

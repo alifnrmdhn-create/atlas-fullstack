@@ -21,6 +21,12 @@ import {
 } from '../components/ui'
 import type { Task } from '../types'
 import { api } from '../lib/api'
+
+type WaitingItem = {
+  kind:   'review'
+  reason: string
+  task:   Task
+}
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import './WorkboardView.css'
@@ -202,6 +208,15 @@ export function WorkboardView() {
 
   // Daily PIC Workspace: smart time filter (default 'week' = active work this week)
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('week')
+
+  // Daily PIC Workspace: tasks menunggu aksi user (review queue)
+  const [waitingItems, setWaitingItems] = useState<WaitingItem[]>([])
+  useEffect(() => {
+    if (!currentUser?.id) return
+    api.get<{ data: WaitingItem[] }>('/tasks/waiting-for-me')
+      .then(r => setWaitingItems(r.data ?? []))
+      .catch(() => { /* non-fatal */ })
+  }, [currentUser?.id, workGroups])
 
   // OFFICER: locked to myItemsOnly regardless of toggle
   const effectiveMyItemsOnly = roleAccess.myItemsLocked ? true : myItemsOnly
@@ -727,6 +742,38 @@ export function WorkboardView() {
               ) : (
                 <SectionState icon="✅" title="No blockers" text="No blockers recorded at this time." />
               )}
+            </div>
+          )}
+
+          {/* Menunggu aksi saya (Daily PIC Workspace) */}
+          {waitingItems.length > 0 && (
+            <div className="panel waiting-panel">
+              <div className="panel__header">
+                <h3 className="panel__title">Menunggu Aksi Anda</h3>
+                <span className="badge">{waitingItems.length}</span>
+              </div>
+              <div className="wi-list">
+                {waitingItems.map(({ task, reason }) => (
+                  <button
+                    className="wi-list-row"
+                    key={task.id}
+                    onClick={() => navigate(`/execution/tasks/${task.id}`)}
+                  >
+                    <div className="wi-list-row__left">
+                      <span className="code-badge">{task.code}</span>
+                      <div>
+                        <strong>{task.title}</strong>
+                        <span className="text-muted text-sm">
+                          {task.assignee?.name ? `${task.assignee.name} · ` : ''}{reason}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="wi-list-row__right">
+                      <span className="severity-badge severity-badge--medium">REVIEW</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
