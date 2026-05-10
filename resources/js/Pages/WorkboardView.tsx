@@ -26,9 +26,37 @@ import { useRoleAccess } from '../hooks/useRoleAccess'
 import './WorkboardView.css'
 
 type BoardMode = 'kanban' | 'list' | 'blockers'
+type TimeFilter = 'week' | 'overdue' | 'in-flight' | 'all'
 
 const STATUS_ORDER = ['BACKLOG', 'READY', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'COMPLETED']
 const statusSlug = (status: string) => status.toLowerCase()
+
+// Time-based filter helpers (Daily PIC Workspace)
+function taskIsOverdue(t: Task): boolean {
+  return !!t.targetCompletion
+    && new Date(t.targetCompletion).getTime() < Date.now()
+    && t.status !== 'COMPLETED'
+}
+function taskDueWithinDays(t: Task, days: number): boolean {
+  if (!t.targetCompletion || t.status === 'COMPLETED') return false
+  const diffDays = (new Date(t.targetCompletion).getTime() - Date.now()) / 86400000
+  return diffDays >= 0 && diffDays <= days
+}
+function taskDueToday(t: Task): boolean {
+  if (!t.targetCompletion || t.status === 'COMPLETED') return false
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const target = new Date(t.targetCompletion); target.setHours(0, 0, 0, 0)
+  return target.getTime() === today.getTime()
+}
+function taskInFlight(t: Task): boolean {
+  return t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW'
+}
+const TIME_FILTER_LABELS: Record<TimeFilter, string> = {
+  week: 'Aktif Minggu Ini',
+  overdue: 'Overdue',
+  'in-flight': 'Berjalan',
+  all: 'Semua',
+}
 
 // ── Sub-components for smooth DnD ──────────────────────────────────────────
 
@@ -172,6 +200,9 @@ export function WorkboardView() {
   // Default myItemsOnly respects role: KADIV/KASUBDIV/BOD default to full view
   const [myItemsOnly, setMyItemsOnly] = useState(roleAccess.defaultMyItemsOnly)
 
+  // Daily PIC Workspace: smart time filter (default 'week' = active work this week)
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('week')
+
   // OFFICER: locked to myItemsOnly regardless of toggle
   const effectiveMyItemsOnly = roleAccess.myItemsLocked ? true : myItemsOnly
   const setEffectiveMyItemsOnly = (v: boolean) => {
@@ -261,14 +292,23 @@ export function WorkboardView() {
     byOwnerUnit(byAssignee(byWorkstream(byProgram(items))))
 
   const rawItems = workGroups.flatMap(g => g.items)
-  const allItems = applyBoardFilters(
+  const scopedItems = applyBoardFilters(
     effectiveMyItemsOnly ? rawItems.filter(i => i.assignee?.id === currentUser?.id) : rawItems
   )
+
+  const matchesTimeFilter = (t: Task): boolean => {
+    if (timeFilter === 'all') return true
+    if (timeFilter === 'overdue') return taskIsOverdue(t)
+    if (timeFilter === 'in-flight') return taskInFlight(t)
+    return taskInFlight(t) || taskIsOverdue(t) || taskDueWithinDays(t, 7)
+  }
+
+  const allItems = scopedItems.filter(matchesTimeFilter)
   const filteredGroups = workGroups.map(g => ({
     ...g,
     items: applyBoardFilters(
       effectiveMyItemsOnly ? g.items.filter(i => i.assignee?.id === currentUser?.id) : g.items
-    ),
+    ).filter(matchesTimeFilter),
   }))
 
   // Derive workstream options from loaded items, scoped by program filter if set
@@ -296,6 +336,12 @@ export function WorkboardView() {
   const blockedCount = allItems.filter(i => i.isBlocked || i.status === 'BLOCKED').length
   const completedCount = allItems.filter(i => i.status === 'COMPLETED').length
   const inFlightCount = allItems.filter(i => ['IN_PROGRESS', 'IN_REVIEW'].includes(i.status)).length
+
+  // Daily summary counts — derive dari scopedItems (sebelum timeFilter), supaya
+  // angka tetap akurat walau user lagi narrowed view
+  const overdueCount = scopedItems.filter(taskIsOverdue).length
+  const dueTodayCount = scopedItems.filter(taskDueToday).length
+  const dueWeekCount = scopedItems.filter(t => taskDueWithinDays(t, 7)).length
   const criticalItems = [...allItems]
     .sort((a, b) => {
       const bw = Number(b.isBlocked || b.status === 'BLOCKED') - Number(a.isBlocked || a.status === 'BLOCKED')
@@ -414,6 +460,21 @@ export function WorkboardView() {
             </button>
           </div>
         )}
+        {/* Daily PIC Workspace: time filter chips */}
+        {!roleAccess.isMonitoringOnly && (
+          <div className="view-toggle wb-time-filter">
+            {(['week', 'overdue', 'in-flight', 'all'] as TimeFilter[]).map(tf => (
+              <button
+                key={tf}
+                className={`view-toggle-btn${timeFilter === tf ? ' active' : ''}`}
+                onClick={() => setTimeFilter(tf)}
+                title={tf === 'week' ? 'In-flight + due ≤ 7 hari + overdue' : undefined}
+              >
+                {TIME_FILTER_LABELS[tf]}
+              </button>
+            ))}
+          </div>
+        )}
         {/* Program filter */}
         <select
           className="wb-program-filter"
@@ -439,13 +500,51 @@ export function WorkboardView() {
           ))}
         </select>
         <div className="view-toolbar__right">
-          <div className="view-toolbar__stats wb-stats">
-            <span>{allItems.length} <em>items</em></span>
-            <span>{inFlightCount} <em>in flight</em></span>
+          <div className="view-toolbar__stats wb-stats wb-daily-summary">
+            <button
+              type="button"
+              className={`wb-summary-stat wb-summary-stat--overdue${overdueCount === 0 ? ' is-zero' : ''}${timeFilter === 'overdue' ? ' is-active' : ''}`}
+              onClick={() => overdueCount > 0 && setTimeFilter('overdue')}
+              disabled={overdueCount === 0}
+              title="Task target sudah lewat & belum selesai"
+            >
+              <span className="wb-summary-stat__num">{overdueCount}</span>
+              <em>overdue</em>
+            </button>
+            <button
+              type="button"
+              className={`wb-summary-stat wb-summary-stat--today${dueTodayCount === 0 ? ' is-zero' : ''}`}
+              onClick={() => dueTodayCount > 0 && setTimeFilter('week')}
+              disabled={dueTodayCount === 0}
+              title="Task yang due hari ini"
+            >
+              <span className="wb-summary-stat__num">{dueTodayCount}</span>
+              <em>due hari ini</em>
+            </button>
+            <button
+              type="button"
+              className={`wb-summary-stat wb-summary-stat--week${dueWeekCount === 0 ? ' is-zero' : ''}`}
+              onClick={() => dueWeekCount > 0 && setTimeFilter('week')}
+              disabled={dueWeekCount === 0}
+              title="Task yang due dalam 7 hari ke depan"
+            >
+              <span className="wb-summary-stat__num">{dueWeekCount}</span>
+              <em>due 7 hari</em>
+            </button>
+            <span className="wb-summary-stat">
+              <span className="wb-summary-stat__num">{inFlightCount}</span>
+              <em>in flight</em>
+            </span>
             {blockedCount > 0 && (
-              <span className="wb-stats__blocked">{blockedCount} <em>blocked</em></span>
+              <span className="wb-summary-stat wb-stats__blocked">
+                <span className="wb-summary-stat__num">{blockedCount}</span>
+                <em>blocked</em>
+              </span>
             )}
-            <span>{completedCount} <em>done</em></span>
+            <span className="wb-summary-stat">
+              <span className="wb-summary-stat__num">{completedCount}</span>
+              <em>done</em>
+            </span>
           </div>
           {!roleAccess.isMonitoringOnly && roleAccess.canCreateWorkstream && (
             <button className="toolbar-action-btn" onClick={() => void openCreateWI()}>
@@ -474,7 +573,24 @@ export function WorkboardView() {
       <div className="workboard-workspace">
         {/* ── Main board ───────────────────────── */}
         <div className="workboard-main">
-          {boardMode === 'kanban' && (
+          {boardMode === 'kanban' && allItems.length === 0 ? (
+            <SectionState
+              icon="✨"
+              title={
+                effectiveMyItemsOnly
+                  ? (timeFilter === 'week' ? 'Anda free minggu ini' : 'Tidak ada task aktif')
+                  : 'Tidak ada task yang match filter saat ini'
+              }
+              text={
+                effectiveMyItemsOnly && timeFilter === 'week'
+                  ? "Tidak ada task overdue, due 7 hari, atau in-flight yang assigned ke Anda. Klik 'Semua' untuk lihat semua, atau 'All' untuk lihat task tim."
+                  : effectiveMyItemsOnly
+                  ? "Tidak ada task Anda yang match. Coba ubah filter waktu atau toggle ke 'All'."
+                  : "Tidak ada task yang match filter saat ini. Ubah preset waktu atau filter program/workstream."
+              }
+            />
+          ) : null}
+          {boardMode === 'kanban' && allItems.length > 0 && (
             <DndContext
               sensors={sensors}
               collisionDetection={pointerWithin}

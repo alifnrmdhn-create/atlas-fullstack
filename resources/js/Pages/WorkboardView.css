@@ -646,3 +646,58 @@
   color: var(--ds-text-tertiary);
   flex-shrink: 0;
 }
+
+/* ── Daily PIC Workspace: time filter chips & daily summary stats ───────── */
+.workboard-v2 .wb-time-filter {
+  margin-left: 4px;
+}
+.workboard-v2 .wb-daily-summary {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+.workboard-v2 .wb-summary-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+  cursor: default;
+}
+.workboard-v2 button.wb-summary-stat {
+  cursor: pointer;
+  font-family: inherit;
+}
+.workboard-v2 button.wb-summary-stat:hover:not(:disabled) {
+  background: var(--bg-subtle, #f3f4f6);
+  border-color: var(--border-subtle, #e5e7eb);
+}
+.workboard-v2 button.wb-summary-stat.is-active {
+  background: var(--brand-tint, #f0fdf4);
+  border-color: var(--brand, #10b981);
+  color: var(--brand-dark, #047857);
+}
+.workboard-v2 button.wb-summary-stat:disabled,
+.workboard-v2 .wb-summary-stat.is-zero {
+  opacity: 0.45;
+  cursor: default;
+}
+.workboard-v2 .wb-summary-stat__num {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+}
+.workboard-v2 .wb-summary-stat--overdue:not(.is-zero) .wb-summary-stat__num {
+  color: var(--danger, #dc2626);
+}
+.workboard-v2 .wb-summary-stat--today:not(.is-zero) .wb-summary-stat__num {
+  color: var(--warning, #d97706);
+}
+.workboard-v2 .wb-summary-stat em {
+  font-style: normal;
+  color: var(--text-muted, #9ca3af);
+}
