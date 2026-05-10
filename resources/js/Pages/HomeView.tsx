@@ -1096,6 +1096,57 @@ export default function HomeView() {
               </div>
             </section>
           )}
+
+          {/* ─── Status per Divisi (slide 17 PPT — rollup eksekutif) ─────── */}
+          {byDivisi.length > 0 && (
+            <section className="hv__section">
+              <header className="hv__sec-head">
+                <h2 className="hv__sec-title">Status per divisi</h2>
+                <span className="hv__sec-meta">{byDivisi.length} divisi · rollup health</span>
+              </header>
+              <div className="hv__rollup-table">
+                <div className="hv__rollup-row hv__rollup-row--head">
+                  <span>Divisi</span>
+                  <span className="hv__rollup-num">On Track</span>
+                  <span className="hv__rollup-num">At Risk</span>
+                  <span className="hv__rollup-num">Terlambat</span>
+                  <span className="hv__rollup-num">Selesai</span>
+                  <span className="hv__rollup-num">Total</span>
+                  <span className="hv__rollup-num">% On Track</span>
+                </div>
+                {[...byDivisi]
+                  .filter(d => d.unit.id !== null)
+                  .sort((a, b) => a.pctOnTrack - b.pctOnTrack)
+                  .map(d => {
+                    const tlm = (d.terlambat ?? 0) + (d.overdue ?? 0)
+                    const pctTone: 'red' | 'amber' | 'green' =
+                      d.pctOnTrack < 50 ? 'red' : d.pctOnTrack < 80 ? 'amber' : 'green'
+                    return (
+                      <button
+                        key={d.unit.code}
+                        type="button"
+                        className="hv__rollup-row"
+                        onClick={() => navigate(`/performance/divisi/${d.unit.code.toLowerCase()}`)}
+                        title={d.unit.name}
+                      >
+                        <span className="hv__rollup-divisi">
+                          <span className="hv__rollup-code">{d.unit.code}</span>
+                          <span className="hv__rollup-name">{d.unit.name}</span>
+                        </span>
+                        <span className="hv__rollup-num" data-tone="green">{d.onTrack ?? 0}</span>
+                        <span className="hv__rollup-num" data-tone="amber">{d.atRisk ?? 0}</span>
+                        <span className="hv__rollup-num" data-tone="red">{tlm}</span>
+                        <span className="hv__rollup-num" data-tone="neutral">{d.selesai ?? 0}</span>
+                        <span className="hv__rollup-num hv__rollup-total">{d.total}</span>
+                        <span className="hv__rollup-pct" data-tone={pctTone}>
+                          {Math.round(d.pctOnTrack)}%
+                        </span>
+                      </button>
+                    )
+                  })}
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </>
