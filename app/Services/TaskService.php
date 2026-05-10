@@ -89,9 +89,21 @@ class TaskService
         return $task->fresh(['entityPics']);
     }
 
-    /** Validate + apply status transition. Returns updated Task. */
-    public function transitionStatus(int $id, string $newStatus, int $userId): Task
-    {
+    /**
+     * Validate + apply status transition. Returns updated Task.
+     *
+     * @param ?string $note Optional context dari drag prompt — disimpan ke status log
+     * @param ?string $blockedReason Mandatory kalau status=BLOCKED — save ke Task.blockedReason
+     * @param ?int $percentComplete Optional: auto-set 100 saat ke COMPLETED dari workspace drag
+     */
+    public function transitionStatus(
+        int $id,
+        string $newStatus,
+        int $userId,
+        ?string $note = null,
+        ?string $blockedReason = null,
+        ?int $percentComplete = null,
+    ): Task {
         $task = Task::query()
             ->with(['workstream.program:id,approvalStatus'])
             ->findOrFail($id);
@@ -130,10 +142,21 @@ class TaskService
         } elseif ($newStatus !== 'COMPLETED' && $task->status === 'COMPLETED') {
             $update['actualCompletion'] = null;
         }
+        if ($percentComplete !== null) {
+            $update['percentComplete'] = $percentComplete;
+        }
+        if ($newStatus === 'BLOCKED') {
+            $update['isBlocked'] = true;
+            if ($blockedReason !== null && $blockedReason !== '') {
+                $update['blockedReason'] = $blockedReason;
+            }
+        } elseif ($task->status === 'BLOCKED' && $newStatus !== 'BLOCKED') {
+            $update['isBlocked'] = false;
+        }
 
-        DB::transaction(function () use ($task, $update, $fromStatus, $newStatus, $userId) {
+        DB::transaction(function () use ($task, $update, $fromStatus, $newStatus, $userId, $note) {
             $task->update($update);
-            $this->writeStatusLog($task->id, $fromStatus, $newStatus, $userId, null);
+            $this->writeStatusLog($task->id, $fromStatus, $newStatus, $userId, $note);
         });
 
         return $task->fresh();

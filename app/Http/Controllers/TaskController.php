@@ -139,8 +139,21 @@ class TaskController extends Controller
             abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
         }
 
-        $data = $request->validate(['status' => 'required|string']);
-        $this->taskService->transitionStatus($id, $data['status'], $request->user()->id);
+        $data = $request->validate([
+            'status'         => 'required|string',
+            'note'           => 'nullable|string|max:2000',
+            'blockedReason'  => 'nullable|string|max:2000',
+            'percentComplete' => 'nullable|integer|min:0|max:100',
+        ]);
+
+        $this->taskService->transitionStatus(
+            $id,
+            $data['status'],
+            $request->user()->id,
+            $data['note'] ?? null,
+            $data['blockedReason'] ?? null,
+            $data['percentComplete'] ?? null,
+        );
         $this->triggerHealth($id);
         BroadcastService::task($id, 'status-changed', ['status' => $data['status']]);
 

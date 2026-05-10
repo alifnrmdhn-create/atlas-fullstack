@@ -268,6 +268,15 @@ export function WorkboardView() {
   const [activeItem, setActiveItem] = useState<Task | null>(null)
   const [overColId, setOverColId] = useState<string | null>(null)
 
+  // Daily PIC Workspace: prompt modal saat drag ke status yang butuh konteks
+  const PROMPT_STATUSES = ['BLOCKED', 'COMPLETED', 'IN_REVIEW'] as const
+  type PromptStatus = typeof PROMPT_STATUSES[number]
+  const [pendingTransition, setPendingTransition] = useState<
+    { item: Task; targetStatus: PromptStatus } | null
+  >(null)
+  const [promptText, setPromptText] = useState('')
+  const [promptError, setPromptError] = useState<string | null>(null)
+
   const onDragStart = ({ active }: DragStartEvent) => {
     const item = allItems.find(i => i.id === active.id)
     if (item) { setActiveItem(item); handleTaskDragStart(item.id) }
@@ -276,8 +285,18 @@ export function WorkboardView() {
     setOverColId(over ? String(over.id) : null)
   }
   const onDragEnd = ({ over }: DragEndEvent) => {
-    if (over) { void handleTaskDrop(String(over.id)) }
-    else { setDragState({ itemId: null, overStatus: null }) }
+    if (over && activeItem) {
+      const target = String(over.id)
+      if ((PROMPT_STATUSES as readonly string[]).includes(target) && target !== activeItem.status) {
+        setPendingTransition({ item: activeItem, targetStatus: target as PromptStatus })
+        setPromptText('')
+        setPromptError(null)
+      } else {
+        void handleTaskDrop(target)
+      }
+    } else if (!over) {
+      setDragState({ itemId: null, overStatus: null })
+    }
     setActiveItem(null)
     setOverColId(null)
   }
@@ -285,6 +304,31 @@ export function WorkboardView() {
     setDragState({ itemId: null, overStatus: null })
     setActiveItem(null)
     setOverColId(null)
+  }
+
+  const confirmPendingTransition = () => {
+    if (!pendingTransition) return
+    const { targetStatus } = pendingTransition
+    if (targetStatus === 'BLOCKED' && !promptText.trim()) {
+      setPromptError('Alasan blocker wajib diisi.')
+      return
+    }
+    const options =
+      targetStatus === 'BLOCKED'
+        ? { blockedReason: promptText.trim(), note: promptText.trim() }
+        : promptText.trim()
+        ? { note: promptText.trim() }
+        : undefined
+    void handleTaskDrop(targetStatus, options)
+    setPendingTransition(null)
+    setPromptText('')
+    setPromptError(null)
+  }
+  const cancelPendingTransition = () => {
+    setPendingTransition(null)
+    setPromptText('')
+    setPromptError(null)
+    setDragState({ itemId: null, overStatus: null })
   }
 
   const byProgram = (items: typeof workGroups[0]['items']) =>
@@ -964,6 +1008,77 @@ export function WorkboardView() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Daily PIC Workspace: prompt modal saat drag ke BLOCKED/COMPLETED/IN_REVIEW */}
+      {pendingTransition && (
+        <div className="modal-backdrop" onClick={cancelPendingTransition}>
+          <div className="modal modal--narrow wb-prompt-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+            <div className="modal__header">
+              <div className="modal-headcopy">
+                <span className="modal-kicker">{formatStatusLabel(pendingTransition.targetStatus)}</span>
+                <h3 className="modal__title">
+                  {pendingTransition.targetStatus === 'BLOCKED' && 'Tandai task sebagai Blocked'}
+                  {pendingTransition.targetStatus === 'COMPLETED' && 'Tandai task selesai'}
+                  {pendingTransition.targetStatus === 'IN_REVIEW' && 'Kirim task untuk review'}
+                </h3>
+                <p className="modal-subtitle">
+                  Task: <strong>{pendingTransition.item.code}</strong> — {pendingTransition.item.title}
+                </p>
+              </div>
+              <button
+                aria-label="Tutup"
+                className="modal__close"
+                onClick={cancelPendingTransition}
+                type="button"
+              >×</button>
+            </div>
+            <div className="modal__body">
+              <label className="form-field">
+                <span className="form-field__label">
+                  {pendingTransition.targetStatus === 'BLOCKED' && 'Alasan blocker (wajib)'}
+                  {pendingTransition.targetStatus === 'COMPLETED' && 'Link bukti / catatan completion (opsional)'}
+                  {pendingTransition.targetStatus === 'IN_REVIEW' && 'Catatan untuk reviewer (opsional)'}
+                </span>
+                <textarea
+                  autoFocus
+                  className="form-field__input"
+                  rows={4}
+                  maxLength={2000}
+                  placeholder={
+                    pendingTransition.targetStatus === 'BLOCKED'
+                      ? 'Apa yang menghambat? Siapa yang ditunggu?'
+                      : pendingTransition.targetStatus === 'COMPLETED'
+                      ? 'mis. https://drive.google.com/... atau referensi notula'
+                      : 'mis. ringkasan perubahan yang perlu di-review'
+                  }
+                  value={promptText}
+                  onChange={e => { setPromptText(e.target.value); setPromptError(null) }}
+                  onKeyDown={e => { if (e.key === 'Escape') cancelPendingTransition() }}
+                />
+                {promptError && <span className="form-field__error">{promptError}</span>}
+              </label>
+              <p className="modal-hint">
+                {pendingTransition.targetStatus === 'BLOCKED'
+                  ? 'Akan disimpan sebagai blockedReason + masuk Riwayat Status. Wajib agar atasan bisa intervensi.'
+                  : 'Catatan akan masuk Riwayat Status task. Boleh dilewati, tapi disarankan untuk audit trail.'}
+              </p>
+            </div>
+            <div className="modal__footer">
+              <button className="btn btn--ghost" onClick={cancelPendingTransition} type="button">
+                Batal
+              </button>
+              <button
+                className="profile-save-btn"
+                onClick={confirmPendingTransition}
+                disabled={pendingTransition.targetStatus === 'BLOCKED' && !promptText.trim()}
+                type="button"
+              >
+                Konfirmasi & Pindah
+              </button>
+            </div>
           </div>
         </div>
       )}

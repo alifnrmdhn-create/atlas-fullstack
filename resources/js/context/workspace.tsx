@@ -213,7 +213,7 @@ export interface WorkspaceContextValue {
   notifToasts: NotificationItem[]
   dismissToast: (id: number) => void
   handleTaskDragStart: (taskId: number) => void
-  handleTaskDrop: (targetStatus: string) => Promise<void>
+  handleTaskDrop: (targetStatus: string, options?: { note?: string; blockedReason?: string }) => Promise<void>
   handleStatusUpdate: (e: FormEvent<HTMLFormElement>) => Promise<void>
   runSearch: (searchQuery: string, type?: string) => Promise<void>
   openProgramWorkspace: (programId: number) => void
@@ -751,7 +751,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setBoardStatus((cur) => ({ ...cur, message: null }))
   }
 
-  const handleTaskDrop = async (targetStatus: string) => {
+  const handleTaskDrop = async (targetStatus: string, options?: { note?: string; blockedReason?: string }) => {
     if (!dragState.itemId) return
     const dragged = workGroups.flatMap((g) => g.items).find((i) => i.id === dragState.itemId)
     if (!dragged || dragged.status === targetStatus) {
@@ -766,6 +766,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       const body: Record<string, unknown> = { status: targetStatus }
       if (autoComplete) body.percentComplete = 100
+      if (options?.note)          body.note = options.note
+      if (options?.blockedReason) body.blockedReason = options.blockedReason
       await api.put(`/tasks/${dragged.id}/status`, body)
       await Promise.all([
         loadOverview('refresh'),
