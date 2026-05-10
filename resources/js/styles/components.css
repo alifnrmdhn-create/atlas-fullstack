@@ -134,7 +134,10 @@
 .panel__body { padding: 16px 18px; }
 .panel__empty { padding: 2.5rem 1.5rem; text-align: center; color: var(--text-muted); font-size: var(--type-small); }
 
-:root:not([data-theme="dark"]) .panel {
+/* Gate dengan :not([class*="--"]) supaya `.panel--variant` future (mis. waiting-panel)
+   tidak ke-override background ini. Defensive — saat ini tidak ada modifier, tapi
+   pre-empt cascade conflict serupa execution-grid kemarin. */
+:root:not([data-theme="dark"]) .panel:not([class*="panel--"]) {
   background: linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 88%, var(--panel) 12%) 0%, var(--panel) 100%);
   border-color: color-mix(in srgb, var(--panel-border) 94%, transparent);
 }

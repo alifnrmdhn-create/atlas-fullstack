@@ -394,7 +394,9 @@ class ExecutionGridController extends Controller
             ->map(fn ($u) => [
                 'id'        => $u->id,
                 'name'      => $u->name,
-                'shortName' => $u->shortName ?? $u->code ?? null,
+                // OrganizationalUnit tidak punya kolom shortName (cuma Directorate).
+                // Fallback ke code supaya UI dapat label singkat untuk grid header.
+                'shortName' => $u->code ?? null,
             ])
             ->values()
             ->all();

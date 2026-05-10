@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\DB;
  * mengambil dari sini (jsonb), bukan dari Initiative.ownerUnitId.
  *
  * Semua 7 task BCMS di-PIC-kan ke unit 16 (Sub Divisi Manajemen Risiko)
- * — unit yang sama dengan Este (186), Fadil (185), Dwi (197).
+ * — unit yang sama dengan Este (este.angga.yustika@ptpn.id),
+ *   Fadil (fadil.kurniawan.lubis@ptpn.id), Dwi (dwi.zunianti@ptpn.id).
  *
  * Skip kalau program belum ada (test DB / fresh CI).
  */

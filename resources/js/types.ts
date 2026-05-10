@@ -195,12 +195,15 @@ export type Task = {
   id: number
   code: string
   title: string
+  description?: string | null
+  output?: string | null
   status: string
   priority: string
   percentComplete: number
   healthStatus: HealthStatus
   isBlocked: boolean
-  blockedReason?: string
+  blockedReason?: string | null
+  startDate?: string | null
   targetCompletion?: string
   actualCompletion?: string | null
   createdAt?: string
@@ -208,7 +211,7 @@ export type Task = {
   blockerCount: number
   commentsCount: number
   createdByUnitId?: number
-  workstream?: { id: number; name: string; program?: { id: number; code: string; name: string; healthStatus?: HealthStatus; approvalStatus?: string; ownerUnitId?: number } }
+  workstream?: { id: number; name: string; program?: { id: number; code: string; name: string; healthStatus?: HealthStatus; approvalStatus?: string; ownerUnitId?: number; startDate?: string | null; targetEndDate?: string | null; actualEndDate?: string | null } }
   assignee?: UserSummary
 }
 
@@ -297,13 +300,20 @@ export type WorkstreamDetail = {
     id: number
     code: string
     title: string
+    description?: string | null
+    output?: string | null
     status: string
     percentComplete: number
-    output?: string | null
     isBlocked?: boolean
+    blockedReason?: string | null
+    healthStatus?: HealthStatus | null
     priority?: string
     startDate?: string | null
     targetCompletion?: string | null
+    actualCompletion?: string | null
+    letterIndex?: string | null
+    phaseId?: number | null
+    picUnitIds?: number[] | null
     picPersons?: Array<{ id: number; name: string }>
   }>
   comments: CommentItem[]
