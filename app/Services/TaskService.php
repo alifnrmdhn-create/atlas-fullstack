@@ -110,6 +110,19 @@ class TaskService
             }
         }
 
+        // WIP limit (Daily PIC Workspace): block kalau user assignee sudah penuh
+        if ($newStatus === 'IN_PROGRESS' && $task->status !== 'IN_PROGRESS' && $task->assignedTo) {
+            $limit = (int) config('atlas-thresholds.wip.in_progress_per_user', 5);
+            $current = Task::query()
+                ->where('assignedTo', $task->assignedTo)
+                ->where('status', 'IN_PROGRESS')
+                ->where('id', '!=', $task->id)
+                ->count();
+            if ($current >= $limit) {
+                abort(409, "WIP limit tercapai: assignee sudah punya {$current} task IN_PROGRESS (limit {$limit}). Selesaikan task lain dulu sebelum mulai yang baru.");
+            }
+        }
+
         $fromStatus = $task->status;
         $update = ['status' => $newStatus];
         if ($newStatus === 'COMPLETED' && !$task->actualCompletion) {

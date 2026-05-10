@@ -8,7 +8,7 @@ import {
   useState,
 } from 'react'
 import type { Dispatch, FormEvent, ReactNode, SetStateAction } from 'react'
-import { api, sessionStorage } from '../lib/api'
+import { api, extractErrorMessage, sessionStorage } from '../lib/api'
 import { useAuth as useInertiaAuth } from '../hooks/useAuth'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useRealtimeEvents } from '../hooks/useRealtimeEvents'
@@ -772,9 +772,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         selectedTaskId === dragged.id ? loadTaskDetail(dragged.id) : Promise.resolve(),
       ])
       setBoardStatus({ saving: false, message: `${dragged.code} dipindah ke ${formatStatusLabel(targetStatus)}.` })
-    } catch {
+    } catch (err) {
       setWorkGroups(prevGroups)
-      setBoardStatus({ saving: false, message: `Gagal memindah ${dragged.code}.` })
+      const serverMessage = extractErrorMessage(err, '')
+      setBoardStatus({
+        saving: false,
+        message: serverMessage
+          ? `failed: ${serverMessage}`
+          : `failed: gagal memindah ${dragged.code}.`,
+      })
     }
   }
 

@@ -83,4 +83,13 @@ return [
     'inbox_today' => [
         'cache_ttl_seconds' => env('ATLAS_INBOX_TODAY_CACHE', 60),
     ],
+
+    // ── Daily PIC Workspace: WIP limit per user (Execution Board) ─────────────
+    // Maksimal task yang sedang IN_PROGRESS untuk satu user. Backend block
+    // transisi ke IN_PROGRESS kalau user sudah mencapai batas — paksa
+    // selesaikan task aktif sebelum buka yang baru. Cegah multi-tasking
+    // berlebihan.
+    'wip' => [
+        'in_progress_per_user' => env('ATLAS_WIP_IN_PROGRESS', 5),
+    ],
 ];
