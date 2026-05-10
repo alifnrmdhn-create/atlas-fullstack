@@ -31,19 +31,24 @@ return new class extends Migration
 {
     public function up(): void
     {
+        $requiredEmails = [
+            'este.angga.yustika@ptpn.id',
+            'fadil.kurniawan.lubis@ptpn.id',
+            'dwi.zunianti@ptpn.id',
+            'alif.nugraha.ramadhan@ptpn.id',
+            'eman.siswanto@ptpn.id',
+            'bod_kmr@ptpn.id',
+        ];
+
         $emailToId = DB::table('User')
-            ->whereIn('email', [
-                'este.angga.yustika@ptpn.id',
-                'fadil.kurniawan.lubis@ptpn.id',
-                'dwi.zunianti@ptpn.id',
-                'alif.nugraha.ramadhan@ptpn.id',
-                'eman.siswanto@ptpn.id',
-                'bod_kmr@ptpn.id',
-            ])
+            ->whereIn('email', $requiredEmails)
             ->pluck('id', 'email')
             ->all();
 
-        if (count($emailToId) < 6) {
+        // Skip migration kalau ada email belum resolved. Cek per-email
+        // (lebih aman daripada count check yang bisa miss case duplicate).
+        $missing = array_filter($requiredEmails, fn ($e) => !isset($emailToId[$e]));
+        if (!empty($missing)) {
             return;
         }
 

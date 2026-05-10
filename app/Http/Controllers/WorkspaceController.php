@@ -20,6 +20,7 @@ use App\Models\UserSession;
 use App\Models\UserStatus;
 use App\Models\Workstream;
 use App\Services\BroadcastService;
+use App\Services\OrgChainService;
 use App\Services\ProgramHealthService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\JsonResponse;
@@ -493,7 +494,7 @@ class WorkspaceController extends Controller
         ]]);
     }
 
-    public function profile(Request $request): JsonResponse|Response
+    public function profile(Request $request, OrgChainService $orgChain): JsonResponse|Response
     {
         if (!$request->expectsJson()) {
             return Inertia::render('ProfileView');
@@ -501,12 +502,23 @@ class WorkspaceController extends Controller
 
         $user = $request->user()->load(['unit:id,code,name', 'directorate:id,code,name']);
 
+        // Resolve supervisor chain via OrgChainService (index 0 = atasan langsung).
+        $supervisorChain = $orgChain->getEscalationChain($user, 6)
+            ->map(fn ($supervisor) => [
+                'id' => $supervisor->id,
+                'name' => $supervisor->name,
+                'roleType' => $supervisor->roleType,
+                'positionTitle' => $supervisor->positionTitle,
+                'avatarUrl' => $supervisor->avatarUrl ?? null,
+            ])
+            ->values();
+
         return response()->json([
             'user' => $user,
-            'supervisorChain' => [],
+            'supervisorChain' => $supervisorChain,
             'subordinates' => User::query()
                 ->where('managerUserId', $user->id)
-                ->get(['id', 'name', 'email', 'roleType', 'positionTitle']),
+                ->get(['id', 'name', 'email', 'roleType', 'positionTitle', 'avatarUrl']),
             'positionHistory' => DB::table('position_history')
                 ->where('userId', $user->id)
                 ->orderByDesc('startDate')
@@ -647,7 +659,8 @@ class WorkspaceController extends Controller
                     ->select([
                         'id', 'code', 'title', 'description', 'output', 'status',
                         'percentComplete', 'priority', 'startDate', 'targetCompletion',
-                        'isBlocked', 'assignedTo', 'initiativeId',
+                        'actualCompletion', 'isBlocked', 'blockedReason', 'healthStatus',
+                        'letterIndex', 'phaseId', 'assignedTo', 'initiativeId',
                     ])
                     ->orderBy('letterIndex')
                     ->orderBy('createdAt'),
