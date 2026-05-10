@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import './AdminViews.css'
 import { useEscKey } from '../hooks/useEscKey'
+import { formatRoleLabel } from '../lib/roleLabel'
 
 type PositionDirectorate = { id: number; code: string; name: string }
 type PositionUnit = { id: number; code: string; name: string }
@@ -360,7 +361,7 @@ export function AdminPositionsView() {
                     {pos.currentHolder
                       ? <div className="admin-cell-stack">
                           <span className="text-sm admin-cell-name">{pos.currentHolder.name}</span>
-                          <span className="text-xs text-muted">{pos.currentHolder.roleType}</span>
+                          <span className="text-xs text-muted">{formatRoleLabel(pos.currentHolder.roleType)}</span>
                         </div>
                       : <span className="badge badge--yellow">Kosong</span>}
                   </td>
@@ -466,7 +467,7 @@ export function AdminPositionsView() {
                       <div className="modal-field">
                         <label className="modal-label">Role Type <span className="admin-required">*</span></label>
                         <select className="form-input" value={form.roleType} onChange={e => setForm(f => ({ ...f, roleType: e.target.value }))}>
-                          {['BOD','KADIV','KASUBDIV','ASISTEN','OFFICER','ADMIN'].map(r => <option key={r} value={r}>{r}</option>)}
+                          {['BOD','KADIV','KASUBDIV','ASISTEN','OFFICER','ADMIN'].map(r => <option key={r} value={r}>{formatRoleLabel(r)}</option>)}
                         </select>
                       </div>
                     </div>
@@ -574,7 +575,7 @@ export function AdminPositionsView() {
                           type="button"
                         >
                           <span className="text-sm text-strong">{u.name}</span>
-                          <span className="text-xs text-muted">{u.positionTitle ?? u.roleType}</span>
+                          <span className="text-xs text-muted">{u.positionTitle ?? formatRoleLabel(u.roleType)}</span>
                         </button>
                       ))}
                     </div>

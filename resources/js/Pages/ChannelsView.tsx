@@ -6,6 +6,7 @@ import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { extractErrorMessage } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
+import { formatRoleLabel } from '../lib/roleLabel'
 import './ChannelsView.css'
 import {
   Avatar,
@@ -1827,7 +1828,7 @@ export function ChannelsView({
                 <div className="channel-header-slim__dm-info">
                   <div className="channel-header-slim__dm-top">
                     <h3>{selectedDmPartner.name}</h3>
-                    <span className="ch-role-badge">{selectedDmPartner.roleType}</span>
+                    <span className="ch-role-badge">{formatRoleLabel(selectedDmPartner.roleType)}</span>
                   </div>
                   {dmPartnerPresence && (() => {
                     // Use lastActivityAt as primary truth for display — status alone
@@ -2816,7 +2817,7 @@ export function ChannelsView({
                             <Avatar name={member.name} />
                             <div>
                               <strong>{member.name}</strong>
-                              <span>{member.roleType}</span>
+                              <span>{formatRoleLabel(member.roleType)}</span>
                             </div>
                           </button>
                         )
@@ -3160,7 +3161,7 @@ export function ChannelsView({
                         <Avatar name={user.name} />
                         <div>
                           <strong>{user.name}</strong>
-                          <span>{user.roleType}</span>
+                          <span>{formatRoleLabel(user.roleType)}</span>
                         </div>
                         <span className="member-add-section__add-icon">
                           {addingMemberId === user.id ? '…' : '+'}
@@ -3190,7 +3191,7 @@ export function ChannelsView({
                     <div>
                       <strong>{member.name}</strong>
                       <p>
-                        {member.roleType}
+                        {formatRoleLabel(member.roleType)}
                         {member.status ? ` · ${member.status}` : ''}
                       </p>
                     </div>
@@ -3406,7 +3407,7 @@ export function ChannelsView({
                       <Avatar name={u.name} />
                       <div>
                         <strong>{u.name}</strong>
-                        <span>{u.roleType}</span>
+                        <span>{formatRoleLabel(u.roleType)}</span>
                       </div>
                     </button>
                   ))

@@ -111,6 +111,9 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
 
   const draftInitialized = useRef(false)
   useEffect(() => {
+    draftInitialized.current = false
+  }, [taskId])
+  useEffect(() => {
     if (detail && !draftInitialized.current) {
       draftInitialized.current = true
       setDraft({

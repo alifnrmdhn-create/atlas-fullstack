@@ -3,6 +3,7 @@ import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
+import { formatRoleLabel } from '../lib/roleLabel'
 import './AdminViews.css'
 type UserUnit = { id: number; code: string; name: string }
 type UserDirectorate = { id: number; code: string; name: string }
@@ -260,7 +261,7 @@ export function AdminUsersView() {
           onChange={e => setRoleFilter(e.target.value)}
         >
           {ROLE_OPTIONS.map(r => (
-            <option key={r} value={r}>{r === 'all' ? 'Semua Role' : r}</option>
+            <option key={r} value={r}>{r === 'all' ? 'Semua Role' : formatRoleLabel(r)}</option>
           ))}
         </select>
         <div className="view-toggle admin-toolbar-toggle">
@@ -322,7 +323,7 @@ export function AdminUsersView() {
                     </div>
                   </td>
                   <td>
-                    <span className={`badge ${ROLE_BADGE[user.roleType] ?? ''}`}>{user.roleType}</span>
+                    <span className={`badge ${ROLE_BADGE[user.roleType] ?? ''}`}>{formatRoleLabel(user.roleType)}</span>
                   </td>
                   <td>
                     <div className="admin-cell-stack">
@@ -432,7 +433,7 @@ export function AdminUsersView() {
                     <label className="modal-label">Role <span className="admin-required">*</span></label>
                     <select className="form-input" value={cuForm.roleType} onChange={e => setCuForm(f => ({ ...f, roleType: e.target.value }))}>
                       {['BOD','KADIV','KASUBDIV','ASISTEN','OFFICER','ADMIN'].map(r => (
-                        <option key={r} value={r}>{r}</option>
+                        <option key={r} value={r}>{formatRoleLabel(r)}</option>
                       ))}
                     </select>
                   </div>

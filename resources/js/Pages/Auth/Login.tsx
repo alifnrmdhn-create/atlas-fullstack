@@ -144,7 +144,6 @@ export default function Login({ errors: pageErrors }: PageProps) {
                                     placeholder=" "
                                     type="text"
                                     value={data.identifier}
-                                    autoFocus
                                 />
                                 <label htmlFor="identifier" className="auth-float-label">NIK atau User ID</label>
                             </div>

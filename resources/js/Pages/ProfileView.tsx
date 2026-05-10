@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
+import { formatRoleLabel } from '../lib/roleLabel'
 import './ProfileView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -125,7 +126,7 @@ function OrgNode({ person, positionName, isSelf = false }:
         </div>
         <div className="org-node__pos">{positionName}</div>
         {role && (
-          <span className="profile-role-badge org-node__role-badge" data-tone={tone}>{role}</span>
+          <span className="profile-role-badge org-node__role-badge" data-tone={tone}>{formatRoleLabel(role)}</span>
         )}
       </div>
     </div>
@@ -236,7 +237,7 @@ export function ProfileView() {
               <p className="profile-identity-hero__pos">{user?.position?.name ?? user?.positionTitle ?? 'Jabatan belum ditetapkan'}</p>
               <div className="profile-identity-hero__badges">
                 {user?.roleType && (
-                  <span className="profile-role-badge" data-tone={userRoleTone}>{user.roleType}</span>
+                  <span className="profile-role-badge" data-tone={userRoleTone}>{formatRoleLabel(user.roleType)}</span>
                 )}
                 {user?.position?.levelCode && (
                   <span className="profile-role-badge profile-role-badge--level" data-tone="gray">{user.position.levelCode}</span>

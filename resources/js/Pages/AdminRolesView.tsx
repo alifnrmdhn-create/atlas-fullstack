@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
+import { formatRoleLabel } from '../lib/roleLabel'
 import './AdminViews.css'
 
 type RoleConfig = {
@@ -148,7 +149,7 @@ export function AdminRolesView() {
                     <span
                       className={`roles-list__code badge badge--${config.badgeColor}`}
                     >
-                      {config.role}
+                      {formatRoleLabel(config.role)}
                     </span>
                     <div className="roles-list__info">
                       <div className="roles-list__label text-strong text-sm">

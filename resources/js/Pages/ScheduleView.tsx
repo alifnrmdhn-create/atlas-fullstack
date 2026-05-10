@@ -5,6 +5,7 @@ import { useDialogFocus } from '../hooks/useDialogFocus'
 import type { Meeting, MeetingType, AttendeeRole, RsvpStatus } from '../types'
 import { MeetingDetailPanel } from './MeetingDetailPanel'
 import { useEscKey } from '../hooks/useEscKey'
+import { formatRoleLabel } from '../lib/roleLabel'
 import './ScheduleView.css'
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -988,7 +989,7 @@ export function ScheduleView() {
               <div className="person-view-header__info">
                 <span className="person-view-header__name">{personView.name}</span>
                 <span className="person-view-header__meta">
-                  {personView.positionTitle ?? personView.roleType}
+                  {personView.positionTitle ?? formatRoleLabel(personView.roleType)}
                   {personView.unit ? ` · ${personView.unit.name}` : ''}
                 </span>
               </div>
@@ -1036,7 +1037,7 @@ export function ScheduleView() {
                       <div className="person-view-item__info">
                         <span className="person-view-item__name">{u.name}</span>
                         <span className="person-view-item__meta">
-                          {u.positionTitle ?? u.roleType}{u.unit ? ` · ${u.unit.code}` : ''}
+                          {u.positionTitle ?? formatRoleLabel(u.roleType)}{u.unit ? ` · ${u.unit.code}` : ''}
                         </span>
                       </div>
                     </button>
@@ -1907,7 +1908,7 @@ export function ScheduleView() {
                                     onClick={() => { setSelectedDelegate(u); setDelegateSearch('') }}
                                   >
                                     <span className="text-sm text-strong">{u.name}</span>
-                                    <span className="text-xs text-muted">{u.positionTitle ?? u.roleType}</span>
+                                    <span className="text-xs text-muted">{u.positionTitle ?? formatRoleLabel(u.roleType)}</span>
                                   </button>
                                 ))}
                               </div>
@@ -2126,7 +2127,7 @@ export function ScheduleView() {
                             <Avatar name={u.name} size={22} />
                             <div className="schedule-user-option__body">
                               <span className="text-sm text-strong">{u.name}</span>
-                              <span className="text-xs text-muted">{u.positionTitle ?? u.roleType}{u.unit ? ` · ${u.unit.code}` : ''}</span>
+                              <span className="text-xs text-muted">{u.positionTitle ?? formatRoleLabel(u.roleType)}{u.unit ? ` · ${u.unit.code}` : ''}</span>
                             </div>
                           </div>
                         </button>

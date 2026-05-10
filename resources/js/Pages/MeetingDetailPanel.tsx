@@ -3,6 +3,7 @@ import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { PicaCompositePanel } from '../components/PicaCompositePanel'
+import { formatRoleLabel } from '../lib/roleLabel'
 import type { Meeting, MeetingType, PresenceStatus } from '../types'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -1279,7 +1280,7 @@ export function MeetingDetailPanel({
                               }}
                             >
                               <span className="text-sm text-strong">{u.name}</span>
-                              <span className="text-xs text-muted">{u.positionTitle ?? u.roleType}</span>
+                              <span className="text-xs text-muted">{u.positionTitle ?? formatRoleLabel(u.roleType)}</span>
                             </button>
                           ))}
                         </div>

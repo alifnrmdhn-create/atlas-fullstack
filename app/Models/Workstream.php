@@ -21,7 +21,7 @@ class Workstream extends Model
     const UPDATED_AT = 'updatedAt';
 
     protected $guarded = ['id'];
-    protected $appends = ['picPersonIds'];
+    protected $appends = ['picPersonIds', 'taskCount', 'phaseCount'];
     protected $hidden  = ['entityPics'];
     protected string $ownerColumn = 'ownerId';
 
@@ -69,5 +69,15 @@ class Workstream extends Model
             return $this->entityPics->pluck('userId')->map(fn ($id) => (int) $id)->values()->all();
         }
         return [];
+    }
+
+    public function getTaskCountAttribute(): int
+    {
+        return $this->relationLoaded('tasks') ? $this->tasks->count() : 0;
+    }
+
+    public function getPhaseCountAttribute(): int
+    {
+        return $this->relationLoaded('phases') ? $this->phases->count() : 0;
     }
 }

@@ -1,0 +1,80 @@
+[
+    {
+        "id": 2,
+        "code": "DIRUT",
+        "name": "Direktur Utama",
+        "domain": null,
+        "isActive": true,
+        "createdAt": "2026-05-09T22:45:41",
+        "shortName": null,
+        "updatedAt": "2026-05-09T22:45:41",
+        "corporateId": null,
+        "corporateCode": null,
+        "corporateName": null
+    },
+    {
+        "id": 3,
+        "code": "DBS",
+        "name": "Direktur Bisnis",
+        "domain": null,
+        "isActive": true,
+        "createdAt": "2026-05-09T22:45:41",
+        "shortName": null,
+        "updatedAt": "2026-05-09T22:45:41",
+        "corporateId": null,
+        "corporateCode": null,
+        "corporateName": null
+    },
+    {
+        "id": 4,
+        "code": "DAS",
+        "name": "Direktur Aset",
+        "domain": null,
+        "isActive": true,
+        "createdAt": "2026-05-09T22:45:41",
+        "shortName": null,
+        "updatedAt": "2026-05-09T22:45:41",
+        "corporateId": null,
+        "corporateCode": null,
+        "corporateName": null
+    },
+    {
+        "id": 5,
+        "code": "DIR-KMR",
+        "name": "Direktorat Keuangan dan Manajemen Risiko",
+        "domain": "ptpn.id",
+        "isActive": true,
+        "createdAt": "2026-04-11T00:00:00",
+        "shortName": "Dir. KMR",
+        "updatedAt": "2026-04-11T00:00:00",
+        "corporateId": "1",
+        "corporateCode": "PTPN III",
+        "corporateName": "PT Perkebunan Nusantara III (Persero)"
+    },
+    {
+        "id": 6,
+        "code": "DPP",
+        "name": "Direktur Produksi & Pengembangan",
+        "domain": null,
+        "isActive": true,
+        "createdAt": "2026-05-09T22:45:50",
+        "shortName": null,
+        "updatedAt": "2026-05-09T22:45:50",
+        "corporateId": null,
+        "corporateCode": null,
+        "corporateName": null
+    },
+    {
+        "id": 7,
+        "code": "DSU",
+        "name": "Direktur SDM & Umum",
+        "domain": null,
+        "isActive": true,
+        "createdAt": "2026-05-09T22:45:50",
+        "shortName": null,
+        "updatedAt": "2026-05-09T22:45:50",
+        "corporateId": null,
+        "corporateCode": null,
+        "corporateName": null
+    }
+]

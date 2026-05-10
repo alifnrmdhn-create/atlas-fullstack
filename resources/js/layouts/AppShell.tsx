@@ -14,6 +14,7 @@ import { CommandPalette } from '../components/CommandPalette'
 import { ContextPanel } from '../components/ContextPanel'
 import { TOPBAR_ACTIONS, TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import { resolveContextPanel } from '../lib/context-panel-config'
+import { formatRoleLabel, formatRoleLabelTitleCase } from '../lib/roleLabel'
 
 type NavItem = {
   path: string
@@ -932,31 +933,33 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // KASUBDIV          → Plan, Do, Performance mid (KPI Divisi + KPI Saya), Pelaporan, Act, Komunikasi, Akun
   // OFFICER/ASISTEN   → Do prioritas, KPI Saya, Pelaporan read, Act, Komunikasi, Akun
   // Default (Admin)   → full nav
+  // NOTE: grup "Pelaporan" sengaja dihilangkan dari sidebar (per permintaan user 2026-05-10).
+  // Akan di-revisit nanti — JANGAN munculkan kembali tanpa permintaan eksplisit.
   const navGroups: { label: string; items: NavItem[] }[] = (() => {
     if (role === 'BOD' || role === 'KADIV') {
       return [
-        grpPerencanaan, grpEksekusi, grpPerformanceFull, grpPelaporan,
+        grpPerencanaan, grpEksekusi, grpPerformanceFull,
         grpTindakLanjut, grpKomunikasi, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
       ]
     }
     if (role === 'KASUBDIV') {
       return [
-        grpPerencanaan, grpEksekusi, grpPerformanceMid, grpPelaporan,
+        grpPerencanaan, grpEksekusi, grpPerformanceMid,
         grpTindakLanjut, grpKomunikasi, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
       ]
     }
     if (role === 'OFFICER' || role === 'ASISTEN') {
       return [
-        grpEksekusiReadOnly, grpPerencanaan, grpPerformanceMin, grpPelaporanReadOnly,
+        grpPerencanaan, grpEksekusiReadOnly, grpPerformanceMin,
         grpTindakLanjut, grpKomunikasi, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
       ]
     }
     // Default: full nav (SUPERADMIN, ADMIN, unknown role)
     return [
-      grpPerencanaan, grpEksekusi, grpPerformanceFull, grpPelaporan,
+      grpPerencanaan, grpEksekusi, grpPerformanceFull,
       grpTindakLanjut, grpKomunikasi, grpAkun,
       ...(isAdmin ? [grpAdmin] : []),
     ]
@@ -1023,8 +1026,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
         <nav className="sidebar__nav">
           {/* Today — Home (organisasi) + Focus (personal), always at top */}
           {(() => {
-            const showHome = role === 'BOD' || role === 'KADIV' || role === 'KASUBDIV' || isAdmin
-            const todayItems: NavItem[] = showHome ? [NI.home, fokusItem] : [fokusItem]
+            const todayItems: NavItem[] = [NI.home, fokusItem]
             return (
               <div className="sidebar__fokus-wrap">
                 {todayItems.map((item) => {
@@ -1119,9 +1121,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
               <span className="sidebar__user-card-name">{currentUser?.name ?? 'Atlas User'}</span>
               <span className="sidebar__user-card-role">{
                 currentUser?.unit?.name
-                ?? (currentUser?.roleType
-                  ? currentUser.roleType.charAt(0).toUpperCase() + currentUser.roleType.slice(1).toLowerCase()
-                  : 'Member')
+                ?? formatRoleLabelTitleCase(currentUser?.roleType, 'Member')
               }</span>
             </span>
             <svg className="sidebar__user-card-chev" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1137,7 +1137,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                   <div className="sidebar__user-popover-avatar">{userInitials || 'AU'}</div>
                   <div>
                     <strong>{currentUser?.name}</strong>
-                    <span>{currentUser?.unit?.name ?? currentUser?.roleType}</span>
+                    <span>{currentUser?.unit?.name ?? formatRoleLabel(currentUser?.roleType)}</span>
                   </div>
                 </div>
                 <div className="sidebar__user-popover-divider" />
