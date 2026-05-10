@@ -1,0 +1,864 @@
+/* ════════════════════════════════════════════════════════════════════
+   Channels Polish — World-class redesign aligned with Home + AppShell
+   ────────────────────────────────────────────────────────────────────
+   Scope: .ds.channels-v2 (does not affect other views)
+   Imported AFTER responsive.css/channels.css for specificity wins.
+   Phases:
+     1 ─ Foundation alignment (panel chrome, page-shell, stagger entrance)
+     2 ─ Toolbar + Empty state polish
+     3 ─ Composer + Sidebar sections
+     4 ─ Message stream + Members panel + DM intimate treatment
+   ════════════════════════════════════════════════════════════════════ */
+
+
+/* ───────── PHASE 1 — Pattern A: workspace 1 card, isi FLAT ─────────
+   Workspace is the only card chrome layer. Inner panels (sidebar list,
+   stream, members) are FLAT — separated only by vertical hairlines.
+   Linear/Notion style: clean, no nested card noise. */
+
+.ds.channels-v2 {
+  background: transparent;
+}
+
+/* Layout fills the workspace card edge-to-edge, no padding/gap.
+   Inner panels' own padding handles internal breathing. */
+.ds.channels-v2 .channels-layout,
+.ds.channels-v2 .channels-layout--polished {
+  background: transparent !important;
+  background-image: none !important;
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+/* Inner panels: NO card chrome. Vertical hairlines do the dividing. */
+.ds.channels-v2 .panel.channel-panel,
+.ds.channels-v2 .panel.channel-stream,
+.ds.channels-v2 .panel.channel-stream--polished,
+.ds.channels-v2 .panel.members-panel,
+.ds.channels-v2 .panel.thread-panel,
+.ds.channels-v2 .panel.thread-panel--polished {
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+
+/* Hairline divider: sidebar list | stream | members */
+.ds.channels-v2 .panel.channel-panel {
+  border-right: 1px solid var(--panel-border-soft) !important;
+}
+.ds.channels-v2 .panel.members-panel {
+  border-left: 1px solid var(--panel-border-soft) !important;
+}
+
+/* Inner sidebar wrapper: transparent so card background shows through */
+.ds.channels-v2 .channel-sidebar,
+.ds.channels-v2 .channel-sidebar--compact {
+  background: transparent;
+}
+
+/* Sidebar top section: hairline below + tidy padding */
+.ds.channels-v2 .channel-sidebar__top {
+  border-bottom: 1px solid var(--panel-border-soft);
+  padding: 14px 16px 12px;
+  background: transparent;
+}
+
+/* Stagger entrance — Home-style cascade */
+@keyframes channels-section-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ds.channels-v2 .view-toolbar {
+  animation: channels-section-enter 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 80ms;
+}
+.ds.channels-v2 .panel.channel-panel {
+  animation: channels-section-enter 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 160ms;
+}
+.ds.channels-v2 .panel.channel-stream {
+  animation: channels-section-enter 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 220ms;
+}
+.ds.channels-v2 .panel.members-panel {
+  animation: channels-section-enter 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 280ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds.channels-v2 .view-toolbar,
+  .ds.channels-v2 .panel.channel-panel,
+  .ds.channels-v2 .panel.channel-stream,
+  .ds.channels-v2 .panel.members-panel {
+    animation: none;
+  }
+}
+
+
+/* ───────── PHASE 2 — Toolbar + Empty state polish ───────── */
+
+/* Toolbar — page header inside workspace card. Hairline below separates
+   it from the flat content layout (sidebar list | stream). */
+.ds.channels-v2 .view-toolbar {
+  background: transparent;
+  border-bottom: 1px solid var(--panel-border-soft);
+  padding: 22px 24px 18px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "title    .         right"
+    "subtitle subtitle  subtitle";
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 2px;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  flex-wrap: wrap;
+}
+
+.ds.channels-v2 .view-toolbar__title {
+  grid-area: title;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.018em;
+  line-height: 1.2;
+  color: var(--text-strong);
+  margin: 0;
+  white-space: normal;
+}
+
+/* Hide the legacy vertical separator dot */
+.ds.channels-v2 .view-toolbar__sep {
+  display: none;
+}
+
+.ds.channels-v2 .view-toolbar__subtitle {
+  grid-area: subtitle;
+  display: block;
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-muted);
+  letter-spacing: 0;
+  max-width: 78ch;
+  margin: 0;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.ds.channels-v2 .view-toolbar__right {
+  grid-area: right;
+  margin-left: 0;
+  align-self: center;
+  padding-bottom: 0;
+  border-left: none;
+}
+
+.ds.channels-v2 .view-toolbar__stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 0;
+  border-left: none;
+}
+
+.ds.channels-v2 .view-toolbar__stats > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text);
+  border: 1px solid var(--panel-border-soft);
+  white-space: nowrap;
+}
+
+.ds.channels-v2 .view-toolbar__stats > span em {
+  color: var(--text-muted);
+  font-style: normal;
+  font-weight: 500;
+}
+
+.ds.channels-v2 .view-toolbar__stats > span.text-red {
+  background: var(--red-dim);
+  color: var(--red);
+  border-color: transparent;
+}
+
+.ds.channels-v2 .view-toolbar__stats > span.text-red em {
+  color: var(--red);
+  opacity: 0.8;
+}
+
+@media (min-width: 1600px) {
+  .ds.channels-v2 .view-toolbar {
+    padding: 24px 32px 20px;
+  }
+}
+
+/* Empty state: gradient indigo glow (matches .empty-state__icon-wrap) */
+.ds.channels-v2 .channel-empty-cta {
+  padding: 32px 22px 28px;
+  gap: 14px;
+}
+
+.ds.channels-v2 .channel-empty-cta__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0;
+  background:
+    radial-gradient(ellipse 74% 74% at 50% 0%, color-mix(in srgb, var(--indigo) 22%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--indigo-dim) 88%, var(--surface-2) 12%) 0%, var(--surface-2) 100%);
+  border: 1px solid color-mix(in srgb, var(--indigo) 18%, var(--panel-border) 82%);
+  color: var(--indigo);
+  box-shadow: 0 6px 16px -8px rgba(31, 107, 53, 0.35);
+}
+
+.ds.channels-v2 .channel-empty-cta__icon svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+.ds.channels-v2 .channel-empty-cta h3 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.ds.channels-v2 .channel-empty-cta p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 32ch;
+  margin: 0 0 4px;
+}
+
+.ds.channels-v2 .channel-empty-cta .btn--primary {
+  background: var(--indigo);
+  color: var(--text-inverse);
+  border: 1px solid var(--indigo);
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px -6px rgba(31, 107, 53, 0.45);
+  transition: transform 120ms ease, box-shadow 160ms ease;
+}
+.ds.channels-v2 .channel-empty-cta .btn--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -6px rgba(31, 107, 53, 0.55);
+}
+
+.ds.channels-v2 .channel-empty-cta .btn--ghost {
+  background: var(--surface-1);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.ds.channels-v2 .channel-empty-cta .btn--ghost:hover {
+  background: var(--surface-2);
+  border-color: var(--panel-border-strong);
+}
+
+
+/* ───────── PHASE 3 — Composer + Sidebar Sections ───────── */
+
+/* Composer: integrated INTO the stream card (no longer its own floating card).
+   It sits at bottom of the stream card with a hairline divider above.
+   `!important` overrides responsive.css:9606 (gradient bg + -12px glow). */
+.ds.channels-v2 .composer-slim {
+  margin: 0 !important;
+  background: var(--app-bg) !important;
+  background-image: none !important;
+  border: none !important;
+  border-top: 1px solid var(--panel-border-soft) !important;
+  border-radius: 0 !important;
+  padding: 12px 18px 14px;
+  box-shadow: none !important;
+}
+
+/* Composer's inner box keeps its own light surface + focus ring */
+.ds.channels-v2 .composer-slim__box {
+  background: var(--surface-1) !important;
+  background-image: none !important;
+  border: 1px solid var(--panel-border-soft) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+.ds.channels-v2 .composer-slim__box:focus-within {
+  background: var(--app-bg) !important;
+  border-color: color-mix(in srgb, var(--indigo) 45%, var(--panel-border) 55%) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--indigo) 10%, transparent) !important;
+}
+
+.ds.channels-v2 .composer-slim__textarea {
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 8px 6px 6px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Toolbar buttons in composer — consistent hover/active surfaces */
+.ds.channels-v2 .composer-slim__toolbar {
+  padding: 4px 4px 2px;
+}
+
+.ds.channels-v2 .composer-slim__icon-btn {
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: var(--text-muted);
+  transition: background 120ms ease, color 120ms ease;
+}
+.ds.channels-v2 .composer-slim__icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.ds.channels-v2 .composer-slim__icon-btn.is-active,
+.ds.channels-v2 .composer-slim__icon-btn--active {
+  background: var(--indigo-dim);
+  color: var(--indigo);
+}
+
+.ds.channels-v2 .composer-slim__helper {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  letter-spacing: 0.005em;
+}
+
+.ds.channels-v2 .composer-slim__send {
+  border-radius: 999px;
+  background: var(--indigo);
+  color: var(--text-inverse);
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  box-shadow: 0 4px 10px -4px rgba(31, 107, 53, 0.45);
+  transition: transform 120ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+.ds.channels-v2 .composer-slim__send:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px -4px rgba(31, 107, 53, 0.55);
+}
+.ds.channels-v2 .composer-slim__send:disabled {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  box-shadow: none;
+  opacity: 1;
+}
+
+/* Sidebar sections: AppShell-style group treatment */
+.ds.channels-v2 .channel-list-compact {
+  padding: 6px 8px 12px;
+}
+
+.ds.channels-v2 .channel-section-compact + .channel-section-compact {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--panel-border-soft);
+}
+
+.ds.channels-v2 .channel-section-compact__header {
+  padding: 6px 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: transparent;
+  border-radius: 6px;
+}
+.ds.channels-v2 .channel-section-compact__header:hover {
+  background: var(--surface-1);
+  color: var(--text);
+}
+
+.ds.channels-v2 .channel-section-compact__count {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.ds.channels-v2 .channel-section-compact__add {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Channel rows: 3px indigo bar on active (mirrors AppShell rail mode) */
+.ds.channels-v2 .channel-row {
+  position: relative;
+  border-radius: 7px;
+  padding: 7px 10px 7px 14px;
+  transition: background 120ms ease;
+}
+.ds.channels-v2 .channel-row:hover {
+  background: var(--surface-1);
+}
+.ds.channels-v2 .channel-row.is-active {
+  background: var(--indigo-dim);
+}
+.ds.channels-v2 .channel-row.is-active::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--indigo);
+}
+.ds.channels-v2 .channel-row.is-active .channel-row__name {
+  color: var(--indigo);
+  font-weight: 600;
+}
+
+.ds.channels-v2 .channel-row.has-unread .channel-row__name {
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.ds.channels-v2 .channel-row__unread {
+  background: var(--indigo);
+  color: var(--text-inverse);
+  font-weight: 700;
+}
+
+/* Sidebar search: cleaner surface */
+.ds.channels-v2 .channel-sidebar__search {
+  background: var(--surface-1);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.ds.channels-v2 .channel-sidebar__search:focus-within {
+  background: var(--app-bg);
+  border-color: color-mix(in srgb, var(--indigo) 35%, var(--panel-border) 65%);
+}
+.ds.channels-v2 .channel-sidebar__search input {
+  background: transparent;
+  border: none;
+  font-size: 13px;
+}
+
+.ds.channels-v2 .channel-sidebar__search-hint {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+  background: var(--surface-2);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* Filter pills: less chunky */
+.ds.channels-v2 .sidebar-filter-pill {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.ds.channels-v2 .sidebar-filter-pill:hover {
+  background: var(--surface-1);
+  color: var(--text);
+}
+.ds.channels-v2 .sidebar-filter-pill.is-active {
+  background: var(--indigo-dim);
+  color: var(--indigo);
+}
+
+.ds.channels-v2 .channel-sidebar__browse-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--indigo);
+  padding: 5px 8px;
+  border-radius: 6px;
+  transition: background 120ms ease;
+}
+.ds.channels-v2 .channel-sidebar__browse-btn:hover {
+  background: var(--indigo-dim);
+}
+
+
+/* ───────── ROUND-2 polish ───────── */
+
+/* Stream-area "no channel selected" empty state — fills the entire card.
+   Replaces the legacy `SectionState` with a richer, more anchored state. */
+.ds.channels-v2 .channel-stream-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+  gap: 14px;
+  text-align: center;
+}
+
+.ds.channels-v2 .channel-stream-empty__icon {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 74% 74% at 50% 0%, color-mix(in srgb, var(--indigo) 24%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--indigo-dim) 90%, var(--surface-2) 10%) 0%, var(--surface-2) 100%);
+  border: 1px solid color-mix(in srgb, var(--indigo) 18%, var(--panel-border) 82%);
+  color: var(--indigo);
+  box-shadow: 0 8px 22px -10px rgba(31, 107, 53, 0.4);
+  margin-bottom: 4px;
+}
+
+.ds.channels-v2 .channel-stream-empty__title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.014em;
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.ds.channels-v2 .channel-stream-empty__text {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  max-width: 38ch;
+  margin: 0;
+}
+
+/* Sidebar empty state — tighter vertical rhythm, icon closer to text */
+.ds.channels-v2 .channel-empty-cta {
+  flex: 0 1 auto !important;
+  justify-content: flex-start !important;
+  padding: 28px 20px 24px !important;
+  gap: 12px !important;
+  margin-top: 8px;
+}
+
+.ds.channels-v2 .channel-empty-cta__icon {
+  margin-bottom: 2px;
+}
+
+.ds.channels-v2 .channel-empty-cta .btn--primary,
+.ds.channels-v2 .channel-empty-cta .btn--ghost {
+  width: auto;
+  align-self: stretch;
+}
+
+/* Browse all channels link — proper hover + tighter padding */
+.ds.channels-v2 .channel-sidebar__browse-btn {
+  background: transparent !important;
+  border: none !important;
+  padding: 6px 8px !important;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--indigo);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  transition: background 120ms ease;
+}
+.ds.channels-v2 .channel-sidebar__browse-btn:hover {
+  background: var(--indigo-dim) !important;
+}
+
+/* Search input polish */
+.ds.channels-v2 .channel-sidebar__search input {
+  background: var(--surface-1) !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px;
+  font-size: 13px;
+  padding: 8px 12px 8px 32px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.ds.channels-v2 .channel-sidebar__search input:focus {
+  background: var(--app-bg) !important;
+  border-color: color-mix(in srgb, var(--indigo) 40%, var(--panel-border) 60%) !important;
+}
+
+/* ───────── PHASE 4 — Stream + Members + DM intimate ───────── */
+
+/* Empty state inside stream area should fill vertical space so the composer
+   doesn't touch it — they need breathing room between them.
+   Also kill the light-mode dashed-border + green-gradient card treatment
+   from responsive.css:10874 (.section-state, .empty-state, .panel__empty)
+   and responsive.css:10151 (.channel-empty-cta, .channel-dm-empty) — those
+   wrap empty states in floating cards which conflict with our flat surface. */
+.ds.channels-v2 .section-state,
+.ds.channels-v2 .empty-state,
+.ds.channels-v2 .panel__empty,
+.ds.channels-v2 .channel-empty-cta,
+.ds.channels-v2 .channel-empty-state,
+.ds.channels-v2 .channel-dm-empty {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.ds.channels-v2 .panel.channel-stream > .section-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+/* Channel header — cleaner + breathing.
+   Override responsive.css `.channel-header-slim { height: 48px }`. */
+.ds.channels-v2 .channel-header-slim {
+  padding: 14px 22px;
+  background: var(--app-bg);
+  border-bottom: 1px solid var(--panel-border-soft);
+  height: auto;
+  min-height: 56px;
+}
+
+.ds.channels-v2 .channel-header-slim__title {
+  gap: 10px;
+}
+
+.ds.channels-v2 .channel-header-slim__title h3 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  color: var(--text-strong);
+}
+
+.ds.channels-v2 .channel-header-slim__hash {
+  color: var(--text-muted);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.ds.channels-v2 .channel-header-slim__members {
+  background: var(--surface-1);
+  color: var(--text-muted);
+  border: 1px solid var(--panel-border-soft);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 120ms ease, color 120ms ease;
+}
+.ds.channels-v2 .channel-header-slim__members:hover {
+  background: var(--indigo-dim);
+  color: var(--indigo);
+  border-color: transparent;
+}
+
+/* Day separator: bigger typography + breathing */
+.ds.channels-v2 .message-group__separator {
+  margin: 22px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ds.channels-v2 .message-group__separator::before,
+.ds.channels-v2 .message-group__separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--panel-border-soft);
+}
+.ds.channels-v2 .message-group__separator span {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--app-bg);
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border-soft);
+}
+
+/* Message group spacing */
+.ds.channels-v2 .message-group + .message-group {
+  margin-top: 4px;
+}
+
+.ds.channels-v2 .message-stream--slackish {
+  padding: 4px 0 16px;
+}
+
+/* Members panel polish */
+.ds.channels-v2 .members-panel {
+  width: 240px;
+}
+
+.ds.channels-v2 .members-panel__header {
+  padding: 14px 18px 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--panel-border-soft);
+  background: var(--app-bg);
+}
+
+.ds.channels-v2 .member-row {
+  padding: 8px 18px;
+  border-radius: 0;
+  transition: background 120ms ease;
+}
+.ds.channels-v2 .member-row:hover {
+  background: var(--surface-1);
+}
+
+.ds.channels-v2 .member-row__name {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.ds.channels-v2 .member-row__dot {
+  width: 8px;
+  height: 8px;
+  box-shadow: 0 0 0 2px var(--app-bg);
+}
+
+/* ── DM intimate treatment ─────────────────────────────────────────── */
+
+/* Stream area gets warm tint when DM is active */
+.ds.channels-v2 .panel.channel-stream:has(.channel-header-slim__dm-info) {
+  background: color-mix(in srgb, var(--indigo) 1.5%, var(--app-bg));
+}
+
+.ds.channels-v2 .panel.channel-stream:has(.channel-header-slim__dm-info) .message-stream--slackish {
+  background: transparent;
+}
+
+/* DM header gets larger avatar + more vertical breathing */
+.ds.channels-v2 .channel-header-slim__dm-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ds.channels-v2 .channel-header-slim:has(.channel-header-slim__dm-info) {
+  padding: 18px 24px;
+  gap: 12px;
+}
+
+.ds.channels-v2 .channel-header-slim__title:has(.channel-header-slim__dm-info) > .avatar {
+  box-shadow: 0 4px 10px -4px rgba(31, 107, 53, 0.35);
+}
+
+.ds.channels-v2 .channel-header-slim__dm-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ds.channels-v2 .channel-header-slim__dm-info h3 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.014em;
+}
+
+/* Presence "last seen" indicator — more prominent */
+.ds.channels-v2 .dm-last-seen {
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ds.channels-v2 .dm-last-seen::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.ds.channels-v2 .dm-last-seen--online {
+  color: var(--green);
+}
+.ds.channels-v2 .dm-last-seen--do_not_disturb {
+  color: var(--red);
+}
+.ds.channels-v2 .dm-last-seen--offline {
+  color: var(--text-muted);
+}
+.ds.channels-v2 .dm-last-seen--offline::before {
+  background: transparent;
+  border: 1.5px solid currentColor;
+}
+
+/* DM messages: bubble feel — rounder + own-message tinted */
+.ds.channels-v2 .panel.channel-stream:has(.channel-header-slim__dm-info) .message-card--slackish {
+  border-radius: var(--radius-md);
+}
+
+.ds.channels-v2 .message-card--dm.message-card--own {
+  background: color-mix(in srgb, var(--indigo) 8%, var(--app-bg));
+}
+
+/* DM rows in sidebar — slightly larger avatar wrap, prominent presence */
+.ds.channels-v2 .channel-row--dm .dm-avatar-wrap {
+  position: relative;
+}
+.ds.channels-v2 .channel-row--dm .dm-avatar-wrap::after {
+  content: none;
+}
+
+/* Polished scrollbar inside stream + sidebar */
+.ds.channels-v2 .message-stream::-webkit-scrollbar,
+.ds.channels-v2 .channel-list-compact::-webkit-scrollbar,
+.ds.channels-v2 .members-panel::-webkit-scrollbar {
+  width: 8px;
+}
+.ds.channels-v2 .message-stream::-webkit-scrollbar-thumb,
+.ds.channels-v2 .channel-list-compact::-webkit-scrollbar-thumb,
+.ds.channels-v2 .members-panel::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+}
+.ds.channels-v2:hover .message-stream::-webkit-scrollbar-thumb,
+.ds.channels-v2:hover .channel-list-compact::-webkit-scrollbar-thumb,
+.ds.channels-v2:hover .members-panel::-webkit-scrollbar-thumb {
+  background: var(--panel-border-soft);
+}
