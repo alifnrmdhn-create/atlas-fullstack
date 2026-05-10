@@ -9,11 +9,22 @@ import './HomeView.css'
 /* ─── Inertia props ─────────────────────────────────────────── */
 
 type ScorecardSnapshot = {
-  avgDirektorat: number
-  totalDirektorat: number
-  topDirektorat: Array<{ rank: number; nama: string; kode: string; nilai: number }>
-  belowTarget: Array<{ nama: string; kode: string; nilai: number }>
+  /** 'portfolio' (DIRUT/Admin) | 'directorate' (Direktur fungsional/KADIV) | 'unit' (KASUBDIV/below) */
+  level: 'portfolio' | 'directorate' | 'unit' | string
   periode: string
+  /** Label noun for items shown — 'direktorat' for portfolio, 'divisi' for directorate level. */
+  itemLabel: string
+  /** Avg KPI of items shown. */
+  avgItem: number
+  /** Total items shown. */
+  totalItem: number
+  /** Top 3 items (direktorat for DIRUT, divisi for Direktur fungsional). */
+  topItems: Array<{ rank: number; nama: string; kode: string; nilai: number }>
+  /** Items below 80% target threshold. */
+  belowTarget: Array<{ nama: string; kode: string; nilai: number }>
+  /** User's own direktorat — header context for directorate-level views.
+   * Null for portfolio (DIRUT oversees all, no singular "own"). */
+  ownItem: { kode: string; nama: string; nilai: number } | null
 }
 
 /* ─── Helpers ───────────────────────────────────────────────── */
@@ -428,30 +439,36 @@ export default function HomeView() {
     })
     .slice(0, 6)
 
-  const onTargetCount = scorecard.totalDirektorat - scorecard.belowTarget.length
+  /* "On track" stat — universal across roles. Was previously "X/Y direktorat
+   * hijau" which only made sense for DIRUT (portfolio view); for everyone
+   * else the metric was applied to the wrong scope. Now: programs on track
+   * out of active programs (excludes selesai + draft/pipeline). Auto scope-
+   * filtered via OrgScope on the programs side. */
+  const activeProgramCount = summary.onTrack + summary.atRisk + tlm
+  const onTrackProgramCount = summary.onTrack
   const actionCount = tlm + needsAction.length + criticalControlCount
   const now = new Date()
 
   /* Count-up — delays aligned with section stagger fade-in (stats=260ms,
    * portfolio=380ms). Numbers tick up just as their section settles in. */
-  const onTargetAnim = useCountUp(onTargetCount, { delay: 300, duration: 700 })
+  const onTrackAnim = useCountUp(onTrackProgramCount, { delay: 300, duration: 700 })
   const actionCountAnim = useCountUp(actionCount, { delay: 300, duration: 700 })
   const totalAnim = useCountUp(summary.total, { delay: 300, duration: 700 })
-  const avgKpiAnim = useCountUp(scorecard.avgDirektorat, { delay: 420, duration: 800 })
+  const avgKpiAnim = useCountUp(scorecard.avgItem, { delay: 420, duration: 800 })
   const totalPortfolioAnim = useCountUp(summary.total, { delay: 420, duration: 700 })
 
   /* Real-time flash — when these values change (via SSE or partial Inertia
    * reload), the corresponding stat element flashes for 1.5s. First render
    * is skipped (count-up handles the initial entry). */
-  const onTargetRef = React.useRef<HTMLSpanElement>(null)
+  const onTrackRef = React.useRef<HTMLSpanElement>(null)
   const actionCountRef = React.useRef<HTMLSpanElement>(null)
   const totalRef = React.useRef<HTMLSpanElement>(null)
   const avgKpiRef = React.useRef<HTMLSpanElement>(null)
   const totalPortfolioRef = React.useRef<HTMLSpanElement>(null)
-  useFlashOnChange(onTargetRef, onTargetCount)
+  useFlashOnChange(onTrackRef, onTrackProgramCount)
   useFlashOnChange(actionCountRef, actionCount)
   useFlashOnChange(totalRef, summary.total)
-  useFlashOnChange(avgKpiRef, scorecard.avgDirektorat)
+  useFlashOnChange(avgKpiRef, scorecard.avgItem)
   useFlashOnChange(totalPortfolioRef, summary.total)
 
   const priorities: Priority[] = []
@@ -484,15 +501,22 @@ export default function HomeView() {
         name: d.nama,
         meta: `${d.nilai.toFixed(2)}%`,
       }))
+    /* URL + CTA depend on level: divisi-level (Direktur fungsional viewing
+     * his divisi) goes to /performance/divisi/[kode], else direktorat-level
+     * goes to /performance/kolegial/[slug]. */
+    const isDivisiLevel = scorecard.itemLabel === 'divisi'
+    const targetUrl = isDivisiLevel
+      ? `/performance/divisi/${first.kode.toLowerCase()}`
+      : `/performance/kolegial/${direkturSlug(first.kode)}`
     priorities.push({
       id: 'belowTarget',
       tone: 'red',
       icon: 'trend-down',
       primary: <>Telaah penurunan <strong>{first.nama}</strong></>,
       secondary: `${first.nilai.toFixed(2)}% — di bawah target periode ${scorecard.periode}`,
-      onClick: () => navigate(`/performance/kolegial/${direkturSlug(first.kode)}`),
+      onClick: () => navigate(targetUrl),
       contextList: otherBelow.length > 0 ? otherBelow : undefined,
-      ctaLabel: 'Buka Kolegial',
+      ctaLabel: isDivisiLevel ? 'Buka Divisi' : 'Buka Kolegial',
     })
   }
   if (needsAction.length > 0) {
@@ -589,21 +613,24 @@ export default function HomeView() {
 
           {/* ─── Stats row — number + visual context ────── */}
           <div className="hv__stats">
-            <div className="hv__stat" data-tone="green">
+            <div className="hv__stat" data-tone={onTrackProgramCount === activeProgramCount ? 'green' : 'amber'}>
               <span className="hv__eyebrow">
-                <span className="hv__eyebrow-dot" aria-hidden /> On target
+                <span className="hv__eyebrow-dot" aria-hidden /> On track
               </span>
-              <span className="hv__big" ref={onTargetRef}>
-                {Math.round(onTargetAnim)}<span className="hv__big-denom">/{scorecard.totalDirektorat}</span>
+              <span className="hv__big" ref={onTrackRef}>
+                {Math.round(onTrackAnim)}<span className="hv__big-denom">/{activeProgramCount}</span>
               </span>
-              {/* Discrete dots — one per direktorat, filled if on target */}
-              <span className="hv__stat-dots" aria-hidden>
-                {Array.from({ length: scorecard.totalDirektorat }, (_, i) => (
-                  <span key={i} className={i < onTargetCount ? 'is-on' : ''} />
-                ))}
-              </span>
+              {/* Discrete dots — one per active program, filled if on track.
+               * Capped at 12 dots to prevent overflow on portfolios with many programs. */}
+              {activeProgramCount > 0 && (
+                <span className="hv__stat-dots" aria-hidden>
+                  {Array.from({ length: Math.min(activeProgramCount, 12) }, (_, i) => (
+                    <span key={i} className={i < onTrackProgramCount ? 'is-on' : ''} />
+                  ))}
+                </span>
+              )}
               <span className="hv__sub">
-                direktorat hijau · periode {scorecard.periode}
+                program on track · periode {scorecard.periode}
               </span>
             </div>
 
@@ -754,7 +781,11 @@ export default function HomeView() {
           <section className="hv__section hv__portfolio">
             <div className="hv__portfolio-cols">
 
-              {/* KPI Achievement column */}
+              {/* KPI Achievement column — adapts per scope level:
+                * - portfolio (DIRUT): avg of 6 direktorat + top 3 ranked
+                * - directorate (Direktur fungsional): own direktorat as headline
+                *   + top 3 divisi within that direktorat ranked. Divisi rows
+                *   navigate to /performance/divisi/[kode] (per-divisi page). */}
               <div className="hv__portfolio-col">
                 <header className="hv__sec-head">
                   <h2 className="hv__sec-title">KPI Achievement</h2>
@@ -768,33 +799,63 @@ export default function HomeView() {
                 </header>
 
                 <div className="hv__col-headline">
-                  <span className="hv__big" data-tone={scorecardTone(scorecard.avgDirektorat)} ref={avgKpiRef}>
-                    {avgKpiAnim.toFixed(2)}<span className="hv__big-unit">%</span>
-                  </span>
-                  <span className="hv__sub">
-                    rata-rata achievement
-                    <span className="hv__sub-meta">
-                      {scorecard.totalDirektorat} direktorat · periode {scorecard.periode}
-                    </span>
-                  </span>
+                  {scorecard.ownItem ? (
+                    <>
+                      {/* Directorate/unit-level: user's own direktorat KPI as
+                       * headline. For directorate-level, sub-meta also surfaces
+                       * the divisi roll-up. For unit-level (KASUBDIV), no
+                       * roll-up — just direktorat name as parent context. */}
+                      <span className="hv__big" data-tone={scorecardTone(scorecard.ownItem.nilai)} ref={avgKpiRef}>
+                        {scorecard.ownItem.nilai.toFixed(2)}<span className="hv__big-unit">%</span>
+                      </span>
+                      <span className="hv__sub">
+                        {scorecard.ownItem.nama}
+                        <span className="hv__sub-meta">
+                          {scorecard.totalItem > 0 && (
+                            <>{scorecard.totalItem} {scorecard.itemLabel} · rata-rata {scorecard.avgItem.toFixed(2)}% · </>
+                          )}
+                          periode {scorecard.periode}
+                        </span>
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      {/* Portfolio-level (DIRUT): avg across all direktorat. */}
+                      <span className="hv__big" data-tone={scorecardTone(scorecard.avgItem)} ref={avgKpiRef}>
+                        {avgKpiAnim.toFixed(2)}<span className="hv__big-unit">%</span>
+                      </span>
+                      <span className="hv__sub">
+                        rata-rata achievement
+                        <span className="hv__sub-meta">
+                          {scorecard.totalItem} {scorecard.itemLabel} · periode {scorecard.periode}
+                        </span>
+                      </span>
+                    </>
+                  )}
                 </div>
 
-                <div className="hv__rank-list">
-                  {scorecard.topDirektorat.map(d => (
-                    <button
-                      key={d.kode}
-                      type="button"
-                      className="hv__rank"
-                      onClick={() => navigate(`/performance/kolegial/${direkturSlug(d.kode)}`)}
-                    >
-                      <span className="hv__rank-num" data-rank={d.rank}>{d.rank}</span>
-                      <span className="hv__rank-name">{d.nama}</span>
-                      <span className="hv__rank-value" data-tone={scorecardTone(d.nilai)}>
-                        {d.nilai.toFixed(2)}%
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                {scorecard.topItems.length > 0 && (
+                  <div className="hv__rank-list">
+                    {scorecard.topItems.map(d => (
+                      <button
+                        key={d.kode}
+                        type="button"
+                        className="hv__rank"
+                        onClick={() => navigate(
+                          scorecard.itemLabel === 'divisi'
+                            ? `/performance/divisi/${d.kode.toLowerCase()}`
+                            : `/performance/kolegial/${direkturSlug(d.kode)}`
+                        )}
+                      >
+                        <span className="hv__rank-num" data-rank={d.rank}>{d.rank}</span>
+                        <span className="hv__rank-name">{d.nama}</span>
+                        <span className="hv__rank-value" data-tone={scorecardTone(d.nilai)}>
+                          {d.nilai.toFixed(2)}%
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {scorecard.belowTarget.length > 0 && (
                   <div className="hv__alert">
@@ -806,7 +867,11 @@ export default function HomeView() {
                         key={d.kode}
                         type="button"
                         className="hv__alert-row"
-                        onClick={() => navigate(`/performance/kolegial/${direkturSlug(d.kode)}`)}
+                        onClick={() => navigate(
+                          scorecard.itemLabel === 'divisi'
+                            ? `/performance/divisi/${d.kode.toLowerCase()}`
+                            : `/performance/kolegial/${direkturSlug(d.kode)}`
+                        )}
                       >
                         <span className="hv__alert-name">{d.nama}</span>
                         <span className="hv__alert-value">{d.nilai.toFixed(2)}%</span>

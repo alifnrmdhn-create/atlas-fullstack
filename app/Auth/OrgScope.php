@@ -32,14 +32,47 @@ class OrgScope
     public static function forUser(User $user): self
     {
         $role = strtoupper($user->roleType ?? '');
-        $isExecutive = in_array($role, ['BOD', 'ADMIN', 'SUPERADMIN'], true);
 
-        if ($isExecutive) {
+        // ADMIN / SUPERADMIN — cross-cutting roles, always portfolio-wide.
+        if (in_array($role, ['ADMIN', 'SUPERADMIN'], true)) {
             return new self(
                 isExecutive: true,
                 unitIds: [],
                 name: null,
                 level: 'portfolio',
+                role: $role,
+            );
+        }
+
+        // BOD — distinguish Direktur Utama (portfolio-wide oversight) from
+        // other Direktur (functional heads scoped to their own direktorat).
+        // All Direktur are BOD members but only DIRUT has cross-direktorat
+        // accountability; others are responsible for one direktorat only.
+        if ($role === 'BOD' && $user->directorateId) {
+            $directorate = Directorate::find($user->directorateId);
+            $isDirektorUtama = $directorate && strtoupper($directorate->code) === 'DIRUT';
+
+            if ($isDirektorUtama) {
+                return new self(
+                    isExecutive: true,
+                    unitIds: [],
+                    name: $directorate?->name,
+                    level: 'portfolio',
+                    role: $role,
+                );
+            }
+
+            // Direktur fungsional (Keuangan, Produksi, SDM, dll) — scope to
+            // all units under their direktorat, sama dengan KADIV behavior.
+            $unitIds = OrganizationalUnit::query()
+                ->where('directorateId', $user->directorateId)
+                ->pluck('id')
+                ->all();
+            return new self(
+                isExecutive: false,
+                unitIds: $unitIds,
+                name: $directorate?->name,
+                level: 'directorate',
                 role: $role,
             );
         }

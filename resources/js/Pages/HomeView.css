@@ -216,15 +216,16 @@
 
 /* ─── Universal eyebrow + dot system ──────────────────────── */
 
+/* Eyebrow — sentence case Geist sans (was uppercase mono — fintech AI
+ * dashboard cliche). Reads as data label, not chrome. */
 .hv__eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
   color: var(--text-muted);
 }
 
@@ -397,29 +398,37 @@
   background: var(--indigo);
 }
 
-/* Chip row: small inline tags showing breakdown of a count */
+/* Inline breakdown text — was pill chips, now plain text with separator
+ * dots between items. Tone via color only. Reads as "metadata line"
+ * (Linear/Stripe pattern) instead of "decorated tag pills". */
 .hv__stat-chips {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 0;
   margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
 }
 
 .hv__stat-chips > span {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 7px;
-  border-radius: 999px;
-  font-size: 10.5px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
+  display: inline;
+  padding: 0;
+  background: transparent;
   white-space: nowrap;
 }
 
-.hv__stat-chips > span[data-tone="red"]   { background: var(--red-dim);    color: var(--red); }
-.hv__stat-chips > span[data-tone="amber"] { background: var(--yellow-dim); color: var(--yellow); }
+.hv__stat-chips > span + span::before {
+  content: ' · ';
+  color: var(--panel-border);
+  margin: 0 5px;
+  font-weight: 400;
+}
+
+.hv__stat-chips > span[data-tone="red"]   { color: var(--red); }
+.hv__stat-chips > span[data-tone="amber"] { color: var(--yellow); }
 
 /* Status composition track: proportional segments showing portfolio health */
 .hv__stat-track {
@@ -488,25 +497,25 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
+/* Section titles — sentence case Geist sans, not uppercase mono. The mono
+ * uppercase eyebrow pattern read as fintech-AI-template. Sentence case
+ * regular weight is Linear/Notion convention — feels like prose, not chrome. */
 .hv__sec-title {
   margin: 0;
-  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 11px;
+  font-family: inherit;
+  font-size: 14px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--text);
+  letter-spacing: -0.005em;
+  color: var(--text-strong);
 }
 
 .hv__sec-meta {
-  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 400;
   color: var(--text-muted);
-  letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -550,8 +559,8 @@
 
 .hv__pri-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 12px;
+  grid-template-columns: 1.65fr 1fr;
+  gap: 24px;
   align-items: stretch;
 }
 
@@ -565,43 +574,32 @@
 
 /* ─── Hero card ────────────────────────────────────────────── */
 
-/* Hero card — neutral surface, tone signal carried entirely by the left
- * rail (5px) and the icon. No background tint, no soft drop shadow. The
- * earlier "tinted bg + tinted icon container + tinted rail + soft chrome"
- * stack read as generic templated card; stripping back to one decisive
- * tone marker reads more intentional and editorial. */
+/* Hero — typography block, NO card chrome. Border + radius read as
+ * templated AI card. Hero now lives as pure content within the section,
+ * structurally separated only by asymmetric grid + whitespace. Tone via
+ * icon color. Hover = subtle bg tint on the whole click area. */
 .hv__pri-hero {
   position: relative;
   display: flex;
   align-items: stretch;
   padding: 0;
-  border-radius: 10px;
-  border: 1px solid var(--panel-border);
-  background: var(--panel);
-  overflow: hidden;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
   cursor: pointer;
   text-align: left;
   font-family: inherit;
-  min-height: 200px;
-  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 160ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Without a context list (no rich item rows inside hero), shrink to natural
- * size — empty middle gap between secondary text and CTA looks awkward
- * otherwise. :has() is supported in Chrome 105+ / Safari 15.4+ / FF 121+. */
-.hv__pri-hero:not(:has(.hv__pri-hero-list)) {
-  min-height: 140px;
+  transition: background-color 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hv__pri-hero:hover {
-  transform: translateY(-1px);
-  border-color: var(--panel-border-strong);
+  background-color: var(--surface-overlay-faint);
 }
 
 .hv__pri-hero:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.35);
+  background-color: var(--surface-overlay-soft);
+  box-shadow: inset 2px 0 0 rgba(22, 163, 74, 0.5);
 }
 
 /* Rail span removed from layout (display: none). Vertical decorative bars
@@ -611,8 +609,8 @@
 }
 
 /* Tone via card border-left only — structural, not decorative. */
-.hv__pri-hero[data-tone="red"]   { border-left: 3px solid var(--red); }
-.hv__pri-hero[data-tone="amber"] { border-left: 3px solid var(--yellow); }
+/* Border-left tone removed — hero has no card chrome at all now.
+ * Tone signal lives entirely in the icon color + CTA text color. */
 
 .hv__pri-hero-content {
   flex: 1;
@@ -731,97 +729,89 @@
   letter-spacing: -0.01em;
 }
 
-/* CTA — pill-shaped action call at bottom-right. Pulls the eye after
- * user reads primary + context. Hover inverts to filled dark style. */
+/* CTA — plain text link with arrow. No pill bg — that read as templated.
+ * Just inline text in tone color, arrow translates on hover. */
 .hv__pri-hero-cta {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   align-self: flex-end;
   margin-top: auto;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: var(--surface-overlay-soft);
-  font-size: 12.5px;
+  padding: 0;
+  background: transparent;
+  font-size: 13px;
   font-weight: 500;
-  color: var(--text-strong);
+  color: var(--text);
   letter-spacing: -0.005em;
-  transition: background 180ms cubic-bezier(0.4, 0, 0.2, 1),
-              color 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hv__pri-hero-cta-arrow {
   transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.hv__pri-hero:hover .hv__pri-hero-cta {
-  background: var(--text-strong);
-  color: var(--panel);
-}
+.hv__pri-hero[data-tone="red"]   .hv__pri-hero-cta { color: var(--red); }
+.hv__pri-hero[data-tone="amber"] .hv__pri-hero-cta { color: var(--yellow); }
 
 .hv__pri-hero:hover .hv__pri-hero-cta-arrow {
   transform: translateX(3px);
 }
 
-/* ─── Secondary rows ────────────────────────────────────────── */
+/* ─── Secondary rows — Linear-style list (no card chrome) ─────
+ * Stripped down from bordered cards to plain list rows. Tone signal
+ * lives entirely in icon color. Hover = subtle bg highlight only.
+ * Rows separated by hairline border-bottom, not wrapped in card. */
 
 .hv__pri-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
+  border-top: 1px solid var(--surface-overlay-soft);
 }
 
 .hv__pri-row {
   position: relative;
   display: grid;
-  grid-template-columns: 20px 1fr 16px;
-  gap: 12px;
+  grid-template-columns: 20px 1fr 14px;
+  gap: 14px;
   align-items: center;
-  padding: 14px;
-  border-radius: 10px;
-  border: 1px solid var(--panel-border-soft);
-  background: var(--panel);
+  padding: 14px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--surface-overlay-soft);
+  border-radius: 0;
+  background: transparent;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
-  overflow: hidden;
   flex: 1;
   min-height: 56px;
-  max-height: 110px;
-  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 96px;
+  transition: background-color 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* When only 1 secondary exists (data-count="2"), don't let it stretch
- * to hero height — bloated single row looks awkward. Natural height,
- * top-aligned. */
 .hv__pri-grid[data-count="2"] .hv__pri-list { align-self: start; }
 .hv__pri-grid[data-count="2"] .hv__pri-row { flex: 0 0 auto; }
 
 .hv__pri-row:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px var(--surface-overlay), 0 1px 2px var(--surface-overlay-soft);
-  border-color: var(--panel-border-strong);
+  background-color: var(--surface-overlay-faint);
 }
 
 .hv__pri-row:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.35);
+  background-color: var(--surface-overlay-soft);
+  box-shadow: inset 2px 0 0 rgba(22, 163, 74, 0.5);
 }
 
-/* Same treatment as hero — rail span removed from layout, tone via
- * card border-left. display:none keeps the JSX backwards-compat. */
+/* Rail removed — was decorative bar AND structural border-left. List
+ * pattern doesn't need either; tone via icon color only. */
 .hv__pri-row-rail {
   display: none;
 }
 
-.hv__pri-row[data-tone="red"]   { border-left: 3px solid var(--red); }
-.hv__pri-row[data-tone="amber"] { border-left: 3px solid var(--yellow); }
-
-/* Naked stroke icon — no tinted container. */
+/* Naked stroke icon — no tinted container, no border-left tone. */
 .hv__pri-row-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -830,8 +820,8 @@
 }
 
 .hv__pri-row-icon > svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .hv__pri-row[data-tone="red"]   .hv__pri-row-icon { color: var(--red); }
@@ -1110,24 +1100,21 @@
   box-shadow: inset 0 0 0 2px rgba(22, 163, 74, 0.35);
 }
 
+/* Plain numbered list — circular colored badges read as templated.
+ * Just the number itself, mono tabular for column alignment. */
 .hv__rank-num {
   width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--surface-1);
-  color: var(--text);
   font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 10.5px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 .hv__rank-num[data-rank="1"] {
-  background: var(--indigo);
-  color: var(--text-inverse);
+  color: var(--indigo);
+  font-weight: 700;
 }
 
 .hv__rank-name {
@@ -1164,11 +1151,10 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
   color: var(--red);
 }
 
@@ -1363,8 +1349,7 @@
 }
 
 .hv__trend-edges > span:nth-child(2) {
-  text-transform: uppercase;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted);
   opacity: 0.7;
 }
@@ -1580,36 +1565,13 @@
  * pitch-black canvas. Bump tone mixes, strengthen borders, and add
  * subtle inset highlights to match the sidebar's premium dark feel. */
 
-/* Hero card — neutral panel in dark too. Tone signal stays in rail + icon
- * (no bg tint that would compound with the dark surface). Crisper border
- * and subtle inset highlight for the lift, no soft shadow. */
-[data-theme="dark"] .hv__pri-hero {
-  border-color: rgba(255,255,255,0.10);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
-}
-
-[data-theme="dark"] .hv__pri-hero:hover {
-  border-color: rgba(255,255,255,0.20);
-}
+/* Hero — no card chrome to override in dark mode now. Background-color
+ * inherited via theme tokens, hover state already uses --surface-overlay-* */
 
 /* CTA pill — non-hover needs more presence on dark canvas */
-[data-theme="dark"] .hv__pri-hero-cta {
-  background: rgba(255,255,255,0.07);
-}
-
-/* Secondary rows — premium border + dark-appropriate hover shadow */
-[data-theme="dark"] .hv__pri-row {
-  border-color: rgba(255,255,255,0.07);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-}
-
-[data-theme="dark"] .hv__pri-row:hover {
-  border-color: rgba(255,255,255,0.16);
-  box-shadow:
-    0 4px 12px rgba(0,0,0,0.35),
-    0 1px 2px rgba(0,0,0,0.20),
-    inset 0 1px 0 rgba(255,255,255,0.04);
-}
+/* CTA + secondary rows in dark mode — no override needed since both
+ * are now plain text/list with theme-aware tokens. Hover bg uses
+ * --surface-overlay-faint which adapts per theme. */
 
 /* Celebration card — stronger green tint for visibility on dark */
 [data-theme="dark"] .hv__pri-celebration {
