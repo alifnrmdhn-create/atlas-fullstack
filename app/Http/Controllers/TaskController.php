@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Blocker;
 use App\Models\SubTask;
 use App\Models\Task;
+use App\Models\WorkItemStatusLog;
 use App\Services\BroadcastService;
 use App\Services\ProgramHealthService;
 use App\Services\TaskService;
@@ -148,6 +149,18 @@ class TaskController extends Controller
         }
 
         return back()->with('success', 'Status task diperbarui.');
+    }
+
+    public function statusLog(Request $request, int $id): JsonResponse
+    {
+        Task::findOrFail($id);
+
+        $logs = WorkItemStatusLog::query()
+            ->where('workItemId', $id)
+            ->orderByDesc('createdAt')
+            ->get(['id', 'fromStatus', 'toStatus', 'byUserId', 'byUserName', 'note', 'createdAt']);
+
+        return response()->json(['data' => $logs]);
     }
 
     public function updateProgress(Request $request, int $id): JsonResponse|RedirectResponse

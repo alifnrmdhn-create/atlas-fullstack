@@ -6850,3 +6850,45 @@ select.wid-input {
   padding: 2px 8px;
   color: var(--text-secondary, #6b7280);
 }
+
+/* ── Riwayat Status (audit log per task) ───────────────────────────────── */
+.tpp-status-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tpp-status-log__item {
+  border-left: 2px solid var(--border-subtle, #e5e7eb);
+  padding: 6px 0 6px 12px;
+}
+.tpp-status-log__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  justify-content: space-between;
+}
+.tpp-status-log__transition {
+  font-size: 13px;
+  color: var(--text-primary, #111827);
+}
+.tpp-status-log__from {
+  color: var(--text-muted, #9ca3af);
+}
+.tpp-status-log__transition strong {
+  font-weight: 600;
+}
+.tpp-status-log__meta {
+  font-size: 11px;
+  color: var(--text-muted, #9ca3af);
+  white-space: nowrap;
+}
+.tpp-status-log__note {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+  font-style: italic;
+}

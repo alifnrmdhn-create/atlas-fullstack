@@ -154,6 +154,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{id}',        [TaskController::class, 'update'])->name('update');
         Route::delete('/{id}',       [TaskController::class, 'destroy'])->name('destroy');
         Route::put('/{id}/status',   [TaskController::class, 'updateStatus'])->name('status');
+        Route::get('/{id}/status-log', [TaskController::class, 'statusLog'])->name('status-log');
         Route::put('/{id}/progress', [TaskController::class, 'updateProgress'])->name('progress');
         Route::put('/{id}/assign',   [TaskController::class, 'assign'])->name('assign');
 

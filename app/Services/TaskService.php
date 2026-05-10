@@ -6,6 +6,8 @@ use App\Models\Blocker;
 use App\Models\EntityPic;
 use App\Models\SubTask;
 use App\Models\Task;
+use App\Models\User;
+use App\Models\WorkItemStatusLog;
 use App\Models\Workstream;
 use Illuminate\Support\Facades\DB;
 
@@ -108,6 +110,7 @@ class TaskService
             }
         }
 
+        $fromStatus = $task->status;
         $update = ['status' => $newStatus];
         if ($newStatus === 'COMPLETED' && !$task->actualCompletion) {
             $update['actualCompletion'] = now();
@@ -115,7 +118,11 @@ class TaskService
             $update['actualCompletion'] = null;
         }
 
-        $task->update($update);
+        DB::transaction(function () use ($task, $update, $fromStatus, $newStatus, $userId) {
+            $task->update($update);
+            $this->writeStatusLog($task->id, $fromStatus, $newStatus, $userId, null);
+        });
+
         return $task->fresh();
     }
 
@@ -124,19 +131,53 @@ class TaskService
     {
         $task = Task::findOrFail($id);
         $data = ['percentComplete' => $percent];
+        $fromStatus = $task->status;
+        $autoTransition = false;
 
-        if ($percent === 100) {
+        if ($percent === 100 && $task->status !== 'COMPLETED') {
             $allowed = self::TRANSITIONS[$task->status] ?? [];
             if (in_array('COMPLETED', $allowed, true)) {
                 $data['status'] = 'COMPLETED';
                 if (!$task->actualCompletion) {
                     $data['actualCompletion'] = now();
                 }
+                $autoTransition = true;
             }
         }
 
-        $task->update($data);
+        DB::transaction(function () use ($task, $data, $autoTransition, $fromStatus, $userId) {
+            $task->update($data);
+            if ($autoTransition) {
+                $this->writeStatusLog(
+                    $task->id,
+                    $fromStatus,
+                    'COMPLETED',
+                    $userId,
+                    'Auto-complete saat progres mencapai 100%.',
+                );
+            }
+        });
+
         return $task->fresh();
+    }
+
+    /** Append-only audit entry untuk transisi status. Dipanggil dalam transaksi. */
+    private function writeStatusLog(
+        int $workItemId,
+        ?string $fromStatus,
+        string $toStatus,
+        int $userId,
+        ?string $note,
+    ): void {
+        $userName = User::query()->where('id', $userId)->value('name');
+        WorkItemStatusLog::create([
+            'workItemId' => $workItemId,
+            'fromStatus' => $fromStatus,
+            'toStatus'   => $toStatus,
+            'byUserId'   => $userId,
+            'byUserName' => $userName,
+            'note'       => $note,
+        ]);
     }
 
     /** Recalculate workstream progress from average of task percentComplete. */

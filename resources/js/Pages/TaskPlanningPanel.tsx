@@ -66,6 +66,30 @@ const PRIORITY_LABELS: Record<string, string> = {
   LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High', CRITICAL: 'Critical',
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  BACKLOG: 'Backlog', READY: 'Ready', IN_PROGRESS: 'Berjalan',
+  IN_REVIEW: 'Review', BLOCKED: 'Blocked', COMPLETED: 'Selesai',
+}
+
+type StatusLogEntry = {
+  id:         number
+  fromStatus: string | null
+  toStatus:   string
+  byUserId:   number
+  byUserName: string | null
+  note:       string | null
+  createdAt:  string
+}
+
+function formatLogTimestamp(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('id-ID', {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    })
+  } catch { return iso }
+}
+
 type DirectoryUser = { id: number; name: string; positionTitle: string | null }
 type Draft         = { title: string; description: string; startDate: string; targetCompletion: string }
 
@@ -84,12 +108,17 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
   // ── Remote data ───────────────────────────────────────────────────────────
   const [detail,  setDetail]  = useState<TaskDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [statusLog, setStatusLog] = useState<StatusLogEntry[]>([])
 
   const loadDetail = async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const res = await api.get<{ data: TaskDetail }>(`/tasks/${taskId}`)
-      setDetail(res.data)
+      const [detailRes, logRes] = await Promise.all([
+        api.get<{ data: TaskDetail }>(`/tasks/${taskId}`),
+        api.get<{ data: StatusLogEntry[] }>(`/tasks/${taskId}/status-log`),
+      ])
+      setDetail(detailRes.data)
+      setStatusLog(logRes.data ?? [])
     } catch { /* non-fatal */ }
     finally { if (!silent) setLoading(false) }
   }
@@ -459,6 +488,35 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                   <span className="tpp-empty-val">—</span>
                 )}
               </div>
+
+              {/* ── Riwayat Status ────────────────────────────────────────── */}
+              {statusLog.length > 0 && (
+                <div className="tpp-section">
+                  <p className="tpp-section-label">Riwayat Status</p>
+                  <ul className="tpp-status-log">
+                    {statusLog.map((log) => {
+                      const fromLabel = log.fromStatus
+                        ? (STATUS_LABELS[log.fromStatus] ?? log.fromStatus)
+                        : null
+                      const toLabel = STATUS_LABELS[log.toStatus] ?? log.toStatus
+                      return (
+                        <li key={log.id} className="tpp-status-log__item">
+                          <div className="tpp-status-log__line">
+                            <span className="tpp-status-log__transition">
+                              {fromLabel && <><span className="tpp-status-log__from">{fromLabel}</span>{' → '}</>}
+                              <strong>{toLabel}</strong>
+                            </span>
+                            <span className="tpp-status-log__meta">
+                              {log.byUserName ?? 'Sistem'} · {formatLogTimestamp(log.createdAt)}
+                            </span>
+                          </div>
+                          {log.note && <p className="tpp-status-log__note">{log.note}</p>}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              )}
 
             </div>
 
