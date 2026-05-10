@@ -445,6 +445,22 @@
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 36%, transparent);
 }
 
+/* Light-theme: re-apply Plan/Real warna karena rule .execution-grid__step-ren/real
+   di atas (line ~421) menimpa background dengan var(--panel). Specificity rule
+   ini sama (0,2,1) dan ditulis SETELAH, jadi menang dalam cascade. */
+:root:not([data-theme="dark"]) .execution-grid__cell--ren {
+  background: var(--blue);
+}
+:root:not([data-theme="dark"]) .execution-grid__cell--real-on-time {
+  background: var(--green);
+}
+:root:not([data-theme="dark"]) .execution-grid__cell--real-late {
+  background: var(--yellow);
+}
+:root:not([data-theme="dark"]) .execution-grid__cell--real-blocked {
+  background: var(--red);
+}
+
 :root:not([data-theme="dark"]) .execution-grid__today-line {
   box-shadow:
     0 0 0 2px color-mix(in srgb, var(--ptpn-green) 18%, transparent),
