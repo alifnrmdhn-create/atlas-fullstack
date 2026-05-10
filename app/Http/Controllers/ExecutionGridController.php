@@ -366,6 +366,7 @@ class ExecutionGridController extends Controller
                 'letterIndex'     => $task->letterIndex ?? null,
                 'title'           => $task->title,
                 'description'     => $task->description ?? null,
+                'output'          => $task->output ?? null,
                 'status'          => $task->status,
                 'isBlocked'       => (bool) $task->isBlocked,
                 'blockedReason'   => $task->blockedReason ?? null,

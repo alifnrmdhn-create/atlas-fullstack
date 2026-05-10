@@ -104,8 +104,17 @@
   line-height: 1.35;
 }
 
-.execution-grid__pic-unit {
+.execution-grid__output {
   left: 374px;
+  min-width: 220px;
+  max-width: 260px;
+  color: var(--text);
+  font-size: var(--type-xs);
+  line-height: 1.35;
+}
+
+.execution-grid__pic-unit {
+  left: 594px;
   min-width: 180px;
   max-width: 220px;
   color: var(--text);
@@ -114,7 +123,7 @@
 }
 
 .execution-grid__pic-person {
-  left: 554px;
+  left: 774px;
   min-width: 180px;
   max-width: 220px;
   color: var(--text-muted);
@@ -123,7 +132,7 @@
 }
 
 .execution-grid__status-label {
-  left: 734px;
+  left: 954px;
   min-width: 56px;
   max-width: 56px;
   justify-content: center;

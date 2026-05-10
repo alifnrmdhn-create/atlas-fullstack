@@ -299,6 +299,12 @@ export type WorkstreamDetail = {
     title: string
     status: string
     percentComplete: number
+    output?: string | null
+    isBlocked?: boolean
+    priority?: string
+    startDate?: string | null
+    targetCompletion?: string | null
+    picPersons?: Array<{ id: number; name: string }>
   }>
   comments: CommentItem[]
 }
@@ -308,6 +314,7 @@ export type TaskDetail = {
   code: string
   title: string
   description?: string
+  output?: string | null
   status: string
   priority: string
   percentComplete: number
@@ -863,6 +870,7 @@ export type ExecutionStep = {
   letterIndex: string | null
   title: string
   description: string | null
+  output: string | null
   status: string
   isBlocked: boolean
   blockedReason: string | null

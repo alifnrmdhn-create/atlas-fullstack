@@ -16,10 +16,11 @@ const WEEK_COL_WIDTH = 38
 // Lebar sticky columns (must match execution-grid.css)
 const COL_FASE = 54
 const COL_URAIAN = 320
+const COL_OUTPUT = 220
 const COL_PIC_UNIT = 180
 const COL_PIC_PERSON = 180
 const COL_STATUS = 56
-const STICKY_WIDTH = COL_FASE + COL_URAIAN + COL_PIC_UNIT + COL_PIC_PERSON + COL_STATUS
+const STICKY_WIDTH = COL_FASE + COL_URAIAN + COL_OUTPUT + COL_PIC_UNIT + COL_PIC_PERSON + COL_STATUS
 
 function deriveRealCellState(
   step: ExecutionStep,
@@ -38,7 +39,7 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
 
   const gridTemplateColumns = useMemo(
     () =>
-      `${COL_FASE}px ${COL_URAIAN}px ${COL_PIC_UNIT}px ${COL_PIC_PERSON}px ${COL_STATUS}px ` +
+      `${COL_FASE}px ${COL_URAIAN}px ${COL_OUTPUT}px ${COL_PIC_UNIT}px ${COL_PIC_PERSON}px ${COL_STATUS}px ` +
       `repeat(${weekRange.weeks.length}, ${WEEK_COL_WIDTH}px)`,
     [weekRange.weeks.length],
   )
@@ -78,6 +79,12 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
             style={{ gridRow: '1 / span 2' }}
           >
             Uraian Tahapan
+          </div>
+          <div
+            className="execution-grid__col-sticky execution-grid__col-sticky--header execution-grid__output"
+            style={{ gridRow: '1 / span 2' }}
+          >
+            Output
           </div>
           <div
             className="execution-grid__col-sticky execution-grid__col-sticky--header execution-grid__pic-unit"
@@ -263,6 +270,9 @@ function StepRows({
       <div className="execution-grid__col-sticky execution-grid__uraian execution-grid__step-ren">
         {step.title}
       </div>
+      <div className="execution-grid__col-sticky execution-grid__output execution-grid__step-ren">
+        {step.output ?? '—'}
+      </div>
       <div className="execution-grid__col-sticky execution-grid__pic-unit execution-grid__step-ren">
         {unitLabels || '—'}
       </div>
@@ -296,6 +306,7 @@ function StepRows({
         {step.isBlocked && ' · 🚧 blocked'}
         {!step.actualDerived && step.actualWeeks.length > 0 && ' · manual'}
       </div>
+      <div className="execution-grid__col-sticky execution-grid__output execution-grid__step-real" />
       <div className="execution-grid__col-sticky execution-grid__pic-unit execution-grid__step-real" />
       <div className="execution-grid__col-sticky execution-grid__pic-person execution-grid__step-real" />
       <div

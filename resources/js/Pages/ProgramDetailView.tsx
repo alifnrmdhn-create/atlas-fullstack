@@ -1976,6 +1976,11 @@ export function ProgramDetailView() {
                                                     <span className="code-badge">{item.code}</span>
                                                     <div className="wi-row__info-text">
                                                       <span className="wi-row__title">{item.title}</span>
+                                                      {item.output && (
+                                                        <span className="wi-row__output" title={`Output: ${item.output}`}>
+                                                          → {item.output}
+                                                        </span>
+                                                      )}
                                                       {(item.startDate || item.targetCompletion || (item.picPersons ?? []).length > 0) && (
                                                         <span className="wi-row__meta">
                                                           {(item.startDate || item.targetCompletion) ? `${fmtDateShort(item.startDate)} → ${fmtDateShort(item.targetCompletion)}` : null}
@@ -2025,6 +2030,11 @@ export function ProgramDetailView() {
                                                   <span className="code-badge">{item.code}</span>
                                                   <div className="wi-row__info-text">
                                                     <span className="wi-row__title">{item.title}</span>
+                                                    {item.output && (
+                                                      <span className="wi-row__output" title={`Output: ${item.output}`}>
+                                                        → {item.output}
+                                                      </span>
+                                                    )}
                                                     {(item.startDate || item.targetCompletion || (item.picPersons ?? []).length > 0) && (
                                                       <span className="wi-row__meta">
                                                         {(item.startDate || item.targetCompletion) ? `${fmtDateShort(item.startDate)} → ${fmtDateShort(item.targetCompletion)}` : null}
