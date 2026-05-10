@@ -154,7 +154,7 @@ class ExecutionGridController extends Controller
         $unitMap = $allUnitIds->unique()->filter()->isNotEmpty()
             ? OrganizationalUnit::query()
                 ->whereIn('id', $allUnitIds->unique()->filter()->values())
-                ->get(['id', 'name', 'shortName', 'code'])
+                ->get(['id', 'name', 'code'])
                 ->keyBy('id')
             : collect();
 

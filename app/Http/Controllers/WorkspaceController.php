@@ -643,14 +643,29 @@ class WorkspaceController extends Controller
         $workstream = Workstream::query()
             ->with([
                 'program:id,code,name,healthStatus,approvalStatus',
-                'tasks:id,code,title,status,percentComplete,initiativeId',
+                'tasks' => fn ($q) => $q
+                    ->select([
+                        'id', 'code', 'title', 'description', 'output', 'status',
+                        'percentComplete', 'priority', 'startDate', 'targetCompletion',
+                        'isBlocked', 'assignedTo', 'initiativeId',
+                    ])
+                    ->orderBy('letterIndex')
+                    ->orderBy('createdAt'),
+                'tasks.assignee:id,name,avatarUrl',
                 'entityPics',
             ])
             ->findOrFail($id);
 
+        // Map task picPersons (alias dari assignee untuk konsistensi UI)
+        $tasks = $workstream->tasks->map(function ($t) {
+            $arr = $t->toArray();
+            $arr['picPersons'] = $t->assignee ? [['id' => $t->assignee->id, 'name' => $t->assignee->name]] : [];
+            return $arr;
+        });
+
         return response()->json(['data' => [
             ...$workstream->toArray(),
-            'tasks' => $workstream->tasks,
+            'tasks' => $tasks,
             'comments' => [],
         ]]);
     }
