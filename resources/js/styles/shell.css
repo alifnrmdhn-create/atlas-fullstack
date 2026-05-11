@@ -31,12 +31,9 @@
   overflow: hidden;
   z-index: 100;
   height: 100%;
-  border-radius: 18px;
+  border-radius: var(--shell-card-radius);
   border: 1px solid var(--sidebar-border-strong);
-  box-shadow:
-    0 18px 40px rgba(15,20,40,0.20),
-    0 6px 14px rgba(15,20,40,0.12),
-    0 1px 0 rgba(255,255,255,0.04) inset;
+  box-shadow: var(--shell-sidebar-shadow);
 }
 
 /* ⑥ Brand header — premium dark identity area with workspace tagline.
@@ -790,13 +787,12 @@
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  /* Now a separate floating card below the topbar. */
+  /* Floating card below the topbar. Real 1px border traces the radius
+   * pixel-perfectly; drop shadows handle elevation only. */
   background: var(--panel);
-  border: 1px solid var(--panel-border);
-  border-radius: 18px;
-  box-shadow:
-    0 14px 32px rgba(15, 20, 40, 0.08),
-    0 4px 10px rgba(15, 20, 40, 0.05);
+  border: 1px solid var(--panel-border-soft);
+  border-radius: var(--shell-card-radius);
+  box-shadow: var(--shell-card-shadow-strong);
   /* Subtle scrollbar */
   scrollbar-width: thin;
   scrollbar-color: var(--panel-border-strong) transparent;
@@ -813,11 +809,9 @@
 .topbar {
   height: var(--topbar-height);
   background: var(--topbar-bg);
-  border: 1px solid var(--panel-border);
-  border-radius: 18px;
-  box-shadow:
-    0 8px 20px rgba(15, 20, 40, 0.06),
-    0 2px 4px rgba(15, 20, 40, 0.04);
+  border: 1px solid var(--panel-border-soft);
+  border-radius: var(--shell-card-radius);
+  box-shadow: var(--shell-card-shadow);
   display: flex;
   align-items: center;
   gap: 14px;

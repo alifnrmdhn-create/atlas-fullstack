@@ -46,6 +46,22 @@
   --lift-shadow: 0 0 0 1px rgba(15,20,40,0.08), 0 14px 28px rgba(15,20,40,0.10), 0 28px 54px rgba(15,20,40,0.14);
   --shadow-card: var(--panel-shadow-md);
 
+  /* Shell card chrome — unified floating-panel look for sidebar / topbar /
+   * workspace content. Uses real 1px border (pixel-perfect on radius)
+   * + symmetric drop-only shadows (no ring shadow, which can render with
+   * aliasing artifacts at rounded corners). */
+  --shell-card-radius: 16px;
+  --shell-card-shadow:
+    0 1px 3px rgba(15,20,40,0.04),
+    0 6px 14px rgba(15,20,40,0.05);
+  --shell-card-shadow-strong:
+    0 2px 6px rgba(15,20,40,0.05),
+    0 10px 24px rgba(15,20,40,0.07);
+  --shell-sidebar-shadow:
+    0 2px 6px rgba(15,20,40,0.10),
+    0 14px 36px rgba(15,20,40,0.16),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+
   /* Typography — scale */
   --type-display:    2rem;       /* 32px — page titles, hero */
   --type-title:      1.375rem;   /* 22px — section headers */
@@ -221,6 +237,18 @@
   --panel-shadow-md: 0 0 0 1px rgba(255,255,255,0.06), 0 4px 12px rgba(0,0,0,0.4);
   --panel-shadow-xl: 0 0 0 1px rgba(255,255,255,0.07), 0 12px 28px rgba(0,0,0,0.5);
   --lift-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+
+  /* Shell card chrome (dark) — drop-only shadows; ring drawn via border */
+  --shell-card-shadow:
+    0 1px 3px rgba(0,0,0,0.30),
+    0 6px 14px rgba(0,0,0,0.32);
+  --shell-card-shadow-strong:
+    0 2px 6px rgba(0,0,0,0.36),
+    0 10px 24px rgba(0,0,0,0.42);
+  --shell-sidebar-shadow:
+    0 2px 6px rgba(0,0,0,0.40),
+    0 14px 36px rgba(0,0,0,0.50),
+    inset 0 1px 0 rgba(255,255,255,0.03);
 
   --text: #B8C4D4;
   --text-strong: #E2E8F0;
