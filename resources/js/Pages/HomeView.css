@@ -164,10 +164,10 @@
 
 .hv__greeting {
   margin: 0;
-  font-size: 35px;
+  font-size: 28px;
   font-weight: 700;
-  letter-spacing: -0.028em;
-  line-height: 1.08;
+  letter-spacing: -0.024em;
+  line-height: 1.12;
   color: var(--text-strong);
 }
 
@@ -178,7 +178,7 @@
 }
 
 @media (max-width: 980px) {
-  .hv__greeting { font-size: 26px; }
+  .hv__greeting { font-size: 22px; }
 }
 
 /* Narrative summary — 1-2 sentence line under the greeting that makes
@@ -295,10 +295,10 @@
 /* ─── Big number — used by stats AND headline numbers ────── */
 
 .hv__big {
-  font-size: 36px;
+  font-size: 30px;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.025em;
   color: var(--text-strong);
   font-variant-numeric: tabular-nums;
   display: inline-flex;
@@ -306,7 +306,7 @@
 }
 
 @media (max-width: 980px) {
-  .hv__big { font-size: 30px; }
+  .hv__big { font-size: 26px; }
 }
 
 .hv__big[data-tone="green"]   { color: var(--indigo); }

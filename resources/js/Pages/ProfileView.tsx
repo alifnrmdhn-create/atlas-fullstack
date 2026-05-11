@@ -14,11 +14,8 @@ type PersonNode = {
   avatarUrl?: string | null
 }
 
-type ChainEntry = {
-  positionId: number
-  positionName: string
-  users: PersonNode[]
-}
+// Backend returns flat User[] for both supervisor chain and subordinates.
+// supervisorChain[0] = atasan langsung, [1] = atasan dari atasan, etc.
 
 type HistoryEntry = {
   id: number
@@ -49,8 +46,8 @@ type ProfileUser = {
 
 type ProfileResponse = {
   user: ProfileUser
-  supervisorChain: ChainEntry[]
-  subordinates: ChainEntry[]
+  supervisorChain: PersonNode[]
+  subordinates: PersonNode[]
   positionHistory: HistoryEntry[]
 }
 
@@ -79,6 +76,22 @@ const ROLE_TONE: Record<string, RoleTone> = {
   KASUBDIV: 'yellow',
   ASISTEN: 'green',
   OFFICER: 'green',
+}
+
+// PTPN role hierarchy weight — higher = more senior. Used to sort
+// subordinate / supervisor lists from senior to junior.
+const ROLE_RANK: Record<string, number> = {
+  SUPERADMIN: 100,
+  ADMIN: 90,
+  BOD: 80,
+  KADIV: 70,
+  KASUBDIV: 60,
+  ASISTEN: 50,
+  OFFICER: 40,
+}
+
+function roleRank(role?: string | null): number {
+  return ROLE_RANK[role?.toUpperCase() ?? ''] ?? 0
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -149,6 +162,7 @@ export function ProfileView() {
   const [activityRange, setActivityRange] = useState<ActivityRange>('7d')
   const [activityLoading, setActivityLoading] = useState(false)
   const [emailCopied, setEmailCopied] = useState(false)
+  const [showEditForm, setShowEditForm] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -184,7 +198,12 @@ export function ProfileView() {
 
   const user = profileData?.user ?? (currentUser as unknown as ProfileUser | null)
   const supervisorChain = profileData?.supervisorChain ?? []
-  const subordinates = profileData?.subordinates ?? []
+  // Sort subordinates by role rank (senior first), then by name within same rank.
+  const subordinates = [...(profileData?.subordinates ?? [])].sort((a, b) => {
+    const rankDiff = roleRank(b.roleType) - roleRank(a.roleType)
+    if (rankDiff !== 0) return rankDiff
+    return (a.name ?? '').localeCompare(b.name ?? '')
+  })
   const positionHistory = profileData?.positionHistory ?? []
   const directReportsCount = subordinates.length
   const hierarchyCount = supervisorChain.length + (user?.position ? 1 : 0) + directReportsCount
@@ -220,42 +239,50 @@ export function ProfileView() {
   return (
     <div className="ds profile-v2 view-profile">
       <div className="profile-v2__inner">
-      <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Profil Saya</h2>
-        <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Lihat dan perbarui informasi akun serta preferensi Anda.</span>
-      </div>
+        <div className="view-toolbar">
+          <h2 className="view-toolbar__title">Profil Saya</h2>
+          <div className="view-toolbar__sep" />
+          <span className="view-toolbar__subtitle">Lihat dan perbarui informasi akun serta preferensi Anda.</span>
+        </div>
 
-      <div className="profile-layout profile-layout--dashboard">
-        <section className="section-block profile-panel profile-panel--identity" aria-label="Informasi pribadi">
-          <div className="profile-identity-hero">
-            <div className="profile-identity-hero__avatar" data-tone={userRoleTone}>
-              {user ? initials(user.name) : '?'}
-            </div>
-            <div className="profile-identity-hero__body">
-              <h2 className="profile-identity-hero__name">{user?.name ?? '—'}</h2>
-              <p className="profile-identity-hero__pos">{user?.position?.name ?? user?.positionTitle ?? 'Jabatan belum ditetapkan'}</p>
-              <div className="profile-identity-hero__badges">
-                {user?.roleType && (
-                  <span className="profile-role-badge" data-tone={userRoleTone}>{formatRoleLabel(user.roleType)}</span>
-                )}
-                {user?.position?.levelCode && (
-                  <span className="profile-role-badge profile-role-badge--level" data-tone="gray">{user.position.levelCode}</span>
-                )}
-                <span className="profile-role-badge profile-role-badge--completeness" data-tone={profileCompleteness === 100 ? 'green' : 'yellow'}>
-                  {profileCompleteness === 100 ? '✓ Profil lengkap' : `Profil ${profileCompleteness}%`}
-                </span>
-              </div>
+        {/* ─── HERO BAND ─────────────────────────────────────── */}
+        <section className="pv-hero" aria-label="Identitas">
+          <div className={`pv-hero__avatar`} data-tone={userRoleTone}>
+            {user ? initials(user.name) : '?'}
+          </div>
+          <div className="pv-hero__body">
+            <h2 className="pv-hero__name">{user?.name ?? '—'}</h2>
+            <p className="pv-hero__pos">{user?.position?.name ?? user?.positionTitle ?? 'Jabatan belum ditetapkan'}</p>
+            <div className="pv-hero__badges">
+              {user?.roleType && (
+                <span className="profile-role-badge" data-tone={userRoleTone}>{formatRoleLabel(user.roleType)}</span>
+              )}
+              {user?.position?.levelCode && (
+                <span className="profile-role-badge profile-role-badge--level" data-tone="gray">{user.position.levelCode}</span>
+              )}
+              <span className="profile-role-badge profile-role-badge--completeness" data-tone={profileCompleteness === 100 ? 'green' : 'yellow'}>
+                {profileCompleteness === 100 ? '✓ Lengkap' : `${profileCompleteness}%`}
+              </span>
             </div>
           </div>
+          <button
+            className={`pv-hero__edit-btn${showEditForm ? ' is-open' : ''}`}
+            onClick={() => setShowEditForm(v => !v)}
+            type="button"
+          >
+            {showEditForm ? 'Tutup editor' : '✏ Edit profil'}
+          </button>
+        </section>
 
-          <div className="profile-identity-body">
-            <form className="profile-form" onSubmit={handleSave}>
-              <div className="profile-form__row">
-                <div className="profile-form__field">
-                  <label className="profile-form__label" htmlFor="p-name">Nama</label>
+        {/* ─── EDIT FORM (collapsible) ────────────────────────── */}
+        {showEditForm && (
+          <section className="pv-section pv-form-section" aria-label="Edit profil">
+            <form className="pv-form" onSubmit={handleSave}>
+              <div className="pv-form__row">
+                <div className="pv-form__field">
+                  <label className="pv-form__label" htmlFor="p-name">Nama</label>
                   <input
-                    className="profile-input"
+                    className="pv-input"
                     disabled={saving}
                     id="p-name"
                     onChange={e => setFormName(e.target.value)}
@@ -263,11 +290,11 @@ export function ProfileView() {
                     value={formName}
                   />
                 </div>
-                <div className="profile-form__field">
-                  <label className="profile-form__label" htmlFor="p-email">Email</label>
-                  <div className="profile-input-wrap">
+                <div className="pv-form__field">
+                  <label className="pv-form__label" htmlFor="p-email">Email</label>
+                  <div className="pv-input-wrap">
                     <input
-                      className="profile-input profile-input--with-action"
+                      className="pv-input pv-input--with-action"
                       disabled={saving}
                       id="p-email"
                       onChange={e => setFormEmail(e.target.value)}
@@ -276,7 +303,7 @@ export function ProfileView() {
                     />
                     <button
                       aria-label="Salin email"
-                      className="profile-input-action"
+                      className="pv-input-action"
                       onClick={copyEmail}
                       title={emailCopied ? 'Tersalin!' : 'Salin email'}
                       type="button"
@@ -295,237 +322,223 @@ export function ProfileView() {
                   </div>
                 </div>
               </div>
-
-              <div className="profile-form__actions">
-                <div className={`profile-save-state${hasDirtyProfile ? ' is-dirty' : ''}`}>
-                  <span>{hasDirtyProfile ? 'Ada perubahan belum disimpan' : 'Data tersinkron'}</span>
-                  {saved && <strong>Tersimpan</strong>}
-                  {saveError && <strong className="profile-save-state__error">{saveError}</strong>}
-                </div>
-                <button className="profile-save-btn" disabled={saving || !hasDirtyProfile} type="submit">
-                  {saving ? 'Menyimpan…' : 'Simpan'}
+              <div className="pv-form__actions">
+                <span className={`pv-form__state${hasDirtyProfile ? ' is-dirty' : ''}`}>
+                  {saved ? '✓ Tersimpan' : saveError ? saveError : hasDirtyProfile ? 'Ada perubahan belum disimpan' : 'Data tersinkron'}
+                </span>
+                <button className="pv-form__save" disabled={saving || !hasDirtyProfile} type="submit">
+                  {saving ? 'Menyimpan…' : 'Simpan perubahan'}
                 </button>
               </div>
             </form>
+          </section>
+        )}
 
-            <div className="profile-fact-grid" aria-label="Detail organisasi">
-              <div className="profile-fact">
-                <span>NIK</span>
-                <strong>{user?.nik ?? '—'}</strong>
+        {/* ─── BODY GRID (2-column to fill workspace width per pakem) ─── */}
+        <div className="pv-body">
+
+        {/* LEFT column */}
+        <div className="pv-body__col pv-body__col--main">
+
+        {/* ─── IDENTITAS ORGANISASI ──────────────────────────── */}
+        <section className="pv-section" aria-label="Identitas organisasi">
+          <h3 className="pv-section__title">Identitas Organisasi</h3>
+          <dl className="pv-data-list">
+            <div className="pv-data-row">
+              <dt>NIK</dt>
+              <dd>{user?.nik ?? <span className="pv-empty-inline">— Belum tersedia</span>}</dd>
+            </div>
+            <div className="pv-data-row">
+              <dt>Email</dt>
+              <dd>{user?.email ?? <span className="pv-empty-inline">— Belum tersedia</span>}</dd>
+            </div>
+            <div className="pv-data-row">
+              <dt>Unit</dt>
+              <dd>{user?.unit?.code ?? <span className="pv-empty-inline">—</span>}</dd>
+            </div>
+            <div className="pv-data-row">
+              <dt>Direktorat</dt>
+              <dd>{user?.directorate?.name ?? <span className="pv-empty-inline">—</span>}</dd>
+            </div>
+            <div className="pv-data-row">
+              <dt>Divisi</dt>
+              <dd>{user?.unit?.name ?? <span className="pv-empty-inline">—</span>}</dd>
+            </div>
+            <div className="pv-data-row">
+              <dt>Atasan langsung</dt>
+              <dd>
+                {supervisorChain[0]?.name
+                  ? <>{supervisorChain[0].name} <span className="pv-data-row__sub">· {supervisorChain[0].positionTitle ?? formatRoleLabel(supervisorChain[0].roleType)}</span></>
+                  : <span className="pv-empty-inline">{atasanEmptyText}</span>}
+              </dd>
+            </div>
+            <div className="pv-data-row">
+              <dt>Tim langsung</dt>
+              <dd>
+                {directReportsCount > 0
+                  ? <>{directReportsCount} orang melapor langsung</>
+                  : <span className="pv-empty-inline">Tidak ada bawahan langsung</span>}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        {/* ─── HIERARKI ──────────────────────────────────────── */}
+        {user?.position && (
+          <section className="pv-section" aria-label="Hierarki jabatan">
+            <div className="pv-section__head">
+              <h3 className="pv-section__title">Hierarki Jabatan</h3>
+              <span className="pv-section__meta">{supervisorChain.length} atasan · {directReportsCount} bawahan</span>
+            </div>
+            <div className="pv-org-map">
+              <div className="pv-org-lane">
+                <div className="pv-org-lane__head">Atasan</div>
+                <div className="pv-org-lane__nodes">
+                  {supervisorChain.length > 0 ? (
+                    [...supervisorChain].reverse().map(person => (
+                      <OrgNode key={person.id} person={person} positionName={person.positionTitle ?? formatRoleLabel(person.roleType)} />
+                    ))
+                  ) : <span className="pv-empty-inline">{atasanEmptyText}</span>}
+                </div>
               </div>
-              <div className="profile-fact">
-                <span>Unit</span>
-                <strong>{user?.unit?.code ?? '—'}</strong>
+              <div className="pv-org-lane pv-org-lane--self">
+                <div className="pv-org-lane__head">Posisi saya</div>
+                <div className="pv-org-lane__nodes">
+                  <OrgNode person={user as PersonNode} positionName={user.position.name} isSelf />
+                </div>
               </div>
-              <div className="profile-fact profile-fact--wide">
-                <span>Direktorat</span>
-                <strong>{user?.directorate?.name ?? '—'}</strong>
-              </div>
-              <div className="profile-fact profile-fact--wide">
-                <span>Divisi</span>
-                <strong>{user?.unit?.name ?? '—'}</strong>
+              <div className="pv-org-lane">
+                <div className="pv-org-lane__head">Bawahan</div>
+                <div className="pv-org-lane__nodes">
+                  {subordinates.length > 0 ? (
+                    subordinates.map(person => (
+                      <OrgNode key={person.id} person={person} positionName={person.positionTitle ?? formatRoleLabel(person.roleType)} />
+                    ))
+                  ) : <span className="pv-empty-inline">Tidak ada bawahan langsung</span>}
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        <section className="section-block profile-panel profile-panel--hierarchy">
-              <div className="section-header">
-                <div>
-                  <h3 className="section-title">Hierarki Jabatan</h3>
-                  <p className="section-subtitle">Struktur posisi dan lini pelaporan saat ini.</p>
+        </div> {/* /pv-body__col--main */}
+
+        {/* RIGHT column */}
+        <div className="pv-body__col pv-body__col--rail">
+
+        {/* ─── AKTIVITAS ─────────────────────────────────────── */}
+        <section className="pv-section" aria-label="Aktivitas">
+          <div className="pv-section__head">
+            <div>
+              <h3 className="pv-section__title">Aktivitas Saya</h3>
+              <p className="pv-section__sub">
+                Terakhir aktif: {activityLast}
+                {activityData?.dailyBreakdown.length ? ` · ${activeDaysCount}/${activityData.dailyBreakdown.length} hari aktif` : ''}
+              </p>
+            </div>
+            <div className="pv-range-toggle">
+              {(['7d', '30d'] as ActivityRange[]).map(r => (
+                <button
+                  className={`pv-range-chip${activityRange === r ? ' is-active' : ''}`}
+                  key={r}
+                  onClick={() => setActivityRange(r)}
+                  type="button"
+                >{r}</button>
+              ))}
+            </div>
+          </div>
+          {activityLoading ? (
+            <p className="pv-empty-inline">Memuat data aktivitas…</p>
+          ) : !activityData ? (
+            <p className="pv-empty-inline">Data aktivitas tidak tersedia.</p>
+          ) : (
+            <>
+              <div className="pv-kpi-row">
+                <div className="pv-kpi">
+                  <span className="pv-kpi__value">{fmtDuration(activityData.totalDurationMs)}</span>
+                  <span className="pv-kpi__label">Total aktif</span>
+                </div>
+                <div className="pv-kpi">
+                  <span className="pv-kpi__value">{activityData.sessionCount}</span>
+                  <span className="pv-kpi__label">Sesi</span>
+                </div>
+                <div className="pv-kpi">
+                  <span className="pv-kpi__value">{fmtDuration(activityData.avgSessionDurationMs)}</span>
+                  <span className="pv-kpi__label">Rata-rata sesi</span>
+                </div>
+                <div className="pv-kpi">
+                  <span className="pv-kpi__value">{activeDaysCount}</span>
+                  <span className="pv-kpi__label">Hari aktif</span>
                 </div>
               </div>
-
-              {!user?.position ? (
-                <p className="profile-empty-note">Belum ada jabatan yang ditetapkan.</p>
-              ) : (
-                <div className="profile-hierarchy-body">
-                  <div className="profile-structure-stats" aria-label="Ringkasan struktur">
-                    <div className="profile-structure-stat">
-                      <strong>{supervisorChain.length}</strong>
-                      <span>lapis atasan</span>
+              {activityData.dailyBreakdown.length > 0 && (() => {
+                const maxMs = Math.max(...activityData.dailyBreakdown.map(d => d.durationMs), 1)
+                const peakDay = activityData.dailyBreakdown.reduce((a, b) => b.durationMs > a.durationMs ? b : a)
+                return (
+                  <div className="pv-chart-wrap">
+                    <div className="pv-chart-meta">
+                      <span className="pv-chart-meta__label">Puncak</span>
+                      <span className="pv-chart-meta__value">
+                        {fmtDuration(peakDay.durationMs)} · {fmtDayLabel(peakDay.date)}
+                      </span>
                     </div>
-                    <div className="profile-structure-stat">
-                      <strong>{hierarchyCount}</strong>
-                      <span>titik relasi</span>
-                    </div>
-                    <div className="profile-structure-stat">
-                      <strong>{directReportsCount}</strong>
-                      <span>tim langsung</span>
-                    </div>
-                  </div>
-
-                  <div className="profile-org-map" aria-label="Peta relasi jabatan">
-                    <section className="profile-org-lane">
-                      <div className="profile-org-lane__header">
-                        <span>Atasan</span>
-                        <strong>{supervisorChain.length}</strong>
-                      </div>
-                      <div className="profile-org-lane__nodes">
-                        {supervisorChain.length > 0 ? (
-                          [...supervisorChain].reverse().map(entry => (
-                            <OrgNode key={entry.positionId} person={entry.users[0] ?? null} positionName={entry.positionName} />
-                          ))
-                        ) : (
-                          <p className="profile-empty-note profile-org-empty">{atasanEmptyText}</p>
-                        )}
-                      </div>
-                    </section>
-
-                    <section className="profile-org-lane profile-org-lane--self">
-                      <div className="profile-org-lane__header">
-                        <span>Posisi saat ini</span>
-                        <strong>{user.position.levelCode}</strong>
-                      </div>
-                      <div className="profile-org-lane__nodes">
-                        <OrgNode person={user as PersonNode} positionName={user.position.name} isSelf />
-                      </div>
-                    </section>
-
-                    <section className="profile-org-lane">
-                      <div className="profile-org-lane__header">
-                        <span>Bawahan</span>
-                        <strong>{subordinates.length}</strong>
-                      </div>
-                      <div className="profile-org-lane__nodes profile-org-lane__nodes--subordinates">
-                        {subordinates.length > 0 ? (
-                          subordinates.map(entry => (
-                            <OrgNode key={entry.positionId} person={entry.users[0] ?? null} positionName={entry.positionName} />
-                          ))
-                        ) : (
-                          <p className="profile-empty-note profile-org-empty">Tidak ada bawahan langsung.</p>
-                        )}
-                      </div>
-                    </section>
-                  </div>
-                </div>
-              )}
-            </section>
-
-            <section className="section-block profile-panel profile-panel--activity">
-                <div className="section-header">
-                  <div>
-                    <h3 className="section-title">Aktivitas Saya</h3>
-                    <p className="section-subtitle">
-                      Terakhir aktif: {activityLast}
-                      {activityData?.dailyBreakdown.length ? ` · ${activeDaysCount}/${activityData.dailyBreakdown.length} hari aktif` : ''}
-                    </p>
-                  </div>
-                  <div className="profile-range-toggle">
-                    {(['7d', '30d'] as ActivityRange[]).map(r => (
-                      <button
-                        className={`range-chip${activityRange === r ? ' range-chip--active' : ''}`}
-                        key={r}
-                        onClick={() => setActivityRange(r)}
-                        type="button"
-                      >{r}</button>
-                    ))}
-                  </div>
-                </div>
-
-                {activityLoading ? (
-                  <div className="profile-activity-loading">Memuat data aktivitas…</div>
-                ) : !activityData ? (
-                  <div className="profile-empty-note">Data aktivitas tidak tersedia.</div>
-                ) : (
-                  <div className="profile-activity-body">
-                    <div className="profile-activity-stats">
-                      <div className="profile-activity-stat">
-                        <span className="profile-activity-stat__value">{fmtDuration(activityData.totalDurationMs)}</span>
-                        <span className="profile-activity-stat__label">Total aktif</span>
-                      </div>
-                      <div className="profile-activity-stat">
-                        <span className="profile-activity-stat__value">{activityData.sessionCount}</span>
-                        <span className="profile-activity-stat__label">Sesi</span>
-                      </div>
-                      <div className="profile-activity-stat">
-                        <span className="profile-activity-stat__value">{fmtDuration(activityData.avgSessionDurationMs)}</span>
-                        <span className="profile-activity-stat__label">Rata-rata sesi</span>
-                      </div>
-                    </div>
-
-                    {activityData.dailyBreakdown.length > 0 && (() => {
-                      const maxMs = Math.max(...activityData.dailyBreakdown.map(d => d.durationMs), 1)
-                      const peakDay = activityData.dailyBreakdown.reduce((a, b) => b.durationMs > a.durationMs ? b : a)
-                      return (
-                        <div className="profile-activity-chart-wrap">
-                          <div className="profile-activity-chart-meta">
-                            <span className="profile-activity-chart-meta__label">Puncak</span>
-                            <span className="profile-activity-chart-meta__value">
-                              {fmtDuration(peakDay.durationMs)} · {fmtDayLabel(peakDay.date)}
-                            </span>
-                          </div>
-                          <div className="profile-activity-chart">
-                            <div className="profile-activity-chart__grid" aria-hidden="true">
-                              <span /><span /><span /><span />
-                            </div>
-                            {activityData.dailyBreakdown.map(day => (
-                              <div className="profile-activity-bar-col" key={day.date} title={`${fmtDayLabel(day.date)}: ${fmtDuration(day.durationMs)}`}>
-                                <span className="profile-activity-bar-col__val">{day.durationMs > 0 ? fmtDuration(day.durationMs) : ''}</span>
-                                <div
-                                  className="profile-activity-bar"
-                                  style={{ height: `${Math.max(4, Math.round((day.durationMs / maxMs) * 78))}%` }}
-                                />
-                                <span className="profile-activity-bar__label">{new Date(day.date).getDate()}</span>
-                              </div>
-                            ))}
-                          </div>
+                    <div className="pv-chart">
+                      {activityData.dailyBreakdown.map(day => (
+                        <div className="pv-chart-col" key={day.date} title={`${fmtDayLabel(day.date)}: ${fmtDuration(day.durationMs)}`}>
+                          <span className="pv-chart-col__val">{day.durationMs > 0 ? fmtDuration(day.durationMs) : ''}</span>
+                          <div className="pv-chart-bar" style={{ height: `${Math.max(4, Math.round((day.durationMs / maxMs) * 100))}%` }} />
+                          <span className="pv-chart-col__label">{new Date(day.date).getDate()}</span>
                         </div>
-                      )
-                    })()}
-                  </div>
-                )}
-              </section>
-
-              <section className="section-block profile-panel profile-panel--history">
-                <div className="section-header">
-                  <div>
-                    <h3 className="section-title">Riwayat Jabatan</h3>
-                    <p className="section-subtitle">
-                      {latestHistoryEntry ? `Perubahan terakhir ${fmtDate(latestHistoryEntry.startDate)}.` : 'Perubahan posisi dan mutasi terakhir.'}
-                    </p>
-                  </div>
-                  <span className="section-badge">{positionHistory.length}</span>
-                </div>
-                {historyEntries.length > 0 ? (
-                  <ul className="position-history-list position-history-list--timeline">
-                    {historyEntries.map(entry => (
-                      <li key={entry.id} className={`position-history-item${!entry.endDate ? ' is-current' : ''}`}>
-                        <span className="position-history__dot" aria-hidden="true" />
-                        <div className="position-history__content">
-                          <div className="profile-history__head">
-                            {entry.position?.code && <span className="code-badge profile-history__code">{entry.position.code}</span>}
-                            <span className="profile-history__title">{entry.position?.name ?? '—'}</span>
-                            <span className="code-badge profile-history__type">{entry.mutationType}</span>
-                            {!entry.endDate && <span className="profile-history__current">Aktif</span>}
-                          </div>
-                          <div className="profile-history__date">
-                            {fmtDate(entry.startDate)}
-                            {entry.endDate ? ` — ${fmtDate(entry.endDate)}` : ' — sekarang'}
-                          </div>
-                          {entry.mutationReason && <div className="profile-history__note">{entry.mutationReason}</div>}
-                          {entry.skNumber && <div className="profile-history__sk">SK: <span className="code-badge">{entry.skNumber}</span></div>}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="profile-history-empty">
-                    <div className="profile-history-empty__icon" aria-hidden="true">
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="9" />
-                        <path d="M12 7v5l3 2" />
-                      </svg>
-                    </div>
-                    <div className="profile-history-empty__body">
-                      <strong>Belum ada mutasi</strong>
-                      <span>Riwayat jabatan akan muncul di sini setelah ada perubahan posisi.</span>
+                      ))}
                     </div>
                   </div>
-                )}
+                )
+              })()}
+            </>
+          )}
         </section>
-      </div>
+
+        {/* ─── RIWAYAT JABATAN (timeline) ──────────────────── */}
+        <section className="pv-section" aria-label="Riwayat jabatan">
+          <div className="pv-section__head">
+            <div>
+              <h3 className="pv-section__title">Riwayat Jabatan</h3>
+              <p className="pv-section__sub">
+                {latestHistoryEntry ? `Perubahan terakhir ${fmtDate(latestHistoryEntry.startDate)}.` : 'Linimasa perubahan posisi dan mutasi.'}
+              </p>
+            </div>
+            {positionHistory.length > 0 && <span className="pv-section__badge">{positionHistory.length}</span>}
+          </div>
+          {historyEntries.length > 0 ? (
+            <ul className="pv-timeline">
+              {historyEntries.map(entry => (
+                <li key={entry.id} className={`pv-timeline__item${!entry.endDate ? ' is-current' : ''}`}>
+                  <span className="pv-timeline__dot" aria-hidden="true" />
+                  <div className="pv-timeline__content">
+                    <div className="pv-timeline__head">
+                      {entry.position?.code && <span className="code-badge">{entry.position.code}</span>}
+                      <span className="pv-timeline__title">{entry.position?.name ?? '—'}</span>
+                      <span className="code-badge">{entry.mutationType}</span>
+                      {!entry.endDate && <span className="pv-timeline__active">Aktif</span>}
+                    </div>
+                    <div className="pv-timeline__date">
+                      {fmtDate(entry.startDate)}
+                      {entry.endDate ? ` — ${fmtDate(entry.endDate)}` : ' — sekarang'}
+                    </div>
+                    {entry.mutationReason && <div className="pv-timeline__note">{entry.mutationReason}</div>}
+                    {entry.skNumber && <div className="pv-timeline__sk">SK: <span className="code-badge">{entry.skNumber}</span></div>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="pv-empty-inline">Belum ada mutasi tercatat. Riwayat jabatan akan muncul di sini setelah ada perubahan posisi.</p>
+          )}
+        </section>
+
+        </div> {/* /pv-body__col--rail */}
+        </div> {/* /pv-body */}
+
       </div>
     </div>
   )

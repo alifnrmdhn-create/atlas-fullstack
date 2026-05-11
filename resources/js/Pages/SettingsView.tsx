@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import type { FormEvent } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
@@ -16,15 +15,6 @@ import './SettingsView.css'
 // ── Nav items ──────────────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  {
-    id: 'Profile',
-    icon: (
-      <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="14">
-        <circle cx="8" cy="5.5" r="2.5" />
-        <path d="M2.5 14c0-3 2.5-5 5.5-5s5.5 2 5.5 5" />
-      </svg>
-    ),
-  },
   {
     id: 'Notifications',
     icon: (
@@ -64,10 +54,6 @@ const NAV_ITEMS = [
 ]
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-
-function initials(name: string) {
-  return name.split(' ').slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase()
-}
 
 function InfoValue({ label, value }: { label: string; value: string }) {
   if (label === 'Database' && value.includes('PostgreSQL')) {
@@ -314,9 +300,8 @@ function loadThemePreference(): ThemePreference {
 
 export function SettingsView() {
   const { currentUser, systemStatus, requestLogout } = useWorkspace()
-  const navigate = useInertiaNavigate()
 
-  const [activeNav, setActiveNav] = useState('Profile')
+  const [activeNav, setActiveNav] = useState('Notifications')
 
   // ── Notification preferences ──────────────────────────────────────────
   const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>(() => ({
@@ -404,80 +389,6 @@ export function SettingsView() {
 
         {/* ── Content ── */}
         <div className="settings-content">
-
-          {/* Profile — redirect to /profile */}
-          {activeNav === 'Profile' && (
-            <div className="section-block">
-              <div className="section-header">
-                <div>
-                  <h3 className="section-title">Profile</h3>
-                  <p className="section-subtitle">Identitas, hierarki jabatan, dan riwayat posisi Anda.</p>
-                </div>
-              </div>
-
-              <div className="profile-avatar-row settings-profile-row">
-                <div
-                  className="profile-avatar"
-                  data-tone="blue"
-                >
-                  {currentUser?.name ? initials(currentUser.name) : '?'}
-                </div>
-                <div className="profile-identity settings-profile-identity">
-                  <div className="profile-name settings-profile-name">{currentUser?.name ?? '—'}</div>
-                  <div className="settings-profile-meta">
-                    {currentUser?.positionTitle ?? currentUser?.roleType ?? '—'}
-                  </div>
-                  {currentUser?.unit && (
-                    <div className="settings-profile-submeta">
-                      {currentUser.unit.name}{currentUser.directorate ? ` · ${currentUser.directorate.name}` : ''}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="settings-quick-actions">
-                <button className="settings-quick-action" onClick={() => navigate('/profile')} type="button">
-                  <span className="settings-quick-action__icon" data-tone="green">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M11.5 2.5a1.77 1.77 0 0 1 2.5 2.5L5 14l-3.5 1 1-3.5Z" />
-                    </svg>
-                  </span>
-                  <span className="settings-quick-action__body">
-                    <span className="settings-quick-action__title">Edit Nama &amp; Email</span>
-                    <span className="settings-quick-action__desc">Perbarui data akun dasar Anda.</span>
-                  </span>
-                  <span className="settings-quick-action__chev" aria-hidden="true">→</span>
-                </button>
-                <button className="settings-quick-action" onClick={() => navigate('/profile')} type="button">
-                  <span className="settings-quick-action__icon" data-tone="blue">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="8" cy="3.5" r="1.5" />
-                      <circle cx="3.5" cy="12" r="1.5" />
-                      <circle cx="12.5" cy="12" r="1.5" />
-                      <path d="M8 5v3M8 8l-4 2.5M8 8l4 2.5" />
-                    </svg>
-                  </span>
-                  <span className="settings-quick-action__body">
-                    <span className="settings-quick-action__title">Hierarki Jabatan</span>
-                    <span className="settings-quick-action__desc">Atasan, tim, dan posisi saat ini.</span>
-                  </span>
-                  <span className="settings-quick-action__chev" aria-hidden="true">→</span>
-                </button>
-                <button className="settings-quick-action" onClick={() => navigate('/profile')} type="button">
-                  <span className="settings-quick-action__icon" data-tone="yellow">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M2 14V8M6 14V5M10 14V9M14 14V3" />
-                    </svg>
-                  </span>
-                  <span className="settings-quick-action__body">
-                    <span className="settings-quick-action__title">Aktivitas &amp; Riwayat</span>
-                    <span className="settings-quick-action__desc">Statistik sesi dan mutasi jabatan.</span>
-                  </span>
-                  <span className="settings-quick-action__chev" aria-hidden="true">→</span>
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Notifications */}
           {activeNav === 'Notifications' && (() => {
@@ -662,12 +573,21 @@ export function SettingsView() {
                 </div>
 
               </div>
+
+              <div className="settings-footnote">
+                <strong>Pintasan:</strong> Tekan <kbd>⌘K</kbd> untuk membuka command palette. Perubahan tampilan tersimpan otomatis di perangkat ini.
+              </div>
             </div>
           )}
 
           {/* Security */}
           {activeNav === 'Security' && (
-            <SecuritySection onLogout={requestLogout} />
+            <>
+              <SecuritySection onLogout={requestLogout} />
+              <div className="settings-footnote">
+                <strong>Tips keamanan:</strong> Gunakan kata sandi minimal 12 karakter dengan kombinasi huruf, angka, dan simbol. Jangan gunakan ulang kata sandi yang sudah dipakai di layanan lain.
+              </div>
+            </>
           )}
 
           {/* Workspace */}

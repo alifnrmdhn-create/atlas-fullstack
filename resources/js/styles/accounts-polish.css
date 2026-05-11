@@ -1,0 +1,975 @@
+/* ════════════════════════════════════════════════════════════════════
+   Accounts Polish — Pattern A for Profile, Presence, Settings
+   ────────────────────────────────────────────────────────────────────
+   Workspace is the only card chrome layer. All inner section blocks
+   inside .profile-v2, .presence-v2, .settings-v2 get flattened: no
+   background, border, radius, or shadow. Hairlines + spacing carry
+   the visual hierarchy.
+
+   Callouts (Status Saya, Danger Zone, theme picker buttons, toggles,
+   form inputs) keep their chrome — they're purposeful UI, not
+   container packaging.
+   ════════════════════════════════════════════════════════════════════ */
+
+
+/* ───────── Shared: page wrapper consistent with workspace card ───────── */
+
+.profile-v2,
+.presence-v2,
+.settings-v2 {
+  background: var(--app-bg) !important;
+  background-image: none !important;
+}
+
+
+/* ───────── PROFILE — handled directly in ProfileView.css (redesigned) ───────── */
+/* Profile sekarang punya struktur baru (pv-* classes). Polish tidak perlu di sini. */
+
+
+/* ───────── PRESENCE ───────── */
+
+/* Toolbar: clean 2-row layout — title+subtitle row, stats row.
+   No more cramming 4 elements in one row. Aligns with Settings/Profile pattern
+   while accommodating the unique stats data Presence has. */
+.presence-v2 .view-toolbar {
+  background: transparent;
+  border-bottom: 1px solid var(--panel-border-soft);
+  padding: 22px 0 18px;
+  margin-bottom: 22px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "title    title"
+    "subtitle right";
+  align-items: end;
+  column-gap: 14px;
+  row-gap: 6px;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+.presence-v2 .view-toolbar__title {
+  grid-area: title;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.018em;
+  line-height: 1.2;
+  color: var(--text-strong);
+  margin: 0;
+}
+.presence-v2 .view-toolbar__sep { display: none; }
+.presence-v2 .view-toolbar__subtitle {
+  grid-area: subtitle;
+  display: block;
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-muted);
+  letter-spacing: 0;
+  max-width: 78ch;
+  margin: 0;
+  white-space: normal;
+  align-self: center;
+}
+.presence-v2 .view-toolbar__right {
+  grid-area: right;
+  margin-left: 0;
+  align-self: center;
+  justify-self: end;
+}
+
+/* Stats cluster — discrete pills, no separator dots, semantic colors */
+.presence-v2 .presence-toolbar-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-1);
+  border: 1px solid var(--panel-border-soft);
+  border-radius: 999px;
+  padding: 4px 6px;
+}
+.presence-v2 .presence-toolbar-stats .presence-sep,
+.presence-v2 .presence-sep,
+.ds.presence-v2 .view-toolbar__stats > .presence-sep {
+  display: none !important;
+}
+.presence-v2 .presence-toolbar-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+}
+.presence-v2 .presence-toolbar-stat::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.presence-v2 .presence-toolbar-stat--online::before  { background: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 16%, transparent); }
+.presence-v2 .presence-toolbar-stat--away::before    { background: var(--yellow); }
+.presence-v2 .presence-toolbar-stat--dnd::before     { background: var(--red); }
+.presence-v2 .presence-toolbar-stat--offline::before { background: transparent; border: 1.5px solid var(--text-muted); width: 5px; height: 5px; }
+.presence-v2 .presence-toolbar-stat em {
+  color: var(--text-muted);
+  font-style: normal;
+  font-weight: 500;
+  margin-left: 1px;
+}
+
+/* Tab nav: premium underline indicator */
+.presence-v2 .presence-tab-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid var(--panel-border-soft);
+  margin-bottom: 18px;
+}
+.presence-v2 .presence-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.presence-v2 .presence-tab-btn:hover {
+  color: var(--text);
+}
+.presence-v2 .presence-tab-btn.is-active {
+  color: var(--indigo);
+  border-bottom-color: var(--indigo);
+}
+
+/* Controls bar: search + filter + actions */
+.presence-v2 .presence-controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.presence-v2 .presence-search-wrap {
+  flex: 1;
+  max-width: 320px;
+  position: relative;
+}
+.presence-v2 .presence-search-wrap__input {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--surface-1);
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.presence-v2 .presence-search-wrap__input:focus {
+  background: var(--app-bg);
+  border-color: color-mix(in srgb, var(--indigo) 40%, var(--panel-border) 60%);
+}
+.presence-v2 .presence-search-wrap__icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.presence-v2 .presence-filter-tabs {
+  display: inline-flex;
+  background: var(--surface-1);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 0;
+}
+.presence-v2 .presence-filter-tab {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.presence-v2 .presence-filter-tab:hover { color: var(--text); }
+.presence-v2 .presence-filter-tab.is-active {
+  background: var(--app-bg);
+  color: var(--text-strong);
+  box-shadow: 0 1px 2px rgba(15,20,40,0.06);
+}
+
+/* Viewport-fit layout: whole Presence page fits within workspace card,
+   no body scroll. Pakem: halaman primer pas resolusi layar.
+   Parent .workspace__content is flex column → use flex:1 + min-height:0
+   to fill remaining space. Override .presence-v2 { min-height:100vh } that
+   forces viewport-height overflow. */
+.ds.presence-v2.view-presence {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  height: auto !important;
+  overflow: hidden !important;
+}
+.ds.presence-v2 .presence-v2__inner {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding-bottom: 24px !important;
+}
+
+/* Workspace 2-column: fills remaining height, each column scrolls internally */
+.presence-v2 .presence-workspace {
+  background: transparent !important;
+  padding: 0 !important;
+  align-items: stretch !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* LEFT panel (directorate list): scrolls internally */
+.presence-v2 .presence-main {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.presence-v2 .presence-main::-webkit-scrollbar { width: 6px; }
+.presence-v2 .presence-main::-webkit-scrollbar-track { background: transparent; }
+.presence-v2 .presence-main::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+.presence-v2 .presence-main:hover::-webkit-scrollbar-thumb {
+  background: var(--panel-border-strong);
+}
+
+/* RIGHT rail: same height, internal scroll for status panel */
+.presence-v2 .presence-sidebar.right-rail {
+  display: flex !important;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.presence-v2 .presence-sidebar .status-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* Polished scrollbar — only visible on hover, subtle */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.presence-v2 .presence-sidebar .status-panel::-webkit-scrollbar {
+  width: 6px;
+}
+.presence-v2 .presence-sidebar .status-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.presence-v2 .presence-sidebar .status-panel::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 160ms ease;
+}
+.presence-v2 .presence-sidebar:hover .status-panel::-webkit-scrollbar-thumb,
+.presence-v2 .presence-sidebar .status-panel:hover::-webkit-scrollbar-thumb {
+  background: var(--panel-border-strong);
+}
+
+/* Status Saya rail polish */
+.presence-v2 .status-panel,
+.presence-v2 .presence-status-card {
+  background: var(--surface-1) !important;
+  border: 1px solid var(--panel-border-soft) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: none !important;
+  padding: 16px !important;
+}
+
+/* Flatten outer container card chrome */
+.presence-v2 .section-block,
+.presence-v2 .presence-panel,
+.presence-v2 .presence-content,
+.presence-v2 .presence-list {
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Direktorat header: PROPER section title — sentence-case 16px bold to match
+   Settings/Profile section titles. Establishes Direktorat as the primary
+   group. Divisi sub-headers stay smaller (uppercase 11px) for clear hierarchy. */
+.presence-v2 .presence-directorate__header {
+  background: transparent !important;
+  border-bottom: 1px solid var(--panel-border-soft) !important;
+  position: static !important;
+  padding: 16px 16px 14px 12px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.012em !important;
+  text-transform: none !important;
+  color: var(--text-strong) !important;
+  border-left-width: 3px !important;
+  border-left-style: solid !important;
+  border-left-color: var(--indigo) !important;
+}
+.presence-v2 .presence-directorate__header:hover {
+  background: var(--surface-1) !important;
+}
+.presence-v2 .presence-directorate__chevron {
+  font-size: 11px !important;
+  color: var(--text-muted) !important;
+  opacity: 0.7;
+}
+
+/* Directorate body should also be transparent */
+.presence-v2 .presence-directorate__body {
+  background: transparent !important;
+}
+
+/* Divisi sub-header (nested inside direktorat) — keep small uppercase
+   for clear sub-group hierarchy. Distinct from direktorat title above. */
+.presence-v2 .presence-unit__header {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  color: var(--text-muted) !important;
+  padding: 10px 16px 8px !important;
+  background: transparent !important;
+}
+.presence-v2 .presence-unit__chevron {
+  font-size: 9px !important;
+  color: var(--text-muted) !important;
+}
+
+/* Flatten generic section blocks */
+.presence-v2 .presence-section {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.presence-v2 .presence-section + .presence-section {
+  border-top: 1px solid var(--panel-border-soft) !important;
+}
+.presence-v2 .presence-section__header {
+  background: transparent !important;
+  border-bottom: 1px solid var(--panel-border-soft) !important;
+}
+
+/* Status Saya rail — DENSE compact layout. Preview, section labels,
+   divider, dan preset items 7-9 dihilangkan untuk fit viewport tanpa scroll.
+   User feedback: "kalo ada elemen yang perlu dihilangkan dan tidak mengganggu, tidak apa-apa". */
+.presence-v2 .status-panel,
+.presence-v2 .presence-status-card {
+  background: var(--app-bg) !important;
+  border: 1px solid var(--panel-border-soft) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: none !important;
+  padding: 14px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.presence-v2 .status-panel__header {
+  padding: 0 !important;
+  border-bottom: 0 !important;
+  background: transparent !important;
+  margin-bottom: 2px;
+}
+.presence-v2 .status-panel__title {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
+}
+
+/* Hide redundant elements: preview (status visible via header dot), all section
+   labels and dividers. Controls speak for themselves. */
+.presence-v2 .status-panel__divider,
+.presence-v2 .status-panel__preview,
+.presence-v2 .status-panel__section-label {
+  display: none !important;
+}
+
+.presence-v2 .status-presets__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0 !important;
+  margin: 0 !important;
+}
+
+/* Cap presets to 6 most useful — hide last 3 (Perjalanan dinas, Jangan diganggu, OOO) */
+.presence-v2 .status-presets__list > .status-preset-row:nth-child(n+7) {
+  display: none !important;
+}
+
+.presence-v2 .status-preset-row {
+  padding: 5px 8px !important;
+  border-radius: 5px !important;
+  border: 0 !important;
+  background: transparent !important;
+  cursor: pointer;
+  transition: background 120ms ease;
+  font-size: 12px;
+  min-height: 0 !important;
+}
+.presence-v2 .status-preset-row:hover {
+  background: var(--surface-1) !important;
+}
+.presence-v2 .status-preset-row.is-active {
+  background: var(--indigo-dim) !important;
+  color: var(--indigo);
+}
+
+.presence-v2 .status-panel__divider {
+  height: 1px;
+  background: var(--panel-border-soft);
+  margin: 6px 0 !important;
+}
+
+/* Form: clean 3-row — Status+Emoji inline, Pesan input, Update button.
+   Compact, structured, no fragmented controls. */
+.presence-v2 .status-form {
+  display: flex !important;
+  flex-direction: column;
+  gap: 8px !important;
+  padding-top: 12px;
+  border-top: 1px solid var(--panel-border-soft);
+  margin-top: 6px;
+}
+
+/* Status + Emoji row — grid: Status select (1fr) + Emoji button (auto compact) */
+.presence-v2 .status-form .status-form__row {
+  display: grid !important;
+  grid-template-columns: 1fr 36px;
+  gap: 6px;
+  align-items: stretch;
+}
+
+/* Hide all label text — controls self-explanatory via placeholder/icon */
+.presence-v2 .status-form .status-form__label {
+  font-size: 0 !important;
+  display: flex !important;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+}
+.presence-v2 .status-form .status-form__label > * {
+  font-size: 12.5px;
+}
+
+/* Emoji picker compact — fits in 32px square button.
+   Override responsive.css:6502+ which sets min-width:64px, height:34px,
+   font-size:20px on the trigger. */
+.presence-v2 .status-form .emoji-picker-field {
+  width: 32px !important;
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  gap: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+.presence-v2 .status-form .emoji-picker-field__trigger {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border: 1px solid var(--panel-border) !important;
+  border-radius: 6px !important;
+  background: var(--app-bg) !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px !important;
+  gap: 0 !important;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.presence-v2 .status-form .emoji-picker-field__trigger:hover {
+  background: var(--surface-1) !important;
+  border-color: var(--panel-border-strong) !important;
+}
+.presence-v2 .status-form .emoji-picker-field__display {
+  font-size: 14px !important;
+  line-height: 1 !important;
+}
+.presence-v2 .status-form .emoji-picker-field__placeholder {
+  font-size: 14px !important;
+  line-height: 1 !important;
+  opacity: 0.6;
+}
+.presence-v2 .status-form .emoji-picker-field__caret,
+.presence-v2 .status-form .emoji-picker-field__clear {
+  display: none !important;
+}
+
+/* Emoji popup: open ABOVE-LEFT from button so it doesn't get clipped by
+   the overflow:hidden chain (rail → panel). Compact width fits inside rail. */
+.presence-v2 .status-form .emoji-picker-popup {
+  position: absolute !important;
+  top: auto !important;
+  bottom: calc(100% + 6px) !important;
+  left: auto !important;
+  right: 0 !important;
+  min-width: 0 !important;
+  width: 240px !important;
+  max-width: 240px !important;
+  max-height: 280px !important;
+  z-index: 100 !important;
+  padding: 10px !important;
+}
+.presence-v2 .status-form .emoji-picker-popup__grid {
+  grid-template-columns: repeat(7, 1fr) !important;
+  gap: 2px !important;
+}
+.presence-v2 .status-form .emoji-picker-popup__btn {
+  width: 28px !important;
+  height: 28px !important;
+  font-size: 16px !important;
+}
+
+/* Allow popup to escape overflow:hidden via overflow:visible on the
+   chain. This works because popup is the only thing that needs to escape;
+   the directorate list scrolls vertically (Y) which still works with
+   overflow-y on .presence-main. */
+.presence-v2 .status-panel {
+  overflow: visible !important;
+}
+.presence-v2 .presence-sidebar.right-rail {
+  overflow: visible !important;
+}
+
+.presence-v2 .status-form__input {
+  width: 100%;
+  padding: 8px 10px !important;
+  border: 1px solid var(--panel-border) !important;
+  border-radius: 6px !important;
+  font-size: 12.5px !important;
+  background: var(--app-bg) !important;
+  color: var(--text-strong) !important;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+  box-sizing: border-box;
+}
+.presence-v2 .status-form__input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+.presence-v2 .status-form__input:focus {
+  border-color: color-mix(in srgb, var(--indigo) 50%, var(--panel-border)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--indigo) 10%, transparent);
+}
+
+/* Update button — primary CTA full-width compact */
+.presence-v2 .presence-update-btn,
+.presence-v2 .status-form .presence-update-btn {
+  background: var(--indigo) !important;
+  color: var(--text-inverse) !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  padding: 0 14px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  box-shadow: 0 3px 8px -4px rgba(31, 107, 53, 0.35);
+  height: 34px !important;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.presence-v2 .presence-update-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px -4px rgba(31, 107, 53, 0.5);
+}
+.presence-v2 .presence-update-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.presence-v2 .status-form__select {
+  font-size: 12.5px !important;
+  padding: 6px 8px !important;
+  border: 1px solid var(--panel-border) !important;
+  border-radius: 6px !important;
+  background: var(--app-bg) !important;
+  color: var(--text-strong) !important;
+  text-transform: none;
+  font-weight: 500;
+  letter-spacing: 0;
+  height: 30px !important;
+  font-family: inherit;
+}
+
+/* Pesan textarea */
+.presence-v2 .status-form textarea {
+  min-height: 36px !important;
+  font-size: 12.5px !important;
+  padding: 7px 9px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--panel-border) !important;
+  background: var(--app-bg) !important;
+  color: var(--text-strong) !important;
+  font-family: inherit;
+  resize: vertical;
+}
+
+/* Update Status button — proportionate to form, not oversized */
+.presence-v2 .status-form button[type="submit"],
+.presence-v2 .status-update-btn {
+  background: var(--indigo) !important;
+  color: var(--text-inverse) !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  padding: 0 14px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  box-shadow: 0 3px 8px -4px rgba(31, 107, 53, 0.35);
+  margin-top: 2px;
+  height: 32px !important;
+  align-self: stretch;
+}
+.presence-v2 .status-form button[type="submit"]:hover,
+.presence-v2 .status-update-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px -4px rgba(31, 107, 53, 0.5);
+}
+
+
+/* Member rows: hover cursor + smoother feedback */
+.presence-v2 .presence-row,
+.presence-v2 .presence-list > * {
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+/* Footer tip: keyboard shortcut hint at bottom of presence list */
+.presence-v2 .presence-footer-tip {
+  margin-top: 24px;
+  padding: 12px 14px;
+  background: var(--surface-1);
+  border-left: 3px solid var(--indigo);
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+.presence-v2 .presence-footer-tip strong {
+  color: var(--text-strong);
+  font-weight: 600;
+  margin-right: 4px;
+}
+.presence-v2 .presence-footer-tip kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  background: var(--app-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-strong);
+  margin: 0 2px;
+}
+
+
+/* ───────── SETTINGS ───────── */
+
+.settings-v2 .view-toolbar {
+  background: transparent;
+  border-bottom: 1px solid var(--panel-border-soft);
+  padding: 22px 24px 18px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "title    .         right"
+    "subtitle subtitle  subtitle";
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 2px;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+.settings-v2 .view-toolbar__title {
+  grid-area: title;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.018em;
+  line-height: 1.2;
+  color: var(--text-strong);
+  margin: 0;
+}
+.settings-v2 .view-toolbar__sep { display: none; }
+.settings-v2 .view-toolbar__subtitle {
+  grid-area: subtitle;
+  display: block;
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-muted);
+  letter-spacing: 0;
+  max-width: 78ch;
+  margin: 0;
+  white-space: normal;
+}
+.settings-v2 .view-toolbar__right { grid-area: right; margin-left: 0; align-self: center; }
+
+/* Flatten left tab nav — no card chrome, just rounded hover/active rows */
+.settings-v2 .settings-nav {
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 8px 0 !important;
+}
+.settings-v2 .settings-nav-item {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+}
+.settings-v2 .settings-nav-item:hover {
+  background: var(--surface-1) !important;
+}
+.settings-v2 .settings-nav-item.is-active {
+  background: var(--indigo-dim) !important;
+  color: var(--indigo) !important;
+  box-shadow: none !important;
+}
+
+/* Flatten content area */
+.settings-v2 .settings-content {
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* Flatten section blocks */
+.settings-v2 .section-block,
+.settings-v2 .settings-section {
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 24px 28px !important;
+  margin: 0 !important;
+}
+.settings-v2 .section-block + .section-block,
+.settings-v2 .settings-section + .settings-section {
+  border-top: 1px solid var(--panel-border-soft) !important;
+}
+
+/* Notification group titles + list rows */
+.settings-v2 .settings-notif-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 16px;
+}
+.settings-v2 .settings-notif-group {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+.settings-v2 .settings-notif-group__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--panel-border-soft);
+}
+
+/* Settings list outer wrapper — kill outer card chrome.
+   SettingsView.css:152 wraps list in border + radius which creates
+   "card containing rows" look. We want flat list with hairline divider only. */
+.settings-v2 .settings-list,
+.settings-v2 .settings-list--compact,
+.settings-v2 .settings-list--spaced {
+  display: flex;
+  flex-direction: column;
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+.settings-v2 .settings-list-row,
+.settings-v2 .list-row.settings-list-row {
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 14px 0 !important;
+  border-bottom: 1px solid var(--panel-border-soft) !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.settings-v2 .settings-list-row:last-child {
+  border-bottom: 0 !important;
+}
+.settings-v2 .settings-list-row:hover {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.settings-v2 .settings-list-row__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.settings-v2 .settings-list-row__title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.settings-v2 .settings-list-row__desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.settings-v2 .settings-list-row__label {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.settings-v2 .settings-value-text {
+  font-size: 13.5px;
+  color: var(--text-strong);
+  font-weight: 500;
+}
+
+/* Security change-password card — keep callout (interactive), soften */
+.settings-v2 .settings-security-card {
+  background: var(--surface-1) !important;
+  background-image: none !important;
+  border: 1px solid var(--panel-border-soft) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: none !important;
+  margin-top: 24px;
+  padding: 20px !important;
+}
+
+/* Footnote: helpful tip/shortcut at bottom of each tab — fills void space */
+.settings-v2 .settings-footnote {
+  margin-top: 32px;
+  padding: 14px 16px;
+  background: var(--surface-1);
+  border-left: 3px solid var(--indigo);
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+.settings-v2 .settings-footnote strong {
+  color: var(--text-strong);
+  font-weight: 600;
+  margin-right: 4px;
+}
+.settings-v2 .settings-footnote kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  background: var(--app-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-strong);
+  margin: 0 2px;
+}
+
+/* Theme picker buttons — keep as actionable cards (purposeful) */
+.settings-v2 .theme-button,
+.settings-v2 .settings-theme-option {
+  background: var(--app-bg) !important;
+  border: 1px solid var(--panel-border) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+/* Danger Zone — keep callout treatment but soften shadow */
+.settings-v2 .danger-zone,
+.settings-v2 .settings-danger {
+  background: color-mix(in srgb, var(--red) 4%, var(--app-bg)) !important;
+  border: 1px solid color-mix(in srgb, var(--red) 20%, var(--panel-border)) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: none !important;
+}
+
+/* Form fields keep visible chrome */
+.settings-v2 .settings-input,
+.settings-v2 input[type="text"],
+.settings-v2 input[type="password"],
+.settings-v2 input[type="email"] {
+  background: var(--app-bg) !important;
+}
+
+
+/* ───────── Empty states (all 3 views) — kill dashed border ───────── */
+
+.profile-v2 .empty-state,
+.profile-v2 .section-state,
+.profile-v2 .panel__empty,
+.presence-v2 .empty-state,
+.presence-v2 .section-state,
+.presence-v2 .panel__empty,
+.settings-v2 .empty-state,
+.settings-v2 .section-state,
+.settings-v2 .panel__empty {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}

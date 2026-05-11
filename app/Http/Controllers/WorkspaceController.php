@@ -500,7 +500,11 @@ class WorkspaceController extends Controller
             return Inertia::render('ProfileView');
         }
 
-        $user = $request->user()->load(['unit:id,code,name', 'directorate:id,code,name']);
+        $user = $request->user()->load([
+            'unit:id,code,name',
+            'directorate:id,code,name',
+            'position:id,code,name,levelCode,roleType,reportsToPositionId',
+        ]);
 
         // Resolve supervisor chain via OrgChainService (index 0 = atasan langsung).
         $supervisorChain = $orgChain->getEscalationChain($user, 6)

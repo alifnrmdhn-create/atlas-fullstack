@@ -33,6 +33,14 @@ const PRESETS: Array<{ emoji: string; message: string; status: PresenceStatus; i
 ]
 
 const STATUS_ORDER: Record<PresenceStatus, number> = { ONLINE: 0, AWAY: 1, DO_NOT_DISTURB: 2, OFFLINE: 3 }
+
+// PTPN role hierarchy weight — higher = more senior. Used as secondary
+// sort key within the same presence status (Kasubdiv before Asisten before Officer).
+const ROLE_RANK: Record<string, number> = {
+  SUPERADMIN: 100, ADMIN: 90, BOD: 80, KADIV: 70, KASUBDIV: 60, ASISTEN: 50, OFFICER: 40,
+}
+const roleRank = (r?: string | null) => ROLE_RANK[r?.toUpperCase() ?? ''] ?? 0
+
 const OFFLINE_SHOW_DEFAULT = 3
 
 type FilterMode = 'all' | 'active' | 'available' | 'mine'
@@ -264,8 +272,14 @@ function buildGroups(presence: PresenceUser[], sortMap: Map<string, SortMode>): 
       const sort = sortMap.get(uKey) ?? 'status'
       const sorted = [...users].sort((a, b) => {
         if (sort === 'name') return (a.user?.name ?? '').localeCompare(b.user?.name ?? '')
-        const d = (STATUS_ORDER[a.status] ?? 4) - (STATUS_ORDER[b.status] ?? 4)
-        return d !== 0 ? d : (a.user?.name ?? '').localeCompare(b.user?.name ?? '')
+        // Tier 1: status (active first)
+        const statusDiff = (STATUS_ORDER[a.status] ?? 4) - (STATUS_ORDER[b.status] ?? 4)
+        if (statusDiff !== 0) return statusDiff
+        // Tier 2: role rank (senior first — KASUBDIV → ASISTEN → OFFICER)
+        const rankDiff = roleRank(b.user?.roleType) - roleRank(a.user?.roleType)
+        if (rankDiff !== 0) return rankDiff
+        // Tier 3: alphabetical
+        return (a.user?.name ?? '').localeCompare(b.user?.name ?? '')
       })
       units.push({ unitId, unitName, users: sorted })
     }
@@ -273,10 +287,13 @@ function buildGroups(presence: PresenceUser[], sortMap: Map<string, SortMode>): 
       const d = b.users.filter(isActive).length - a.users.filter(isActive).length
       return d !== 0 ? d : a.unitName.localeCompare(b.unitName)
     })
-    // Sort direct members by status then name
+    // Sort direct members: status → role rank → name
     const sortedDirectMembers = [...directMembers].sort((a, b) => {
-      const d = (STATUS_ORDER[a.status] ?? 4) - (STATUS_ORDER[b.status] ?? 4)
-      return d !== 0 ? d : (a.user?.name ?? '').localeCompare(b.user?.name ?? '')
+      const statusDiff = (STATUS_ORDER[a.status] ?? 4) - (STATUS_ORDER[b.status] ?? 4)
+      if (statusDiff !== 0) return statusDiff
+      const rankDiff = roleRank(b.user?.roleType) - roleRank(a.user?.roleType)
+      if (rankDiff !== 0) return rankDiff
+      return (a.user?.name ?? '').localeCompare(b.user?.name ?? '')
     })
     dirs.push({ dirId, dirName, directMembers: sortedDirectMembers, units })
   }
@@ -749,6 +766,7 @@ export function PresenceView() {
               </div>
             )
           })}
+
         </div>
 
         {/* ── Sidebar: update status ── */}
