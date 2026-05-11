@@ -10,4 +10,8 @@ cmds = [
 ]
 
 [start]
-cmd = "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=$PORT"
+# PHP_CLI_SERVER_WORKERS=20 + --no-reload: tanpa keduanya `artisan serve`
+# default cuma 1 worker (lihat Laravel ServeCommand::initialize). 1 worker
+# = SSE long-lived connection block semua request lain dari user yang sama
+# → polling antri, message tidak realtime, "harus refresh dulu".
+cmd = "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && PHP_CLI_SERVER_WORKERS=20 php artisan serve --host=0.0.0.0 --port=$PORT --no-reload"
