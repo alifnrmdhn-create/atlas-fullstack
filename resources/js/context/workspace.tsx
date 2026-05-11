@@ -931,7 +931,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // ── Channel message event handlers ───────────────────────
   const handleMessageCreated = useEffectEvent((event: { channelId: number; message: ChannelMessage & { author?: { name?: string; roleType?: string } } }) => {
-    if (event.channelId !== selectedChannelId) return
     // Normalize: backend sends author relationship, frontend uses authorName/authorRole
     const msg: ChannelMessage = {
       ...event.message,
@@ -939,16 +938,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       authorName: event.message.authorName ?? event.message.author?.name,
       authorRole: event.message.authorRole ?? event.message.author?.roleType,
     }
-    setMessages((prev) => {
-      // Deduplicate: skip if a message with same id already exists
-      if (prev.some((m) => m.id === msg.id)) return prev
-      return [...prev, msg]
-    })
-    // Update sidebar lastMessage
+
+    const isViewing = event.channelId === selectedChannelId
+    const isOwnMessage = currentUser != null && msg.userId === currentUser.id
+
+    // Always update sidebar — bump unread when not viewing & not own message
     setChannels((prev) => prev.map((c) =>
       c.id === event.channelId
         ? {
             ...c,
+            unreadCount: isViewing || isOwnMessage ? c.unreadCount : c.unreadCount + 1,
             lastMessage: {
               id: event.message.id,
               userId: event.message.userId,
@@ -959,6 +958,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           }
         : c
     ))
+
+    if (!isViewing) return
+
+    setMessages((prev) => {
+      // Deduplicate: skip if a message with same id already exists
+      if (prev.some((m) => m.id === msg.id)) return prev
+      return [...prev, msg]
+    })
     // Keep lastViewedAt fresh so periodic loadOverview doesn't re-inflate unreadCount
     // Debounced: fire once after 2s of no new messages (not on every single message)
     if (markReadTimerRef.current) clearTimeout(markReadTimerRef.current)
@@ -1059,13 +1066,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const handleChannelCreated = useEffectEvent((event: { channel: ChannelSummary }) => {
     setChannels((prev) => {
       if (prev.some((c) => c.id === event.channel.id)) return prev
+      const isDm = event.channel.isDirectMessage ?? /^dm-\d+-\d+$/.test(event.channel.name ?? '')
       return [...prev, {
         ...event.channel,
-        unreadCount: 0,
-        memberCount: 1,
-        isStarred: false,
+        unreadCount: event.channel.unreadCount ?? 0,
+        memberCount: event.channel.memberCount ?? (isDm ? 2 : 1),
+        isStarred: event.channel.isStarred ?? false,
         canManageMembers: event.channel.canManageMembers ?? false,
-        isDirectMessage: event.channel.isDirectMessage ?? false,
+        isDirectMessage: isDm,
       }]
     })
   })

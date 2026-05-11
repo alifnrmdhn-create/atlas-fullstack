@@ -850,8 +850,30 @@ export function ProgramDetailView() {
             <span className="wi-detail-header__sep">›</span>
             <span className="wi-detail-header__crumb">
               <span className="wi-detail-header__crumb-code">{detail.code}</span>
-              <span className="wi-detail-header__crumb-name">{detail.name}</span>
             </span>
+            <HealthPill status={normalizeHealthStatus(detail.healthStatus)} />
+            {detail.kelompok && (
+              <span className={`prog-detail-header__kelompok prog-detail-header__kelompok--${detail.kelompok === 'SCORECARD' ? 'scorecard' : 'non'}`}>
+                {detail.kelompok === 'SCORECARD' ? 'Scorecard' : 'Non Scorecard'}
+              </span>
+            )}
+            {detail.autoHealthComputedAt && (
+              <span
+                className="prog-detail-header__auto"
+                title={`Auto-derived dari workstream + KPI + task overdue + open blockers. Last computed: ${new Date(detail.autoHealthComputedAt).toLocaleString('id-ID')}`}
+              >
+                ⓘ auto
+              </span>
+            )}
+            {detail.approvalStatus && detail.approvalStatus !== 'ACTIVE' && (() => {
+              const tone = detail.approvalStatus === 'REJECTED' ? 'danger'
+                : detail.approvalStatus === 'DRAFT' || detail.approvalStatus === 'PLANNING' ? 'warning'
+                : 'info'
+              const pillLabel = tone === 'warning' ? 'Draft'
+                : tone === 'danger' ? 'Ditolak'
+                : detail.approvalStatus === 'PENDING_KASUB' ? 'Pending Kasub' : 'Pending Kadiv'
+              return <span className={`prog-approval-pill prog-approval-pill--${tone}`}>{pillLabel}</span>
+            })()}
           </>
         )}
         <div className="wi-detail-header__actions">
@@ -1021,22 +1043,11 @@ export function ProgramDetailView() {
               <div className="prog-detail-main">
                 {detail.description && (
                   <div className="wi-section">
-                    <div className="wi-section__header">
-                      <h3 className="wi-section__title">
-                        {PIcon.info}
-                        Deskripsi
-                      </h3>
-                    </div>
                     <p className="wi-desc">{detail.description}</p>
                   </div>
                 )}
                 <div className="wi-section">
-                  <div className="wi-section__header">
-                    <h3 className="wi-section__title">
-                      {PIcon.sparkle}
-                      Key Metrics
-                    </h3>
-                  </div>
+
                   {(() => {
                     // Compute KPI health from internal KPIs with actuals
                     const kpisWithData = (detail.kpis ?? []).filter(k => k.actualValue != null)
@@ -1337,35 +1348,44 @@ export function ProgramDetailView() {
                                 <span className="prog-progress-log__meta">{entry.createdByName} · {date}</span>
                               </div>
                               <p className="prog-progress-log__narrative">{entry.narrative}</p>
-                              {entry.kendala && (
-                                <div className="prog-progress-log__kendala">
-                                  <strong>Kendala:</strong> {entry.kendala}
-                                </div>
-                              )}
-                              {entry.correctiveAction && (
-                                <div className="prog-progress-log__corrective">
-                                  <strong>Corrective action:</strong> {entry.correctiveAction}
-                                </div>
-                              )}
-                              {entry.nextStep && (
-                                <div className="prog-progress-log__nextstep">
-                                  <strong>Next step:</strong> {entry.nextStep}
-                                </div>
-                              )}
-                              {entry.dukunganDibutuhkan && (
-                                <div className="prog-progress-log__support">
-                                  <strong>Dukungan dibutuhkan:</strong> {entry.dukunganDibutuhkan}
-                                  <div style={{ marginTop: 6 }}>
-                                    <EscalationButton
-                                      sourceType="PROGRESS_LOG"
-                                      sourceId={entry.id}
-                                      prefillTitle={`Dukungan untuk ${entry.period}`}
-                                      prefillDescription={entry.dukunganDibutuhkan}
-                                      linkedProgramId={numId}
-                                      size="sm"
-                                    />
+                              {(entry.kendala || entry.correctiveAction || entry.nextStep || entry.dukunganDibutuhkan) && (
+                                <details className="prog-progress-log__details">
+                                  <summary className="prog-progress-log__details-toggle">
+                                    Detail kendala, tindak lanjut &amp; dukungan
+                                  </summary>
+                                  <div className="prog-progress-log__details-body">
+                                    {entry.kendala && (
+                                      <div className="prog-progress-log__kendala">
+                                        <strong>Kendala:</strong> {entry.kendala}
+                                      </div>
+                                    )}
+                                    {entry.correctiveAction && (
+                                      <div className="prog-progress-log__corrective">
+                                        <strong>Corrective action:</strong> {entry.correctiveAction}
+                                      </div>
+                                    )}
+                                    {entry.nextStep && (
+                                      <div className="prog-progress-log__nextstep">
+                                        <strong>Next step:</strong> {entry.nextStep}
+                                      </div>
+                                    )}
+                                    {entry.dukunganDibutuhkan && (
+                                      <div className="prog-progress-log__support">
+                                        <strong>Dukungan dibutuhkan:</strong> {entry.dukunganDibutuhkan}
+                                        <div style={{ marginTop: 6 }}>
+                                          <EscalationButton
+                                            sourceType="PROGRESS_LOG"
+                                            sourceId={entry.id}
+                                            prefillTitle={`Dukungan untuk ${entry.period}`}
+                                            prefillDescription={entry.dukunganDibutuhkan}
+                                            linkedProgramId={numId}
+                                            size="sm"
+                                          />
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
-                                </div>
+                                </details>
                               )}
                             </div>
                           )
@@ -1578,7 +1598,7 @@ export function ProgramDetailView() {
                             <span className="wi-sidebar-label">Target selesai</span>
                             <span className="wi-sidebar-value wi-sidebar-value--wrap">
                               {new Date(detail.targetEndDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                              <br />
+                              {' · '}
                               <span className={`wi-sidebar-deadline wi-sidebar-deadline--${info.tone}`}>{info.label}</span>
                             </span>
                           </div>
@@ -1698,75 +1718,38 @@ export function ProgramDetailView() {
                   </section>
                   )}
 
-                  {/* ── Channel panel ── */}
-                  <section className="wid-panel">
-                    <div className="wid-panel__head wid-panel__head--compact">
-                      <h3 className="wid-panel__title">
-                        <span className="wid-panel__icon">{PIcon.wifi}</span>
-                        Channel
-                      </h3>
-                      <button
-                        aria-expanded={!sidebarCollapsed.channel}
-                        aria-label={sidebarCollapsed.channel ? 'Buka panel' : 'Tutup panel'}
-                        className={`wid-panel__collapse${sidebarCollapsed.channel ? ' is-collapsed' : ''}`}
-                        onClick={() => toggleSidebar('channel')}
-                        type="button"
-                      >
-                        {PIcon.chevron}
-                      </button>
-                    </div>
-                    <div className={`wid-panel__body${sidebarCollapsed.channel ? ' is-collapsed' : ''}`}>
-                      {programSummary?.linkedChannel ? (
-                        <>
-                          <div className="wi-sidebar-row">
-                            <span className="wi-sidebar-label">Linked</span>
-                            <span className="wi-sidebar-value">#{programSummary.linkedChannel.name}</span>
-                          </div>
-                          {(programSummary?.messageCount ?? 0) > 0 && (
-                            <div className="wi-sidebar-row">
-                              <span className="wi-sidebar-label">Pesan</span>
-                              <span className="wi-sidebar-value">{programSummary.messageCount}</span>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="wid-panel-empty">
-                          <span className="wid-panel-empty__icon">{PIcon.wifi}</span>
-                          <span className="wid-panel-empty__text">Belum terhubung ke channel komunikasi</span>
-                          {roleAccess.canEditProgram(isOwner) && (
-                            <button className="wid-panel-empty__cta" onClick={openEdit} type="button">+ Hubungkan Channel</button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </section>
-
-                  {/* ── Execution Grid shortcut panel ── */}
-                  <section className="wid-panel">
-                    <div className="wid-panel__head wid-panel__head--compact">
-                      <h3 className="wid-panel__title">
-                        <span className="wid-panel__icon">{PIcon.chart}</span>
-                        Jadwal
-                      </h3>
-                    </div>
-                    <div className="wid-panel__body">
-                      {(detail.workstreams ?? []).length > 0 ? (
+                  {/* ── Channel panel ── (rendered only when channel linked) */}
+                  {programSummary?.linkedChannel && (
+                    <section className="wid-panel">
+                      <div className="wid-panel__head wid-panel__head--compact">
+                        <h3 className="wid-panel__title">
+                          <span className="wid-panel__icon">{PIcon.wifi}</span>
+                          Channel
+                        </h3>
                         <button
-                          className="prog-execution-shortcut prog-execution-shortcut--card"
-                          onClick={() => setActiveTab('execution')}
+                          aria-expanded={!sidebarCollapsed.channel}
+                          aria-label={sidebarCollapsed.channel ? 'Buka panel' : 'Tutup panel'}
+                          className={`wid-panel__collapse${sidebarCollapsed.channel ? ' is-collapsed' : ''}`}
+                          onClick={() => toggleSidebar('channel')}
                           type="button"
                         >
-                          Lihat jadwal Plan / Real mingguan →
+                          {PIcon.chevron}
                         </button>
-                      ) : (
-                        <div className="wid-panel-empty">
-                          <span className="wid-panel-empty__icon">{PIcon.layers}</span>
-                          <span className="wid-panel-empty__text">Tambahkan workstream untuk mengaktifkan Execution Grid</span>
-                          <button className="wid-panel-empty__cta" onClick={() => setActiveTab('workstream')} type="button">+ Tambah Workstream</button>
+                      </div>
+                      <div className={`wid-panel__body${sidebarCollapsed.channel ? ' is-collapsed' : ''}`}>
+                        <div className="wi-sidebar-row">
+                          <span className="wi-sidebar-label">Linked</span>
+                          <span className="wi-sidebar-value">#{programSummary.linkedChannel.name}</span>
                         </div>
-                      )}
-                    </div>
-                  </section>
+                        {(programSummary?.messageCount ?? 0) > 0 && (
+                          <div className="wi-sidebar-row">
+                            <span className="wi-sidebar-label">Pesan</span>
+                            <span className="wi-sidebar-value">{programSummary.messageCount}</span>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  )}
 
                 </div>
               </div>
@@ -1975,7 +1958,7 @@ export function ProgramDetailView() {
                                               </span>
                                             )}
                                             {!['PLANNING', 'BACKLOG', 'READY'].includes(phase.status) && (
-                                              <span className="wi-status-chip phase-group__status">{formatStatusLabel(phase.status)}</span>
+                                              <span className="wi-status-chip phase-group__status" data-status={phase.status}>{formatStatusLabel(phase.status)}</span>
                                             )}
                                             {roleAccess.canCreateWorkstream && confirmDelPhaseId !== phase.id && (
                                               <div className="phase-group__actions" onClick={e => e.stopPropagation()}>
@@ -2027,7 +2010,7 @@ export function ProgramDetailView() {
                                                     {item.priority && <span className={`wi-row__priority wi-row__priority--${item.priority.toLowerCase()}`} title={item.priority} />}
                                                     <span className="wi-pct">{item.percentComplete}%</span>
                                                     {!['BACKLOG', 'READY'].includes(item.status) && (
-                                                      <span className="wi-status-chip">{formatStatusLabel(item.status)}</span>
+                                                      <span className="wi-status-chip" data-status={item.status}>{formatStatusLabel(item.status)}</span>
                                                     )}
                                                   </div>
                                                 </button>
@@ -2080,7 +2063,7 @@ export function ProgramDetailView() {
                                                 <div className="wi-row__right">
                                                   {item.priority && <span className={`wi-row__priority wi-row__priority--${item.priority.toLowerCase()}`} title={item.priority} />}
                                                   <span className="wi-pct">{item.percentComplete}%</span>
-                                                  <span className="wi-status-chip">{formatStatusLabel(item.status)}</span>
+                                                  <span className="wi-status-chip" data-status={item.status}>{formatStatusLabel(item.status)}</span>
                                                 </div>
                                               </button>
                                             ))}

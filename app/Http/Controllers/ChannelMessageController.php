@@ -103,6 +103,12 @@ class ChannelMessageController extends Controller
                 'channelId' => $channelId,
                 'message' => $message,
             ], $memberIds);
+
+            // DM notification — non-mention DMs still deserve a notification
+            // (mentions handled by processMentions above)
+            rescue(function () use ($channelId, $userId, $message, $memberIds) {
+                $this->notifyDmRecipients($channelId, $userId, $message, $memberIds);
+            });
         }
 
         if ($request->expectsJson()) {
@@ -284,6 +290,53 @@ class ChannelMessageController extends Controller
     private function memberIds(int $channelId): array
     {
         return ChannelMember::where('channelId', $channelId)->pluck('userId')->all();
+    }
+
+    private function notifyDmRecipients(int $channelId, int $senderId, ChannelMessage $message, array $memberIds): void
+    {
+        $channel = Channel::find($channelId);
+        if (!$channel || $channel->type !== 'PRIVATE') return;
+        if (!preg_match('/^dm-\d+-\d+$/', (string) $channel->name)) return;
+
+        $recipientIds = array_values(array_filter(
+            $memberIds,
+            fn ($id) => (int) $id !== (int) $senderId,
+        ));
+        if (empty($recipientIds)) return;
+
+        // Skip recipients already covered by a MENTION notification for this message
+        // (processMentions writes mentionedUserIds directly to DB, so re-read it)
+        $mentionedRaw = ChannelMessage::where('id', $message->id)->value('mentionedUserIds');
+        if (!empty($mentionedRaw)) {
+            $mentioned = array_map('intval', (array) $mentionedRaw);
+            $recipientIds = array_values(array_filter(
+                $recipientIds,
+                fn ($id) => !in_array((int) $id, $mentioned, true),
+            ));
+            if (empty($recipientIds)) return;
+        }
+
+        $sender = User::find($senderId);
+        if (!$sender) return;
+
+        $content = (string) ($message->content ?? '');
+        $preview = mb_strlen($content) > 100 ? mb_substr($content, 0, 100) . '…' : $content;
+        $msg = "{$sender->name} mengirim pesan: \"{$preview}\"";
+        $source = "{$sender->name}·channel:{$channelId}";
+
+        foreach ($recipientIds as $uid) {
+            $notif = Notification::create([
+                'userId' => $uid,
+                'type' => 'DM_RECEIVED',
+                'message' => $msg,
+                'source' => $source,
+                'createdAt' => now(),
+                'state' => 'UNREAD',
+            ]);
+            BroadcastService::toUsers('notification:created', [
+                'notification' => $notif,
+            ], [(int) $uid]);
+        }
     }
 
     private function processMentions(int $channelId, int $senderId, string $content, int $messageId): void

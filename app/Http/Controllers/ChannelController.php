@@ -352,13 +352,17 @@ class ChannelController extends Controller
                 ->first(['id', 'content', 'createdAt', 'userId']);
 
             $unreadCount = 0;
-            if ($membership?->lastViewedAt) {
-                $unreadCount = ChannelMessage::query()
-                    ->where('channelId', $ch->id)
-                    ->where('createdAt', '>', $membership->lastViewedAt)
-                    ->whereNull('deletedForEveryoneAt')
-                    ->whereNull('parentMessageId')
-                    ->count();
+            if ($membership) {
+                $cutoff = $membership->lastViewedAt ?? $membership->joinedAt;
+                if ($cutoff) {
+                    $unreadCount = ChannelMessage::query()
+                        ->where('channelId', $ch->id)
+                        ->where('userId', '!=', $userId)
+                        ->where('createdAt', '>', $cutoff)
+                        ->whereNull('deletedForEveryoneAt')
+                        ->whereNull('parentMessageId')
+                        ->count();
+                }
             }
 
             return [
