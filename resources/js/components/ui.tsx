@@ -443,7 +443,11 @@ export function effectivePresenceSlug(status: string, lastActivityAt: string): s
 
 function UserAvatar({ avatarUrl, name, className }: { avatarUrl?: string; name: string; className?: string }) {
   const [failed, setFailed] = useState(false)
-  if (avatarUrl && !failed) {
+  // Filter out garbage values (DB sometimes stores 2-letter initials instead of a URL).
+  // A real avatar must be an absolute URL, root-absolute path, or data: URI — never
+  // a bare token that the browser would interpret as a relative path and 404 on.
+  const looksLikeUrl = !!avatarUrl && /^(https?:\/\/|\/|data:)/.test(avatarUrl)
+  if (looksLikeUrl && !failed) {
     return (
       <img
         className={className ?? 'presence-row__avatar-img'}

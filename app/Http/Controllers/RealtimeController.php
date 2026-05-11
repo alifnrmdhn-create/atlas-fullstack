@@ -127,6 +127,16 @@ class RealtimeController extends Controller
         abort_unless($user, 401);
 
         $since = max(0, (int) $request->query('since', 0));
+        $currentMax = (int) (BroadcastEvent::max('id') ?? 0);
+
+        // Seed call (sentinel since > max) — skip query, langsung balikkan max sekarang.
+        // Frontend pakai ini untuk inisialisasi lastEventId tanpa banjir event lama.
+        if ($since >= $currentMax) {
+            return response()->json([
+                'events' => [],
+                'lastEventId' => $currentMax,
+            ]);
+        }
 
         $events = BroadcastEvent::query()
             ->where('id', '>', $since)
@@ -138,11 +148,16 @@ class RealtimeController extends Controller
             ->limit(200)
             ->get(['id', 'eventType', 'payload']);
 
+        // Selalu majukan lastEventId ke max global supaya next poll tidak re-scan
+        // event yang sudah tidak relevan untuk user ini. Kecuali kalau hit LIMIT —
+        // berarti ada kemungkinan event lain di antaranya, jangan loncat.
+        $lastEventId = $events->count() >= 200
+            ? (int) $events->last()->id
+            : $currentMax;
+
         return response()->json([
             'events' => $events,
-            'lastEventId' => $events->isEmpty()
-                ? $since
-                : (int) $events->last()->id,
+            'lastEventId' => $lastEventId,
         ]);
     }
 
