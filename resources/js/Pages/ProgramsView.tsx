@@ -502,19 +502,25 @@ export function ProgramsView() {
     })).filter(g => g.items.length > 0)
   }
 
-  // ── Blocker counts per program (for detail panel badge) ───────────────
-  const blockerCountByProgram = pulse?.activeBlockers.reduce<Record<number, number>>((acc, b) => {
-    const pid = b.task.workstream.program.id
-    acc[pid] = (acc[pid] ?? 0) + 1
-    return acc
-  }, {}) ?? {}
-
   // ── Pulse filter state ─────────────────────────────────────────────────
   const [pulseFilter, setPulseFilter] = useState<'all' | number>('all')
 
-  const blockers = pulse?.activeBlockers.filter(b =>
-    pulseFilter === 'all' || b.task.workstream.program.id === pulseFilter
-  ) ?? []
+  // Filter blockers with valid task→workstream→program chain.
+  // Orphan blockers (task deleted/null) would crash downstream accesses.
+  const validBlockers = (pulse?.activeBlockers ?? []).filter(b =>
+    b.task?.workstream?.program?.id != null
+  )
+
+  // ── Blocker counts per program (for detail panel badge) ───────────────
+  const blockerCountByProgram = validBlockers.reduce<Record<number, number>>((acc, b) => {
+    const pid = b.task!.workstream.program.id
+    acc[pid] = (acc[pid] ?? 0) + 1
+    return acc
+  }, {})
+
+  const blockers = validBlockers.filter(b =>
+    pulseFilter === 'all' || b.task!.workstream.program.id === pulseFilter
+  )
   const atRisk = pulse?.atRiskWorkstreams.filter(i =>
     pulseFilter === 'all' || i.program.id === pulseFilter
   ) ?? []
@@ -1141,7 +1147,7 @@ export function ProgramsView() {
                                   {b.title}
                                 </div>
                                 <div className="blocker-item__meta">
-                                  {b.task.workstream.program.code} › {b.task.workstream.name} › {b.task.title}
+                                  {b.task!.workstream.program.code} › {b.task!.workstream.name} › {b.task!.title}
                                 </div>
                               </div>
                               <span className="blocker-item__age">
@@ -1149,7 +1155,7 @@ export function ProgramsView() {
                               </span>
                               <button
                                 className="btn btn--ghost blocker-item__action"
-                                onClick={() => navigate(`/execution/tasks/${b.task.id}`)}
+                                onClick={() => navigate(`/execution/tasks/${b.task!.id}`)}
                                 type="button"
                               >
                                 Buka →
