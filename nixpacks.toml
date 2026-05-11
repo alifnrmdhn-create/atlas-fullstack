@@ -1,5 +1,10 @@
 [phases.install]
 cmds = [
+  # FrankenPHP: static single-binary PHP server (bundle Caddy + PHP runtime). Native SSE
+  # support via per-connection goroutine — tidak ada per-request worker exhaustion seperti
+  # `php artisan serve`. Pinned ke versi spesifik supaya build deterministic.
+  'curl -fsSL https://github.com/php/frankenphp/releases/download/v1.12.2/frankenphp-linux-x86_64 -o /usr/local/bin/frankenphp',
+  'chmod +x /usr/local/bin/frankenphp',
   'composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-req=ext-gd',
   'npm ci'
 ]
@@ -10,8 +15,6 @@ cmds = [
 ]
 
 [start]
-# PHP_CLI_SERVER_WORKERS=20 + --no-reload: tanpa keduanya `artisan serve`
-# default cuma 1 worker (lihat Laravel ServeCommand::initialize). 1 worker
-# = SSE long-lived connection block semua request lain dari user yang sama
-# → polling antri, message tidak realtime, "harus refresh dulu".
-cmd = "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && PHP_CLI_SERVER_WORKERS=20 php artisan serve --host=0.0.0.0 --port=$PORT --no-reload"
+# FrankenPHP `php-server` mode: serve dari public/, auto-routing ke index.php. Untuk
+# CLI tasks (migrate, cache:*) tetap pakai `php` dari Nixpacks-provided PHP.
+cmd = "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && exec frankenphp php-server -r public/ --listen :$PORT"
