@@ -947,6 +947,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const isViewing = onChannelsPage && tabVisible && event.channelId === selectedChannelId
     const isOwnMessage = currentUser != null && msg.userId === currentUser.id
 
+    // Clear typing indicator for the sender — message arrived, they're not "still typing".
+    // Tanpa ini, indicator stay sampai 5s timer auto-clear-nya habis.
+    const typingKey = `${event.channelId}:${msg.userId}`
+    const typingTimer = typingTimersRef.current.get(typingKey)
+    if (typingTimer) {
+      clearTimeout(typingTimer)
+      typingTimersRef.current.delete(typingKey)
+    }
+    setTypingUsers((prev) => {
+      const current = prev[event.channelId]
+      if (!current?.some((u) => u.userId === msg.userId)) return prev
+      const next = current.filter((u) => u.userId !== msg.userId)
+      if (next.length === 0) {
+        const { [event.channelId]: _, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [event.channelId]: next }
+    })
+
     // Always update sidebar — bump unread when not viewing & not own message
     setChannels((prev) => prev.map((c) =>
       c.id === event.channelId
