@@ -1008,7 +1008,7 @@ export function ProgramsView() {
                                   onClick={() => navigate(`/programs/${prog.id}`)}>
                                   <span className="code-badge roadmap-bar__code">{prog.code}</span>
                                   <div className="roadmap-bar__title">
-                                    <span className="roadmap-bar__name">{prog.name}</span>
+                                    <span className="roadmap-bar__name" title={prog.name}>{prog.name}</span>
                                   </div>
                                   <div className="progress-bar-track roadmap-bar__progress">
                                     <div className={`progress-bar-fill ${sc}`} style={{ width: `${Math.max(prog.progressPercent, 2)}%` }} />

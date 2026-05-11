@@ -95,7 +95,7 @@ export function MonitoringMatrix() {
               <tr key={row.id} className="monitoring-matrix__row" onClick={() => navigate(`/programs/${row.id}`)}>
                 <td className="monitoring-matrix__td-name">
                   <span className="code-badge">{row.code}</span>
-                  <span className="monitoring-matrix__prog-name">{row.name}</span>
+                  <span className="monitoring-matrix__prog-name" title={row.name}>{row.name}</span>
                 </td>
                 <td className="monitoring-matrix__td-prog">
                   <div className="progress-bar progress-bar--inline">

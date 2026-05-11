@@ -1,0 +1,667 @@
+/* ════════════════════════════════════════════════════════════════════
+   Programs Polish — Pattern A consistency for ProgramsView
+   ────────────────────────────────────────────────────────────────────
+   Bring Programs header to match firm pages (Profile, Settings, Channels,
+   Presence). Fix max-width violation, tone down MONITORING badge,
+   normalize empty state cards.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ───────── Inner wrapper: full-width per pakem ─────────
+   Override max-width:1400px from ProgramsView.css:14 — pakem ATLAS:
+   halaman primer WAJIB stretch lebar workspace. */
+.programs-v2 .programs-v2__inner {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 22px 24px 40px !important;
+}
+
+@media (min-width: 1600px) {
+  .programs-v2 .programs-v2__inner {
+    padding: 24px 32px 48px !important;
+  }
+}
+
+
+/* ───────── Hero header: match firm-page pattern ─────────
+   Pattern: title 22px + subtitle 12.5px muted, hairline divider below.
+   Same as Profile / Settings / Channels / Presence. */
+.programs-v2 .programs-v2__hero {
+  padding: 0 0 18px !important;
+  margin-bottom: 22px !important;
+  border-bottom: 1px solid var(--panel-border-soft) !important;
+  align-items: center !important;
+}
+
+.programs-v2 .programs-v2__title {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.018em !important;
+  line-height: 1.2 !important;
+  color: var(--text-strong) !important;
+}
+
+.programs-v2 .programs-v2__subtitle {
+  font-size: 12.5px !important;
+  font-weight: 400 !important;
+  color: var(--text-muted) !important;
+  line-height: 1.5 !important;
+}
+
+.programs-v2 .programs-v2__subtitle-warn {
+  color: var(--red) !important;
+  font-weight: 600 !important;
+}
+
+
+/* ───────── Hero actions (right side) ─────────
+   CTA "Program Baru" stays primary. MONITORING badge hidden entirely
+   (was outlier — context unclear, gak ada di halaman firm lain). */
+.programs-v2 .programs-v2__hero-actions {
+  gap: 8px !important;
+}
+
+.programs-v2 .role-monitoring-badge {
+  display: none !important;
+}
+
+
+/* ───────── CTA "Program Baru" polish ───────── */
+.programs-v2 .programs-v2__cta {
+  height: 32px !important;
+  padding: 0 14px !important;
+  border-radius: 8px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  background: var(--indigo) !important;
+  box-shadow: 0 3px 8px -4px rgba(31, 107, 53, 0.4);
+}
+.programs-v2 .programs-v2__cta:hover {
+  background: var(--indigo-dark) !important;
+  transform: translateY(-1px);
+}
+
+
+/* ───────── Tabs nav: tighter spacing ─────────
+   Tab text + green underline indicator (already established pattern). */
+.programs-v2 .programs-v2__tabs {
+  margin: 0 0 18px !important;
+  gap: 0 !important;
+}
+
+
+/* ───────── Timeline lane cards: refine bar + spacing ─────────
+   The Lanes view uses .roadmap-lane / .roadmap-bar from misc-views.css:280.
+   Issues: 20px-tall progress bar dominates visually, code badge & bar
+   too close, components feel "menempel" with borders. */
+
+.programs-v2 .roadmap-lane,
+.view-programs .roadmap-lane {
+  border: 1px solid var(--panel-border-soft) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+
+.programs-v2 .roadmap-lane__header,
+.view-programs .roadmap-lane__header {
+  background: var(--surface-1) !important;
+  border-bottom: 1px solid var(--panel-border-soft) !important;
+  padding: 12px 18px !important;
+  gap: 10px !important;
+}
+
+.programs-v2 .roadmap-lane__label,
+.view-programs .roadmap-lane__label {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--text-strong) !important;
+}
+
+/* Bar row: proper breathing, slimmer progress bar */
+.programs-v2 .roadmap-bar,
+.view-programs .roadmap-bar {
+  padding: 14px 18px !important;
+  gap: 16px !important;
+  border-bottom: 1px solid var(--panel-border-soft) !important;
+}
+.programs-v2 .roadmap-bar:hover,
+.view-programs .roadmap-bar:hover {
+  background: var(--surface-1) !important;
+}
+
+/* Code badge — separator visual jelas */
+.programs-v2 .roadmap-bar__code,
+.view-programs .roadmap-bar__code {
+  margin-right: 4px;
+}
+
+/* Program name in Timeline lane row — allow 2-line wrap (no ellipsis cut) */
+.programs-v2 .roadmap-bar__title,
+.view-programs .roadmap-bar__title {
+  min-width: 0;
+}
+.programs-v2 .roadmap-bar__name,
+.view-programs .roadmap-bar__name {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: var(--text-strong) !important;
+  white-space: normal !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.35;
+}
+
+/* Slim progress bar (was 20px tall — too dominant) */
+.programs-v2 .progress-bar-track.roadmap-bar__progress,
+.view-programs .progress-bar-track.roadmap-bar__progress {
+  width: 200px !important;
+  height: 8px !important;
+  background: var(--surface-2) !important;
+  border-radius: 99px !important;
+  overflow: hidden;
+}
+.programs-v2 .roadmap-bar__progress .progress-bar-fill,
+.view-programs .roadmap-bar__progress .progress-bar-fill {
+  height: 100% !important;
+  border-radius: 99px !important;
+}
+.programs-v2 .progress-bar-fill.at-risk,
+.view-programs .progress-bar-fill.at-risk {
+  background: var(--yellow) !important;
+}
+.programs-v2 .progress-bar-fill.on-track,
+.view-programs .progress-bar-fill.on-track {
+  background: var(--green) !important;
+}
+.programs-v2 .progress-bar-fill.off-track,
+.view-programs .progress-bar-fill.off-track {
+  background: var(--red) !important;
+}
+
+/* Pct label — tabular numerals, proper width */
+.programs-v2 .roadmap-bar__pct,
+.view-programs .roadmap-bar__pct {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--text-strong) !important;
+  width: 40px !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Owner name — readable */
+.programs-v2 .roadmap-bar__owner,
+.view-programs .roadmap-bar__owner {
+  font-size: 12px !important;
+  color: var(--text-muted) !important;
+  max-width: 120px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* No KPI / risk chip pill */
+.programs-v2 .program-tone-chip,
+.view-programs .program-tone-chip {
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  letter-spacing: 0.02em;
+}
+.programs-v2 .program-tone-chip--yellow,
+.view-programs .program-tone-chip--yellow {
+  background: var(--yellow-dim) !important;
+  color: var(--yellow) !important;
+}
+
+
+/* ───────── Monitoring Matrix tab — slim, dense, scan-friendly ─────────
+   Bug: original cells 24x24 chunky, code badge nempel ke nama,
+   program name terpotong di 180px, current week highlight subtle. */
+
+.programs-v2 .monitoring-matrix,
+.view-programs .monitoring-matrix {
+  padding: 4px 0 !important;
+}
+
+/* Legend: tighter dots + spacing */
+.programs-v2 .monitoring-matrix__legend,
+.view-programs .monitoring-matrix__legend {
+  gap: 16px !important;
+  margin-bottom: 18px !important;
+  font-size: 11.5px !important;
+  color: var(--text-muted) !important;
+}
+.programs-v2 .monitoring-matrix__dot,
+.view-programs .monitoring-matrix__dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 2px !important;
+}
+
+/* Table headers + cells: hairline borders + tighter padding */
+.programs-v2 .monitoring-matrix__table th,
+.programs-v2 .monitoring-matrix__table td,
+.view-programs .monitoring-matrix__table th,
+.view-programs .monitoring-matrix__table td {
+  border-bottom: 1px solid var(--panel-border-soft) !important;
+  padding: 10px 8px !important;
+}
+.programs-v2 .monitoring-matrix__table th,
+.view-programs .monitoring-matrix__table th {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: var(--text-muted) !important;
+  padding-bottom: 12px !important;
+  font-family: inherit !important;
+}
+
+/* Program name column: lebih lebar untuk readable */
+.programs-v2 .monitoring-matrix__th-name,
+.view-programs .monitoring-matrix__th-name {
+  min-width: 320px !important;
+}
+.programs-v2 .monitoring-matrix__td-name,
+.view-programs .monitoring-matrix__td-name {
+  gap: 12px !important;
+}
+.programs-v2 .monitoring-matrix__prog-name,
+.view-programs .monitoring-matrix__prog-name {
+  max-width: 320px !important;
+  font-size: 13px !important;
+  color: var(--text-strong) !important;
+  font-weight: 600 !important;
+  /* Allow 2-line wrap with ellipsis on overflow — long program names readable */
+  white-space: normal !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.35;
+}
+
+/* Progress column */
+.programs-v2 .monitoring-matrix__th-prog,
+.view-programs .monitoring-matrix__th-prog {
+  min-width: 120px !important;
+  text-align: left !important;
+}
+.programs-v2 .monitoring-matrix__td-prog,
+.view-programs .monitoring-matrix__td-prog {
+  min-width: 120px !important;
+}
+.programs-v2 .monitoring-matrix__td-prog .progress-bar,
+.view-programs .monitoring-matrix__td-prog .progress-bar {
+  height: 6px !important;
+  background: var(--surface-2) !important;
+  border-radius: 99px !important;
+  margin-bottom: 4px;
+}
+.programs-v2 .monitoring-matrix__td-prog .progress-bar__fill,
+.view-programs .monitoring-matrix__td-prog .progress-bar__fill {
+  background: var(--green) !important;
+  border-radius: 99px !important;
+}
+.programs-v2 .monitoring-matrix__prog-pct,
+.view-programs .monitoring-matrix__prog-pct {
+  font-size: 11px !important;
+  color: var(--text-strong) !important;
+  font-weight: 600 !important;
+  margin-left: 0 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Week cells: SLIM 16x16 squares (was 24x24 chunky) */
+.programs-v2 .monitoring-matrix__cell,
+.view-programs .monitoring-matrix__cell {
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 3px !important;
+}
+.programs-v2 .monitoring-matrix__td-week,
+.view-programs .monitoring-matrix__td-week {
+  padding: 8px 4px !important;
+  text-align: center;
+}
+
+/* Current week highlight: indigo accent (lebih visible dari bg 5%) */
+.programs-v2 .monitoring-matrix__th-week--current,
+.view-programs .monitoring-matrix__th-week--current {
+  color: var(--indigo) !important;
+  background: var(--indigo-dim) !important;
+  border-radius: 4px 4px 0 0;
+}
+.programs-v2 .monitoring-matrix__td-week--current,
+.view-programs .monitoring-matrix__td-week--current {
+  background: color-mix(in srgb, var(--indigo) 6%, transparent) !important;
+}
+
+/* Row hover */
+.programs-v2 .monitoring-matrix__row:hover,
+.view-programs .monitoring-matrix__row:hover {
+  background: var(--surface-1) !important;
+}
+
+
+/* ───────── Pulse tab: flatten section cards + compact empty states ─────────
+   Pulse has 3 sections (Active Blockers, Workstream Berisiko, Tugas Stagnan).
+   Each rendered with .section-block card chrome (padding 20px, gradient bg,
+   box-shadow, border, radius). Stacked = 3 heavy cards.
+   Pattern A: flat sections separated by hairline + compact empty states. */
+
+/* Filter pills row */
+.programs-v2 .program-filter-pills,
+.view-programs .program-filter-pills {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.programs-v2 .program-filter-pill,
+.view-programs .program-filter-pill {
+  padding: 6px 14px !important;
+  border: 1px solid var(--panel-border-soft) !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--text-muted) !important;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.programs-v2 .program-filter-pill:hover,
+.view-programs .program-filter-pill:hover {
+  background: var(--surface-1) !important;
+  color: var(--text) !important;
+}
+.programs-v2 .program-filter-pill--active,
+.view-programs .program-filter-pill--active {
+  background: var(--text-strong) !important;
+  color: var(--text-inverse) !important;
+  border-color: var(--text-strong) !important;
+}
+
+/* Pulse + Risiko stacks — flatten sections, hairline divider antar section.
+   Override the light-mode .section-block treatment from responsive.css:3911
+   that adds gradient + box-shadow + border. We're flat per Pattern A. */
+.programs-v2 .pulse-stack,
+.programs-v2 .programs-section-stack,
+.view-programs .pulse-stack,
+.view-programs .programs-section-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.programs-v2 .pulse-stack > .section-block,
+.programs-v2 .programs-section-stack > .section-block,
+.view-programs .pulse-stack > .section-block,
+.view-programs .programs-section-stack > .section-block,
+:root:not([data-theme="dark"]) .programs-v2 .pulse-stack > .section-block,
+:root:not([data-theme="dark"]) .programs-v2 .programs-section-stack > .section-block,
+:root:not([data-theme="dark"]) .view-programs .pulse-stack > .section-block,
+:root:not([data-theme="dark"]) .view-programs .programs-section-stack > .section-block {
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 24px 0 !important;
+  margin: 0 !important;
+  border-bottom: 1px solid var(--panel-border-soft) !important;
+}
+.programs-v2 .pulse-stack > .section-block:last-child,
+.programs-v2 .programs-section-stack > .section-block:last-child,
+.view-programs .pulse-stack > .section-block:last-child,
+.view-programs .programs-section-stack > .section-block:last-child,
+:root:not([data-theme="dark"]) .programs-v2 .pulse-stack > .section-block:last-child,
+:root:not([data-theme="dark"]) .programs-v2 .programs-section-stack > .section-block:last-child,
+:root:not([data-theme="dark"]) .view-programs .pulse-stack > .section-block:last-child,
+:root:not([data-theme="dark"]) .view-programs .programs-section-stack > .section-block:last-child {
+  border-bottom: 0 !important;
+}
+
+/* Section header polish in Pulse + Risiko stacks */
+.programs-v2 .pulse-stack .section-header,
+.programs-v2 .programs-section-stack .section-header,
+.view-programs .pulse-stack .section-header,
+.view-programs .programs-section-stack .section-header {
+  margin-bottom: 14px !important;
+  align-items: center;
+}
+.programs-v2 .pulse-stack .section-title,
+.programs-v2 .programs-section-stack .section-title,
+.view-programs .pulse-stack .section-title,
+.view-programs .programs-section-stack .section-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.012em !important;
+  color: var(--text-strong) !important;
+}
+.programs-v2 .pulse-stack .section-subtitle,
+.programs-v2 .programs-section-stack .section-subtitle,
+.view-programs .pulse-stack .section-subtitle,
+.view-programs .programs-section-stack .section-subtitle {
+  font-size: 12px !important;
+  color: var(--text-muted) !important;
+  margin-top: 2px !important;
+}
+.programs-v2 .pulse-stack .section-badge,
+.programs-v2 .programs-section-stack .section-badge,
+.view-programs .pulse-stack .section-badge,
+.view-programs .programs-section-stack .section-badge {
+  background: var(--surface-1) !important;
+  border-color: var(--panel-border-soft) !important;
+  color: var(--text-muted) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 3px 10px !important;
+}
+.programs-v2 .pulse-stack .section-badge--red,
+.view-programs .pulse-stack .section-badge--red {
+  background: var(--red-dim) !important;
+  color: var(--red) !important;
+}
+.programs-v2 .pulse-stack .section-badge--yellow,
+.view-programs .pulse-stack .section-badge--yellow {
+  background: var(--yellow-dim) !important;
+  color: var(--yellow) !important;
+}
+
+/* Gov table (Risiko: Risk per Program) — clean header pattern.
+   Override responsive.css:10706 which adds panel-shadow-md + inset highlight,
+   plus responsive.css:9914 which adds light-mode gradient background. */
+.programs-v2 .gov-table,
+.view-programs .gov-table,
+:root:not([data-theme="dark"]) .programs-v2 .gov-table,
+:root:not([data-theme="dark"]) .view-programs .gov-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.programs-v2 .gov-table th,
+.view-programs .gov-table th {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: var(--text-muted) !important;
+  padding: 10px 12px !important;
+  text-align: left !important;
+  border-bottom: 1px solid var(--panel-border-soft) !important;
+  border-top: 0 !important;
+  background: transparent !important;
+}
+.programs-v2 .gov-table td,
+.view-programs .gov-table td {
+  padding: 14px 12px !important;
+  border-bottom: 1px solid var(--panel-border-soft) !important;
+  border-top: 0 !important;
+  font-size: 13px;
+  color: var(--text);
+  background: transparent !important;
+}
+.programs-v2 .gov-table tbody tr:last-child td,
+.view-programs .gov-table tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+.programs-v2 .gov-table__row,
+.view-programs .gov-table__row {
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.programs-v2 .gov-table__row:hover td,
+.view-programs .gov-table__row:hover td {
+  background: var(--surface-1) !important;
+}
+.programs-v2 .gov-table__row--active td,
+.view-programs .gov-table__row--active td {
+  background: var(--indigo-dim) !important;
+}
+.programs-v2 .gov-table__name,
+.view-programs .gov-table__name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.programs-v2 .gov-table__name strong,
+.view-programs .gov-table__name strong {
+  color: var(--text-strong);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Status badges di Risiko table — polish konsisten */
+.programs-v2 .gov-table .badge,
+.view-programs .gov-table .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  border: 1px solid var(--panel-border-soft) !important;
+  background: var(--surface-1) !important;
+  color: var(--text) !important;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.programs-v2 .gov-table .badge--green,
+.view-programs .gov-table .badge--green {
+  background: var(--green-dim) !important;
+  color: var(--green) !important;
+  border-color: transparent !important;
+}
+.programs-v2 .gov-table .badge--yellow,
+.view-programs .gov-table .badge--yellow {
+  background: var(--yellow-dim) !important;
+  color: var(--yellow) !important;
+  border-color: transparent !important;
+}
+.programs-v2 .gov-table .badge--red,
+.view-programs .gov-table .badge--red {
+  background: var(--red-dim) !important;
+  color: var(--red) !important;
+  border-color: transparent !important;
+}
+.programs-v2 .gov-table .badge--neutral,
+.programs-v2 .gov-table .badge--blue,
+.view-programs .gov-table .badge--neutral,
+.view-programs .gov-table .badge--blue {
+  background: var(--surface-1) !important;
+  color: var(--text) !important;
+}
+
+/* Empty state inside Program Alignment — text wraps better, lebih lega */
+.programs-v2 .programs-section-stack .section-state,
+.view-programs .programs-section-stack .section-state {
+  padding: 8px 0 !important;
+}
+.programs-v2 .programs-section-stack .section-state__text,
+.programs-v2 .programs-section-stack .section-state > p,
+.view-programs .programs-section-stack .section-state__text,
+.view-programs .programs-section-stack .section-state > p {
+  max-width: none !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* ───────── Empty states (Pulse, Risiko, etc.) — compact + flat ─────────
+   Kill legacy dashed-border + green-gradient card from responsive.css:10874.
+   Plus tone down emoji size + tighten padding for compact look. */
+.programs-v2 .empty-state,
+.programs-v2 .section-state,
+.programs-v2 .panel__empty,
+.view-programs .empty-state,
+.view-programs .section-state,
+.view-programs .panel__empty {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  padding: 14px 0 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  text-align: left !important;
+}
+
+/* Inline emoji icon — compact, gak heroic */
+.programs-v2 .section-state__icon,
+.view-programs .section-state__icon {
+  font-size: 18px !important;
+  width: auto !important;
+  height: auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  filter: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.programs-v2 .empty-state__icon-wrap,
+.view-programs .empty-state__icon-wrap {
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+/* Empty state title + text — inline compact */
+.programs-v2 .section-state__title,
+.programs-v2 .section-state > strong,
+.view-programs .section-state__title,
+.view-programs .section-state > strong {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--text-strong) !important;
+  margin: 0 !important;
+}
+.programs-v2 .section-state__text,
+.programs-v2 .section-state > p,
+.view-programs .section-state__text,
+.view-programs .section-state > p {
+  font-size: 12px !important;
+  color: var(--text-muted) !important;
+  margin: 0 !important;
+  line-height: 1.5;
+}
