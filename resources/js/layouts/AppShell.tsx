@@ -346,6 +346,12 @@ const ACTION_NOTIF_TYPES = new Set([
   'CLEAR_PATH_REQUESTED',
   // Sprint 4 — carryover threshold (action item belum selesai berulang)
   'CARRYOVER_THRESHOLD',
+  // Sprint 5 — Plan→Do handoff
+  'PROGRAM_TASKS_ASSIGNED',
+  // Meeting flow — invite minta RSVP, action item minta dikerjakan, update perlu acknowledge
+  'MEETING_INVITED',
+  'MEETING_UPDATED',
+  'ACTION_ITEM_ASSIGNED',
 ])
 
 const NOTIF_FALLBACK_CONTEXT: Record<string, { roleImpact: string; impact: string }> = {
@@ -365,6 +371,12 @@ const NOTIF_FALLBACK_CONTEXT: Record<string, { roleImpact: string; impact: strin
   CARRYOVER_THRESHOLD: { roleImpact: 'Action item Anda berulang carry-over', impact: 'Pertimbangkan eskalasi atau re-scope' },
   // Sprint 5 — Plan→Do handoff
   PROGRAM_TASKS_ASSIGNED: { roleImpact: 'Tugas baru di pipeline Anda', impact: 'Program aktif, mulai eksekusi' },
+  // Meeting flow
+  MEETING_INVITED:       { roleImpact: 'Anda diundang ke rapat',         impact: 'Konfirmasi RSVP supaya organizer tahu kehadiran' },
+  MEETING_UPDATED:       { roleImpact: 'Jadwal rapat berubah',           impact: 'Cek waktu baru dan adjust kalender Anda' },
+  MEETING_CANCELLED:     { roleImpact: 'Rapat dibatalkan organizer',     impact: 'Slot waktu Anda terbuka kembali' },
+  MEETING_POSTPONED:     { roleImpact: 'Rapat ditunda sementara',        impact: 'Tunggu jadwal baru dari organizer' },
+  ACTION_ITEM_ASSIGNED:  { roleImpact: 'Anda PIC action item rapat',     impact: 'Tindak lanjut dengan deadline yang ditetapkan' },
 }
 
 function isActionNotification(type: string): boolean {
@@ -385,6 +397,10 @@ function notificationIntentLabel(notification: NotificationItem): string {
   if (notification.type === 'CLEAR_PATH_CLEARED') return 'Lanjut eksekusi'
   if (notification.type === 'CARRYOVER_THRESHOLD') return 'Tinjau ulang'
   if (notification.type === 'PROGRAM_TASKS_ASSIGNED') return 'Buka pipeline'
+  if (notification.type === 'MEETING_INVITED') return 'Konfirmasi RSVP'
+  if (notification.type === 'MEETING_UPDATED') return 'Lihat jadwal'
+  if (notification.type === 'MEETING_CANCELLED' || notification.type === 'MEETING_POSTPONED') return 'Buka rapat'
+  if (notification.type === 'ACTION_ITEM_ASSIGNED') return 'Kerjakan'
   return 'Cek detail'
 }
 
@@ -426,7 +442,9 @@ function notificationPriority(notification: NotificationItem): NonNullable<Notif
 function notificationCategory(notification: NotificationItem): NonNullable<NotificationItem['category']> {
   if (notification.category) return notification.category
   if (notification.type === 'DM_RECEIVED' || notification.type === 'MENTION') return 'COMMUNICATION'
+  // Meeting cancel/postpone = perubahan jadwal mendadak → masuk RISK supaya menonjol di tab Risk
   if (notification.type === 'BLOCKER_CREATED' || notification.type === 'DEADLINE_APPROACHING') return 'RISK'
+  if (notification.type === 'MEETING_CANCELLED' || notification.type === 'MEETING_POSTPONED') return 'RISK'
   if (notificationRequiresAction(notification)) return 'ACTION'
   return 'SYSTEM'
 }
@@ -555,7 +573,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     userMenuSurface, toggleUserMenu, closeUserMenu,
     currentUser, totalUnreadChannels,
     overviewStatus, loadOverview,
-    handleLogout, notifications, markNotificationRead,
+    handleLogout, notifications, markNotificationRead, dismissNotification,
     notifToasts, dismissToast,
     setSelectedProgramId, setSelectedTaskId, setSelectedChannelId,
     authStatus, logoutPending, requestLogout, cancelLogout,
@@ -714,6 +732,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
     CLEAR_PATH_REQUESTED: 'Clear the Path', CLEAR_PATH_COMMITTED: 'Clear the Path',
     CLEAR_PATH_CLEARED: 'Clear the Path', CARRYOVER_THRESHOLD: 'Carryover',
     PROGRAM_TASKS_ASSIGNED: 'Pipeline',
+    MEETING_INVITED: 'Rapat', MEETING_UPDATED: 'Rapat',
+    MEETING_CANCELLED: 'Rapat', MEETING_POSTPONED: 'Rapat',
+    ACTION_ITEM_ASSIGNED: 'Action Item',
   }
 
   const NOTIF_TYPE_COLOR: Record<string, string> = {
@@ -724,6 +745,11 @@ export function AppShell({ children }: { children?: ReactNode }) {
     DM_RECEIVED: 'notif-type--mention',
     CLEAR_PATH_REQUESTED: 'notif-type--approval', CARRYOVER_THRESHOLD: 'notif-type--warn',
     CLEAR_PATH_CLEARED: 'notif-type--success' as string,
+    MEETING_INVITED: 'notif-type--approval',
+    MEETING_UPDATED: 'notif-type--warn',
+    MEETING_CANCELLED: 'notif-type--danger',
+    MEETING_POSTPONED: 'notif-type--warn',
+    ACTION_ITEM_ASSIGNED: 'notif-type--approval',
   }
 
   function formatNotifTime(dateString: string): string {
@@ -750,6 +776,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
       if (type === 'workstream' && !isNaN(id)) { navigate('/programs'); return }
       if (type === 'assignment' && !isNaN(id)) { navigate('/penugasan'); return }
       if (type === 'report') { navigate('/laporan-bulanan'); return }
+      if (type === 'meeting' && !isNaN(id)) { navigate(`/jadwal?meeting=${id}`); return }
+      if (type === 'escalation' && !isNaN(id)) { navigate(`/fokus?escalation=${id}`); return }
     }
     navigate('/fokus')
   }
@@ -762,27 +790,25 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
   async function handleNotifGroupClick(group: NotificationDropGroup, target: NotificationItem = group.latest) {
     setNotifDropOpen(false)
-    await Promise.all(group.items.filter(n => n.state === 'UNREAD').map(n => api.put(`/notifications/${n.id}/read`, {})))
-    await loadOverview('refresh')
+    // Pakai workspace's markNotificationRead — sudah optimistic update local state,
+    // jadi UI update instan tanpa tunggu loadOverview heavy refetch.
+    const unread = group.items.filter(n => n.state === 'UNREAD')
+    await Promise.all(unread.map(n => markNotificationRead(n.id)))
     navigateToNotifSource(target.source)
   }
 
   async function handleNotifGroupDismiss(group: NotificationDropGroup) {
-    try {
-      await Promise.all(group.items.map(n => api.put(`/notifications/${n.id}/dismiss`, {})))
-    } catch {
-      // Tetap refresh agar UI kembali sinkron jika sebagian request berhasil.
-    } finally {
-      await loadOverview('refresh')
-    }
+    await Promise.all(group.items.map(n => dismissNotification(n.id)))
   }
 
   async function handleMarkAllReadDrop() {
     if (markingAllRead) return
     setMarkingAllRead(true)
+    // Pakai single-item helper untuk dapat optimistic update — bulk endpoint
+    // /notifications/read-all dipakai oleh server tapi local state di-update via setNotifications.
+    const unread = activeNotifications.filter(n => n.state === 'UNREAD')
     try {
-      await api.put('/notifications/read-all', {})
-      await loadOverview('refresh')
+      await Promise.all(unread.map(n => markNotificationRead(n.id)))
     } finally {
       setMarkingAllRead(false)
     }

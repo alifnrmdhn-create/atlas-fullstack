@@ -694,19 +694,36 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }
 
   const markNotificationRead = async (notificationId: number) => {
+    // Optimistic update — tanpa loadOverview heavy refetch
+    const now = new Date().toISOString()
+    setNotifications(prev => prev.map(n =>
+      n.id === notificationId && n.state === 'UNREAD'
+        ? { ...n, state: 'READ' as const, readAt: now }
+        : n,
+    ))
+    setNotifToasts(prev => prev.filter(t => t.id !== notificationId))
     try {
       await api.put(`/notifications/${notificationId}/read`)
-      await loadOverview('refresh')
     } catch {
+      // Server gagal — re-sync state dari server
+      await loadOverview('refresh')
       setOverviewStatus((cur) => ({ ...cur, message: 'Notifikasi gagal diperbarui.' }))
     }
   }
 
   const dismissNotification = async (notificationId: number) => {
+    // Optimistic update
+    const now = new Date().toISOString()
+    setNotifications(prev => prev.map(n =>
+      n.id === notificationId
+        ? { ...n, state: 'DISMISSED' as const, dismissedAt: now }
+        : n,
+    ))
+    setNotifToasts(prev => prev.filter(t => t.id !== notificationId))
     try {
       await api.put(`/notifications/${notificationId}/dismiss`)
-      await loadOverview('refresh')
     } catch {
+      await loadOverview('refresh')
       setOverviewStatus((cur) => ({ ...cur, message: 'Notifikasi gagal disembunyikan.' }))
     }
   }
