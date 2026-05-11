@@ -32,7 +32,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class RealtimeController extends Controller
 {
     private const STREAM_TTL_SECONDS = 90;        // Reconnect lebih sering — lebih ramah proxy edge yang time-out long connections
-    private const POLL_INTERVAL_US   = 1_500_000; // 1.5 detik — snappier delivery
+    private const POLL_INTERVAL_US   = 400_000;   // 0.4 detik — typing indicator perlu sub-second delivery via SSE
     private const HEARTBEAT_SECONDS  = 10;        // Keepalive lebih sering supaya proxy tidak menganggap idle/buffered
     private const IDLE_THRESHOLD_MS  = 90_000;    // 90 detik gap = sesi baru
 
