@@ -1,10 +1,10 @@
 [phases.install]
 cmds = [
-  # FrankenPHP: static single-binary PHP server (bundle Caddy + PHP runtime). Native SSE
-  # support via per-connection goroutine — tidak ada per-request worker exhaustion seperti
-  # `php artisan serve`. Pinned ke versi spesifik supaya build deterministic.
-  'curl -fsSL https://github.com/php/frankenphp/releases/download/v1.12.2/frankenphp-linux-x86_64 -o /usr/local/bin/frankenphp',
-  'chmod +x /usr/local/bin/frankenphp',
+  # FrankenPHP standalone binary. WAJIB simpan di /app (working dir) — file di
+  # /usr/local/bin tidak ikut persist ke runtime image Nixpacks.
+  'mkdir -p bin',
+  'curl -fsSL https://github.com/php/frankenphp/releases/download/v1.12.2/frankenphp-linux-x86_64 -o bin/frankenphp',
+  'chmod +x bin/frankenphp',
   'composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-req=ext-gd',
   'npm ci'
 ]
@@ -15,6 +15,8 @@ cmds = [
 ]
 
 [start]
-# FrankenPHP `php-server` mode: serve dari public/, auto-routing ke index.php. Untuk
-# CLI tasks (migrate, cache:*) tetap pakai `php` dari Nixpacks-provided PHP.
-cmd = "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && exec frankenphp php-server -r public/ --listen :$PORT"
+# FrankenPHP `php-server` mode: serve dari public/, auto-routing ke index.php.
+# Native SSE (per-connection goroutine, no per-request worker exhaustion).
+# `php` (Nixpacks-provided) tetap dipakai untuk CLI tasks; FrankenPHP punya bundled
+# PHP-nya sendiri tapi tidak overlap dengan PATH `php`.
+cmd = "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT"
