@@ -1,10 +1,13 @@
 import { createContext } from 'react'
 
-export type RealtimeListener = (data: unknown, event: MessageEvent) => void
+export type RealtimeListener = (data: unknown, event: MessageEvent | null) => void
 
 /**
  * Simple event-bus untuk real-time events. Satu instance di-share via
  * RealtimeProvider; semua `useRealtimeEvents()` subscribe ke sini.
+ *
+ * Event sumber: SSE EventSource (real MessageEvent) atau polling fallback
+ * (event === null). Handler tidak perlu peduli sumbernya.
  */
 export class RealtimeDispatcher {
     private listeners = new Map<string, Set<RealtimeListener>>()
@@ -16,7 +19,7 @@ export class RealtimeDispatcher {
         return () => { set.delete(handler) }
     }
 
-    emit(type: string, data: unknown, event: MessageEvent): void {
+    emit(type: string, data: unknown, event: MessageEvent | null = null): void {
         const set = this.listeners.get(type)
         if (!set) return
         for (const handler of set) {

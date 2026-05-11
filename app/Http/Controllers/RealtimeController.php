@@ -31,10 +31,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class RealtimeController extends Controller
 {
-    private const STREAM_TTL_SECONDS = 300;      // 5 menit lalu client reconnect
-    private const POLL_INTERVAL_US   = 2_000_000; // 2 detik
-    private const HEARTBEAT_SECONDS  = 20;
-    private const IDLE_THRESHOLD_MS  = 90_000;   // 90 detik gap = sesi baru
+    private const STREAM_TTL_SECONDS = 90;        // Reconnect lebih sering — lebih ramah proxy edge yang time-out long connections
+    private const POLL_INTERVAL_US   = 1_500_000; // 1.5 detik — snappier delivery
+    private const HEARTBEAT_SECONDS  = 10;        // Keepalive lebih sering supaya proxy tidak menganggap idle/buffered
+    private const IDLE_THRESHOLD_MS  = 90_000;    // 90 detik gap = sesi baru
 
     public function stream(Request $request): StreamedResponse
     {
@@ -54,7 +54,14 @@ class RealtimeController extends Controller
             @set_time_limit(self::STREAM_TTL_SECONDS + 30);
             @ini_set('output_buffering', 'off');
             @ini_set('zlib.output_compression', 'off');
+            @ini_set('implicit_flush', '1');
+            @ob_implicit_flush(true);
             while (ob_get_level()) ob_end_flush();
+
+            // 2KB padding di awal — beberapa proxy/edge butuh response body cukup besar
+            // sebelum mulai meneruskan stream. Komentar SSE (": ...") di-ignore oleh client.
+            echo ': ' . str_repeat(' ', 2048) . "\n\n";
+            flush();
 
             $this->sendEvent('workspace:ready', [
                 'connectedAt' => now()->toIso8601String(),
@@ -103,6 +110,39 @@ class RealtimeController extends Controller
             'Cache-Control' => 'no-cache, no-transform',
             'Connection' => 'keep-alive',
             'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    /**
+     * GET /realtime/poll?since=N — polling fallback untuk environment di mana
+     * SSE tidak reliable (mis. `php artisan serve` single-process, proxy buffering).
+     * Mengembalikan event yang relevan untuk user dengan id > $since.
+     *
+     * Frontend menjalankannya berdampingan dengan SSE; dedup terjadi di handler
+     * (mis. notifications.some(n => n.id === event.notification.id)).
+     */
+    public function poll(Request $request)
+    {
+        $user = $request->user();
+        abort_unless($user, 401);
+
+        $since = max(0, (int) $request->query('since', 0));
+
+        $events = BroadcastEvent::query()
+            ->where('id', '>', $since)
+            ->where(function ($q) use ($user) {
+                $q->whereNull('userIds')
+                  ->orWhereRaw('"userIds"::jsonb @> ?::jsonb', [json_encode($user->id)]);
+            })
+            ->orderBy('id')
+            ->limit(200)
+            ->get(['id', 'eventType', 'payload']);
+
+        return response()->json([
+            'events' => $events,
+            'lastEventId' => $events->isEmpty()
+                ? $since
+                : (int) $events->last()->id,
         ]);
     }
 

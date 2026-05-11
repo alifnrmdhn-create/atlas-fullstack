@@ -323,6 +323,8 @@ Route::middleware('auth')->group(function () {
 
     // ── Real-time SSE + Presence ──────────────────────────────────────────────
     Route::get('/realtime/stream',                  [RealtimeController::class, 'stream'])->name('realtime.stream');
+    // Polling fallback — short-lived request, works behind any proxy. Runs alongside SSE.
+    Route::get('/realtime/poll',                    [RealtimeController::class, 'poll'])->name('realtime.poll');
     Route::post('/realtime/ping',                   [RealtimeController::class, 'ping'])->name('realtime.ping');
     Route::post('/realtime/typing/{channelId}',     [RealtimeController::class, 'typing'])->name('realtime.typing');
 

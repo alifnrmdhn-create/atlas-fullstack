@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef } from 'react'
 import { RealtimeDispatcherContext } from '../contexts/RealtimeDispatcher'
 
-export type RealtimeHandler = (data: unknown, event: MessageEvent) => void
+export type RealtimeHandler = (data: unknown, event: MessageEvent | null) => void
 
 export type RealtimeHandlers = Partial<{
     'workspace:update': RealtimeHandler
