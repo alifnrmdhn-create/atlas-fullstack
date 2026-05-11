@@ -18,7 +18,10 @@ return [
     |
     */
 
-    'driver' => env('SESSION_DRIVER', 'file'),
+    // Default 'database': persists across deploys & works dengan container ephemeral
+    // (Railway, Docker, k8s). File-based sessions hilang per redeploy → forced logout.
+    // Override via env var SESSION_DRIVER kalau perlu (mis. 'file' di dev untuk debug).
+    'driver' => env('SESSION_DRIVER', 'database'),
 
     /*
     |--------------------------------------------------------------------------
