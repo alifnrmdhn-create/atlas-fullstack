@@ -939,7 +939,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       authorRole: event.message.authorRole ?? event.message.author?.roleType,
     }
 
-    const isViewing = event.channelId === selectedChannelId
+    // "Viewing" hanya berlaku kalau user benar-benar di halaman /channels DAN tab visible.
+    // selectedChannelId persist antar route, jadi kalau user pindah ke /home tapi
+    // selectedChannelId masih nilai lama, kita TIDAK boleh menganggapnya viewing.
+    const onChannelsPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/channels')
+    const tabVisible = typeof document !== 'undefined' && document.visibilityState === 'visible'
+    const isViewing = onChannelsPage && tabVisible && event.channelId === selectedChannelId
     const isOwnMessage = currentUser != null && msg.userId === currentUser.id
 
     // Always update sidebar — bump unread when not viewing & not own message

@@ -73,7 +73,7 @@ export type RealtimeContextValue = { ticks: RefreshTicks; status: RealtimeStatus
 
 export const RealtimeContext = createContext<RealtimeContextValue | null>(null)
 
-const POLL_INTERVAL_MS = 4000          // polling fallback cadence
+const POLL_INTERVAL_MS = 2000          // polling fallback cadence — pendek supaya typing & message terasa realtime saat SSE buffered
 const POLL_SEED_SENTINEL = 2_147_483_647 // max int — seeds lastEventId tanpa fetch event lama
 
 type PollResponse = { events?: { id: number; eventType: string; payload: unknown }[]; lastEventId?: number }
