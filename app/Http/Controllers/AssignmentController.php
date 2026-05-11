@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Assignment;
 use App\Models\AssignmentAttachment;
+use App\Models\Notification;
 use App\Services\AssignmentService;
 use App\Services\BroadcastService;
 use App\Support\RolePolicy;
@@ -79,14 +80,17 @@ class AssignmentController extends Controller
 
         $assignment = $this->service->create($request->user(), $data);
         BroadcastService::assignment($assignment->id, 'created');
+
+        $notif = Notification::create([
+            'userId' => $assignment->assigneeId,
+            'type' => 'TASK_ASSIGNED',
+            'message' => "Tugas baru: {$assignment->title}",
+            'source' => "assignment:{$assignment->id}",
+            'state' => 'UNREAD',
+            'createdAt' => now(),
+        ]);
         BroadcastService::toUsers('notification:created', [
-            'notification' => [
-                'type' => 'TASK_ASSIGNED',
-                'message' => "Tugas baru: {$assignment->title}",
-                'source' => "assignment:{$assignment->id}",
-                'state' => 'UNREAD',
-                'createdAt' => now()->toIso8601String(),
-            ],
+            'notification' => $notif,
         ], [$assignment->assigneeId]);
 
         if ($request->expectsJson()) {

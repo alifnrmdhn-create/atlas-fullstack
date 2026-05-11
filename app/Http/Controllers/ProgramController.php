@@ -321,7 +321,7 @@ class ProgramController extends Controller
             $byUser = $taskRows->groupBy('assignedTo');
             foreach ($byUser as $userId => $tasks) {
                 $count = $tasks->count();
-                \App\Models\Notification::create([
+                $notif = \App\Models\Notification::create([
                     'userId' => $userId,
                     'type' => 'PROGRAM_TASKS_ASSIGNED',
                     'message' => "Program {$program->name} aktif. {$count} tugas di pipeline Anda.",
@@ -330,10 +330,9 @@ class ProgramController extends Controller
                     'state' => 'UNREAD',
                 ]);
 
-                // SSE push agar notif muncul real-time tanpa reload
+                // Frontend handler reads event.notification.id — payload MUST wrap the model row.
                 BroadcastService::toUsers('notification:created', [
-                    'type' => 'PROGRAM_TASKS_ASSIGNED',
-                    'programId' => $program->id,
+                    'notification' => $notif,
                 ], [(int) $userId]);
             }
         });

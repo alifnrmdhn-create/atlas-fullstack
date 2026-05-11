@@ -321,7 +321,7 @@ class EscalationController extends Controller
 
     private function createNotification(int $userId, string $type, EscalationRequest $req, string $message): void
     {
-        Notification::create([
+        $notif = Notification::create([
             'userId' => $userId,
             'type' => $type,
             'message' => $message,
@@ -330,10 +330,9 @@ class EscalationController extends Controller
             'state' => 'UNREAD',
         ]);
 
-        // Push via SSE — tanpa ini, recipient harus reload untuk lihat notif
+        // Frontend handler reads event.notification.id — payload MUST wrap the model row.
         BroadcastService::toUsers('notification:created', [
-            'type' => $type,
-            'escalationId' => $req->id,
+            'notification' => $notif,
         ], [$userId]);
     }
 }

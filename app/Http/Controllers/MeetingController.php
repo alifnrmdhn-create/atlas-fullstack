@@ -8,8 +8,10 @@ use App\Models\Meeting;
 use App\Models\MeetingActionItem;
 use App\Models\MeetingAttendee;
 use App\Models\MeetingDecision;
+use App\Models\Notification;
 use App\Models\Program;
 use App\Models\User;
+use App\Services\BroadcastService;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -45,6 +47,25 @@ class MeetingController extends Controller
             || $meeting->attendees->contains('userId', $userId);
         if (!$isParticipant && !$this->canSeeAll($role)) {
             abort(403, 'Tidak memiliki akses ke meeting ini.');
+        }
+    }
+
+    private function notifyMeetingUsers(array $userIds, string $type, string $message, int $meetingId): void
+    {
+        foreach (array_unique($userIds) as $uid) {
+            $uid = (int) $uid;
+            if ($uid <= 0) continue;
+            $notif = Notification::create([
+                'userId' => $uid,
+                'type' => $type,
+                'message' => $message,
+                'source' => "meeting:{$meetingId}",
+                'createdAt' => now(),
+                'state' => 'UNREAD',
+            ]);
+            BroadcastService::toUsers('notification:created', [
+                'notification' => $notif,
+            ], [$uid]);
         }
     }
 
@@ -386,6 +407,17 @@ class MeetingController extends Controller
             return $meeting;
         });
 
+        rescue(function () use ($meeting, $organizerId) {
+            $inviteeIds = $meeting->attendees()->where('userId', '!=', $organizerId)->pluck('userId')->all();
+            $when = $meeting->startAt->format('d M Y H:i');
+            $this->notifyMeetingUsers(
+                $inviteeIds,
+                'MEETING_INVITED',
+                "Anda diundang ke meeting \"{$meeting->title}\" pada {$when}.",
+                $meeting->id,
+            );
+        });
+
         if ($request->expectsJson()) {
             return response()->json(['data' => $meeting->fresh(['attendees'])], 201);
         }
@@ -465,6 +497,10 @@ class MeetingController extends Controller
         if (!empty($data['postponedReason'])) $updateData['postponedReason'] = trim($data['postponedReason']);
         if (($data['status'] ?? null) === 'SCHEDULED') $updateData['postponedReason'] = null;
 
+        $prevStartAt = $meeting->startAt;
+        $prevEndAt = $meeting->endAt;
+        $prevStatus = $meeting->status;
+
         DB::transaction(function () use ($meeting, $updateData, $data) {
             // Optimistic concurrency check for status transitions
             if (!empty($data['status'])) {
@@ -474,6 +510,32 @@ class MeetingController extends Controller
                 }
             }
             $meeting->update($updateData);
+        });
+
+        rescue(function () use ($meeting, $updateData, $prevStartAt, $prevEndAt, $prevStatus) {
+            $meeting->refresh();
+            $attendeeIds = $meeting->attendees()->where('userId', '!=', $meeting->organizerId)->pluck('userId')->all();
+            if (empty($attendeeIds)) return;
+
+            $newStatus = $updateData['status'] ?? $prevStatus;
+            if ($newStatus !== $prevStatus) {
+                if ($newStatus === 'CANCELLED') {
+                    $this->notifyMeetingUsers($attendeeIds, 'MEETING_CANCELLED', "Meeting \"{$meeting->title}\" dibatalkan.", $meeting->id);
+                    return;
+                }
+                if ($newStatus === 'POSTPONED') {
+                    $reason = $meeting->postponedReason ? " Alasan: {$meeting->postponedReason}" : '';
+                    $this->notifyMeetingUsers($attendeeIds, 'MEETING_POSTPONED', "Meeting \"{$meeting->title}\" ditunda.{$reason}", $meeting->id);
+                    return;
+                }
+            }
+
+            $rescheduled = (isset($updateData['startAt']) && (string) $meeting->startAt !== (string) $prevStartAt)
+                || (isset($updateData['endAt']) && (string) $meeting->endAt !== (string) $prevEndAt);
+            if ($rescheduled) {
+                $when = $meeting->startAt->format('d M Y H:i');
+                $this->notifyMeetingUsers($attendeeIds, 'MEETING_UPDATED', "Meeting \"{$meeting->title}\" dijadwalkan ulang ke {$when}.", $meeting->id);
+            }
         });
 
         if ($request->expectsJson()) {
@@ -496,6 +558,11 @@ class MeetingController extends Controller
         }
 
         $meeting->update(['status' => 'CANCELLED']);
+
+        rescue(function () use ($meeting) {
+            $attendeeIds = $meeting->attendees()->where('userId', '!=', $meeting->organizerId)->pluck('userId')->all();
+            $this->notifyMeetingUsers($attendeeIds, 'MEETING_CANCELLED', "Meeting \"{$meeting->title}\" dibatalkan.", $meeting->id);
+        });
 
         if ($request->expectsJson()) {
             return response()->json(['ok' => true]);
@@ -557,10 +624,17 @@ class MeetingController extends Controller
             'attendeeRole' => 'in:REQUIRED,OPTIONAL',
         ]);
 
-        MeetingAttendee::updateOrCreate(
+        $attendee = MeetingAttendee::updateOrCreate(
             ['meetingId' => $id, 'userId' => $data['userId']],
             ['attendeeRole' => $data['attendeeRole'] ?? 'REQUIRED', 'rsvpStatus' => 'PENDING'],
         );
+
+        if ($attendee->wasRecentlyCreated) {
+            rescue(function () use ($meeting, $data) {
+                $when = $meeting->startAt->format('d M Y H:i');
+                $this->notifyMeetingUsers([(int) $data['userId']], 'MEETING_INVITED', "Anda diundang ke meeting \"{$meeting->title}\" pada {$when}.", $meeting->id);
+            });
+        }
 
         return back()->with('success', 'Peserta ditambahkan.');
     }
@@ -631,6 +705,13 @@ class MeetingController extends Controller
 
         $item = MeetingActionItem::create([...$data, 'meetingId' => $id, 'title' => trim($data['title']), 'status' => 'OPEN']);
 
+        if (!empty($data['assignedToId']) && (int) $data['assignedToId'] !== (int) $userId) {
+            rescue(function () use ($meeting, $item, $data) {
+                $due = !empty($data['dueDate']) ? ' (deadline ' . \Illuminate\Support\Carbon::parse($data['dueDate'])->format('d M Y') . ')' : '';
+                $this->notifyMeetingUsers([(int) $data['assignedToId']], 'ACTION_ITEM_ASSIGNED', "Action item baru di meeting \"{$meeting->title}\": {$item->title}{$due}.", $meeting->id);
+            });
+        }
+
         if ($request->expectsJson()) {
             return response()->json(['data' => $item], 201);
         }
@@ -659,7 +740,16 @@ class MeetingController extends Controller
             $data['completedAt'] = now();
         }
 
+        $prevAssignee = $item->assignedToId;
         $item->update($data);
+
+        if (array_key_exists('assignedToId', $data) && $data['assignedToId'] && (int) $data['assignedToId'] !== (int) $prevAssignee && (int) $data['assignedToId'] !== (int) $userId) {
+            rescue(function () use ($meeting, $item, $data) {
+                $due = !empty($data['dueDate']) ? ' (deadline ' . \Illuminate\Support\Carbon::parse($data['dueDate'])->format('d M Y') . ')' : '';
+                $title = $meeting?->title ?? 'meeting';
+                $this->notifyMeetingUsers([(int) $data['assignedToId']], 'ACTION_ITEM_ASSIGNED', "Action item di meeting \"{$title}\" di-assign ke Anda: {$item->title}{$due}.", $meeting?->id ?? 0);
+            });
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $item->fresh()]);

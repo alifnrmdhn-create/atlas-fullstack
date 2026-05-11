@@ -374,7 +374,7 @@ class ChannelMessageController extends Controller
         $source = "{$sender->name}·channel:{$channelId}";
 
         foreach ($mentioned as $uid) {
-            Notification::create([
+            $notif = Notification::create([
                 'userId' => $uid,
                 'type' => 'MENTION',
                 'message' => $msg,
@@ -382,6 +382,9 @@ class ChannelMessageController extends Controller
                 'createdAt' => now(),
                 'state' => 'UNREAD',
             ]);
+            BroadcastService::toUsers('notification:created', [
+                'notification' => $notif,
+            ], [(int) $uid]);
         }
     }
 }
