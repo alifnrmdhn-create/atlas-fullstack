@@ -765,22 +765,33 @@ export function ChannelsView({
   const [floatingNewCount, setFloatingNewCount] = useState(0)
   const prevMsgLengthRef = useRef(0)
 
-  // Jump to bottom instantly when switching channels
+  // ONBOARDING channels start scroll position at top (reading order) instead of bottom (chat order).
+  const isOnboardingChannel = selectedChannel?.topicType === 'ONBOARDING'
+
+  // Position scroll on channel switch
   useEffect(() => {
-    isAtBottomRef.current = true
-    setIsAtBottom(true)
     setFloatingNewCount(0)
-    if (streamRef.current) streamRef.current.scrollTop = streamRef.current.scrollHeight
-  }, [selectedChannelId])
+    if (isOnboardingChannel) {
+      isAtBottomRef.current = false
+      setIsAtBottom(false)
+      if (streamRef.current) streamRef.current.scrollTop = 0
+    } else {
+      isAtBottomRef.current = true
+      setIsAtBottom(true)
+      if (streamRef.current) streamRef.current.scrollTop = streamRef.current.scrollHeight
+    }
+  }, [selectedChannelId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll on new message — only when already at bottom
   // Uses isAtBottomRef to avoid stale-closure issue with [messages.length] dep array
   useEffect(() => {
     const delta = messages.length - prevMsgLengthRef.current
+    const isInitialLoad = prevMsgLengthRef.current === 0
     if (delta > 0 && messages.length > 0) {
       if (isAtBottomRef.current) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      } else {
+      } else if (!isInitialLoad) {
+        // Suppress floating "new messages" bump on initial load (e.g., ONBOARDING starts at top)
         setFloatingNewCount((c) => c + delta)
       }
     }

@@ -24,6 +24,18 @@ class ChannelMessage extends Model
         'updatedAt' => 'datetime',
     ];
 
+    protected $appends = ['authorName', 'authorRole'];
+
+    public function getAuthorNameAttribute(): ?string
+    {
+        return $this->relationLoaded('author') ? ($this->author?->name) : null;
+    }
+
+    public function getAuthorRoleAttribute(): ?string
+    {
+        return $this->relationLoaded('author') ? ($this->author?->roleType) : null;
+    }
+
     public function channel()
     {
         return $this->belongsTo(Channel::class, 'channelId');
