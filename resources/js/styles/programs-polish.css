@@ -1256,6 +1256,191 @@
 }
 
 
+/* ════════════════════════════════════════════════════════════════════
+   Tab HAMBATAN (blocker list) — Pattern A polish
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Section heading shares program-detail-section-head treatment (already
+   demoted via existing rules). Hide icon, normalize badge. */
+.prog-detail-page .prog-detail-tab-body > .program-detail-section-head .section-badge--red {
+  background: color-mix(in srgb, var(--red) 10%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--red) 25%, transparent) !important;
+  color: var(--red) !important;
+}
+
+/* Flatten blocker list — kill nested card chrome. Severity = left-border accent. */
+.prog-detail-page .program-list-stack {
+  border-top: 1px solid var(--panel-border) !important;
+  background: transparent !important;
+}
+.prog-detail-page .blocker-item {
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--panel-border) !important;
+  border-left: 2px solid var(--blocker-accent, var(--panel-border)) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 14px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+.prog-detail-page .blocker-item:hover {
+  background: var(--surface-2) !important;
+  box-shadow: none !important;
+}
+.prog-detail-page .blocker-item__title {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: var(--text-strong) !important;
+}
+.prog-detail-page .blocker-item__meta {
+  font-size: 11.5px !important;
+  color: var(--text-muted) !important;
+  margin-top: 2px !important;
+}
+.prog-detail-page .blocker-item__age {
+  font-size: 11px !important;
+  color: var(--text-muted) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+.prog-detail-page .blocker-item__action {
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  padding: 4px 10px !important;
+  background: transparent !important;
+  border: 1px solid var(--panel-border) !important;
+  color: var(--text-body) !important;
+}
+.prog-detail-page .blocker-item__action:hover {
+  background: var(--surface-2) !important;
+  color: var(--text-strong) !important;
+}
+
+/* Severity badge — keep tone-aware but tighter */
+.prog-detail-page .blocker-item .severity-badge {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  padding: 2px 7px !important;
+  letter-spacing: 0.04em !important;
+  flex-shrink: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   Tab KPI APMS — Pattern A polish
+   ════════════════════════════════════════════════════════════════════ */
+
+/* KPI head: demote title row consistent with other tabs */
+.prog-detail-page .prog-kpi-head__title > svg {
+  display: none !important;
+}
+.prog-detail-page .prog-kpi-head__title {
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--text-muted) !important;
+  gap: 0 !important;
+}
+.prog-detail-page .prog-kpi-head__title-row {
+  margin-bottom: 8px !important;
+}
+.prog-detail-page .prog-kpi-flag {
+  font-size: 10.5px !important;
+  padding: 2px 8px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   Tab JADWAL (Execution Grid) — Pattern A polish
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Content header: "Execution Grid — <program>" + subtitle. Keep
+   readable hierarchy (heading > subtitle) but tighten weight.       */
+.prog-detail-page .prog-detail-tab-body .section-header {
+  margin-bottom: 4px !important;
+}
+.prog-detail-page .prog-detail-tab-body .section-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: var(--text-strong) !important;
+  letter-spacing: -0.005em !important;
+}
+.prog-detail-page .prog-detail-tab-body .section-subtitle {
+  font-size: 12px !important;
+  color: var(--text-muted) !important;
+  margin-top: 2px !important;
+}
+
+/* View-toggle / export buttons row: ghost style */
+.prog-detail-page .view-toggle-btn {
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  padding: 4px 10px !important;
+  background: transparent !important;
+  border: 1px solid var(--panel-border) !important;
+  color: var(--text-body) !important;
+  border-radius: 6px !important;
+}
+.prog-detail-page .view-toggle-btn:hover {
+  background: var(--surface-2) !important;
+  color: var(--text-strong) !important;
+}
+.prog-detail-page .view-toggle-btn.active {
+  background: var(--surface-2) !important;
+  border-color: var(--panel-border-strong, var(--panel-border)) !important;
+  color: var(--text-strong) !important;
+  font-weight: 600 !important;
+}
+
+/* Workstream pills (tab nav at top of Jadwal) */
+.prog-detail-page .workstream-pills {
+  gap: 4px !important;
+  border-bottom: 1px solid var(--panel-border) !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 10px !important;
+}
+.prog-detail-page .workstream-pill {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 8px 12px !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  color: var(--text-muted) !important;
+  margin-bottom: -1px !important;
+}
+.prog-detail-page .workstream-pill:hover {
+  color: var(--text-body) !important;
+  background: transparent !important;
+}
+.prog-detail-page .workstream-pill--active {
+  color: var(--green) !important;
+  font-weight: 600 !important;
+  border-bottom-color: var(--green) !important;
+  background: transparent !important;
+}
+.prog-detail-page .workstream-pill__count {
+  font-size: 10.5px !important;
+  color: var(--text-muted) !important;
+  margin-left: 6px !important;
+  font-weight: 500 !important;
+}
+
+/* Planning-mode notice — slim banner, tone-aware */
+.prog-detail-page .exec-planning-notice {
+  font-size: 11.5px !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  background: color-mix(in srgb, var(--yellow) 8%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--yellow) 22%, transparent) !important;
+  color: var(--text-body) !important;
+  gap: 6px !important;
+}
+
+
 /* ───────── Riwayat Progress: collapsible supplementary fields ─────────
    Default collapsed: only narrative shown (the main paragraph).
    On expand: Kendala / Corrective action / Next step / Dukungan reveal.
