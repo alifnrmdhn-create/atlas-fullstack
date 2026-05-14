@@ -6,6 +6,7 @@ import { api } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useDarkMode } from '../lib/useDarkMode'
 import { EscalationButton } from '../components/Escalation'
+import { TraceStrip, type TraceNode } from '../components/TraceStrip'
 import { tonePalette } from '../lib/statusColors'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import { useEscKey } from '../hooks/useEscKey'
@@ -1073,12 +1074,16 @@ export function TaskDetailView() {
         <button className="wid-back" onClick={() => navigate('/execution')} type="button">
           {Icon.back} Execution Board
         </button>
-        {detail.workstream && (
-          <>
-            <span className="wid-crumb-sep">›</span>
-            <span className="wid-crumb-text">{detail.workstream.name}</span>
-          </>
-        )}
+        <span className="wid-topbar__sep" aria-hidden="true" />
+        <TraceStrip
+          nodes={[
+            { label: 'Programs', href: '/programs' },
+            ...(parentProgram
+              ? [{ code: parentProgram.code, label: parentProgram.name, href: `/programs/${parentProgram.id}` } as TraceNode]
+              : []),
+            ...(detail.workstream ? [{ label: detail.workstream.name } as TraceNode] : []),
+          ]}
+        />
         <div className="wid-topbar__actions">
           {liveFlash && (
             <span className="wid-live-badge" title="Data diperbarui oleh sinkronisasi real-time">
@@ -1142,16 +1147,6 @@ export function TaskDetailView() {
 
       {/* ── Hero ───────────────────────────────────────────────── */}
       <div className="wid-hero">
-        {parentProgram && (
-          <button className="wid-hero__program" onClick={() => navigate(`/programs/${parentProgram.id}`)} type="button">
-            <span className="wid-hero__program-icon">{Icon.program}</span>
-            <span className="wid-hero__program-code">{parentProgram.code}</span>
-            <span className="wid-hero__program-name">{parentProgram.name}</span>
-            <span className="wid-hero__program-pct">{parentProgram.progressPercent}%</span>
-            <span className="wid-hero__program-arrow">{Icon.arrow}</span>
-          </button>
-        )}
-
         <div className="wid-hero__meta">
           <span className="wid-chip wid-chip--code">{detail.code}</span>
           <span className="wid-chip wid-chip--priority" style={{ background: priorityTone.bg, color: priorityTone.fg }}>

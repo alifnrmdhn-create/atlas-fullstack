@@ -11,6 +11,7 @@ import { useDialogFocus } from '../hooks/useDialogFocus'
 import { sc as colors } from '../lib/statusColors'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import { EscalationButton } from '../components/Escalation'
+import { TraceStrip, type TraceNode } from '../components/TraceStrip'
 import {
   HealthPill,
   Metric,
@@ -839,18 +840,14 @@ export function ProgramDetailView() {
     <div className="ds program-detail-v2 prog-detail-page">
       {/* ── Breadcrumb header ──────────────────────────────────────────── */}
       <div className="wi-detail-header">
-        <button className="wi-detail-back" onClick={() => navigate('/programs')} type="button">
-          <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12">
-            <path d="M8 1 3 6l5 5" />
-          </svg>
-          Programs
-        </button>
+        <TraceStrip
+          nodes={[
+            { label: 'Programs', href: '/programs' },
+            ...(detail ? [{ code: detail.code } as TraceNode] : []),
+          ]}
+        />
         {detail && (
           <>
-            <span className="wi-detail-header__sep">›</span>
-            <span className="wi-detail-header__crumb">
-              <span className="wi-detail-header__crumb-code">{detail.code}</span>
-            </span>
             <HealthPill status={normalizeHealthStatus(detail.healthStatus)} />
             {detail.kelompok && (
               <span className={`prog-detail-header__kelompok prog-detail-header__kelompok--${detail.kelompok === 'SCORECARD' ? 'scorecard' : 'non'}`}>
