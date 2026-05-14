@@ -1,5 +1,6 @@
 import { Head, usePage } from '@inertiajs/react'
 import type { CharterPayload } from '../../types/charter'
+import { ActivityTimelineTable } from './Charter/ActivityTimelineTable'
 import './Charter/charter.css'
 
 /**
@@ -7,14 +8,10 @@ import './Charter/charter.css'
  *
  * Mirrors the KPI Charter PPT format used by DKMR (slide 20–24).
  * Parallel route to /programs/{id} (edit mode, 5 tabs).
- *
- * Scaffold commit: skeleton with placeholder content. Activity table,
- * status/update/PICA/KPI panels, and print CSS land in subsequent
- * commits per docs/CHARTER_VIEW_PLAN.md section 5.11.
  */
 export default function Charter() {
   const { props } = usePage<CharterPayload>()
-  const { program, status } = props
+  const { program, status, activities } = props
 
   return (
     <>
@@ -32,9 +29,15 @@ export default function Charter() {
                 Periode {program.period.from} → {program.period.to} · Health: {status.health}
               </p>
             </header>
+
+            <section className="charter-page__section">
+              <h2 className="charter-page__section-title">Aktivitas &amp; Timeline</h2>
+              <ActivityTimelineTable activities={activities} />
+            </section>
+
             <div className="charter-page__placeholder-body">
-              Charter View scaffold. Activity table, status panel, update panel, PICA, and KPI
-              progress table land in subsequent commits.
+              Status panel, update panel, PICA next-step, and KPI progress table land in the next
+              commit.
             </div>
           </div>
         </div>

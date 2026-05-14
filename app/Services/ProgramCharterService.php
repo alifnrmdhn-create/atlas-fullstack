@@ -7,7 +7,9 @@ use App\Models\KpiDefinition;
 use App\Models\OrganizationalUnit;
 use App\Models\Program;
 use App\Models\ProgramProgressLog;
+use App\Models\Task;
 use App\Models\User;
+use App\Services\Helpers\WeekToMonthMapper;
 
 /**
  * Charter View data assembler.
@@ -34,12 +36,64 @@ class ProgramCharterService
 
         return [
             'program'           => $this->buildProgramBlock($program),
-            'activities'        => [],
+            'activities'        => $this->buildActivities($program),
             'status'            => $this->buildStatusBlock($program),
             'kpi'               => $this->buildKpiBlock($program),
             'latestProgressLog' => $this->buildLatestProgressLog($program),
             'kpiHistory'        => ['rows' => []],
         ];
+    }
+
+    /**
+     * Activity rows for the timeline table.
+     *
+     * One row per Task across all workstreams of the program. Months
+     * derived from plannedWeeks/actualWeeks via WeekToMonthMapper:
+     *   - target: month overlaps a planned ISO week
+     *   - realized: month overlaps an actual ISO week
+     *   - below: month was targeted but no actual delivery, and the
+     *     month has fully passed (we no longer have time to catch up)
+     */
+    private function buildActivities(Program $program): array
+    {
+        $tasks = Task::query()
+            ->select(['id', 'title', 'output', 'plannedWeeks', 'actualWeeks', 'initiativeId'])
+            ->whereIn('initiativeId', $program->workstreams->pluck('id'))
+            ->with(['workstream:id,name,programId'])
+            ->orderBy('initiativeId')
+            ->orderBy('id')
+            ->get();
+
+        $year = (int) ($program->startDate?->format('Y') ?? now()->format('Y'));
+        $currentMonth = (int) now()->format('n');
+        $currentYear = (int) now()->format('Y');
+
+        return $tasks->map(function (Task $task) use ($year, $currentMonth, $currentYear) {
+            $planned = is_array($task->plannedWeeks) ? $task->plannedWeeks : [];
+            $actual = is_array($task->actualWeeks) ? $task->actualWeeks : [];
+
+            $months = [];
+            foreach (self::MONTH_LABELS as $monthNum => $label) {
+                $targeted = WeekToMonthMapper::isMonthTargeted($planned, $year, $monthNum);
+                $realized = WeekToMonthMapper::isMonthRealized($actual, $year, $monthNum);
+                $monthHasPassed = $year < $currentYear
+                    || ($year === $currentYear && $monthNum < $currentMonth);
+                $months[$label] = [
+                    'target'   => $targeted,
+                    'realized' => $realized,
+                    'below'    => $targeted && !$realized && $monthHasPassed,
+                ];
+            }
+
+            return [
+                'id'           => $task->id,
+                'name'         => $task->title,
+                'workstream'   => $task->workstream?->name ?? '',
+                'deliverable'  => $task->output,
+                'periodicity'  => null,
+                'months'       => $months,
+            ];
+        })->all();
     }
 
     private function buildProgramBlock(Program $program): array

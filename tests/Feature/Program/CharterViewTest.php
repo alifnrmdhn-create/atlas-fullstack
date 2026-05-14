@@ -7,7 +7,9 @@ use App\Models\OrganizationalUnit;
 use App\Models\Position;
 use App\Models\Program;
 use App\Models\ProgramProgressLog;
+use App\Models\Task;
 use App\Models\User;
+use App\Models\Workstream;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -170,6 +172,48 @@ class CharterViewTest extends TestCase
             ->get("/programs/{$this->nonScorecardProgram->id}/charter");
         $response->assertInertia(fn ($page) => $page
             ->where('status.health', 'TERLAMBAT') // RED → TERLAMBAT
+        );
+    }
+
+    public function test_activities_derive_monthly_target_and_realized_from_weeks(): void
+    {
+        $workstream = Workstream::create([
+            'code' => 'WS-CHTR-01',
+            'programId' => $this->scorecardProgram->id,
+            'name' => 'Audit Penerimaan',
+            'ownerId' => $this->admin->id,
+            'status' => 'IN_PROGRESS',
+            'priority' => 'HIGH',
+            'progressPercent' => 0,
+            'targetCompletion' => '2026-12-31',
+        ]);
+
+        Task::create([
+            'code' => 'WI-CHTR-01',
+            'initiativeId' => $workstream->id,
+            'title' => 'Penyusunan kebijakan audit penerimaan',
+            'output' => 'Dokumen kebijakan',
+            'createdBy' => $this->admin->id,
+            'status' => 'IN_PROGRESS',
+            'priority' => 'HIGH',
+            'percentComplete' => 0,
+            'targetCompletion' => '2026-06-30',
+            'plannedWeeks' => [23, 24, 25], // June 2026
+            'actualWeeks' => [23],          // realized in June
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->get("/programs/{$this->scorecardProgram->id}/charter");
+
+        $response->assertInertia(fn ($page) => $page
+            ->has('activities', 1)
+            ->where('activities.0.name', 'Penyusunan kebijakan audit penerimaan')
+            ->where('activities.0.workstream', 'Audit Penerimaan')
+            ->where('activities.0.deliverable', 'Dokumen kebijakan')
+            ->where('activities.0.months.Jun.target', true)
+            ->where('activities.0.months.Jun.realized', true)
+            ->where('activities.0.months.Jul.target', false)
+            ->where('activities.0.months.Jul.realized', false)
         );
     }
 
