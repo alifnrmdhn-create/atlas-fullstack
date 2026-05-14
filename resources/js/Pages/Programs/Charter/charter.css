@@ -17,53 +17,372 @@
   color: var(--text-strong);
 }
 
-/* ── Scaffold placeholder (deleted once HeaderStrip lands) ── */
-.charter-page__placeholder-header {
-  padding: 16px 18px;
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-lg);
-  background: var(--panel);
-}
-.charter-page__placeholder-code {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-.charter-page__placeholder-title {
-  font-size: 22px;
-  font-weight: 700;
-  margin: 4px 0 8px;
-  letter-spacing: -0.018em;
-  color: var(--text-strong);
-}
-.charter-page__placeholder-meta {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin: 2px 0;
-}
-.charter-page__placeholder-body {
-  padding: 24px;
-  border: 1px dashed var(--panel-border);
-  border-radius: var(--radius-lg);
-  color: var(--text-muted);
-  font-style: italic;
-  text-align: center;
-}
-
-.charter-page__section {
+.charter-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.charter-page__section-title {
+.charter-section-title {
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-muted);
   margin: 0;
+}
+
+/* ── Header strip (metadata top row) ──────────────────────────────── */
+.cs-header {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr auto;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+}
+.cs-header__col {
+  min-width: 0;
+}
+.cs-header__col--so {
+  border-right: 1px solid var(--panel-border);
+  padding-right: 14px;
+}
+.cs-header__col--actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  align-items: flex-end;
+}
+.cs-header__label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.cs-header__so {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-strong);
+  line-height: 1.35;
+  word-wrap: break-word;
+}
+.cs-header__pillar {
+  margin-top: 4px;
+  display: inline-block;
+  padding: 2px 8px;
+  background: color-mix(in srgb, var(--indigo) 12%, transparent);
+  color: var(--indigo);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.cs-header__value {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-strong);
+  line-height: 1.35;
+}
+.cs-header__sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.cs-header__sub--muted {
+  font-style: italic;
+}
+.cs-health {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.cs-export {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--panel-border);
+  background: var(--surface-1);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* ── 2-col grid: timeline + side rail ─────────────────────────────── */
+.charter-grid {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.charter-grid__main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.charter-grid__side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+@media (max-width: 1100px) {
+  .charter-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Status panel (side rail) ─────────────────────────────────────── */
+.cs-status {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+.cs-status__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.cs-status__label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.cs-status__big {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+  line-height: 1.1;
+}
+.cs-status__health-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.cs-status__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.cs-status__health-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-strong);
+}
+.cs-status__breakdown {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--panel-border);
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.cs-status__breakdown-num {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.cs-status__breakdown-sep,
+.cs-status__breakdown-total {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.cs-status__breakdown-label {
+  margin-left: 4px;
+}
+
+/* ── Update panel (side rail) ─────────────────────────────────────── */
+.cs-update {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+.cs-update__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.cs-update__label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.cs-update__period {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.cs-update__note {
+  font-size: 12.5px;
+  color: var(--text-strong);
+  line-height: 1.55;
+  margin: 0;
+}
+.cs-update__empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+/* ── PICA next-step row ───────────────────────────────────────────── */
+.cs-pica {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.cs-pica__card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  min-width: 0;
+}
+.cs-pica__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.cs-pica__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cs-pica__block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cs-pica__block + .cs-pica__block {
+  padding-top: 10px;
+  border-top: 1px solid var(--panel-border);
+}
+.cs-pica__block-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cs-pica__block-text {
+  font-size: 12.5px;
+  color: var(--text-strong);
+  line-height: 1.5;
+  margin: 0;
+}
+.cs-pica__empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+}
+@media (max-width: 900px) {
+  .cs-pica {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── KPI Progress table ───────────────────────────────────────────── */
+.kpt-wrap {
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  overflow: hidden;
+}
+.kpt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+.kpt-head {
+  background: var(--surface-1);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--panel-border);
+  white-space: nowrap;
+}
+.kpt-head--mon {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  width: 60px;
+  padding: 8px 6px;
+}
+.kpt-head--label {
+  min-width: 60px;
+}
+.kpt-row--target {
+  border-bottom: 0;
+}
+.kpt-row--real {
+  border-bottom: 1px solid var(--panel-border);
+}
+.kpt-cell {
+  padding: 6px 8px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+  border-left: 1px solid var(--panel-border-soft, var(--panel-border));
+}
+.kpt-cell--name {
+  text-align: left;
+  font-weight: 500;
+  padding: 8px 12px;
+  vertical-align: middle;
+  border-left: 0;
+  min-width: 200px;
+}
+.kpt-cell--label {
+  text-align: left;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  background: var(--surface-1);
+  padding: 6px 8px;
+  border-left: 0;
+}
+.kpt-cell--mon.is-above {
+  background: color-mix(in srgb, var(--green) 22%, transparent);
+  color: var(--text-strong);
+  font-weight: 600;
+}
+.kpt-empty {
+  padding: 28px;
+  text-align: center;
+  color: var(--text-muted);
+  border: 1px dashed var(--panel-border);
+  border-radius: var(--radius-lg);
+  font-size: 12.5px;
+  font-style: italic;
 }
 
 /* ── Activity Timeline Table ──────────────────────────────────────

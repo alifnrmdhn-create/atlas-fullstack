@@ -3,6 +3,8 @@
 namespace Tests\Feature\Program;
 
 use App\Models\Directorate;
+use App\Models\KpiDefinition;
+use App\Models\KpiValue;
 use App\Models\OrganizationalUnit;
 use App\Models\Position;
 use App\Models\Program;
@@ -214,6 +216,90 @@ class CharterViewTest extends TestCase
             ->where('activities.0.months.Jun.realized', true)
             ->where('activities.0.months.Jul.target', false)
             ->where('activities.0.months.Jul.realized', false)
+        );
+    }
+
+    public function test_status_block_counts_completed_tasks(): void
+    {
+        $workstream = Workstream::create([
+            'code' => 'WS-CHTR-02',
+            'programId' => $this->scorecardProgram->id,
+            'name' => 'Workstream Counter',
+            'ownerId' => $this->admin->id,
+            'status' => 'IN_PROGRESS',
+            'priority' => 'HIGH',
+            'progressPercent' => 0,
+            'targetCompletion' => '2026-12-31',
+        ]);
+        // 2 done, 1 in-progress
+        foreach (['DONE', 'DONE', 'IN_PROGRESS'] as $i => $status) {
+            Task::create([
+                'code' => "WI-COUNT-$i",
+                'initiativeId' => $workstream->id,
+                'title' => "Task counter $i",
+                'createdBy' => $this->admin->id,
+                'status' => $status,
+                'priority' => 'MEDIUM',
+                'percentComplete' => $status === 'DONE' ? 100 : 50,
+                'targetCompletion' => '2026-06-30',
+                'plannedWeeks' => [10, 11],
+                'actualWeeks' => $status === 'DONE' ? [10, 11] : [10],
+            ]);
+        }
+
+        $response = $this->actingAs($this->admin)
+            ->get("/programs/{$this->scorecardProgram->id}/charter");
+
+        $response->assertInertia(fn ($page) => $page
+            ->where('status.totalCount', 3)
+            ->where('status.completedCount', 2)
+        );
+    }
+
+    public function test_kpi_history_returns_monthly_rows_for_active_kpis(): void
+    {
+        $kpi = KpiDefinition::create([
+            'code' => 'KPI-CHTR-EBITDA',
+            'programId' => $this->scorecardProgram->id,
+            'name' => 'EBITDA',
+            'metricType' => 'OUTCOME',
+            'dataType' => 'CURRENCY',
+            'targetValue' => 100.0,
+            'reviewFrequency' => 'MONTHLY',
+            'unitOfMeasure' => 'Rp Triliun',
+            'isActive' => true,
+        ]);
+
+        // Two months of data — Jan and Feb 2026
+        KpiValue::create([
+            'kpiDefinitionId' => $kpi->id,
+            'measurementDate' => '2026-01-31',
+            'targetValue' => 8.0,
+            'actualValue' => 8.5, // above
+        ]);
+        KpiValue::create([
+            'kpiDefinitionId' => $kpi->id,
+            'measurementDate' => '2026-02-28',
+            'targetValue' => 16.0,
+            'actualValue' => 12.0, // below
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->get("/programs/{$this->scorecardProgram->id}/charter");
+
+        // PHP's json_encode collapses 8.0 → "8" so int comparisons are
+        // safer than float literals across the wire.
+        $response->assertInertia(fn ($page) => $page
+            ->has('kpiHistory.rows', 1)
+            ->where('kpiHistory.rows.0.label', 'EBITDA (Rp Triliun)')
+            ->where('kpiHistory.rows.0.months.Jan.target', 8)
+            ->where('kpiHistory.rows.0.months.Jan.real', 8.5)
+            ->where('kpiHistory.rows.0.months.Jan.aboveTarget', true)
+            ->where('kpiHistory.rows.0.months.Feb.target', 16)
+            ->where('kpiHistory.rows.0.months.Feb.real', 12)
+            ->where('kpiHistory.rows.0.months.Feb.aboveTarget', false)
+            ->where('kpiHistory.rows.0.months.Mar.target', null)
+            ->where('kpiHistory.rows.0.months.Mar.real', null)
         );
     }
 

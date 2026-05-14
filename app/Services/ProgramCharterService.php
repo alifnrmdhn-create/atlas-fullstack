@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Directorate;
 use App\Models\KpiDefinition;
+use App\Models\KpiValue;
 use App\Models\OrganizationalUnit;
 use App\Models\Program;
 use App\Models\ProgramProgressLog;
@@ -33,15 +34,28 @@ class ProgramCharterService
     public function assemble(Program $program): array
     {
         $program->loadMissing(['owner', 'workstreams']);
+        $tasks = $this->loadTasks($program);
 
         return [
             'program'           => $this->buildProgramBlock($program),
-            'activities'        => $this->buildActivities($program),
-            'status'            => $this->buildStatusBlock($program),
+            'activities'        => $this->buildActivities($program, $tasks),
+            'status'            => $this->buildStatusBlock($program, $tasks),
             'kpi'               => $this->buildKpiBlock($program),
             'latestProgressLog' => $this->buildLatestProgressLog($program),
-            'kpiHistory'        => ['rows' => []],
+            'kpiHistory'        => $this->buildKpiHistory($program),
         ];
+    }
+
+    /** Load all tasks for the program once — reused by activities + status. */
+    private function loadTasks(Program $program): \Illuminate\Support\Collection
+    {
+        return Task::query()
+            ->select(['id', 'title', 'output', 'status', 'plannedWeeks', 'actualWeeks', 'initiativeId'])
+            ->whereIn('initiativeId', $program->workstreams->pluck('id'))
+            ->with(['workstream:id,name,programId'])
+            ->orderBy('initiativeId')
+            ->orderBy('id')
+            ->get();
     }
 
     /**
@@ -54,16 +68,8 @@ class ProgramCharterService
      *   - below: month was targeted but no actual delivery, and the
      *     month has fully passed (we no longer have time to catch up)
      */
-    private function buildActivities(Program $program): array
+    private function buildActivities(Program $program, \Illuminate\Support\Collection $tasks): array
     {
-        $tasks = Task::query()
-            ->select(['id', 'title', 'output', 'plannedWeeks', 'actualWeeks', 'initiativeId'])
-            ->whereIn('initiativeId', $program->workstreams->pluck('id'))
-            ->with(['workstream:id,name,programId'])
-            ->orderBy('initiativeId')
-            ->orderBy('id')
-            ->get();
-
         $year = (int) ($program->startDate?->format('Y') ?? now()->format('Y'));
         $currentMonth = (int) now()->format('n');
         $currentYear = (int) now()->format('Y');
@@ -127,19 +133,57 @@ class ProgramCharterService
         ];
     }
 
-    private function buildStatusBlock(Program $program): array
+    private function buildStatusBlock(Program $program, \Illuminate\Support\Collection $tasks): array
     {
         $health = $this->mapHealth($program);
-
-        $totalCount = $program->workstreams?->count() ?? 0;
+        $totalCount = $tasks->count();
+        $completedCount = $tasks->where('status', 'DONE')->count();
+        $achievementPct = $this->computeAchievementPct($program, $tasks);
 
         return [
             'health'         => $health['key'],
-            'achievementPct' => null,
+            'achievementPct' => $achievementPct,
             'badgeColor'     => $health['color'],
-            'completedCount' => 0,
+            'completedCount' => $completedCount,
             'totalCount'     => $totalCount,
         ];
+    }
+
+    /**
+     * Realized weeks ÷ planned weeks counted only up through the current
+     * calendar month, summed across all program tasks. Null when there
+     * are no planned weeks in the period to date.
+     */
+    private function computeAchievementPct(Program $program, \Illuminate\Support\Collection $tasks): ?float
+    {
+        $year = (int) ($program->startDate?->format('Y') ?? now()->format('Y'));
+        $currentYear = (int) now()->format('Y');
+        $currentMonth = (int) now()->format('n');
+
+        if ($year > $currentYear) {
+            return null;
+        }
+
+        $cutoffWeek = $year < $currentYear
+            ? 53
+            : max(WeekToMonthMapper::getWeeksInMonth($year, $currentMonth));
+
+        $plannedToDate = 0;
+        $realizedToDate = 0;
+
+        foreach ($tasks as $task) {
+            $planned = is_array($task->plannedWeeks) ? $task->plannedWeeks : [];
+            $actual = is_array($task->actualWeeks) ? $task->actualWeeks : [];
+
+            $plannedToDate += count(array_filter($planned, fn ($w) => (int) $w <= $cutoffWeek));
+            $realizedToDate += count(array_filter($actual, fn ($w) => (int) $w <= $cutoffWeek));
+        }
+
+        if ($plannedToDate === 0) {
+            return null;
+        }
+
+        return round($realizedToDate / $plannedToDate * 100, 1);
     }
 
     private function buildKpiBlock(Program $program): ?array
@@ -191,6 +235,60 @@ class ProgramCharterService
             'nextStep'              => $log->nextStep,
             'supportNeeded'         => $log->dukunganDibutuhkan,
         ];
+    }
+
+    /**
+     * KPI history rows for the bottom progress table — one row per KPI
+     * with monthly target and actual numbers. A month cell carries the
+     * latest KpiValue measurementDate that falls in that month.
+     */
+    private function buildKpiHistory(Program $program): array
+    {
+        $kpis = KpiDefinition::query()
+            ->where('programId', $program->id)
+            ->where('isActive', true)
+            ->orderBy('createdAt')
+            ->get(['id', 'name', 'unitOfMeasure']);
+
+        if ($kpis->isEmpty()) {
+            return ['rows' => []];
+        }
+
+        $year = (int) ($program->startDate?->format('Y') ?? now()->format('Y'));
+
+        $values = KpiValue::query()
+            ->whereIn('kpiDefinitionId', $kpis->pluck('id'))
+            ->whereYear('measurementDate', $year)
+            ->orderBy('measurementDate')
+            ->get(['kpiDefinitionId', 'measurementDate', 'targetValue', 'actualValue']);
+
+        $rows = $kpis->map(function (KpiDefinition $kpi) use ($values) {
+            $kpiValues = $values->where('kpiDefinitionId', $kpi->id);
+
+            $months = [];
+            foreach (self::MONTH_LABELS as $monthNum => $label) {
+                $monthValues = $kpiValues->filter(fn ($v) => (int) $v->measurementDate->format('n') === $monthNum);
+                $latest = $monthValues->last();
+
+                $target = $latest?->targetValue !== null ? (float) $latest->targetValue : null;
+                $real = $latest ? (float) $latest->actualValue : null;
+                $above = ($target !== null && $real !== null) ? $real >= $target : false;
+
+                $months[$label] = [
+                    'target'      => $target,
+                    'real'        => $real,
+                    'aboveTarget' => $above,
+                ];
+            }
+
+            $unit = $kpi->unitOfMeasure ? " ({$kpi->unitOfMeasure})" : '';
+            return [
+                'label'  => $kpi->name . $unit,
+                'months' => $months,
+            ];
+        })->all();
+
+        return ['rows' => $rows];
     }
 
     /** Map healthStatus + approvalStatus to charter vocabulary. */
