@@ -1,0 +1,169 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Directorate;
+use App\Models\KpiDefinition;
+use App\Models\OrganizationalUnit;
+use App\Models\Program;
+use App\Models\ProgramProgressLog;
+use App\Models\User;
+
+/**
+ * Charter View data assembler.
+ *
+ * Compose a single read-only payload for the Charter mode page
+ * (mirrors slide 20–24 of the DKMR May 2026 PPT deck). All data
+ * comes from existing tables — no new aggregations beyond the
+ * month-from-week derivation handled in WeekToMonthMapper.
+ *
+ * Contract is documented in docs/CHARTER_VIEW_PLAN.md section 5.5
+ * and mirrored in resources/js/types/charter.ts.
+ */
+class ProgramCharterService
+{
+    private const MONTH_LABELS = [
+        1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+        5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agu',
+        9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des',
+    ];
+
+    public function assemble(Program $program): array
+    {
+        $program->loadMissing(['owner', 'workstreams']);
+
+        return [
+            'program'           => $this->buildProgramBlock($program),
+            'activities'        => [],
+            'status'            => $this->buildStatusBlock($program),
+            'kpi'               => $this->buildKpiBlock($program),
+            'latestProgressLog' => $this->buildLatestProgressLog($program),
+            'kpiHistory'        => ['rows' => []],
+        ];
+    }
+
+    private function buildProgramBlock(Program $program): array
+    {
+        $owner = $program->owner;
+        $unitId = $program->ownerUnitId ?? $owner?->unitId;
+        $unit = $unitId ? OrganizationalUnit::find($unitId) : null;
+        $directorate = $unit?->directorateId ? Directorate::find($unit->directorateId) : null;
+
+        $pillars = config('atlas-thresholds.pillars', []);
+        $pillarValue = $program->pilarStrategis?->value;
+
+        return [
+            'id'                  => $program->id,
+            'name'                => $program->name,
+            'code'                => $program->code,
+            'strategicObjective'  => $program->strategicObjective,
+            'pillar'              => $pillarValue,
+            'pillarLabel'         => $pillarValue ? ($pillars[$pillarValue] ?? $pillarValue) : null,
+            'divisionName'        => $unit?->name ?? '—',
+            'directorateName'     => $directorate?->name ?? '—',
+            'pic'                 => [
+                'name'     => $owner?->name ?? '—',
+                'position' => $owner?->positionTitle ?? '—',
+            ],
+            'period'              => [
+                'from' => $program->startDate?->format('Y-m') ?? now()->format('Y-m'),
+                'to'   => $program->targetEndDate?->format('Y-m') ?? now()->format('Y-m'),
+            ],
+            'currentMonth'        => now()->format('Y-m'),
+        ];
+    }
+
+    private function buildStatusBlock(Program $program): array
+    {
+        $health = $this->mapHealth($program);
+
+        $totalCount = $program->workstreams?->count() ?? 0;
+
+        return [
+            'health'         => $health['key'],
+            'achievementPct' => null,
+            'badgeColor'     => $health['color'],
+            'completedCount' => 0,
+            'totalCount'     => $totalCount,
+        ];
+    }
+
+    private function buildKpiBlock(Program $program): ?array
+    {
+        if ($program->kelompok !== 'SCORECARD') {
+            return null;
+        }
+        $kpi = KpiDefinition::query()
+            ->where('programId', $program->id)
+            ->where('isActive', true)
+            ->orderBy('createdAt')
+            ->first();
+
+        if (!$kpi) {
+            return null;
+        }
+
+        return [
+            'name'     => $kpi->name,
+            'target'   => (float) $kpi->targetValue,
+            'unit'     => $kpi->unitOfMeasure ?? '',
+            'glossary' => $kpi->description,
+        ];
+    }
+
+    private function buildLatestProgressLog(Program $program): array
+    {
+        $log = ProgramProgressLog::query()
+            ->where('programId', $program->id)
+            ->orderByDesc('createdAt')
+            ->first();
+
+        if (!$log) {
+            return [
+                'asOfMonth'             => null,
+                'updateNote'            => null,
+                'problemIdentification' => null,
+                'correctiveAction'      => null,
+                'nextStep'              => null,
+                'supportNeeded'         => null,
+            ];
+        }
+
+        return [
+            'asOfMonth'             => $this->formatPeriodLabel($log->period),
+            'updateNote'            => $log->narrative,
+            'problemIdentification' => $log->kendala,
+            'correctiveAction'      => $log->correctiveAction,
+            'nextStep'              => $log->nextStep,
+            'supportNeeded'         => $log->dukunganDibutuhkan,
+        ];
+    }
+
+    /** Map healthStatus + approvalStatus to charter vocabulary. */
+    private function mapHealth(Program $program): array
+    {
+        if ($program->approvalStatus === 'COMPLETED') {
+            return ['key' => 'COMPLETED', 'color' => '#2563eb'];
+        }
+        return match ($program->healthStatus) {
+            'GREEN'   => ['key' => 'ON_TRACK',  'color' => '#16a34a'],
+            'YELLOW'  => ['key' => 'AT_RISK',   'color' => '#d97706'],
+            'RED'     => ['key' => 'TERLAMBAT', 'color' => '#dc2626'],
+            default   => ['key' => 'ON_TRACK',  'color' => '#64748b'],
+        };
+    }
+
+    /** "2026-W17" → "Minggu ke 17 April" (approx — picks the month of the ISO week midpoint). */
+    private function formatPeriodLabel(?string $period): ?string
+    {
+        if (!$period) return null;
+        if (preg_match('/^(\d{4})-W(\d{1,2})$/', $period, $m)) {
+            $year = (int) $m[1];
+            $week = (int) $m[2];
+            $midpoint = (new \DateTime())->setISODate($year, $week, 4);
+            $monthLabel = self::MONTH_LABELS[(int) $midpoint->format('n')] ?? $midpoint->format('M');
+            return "Minggu ke {$week} {$monthLabel}";
+        }
+        return $period;
+    }
+}

@@ -16,6 +16,7 @@ use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\MonthlyReportController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PhaseController;
+use App\Http\Controllers\Program\CharterController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\RealtimeController;
 use App\Http\Controllers\RiskReportController;
@@ -131,6 +132,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/reject',   [ProgramController::class, 'reject'])->name('reject');
         Route::patch('/{id}/archive', [ProgramController::class, 'archive'])->name('archive');
         Route::patch('/{id}/restore', [ProgramController::class, 'restore'])->name('restore');
+
+        // Charter View (read-only, parallel to /{id})
+        Route::get('/{program}/charter', [CharterController::class, 'show'])->name('charter');
 
         // Sub-resources
         Route::get('/{id}/execution-grid',      [ExecutionGridController::class, 'executionGrid'])->name('execution-grid');
