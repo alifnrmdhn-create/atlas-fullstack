@@ -17,6 +17,7 @@ cmds = [
 [start]
 # FrankenPHP `php-server` mode: serve dari public/, auto-routing ke index.php.
 # Native SSE (per-connection goroutine, no per-request worker exhaustion).
-# `php` (Nixpacks-provided) tetap dipakai untuk CLI tasks; FrankenPHP punya bundled
-# PHP-nya sendiri tapi tidak overlap dengan PATH `php`.
-cmd = "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT"
+# `schedule:work` di-background supaya cleanup broadcast_events, reminders,
+# ghost-cleanup, auto-health compute tetap jalan. Container ephemeral — kalau
+# Railway restart container, scheduler restart bareng FrankenPHP.
+cmd = "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && (php artisan schedule:work --whisper >/dev/null 2>&1 &) && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT"
