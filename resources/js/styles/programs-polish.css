@@ -1506,3 +1506,73 @@
 .prog-detail-page .prog-detail-tab--active {
   font-weight: 600 !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   Identitas Strategis (Pilar + Objective) — Ringkasan tab inline edit
+   Charter View Phase 1. Pattern A: hairline above, two-column row,
+   no card-in-card.
+   ════════════════════════════════════════════════════════════════════ */
+.prog-strategic {
+  border-top: 1px solid var(--panel-border);
+  padding-top: 16px;
+}
+.prog-strategic__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.prog-strategic__title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0;
+}
+.prog-strategic__status {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.prog-strategic__status--error {
+  color: var(--red);
+}
+.prog-strategic__row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 8px 0;
+}
+.prog-strategic__row + .prog-strategic__row {
+  border-top: 1px solid var(--panel-border);
+}
+.prog-strategic__label {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding-top: 8px;
+}
+.prog-strategic__value {
+  font-size: 13.5px;
+  color: var(--text-strong);
+  padding: 6px 0;
+  line-height: 1.5;
+}
+.prog-strategic__input {
+  font-size: 13.5px;
+}
+.prog-strategic__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding-left: 172px;
+}
+@media (max-width: 720px) {
+  .prog-strategic__row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .prog-strategic__actions {
+    padding-left: 0;
+  }
+}

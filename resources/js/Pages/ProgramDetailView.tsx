@@ -414,6 +414,40 @@ export function ProgramDetailView() {
     }
   }, [numId])
 
+  // ── Identitas Strategis (Charter View Phase 1) ────────────────────────
+  // Inline editable: pilarStrategis (5-value enum) + strategicObjective
+  // (free text). Sumber data ke Charter View read-only di Phase 2.
+  const [strategicForm, setStrategicForm] = useState({
+    strategicObjective: '',
+    pilarStrategis: '',
+  })
+  const [strategicSaving, setStrategicSaving] = useState(false)
+  const [strategicError, setStrategicError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setStrategicForm({
+      strategicObjective: detail?.strategicObjective ?? '',
+      pilarStrategis: detail?.pilarStrategis ?? '',
+    })
+    setStrategicError(null)
+  }, [detail?.strategicObjective, detail?.pilarStrategis])
+
+  const saveStrategic = async () => {
+    if (!detail) return
+    setStrategicSaving(true); setStrategicError(null)
+    try {
+      await api.put(`/programs/${numId}`, {
+        strategicObjective: strategicForm.strategicObjective.trim() || null,
+        pilarStrategis: strategicForm.pilarStrategis || null,
+      })
+      await loadDetail(true)
+    } catch (err: unknown) {
+      setStrategicError(extractErrorMessage(err, 'Gagal menyimpan.'))
+    } finally {
+      setStrategicSaving(false)
+    }
+  }
+
   // ── Workstream sub-detail ─────────────────────────────────────────────
   const [selectedIniId, setSelectedIniId] = useState<number | null>(null)
   const [iniDetail, setIniDetail] = useState<WorkstreamDetail | null>(null)
@@ -1043,6 +1077,93 @@ export function ProgramDetailView() {
                     <p className="wi-desc">{detail.description}</p>
                   </div>
                 )}
+
+                {/* ── Identitas Strategis: Pilar + Objective (Charter Phase 1) ── */}
+                {(() => {
+                  const canEditStrategic = roleAccess.canEditProgram(isOwner)
+                    && !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '')
+                  const dirty =
+                    (strategicForm.strategicObjective ?? '') !== (detail.strategicObjective ?? '') ||
+                    (strategicForm.pilarStrategis ?? '') !== (detail.pilarStrategis ?? '')
+                  const hasAnyValue = !!(detail.strategicObjective || detail.pilarStrategis)
+                  if (!canEditStrategic && !hasAnyValue) return null
+                  return (
+                    <div className="wi-section prog-strategic">
+                      <div className="prog-strategic__head">
+                        <h3 className="prog-strategic__title">Identitas Strategis</h3>
+                        {strategicSaving && <span className="prog-strategic__status">Menyimpan…</span>}
+                        {strategicError && <span className="prog-strategic__status prog-strategic__status--error">{strategicError}</span>}
+                      </div>
+                      <div className="prog-strategic__row">
+                        <label className="prog-strategic__label">Pilar Strategis</label>
+                        {canEditStrategic ? (
+                          <select
+                            className="wi-input prog-strategic__input"
+                            value={strategicForm.pilarStrategis}
+                            onChange={e => setStrategicForm(f => ({ ...f, pilarStrategis: e.target.value }))}
+                            disabled={strategicSaving}
+                          >
+                            <option value="">— Pilih pilar —</option>
+                            <option value="COLLECTING_MORE">Collecting More</option>
+                            <option value="SPENDING_BETTER">Spending Better</option>
+                            <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
+                            <option value="ENABLER">Program Enabler</option>
+                            <option value="NON_SCORECARD">Non-Scorecard</option>
+                          </select>
+                        ) : (
+                          <span className="prog-strategic__value">
+                            {detail.pilarStrategis ? detail.pilarStrategis.replace(/_/g, ' ') : '—'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="prog-strategic__row">
+                        <label className="prog-strategic__label">Strategic Objective</label>
+                        {canEditStrategic ? (
+                          <textarea
+                            className="wi-input prog-strategic__input"
+                            rows={2}
+                            maxLength={1000}
+                            value={strategicForm.strategicObjective}
+                            onChange={e => setStrategicForm(f => ({ ...f, strategicObjective: e.target.value }))}
+                            placeholder="Contoh: Efektivitas Pengawasan Pendanaan Pemerintah"
+                            disabled={strategicSaving}
+                          />
+                        ) : (
+                          <span className="prog-strategic__value">
+                            {detail.strategicObjective || '—'}
+                          </span>
+                        )}
+                      </div>
+                      {canEditStrategic && dirty && (
+                        <div className="prog-strategic__actions">
+                          <button
+                            type="button"
+                            className="wi-btn wi-btn--primary wi-btn--sm"
+                            onClick={saveStrategic}
+                            disabled={strategicSaving}
+                          >
+                            {strategicSaving ? 'Menyimpan…' : 'Simpan'}
+                          </button>
+                          <button
+                            type="button"
+                            className="wi-btn wi-btn--ghost wi-btn--sm"
+                            onClick={() => {
+                              setStrategicForm({
+                                strategicObjective: detail.strategicObjective ?? '',
+                                pilarStrategis: detail.pilarStrategis ?? '',
+                              })
+                              setStrategicError(null)
+                            }}
+                            disabled={strategicSaving}
+                          >
+                            Reset
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+
                 <div className="wi-section">
 
                   {(() => {

@@ -1507,9 +1507,11 @@ export function ProgramsView() {
                         value={cpForm.pilarStrategis}
                       >
                         <option value="">— Pilih pilar —</option>
-                        <option value="ENABLER">Enabler</option>
+                        <option value="COLLECTING_MORE">Collecting More</option>
                         <option value="SPENDING_BETTER">Spending Better</option>
                         <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
+                        <option value="ENABLER">Program Enabler</option>
+                        <option value="NON_SCORECARD">Non-Scorecard</option>
                       </select>
                     </div>
                   </div>
@@ -1868,9 +1870,11 @@ export function ProgramsView() {
                         value={editProgram.pilarStrategis}
                       >
                         <option value="">— Pilih pilar —</option>
-                        <option value="ENABLER">Enabler</option>
+                        <option value="COLLECTING_MORE">Collecting More</option>
                         <option value="SPENDING_BETTER">Spending Better</option>
                         <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
+                        <option value="ENABLER">Program Enabler</option>
+                        <option value="NON_SCORECARD">Non-Scorecard</option>
                       </select>
                     </div>
                   </div>

@@ -180,7 +180,7 @@ class ProgramController extends Controller
             'picPersonIds.*' => 'integer|exists:User,id',
             'hasNoApmsKpi' => 'nullable|boolean',
             'kelompok' => 'nullable|in:SCORECARD,NON_SCORECARD',
-            'pilarStrategis' => 'nullable|in:ENABLER,SPENDING_BETTER,INNOVATIVE_FINANCING',
+            'pilarStrategis' => 'nullable|in:' . implode(',', array_keys(config('atlas-thresholds.pillars', []))),
             'progresTerkini' => 'nullable|string|max:2000',
             'dukunganDibutuhkan' => 'nullable|string|max:2000',
         ]);
@@ -220,7 +220,7 @@ class ProgramController extends Controller
             'picPersonIds' => 'nullable|array',
             'picPersonIds.*' => 'integer|exists:User,id',
             'kelompok' => 'nullable|in:SCORECARD,NON_SCORECARD',
-            'pilarStrategis' => 'nullable|in:ENABLER,SPENDING_BETTER,INNOVATIVE_FINANCING',
+            'pilarStrategis' => 'nullable|in:' . implode(',', array_keys(config('atlas-thresholds.pillars', []))),
             'progresTerkini' => 'nullable|string|max:2000',
             'dukunganDibutuhkan' => 'nullable|string|max:2000',
         ]);
