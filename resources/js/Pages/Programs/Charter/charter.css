@@ -385,6 +385,117 @@
   font-style: italic;
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   PRINT — A4 landscape, hide app chrome, force exact colors
+   ────────────────────────────────────────────────────────────────────
+   Plan section 5.8: Cmd+P should produce a rapi single-page brief.
+   Page-break-inside avoided on each section card so they don't split.
+   ════════════════════════════════════════════════════════════════════ */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0.6cm;
+  }
+
+  /* Hide app shell chrome — only the Charter content should print */
+  .sidebar,
+  .topbar,
+  .notif-toast,
+  .charter-export-button {
+    display: none !important;
+  }
+
+  /* Reset workspace and page-shell so content fills the printable area */
+  .workspace,
+  .workspace__content,
+  .page-shell,
+  .page-shell__inner {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    min-height: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Force exact colors for status/health cells (default browsers strip
+     backgrounds to save ink — we need the green/orange to print) */
+  .charter-page,
+  .charter-page * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  .charter-page {
+    font-size: 9pt;
+    color: #1f2937;
+    gap: 10px;
+  }
+  .charter-section-title {
+    font-size: 9pt;
+    margin: 0 0 4px;
+  }
+
+  /* Tighten card paddings for print */
+  .cs-header,
+  .cs-status,
+  .cs-update,
+  .cs-pica__card,
+  .atl-wrap,
+  .kpt-wrap {
+    padding: 10px 12px;
+    border-radius: 4px;
+    border: 1px solid #d1d5db;
+    box-shadow: none !important;
+  }
+  .atl-wrap,
+  .kpt-wrap {
+    padding: 0;
+  }
+
+  /* Pillar badge prints flat */
+  .cs-header__pillar {
+    background: #e0e7ff !important;
+    color: #4338ca !important;
+  }
+
+  /* Keep activity table on one page if possible */
+  .atl-wrap,
+  .kpt-wrap {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .charter-grid {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .cs-pica {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Slightly smaller table fonts for print fit */
+  .atl-table,
+  .kpt-table {
+    font-size: 8.5pt;
+  }
+  .atl-head,
+  .kpt-head {
+    font-size: 7.5pt;
+    padding: 5px 7px;
+  }
+  .atl-cell,
+  .kpt-cell {
+    padding: 4px 6px;
+  }
+
+  /* Hide the disabled Export button — already covered by
+     .charter-export-button selector above, but defensive double rule */
+  .cs-export {
+    display: none !important;
+  }
+}
+
 /* ── Activity Timeline Table ──────────────────────────────────────
    12-month grid mirroring DKMR PPT slide 21. Each activity = two
    rows (Target / Real). Pattern A: hairline divider on outer card,
