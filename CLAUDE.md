@@ -77,6 +77,21 @@ php artisan schedule:run   # tiap menit di cron
 
 User guide pilot: `docs/user-guide-pilot-dkm.md`.
 
+## Charter View context (Mei 2026)
+
+ATLAS punya dua mode untuk Program:
+- **Edit mode** (`/programs/{program}`): 5 tab existing (Ringkasan/Struktur/Jadwal/Eksekusi/Health) untuk PIC saat input data.
+- **Charter mode** (`/programs/{program}/charter`): single-page read-only, mirror format KPI Charter PPT DKMR (lihat `docs/reference/2026_MEI_Monitoring_Program_Kerja_DKMR.pptx`), dengan tombol Export PPTX.
+
+Aturan eksekusi:
+1. Charter View HANYA menampilkan, tidak mengedit. Semua editing tetap di tab existing.
+2. Data source: Program + Workstream + Phase + Task + ProgressLog + KpiValue + ProgramKpiLink — semua existing, no new aggregations except month-from-week derivation.
+3. Layout: Pattern A workspace (`.page-shell` outer card), inner grid pakai hairline `border: 0.5px solid var(--color-border-tertiary)`, BUKAN card-in-card.
+4. Vocabulary firm: On Track / At Risk / Terlambat / Completed.
+5. RBAC: pakai `ProgramPolicy` yang sudah ada (sama dengan ProgramDetailView).
+6. Aktivitas table: monthly columns Jan–Des, baris Target/Real per Task, derive dari `plannedWeeks`/`actualWeeks` (bulan ter-target jika minimal 1 minggu di bulan itu ada di `plannedWeeks`).
+7. % Achievement = realized weeks / planned weeks up to current month, per program (atau per KPI utama jika di-link).
+
 ## Naming Conventions
 
 **Penting**: model `Task` map ke tabel `WorkItem`, FK `initiativeId` → `Initiative.id` (workstream).
