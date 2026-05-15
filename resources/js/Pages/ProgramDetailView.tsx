@@ -920,6 +920,19 @@ export function ProgramDetailView() {
               Board
             </button>
           )}
+          {detail && (
+            <button
+              className="icon-btn wi-detail-header__board-btn charter-link"
+              onClick={() => navigate(`/programs/${numId}/charter`)}
+              type="button"
+              title="Buka tampilan Charter (single-page, read-only)"
+            >
+              Lihat sebagai Charter
+              <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10">
+                <path d="M3 6h6M6 3l3 3-3 3" />
+              </svg>
+            </button>
+          )}
           {detail && roleAccess.canEditProgram(isOwner) &&
             !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') && (
             <button className="btn btn--ghost wi-detail-header__btn" onClick={openEdit} type="button">
