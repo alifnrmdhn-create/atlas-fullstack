@@ -29,7 +29,7 @@ export function getProgramDisplayStatus(
   if (a === 'REJECTED')                  return { label: 'Perlu revisi',      tone: 'rejected',  slug: 'blocked' }
 
   // ACTIVE (Eksekusi) or COMPLETED phase — fall back to operational status
-  if (s === 'COMPLETED')                 return { label: 'Selesai',           tone: 'done',      slug: 'completed' }
+  if (s === 'COMPLETED')                 return { label: 'Completed',         tone: 'done',      slug: 'completed' }
   if (s === 'CANCELLED')                 return { label: 'Dibatalkan',        tone: 'cancelled', slug: 'blocked' }
   if (s === 'ON_HOLD')                   return { label: 'Ditahan',           tone: 'hold',      slug: 'in-review' }
   return { label: 'Berjalan',            tone: 'running',                      slug: 'in-progress' }
@@ -57,7 +57,7 @@ export function getProgramHealthDisplay(program: {
 }): ProgramHealthDisplay {
   const isCompleted = program.status === 'COMPLETED'
   if (isCompleted) {
-    return { label: 'Selesai', tone: 'selesai', slug: 'completed', isOverdue: false }
+    return { label: 'Completed', tone: 'selesai', slug: 'completed', isOverdue: false }
   }
 
   const isOverdue =

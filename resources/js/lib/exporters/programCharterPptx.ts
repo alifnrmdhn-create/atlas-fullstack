@@ -357,12 +357,20 @@ function buildFooter(slide: pptxgen.Slide, data: CharterPayload): void {
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────
+/**
+ * Health label for the PPTX export.
+ *
+ * Per CHARTER_VIEW_PLAN.md section 7.1: the in-app UI keeps "Terlambat",
+ * but the PPT manual format (and Pak Dirkeu's forum vocabulary outside
+ * ATLAS) uses "Delayed" — so the exported deck matches that convention.
+ * "Completed" is consistent between UI and PPTX.
+ */
 function healthLabel(health: string): string {
   switch (health) {
     case 'ON_TRACK':  return 'On Track'
     case 'AT_RISK':   return 'At Risk'
-    case 'TERLAMBAT': return 'Terlambat'
-    case 'COMPLETED': return 'Selesai'
+    case 'TERLAMBAT': return 'Delayed'
+    case 'COMPLETED': return 'Completed'
     default:          return health
   }
 }

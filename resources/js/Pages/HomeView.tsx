@@ -1110,7 +1110,7 @@ export default function HomeView() {
                   <span className="hv__rollup-num">On Track</span>
                   <span className="hv__rollup-num">At Risk</span>
                   <span className="hv__rollup-num">Terlambat</span>
-                  <span className="hv__rollup-num">Selesai</span>
+                  <span className="hv__rollup-num">Completed</span>
                   <span className="hv__rollup-num">Total</span>
                   <span className="hv__rollup-num">% On Track</span>
                 </div>

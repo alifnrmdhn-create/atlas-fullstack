@@ -13,7 +13,7 @@ const HEALTH_LABEL: Record<CharterHealth, string> = {
   ON_TRACK:  'On Track',
   AT_RISK:   'At Risk',
   TERLAMBAT: 'Terlambat',
-  COMPLETED: 'Selesai',
+  COMPLETED: 'Completed',
 }
 
 /**
