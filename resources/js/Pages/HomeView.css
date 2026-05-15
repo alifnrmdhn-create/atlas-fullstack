@@ -1463,6 +1463,44 @@
   box-shadow: inset 0 0 0 2px rgba(22, 163, 74, 0.35);
 }
 
+/* ── Row wrap (program info button + inline action button) ──
+   Wraps the row button + escalation button so they sit side-by-side.
+   The row button keeps full-width clickable behavior; action button
+   is rendered after with its own click target. */
+.hv__list-row-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hv__list-row-wrap > .hv__list-row {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.hv__list-row-wrap + .hv__list-row-wrap {
+  border-top: 1px solid var(--surface-overlay-soft);
+}
+.hv__row-action {
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+.hv__row-escalated {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--green);
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--green) 12%, transparent);
+  white-space: nowrap;
+  animation: hv-escalated-fadein 200ms ease-out;
+}
+@keyframes hv-escalated-fadein {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
 .hv__list-code {
   font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
   font-size: 11px;
@@ -1646,6 +1684,27 @@
 }
 .hv__deadline-row:hover {
   background: var(--surface-2, #f9fafb);
+}
+/* Wrap for inline escalation button — mirrors .hv__list-row-wrap.
+   Row button keeps grid layout, action sits to its right. */
+.hv__deadline-row-wrap {
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--panel-border, #e5e7eb);
+}
+.hv__deadline-table > .hv__deadline-row-wrap:first-of-type {
+  border-top: 0;
+}
+.hv__deadline-row-wrap > .hv__deadline-row {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.hv__deadline-row-wrap > .hv__row-action {
+  display: flex;
+  align-items: center;
+  padding-right: 12px;
+  padding-left: 4px;
+  background: var(--panel, #fff);
 }
 .hv__deadline-row--head {
   background: var(--surface-1, #f3f4f6);

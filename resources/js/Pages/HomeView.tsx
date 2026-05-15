@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Head, usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { SkeletonBlock, SectionState } from '../components/ui'
+import { EscalationButton } from '../components/Escalation'
 import './HomeView.css'
 
 /* ─── Inertia props ─────────────────────────────────────────── */
@@ -385,6 +386,22 @@ export default function HomeView() {
   const navigate = useInertiaNavigate()
   const { props } = usePage<{ scorecardSnapshot: ScorecardSnapshot }>()
   const scorecard = props.scorecardSnapshot
+
+  // Inline confirmation badge — set of program IDs yang baru saja
+  // di-escalate (replace tombol Eskalasi dengan "✓ Tereskalasi" selama
+  // 5 detik). Mencegah double-escalate dan kasih feedback visual tanpa
+  // bergantung pada toast global yang belum ada di codebase.
+  const [recentlyEscalated, setRecentlyEscalated] = useState<Set<number>>(new Set())
+  const markEscalated = (programId: number) => {
+    setRecentlyEscalated(prev => new Set(prev).add(programId))
+    setTimeout(() => {
+      setRecentlyEscalated(prev => {
+        const next = new Set(prev)
+        next.delete(programId)
+        return next
+      })
+    }, 5000)
+  }
 
   if (overviewStatus.loading && !programSummary) {
     return (
@@ -1009,29 +1026,51 @@ export default function HomeView() {
                     ? `${Math.abs(days)} hari lewat`
                     : days === 0 ? 'Hari ini'
                     : `${days} hari lagi`
+                  const canEscalate = urgency === 'critical' || urgency === 'urgent'
                   return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="hv__deadline-row"
-                      onClick={() => openProgramWorkspace(p.id)}
-                    >
-                      <span className="hv__deadline-program">
-                        <span className="hv__deadline-code">{p.code}</span>
-                        <span className="hv__deadline-name">{p.name}</span>
-                      </span>
-                      <span className="hv__deadline-divisi">{p.divisi || '—'}</span>
-                      <span className="hv__deadline-date">{p.targetEndDate ?? '—'}</span>
-                      <span className="hv__deadline-countdown" data-urgency={urgency}>
-                        {daysLabel}
-                      </span>
-                      <span className="hv__deadline-progress" title={p.progresTerkini ?? ''}>
-                        {p.progresTerkini ? p.progresTerkini : <em className="hv__deadline-empty">—</em>}
-                      </span>
-                      <span className="hv__deadline-support" title={p.dukunganDibutuhkan ?? ''}>
-                        {p.dukunganDibutuhkan ? p.dukunganDibutuhkan : <em className="hv__deadline-empty">—</em>}
-                      </span>
-                    </button>
+                    <div key={p.id} className="hv__deadline-row-wrap">
+                      <button
+                        type="button"
+                        className="hv__deadline-row"
+                        onClick={() => openProgramWorkspace(p.id)}
+                      >
+                        <span className="hv__deadline-program">
+                          <span className="hv__deadline-code">{p.code}</span>
+                          <span className="hv__deadline-name">{p.name}</span>
+                        </span>
+                        <span className="hv__deadline-divisi">{p.divisi || '—'}</span>
+                        <span className="hv__deadline-date">{p.targetEndDate ?? '—'}</span>
+                        <span className="hv__deadline-countdown" data-urgency={urgency}>
+                          {daysLabel}
+                        </span>
+                        <span className="hv__deadline-progress" title={p.progresTerkini ?? ''}>
+                          {p.progresTerkini ? p.progresTerkini : <em className="hv__deadline-empty">—</em>}
+                        </span>
+                        <span className="hv__deadline-support" title={p.dukunganDibutuhkan ?? ''}>
+                          {p.dukunganDibutuhkan ? p.dukunganDibutuhkan : <em className="hv__deadline-empty">—</em>}
+                        </span>
+                      </button>
+                      {canEscalate && (
+                        <div className="hv__row-action">
+                          {recentlyEscalated.has(p.id) ? (
+                            <span className="hv__row-escalated" role="status">✓ Tereskalasi</span>
+                          ) : (
+                            <EscalationButton
+                              sourceType="AD_HOC"
+                              prefillTitle={`Deadline ketat: ${p.code} — ${p.name}`}
+                              prefillDescription={[
+                                `${daysLabel} dari deadline ${p.targetEndDate ?? '—'}.`,
+                                p.progresTerkini ? `\nProgres terkini: ${p.progresTerkini}` : '',
+                                p.dukunganDibutuhkan ? `\nCatatan PIC: ${p.dukunganDibutuhkan}` : '',
+                              ].join('').trim()}
+                              linkedProgramId={p.id}
+                              size="sm"
+                              onCreated={() => markEscalated(p.id)}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
               </div>
@@ -1059,29 +1098,47 @@ export default function HomeView() {
                               : tone === 'amber' ? 'At Risk'
                               : tone === 'green' ? 'On Track'
                               : 'Idle / Draft'
+                  const canEscalate = tone === 'red' || tone === 'amber'
                   return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="hv__list-row"
-                      onClick={() => openProgramWorkspace(p.id)}
-                    >
-                      <span className="hv__list-code">{p.code}</span>
-                      <span className="hv__list-name">{p.name}</span>
-                      <span className="hv__list-divisi">{p.divisi || '—'}</span>
-                      <span className="hv__list-bar" aria-hidden>
-                        <span
-                          className="hv__list-bar-fill"
-                          data-tone={tone}
-                          style={{ width: `${Math.min(Math.max(p.progressPercent, 0), 100)}%` }}
-                        />
-                      </span>
-                      <span className="hv__list-pct">{Math.round(p.progressPercent)}%</span>
-                      <span className="hv__list-status">
-                        <span className="hv__eyebrow-dot" data-tone={tone} aria-hidden />
-                        {label}
-                      </span>
-                    </button>
+                    <div key={p.id} className="hv__list-row-wrap">
+                      <button
+                        type="button"
+                        className="hv__list-row"
+                        onClick={() => openProgramWorkspace(p.id)}
+                      >
+                        <span className="hv__list-code">{p.code}</span>
+                        <span className="hv__list-name">{p.name}</span>
+                        <span className="hv__list-divisi">{p.divisi || '—'}</span>
+                        <span className="hv__list-bar" aria-hidden>
+                          <span
+                            className="hv__list-bar-fill"
+                            data-tone={tone}
+                            style={{ width: `${Math.min(Math.max(p.progressPercent, 0), 100)}%` }}
+                          />
+                        </span>
+                        <span className="hv__list-pct">{Math.round(p.progressPercent)}%</span>
+                        <span className="hv__list-status">
+                          <span className="hv__eyebrow-dot" data-tone={tone} aria-hidden />
+                          {label}
+                        </span>
+                      </button>
+                      {canEscalate && (
+                        <div className="hv__row-action">
+                          {recentlyEscalated.has(p.id) ? (
+                            <span className="hv__row-escalated" role="status">✓ Tereskalasi</span>
+                          ) : (
+                            <EscalationButton
+                              sourceType="AD_HOC"
+                              prefillTitle={`Butuh dukungan: ${p.code} — ${p.name}`}
+                              prefillDescription={`Program berstatus ${label}, progress ${Math.round(p.progressPercent)}%.`}
+                              linkedProgramId={p.id}
+                              size="sm"
+                              onCreated={() => markEscalated(p.id)}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
               </div>
