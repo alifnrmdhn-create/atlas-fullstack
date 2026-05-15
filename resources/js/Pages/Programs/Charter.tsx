@@ -1,6 +1,7 @@
 import { Head, usePage } from '@inertiajs/react'
 import type { CharterPayload } from '../../types/charter'
 import { ActivityTimelineTable } from './Charter/ActivityTimelineTable'
+import { ExportButton } from './Charter/ExportButton'
 import { HeaderStrip } from './Charter/HeaderStrip'
 import { KpiProgressTable } from './Charter/KpiProgressTable'
 import { PicaNextStepRow } from './Charter/PicaNextStepRow'
@@ -32,7 +33,12 @@ export default function Charter() {
       <div className="page-shell">
         <div className="page-shell__inner">
           <div className="charter-page" data-charter-root>
-            <HeaderStrip program={program} status={status} kpi={kpi} />
+            <HeaderStrip
+              program={program}
+              status={status}
+              kpi={kpi}
+              actionSlot={<ExportButton data={props} />}
+            />
 
             <div className="charter-grid">
               <section className="charter-grid__main">

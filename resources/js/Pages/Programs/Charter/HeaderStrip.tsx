@@ -1,9 +1,12 @@
+import type { ReactNode } from 'react'
 import type { CharterProgram, CharterStatus, CharterKpi, CharterHealth } from '../../../types/charter'
 
 type Props = {
   program: CharterProgram
   status: CharterStatus
   kpi: CharterKpi
+  /** Right-aligned action slot. Charter.tsx passes <ExportButton/> here. */
+  actionSlot?: ReactNode
 }
 
 const HEALTH_LABEL: Record<CharterHealth, string> = {
@@ -17,7 +20,7 @@ const HEALTH_LABEL: Record<CharterHealth, string> = {
  * Top metadata strip — Strategic Objective, KPI, PIC, Period, Health badge,
  * Export PPTX button (placeholder in Phase 2; wired in Phase 3).
  */
-export function HeaderStrip({ program, status, kpi }: Props) {
+export function HeaderStrip({ program, status, kpi, actionSlot }: Props) {
   return (
     <header className="cs-header">
       <div className="cs-header__col cs-header__col--so">
@@ -61,14 +64,16 @@ export function HeaderStrip({ program, status, kpi }: Props) {
         >
           {HEALTH_LABEL[status.health]}
         </span>
-        <button
-          type="button"
-          className="charter-export-button cs-export"
-          disabled
-          title="Tersedia di Phase 3"
-        >
-          Export PPTX
-        </button>
+        {actionSlot ?? (
+          <button
+            type="button"
+            className="charter-export-button cs-export"
+            disabled
+            title="Tersedia di Phase 3"
+          >
+            Export PPTX
+          </button>
+        )}
       </div>
     </header>
   )

@@ -114,6 +114,33 @@
   color: var(--text-muted);
   cursor: not-allowed;
 }
+.cs-export--ready {
+  background: var(--indigo);
+  border-color: var(--indigo);
+  color: #fff;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+}
+.cs-export--ready:hover:not(:disabled) {
+  background: var(--indigo-dark, var(--indigo));
+  transform: translateY(-1px);
+}
+.cs-export--ready:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+.cs-export-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.cs-export-error {
+  font-size: 10.5px;
+  color: var(--red);
+  text-align: right;
+  max-width: 180px;
+}
 
 /* ── 2-col grid: timeline + side rail ─────────────────────────────── */
 .charter-grid {
