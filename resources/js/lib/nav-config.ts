@@ -47,14 +47,10 @@ export const NAV_SECTIONS: NavSection[] = [
       { path: '/performance/me', label: 'KPI Saya' },
     ],
   },
-  {
-    label: 'Pelaporan',
-    items: [
-      { path: '/laporan-bulanan', label: 'Laporan Bulanan' },
-      { path: '/laporan-risiko', label: 'Laporan Risiko' },
-      { path: '/reports', label: 'Analytics' },
-    ],
-  },
+  // NOTE: grup "Pelaporan" dihilangkan dari Command Palette + breadcrumb
+  // dropdown per permintaan user 2026-05-10. Sinkron dengan sidebar
+  // (lihat AppShell.tsx navGroups). Halaman tetap hidup via direct URL,
+  // notif deep-link, dan link di /reports analytics panel.
   {
     label: 'Tindak Lanjut',
     items: [{ path: '/jadwal', label: 'Rapat Koordinasi' }],
