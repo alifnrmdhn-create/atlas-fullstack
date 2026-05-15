@@ -833,9 +833,12 @@
   border-radius: var(--radius-md);
 }
 
-.ds.channels-v2 .message-card--dm.message-card--own {
-  background: color-mix(in srgb, var(--indigo) 8%, var(--app-bg));
-}
+/* Outer row strip dihilangkan — bubble own-message sudah dapat green-tint dari
+ * `.message-card--own .message-card__body` (responsive.css). Mengecat row
+ * `<article>` ikut hijau juga menumpuk dua layer warna (token `--indigo` di
+ * light theme = #1F6B35, dark-green, jadi 8% mix ke `--app-bg` menghasilkan
+ * mint band yang melebar seluruh baris). Tanpa rule ini, DM own-message
+ * tampak seperti channel own-message: bubble tinted di kanan, latar netral. */
 
 /* DM rows in sidebar — slightly larger avatar wrap, prominent presence */
 .ds.channels-v2 .channel-row--dm .dm-avatar-wrap {
