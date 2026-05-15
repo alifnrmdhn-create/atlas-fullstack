@@ -403,6 +403,40 @@ export default function HomeView() {
     }, 5000)
   }
 
+  // ── React Rules of Hooks: SEMUA hooks harus dipanggil sebelum early return ──
+  // Sebelumnya useCountUp + useRef + useFlashOnChange dipanggil setelah
+  // early return loading — bug latent yang baru tersurface lewat HMR. Sekarang
+  // semua hook di sini dengan safe defaults; nilainya akan refresh otomatis
+  // setelah programSummary tersedia (count-up + flash-on-change keduanya
+  // sudah handle perubahan input).
+  const summaryView = programSummary?.summary
+  const tlmView = (summaryView?.terlambat ?? 0) + (summaryView?.overdue ?? 0)
+  const needsActionView = programSummary?.needsAction ?? []
+  const controlsView = programSummary?.controls ?? []
+  const criticalControlCountView = controlsView.filter(
+    c => c.severity === 'CRITICAL' || c.severity === 'HIGH'
+  ).length
+  const onTrackProgramCountView = summaryView?.onTrack ?? 0
+  const actionCountView = tlmView + needsActionView.length + criticalControlCountView
+  const summaryTotalView = summaryView?.total ?? 0
+
+  const onTrackAnim = useCountUp(onTrackProgramCountView, { delay: 300, duration: 700 })
+  const actionCountAnim = useCountUp(actionCountView, { delay: 300, duration: 700 })
+  const totalAnim = useCountUp(summaryTotalView, { delay: 300, duration: 700 })
+  const avgKpiAnim = useCountUp(scorecard.avgItem, { delay: 420, duration: 800 })
+  const totalPortfolioAnim = useCountUp(summaryTotalView, { delay: 420, duration: 700 })
+
+  const onTrackRef = React.useRef<HTMLSpanElement>(null)
+  const actionCountRef = React.useRef<HTMLSpanElement>(null)
+  const totalRef = React.useRef<HTMLSpanElement>(null)
+  const avgKpiRef = React.useRef<HTMLSpanElement>(null)
+  const totalPortfolioRef = React.useRef<HTMLSpanElement>(null)
+  useFlashOnChange(onTrackRef, onTrackProgramCountView)
+  useFlashOnChange(actionCountRef, actionCountView)
+  useFlashOnChange(totalRef, summaryTotalView)
+  useFlashOnChange(avgKpiRef, scorecard.avgItem)
+  useFlashOnChange(totalPortfolioRef, summaryTotalView)
+
   if (overviewStatus.loading && !programSummary) {
     return (
       <div className="ds home-v2">
@@ -475,27 +509,9 @@ export default function HomeView() {
   const actionCount = tlm + needsAction.length + criticalControlCount
   const now = new Date()
 
-  /* Count-up — delays aligned with section stagger fade-in (stats=260ms,
-   * portfolio=380ms). Numbers tick up just as their section settles in. */
-  const onTrackAnim = useCountUp(onTrackProgramCount, { delay: 300, duration: 700 })
-  const actionCountAnim = useCountUp(actionCount, { delay: 300, duration: 700 })
-  const totalAnim = useCountUp(summary.total, { delay: 300, duration: 700 })
-  const avgKpiAnim = useCountUp(scorecard.avgItem, { delay: 420, duration: 800 })
-  const totalPortfolioAnim = useCountUp(summary.total, { delay: 420, duration: 700 })
-
-  /* Real-time flash — when these values change (via SSE or partial Inertia
-   * reload), the corresponding stat element flashes for 1.5s. First render
-   * is skipped (count-up handles the initial entry). */
-  const onTrackRef = React.useRef<HTMLSpanElement>(null)
-  const actionCountRef = React.useRef<HTMLSpanElement>(null)
-  const totalRef = React.useRef<HTMLSpanElement>(null)
-  const avgKpiRef = React.useRef<HTMLSpanElement>(null)
-  const totalPortfolioRef = React.useRef<HTMLSpanElement>(null)
-  useFlashOnChange(onTrackRef, onTrackProgramCount)
-  useFlashOnChange(actionCountRef, actionCount)
-  useFlashOnChange(totalRef, summary.total)
-  useFlashOnChange(avgKpiRef, scorecard.avgItem)
-  useFlashOnChange(totalPortfolioRef, summary.total)
+  // NOTE: useCountUp + useRef + useFlashOnChange hooks dipindah ke atas
+  // sebelum early return (line 423+) supaya patuh React Rules of Hooks.
+  // Variabel onTrackAnim, totalAnim, *Ref, dst. tetap available di sini.
 
   const priorities: Priority[] = []
   if (tlm > 0) {
