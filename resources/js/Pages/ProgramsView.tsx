@@ -804,6 +804,21 @@ export function ProgramsView() {
                                 )}
                               </div>
                             </button>
+                            {/* Charter quick-view button — direct shortcut ke
+                                /programs/{id}/charter tanpa drill-in ke edit
+                                view. Selalu visible untuk discoverability. */}
+                            <button
+                              className="program-row__charter-btn"
+                              onClick={e => { e.stopPropagation(); navigate(`/programs/${prog.id}/charter`) }}
+                              type="button"
+                              title="Lihat sebagai Charter (single-page, read-only)"
+                              aria-label={`Lihat ${prog.code} sebagai Charter`}
+                            >
+                              Charter
+                              <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10" aria-hidden="true">
+                                <path d="M3 6h6M6 3l3 3-3 3" />
+                              </svg>
+                            </button>
                             {/* Kebab wrap SELALU dirender dengan width tetap (44px) agar
                                 semua baris identik — button di-hide via visibility:hidden
                                 bila tidak ada aksi, bukan conditional render. */}
