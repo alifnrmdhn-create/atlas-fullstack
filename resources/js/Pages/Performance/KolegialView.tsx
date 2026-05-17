@@ -23,7 +23,7 @@ type StatItem = {
 
 type PageProps = {
   stats: StatItem[]
-  dirut: Direktur
+  dirut: Direktur | null
   direktur: Direktur[]
   periode: string
 }
@@ -48,8 +48,8 @@ export default function KolegialView() {
   const { stats, dirut, direktur, periode } = usePage<PageProps>().props
   const navigate = useInertiaNavigate()
 
-  const dirutTone = scoreTone(dirut.nilai)
-  const dirutBar = fillRatio(dirut.nilai) * 100
+  const dirutTone = dirut ? scoreTone(dirut.nilai) : 'neutral'
+  const dirutBar = dirut ? fillRatio(dirut.nilai) * 100 : 0
 
   return (
     <>
@@ -87,6 +87,7 @@ export default function KolegialView() {
           </Card>
 
           {/* ─── Direktur Utama hero ─────────────── */}
+          {dirut && (
           <Card
             padding="lg"
             className="perf__section perf-subject"
@@ -140,6 +141,7 @@ export default function KolegialView() {
               <div className="perf-subject__bar-fill" data-tone={dirutTone} style={{ width: `${dirutBar}%` }} />
             </div>
           </Card>
+          )}
 
           {/* ─── 5 Direktur grid ──────────────────── */}
           <section className="perf__section">

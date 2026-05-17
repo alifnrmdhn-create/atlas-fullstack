@@ -30,11 +30,24 @@ class PerformanceController extends Controller
         $periode = $request->query('periode') ?? now()->format('Y-m');
         $grid = $this->scorecard->direktoratGrid($request->user(), $periode);
 
+        // Normalize DB code → direkturList key. DB has 'DIR-KMR' as the
+        // canonical Directorate.code, but direkturList uses 'DKM' (short
+        // form used in URLs/slugs). This map bridges that for lookups.
+        $codeAlias = ['DIR-KMR' => 'DKM'];
+        foreach ($grid as &$g) {
+            $g['kode'] = $codeAlias[$g['kode']] ?? $g['kode'];
+        }
+        unset($g);
+
         // total_kpi & perspektif extended metadata kept static — these are
         // organizational facts not currently in the scorecard table; can be
         // promoted to a separate table when KPI catalog UI lands (Phase 3).
-        $totalKpiByCode = ['DIRUT' => 12, 'DBS' => 10, 'DAS' => 10, 'DPP' => 18, 'DSU' => 10, 'DKM' => 10];
-        $perspektifByCode = ['DIRUT' => ['Ekonomi & Sosial', 'IMB', 'Teknologi', 'Investasi', 'Talenta']];
+        // DKM = 19 KPI (PDF Direktorat Keuangan & MR, page 9).
+        $totalKpiByCode = ['DIRUT' => 12, 'DBS' => 10, 'DAS' => 10, 'DPP' => 18, 'DSU' => 10, 'DKM' => 19];
+        $perspektifByCode = [
+            'DIRUT' => ['Ekonomi & Sosial', 'IMB', 'Teknologi', 'Investasi', 'Talenta'],
+            'DKM'   => ['Kinerja Keuangan', 'Tata Kelola & Risiko', 'Kepatuhan & Pajak'],
+        ];
 
         // Compute summary stats from the (scoped) grid
         $totalKpi = array_sum(array_intersect_key($totalKpiByCode, array_flip(array_column($grid, 'kode'))));
@@ -164,6 +177,8 @@ class PerformanceController extends Controller
     {
         // Source of truth: direktoratGrid struktur (sama dengan scorecard)
         // Untuk MVP, hardcode mapping. Sprint 6: tarik dari OrganizationalUnit + KPI riil.
+        // Normalize input — URL params are typically lowercase, grid uses uppercase.
+        $kode = strtoupper($kode);
         foreach ($this->getDirektoratGrid() as $direktorat) {
             foreach ($direktorat['divisi'] as $idx => $divisi) {
                 if ($divisi['kode'] === $kode) {
@@ -214,19 +229,94 @@ class PerformanceController extends Controller
                 ['kode' => 'DOPS', 'nama' => 'Operasional SDM',               'nilai' => 101.24],
                 ['kode' => 'DPDU', 'nama' => 'Pengadaan dan Umum',            'nilai' => 100.94],
             ]],
-            ['kode' => 'DKM', 'nama' => 'Direktur Keuangan & MR', 'nilai' => 101.85, 'divisi' => [
-                ['kode' => 'DKSA', 'nama' => 'Keuangan Strategis & Anggaran', 'nilai' => 102.27],
-                ['kode' => 'DAPN', 'nama' => 'Akuntansi dan Perpajakan',       'nilai' => 100.86],
-                ['kode' => 'DIMR', 'nama' => 'Manajemen Risiko',               'nilai' => 101.96],
+            // DKM: synced with PDF reference (15 Mei 2026) — page 9-12
+            ['kode' => 'DKM', 'nama' => 'Direktur Keuangan & MR', 'nilai' => 102.7, 'divisi' => [
+                ['kode' => 'DKSA', 'nama' => 'Keuangan Strategis & Anggaran', 'nilai' => 103.4],
+                ['kode' => 'DAPN', 'nama' => 'Akuntansi dan Perpajakan',       'nilai' => 100.8],
+                ['kode' => 'DIMR', 'nama' => 'Manajemen Risiko',               'nilai' => 101.9],
             ]],
         ];
     }
 
-    /** Dummy KPI items per divisi. Format konsisten dengan IndividuDetail. */
+    /** KPI items per divisi.
+     *  Source: 15052026_Monitoring Program Kerja DKMR.pdf pages 10-12.
+     *  Divisi DKMR (DKSA, DAPN, DIMR) populated with actual PDF data.
+     *  Other divisi fall back to generic 5-item template.
+     */
     private function getDummyDivisiKpi(string $kode): array
     {
-        // Untuk MVP, return template generik yang bisa di-customize per divisi.
-        // Sprint 6: tarik dari KpiDefinition table.
+        // PDF data: each KPI has Bobot %, Satuan, Target FY, Target Mar, Realisasi Mar, Nilai %.
+        // Skor = bobot × nilai/100. We use nilai % as realisasi where Mar values are not stated.
+        $kpiByDivisi = [
+            // ── DKSA: 16 KPI · Score 103.4% (PDF page 10) ──
+            'DKSA' => [
+                ['kode' => 'DKSA-001', 'nama' => 'EBITDA',                                                 'bobot' => 6,  'satuan' => 'Rp Miliar', 'polaritas' => 'maximize', 'sasaran' => '1.483',   'realisasi' => '3.257,8', 'skor' => 6.6,  'definisi' => 'Earnings before interest, tax, depreciation, amortization.'],
+                ['kode' => 'DKSA-002', 'nama' => 'Rasio % Penyelesaian Program vs % Penyerapan Anggaran', 'bobot' => 5,  'satuan' => 'Rasio',     'polaritas' => 'maximize', 'sasaran' => '1',       'realisasi' => '1,1',     'skor' => 5.5,  'definisi' => 'Efektivitas anggaran terhadap penyelesaian program.'],
+                ['kode' => 'DKSA-003', 'nama' => 'ROI',                                                    'bobot' => 5,  'satuan' => '%',         'polaritas' => 'maximize', 'sasaran' => '-0,34',   'realisasi' => '0,48',    'skor' => 5.5,  'definisi' => 'Return on Investment.'],
+                ['kode' => 'DKSA-004', 'nama' => '% Debt To Equity Rasio',                                 'bobot' => 8,  'satuan' => '%',         'polaritas' => 'minimize', 'sasaran' => '60',      'realisasi' => '44,39',   'skor' => 8.66, 'definisi' => 'Rasio utang terhadap ekuitas.'],
+                ['kode' => 'DKSA-005', 'nama' => '% On Time Pembayaran Utang Pihak Ketiga JT',             'bobot' => 8,  'satuan' => '%',         'polaritas' => 'maximize', 'sasaran' => '100',     'realisasi' => '100',     'skor' => 8.0,  'definisi' => 'Ketepatan waktu pembayaran utang pihak ketiga jatuh tempo.'],
+                ['kode' => 'DKSA-006', 'nama' => '% On Time Pembayaran Utang Pendanaan Internal JT',       'bobot' => 5,  'satuan' => '%',         'polaritas' => 'maximize', 'sasaran' => '100',     'realisasi' => '100',     'skor' => 5.0,  'definisi' => 'Ketepatan waktu pembayaran utang internal jatuh tempo.'],
+                ['kode' => 'DKSA-007', 'nama' => '% On Time Pembayaran Utang IP PEN JT',                   'bobot' => 10, 'satuan' => '%',         'polaritas' => 'maximize', 'sasaran' => '100',     'realisasi' => '100',     'skor' => 10.0, 'definisi' => 'Ketepatan waktu pembayaran utang IP PEN jatuh tempo.'],
+                ['kode' => 'DKSA-008', 'nama' => '% Nilai Penyetoran Sinking Fund (TW)',                   'bobot' => 8,  'satuan' => '%',         'polaritas' => 'maximize', 'sasaran' => '100',     'realisasi' => '100',     'skor' => 8.0,  'definisi' => 'Persentase nilai penyetoran sinking fund per triwulan.'],
+                ['kode' => 'DKSA-009', 'nama' => '% On Time Pendanaan Operasional Tepat Waktu',            'bobot' => 10, 'satuan' => '%',         'polaritas' => 'maximize', 'sasaran' => '100',     'realisasi' => '100',     'skor' => 10.0, 'definisi' => 'Ketepatan waktu penyediaan pendanaan operasional.'],
+                ['kode' => 'DKSA-010', 'nama' => '% Pemenuhan HPS sesuai SLA',                             'bobot' => 5,  'satuan' => '%',         'polaritas' => 'maximize', 'sasaran' => '100',     'realisasi' => '100',     'skor' => 5.0,  'definisi' => 'Pemenuhan HPS sesuai Service Level Agreement.'],
+                ['kode' => 'DKSA-011', 'nama' => '% Pengalihan Anggaran',                                  'bobot' => 5,  'satuan' => '%',         'polaritas' => 'minimize', 'sasaran' => '0',       'realisasi' => '0',       'skor' => 5.0,  'definisi' => 'Persentase pengalihan anggaran (lower is better).'],
+                ['kode' => 'DKSA-012', 'nama' => 'NOCF',                                                   'bobot' => 5,  'satuan' => 'Rp Miliar', 'polaritas' => 'maximize', 'sasaran' => '1.534',   'realisasi' => '3.305',   'skor' => 5.0,  'definisi' => 'Net Operating Cash Flow.'],
+                ['kode' => 'DKSA-013', 'nama' => 'Minimum Cash Balance',                                   'bobot' => 5,  'satuan' => 'Rp Miliar', 'polaritas' => 'maximize', 'sasaran' => '256',     'realisasi' => '345',     'skor' => 5.0,  'definisi' => 'Saldo kas minimum yang dipertahankan.'],
+                ['kode' => 'DKSA-014', 'nama' => '% On Time Penyusunan Anggaran',                          'bobot' => 10, 'satuan' => '%',         'polaritas' => 'maximize', 'sasaran' => '100',     'realisasi' => '100',     'skor' => 10.0, 'definisi' => 'Ketepatan waktu penyusunan anggaran tahunan.'],
+                ['kode' => 'DKSA-015', 'nama' => 'Jumlah Fraud',                                           'bobot' => 3,  'satuan' => 'Jumlah',    'polaritas' => 'minimize', 'sasaran' => '0',       'realisasi' => '0',       'skor' => 3.0,  'definisi' => 'Jumlah kejadian fraud di divisi.'],
+                ['kode' => 'DKSA-016', 'nama' => '% Mitigasi Plan Terlaksana',                             'bobot' => 2,  'satuan' => '%',         'polaritas' => 'maximize', 'sasaran' => '100',     'realisasi' => '100',     'skor' => 2.0,  'definisi' => 'Persentase rencana mitigasi risiko yang terlaksana.'],
+            ],
+
+            // ── DAPN: 18 KPI · Score 100.8% (PDF page 11) ──
+            'DAPN' => [
+                ['kode' => 'DAPN-001', 'nama' => 'EBITDA Sub Holding',                       'bobot' => 3,  'satuan' => 'Rp Miliar', 'polaritas' => 'maximize', 'sasaran' => '1.447,2', 'realisasi' => '2.905,9', 'skor' => 3.3,  'definisi' => 'EBITDA Sub Holding PTPN.'],
+                ['kode' => 'DAPN-002', 'nama' => 'EBITDA Anper non PTPN',                    'bobot' => 3,  'satuan' => 'Rp Miliar', 'polaritas' => 'maximize', 'sasaran' => '-7,19',   'realisasi' => '10,8',    'skor' => 3.3,  'definisi' => 'EBITDA Anak Perusahaan non-PTPN.'],
+                ['kode' => 'DAPN-003', 'nama' => 'Rasio % Penyelesaian Program vs % Penyerapan Anggaran', 'bobot' => 5, 'satuan' => '%', 'polaritas' => 'maximize', 'sasaran' => '95',  'realisasi' => '100', 'skor' => 5.26, 'definisi' => 'Efektivitas anggaran terhadap penyelesaian program.'],
+                ['kode' => 'DAPN-004', 'nama' => 'Opini Audit',                              'bobot' => 15, 'satuan' => '-',         'polaritas' => 'minimize', 'sasaran' => '0',       'realisasi' => '0',       'skor' => 15.0, 'definisi' => 'Jumlah opini audit qualified.'],
+                ['kode' => 'DAPN-005', 'nama' => 'Jumlah Teguran',                           'bobot' => 5,  'satuan' => 'Jumlah',    'polaritas' => 'minimize', 'sasaran' => '0',       'realisasi' => '0',       'skor' => 5.0,  'definisi' => 'Jumlah teguran dari regulator.'],
+                ['kode' => 'DAPN-006', 'nama' => 'Denda Pajak',                              'bobot' => 5,  'satuan' => 'Rp',        'polaritas' => 'minimize', 'sasaran' => '0',       'realisasi' => '0',       'skor' => 5.0,  'definisi' => 'Nilai denda pajak.'],
+                ['kode' => 'DAPN-007', 'nama' => 'Lebih Bayar',                              'bobot' => 5,  'satuan' => 'Rp',        'polaritas' => 'minimize', 'sasaran' => '0',       'realisasi' => '0',       'skor' => 5.0,  'definisi' => 'Nilai lebih bayar pajak.'],
+                ['kode' => 'DAPN-008', 'nama' => 'Kurang Bayar',                             'bobot' => 5,  'satuan' => 'Rp',        'polaritas' => 'minimize', 'sasaran' => '0',       'realisasi' => '0',       'skor' => 5.0,  'definisi' => 'Nilai kurang bayar pajak.'],
+                ['kode' => 'DAPN-009', 'nama' => '% Akurasi Transaksi Kas dan Bank',         'bobot' => 6,  'satuan' => '%',         'polaritas' => 'maximize', 'sasaran' => '95',      'realisasi' => '95',      'skor' => 6.0,  'definisi' => 'Akurasi pencatatan transaksi kas dan bank.'],
+                ['kode' => 'DAPN-010', 'nama' => 'Denda Pajak Anper',                        'bobot' => 5,  'satuan' => '%',         'polaritas' => 'minimize', 'sasaran' => '0',       'realisasi' => '0',       'skor' => 5.0,  'definisi' => 'Denda pajak Anak Perusahaan.'],
+                ['kode' => 'DAPN-011', 'nama' => 'Lebih Bayar Anper',                        'bobot' => 5,  'satuan' => '%',         'polaritas' => 'minimize', 'sasaran' => '0',       'realisasi' => '0',       'skor' => 5.0,  'definisi' => 'Lebih bayar pajak Anak Perusahaan.'],
+                ['kode' => 'DAPN-012', 'nama' => 'Kurang Bayar Anper',                       'bobot' => 5,  'satuan' => '%',         'polaritas' => 'minimize', 'sasaran' => '0',       'realisasi' => '0',       'skor' => 5.0,  'definisi' => 'Kurang bayar pajak Anak Perusahaan.'],
+                ['kode' => 'DAPN-013', 'nama' => 'Jumlah Temuan Signifikan Audit Keuangan', 'bobot' => 12, 'satuan' => 'Jumlah',    'polaritas' => 'minimize', 'sasaran' => '0',       'realisasi' => '0',       'skor' => 12.0, 'definisi' => 'Jumlah temuan signifikan dari audit keuangan.'],
+                ['kode' => 'DAPN-014', 'nama' => '% Kelengkapan Dokumen Verifikasi',         'bobot' => 6,  'satuan' => '%',         'polaritas' => 'maximize', 'sasaran' => '0,9',     'realisasi' => '0',       'skor' => 6.0,  'definisi' => 'Kelengkapan dokumen verifikasi keuangan.'],
+                ['kode' => 'DAPN-015', 'nama' => '% Koreksi LK & LM',                        'bobot' => 6,  'satuan' => '%',         'polaritas' => 'minimize', 'sasaran' => '0,25',    'realisasi' => '0',       'skor' => 6.0,  'definisi' => 'Persentase koreksi Laporan Keuangan & Manajemen.'],
+                ['kode' => 'DAPN-016', 'nama' => 'Jumlah Temuan Audit ICOFR',                'bobot' => 4,  'satuan' => 'Jumlah',    'polaritas' => 'minimize', 'sasaran' => '0',       'realisasi' => '0',       'skor' => 4.0,  'definisi' => 'Jumlah temuan audit ICOFR.'],
+                ['kode' => 'DAPN-017', 'nama' => 'Jumlah Fraud',                             'bobot' => 3,  'satuan' => 'Jumlah',    'polaritas' => 'minimize', 'sasaran' => '0',       'realisasi' => '0',       'skor' => 3.0,  'definisi' => 'Jumlah kejadian fraud di divisi.'],
+                ['kode' => 'DAPN-018', 'nama' => '% Mitigasi Plan Terlaksana',               'bobot' => 2,  'satuan' => '%',         'polaritas' => 'maximize', 'sasaran' => '100',     'realisasi' => '100',     'skor' => 2.0,  'definisi' => 'Persentase rencana mitigasi risiko yang terlaksana.'],
+            ],
+
+            // ── DIMR: 14 KPI · Score 101.9% (PDF page 12) ──
+            'DIMR' => [
+                ['kode' => 'DIMR-001', 'nama' => 'Rasio % Penyelesaian Program vs % Penyerapan Anggaran', 'bobot' => 5,  'satuan' => '%',     'polaritas' => 'maximize', 'sasaran' => '0',   'realisasi' => '100', 'skor' => 5.5,  'definisi' => 'Efektivitas anggaran terhadap penyelesaian program.'],
+                ['kode' => 'DIMR-002', 'nama' => 'Risk Maturity Index',                                   'bobot' => 10, 'satuan' => 'Skor',  'polaritas' => 'maximize', 'sasaran' => '0',   'realisasi' => '0',   'skor' => 10.0, 'definisi' => 'Indeks kematangan manajemen risiko.'],
+                ['kode' => 'DIMR-003', 'nama' => 'Skor Aspek Kinerja',                                    'bobot' => 5,  'satuan' => 'Skor',  'polaritas' => 'maximize', 'sasaran' => '81',  'realisasi' => '77',  'skor' => 4.75, 'definisi' => 'Skor aspek kinerja MR (Moderate: 95.1%).'],
+                ['kode' => 'DIMR-004', 'nama' => 'GCG Index',                                             'bobot' => 10, 'satuan' => 'Skor',  'polaritas' => 'maximize', 'sasaran' => '0',   'realisasi' => '0',   'skor' => 10.0, 'definisi' => 'Indeks Good Corporate Governance.'],
+                ['kode' => 'DIMR-005', 'nama' => '% On Time Implementasi Inisiatif MR',                   'bobot' => 10, 'satuan' => '%',     'polaritas' => 'maximize', 'sasaran' => '100', 'realisasi' => '100', 'skor' => 10.0, 'definisi' => 'Ketepatan waktu implementasi inisiatif MR.'],
+                ['kode' => 'DIMR-006', 'nama' => '% Mitigasi Plan Terealisasi (Semua Divisi)',           'bobot' => 10, 'satuan' => '%',     'polaritas' => 'maximize', 'sasaran' => '10',  'realisasi' => '10',  'skor' => 10.0, 'definisi' => 'Realisasi mitigasi plan di semua divisi.'],
+                ['kode' => 'DIMR-007', 'nama' => '% Kelengkapan Dokumen Contingency Plan, BCP & Stress Test', 'bobot' => 5, 'satuan' => '%', 'polaritas' => 'maximize', 'sasaran' => '100', 'realisasi' => '100', 'skor' => 5.0,  'definisi' => 'Kelengkapan dokumen contingency, BCP & stress test.'],
+                ['kode' => 'DIMR-008', 'nama' => 'Skor Aspek Kualitas Penerapan MR',                      'bobot' => 10, 'satuan' => 'Skor',  'polaritas' => 'maximize', 'sasaran' => '81',  'realisasi' => '78',  'skor' => 9.63, 'definisi' => 'Skor kualitas penerapan MR (Moderate: 96.3%).'],
+                ['kode' => 'DIMR-009', 'nama' => 'Indeks Survei Budaya Risiko',                           'bobot' => 10, 'satuan' => 'Skor',  'polaritas' => 'maximize', 'sasaran' => '66,67','realisasi' => '66,67','skor' => 10.0, 'definisi' => 'Indeks survei budaya risiko.'],
+                ['kode' => 'DIMR-010', 'nama' => '% On Time Risk Oversight & Evaluation',                 'bobot' => 5,  'satuan' => '%',     'polaritas' => 'maximize', 'sasaran' => '96',  'realisasi' => '100', 'skor' => 5.21, 'definisi' => 'Ketepatan waktu risk oversight & evaluation.'],
+                ['kode' => 'DIMR-011', 'nama' => 'Jumlah Temuan belum Terinternalisasi Peraturan',        'bobot' => 5,  'satuan' => 'Jumlah','polaritas' => 'minimize', 'sasaran' => '1',   'realisasi' => '0',   'skor' => 5.5,  'definisi' => 'Jumlah temuan peraturan belum terinternalisasi.'],
+                ['kode' => 'DIMR-012', 'nama' => '% Kelengkapan SOP Kepatuhan',                           'bobot' => 10, 'satuan' => '%',     'polaritas' => 'maximize', 'sasaran' => '50',  'realisasi' => '50',  'skor' => 10.0, 'definisi' => 'Persentase kelengkapan SOP kepatuhan.'],
+                ['kode' => 'DIMR-013', 'nama' => 'Jumlah Fraud',                                          'bobot' => 3,  'satuan' => 'Jumlah','polaritas' => 'minimize', 'sasaran' => '0',   'realisasi' => '0',   'skor' => 3.0,  'definisi' => 'Jumlah kejadian fraud di divisi.'],
+                ['kode' => 'DIMR-014', 'nama' => '% Mitigasi Plan Terealisasi',                           'bobot' => 2,  'satuan' => '%',     'polaritas' => 'maximize', 'sasaran' => '100', 'realisasi' => '100', 'skor' => 2.0,  'definisi' => 'Persentase rencana mitigasi terealisasi.'],
+            ],
+        ];
+
+        // Return divisi-specific KPI list, fallback to generic 5-item template
+        if (isset($kpiByDivisi[$kode])) {
+            return collect($kpiByDivisi[$kode])
+                ->map(fn ($k, $i) => array_merge(['no' => $i + 1], $k))
+                ->all();
+        }
+
+        // Generic fallback for divisi outside DKMR
         return [
             ['no' => 1, 'kode' => 'DIV-001', 'nama' => 'Pencapaian KPI Direktorat',     'bobot' => 30, 'satuan' => '%',  'polaritas' => 'maximize', 'sasaran' => '100', 'realisasi' => '102.27', 'skor' => 30.68, 'definisi' => 'Kontribusi divisi ke KPI direktorat induk.'],
             ['no' => 2, 'kode' => 'DIV-002', 'nama' => '% On-Time Penyelesaian Program', 'bobot' => 25, 'satuan' => '%',  'polaritas' => 'maximize', 'sasaran' => '100', 'realisasi' => '95',     'skor' => 23.75, 'definisi' => 'Persentase program kerja divisi selesai sesuai target waktu.'],
@@ -236,13 +326,33 @@ class PerformanceController extends Controller
         ];
     }
 
-    /** Dummy top performer di divisi. */
+    /** Top performer per divisi. Uses real Kasub data from DB users.
+     *  DKMR divisi (DKSA/DAPN/DIMR) have correct Kasub names from PTPN III seed.
+     *  Other divisi fall back to generic top-3.
+     */
     private function getDummyDivisiTopPerformers(string $kode): array
     {
-        return [
-            ['rank' => 1, 'nama' => 'Dimas Aryo Wibisono',          'jabatan' => 'Kepala Sub Divisi Anggaran',                          'nilai' => 105.00],
-            ['rank' => 2, 'nama' => 'Deny Ariyanto Prabowo',        'jabatan' => 'Kepala Sub Divisi HPS dan Informasi Harga',           'nilai' => 105.00],
-            ['rank' => 3, 'nama' => 'Raja Agustino M. Sembiring',   'jabatan' => 'Kepala Sub Divisi Keuangan Strategis & Perencanaan',  'nilai' => 104.83],
+        $kode = strtoupper($kode);
+        $performersByDivisi = [
+            'DKSA' => [
+                ['rank' => 1, 'nama' => 'Dimas Aryo Wibisono',                  'jabatan' => 'Kepala Sub Divisi Anggaran',                                       'nilai' => 105.00],
+                ['rank' => 2, 'nama' => 'Audi Muhammad Rafie',                  'jabatan' => 'Kepala Sub Divisi Perbendaharaan dan HPS',                         'nilai' => 104.50],
+                ['rank' => 3, 'nama' => 'Raja Agustino M. Sembiring',           'jabatan' => 'Kepala Sub Divisi Keuangan Strategis dan Perencanaan Finansial',   'nilai' => 104.83],
+            ],
+            'DAPN' => [
+                ['rank' => 1, 'nama' => 'Jonri Sitorus',                        'jabatan' => 'Kepala Sub Divisi Manajemen Keuangan, Pajak dan Akuntansi',        'nilai' => 102.50],
+                ['rank' => 2, 'nama' => 'Arief Harwanto',                       'jabatan' => 'Kepala Sub Divisi Akuntansi dan Verifikasi',                       'nilai' => 101.20],
+            ],
+            'DIMR' => [
+                ['rank' => 1, 'nama' => 'Alif Nugraha Ramadhan',                'jabatan' => 'Kepala Sub Divisi Strategi Manajemen Risiko Terintegrasi',         'nilai' => 102.80],
+                ['rank' => 2, 'nama' => 'Aan Fadlianto',                        'jabatan' => 'Kepala Sub Divisi Kajian dan Pengawasan Risiko',                   'nilai' => 101.00],
+            ],
+        ];
+
+        return $performersByDivisi[$kode] ?? [
+            ['rank' => 1, 'nama' => 'Top Performer 1', 'jabatan' => 'Kepala Sub Divisi', 'nilai' => 105.00],
+            ['rank' => 2, 'nama' => 'Top Performer 2', 'jabatan' => 'Kepala Sub Divisi', 'nilai' => 104.00],
+            ['rank' => 3, 'nama' => 'Top Performer 3', 'jabatan' => 'Kepala Sub Divisi', 'nilai' => 103.00],
         ];
     }
 
@@ -497,6 +607,13 @@ class PerformanceController extends Controller
     // ── Private: dummy KPI kolegial per direktur ──────────────────────────
     private function getDummyKolegialKpi(string $kode): array
     {
+        // DKM (Direktur Keuangan & MR): use 19-KPI Direktorat data from PDF
+        // (Monitoring Program Kerja DKMR 15 Mei 2026, page 9) — Score 102.7%.
+        // Other Direktur fall back to generic 12-KPI Kolegial BOD template.
+        if ($kode === 'DKM') {
+            return $this->getDkmrDirektoratKpi();
+        }
+
         $base = [
             [
                 'perspektif' => 'Ekonomi & Sosial',
@@ -553,5 +670,60 @@ class PerformanceController extends Controller
         ];
 
         return $base;
+    }
+
+    /**
+     * KPI Direktorat Keuangan & MR — 19 KPI dari PDF page 9.
+     * Score: 102.7% (Periode Maret 2026).
+     * Grouped by 3 perspektif keuangan: Kinerja Keuangan, Tata Kelola & Risiko,
+     * Manajemen Kepatuhan & Pajak. Bobot total 100%.
+     */
+    private function getDkmrDirektoratKpi(): array
+    {
+        return [
+            [
+                'perspektif' => 'Kinerja Keuangan',
+                'perspektif_key' => 'kinerja_keuangan',
+                'color' => 'green',
+                'pct' => 33.0,
+                'items' => [
+                    ['kode' => 'DKMR-001', 'nama' => 'EBITDA',                                                   'satuan' => 'Rp Miliar', 'polaritas' => 'maximize', 'bobot' => 4,  'target' => 1483,  'realisasi' => 3257.8, 'skor' => 4.4],
+                    ['kode' => 'DKMR-002', 'nama' => 'Ratio % Penyelesaian Proker vs % Penyerapan Anggaran',     'satuan' => '%',         'polaritas' => 'maximize', 'bobot' => 4,  'target' => 1,     'realisasi' => 1.1,    'skor' => 4.4],
+                    ['kode' => 'DKMR-003', 'nama' => 'ROI',                                                       'satuan' => '%',         'polaritas' => 'maximize', 'bobot' => 3,  'target' => -0.34, 'realisasi' => 0.48,   'skor' => 3.3],
+                    ['kode' => 'DKMR-004', 'nama' => '% Debt To Equity Ratio',                                    'satuan' => '%',         'polaritas' => 'minimize', 'bobot' => 5,  'target' => 60,    'realisasi' => 44.39,  'skor' => 5.5],
+                    ['kode' => 'DKMR-005', 'nama' => 'Net Operating Cash Flow (NOCF)',                            'satuan' => 'Rp Miliar', 'polaritas' => 'maximize', 'bobot' => 4,  'target' => 1534,  'realisasi' => 3305,   'skor' => 4.4],
+                    ['kode' => 'DKMR-006', 'nama' => 'Minimum Cash Balance',                                      'satuan' => 'Rp Miliar', 'polaritas' => 'maximize', 'bobot' => 4,  'target' => 256,   'realisasi' => 345,    'skor' => 4.4],
+                    ['kode' => 'DKMR-007', 'nama' => '% Akurasi Perencanaan Keuangan',                            'satuan' => '%',         'polaritas' => 'maximize', 'bobot' => 4,  'target' => 90,    'realisasi' => 335.6,  'skor' => 4.4],
+                    ['kode' => 'DKMR-008', 'nama' => '% On Time Pembayaran Bunga',                                'satuan' => '%',         'polaritas' => 'maximize', 'bobot' => 10, 'target' => 100,   'realisasi' => 100,    'skor' => 10.0],
+                    ['kode' => 'DKMR-009', 'nama' => '% Nilai Penyetoran Sinking Fund (TW)',                      'satuan' => '%',         'polaritas' => 'maximize', 'bobot' => 6,  'target' => 100,   'realisasi' => 100,    'skor' => 6.0],
+                ],
+            ],
+            [
+                'perspektif' => 'Tata Kelola & Risiko',
+                'perspektif_key' => 'tata_kelola_risiko',
+                'color' => 'green',
+                'pct' => 26.0,
+                'items' => [
+                    ['kode' => 'DKMR-010', 'nama' => 'Opini Audit',                                              'satuan' => '-',         'polaritas' => 'minimize', 'bobot' => 10, 'target' => 0,  'realisasi' => 0,  'skor' => 10.0],
+                    ['kode' => 'DKMR-011', 'nama' => 'Maturity Level',                                            'satuan' => 'Skor',     'polaritas' => 'maximize', 'bobot' => 10, 'target' => 0,  'realisasi' => 0,  'skor' => 10.0],
+                    ['kode' => 'DKMR-012', 'nama' => 'Jumlah Temuan Audit Keuangan Signifikan',                  'satuan' => 'Jumlah',    'polaritas' => 'minimize', 'bobot' => 5,  'target' => 0,  'realisasi' => 0,  'skor' => 5.0],
+                    ['kode' => 'DKMR-013', 'nama' => 'Skor Aspek Kualitas MR',                                    'satuan' => 'Skor',     'polaritas' => 'maximize', 'bobot' => 4,  'target' => 81, 'realisasi' => 90, 'skor' => 4.4],
+                    ['kode' => 'DKMR-014', 'nama' => 'Skor Survei Budaya Risiko',                                 'satuan' => 'Skor',     'polaritas' => 'maximize', 'bobot' => 7,  'target' => 67, 'realisasi' => 67, 'skor' => 7.0],
+                ],
+            ],
+            [
+                'perspektif' => 'Kepatuhan & Pajak',
+                'perspektif_key' => 'kepatuhan_pajak',
+                'color' => 'green',
+                'pct' => 20.0,
+                'items' => [
+                    ['kode' => 'DKMR-015', 'nama' => 'Denda Pajak',                       'satuan' => 'Rp',     'polaritas' => 'minimize', 'bobot' => 4, 'target' => 0,   'realisasi' => 0,   'skor' => 4.0],
+                    ['kode' => 'DKMR-016', 'nama' => 'Lebih Bayar',                       'satuan' => 'Rp',     'polaritas' => 'minimize', 'bobot' => 4, 'target' => 0,   'realisasi' => 0,   'skor' => 4.0],
+                    ['kode' => 'DKMR-017', 'nama' => 'Kurang Bayar',                      'satuan' => 'Rp',     'polaritas' => 'minimize', 'bobot' => 4, 'target' => 0,   'realisasi' => 0,   'skor' => 4.0],
+                    ['kode' => 'DKMR-018', 'nama' => 'Jumlah Fraud',                      'satuan' => 'Jumlah', 'polaritas' => 'minimize', 'bobot' => 3, 'target' => 0,   'realisasi' => 0,   'skor' => 3.0],
+                    ['kode' => 'DKMR-019', 'nama' => '% Mitigasi Plan Terealisasi',       'satuan' => '%',      'polaritas' => 'maximize', 'bobot' => 5, 'target' => 100, 'realisasi' => 100, 'skor' => 5.0],
+                ],
+            ],
+        ];
     }
 }

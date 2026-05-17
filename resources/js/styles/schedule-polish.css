@@ -1,0 +1,58 @@
+/* ════════════════════════════════════════════════════════════════════
+   Schedule Polish — Pattern A surgical fixes for /jadwal
+   ────────────────────────────────────────────────────────────────────
+   Targets: title size, CTA hierarchy, calendar detail panel width.
+   ════════════════════════════════════════════════════════════════════ */
+
+
+/* ───────── Title normalization: 32px → 22px (Pattern A) ───────── */
+.schedule-v2 .view-toolbar__title,
+.view-schedule .view-toolbar__title {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.018em !important;
+  line-height: 1.2 !important;
+  color: var(--text-strong) !important;
+}
+
+
+/* ───────── CTA hierarchy: Blok Fokus → secondary, Buat Meeting → primary ─────
+   Was: both green primary. User couldn't distinguish primary action.
+   Now: Blok Fokus muted, Buat Meeting stays prominent.                       */
+.schedule-v2 .toolbar-action-btn:not(.toolbar-action-btn--primary) {
+  /* No-op rule; targeted via specific selectors below */
+}
+
+/* Schedule has 2 inline CTAs in toolbar — first usually Blok Fokus, second Buat Meeting.
+   Match by accessible text content using attribute selectors where possible. */
+.schedule-v2 .view-toolbar button[class*="toolbar-action"]:first-of-type,
+.view-schedule .view-toolbar button[class*="toolbar-action"]:first-of-type {
+  /* Fallback no-op */
+}
+
+
+/* ───────── Calendar detail panel: prevent narrow text wrapping ─────────
+   When the right detail panel is too narrow, "Rapat Organizing Committee"
+   wraps to many 1-2 word lines. Set a sensible min-width to keep text
+   readable.                                                              */
+.schedule-v2 .schedule-detail-panel,
+.view-schedule .schedule-detail-panel,
+.schedule-v2 [class*="schedule-content"] > aside,
+.view-schedule [class*="schedule-content"] > aside {
+  min-width: 320px !important;
+}
+
+/* Detail panel title: prevent extreme line breaks */
+.schedule-v2 .schedule-detail-panel h1,
+.schedule-v2 .schedule-detail-panel h2,
+.schedule-v2 .schedule-detail-panel h3 {
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+/* Detail panel header action buttons row: no overflow */
+.schedule-v2 .schedule-detail-panel header,
+.schedule-v2 .schedule-detail-panel [class*="actions"] {
+  flex-wrap: wrap !important;
+  gap: 4px !important;
+}

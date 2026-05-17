@@ -52,33 +52,35 @@ class ScorecardSeeder extends Seeder
             ['kode' => 'DOPS', 'nama' => 'Operasional SDM',               'nilai' => 101.24],
             ['kode' => 'DPDU', 'nama' => 'Pengadaan dan Umum',            'nilai' => 100.94],
         ]],
-        ['kode' => 'DIR-KMR', 'nama' => 'Direktorat Keuangan dan Manajemen Risiko', 'nilai' => 101.85, 'divisi' => [
-            ['kode' => 'DKSA-HLD', 'nama' => 'Divisi Keuangan Strategis dan Anggaran', 'nilai' => 102.27],
-            ['kode' => 'DAPN-HLD', 'nama' => 'Divisi Akuntansi dan Perpajakan',        'nilai' => 100.86],
-            ['kode' => 'DIMR-HLD', 'nama' => 'Divisi Manajemen Risiko',                'nilai' => 101.96],
+        // DIR-KMR: synced with PDF reference (15 Mei 2026) — Monitoring Program Kerja DKMR
+        ['kode' => 'DIR-KMR', 'nama' => 'Direktorat Keuangan dan Manajemen Risiko', 'nilai' => 102.7, 'divisi' => [
+            ['kode' => 'DKSA-HLD', 'nama' => 'Divisi Keuangan Strategis dan Anggaran', 'nilai' => 103.4],
+            ['kode' => 'DAPN-HLD', 'nama' => 'Divisi Akuntansi dan Perpajakan',        'nilai' => 100.8],
+            ['kode' => 'DIMR-HLD', 'nama' => 'Divisi Manajemen Risiko',                'nilai' => 101.9],
         ]],
     ];
 
     public function run(): void
     {
         $now = Carbon::now();
-        /* Seed 3 periods: 2 prior + current. Slight random variation on
-         * historical values so the trend shows real movement, not flat. */
+        /* Seed 4 periods: 2026-01..2026-03 + current month.
+         * 2026-03 = PDF reference values (Monitoring DKMR 15 Mei 2026, s.d. Maret).
+         * Earlier periods use mild deterministic step-down so trend shows
+         * movement without diverging from the PDF reference point.
+         * Current month = same as 2026-03 (live data caught up). */
         $periodes = [
-            $now->copy()->subMonths(2)->format('Y-m'),
-            $now->copy()->subMonths(1)->format('Y-m'),
-            $now->format('Y-m'),
+            '2026-01' => -2.5,  // 2 step-downs from reference
+            '2026-02' => -1.0,  // 1 step-down
+            '2026-03' => 0,     // PDF reference (anchor)
+            '2026-04' => 0.4,   // slight bump (April keeps momentum from March)
+            '2026-05' => 0,     // current month — back to anchor
         ];
 
-        foreach ($periodes as $idx => $periode) {
-            $isCurrent = $idx === count($periodes) - 1;
-
+        foreach ($periodes as $periode => $delta) {
             foreach (self::GRID as $direktorat) {
                 $dir = $this->findOrCreateDirectorate($direktorat['kode'], $direktorat['nama']);
 
-                $nilai = $isCurrent
-                    ? $direktorat['nilai']
-                    : $this->priorPeriodValue($direktorat['nilai'], $idx);
+                $nilai = max(0, min(150, $direktorat['nilai'] + $delta));
 
                 DirektoratScorecard::updateOrCreate(
                     ['directorateId' => $dir->id, 'periode' => $periode],
@@ -88,9 +90,7 @@ class ScorecardSeeder extends Seeder
                 foreach ($direktorat['divisi'] as $divisi) {
                     $unit = $this->findOrCreateUnit($divisi['kode'], $divisi['nama'], $dir->id);
 
-                    $divisiNilai = $isCurrent
-                        ? $divisi['nilai']
-                        : $this->priorPeriodValue($divisi['nilai'], $idx);
+                    $divisiNilai = max(0, min(150, $divisi['nilai'] + $delta));
 
                     DivisiScorecard::updateOrCreate(
                         ['unitId' => $unit->id, 'periode' => $periode],

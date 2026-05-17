@@ -1,0 +1,66 @@
+/* ════════════════════════════════════════════════════════════════════
+   Assignments Polish — Pattern A surgical fixes for /penugasan
+   ────────────────────────────────────────────────────────────────────
+   AssignmentsView.css already covers most styling (toolbar 22px title,
+   28px segmented toggles, tone-aware text colors). This file is small
+   targeted polish: empty state subtle + stats pill grouping.
+   ════════════════════════════════════════════════════════════════════ */
+
+
+/* ───────── Empty kanban column state: subtle muted text ─────────
+   Was: dashed border box "Menunggu persetujuan" (visual noise).
+   Now: faint muted line, no chrome. Pattern matches Workboard.    */
+.assignments-v2 .kanban-col__empty,
+.assignments-v2 .kanban-col__empty--dashed {
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  font-size: 11.5px !important;
+  font-weight: 400 !important;
+  text-align: center !important;
+  padding: 14px 8px !important;
+  opacity: 0.5 !important;
+  transition: opacity 140ms;
+  min-height: auto !important;
+}
+.assignments-v2 .kanban-col__body:hover .kanban-col__empty {
+  opacity: 0.85 !important;
+}
+
+
+/* ───────── Stats summary: wrap in pill container ─────────
+   Was: inline tone-aware spans with left-border separator.
+   Now: subtle background pill, compact gap, tabular numerals.     */
+.assignments-v2 .view-toolbar__stats,
+.assignments-v2 .wb-stats {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 4px 12px !important;
+  background: var(--ds-surface-card, var(--surface-1)) !important;
+  border: 1px solid var(--ds-border-subtle, var(--panel-border)) !important;
+  border-radius: 6px !important;
+  border-left: 1px solid var(--ds-border-subtle, var(--panel-border)) !important;
+}
+
+/* Each stat span: keep tabular numbers strong, label muted */
+.assignments-v2 .view-toolbar__stats > span,
+.assignments-v2 .wb-stats > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* ───────── Completed card: mute the "Lewat Xh" overdue tag ─────────
+   When a task lives in SELESAI column with a historical overdue tag,
+   bright red looks like it's still overdue. Mute it.
+   Selector via :has() targets cards in column whose header has the
+   --completed modifier.                                              */
+.assignments-v2 .kanban-col:has(.kanban-col__header--completed) .pg-due-inline--overdue {
+  background: var(--surface-2) !important;
+  color: var(--text-muted) !important;
+}

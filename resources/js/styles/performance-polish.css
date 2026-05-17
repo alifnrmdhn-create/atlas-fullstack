@@ -1,0 +1,32 @@
+/* ════════════════════════════════════════════════════════════════════
+   Performance Polish — Pattern A surgical fixes for KPI pages
+   ────────────────────────────────────────────────────────────────────
+   Scope: .perf (all Performance/* views — KPI Saya, KPI Divisi,
+   Scorecard, Kolegial). Targets forecast pill style consistency.
+   ════════════════════════════════════════════════════════════════════ */
+
+
+/* ───────── Forecast pill: dashed border → solid subtle ─────────
+   Was: 1px dashed border on green/yellow/red — looked off-pattern
+   compared to other pills in the page (chips/code-badges are solid).
+   Now: 1px solid with tone-tinted background. Pattern A consistent. */
+.perf .forecast-badge {
+  border-style: solid !important;
+  border-width: 1px !important;
+}
+.perf .forecast-badge--green {
+  background: color-mix(in srgb, #1f7a3f 8%, transparent) !important;
+  border-color: color-mix(in srgb, #1f7a3f 22%, transparent) !important;
+}
+.perf .forecast-badge--yellow {
+  background: color-mix(in srgb, #9b6b00 8%, transparent) !important;
+  border-color: color-mix(in srgb, #9b6b00 22%, transparent) !important;
+}
+.perf .forecast-badge--red {
+  background: color-mix(in srgb, #c5302d 8%, transparent) !important;
+  border-color: color-mix(in srgb, #c5302d 22%, transparent) !important;
+}
+.perf .forecast-badge--muted {
+  background: var(--surface-2) !important;
+  border-color: var(--panel-border) !important;
+}
