@@ -229,6 +229,26 @@ export function ProgramDetailView() {
     dukunganDibutuhkan: '',
   })
   const [progressFormSaving, setProgressFormSaving] = useState(false)
+  // Composite Weekly Update — KPI aktual yang dimasukkan bareng progress log.
+  // Map kpiId → string input value. Saat submit progress log, parallel POST
+  // ke /kpis/{id}/values untuk setiap entry yang nilainya non-empty.
+  const [weeklyKpiActuals, setWeeklyKpiActuals] = useState<Record<number, string>>({})
+  const [weeklyKpiErrors, setWeeklyKpiErrors] = useState<string[]>([])
+
+  // Derive measurementDate (YYYY-MM-DD, Jumat = end-of-work-week) dari ISO week
+  // string "YYYY-Www". Fallback: hari ini.
+  const isoWeekToFridayDate = (period: string): string => {
+    const m = period.match(/^(\d{4})-W(\d{1,2})$/)
+    if (!m) return new Date().toISOString().slice(0, 10)
+    const year = parseInt(m[1], 10)
+    const week = parseInt(m[2], 10)
+    const jan4 = new Date(year, 0, 4)
+    const jan4IsoDay = ((jan4.getDay() + 6) % 7) + 1 // 1=Mon..7=Sun
+    const w01Mon = new Date(year, 0, 4 - jan4IsoDay + 1)
+    const friday = new Date(w01Mon)
+    friday.setDate(w01Mon.getDate() + (week - 1) * 7 + 4)
+    return friday.toISOString().slice(0, 10)
+  }
 
   const loadProgressLog = useCallback(async () => {
     setProgressLogLoading(true)
@@ -243,7 +263,10 @@ export function ProgramDetailView() {
   const submitProgressLog = async () => {
     if (!progressForm.narrative.trim()) return
     setProgressFormSaving(true)
+    setWeeklyKpiErrors([])
     try {
+      // (1) Save progress log — narrative + PICA fields. Wajib sukses lebih
+      //     dulu karena ini source of truth weekly update.
       const res = await api.post<{ data: ProgressLogEntry }>(`/programs/${numId}/progress-log`, progressForm)
       setProgressLog(prev => {
         const existing = prev.findIndex(e => e.period === res.data.period)
@@ -254,8 +277,46 @@ export function ProgramDetailView() {
         }
         return [res.data, ...prev]
       })
+
+      // (2) Save KPI actuals (kalau ada yang diisi). Parallel POST per KPI.
+      //     Kegagalan per-KPI di-collect sebagai partial error, tidak rollback
+      //     progress log karena bedanya audit trail vs measurement.
+      const kpiEntries = Object.entries(weeklyKpiActuals)
+        .filter(([, v]) => v.trim() !== '' && !Number.isNaN(Number(v)))
+      if (kpiEntries.length > 0) {
+        const measurementDate = isoWeekToFridayDate(progressForm.period)
+        const settled = await Promise.allSettled(kpiEntries.map(([kpiId, value]) =>
+          api.post(`/kpis/${kpiId}/values`, {
+            measurementDate,
+            actualValue: Number(value),
+          })
+        ))
+        const failed = settled
+          .map((r, i) => ({ r, kpiId: kpiEntries[i][0] }))
+          .filter(({ r }) => r.status === 'rejected')
+          .map(({ kpiId, r }) => {
+            const kpi = (detail?.kpis ?? []).find(k => String(k.id) === kpiId)
+            const label = kpi?.name ?? `KPI #${kpiId}`
+            const msg = (r as PromiseRejectedResult).reason instanceof Error
+              ? (r as PromiseRejectedResult).reason.message
+              : 'gagal menyimpan'
+            return `${label}: ${msg}`
+          })
+        if (failed.length > 0) {
+          setWeeklyKpiErrors(failed)
+          // Tetap close form? Tidak — biar user lihat error + retry. Tapi
+          // progress log sudah tersimpan, jadi clear narrative dst.
+          await loadDetail(true)
+          setProgressForm(f => ({ ...f, narrative: '', kendala: '', correctiveAction: '', nextStep: '', dukunganDibutuhkan: '' }))
+          return
+        }
+        // Semua KPI sukses → reload detail untuk refresh actualValue
+        await loadDetail(true)
+      }
+
       setShowProgressForm(false)
       setProgressForm(f => ({ ...f, narrative: '', kendala: '', correctiveAction: '', nextStep: '', dukunganDibutuhkan: '' }))
+      setWeeklyKpiActuals({})
     } finally {
       setProgressFormSaving(false)
     }
@@ -1396,6 +1457,50 @@ export function ProgramDetailView() {
                             placeholder="Ceritakan perkembangan program minggu ini..."
                           />
                         </div>
+
+                        {/* ── KPI Aktual Minggu Ini — composite weekly entry ──
+                            Numbers behind the narrative. Optional; biarkan kosong
+                            kalau tidak ada update. Submit progress log akan
+                            otomatis POST setiap entry yang terisi sebagai
+                            KpiValue dengan measurementDate = Jumat ISO week. */}
+                        {(detail.kpis ?? []).length > 0 && (
+                          <div className="prog-progress-form__row prog-progress-form__row--kpi">
+                            <label className="prog-progress-form__label">
+                              KPI Aktual Minggu Ini
+                              <span className="prog-progress-form__hint">opsional · isi yang berubah saja</span>
+                            </label>
+                            <div className="prog-progress-form__kpi-list">
+                              {(detail.kpis ?? []).map(kpi => {
+                                const lastActual = kpi.actualValue != null
+                                  ? formatKpiValue(kpi.actualValue, kpi.unitOfMeasure ?? '', kpi.dataType ?? undefined)
+                                  : null
+                                const targetLabel = formatKpiValue(kpi.targetValue, kpi.unitOfMeasure ?? '', kpi.dataType ?? undefined)
+                                return (
+                                  <div key={kpi.id} className="prog-progress-form__kpi-item">
+                                    <div className="prog-progress-form__kpi-meta">
+                                      <span className="prog-progress-form__kpi-name">{kpi.name}</span>
+                                      <span className="prog-progress-form__kpi-sub">
+                                        Target {targetLabel}
+                                        {lastActual ? ` · terakhir ${lastActual}` : ' · belum ada actual'}
+                                      </span>
+                                    </div>
+                                    <input
+                                      className="wi-input prog-progress-form__kpi-input"
+                                      type="number"
+                                      step="any"
+                                      inputMode="decimal"
+                                      value={weeklyKpiActuals[kpi.id] ?? ''}
+                                      onChange={e => setWeeklyKpiActuals(s => ({ ...s, [kpi.id]: e.target.value }))}
+                                      placeholder={lastActual ?? '—'}
+                                      aria-label={`Aktual baru untuk ${kpi.name}`}
+                                    />
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="prog-progress-form__row">
                           <label className="prog-progress-form__label">Kendala / Problem Identification</label>
                           <textarea
@@ -1436,6 +1541,17 @@ export function ProgramDetailView() {
                             placeholder="Support yang diperlukan dari stakeholder (opsional)"
                           />
                         </div>
+                        {weeklyKpiErrors.length > 0 && (
+                          <div className="prog-progress-form__kpi-errors" role="alert">
+                            <strong>Progres tersimpan,</strong> tapi {weeklyKpiErrors.length} KPI gagal disimpan:
+                            <ul>
+                              {weeklyKpiErrors.map((msg, i) => <li key={i}>{msg}</li>)}
+                            </ul>
+                            <p className="prog-progress-form__kpi-errors-hint">
+                              Coba lagi dari tab KPI atau retry submit setelah perbaikan.
+                            </p>
+                          </div>
+                        )}
                         <div className="prog-progress-form__actions">
                           <button
                             className="wi-btn wi-btn--primary wi-btn--sm"
