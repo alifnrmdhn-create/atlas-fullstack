@@ -29,8 +29,9 @@ class ProgramService
         $scope = $this->scopeResolver->resolveUserScope($user);
 
         $query = Program::query()
-            ->with(['owner:id,name,avatarUrl,roleType,unitId'])
+            ->with(['owner:id,name,avatarUrl,roleType,unitId', 'linkedChannel:id,name'])
             ->withCount('workstreams')
+            ->withCount(['kpis as kpiCount' => fn ($q) => $q->where('isActive', true)])
             ->whereNull('archivedAt')
             ->whereIn('approvalStatus', ['ACTIVE', 'PENDING_KASUB', 'PENDING_KADIV', 'DRAFT', 'COMPLETED']);
 
@@ -51,8 +52,9 @@ class ProgramService
         $scope = $this->scopeResolver->resolveUserScope($user);
 
         $query = Program::query()
-            ->with(['owner:id,name,avatarUrl,roleType,unitId'])
+            ->with(['owner:id,name,avatarUrl,roleType,unitId', 'linkedChannel:id,name'])
             ->withCount('workstreams')
+            ->withCount(['kpis as kpiCount' => fn ($q) => $q->where('isActive', true)])
             ->whereNull('archivedAt')
             ->whereIn('approvalStatus', ['ACTIVE', 'PENDING_KASUB', 'PENDING_KADIV', 'DRAFT', 'COMPLETED'])
             ->orderBy('createdAt', 'desc');
@@ -241,6 +243,7 @@ class ProgramService
             ->with([
                 'owner:id,name,avatarUrl,roleType,unitId,positionTitle',
                 'coPics',
+                'linkedChannel:id,name',
                 'workstreams.entityPics',
                 'workstreams.phases',
                 'workstreams.phases.entityPics',

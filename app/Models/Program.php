@@ -46,6 +46,12 @@ class Program extends Model
         return $this->belongsTo(User::class, 'ownerId');
     }
 
+    /** Channel komunikasi yang ter-tautkan ke program (untuk checklist Plan-phase). */
+    public function linkedChannel()
+    {
+        return $this->belongsTo(Channel::class, 'linkedChannelId');
+    }
+
     public function workstreams(): HasMany
     {
         return $this->hasMany(Workstream::class, 'programId');

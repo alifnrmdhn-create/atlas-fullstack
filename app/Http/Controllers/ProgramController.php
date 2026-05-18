@@ -224,6 +224,7 @@ class ProgramController extends Controller
             'targetEndDate' => 'sometimes|date|after_or_equal:startDate',
             'priority' => 'sometimes|in:LOW,MEDIUM,HIGH,CRITICAL',
             'budgetIdr' => 'nullable|numeric',
+            'linkedChannelId' => 'nullable|integer|exists:Channel,id',
             'picPersonIds' => 'nullable|array',
             'picPersonIds.*' => 'integer|exists:User,id',
             'kelompok' => 'nullable|in:SCORECARD,NON_SCORECARD',

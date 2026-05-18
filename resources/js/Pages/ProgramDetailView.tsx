@@ -123,7 +123,7 @@ export function ProgramDetailView() {
   const {
     programs, currentUser, apmsKpis, apmsLastFetchedAt, refreshApmsKpis,
     normalizeHealthStatus, formatStatusLabel,
-    loadOverview,
+    loadOverview, channels,
   } = useWorkspace()
   const roleAccess = useRoleAccess()
   const dark = useDarkMode()
@@ -566,6 +566,8 @@ export function ProgramDetailView() {
     code: '', name: '', description: '',
     status: 'IN_PROGRESS', priority: 'MEDIUM',
     startDate: '', targetEndDate: '',
+    budgetIdr: '' as string | number,
+    linkedChannelId: '' as string | number,
   })
   const [epPicIds, setEpPicIds] = useState<number[]>([])
   const [epOwnerId, setEpOwnerId] = useState<number | null>(null)
@@ -588,6 +590,8 @@ export function ProgramDetailView() {
       priority: detail.priority,
       startDate: detail.startDate?.slice(0, 10) ?? '',
       targetEndDate: detail.targetEndDate?.slice(0, 10) ?? '',
+      budgetIdr: detail.budgetIdr ?? '',
+      linkedChannelId: detail.linkedChannelId ?? '',
     })
     setEpPicIds(detail.picPersonIds ?? [])
     setEpOwnerId(detail.ownerId)
@@ -603,12 +607,22 @@ export function ProgramDetailView() {
     e.preventDefault()
     setEpSaving(true); setEpError(null)
     try {
+      // Normalize numeric inputs: empty string → null (clear), value → number
+      const budgetNum = epForm.budgetIdr === '' || epForm.budgetIdr === null
+        ? null
+        : Number(epForm.budgetIdr)
+      const channelNum = epForm.linkedChannelId === '' || epForm.linkedChannelId === null
+        ? null
+        : Number(epForm.linkedChannelId)
+
       await api.put(`/programs/${numId}`, {
         code: epForm.code.trim(),
         name: epForm.name.trim(),
         description: epForm.description.trim() || undefined,
         status: epForm.status, priority: epForm.priority,
         startDate: epForm.startDate, targetEndDate: epForm.targetEndDate,
+        budgetIdr: budgetNum,
+        linkedChannelId: channelNum,
         picPersonIds: epPicIds,
         ...(epOwnerId && epOwnerId !== detail?.ownerId ? { ownerIdOverride: epOwnerId } : {}),
       })
@@ -2900,6 +2914,47 @@ export function ProgramDetailView() {
                       <label>Target Selesai</label>
                       <input onChange={e => setEpForm(f => ({ ...f, targetEndDate: e.target.value }))} type="date" value={epForm.targetEndDate} />
                     </div>
+                  </div>
+                  <div className="form-field">
+                    <label>
+                      Anggaran (IDR)
+                      <span className="form-field__hint"> · opsional, isi 0 atau kosongkan kalau belum diatur</span>
+                    </label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min={0}
+                      step="any"
+                      inputMode="numeric"
+                      placeholder="0"
+                      value={epForm.budgetIdr === '' ? '' : String(epForm.budgetIdr)}
+                      onChange={e => setEpForm(f => ({ ...f, budgetIdr: e.target.value }))}
+                    />
+                    {epForm.budgetIdr !== '' && Number(epForm.budgetIdr) > 0 && (
+                      <span className="form-field__hint" style={{ marginTop: 4 }}>
+                        Rp {Number(epForm.budgetIdr).toLocaleString('id-ID')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="form-field">
+                    <label>
+                      Channel Komunikasi
+                      <span className="form-field__hint"> · tautkan ke channel agar update program juga muncul di sana</span>
+                    </label>
+                    <select
+                      className="form-input"
+                      value={epForm.linkedChannelId === '' ? '' : String(epForm.linkedChannelId)}
+                      onChange={e => setEpForm(f => ({ ...f, linkedChannelId: e.target.value }))}
+                    >
+                      <option value="">— Tidak ditautkan —</option>
+                      {channels
+                        .filter(c => !c.isDirectMessage)
+                        .map(c => (
+                          <option key={c.id} value={c.id}>
+                            #{c.name}{c.type === 'PRIVATE' ? ' (private)' : ''}
+                          </option>
+                        ))}
+                    </select>
                   </div>
                 </section>
                 <section className="modal-section">
