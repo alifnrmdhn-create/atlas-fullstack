@@ -77,7 +77,17 @@ class RolePolicy
         return self::isAdminOrAbove($r) || $r === 'kadiv';
     }
 
-    /** BOD & OFFICER read-only — BOD monitoring, OFFICER support. */
+    /**
+     * BOD & OFFICER read-only — BOD monitoring, OFFICER support.
+     *
+     * Catatan eksplisit role yang BUKAN read-only (write-enabled):
+     *   - ADMIN, SUPERADMIN: full access
+     *   - KADIV: approval + cross-divisi
+     *   - KASUBDIV: penanggung jawab divisi
+     *   - ASISTEN: PIC operasional, primary initiator program kerja
+     *     (lihat ATLAS_PDCA_IMPLEMENTATION_PLAN section "Sprint 0" — ASISTEN
+     *     mendaftarkan program & task harian). Sengaja TIDAK termasuk read-only.
+     */
     public static function isReadOnly(?string $role): bool
     {
         $r = self::norm($role);
