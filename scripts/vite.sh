@@ -1,6 +1,6 @@
 #!/bin/sh
-IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}')
-if [ -n "$IP" ]; then
-    export VITE_DEV_SERVER_URL="http://$IP:5173"
-fi
+# Asset URL sengaja tidak di-pin ke IP LAN — kalau host berpindah network
+# (Wi-Fi swap), IP en0 berubah dan asset URL di HTML jadi stale → tab freeze
+# sampai TCP timeout. Default Vite (localhost:5173) cukup untuk dev di mesin
+# sendiri. Untuk akses dari device lain di LAN, set VITE_DEV_SERVER_URL manual.
 exec vite
