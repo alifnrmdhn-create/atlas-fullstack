@@ -1161,6 +1161,15 @@ export function MeetingDetailPanel({
               </span>
             )}
           </div>
+          {/* Gap pass 2 — clarify close-loop behavior: tandai action item
+              selesai akan auto-close task yang ditautkan, tapi reopen tidak
+              revert. Mencegah user surprise saat unmark accidentally. */}
+          {actionItems.some(ai => ai.linkedTaskId) && (
+            <p className="meeting-detail__hint">
+              💡 Action item yang tertaut ke task akan otomatis menutup task saat ditandai selesai.
+              Reopen action item TIDAK mengembalikan task — buka task untuk reopen manual bila perlu.
+            </p>
+          )}
 
           {/* Progress bar */}
           {totalAI > 0 && (

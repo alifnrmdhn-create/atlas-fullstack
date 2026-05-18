@@ -1949,6 +1949,16 @@
   color: var(--text-muted);
   padding: 8px 0;
 }
+.meeting-detail__hint {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--blue, #2563eb) 6%, transparent);
+  border-left: 2px solid var(--blue, #2563eb);
+  border-radius: 4px;
+  margin: 8px 0;
+}
 .meeting-prep-unavailable {
   display: flex;
   align-items: center;
