@@ -190,6 +190,80 @@ class ScorecardSummaryService
     }
 
     /**
+     * Trend skor KPI direktorat untuk N bulan terakhir.
+     *
+     * Mirror chart "Tren Skor KPI - JANUARI s.d. MARET 2026" di slide 8 PDF
+     * DKMR. Bar chart clustered: x-axis bulan, y-axis nilai (0-110), satu
+     * series per direktorat dalam scope viewer.
+     *
+     * Periode terakhir = $endPeriode atau bulan berjalan. Mundur $months
+     * bulan ke belakang. Direktorat yang tidak punya data di salah satu
+     * bulan tetap muncul dengan nilai null (chart akan gap-skip).
+     *
+     * @return array{
+     *   periodes: array<int, array{key: string, label: string}>,
+     *   series: array<int, array{kode: string, nama: string, values: array<int, ?float>}>
+     * }
+     */
+    public function trendDirektorat(
+        ?User $user = null,
+        int $months = 6,
+        ?string $endPeriode = null,
+    ): array {
+        $endPeriode = $endPeriode ?? now()->format('Y-m');
+        $months = max(2, min(12, $months));
+
+        // Build periode list mundur dari endPeriode
+        $end = Carbon::createFromFormat('Y-m', $endPeriode)->startOfMonth();
+        $periodes = [];
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $p = $end->copy()->subMonthsNoOverflow($i);
+            $periodes[] = [
+                'key'   => $p->format('Y-m'),
+                'label' => $p->isoFormat('MMM'),
+            ];
+        }
+        $periodeKeys = array_column($periodes, 'key');
+
+        // Scope direktorat IDs (sama logic dengan direktoratGrid)
+        $directorateIds = $this->resolveScopedDirectorateIds($user);
+
+        // Pull all DirektoratScorecard values dalam range periode + scope
+        $rowsQuery = DirektoratScorecard::query()
+            ->whereIn('periode', $periodeKeys);
+        if ($directorateIds !== null) {
+            $rowsQuery->whereIn('directorateId', $directorateIds);
+        }
+        $rows = $rowsQuery->get(['directorateId', 'periode', 'nilai']);
+
+        if ($rows->isEmpty()) {
+            return ['periodes' => $periodes, 'series' => []];
+        }
+
+        // Unique direktorat dalam result
+        $directorateIdList = $rows->pluck('directorateId')->unique()->values();
+        $directorates = Directorate::query()
+            ->whereIn('id', $directorateIdList)
+            ->orderBy('code')
+            ->get(['id', 'code', 'name']);
+
+        // Build series: per direktorat, values aligned with periodeKeys order
+        $series = $directorates->map(function (Directorate $dir) use ($rows, $periodeKeys) {
+            $values = array_map(function ($key) use ($rows, $dir) {
+                $match = $rows->first(fn ($r) => $r->directorateId === $dir->id && $r->periode === $key);
+                return $match ? (float) $match->nilai : null;
+            }, $periodeKeys);
+            return [
+                'kode'   => $dir->code,
+                'nama'   => $dir->name,
+                'values' => $values,
+            ];
+        })->values()->all();
+
+        return ['periodes' => $periodes, 'series' => $series];
+    }
+
+    /**
      * Resolve display level from user's OrgScope.
      */
     private function resolveLevel(?User $user): string

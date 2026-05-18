@@ -152,8 +152,11 @@ class PerformanceController extends Controller
             'nilai' => $d['nilai'],
         ])->values()->all();
 
+        // Trend skor 6 bulan terakhir untuk bar chart (Gap #2 vs PDF slide 8)
+        $trend = $this->scorecard->trendDirektorat($user, 6, $periode);
+
         return Inertia::render('Performance/ScorecardView', compact(
-            'topDirektorat', 'topDivisi', 'direktoratGrid', 'periode'
+            'topDirektorat', 'topDivisi', 'direktoratGrid', 'trend', 'periode'
         ));
     }
 

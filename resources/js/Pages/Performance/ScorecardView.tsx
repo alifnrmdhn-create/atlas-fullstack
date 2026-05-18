@@ -1,6 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react'
 import { Card, Pill } from '../../design-system'
 import { scoreTone, fillRatio, formatPercent, formatPeriod } from './_shared'
+import { KpiTrendChart, type KpiTrendPayload } from './KpiTrendChart'
 import './Performance.css'
 
 type RankItem = { rank: number; nama: string; kode?: string; sub?: string; nilai: number }
@@ -11,6 +12,7 @@ type PageProps = {
   topDirektorat: RankItem[]
   topDivisi: RankItem[]
   direktoratGrid: DirektoratCard[]
+  trend: KpiTrendPayload
   periode: string
 }
 
@@ -57,7 +59,7 @@ function RankWithBar({
 }
 
 export default function ScorecardView() {
-  const { topDirektorat, topDivisi, direktoratGrid, periode } = usePage<PageProps>().props
+  const { topDirektorat, topDivisi, direktoratGrid, trend, periode } = usePage<PageProps>().props
 
   // Header summary stat — computed from grid for symmetry
   const totalDirektorat = direktoratGrid.length
@@ -137,6 +139,21 @@ export default function ScorecardView() {
               </div>
             </Card>
           </div>
+
+          {/* ─── Tren skor KPI 6 bulan terakhir ────── */}
+          {trend && trend.series.length > 0 && (
+            <section className="perf__section">
+              <div className="perf-section-head">
+                <span className="perf__section-label">Tren Skor KPI</span>
+                <span className="perf-section-meta">
+                  {trend.periodes[0]?.label} – {trend.periodes[trend.periodes.length - 1]?.label} · per direktorat
+                </span>
+              </div>
+              <Card padding="md">
+                <KpiTrendChart trend={trend} />
+              </Card>
+            </section>
+          )}
 
           {/* ─── Semua Direktorat grid ────────────── */}
           <section className="perf__section">
