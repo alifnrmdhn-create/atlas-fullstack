@@ -19,7 +19,7 @@ class Program extends Model
     const UPDATED_AT = 'updatedAt';
 
     protected $guarded = ['id'];
-    protected $appends = ['picPersonIds', 'workstreamCount'];
+    protected $appends = ['picPersonIds', 'workstreamCount', 'readiness'];
     protected $hidden  = ['coPics'];
 
     /** Kolom pemilik yang dipakai untuk user-scope filter. */
@@ -108,5 +108,58 @@ class Program extends Model
             return $this->workstreams->count();
         }
         return 0;
+    }
+
+    /**
+     * Readiness checklist computed dari relasi program. Dipakai FE untuk
+     * menentukan apakah program siap di-aktifkan (DRAFT → ACTIVE).
+     *
+     * Memanfaatkan relation yang sudah eager-loaded di ProgramService::findOrFail
+     * (workstreams.tasks) supaya tidak menambah N+1 query. Fall back ke
+     * exists() query saat relasi belum loaded (mis. dipanggil dari list view).
+     *
+     * Catatan: `hasChannel` dan `description`/`budget` checks tidak di sini —
+     * itu derivasi FE dari field detail atau dari workspace/summary endpoint.
+     * Server hanya tahu yang berkaitan dengan relasi sub-entity.
+     *
+     * @return array{hasWorkstream: bool, hasTask: bool, hasKpi: bool, isReady: bool}
+     */
+    public function getReadinessAttribute(): array
+    {
+        $hasWorkstream = false;
+        $hasTask = false;
+
+        if ($this->relationLoaded('workstreams')) {
+            $hasWorkstream = $this->workstreams->isNotEmpty();
+            foreach ($this->workstreams as $ws) {
+                if ($ws->relationLoaded('tasks')) {
+                    if ($ws->tasks->isNotEmpty()) {
+                        $hasTask = true;
+                        break;
+                    }
+                } else {
+                    if ($ws->tasks()->exists()) {
+                        $hasTask = true;
+                        break;
+                    }
+                }
+            }
+        } else {
+            $hasWorkstream = $this->workstreams()->exists();
+            if ($hasWorkstream) {
+                $hasTask = $this->tasks()->exists();
+            }
+        }
+
+        $hasKpi = $this->relationLoaded('kpis')
+            ? $this->kpis->isNotEmpty()
+            : $this->kpis()->where('isActive', true)->exists();
+
+        return [
+            'hasWorkstream' => $hasWorkstream,
+            'hasTask'       => $hasTask,
+            'hasKpi'        => $hasKpi,
+            'isReady'       => $hasWorkstream && $hasTask && $hasKpi,
+        ];
     }
 }
