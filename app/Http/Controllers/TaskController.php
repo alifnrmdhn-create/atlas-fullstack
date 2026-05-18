@@ -322,9 +322,19 @@ class TaskController extends Controller
         $task = Task::query()->with('workstream:id,programId')->find($taskId);
         if ($task?->workstream) {
             $this->taskService->recomputeWorkstreamProgress($task->workstream->id);
+            // Broadcast cascade: task progress berubah → workstream progress
+            // berubah → FE workstream view & program detail perlu refresh.
+            BroadcastService::workstream($task->workstream->id, 'progress-recomputed', [
+                'programId' => $task->workstream->programId,
+            ]);
         }
         if ($task?->workstream?->programId) {
             rescue(fn () => $this->healthService->recompute($task->workstream->programId));
+            // Broadcast program:changed supaya ProgramsView list + ProgramDetail
+            // Ringkasan tab refresh progress + healthStatus.
+            BroadcastService::program($task->workstream->programId, 'progress-recomputed', [
+                'taskId' => $taskId,
+            ]);
         }
     }
 }
