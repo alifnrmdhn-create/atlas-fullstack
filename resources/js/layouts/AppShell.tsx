@@ -910,7 +910,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     perfDirektorat:{ path: '/performance/kolegial',  label: 'KPI Direktorat',  caption: 'Capaian KPI bersama jajaran direksi',  icon: IconKpiKolegial  },
     perfDivisi:    { path: '/performance/divisi',    label: 'KPI Divisi',      caption: 'Capaian KPI level divisi',             icon: IconKpiKolegial  },
     perfSaya:      { path: '/performance/me',        label: 'KPI Saya',        caption: 'KPI individual saya',                  icon: IconKpiIndividu  },
-    perfIndividu:  { path: '/performance/individu',  label: 'KPI Individu',    caption: 'Browse KPI individual karyawan',       icon: IconKpiIndividu  },
+    perfIndividu:  { path: '/performance/individu',  label: 'Leaderboard',     caption: 'Top performer per BOD level',          icon: IconKpiIndividu  },
     schedule:    { path: '/jadwal',    label: 'Rapat Koordinasi', caption: 'Rapat koordinasi & cadence tim',    icon: IconSchedule,    shortcut: 'G R' },
     channels:    { path: '/channels',  label: 'Channels',         caption: 'Team collaboration',                icon: IconChannels,    shortcut: 'G C', badge: () => totalUnreadChannels, badgeUrgent: true },
     presence:    { path: '/presence',  label: 'Presence',         caption: 'Live team availability',            icon: IconPresence   },
@@ -930,8 +930,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // BOD: tanpa "KPI Saya" — Direksi tidak punya KPI personal, scope-nya = direktorat.
   // KADIV: full set (KPI Saya = personal Kadiv sebagai individu).
   // KASUBDIV: hanya KPI Divisi & KPI Saya. OFFICER/ASISTEN: hanya KPI Saya.
-  const grpPerformanceBod     = { label: 'Performance', items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi] }
-  const grpPerformanceFull    = { label: 'Performance', items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfSaya] }
+  const grpPerformanceBod     = { label: 'Performance', items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfIndividu] }
+  const grpPerformanceFull    = { label: 'Performance', items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfIndividu, NI.perfSaya] }
   const grpPerformanceMid     = { label: 'Performance', items: [NI.perfDivisi, NI.perfSaya] }
   const grpPerformanceMin     = { label: 'Performance', items: [NI.perfSaya] }
   const grpTindakLanjut       = { label: 'Tindak Lanjut', items: [NI.schedule] }

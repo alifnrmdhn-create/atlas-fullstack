@@ -2,16 +2,8 @@ import { useState } from 'react'
 import { Head, Link, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { Button, Card } from '../../design-system'
-import { scoreTone } from './_shared'
+import { LeaderboardSection, type Performer } from './LeaderboardSection'
 import './Performance.css'
-
-type Performer = {
-  rank: number
-  nama: string
-  jabatan: string
-  unit: string
-  nilai: number
-}
 
 type Divisi = { kode: string; nama: string }
 type OrgGroup = { kode: string; nama: string; divisi: Divisi[] }
@@ -26,8 +18,6 @@ export default function IndividuView() {
   const { topPerformers, orgNav, periode } = usePage<PageProps>().props
   const navigate = useInertiaNavigate()
   const [openOrg, setOpenOrg] = useState<string | null>(null)
-
-  const groups = Object.entries(topPerformers)
 
   return (
     <>
@@ -53,39 +43,17 @@ export default function IndividuView() {
             </div>
           </header>
 
-          {/* ─── Top performers ──────────────────── */}
+          {/* ─── Leaderboard BOD-1/-2/-3 ─────────── */}
           <section className="perf__section">
-            <span className="perf__section-label">Top Performers</span>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
-              {groups.map(([bodLabel, performers]) => (
-                <Card key={bodLabel} padding="md">
-                  <div className="perf-card-head">
-                    <h2 className="perf-card-head__title">{bodLabel}</h2>
-                    <span className="perf-rank__sub">Nilai bulan ini</span>
-                  </div>
-                  {performers.map(p => {
-                    const tone = scoreTone(p.nilai)
-                    return (
-                      <button
-                        key={p.nama}
-                        type="button"
-                        className="perf-rank"
-                        onClick={() => navigate(`/performance/individu/${encodeURIComponent(p.nama)}`)}
-                      >
-                        <span className="perf-rank__num" data-rank={p.rank}>{p.rank}</span>
-                        <div className="perf-rank__info">
-                          <div className="perf-rank__name">{p.nama}</div>
-                          <div className="perf-rank__sub">{p.jabatan} · {p.unit}</div>
-                        </div>
-                        <span className="perf-rank__value" data-tone={tone}>
-                          {p.nilai.toFixed(2)}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </Card>
-              ))}
+            <div className="perf-section-head">
+              <span className="perf__section-label">Leaderboard KPI</span>
+              <span className="perf-section-meta">Top 3 per level · medal styling untuk #1–#3</span>
             </div>
+            <LeaderboardSection
+              topPerformers={topPerformers}
+              onSelect={(nama) => navigate(`/performance/individu/${encodeURIComponent(nama)}`)}
+              periode={periode}
+            />
           </section>
 
           {/* ─── Org navigation ──────────────────── */}

@@ -314,22 +314,37 @@
 }
 
 .perf-rank__num {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: var(--ds-neutral-100);
   color: var(--ds-text-tertiary);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: var(--ds-weight-semibold);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 0 0 0.5px var(--panel-border, rgba(0,0,0,0.06));
+  flex-shrink: 0;
 }
 
+/* Medal palette for top 3 — Gap #3 leaderboard polish.
+   Mirror PDF DKMR slide 14: gold #1, silver #2, bronze #3. */
 .perf-rank__num[data-rank="1"] {
-  background: var(--ds-brand-50);
-  color: var(--ds-brand-700);
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+  color: #78350f;
+  box-shadow: inset 0 0 0 1px #f59e0b, 0 1px 2px rgba(245, 158, 11, 0.3);
+}
+.perf-rank__num[data-rank="2"] {
+  background: linear-gradient(135deg, #e5e7eb 0%, #9ca3af 100%);
+  color: #1f2937;
+  box-shadow: inset 0 0 0 1px #6b7280, 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.perf-rank__num[data-rank="3"] {
+  background: linear-gradient(135deg, #fdba74 0%, #c2410c 100%);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px #9a3412, 0 1px 2px rgba(154, 52, 18, 0.3);
 }
 
 .perf-rank__info {
@@ -1296,4 +1311,17 @@
   color: var(--text-muted);
   font-style: italic;
   margin: 0;
+}
+
+/* ── Leaderboard 3-column grid (Gap #3) ─────────────────────── */
+.perf-leaderboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+}
+.perf-leaderboard__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
 }
