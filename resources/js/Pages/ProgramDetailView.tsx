@@ -643,6 +643,9 @@ export function ProgramDetailView() {
   })
   const [ciSaving, setCiSaving] = useState(false)
   const [ciError, setCiError] = useState<string | null>(null)
+  // Owner workstream = reviewer task IN_REVIEW (lihat TaskController.waitingForMe).
+  // Default ke current user, tapi visible + bisa override.
+  const [ciOwnerId, setCiOwnerId] = useState<number | null>(null)
   const [ciPicIds, setCiPicIds] = useState<number[]>([])
   const [eiPicIds, setEiPicIds] = useState<number[]>([])
   const [ciPrimaryPicId, setCiPrimaryPicId] = useState<number | null>(null)
@@ -668,6 +671,7 @@ export function ProgramDetailView() {
         status: ciForm.status, priority: ciForm.priority,
         startDate: ciForm.startDate || undefined,
         targetCompletion: ciForm.targetCompletion,
+        ownerId: ciOwnerId ?? currentUser?.id ?? undefined,
         picPersonIds: ciPicIds.length > 0 ? ciPicIds : undefined,
         primaryPicPersonId: ciPrimaryPicId ?? (ciPicIds[0] ?? undefined),
       })
@@ -3069,6 +3073,27 @@ export function ProgramDetailView() {
                       <option value="HIGH">High</option>
                       <option value="MEDIUM">Medium</option>
                       <option value="LOW">Low</option>
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label>
+                      Owner Workstream
+                      <span className="form-field__hint"> · reviewer task yang masuk IN_REVIEW</span>
+                    </label>
+                    <select
+                      className="form-input"
+                      value={ciOwnerId ?? currentUser?.id ?? ''}
+                      onChange={e => setCiOwnerId(Number(e.target.value))}
+                    >
+                      {userDirectory.length === 0 && currentUser && (
+                        <option value={currentUser.id}>{currentUser.name} (Anda)</option>
+                      )}
+                      {userDirectory.map(u => (
+                        <option key={u.id} value={u.id}>
+                          {u.name}{u.id === currentUser?.id ? ' (Anda)' : ''}
+                          {u.positionTitle ? ` — ${u.positionTitle}` : ''}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
