@@ -20,6 +20,7 @@ import { useEscKey } from '../hooks/useEscKey'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import { ExecutionTab } from '../components/ExecutionTab'
 import { MonitoringMatrix } from '../components/MonitoringMatrix'
+import { useInlineToast } from '../components/InlineToast'
 import './ProgramsView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -104,6 +105,7 @@ export function ProgramsView() {
   const role = currentUser?.roleType?.toUpperCase() ?? ''
   const roleAccess = useRoleAccess()
   const isStrategic = role === 'BOD' || role === 'KADIV'
+  const toast = useInlineToast()
 
   // ── Tab state ──────────────────────────────────────────────────────────
   const [tab, setTab] = useState<ProgramTab>('portfolio')
@@ -469,9 +471,10 @@ export function ProgramsView() {
     setCpSaving(true)
     setCpError(null)
     try {
-      await api.post('/programs', {
+      const programName = cpForm.name.trim()
+      const res = await api.post<{ data: { id: number } }>('/programs', {
         code: cpForm.code.trim(),
-        name: cpForm.name.trim(),
+        name: programName,
         description: cpForm.description.trim() || undefined,
         status: cpForm.status,
         priority: cpForm.priority,
@@ -484,11 +487,19 @@ export function ProgramsView() {
         kelompok: cpForm.kelompok || undefined,
         pilarStrategis: cpForm.pilarStrategis || undefined,
       })
+      const newId = res?.data?.id
       closeCpModal()
-      await loadOverview('refresh')
+      toast.show(`Program "${programName}" berhasil dibuat — buka detail untuk lanjut setup`, 'success')
+      // Refresh sidebar context + program list di belakang, lalu navigasi user
+      // ke detail page untuk lanjut setup checklist.
+      void loadOverview('refresh')
+      if (newId) {
+        navigate(`/programs/${newId}`)
+      }
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message ?? 'Gagal membuat program.'
       setCpError(msg)
+      toast.show(msg, 'error')
     } finally {
       setCpSaving(false)
     }
@@ -2218,6 +2229,7 @@ export function ProgramsView() {
         </>,
         document.body
       )}
+      <toast.View />
     </div>
   )
 }
