@@ -9,14 +9,53 @@ import { COLORS, LAYOUT, MONTH_LABELS, healthColor, slugify } from './charterTem
  *
  * Layout per docs/CHARTER_VIEW_PLAN.md section 6.6.
  *
- * Visual reference: docs/reference/2026_MEI_Monitoring_Program_Kerja_DKMR.pptx
- * (slide 20–24). 100% pixel-fidelity is not the goal; structural identity is.
+ * Visual reference: docs/reference/15052026_Monitoring Program Kerja DKMR.pdf
+ * (page 21 et al). 100% pixel-fidelity is not the goal; structural
+ * identity is.
  */
 export async function exportProgramCharter(data: CharterPayload): Promise<void> {
   const pres = new pptxgen()
   pres.layout = 'LAYOUT_WIDE' // 13.333 × 7.5 in
   pres.title = `Charter — ${data.program.code} — ${data.program.name}`
 
+  composeSlide(pres, data)
+
+  const filename = `Charter_${slugify(data.program.name)}_${data.program.currentMonth}.pptx`
+  await pres.writeFile({ fileName: filename })
+}
+
+/**
+ * Batch variant — one slide per program, single file. Used by the
+ * multi-program export modal in /programs (Pak Dirkeu's MRC use case:
+ * pick N programs across direktorat, get one deck).
+ *
+ * Slides are composed in the order payloads are passed. The downstream
+ * caller is expected to sort/filter beforehand.
+ */
+export async function exportProgramsCharterBatch(payloads: CharterPayload[]): Promise<void> {
+  if (payloads.length === 0) return
+  if (payloads.length === 1) {
+    // Single-item batch is just the regular export. Avoids "Batch_1programs"
+    // filename ugliness.
+    return exportProgramCharter(payloads[0])
+  }
+
+  const pres = new pptxgen()
+  pres.layout = 'LAYOUT_WIDE'
+  const currentMonth = payloads[0].program.currentMonth
+  pres.title = `Charter Batch — ${payloads.length} programs — ${currentMonth}`
+
+  for (const data of payloads) {
+    composeSlide(pres, data)
+  }
+
+  const filename = `Charter_Batch_${payloads.length}programs_${currentMonth}.pptx`
+  await pres.writeFile({ fileName: filename })
+}
+
+/** Compose one slide from a charter payload — extracted so both
+ *  single + batch exporters share the exact same builder pipeline. */
+function composeSlide(pres: pptxgen, data: CharterPayload): void {
   const slide = pres.addSlide()
   slide.background = { color: COLORS.PANEL_BG }
 
@@ -28,9 +67,6 @@ export async function exportProgramCharter(data: CharterPayload): Promise<void> 
   buildPicaNextStep(slide, data)
   buildKpiProgress(slide, data)
   buildFooter(slide, data)
-
-  const filename = `Charter_${slugify(data.program.name)}_${data.program.currentMonth}.pptx`
-  await pres.writeFile({ fileName: filename })
 }
 
 // ── Header strip ────────────────────────────────────────────────────────
