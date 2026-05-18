@@ -273,6 +273,7 @@ function prefetchRoute(path: string) {
     '/laporan-risiko': () => import('../Pages/RiskReportsView'),
     '/playbook': () => import('../Pages/PlaybookView'),
     '/glossary': () => import('../Pages/GlossaryView'),
+    '/executive': () => import('../Pages/ExecutiveSummaryView'),
     '/presence': () => import('../Pages/PresenceView'),
     '/profile': () => import('../Pages/ProfileView'),
     '/programs': () => import('../Pages/ProgramsView'),
@@ -906,6 +907,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     goals:       { path: '/goals',      label: 'Goals & KPI',   caption: 'Manage KPI organisasi & tracking capaian',  icon: IconGoals    },
     activity:    { path: '/activity',   label: 'Team Activity', caption: 'Leaderboard sesi & aktivitas harian tim',   icon: IconActivity },
     reports:       { path: '/reports',         label: 'Analytics',       caption: 'KPI, program health & leaderboard',  icon: IconReports       },
+    executive:     { path: '/executive',             label: 'Executive Summary', caption: 'Snapshot eksekutif 1-halaman',     icon: IconScorecard    },
     perfScorecard: { path: '/performance/scorecard', label: 'Scorecard',       caption: 'Ranking capaian direktorat & divisi',  icon: IconScorecard    },
     perfDirektorat:{ path: '/performance/kolegial',  label: 'KPI Direktorat',  caption: 'Capaian KPI bersama jajaran direksi',  icon: IconKpiKolegial  },
     perfDivisi:    { path: '/performance/divisi',    label: 'KPI Divisi',      caption: 'Capaian KPI level divisi',             icon: IconKpiKolegial  },
@@ -930,8 +932,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // BOD: tanpa "KPI Saya" — Direksi tidak punya KPI personal, scope-nya = direktorat.
   // KADIV: full set (KPI Saya = personal Kadiv sebagai individu).
   // KASUBDIV: hanya KPI Divisi & KPI Saya. OFFICER/ASISTEN: hanya KPI Saya.
-  const grpPerformanceBod     = { label: 'Performance', items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfIndividu] }
-  const grpPerformanceFull    = { label: 'Performance', items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfIndividu, NI.perfSaya] }
+  const grpPerformanceBod     = { label: 'Performance', items: [NI.executive, NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfIndividu] }
+  const grpPerformanceFull    = { label: 'Performance', items: [NI.executive, NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfIndividu, NI.perfSaya] }
   const grpPerformanceMid     = { label: 'Performance', items: [NI.perfDivisi, NI.perfSaya] }
   const grpPerformanceMin     = { label: 'Performance', items: [NI.perfSaya] }
   const grpTindakLanjut       = { label: 'Tindak Lanjut', items: [NI.schedule] }
@@ -1005,6 +1007,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     '/goals': 'Goals & KPI', '/activity': 'Team Activity', '/execution': 'Execution', '/penugasan': 'Penugasan', '/reports': 'Analytics', '/laporan-bulanan': 'Monthly Reports', '/laporan-risiko': 'Risk Reports',
     '/fokus': 'Focus', '/channels': 'Channels', '/jadwal': 'Rapat Koordinasi', '/search': 'Search',
     '/presence': 'Presence', '/profile': 'Profile', '/settings': 'Settings', '/glossary': 'Glossary',
+    '/executive': 'Executive Summary',
     '/admin/users': 'Users', '/admin/positions': 'Positions',
     '/admin/orgs': 'Companies', '/admin/roles': 'Roles & Permissions',
     '/playbook': 'Playbook',
