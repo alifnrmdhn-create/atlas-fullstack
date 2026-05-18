@@ -26,6 +26,14 @@ type ScorecardSnapshot = {
   /** User's own direktorat — header context for directorate-level views.
    * Null for portfolio (DIRUT oversees all, no singular "own"). */
   ownItem: { kode: string; nama: string; nilai: number } | null
+  /** Full direktorat × divisi grid — present only at portfolio level
+   * (BOD/DIRUT/Admin). Powers the cross-direktorat matrix section. */
+  grid?: Array<{
+    kode: string
+    nama: string
+    nilai: number
+    divisi: Array<{ kode: string; nama: string; nilai: number }>
+  }>
 }
 
 /* ─── Helpers ───────────────────────────────────────────────── */
@@ -1166,6 +1174,62 @@ export default function HomeView() {
                 >
                   Lihat semua program ({summary.total}) <span aria-hidden>→</span>
                 </button>
+              </div>
+            </section>
+          )}
+
+          {/* ─── Matrix Direktorat (cross-direktorat scorecard) ───────────
+              Visible hanya untuk BOD/DIRUT/Admin (level=portfolio). Sumber
+              data ScorecardSummaryService::direktoratGrid via homeSnapshot,
+              sinkron dengan PDF reference (Mei 2026): 6 direktorat dengan
+              sub-divisi-nya. */}
+          {scorecard.grid && scorecard.grid.length > 0 && (
+            <section className="hv__section">
+              <header className="hv__sec-head">
+                <h2 className="hv__sec-title">Matrix Direktorat</h2>
+                <span className="hv__sec-meta">
+                  {scorecard.grid.length} direktorat · {scorecard.periode}
+                </span>
+              </header>
+              <div className="hv__direktorat-grid">
+                {scorecard.grid.map(d => {
+                  const tone = d.nilai >= 100 ? 'green' : d.nilai >= 80 ? 'amber' : 'red'
+                  return (
+                    <button
+                      key={d.kode}
+                      className="hv__direktorat-card"
+                      data-tone={tone}
+                      onClick={() => navigate(`/performance/scorecard?periode=${scorecard.periode}`)}
+                      type="button"
+                    >
+                      <div className="hv__direktorat-card__head">
+                        <div className="hv__direktorat-card__title">
+                          <span className="hv__direktorat-card__code">{d.kode}</span>
+                          <span className="hv__direktorat-card__name">{d.nama}</span>
+                        </div>
+                        <span className="hv__direktorat-card__nilai" data-tone={tone}>
+                          {d.nilai.toFixed(1)}%
+                        </span>
+                      </div>
+                      {d.divisi.length > 0 && (
+                        <ul className="hv__direktorat-card__divisi">
+                          {d.divisi.map(div => {
+                            const divTone = div.nilai >= 100 ? 'green' : div.nilai >= 80 ? 'amber' : 'red'
+                            return (
+                              <li key={div.kode} className="hv__direktorat-card__divisi-row">
+                                <span className="hv__direktorat-card__divisi-code">{div.kode}</span>
+                                <span className="hv__direktorat-card__divisi-name">{div.nama}</span>
+                                <span className="hv__direktorat-card__divisi-nilai" data-tone={divTone}>
+                                  {div.nilai.toFixed(1)}%
+                                </span>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </section>
           )}

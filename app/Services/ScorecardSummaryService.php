@@ -117,6 +117,11 @@ class ScorecardSummaryService
      * Plus `ownItem` when applicable: user's parent direktorat info, surfaced
      * as a contextual header in directorate-level renderings.
      *
+     * `grid` carries the full direktorat × divisi structure when level=portfolio
+     * — used by HomeView's cross-direktorat matrix (Isu #9). At
+     * directorate/unit level the matrix is hidden so the field is omitted to
+     * keep payload lean.
+     *
      * @return array{
      *   level: string,
      *   periode: string,
@@ -126,6 +131,7 @@ class ScorecardSummaryService
      *   topItems: array<int, array{rank: int, nama: string, kode: string, nilai: float}>,
      *   belowTarget: array<int, array{nama: string, kode: string, nilai: float}>,
      *   ownItem: ?array{kode: string, nama: string, nilai: float},
+     *   grid?: array<int, array{kode: string, nama: string, nilai: float, divisi: array<int, array{kode: string, nama: string, nilai: float}>}>,
      * }
      */
     public function homeSnapshot(?User $user = null, ?string $periode = null): array
@@ -136,8 +142,10 @@ class ScorecardSummaryService
         // Resolve "ownItem" — user's own direktorat, when applicable
         $ownItem = $this->resolveOwnItem($user, $periode);
 
+        $grid = null;
         if ($level === 'portfolio') {
             $items = $this->direktoratGrid($user, $periode);
+            $grid  = $items; // full structure for cross-direktorat matrix
             $itemLabel = 'direktorat';
         } elseif ($level === 'directorate' && $user?->directorateId) {
             $items = $this->divisiGrid($user->directorateId, $periode);
@@ -165,7 +173,7 @@ class ScorecardSummaryService
             array_filter($items, fn ($d) => $d['nilai'] < 80.0)
         ));
 
-        return [
+        $payload = [
             'level'       => $level,
             'periode'     => $periode,
             'itemLabel'   => $itemLabel,
@@ -175,6 +183,10 @@ class ScorecardSummaryService
             'belowTarget' => $belowTarget,
             'ownItem'     => $ownItem,
         ];
+        if ($grid !== null) {
+            $payload['grid'] = $grid;
+        }
+        return $payload;
     }
 
     /**
