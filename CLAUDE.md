@@ -80,8 +80,8 @@ User guide pilot: `docs/user-guide-pilot-dkm.md`.
 ## Charter View context (Mei 2026)
 
 ATLAS punya dua mode untuk Program:
-- **Edit mode** (`/programs/{program}`): 5 tab existing (Ringkasan/Struktur/Jadwal/Eksekusi/Health) untuk PIC saat input data.
-- **Charter mode** (`/programs/{program}/charter`): single-page read-only, mirror format KPI Charter PPT DKMR (lihat `docs/reference/2026_MEI_Monitoring_Program_Kerja_DKMR.pptx`), dengan tombol Export PPTX.
+- **Edit mode** (`/programs/{program}`): 6 tab existing (Ringkasan/Struktur/Jadwal/Eksekusi/Hambatan/KPI) untuk PIC saat input data.
+- **Charter mode** (`/programs/{program}/charter`): single-page read-only, mirror format KPI Charter PPT DKMR (lihat `docs/reference/15052026_Monitoring Program Kerja DKMR.pdf` — file binary di-gitignore, ada di disk dev), dengan tombol Export PPTX.
 
 Aturan eksekusi:
 1. Charter View HANYA menampilkan, tidak mengedit. Semua editing tetap di tab existing.
@@ -109,7 +109,7 @@ php artisan test --filter="OrgChainServiceTest"     # specific
 php artisan test --filter="EscalationFlowTest"      # E2E pilot flow
 ```
 
-Tests baseline: 110/111 passing (1 pre-existing KPI decimal serialization unrelated).
+Tests baseline: 147/148 passing (1 pre-existing KPI decimal serialization di WorkflowMutationSmokeTest — assertJsonPath strict-equal `'95.000000'` vs serialized `95`, tidak terkait fitur).
 
 ## Convention Pegangan
 
