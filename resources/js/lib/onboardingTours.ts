@@ -12,6 +12,7 @@
  */
 
 export type TourId =
+  | 'pdca-orientation'       // pertama login user — overview alur PDCA
   | 'escalation-inbox'       // pertama buka Inbox dengan section escalation
   | 'clear-path-button'      // pertama lihat tombol "Butuh Dukungan Atasan"
   | 'triage-panel'           // pertama buka triage panel (atasan)
@@ -26,6 +27,42 @@ export type TourStep = {
 }
 
 export const TOURS: Record<TourId, TourStep[]> = {
+  'pdca-orientation': [
+    {
+      id: 'welcome',
+      title: 'Selamat datang di ATLAS',
+      text: 'ATLAS bekerja mengikuti siklus <strong>PDCA</strong> — Plan, Do, Check, Act. Tur singkat ini menunjukkan empat fase tersebut di sidebar kiri. ~30 detik.',
+    },
+    {
+      id: 'plan',
+      title: '1. Plan — Perencanaan',
+      text: 'Mulai dari sini. Buat program, bagi jadi workstream, lalu task. Tambahkan KPI yang akan diukur. Setelah siap dieksekusi, KADIV menyetujui untuk masuk fase berikutnya.',
+      attachTo: { element: '.sidebar a[href="/programs"]', on: 'right' },
+    },
+    {
+      id: 'do',
+      title: '2. Do — Eksekusi',
+      text: 'Workboard menampilkan task harian tim. PIC update status (BACKLOG → IN_PROGRESS → COMPLETED), unggah evidence, dan log progress mingguan dari tab Ringkasan program.',
+      attachTo: { element: '.sidebar a[href="/execution"]', on: 'right' },
+    },
+    {
+      id: 'check',
+      title: '3. Check — Pantau performa',
+      text: 'Lihat ringkasan portofolio program dan capaian KPI tiap direktorat di Performance. Home (halaman ini) juga menampilkan matrix lintas direktorat untuk eksekutif.',
+      attachTo: { element: '.sidebar a[href="/performance/scorecard"]', on: 'right' },
+    },
+    {
+      id: 'act',
+      title: '4. Act — Tindak Lanjut',
+      text: 'Rapat Koordinasi catat keputusan dan action items. Action item yang terhubung ke task otomatis menutup task saat dirampungkan. Tombol "Butuh Dukungan Atasan" mengangkat blocker ke atasan langsung.',
+      attachTo: { element: '.sidebar a[href="/jadwal"]', on: 'right' },
+    },
+    {
+      id: 'closing',
+      title: 'Selesai',
+      text: 'Sekarang Anda paham strukturnya. Tur akan ditandai selesai dan tidak muncul lagi. Bila perlu, semua fitur dijelaskan ulang lewat <a href="/playbook">Playbook</a>.',
+    },
+  ],
   'escalation-inbox': [
     {
       id: 'welcome',

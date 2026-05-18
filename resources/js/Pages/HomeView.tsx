@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { Head, usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
+import { useOnboardingTour } from '../hooks/useOnboardingTour'
 import { SkeletonBlock, SectionState } from '../components/ui'
 import { EscalationButton } from '../components/Escalation'
 import './HomeView.css'
@@ -410,6 +411,12 @@ export default function HomeView() {
       })
     }, 5000)
   }
+
+  // Isu #8 — Onboarding tour PDCA. Trigger sekali untuk user baru di Home
+  // (page primer). Hook idempotent: cek toursCompleted di auth.user, kalau
+  // sudah pernah, skip. Trigger setelah programSummary loaded supaya
+  // sidebar selectors sudah ada di DOM saat Shepherd attach.
+  useOnboardingTour('pdca-orientation', { trigger: programSummary !== null })
 
   // ── React Rules of Hooks: SEMUA hooks harus dipanggil sebelum early return ──
   // Sebelumnya useCountUp + useRef + useFlashOnChange dipanggil setelah
