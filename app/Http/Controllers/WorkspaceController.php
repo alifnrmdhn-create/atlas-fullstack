@@ -717,6 +717,17 @@ class WorkspaceController extends Controller
         }
 
         $workstream->load('entityPics');
+
+        // Broadcast cascade: workstream baru → parent program readiness
+        // berubah (hasWorkstream berpotensi flip false→true). FE perlu
+        // refetch program detail supaya checklist activation update.
+        BroadcastService::workstream($workstream->id, 'created', [
+            'programId' => $workstream->programId,
+        ]);
+        BroadcastService::program($workstream->programId, 'workstream-added', [
+            'workstreamId' => $workstream->id,
+        ]);
+
         return response()->json(['data' => $workstream], 201);
     }
 
