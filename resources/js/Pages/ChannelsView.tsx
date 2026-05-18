@@ -7,6 +7,7 @@ import { useEscKey } from '../hooks/useEscKey'
 import { extractErrorMessage } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { formatRoleLabel } from '../lib/roleLabel'
+import { useInlineToast } from '../components/InlineToast'
 import './ChannelsView.css'
 import {
   Avatar,
@@ -615,6 +616,7 @@ export function ChannelsView({
   sending,
   channelEntryUnread,
 }: ChannelsViewProps) {
+  const toast = useInlineToast()
   const [channelQuery, setChannelQuery] = useState('')
   const [channelFilter, setChannelFilter] = useState<'all' | 'priority' | 'unread'>('all')
   const [streamMode, setStreamMode] = useState<'all' | 'threads' | 'pinned' | 'saved'>('all')
@@ -2020,7 +2022,16 @@ export function ChannelsView({
                             className="channel-settings-dropdown__danger"
                             onClick={async () => {
                               if (!selectedChannelId) return
-                              await onArchiveChannel(selectedChannelId)
+                              const channelName = selectedChannel?.name ?? 'channel'
+                              try {
+                                await onArchiveChannel(selectedChannelId)
+                                toast.show(`Channel #${channelName} diarsipkan`, 'success')
+                              } catch (err) {
+                                toast.show(
+                                  err instanceof Error ? err.message : 'Gagal mengarsipkan channel',
+                                  'error',
+                                )
+                              }
                               setShowSettings(false)
                               setShowArchiveConfirm(false)
                             }}
@@ -3846,6 +3857,7 @@ export function ChannelsView({
 
     {/* Image lightbox */}
     {lightbox && <ImageLightbox name={lightbox.name} onClose={closeLightbox} url={lightbox.url} />}
+    <toast.View />
     </div>
   )
 }
