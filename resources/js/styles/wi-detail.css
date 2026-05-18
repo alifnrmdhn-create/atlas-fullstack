@@ -7239,6 +7239,60 @@ select.wid-input {
 .prog-progress-form__label { font-size: 12px; font-weight: 500; color: var(--text-secondary, #6b7280); }
 .prog-progress-form__actions { display: flex; gap: 8px; padding-top: 4px; }
 
+/* ── Period Picker ─────────────────────────────────
+   Mode toggle Mingguan/Bulanan + native <input type=week|month>
+   + preview label "Minggu ke N bulan X" (mirror DKMR PDF). */
+.prog-period-picker {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  gap: 6px 10px;
+  align-items: center;
+}
+.prog-period-picker__mode {
+  grid-row: 1;
+  grid-column: 1;
+  display: inline-flex;
+  background: var(--bg-elevated, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 0;
+}
+.prog-period-picker__mode-btn {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted, #6b7280);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.prog-period-picker__mode-btn[data-active="true"] {
+  background: var(--brand-soft, color-mix(in srgb, var(--brand, #0ea5e9) 10%, transparent));
+  color: var(--text-strong, #111827);
+  font-weight: 600;
+}
+.prog-period-picker__mode-btn:hover:not([data-active="true"]) {
+  color: var(--text-strong, #111827);
+}
+.prog-period-picker__input {
+  grid-row: 1;
+  grid-column: 2;
+  min-width: 0;
+}
+.prog-period-picker__preview {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: var(--text-muted, #6b7280);
+  font-style: italic;
+  padding-left: 2px;
+}
+.prog-period-picker__preview::before { content: '→ '; font-style: normal; }
+
 /* ── KPI Aktual section (composite weekly update) ──
    Inline batch entry untuk semua KPI internal program. Render 1 row per
    KPI: nama + target/last actual sebagai context + numeric input. */

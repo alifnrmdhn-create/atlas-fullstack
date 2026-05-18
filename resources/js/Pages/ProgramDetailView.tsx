@@ -6,6 +6,7 @@ import { useWorkspace } from '../hooks/useWorkspace'
 import { api, ApiRequestError, extractErrorMessage } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { formatKpiValue, getKpiFillPercent } from '../lib/kpi'
+import { periodToLabel, currentIsoWeek, currentMonth, isIsoWeek } from '../lib/periodFormat'
 import { useDarkMode } from '../lib/useDarkMode'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
@@ -261,15 +262,7 @@ export function ProgramDetailView() {
     nextStep: string
     dukunganDibutuhkan: string
   }>({
-    period: (() => {
-      // ISO 8601 week: minggu yang berisi Kamis pertama bulan Januari adalah W01
-      const now = new Date()
-      const thursday = new Date(now)
-      thursday.setDate(now.getDate() - ((now.getDay() + 6) % 7) + 3) // Kamis minggu ini
-      const jan4 = new Date(thursday.getFullYear(), 0, 4) // 4 Jan selalu di W01
-      const week = 1 + Math.round((thursday.getTime() - jan4.getTime()) / 604800000)
-      return `${thursday.getFullYear()}-W${String(week).padStart(2, '0')}`
-    })(),
+    period: currentIsoWeek(),
     healthAtTime: 'on_track',
     narrative: '',
     kendala: '',
@@ -278,6 +271,10 @@ export function ProgramDetailView() {
     dukunganDibutuhkan: '',
   })
   const [progressFormSaving, setProgressFormSaving] = useState(false)
+  // Mode periode: 'week' default (DKMR PDF dominan minggu-ke-N), 'month' fallback
+  // untuk program dengan reporting bulanan. Auto-sync ke progressForm.period saat
+  // ganti mode (current week ↔ current month).
+  const [periodMode, setPeriodMode] = useState<'week' | 'month'>('week')
   // Composite Weekly Update — KPI aktual yang dimasukkan bareng progress log.
   // Map kpiId → string input value. Saat submit progress log, parallel POST
   // ke /kpis/{id}/values untuk setiap entry yang nilainya non-empty.
@@ -1906,13 +1903,52 @@ export function ProgramDetailView() {
                       <div className="prog-progress-form">
                         <div className="prog-progress-form__row">
                           <label className="prog-progress-form__label">Periode</label>
-                          <input
-                            type="text"
-                            className="wi-input"
-                            value={progressForm.period}
-                            onChange={e => setProgressForm(f => ({ ...f, period: e.target.value }))}
-                            placeholder="2026-W17"
-                          />
+                          <div className="prog-period-picker">
+                            <div className="prog-period-picker__mode" role="tablist" aria-label="Mode periode">
+                              <button
+                                type="button"
+                                role="tab"
+                                aria-selected={periodMode === 'week'}
+                                className="prog-period-picker__mode-btn"
+                                data-active={periodMode === 'week'}
+                                onClick={() => {
+                                  if (periodMode === 'week') return
+                                  setPeriodMode('week')
+                                  setProgressForm(f => ({ ...f, period: currentIsoWeek() }))
+                                }}
+                              >
+                                Mingguan
+                              </button>
+                              <button
+                                type="button"
+                                role="tab"
+                                aria-selected={periodMode === 'month'}
+                                className="prog-period-picker__mode-btn"
+                                data-active={periodMode === 'month'}
+                                onClick={() => {
+                                  if (periodMode === 'month') return
+                                  setPeriodMode('month')
+                                  setProgressForm(f => ({ ...f, period: currentMonth() }))
+                                }}
+                              >
+                                Bulanan
+                              </button>
+                            </div>
+                            <input
+                              type={periodMode === 'week' ? 'week' : 'month'}
+                              className="wi-input prog-period-picker__input"
+                              value={progressForm.period}
+                              onChange={e => setProgressForm(f => ({ ...f, period: e.target.value }))}
+                              aria-describedby="prog-period-preview"
+                            />
+                            <span
+                              id="prog-period-preview"
+                              className="prog-period-picker__preview"
+                              data-format={isIsoWeek(progressForm.period) ? 'week' : 'month'}
+                            >
+                              {periodToLabel(progressForm.period)}
+                            </span>
+                          </div>
                         </div>
                         <div className="prog-progress-form__row">
                           <label className="prog-progress-form__label">Health</label>
