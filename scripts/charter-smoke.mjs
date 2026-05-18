@@ -247,6 +247,63 @@ try {
     passed.push(`Phase 4 vocab on /: skipped (pre-existing HomeView render flake — ${err.message.slice(0, 80)})`)
   }
 
+  // ── PDCA orientation tour selectors (Isu #8) ──────────────────────────
+  // Verify sidebar nav items used as Shepherd attachTo anchors still exist.
+  // If selectors break (sidebar restructured), tour would attach to nothing.
+  step('verify PDCA tour selectors present on /')
+  const tourSelectors = await evaluate(page, () => ({
+    plan: !!document.querySelector('.sidebar a[href="/programs"]'),
+    doExec: !!document.querySelector('.sidebar a[href="/execution"]'),
+    check: !!document.querySelector('.sidebar a[href="/performance/scorecard"]'),
+    act: !!document.querySelector('.sidebar a[href="/jadwal"]'),
+  }))
+  const tourMissing = Object.entries(tourSelectors).filter(([, ok]) => !ok).map(([k]) => k)
+  if (tourMissing.length === 0) {
+    passed.push('Isu #8: all 4 PDCA tour anchor selectors present in sidebar')
+  } else {
+    issues.push(`Isu #8: PDCA tour selectors MISSING: ${tourMissing.join(', ')}`)
+  }
+
+  // ── Charter at dark mode ──────────────────────────────────────────────
+  // Commit b0fa0c5 added dark mode coverage for ds-* tokens. Verify Charter
+  // renders without breakage when [data-theme="dark"] is on.
+  step('toggle dark mode → revisit Charter')
+  await page.send('Runtime.evaluate', {
+    expression: `document.documentElement.setAttribute('data-theme', 'dark')`,
+  })
+  await navigate(page, `${baseUrl}/programs/${chosenProgramId}/charter`)
+  try {
+    await waitFor(page, () => document.querySelector('[data-charter-root]'), 20_000, 'Charter root mounted (dark)')
+    const darkDiag = await evaluate(page, () => {
+      const root = document.querySelector('[data-charter-root]')
+      const bg = root ? getComputedStyle(root).backgroundColor : ''
+      return {
+        rootPresent: !!root,
+        headerPresent: !!document.querySelector('.cs-header'),
+        statusPresent: !!document.querySelector('.cs-status'),
+        themeAttr: document.documentElement.getAttribute('data-theme'),
+        rootBg: bg,
+        // Heuristic: dark mode body bg should be RGB sum < 384 (avg < 128).
+        bgIsDark: (() => {
+          const m = (getComputedStyle(document.body).backgroundColor || '').match(/rgba?\(([^)]+)\)/)
+          if (!m) return false
+          const [r, g, b] = m[1].split(',').map(s => parseInt(s.trim(), 10))
+          return (r + g + b) < 384
+        })(),
+      }
+    })
+    if (darkDiag.themeAttr === 'dark') passed.push(`Charter dark mode: data-theme="${darkDiag.themeAttr}"`)
+    if (darkDiag.rootPresent && darkDiag.headerPresent && darkDiag.statusPresent) {
+      passed.push('Charter dark mode: all key elements still render (no React/CSS crash)')
+    } else {
+      issues.push(`Charter dark mode: missing elements — root:${darkDiag.rootPresent} header:${darkDiag.headerPresent} status:${darkDiag.statusPresent}`)
+    }
+    if (darkDiag.bgIsDark) passed.push('Charter dark mode: body bg is actually dark (token resolved correctly)')
+    else issues.push(`Charter dark mode: body bg NOT dark — got "${darkDiag.rootBg}", expected RGB sum < 384`)
+  } catch (err) {
+    issues.push(`Charter dark mode: render failed — ${err.message.slice(0, 100)}`)
+  }
+
   // ── Summary ───────────────────────────────────────────────────────────
   console.log('')
   console.log(`✓ Passed (${passed.length}):`)
