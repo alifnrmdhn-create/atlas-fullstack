@@ -274,6 +274,17 @@
 .roadmap-body { padding: 1.25rem 2.25rem; display: flex; flex-direction: column; gap: 20px; }
 .roadmap-body--timeline { padding: 0 0 24px; }
 .roadmap-empty { padding: 24px; }
+.roadmap-empty--error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  background: color-mix(in srgb, var(--red, #dc2626) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red, #dc2626) 22%, transparent);
+  border-radius: 8px;
+  margin: 0 12px;
+}
+.roadmap-empty--error .btn { margin-top: 4px; }
 .roadmap-toolbar-offset { margin-left: 4px; }
 .roadmap-stat-alert { color: var(--red); }
 

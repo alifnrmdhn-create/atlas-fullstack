@@ -171,12 +171,18 @@ export function ProgramsView() {
   // ── Timeline data ──────────────────────────────────────────────────────
   const [timelineData, setTimelineData] = useState<TimelineGanttProgram[]>([])
   const [timelineLoading, setTimelineLoading] = useState(false)
+  const [timelineError, setTimelineError] = useState<string | null>(null)
 
   const loadTimeline = useCallback(() => {
     setTimelineLoading(true)
+    setTimelineError(null)
     api.get<{ data: TimelineGanttProgram[] }>('/programs/timeline-all')
       .then(res => setTimelineData(res.data ?? []))
-      .catch((err) => { console.error('[Atlas] Gagal memuat timeline program:', err); setTimelineData([]) })
+      .catch((err) => {
+        console.error('[Atlas] Gagal memuat timeline program:', err)
+        setTimelineData([])
+        setTimelineError(err instanceof Error ? err.message : 'Gagal memuat timeline program')
+      })
       .finally(() => setTimelineLoading(false))
   }, [])
 
@@ -187,12 +193,18 @@ export function ProgramsView() {
   // ── Execution pulse data ───────────────────────────────────────────────
   const [pulse, setPulse] = useState<ExecutionPulse | null>(null)
   const [pulseLoading, setPulseLoading] = useState(false)
+  const [pulseError, setPulseError] = useState<string | null>(null)
 
   const loadPulse = useCallback(() => {
     setPulseLoading(true)
+    setPulseError(null)
     api.get<{ data: ExecutionPulse }>('/programs/execution-pulse')
       .then(res => setPulse(res.data ?? null))
-      .catch((err) => { console.error('[Atlas] Gagal memuat execution pulse:', err); setPulse(null) })
+      .catch((err) => {
+        console.error('[Atlas] Gagal memuat execution pulse:', err)
+        setPulse(null)
+        setPulseError(err instanceof Error ? err.message : 'Gagal memuat data eksekusi')
+      })
       .finally(() => setPulseLoading(false))
   }, [])
 
@@ -394,11 +406,17 @@ export function ProgramsView() {
   const closeRestoreModal = useCallback(() => closeOverlay('restore-program', () => { setRestoreTarget(null); setRestoreError(null) }), [closeOverlay])
   useEscKey(closeRestoreModal, !!restoreTarget)
 
+  const [archivedError, setArchivedError] = useState<string | null>(null)
   const loadArchivedPrograms = useCallback(() => {
     setArchivedLoading(true)
+    setArchivedError(null)
     api.get<{ data: ArchivedProgram[] }>('/programs/archived')
       .then(res => setArchivedPrograms(res.data ?? []))
-      .catch((err) => { console.error('[Atlas] Gagal memuat program arsip:', err); setArchivedPrograms([]) })
+      .catch((err) => {
+        console.error('[Atlas] Gagal memuat program arsip:', err)
+        setArchivedPrograms([])
+        setArchivedError(err instanceof Error ? err.message : 'Gagal memuat program arsip')
+      })
       .finally(() => setArchivedLoading(false))
   }, [])
 
@@ -1188,6 +1206,14 @@ export function ProgramsView() {
                 <div className="roadmap-body roadmap-body--timeline">
                   {timelineLoading ? (
                     <p className="text-sm text-muted roadmap-empty">Memuat timeline…</p>
+                  ) : timelineError ? (
+                    <div className="roadmap-empty roadmap-empty--error" role="alert">
+                      <p className="text-sm">Gagal memuat timeline program.</p>
+                      <p className="text-xs text-muted">{timelineError}</p>
+                      <button type="button" className="btn btn--ghost btn--sm" onClick={loadTimeline}>
+                        Coba lagi
+                      </button>
+                    </div>
                   ) : (
                     <TimelineGantt
                       programs={filteredTimeline}
@@ -1846,6 +1872,14 @@ export function ProgramsView() {
             </div>
             {archivedLoading ? (
               <SkeletonStack lines={[90, 75, 60]} />
+            ) : archivedError ? (
+              <div className="roadmap-empty roadmap-empty--error" role="alert">
+                <p className="text-sm">Gagal memuat program arsip.</p>
+                <p className="text-xs text-muted">{archivedError}</p>
+                <button type="button" className="btn btn--ghost btn--sm" onClick={loadArchivedPrograms}>
+                  Coba lagi
+                </button>
+              </div>
             ) : archivedPrograms.length === 0 ? (
               <SectionState icon="📦" title="Tidak ada arsip" text="Belum ada program yang diarsipkan." />
             ) : (
