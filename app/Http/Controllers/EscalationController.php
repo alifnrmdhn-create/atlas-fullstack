@@ -225,10 +225,15 @@ class EscalationController extends Controller
                 'status' => 'REQUESTED',
             ]);
 
+            $newTargetTitle = trim(($newTarget->positionTitle ?? '') ?: '');
+            $newTargetLabel = $newTargetTitle !== ''
+                ? "{$newTarget->name} ({$newTargetTitle})"
+                : $newTarget->name;
+
             $this->createNotification($newTarget->id, 'CLEAR_PATH_REQUESTED', $newReq,
-                "Eskalasi di-reroute ke Anda: {$newReq->title}");
+                "Eskalasi di-reroute ke Anda dari {$user->name}: {$newReq->title}");
             $this->createNotification($req->requestedById, 'CLEAR_PATH_REQUESTED', $newReq,
-                "Eskalasi Anda di-reroute ke {$newTarget->name}.");
+                "Eskalasi \"{$req->title}\" di-reroute ke {$newTargetLabel}. Klik untuk lihat tracking baru.");
         });
 
         return response()->json(['data' => $req->fresh()]);
