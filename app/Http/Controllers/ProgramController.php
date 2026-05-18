@@ -217,13 +217,15 @@ class ProgramController extends Controller
         $request->mergeIfMissing(['startDate' => $program->startDate?->toDateString()]);
 
         $data = $request->validate([
-            'name' => 'sometimes|string|max:200',
+            // 'sometimes|required' = boleh tidak dikirim, tapi kalau dikirim tidak
+            // boleh kosong. Sinkron dengan FE yang punya HTML `required` di input.
+            'name' => 'sometimes|required|string|min:1|max:200',
             'description' => 'nullable|string|max:2000',
             'strategicObjective' => 'nullable|string|max:1000',
             'startDate' => 'sometimes|date',
             'targetEndDate' => 'sometimes|date|after_or_equal:startDate',
             'priority' => 'sometimes|in:LOW,MEDIUM,HIGH,CRITICAL',
-            'budgetIdr' => 'nullable|numeric',
+            'budgetIdr' => 'nullable|numeric|min:0',
             'linkedChannelId' => 'nullable|integer|exists:Channel,id',
             'picPersonIds' => 'nullable|array',
             'picPersonIds.*' => 'integer|exists:User,id',
