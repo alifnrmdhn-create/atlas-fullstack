@@ -3,6 +3,7 @@ import { Head, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { useFeatureFlag } from '../../hooks/useFeatureFlag'
 import { useOnboardingTour } from '../../hooks/useOnboardingTour'
+import { useRealtime } from '../../hooks/useRealtime'
 import { api } from '../../lib/api'
 import { Card, Pill } from '../../design-system'
 import { ForecastBadge } from '../../components/ui'
@@ -69,6 +70,11 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
   const [data, setData] = useState<LedgerData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Ledger di-derive on-the-fly dari Task + MeetingActionItem + Assignment.
+  // Subscribe ke ticks ketiganya supaya bilamana ada status update,
+  // hit rate + streak auto-refresh tanpa user F5.
+  const { ticks } = useRealtime()
+  const ledgerSignal = ticks.assignment + ticks.task + ticks.meeting
 
   useOnboardingTour('commitment-ledger', { trigger: enabled && !!data })
 
@@ -79,7 +85,7 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
       .then(payload => { if (!cancelled) { setData(payload.data); setLoading(false) } })
       .catch(err => { if (!cancelled) { setError((err as Error).message); setLoading(false) } })
     return () => { cancelled = true }
-  }, [enabled, userId])
+  }, [enabled, userId, ledgerSignal])
 
   if (!enabled) return null
 
