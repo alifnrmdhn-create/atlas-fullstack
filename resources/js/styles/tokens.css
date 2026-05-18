@@ -88,6 +88,14 @@
   --text-body: var(--text);
   --text-primary: var(--text-strong);
   --text-secondary: var(--text);
+
+  /* Legacy aliases — referenced as var(--bg-card, fallback) etc. across the
+   * codebase. Without these definitions the fallback (#fff / #f3f4f6 / #e5e7eb)
+   * kicks in regardless of theme. Re-point at theme-aware tokens so dark mode
+   * propagates automatically through indirection. */
+  --bg-card: var(--panel);
+  --bg-subtle: var(--surface-1);
+  --border-color: var(--panel-border);
   --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'Geist Mono', 'JetBrains Mono', monospace;
 
@@ -220,10 +228,14 @@
   --sidebar-hover: rgba(255,255,255,0.04);
   --sidebar-active-bg: rgba(52,211,153,0.10);
 
-  --indigo: #34D399;                 /* brighter brand green for dark visibility */
-  --indigo-dark: #22C55E;
-  --indigo-dim: rgba(52,211,153,0.10);
-  --indigo-mid: rgba(52,211,153,0.20);
+  /* Brand green — matches --ds-brand-500/600. Earlier value (#34D399 mint)
+   * was too saturated against pure-black canvas; primary CTAs read as
+   * "screaming" rather than "present". Deeper green keeps brand identity
+   * with white text still at 5.1:1 (AA Large + UI). */
+  --indigo: #2E8B4E;
+  --indigo-dark: #1F6B35;
+  --indigo-dim: rgba(46,139,78,0.12);
+  --indigo-mid: rgba(46,139,78,0.22);
 
   --app-bg: #0A0A0B;                 /* pitch black canvas */
   --surface-0: #0A0A0B;              /* alias of canvas */
