@@ -1164,15 +1164,15 @@ export function ProgramsView() {
                             </div>
                             <div className="alignment-grid">
                               {dashboard.dimensions.strategic.slice(0, 8).map(s => (
-                                <div className="alignment-cell" key={s.programId} title={`${s.program} — ${s.strategicAlignment}%`}>
+                                <div className="alignment-cell" key={s.programId} title={`${s.program} — ${s.strategicAlignment ?? 0}%`}>
                                   <div className="alignment-cell__bar">
                                     <div
-                                      className={`alignment-cell__fill alignment-cell__fill--${s.strategicAlignment >= 80 ? 'green' : s.strategicAlignment >= 60 ? 'yellow' : 'red'}`}
-                                      style={{ height: `${s.strategicAlignment}%` }}
+                                      className={`alignment-cell__fill alignment-cell__fill--${(s.strategicAlignment ?? 0) >= 80 ? 'green' : (s.strategicAlignment ?? 0) >= 60 ? 'yellow' : 'red'}`}
+                                      style={{ height: `${s.strategicAlignment ?? 0}%` }}
                                     />
                                   </div>
                                   <span className="alignment-cell__label text-muted">{s.program}</span>
-                                  <span className="alignment-cell__val">{s.strategicAlignment}%</span>
+                                  <span className="alignment-cell__val">{s.strategicAlignment != null ? `${s.strategicAlignment}%` : '—'}</span>
                                 </div>
                               ))}
                             </div>

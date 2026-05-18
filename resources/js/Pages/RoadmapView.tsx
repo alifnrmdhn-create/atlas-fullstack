@@ -194,13 +194,13 @@ export function RoadmapView() {
                     </div>
                     <div className="alignment-grid">
                       {dashboard.dimensions.strategic.slice(0, 8).map(s => (
-                        <div className="alignment-cell" key={s.programId} title={`${s.program} — ${s.strategicAlignment}%`}>
+                        <div className="alignment-cell" key={s.programId} title={`${s.program} — ${s.strategicAlignment ?? 0}%`}>
                           <div className="alignment-cell__bar">
                             <div
                               className={`alignment-cell__fill alignment-cell__fill--${normalizeHealthStatus(s.healthStatus).toLowerCase()}`}
-                              style={{ height: `${s.strategicAlignment}%` }}
+                              style={{ height: `${s.strategicAlignment ?? 0}%` }}
                             >
-                              <span className={`alignment-cell__fill-label${s.strategicAlignment >= 20 ? ' alignment-cell__fill-label--visible' : ''}`}>
+                              <span className={`alignment-cell__fill-label${(s.strategicAlignment ?? 0) >= 20 ? ' alignment-cell__fill-label--visible' : ''}`}>
                                 {s.program}
                               </span>
                             </div>

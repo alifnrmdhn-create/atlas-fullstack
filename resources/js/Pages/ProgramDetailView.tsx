@@ -1328,7 +1328,14 @@ export function ProgramDetailView() {
                               <span className="metric__sub">{scheduleHealth.pctTime}% waktu terpakai</span>
                             )}
                           </div>
-                          <Metric label="Alignment" value={`${detail.strategicAlignment}%`} />
+                          <Metric
+                            label="Alignment"
+                            value={
+                              detail.strategicAlignment != null
+                                ? `${detail.strategicAlignment}%`
+                                : '—'
+                            }
+                          />
                           <Metric label="Workstream" value={`${(detail.workstreams ?? []).length}`} />
                           {kpiHealth !== null && (
                             <div className="metric">
