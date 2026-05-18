@@ -1096,9 +1096,23 @@ export function ProgramDetailView() {
           ? <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="12" aria-hidden="true"><path d="M4 3v8l7-4z"/></svg>
           : <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="12" aria-hidden="true"><path d="m2.5 7 3 3 6-7"/></svg>
 
+        // Pre-compute checklist state — dipakai banner hint + checklist section.
+        // Sinkron dengan logic di line ~1712 (checks array).
+        const checklistDone = (
+          !!(detail.description?.trim())
+          && !!detail.readiness?.hasWorkstream && !!detail.readiness?.hasTask
+          && !!(detail.budgetIdr && detail.budgetIdr > 0)
+          && !!(programSummary?.linkedChannel)
+          && !!(programSummary?.kpiCount && programSummary.kpiCount > 0)
+        )
+
         let hint: React.ReactNode = null
         if (phase === 'planning') {
-          if (status === 'DRAFT') hint = 'Lengkapi persiapan di checklist, lalu aktifkan program.'
+          if (status === 'DRAFT') {
+            hint = checklistDone
+              ? 'Checklist lengkap — klik tombol di bawah untuk aktifkan / ajukan persetujuan.'
+              : 'Lengkapi persiapan di checklist, lalu aktifkan program.'
+          }
           else if (status === 'PENDING_KASUB') hint = 'Menunggu persetujuan KASUBDIV.'
           else if (status === 'PENDING_KADIV') hint = 'Menunggu persetujuan KADIV.'
           else if (status === 'REJECTED') hint = 'Perlu revisi — lihat catatan penolakan di atas.'
