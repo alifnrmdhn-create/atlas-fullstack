@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import type { FormEvent } from 'react'
 import { usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
-import { api, extractErrorMessage } from '../lib/api'
+import { api, ApiRequestError, extractErrorMessage } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { formatKpiValue, getKpiFillPercent } from '../lib/kpi'
 import { useDarkMode } from '../lib/useDarkMode'
@@ -444,12 +444,24 @@ export function ProgramDetailView() {
     setBlockersLoading(true)
     setBlockersError(false)
     api.get<{ data: { activeBlockers: PulseBlocker[] } }>('/programs/execution-pulse')
-      .then(res => setBlockers(
-        (res.data?.activeBlockers ?? []).filter(b => b.task.workstream.program.id === numId)
-      ))
+      .then(res => {
+        // Defensive filter — skip blocker dengan struktur nested yang malformed,
+        // jangan jatuhkan seluruh load karena 1 item rusak.
+        const all = res.data?.activeBlockers ?? []
+        const filtered = all.filter(b => b?.task?.workstream?.program?.id === numId)
+        setBlockers(filtered)
+      })
       .catch((err) => {
-        console.error('[Atlas] Gagal memuat blocker program:', err)
-        setBlockersError(true)
+        // Hanya tandai error untuk HTTP failure nyata (4xx/5xx). Empty
+        // array dari endpoint sukses TIDAK boleh trigger banner — itu
+        // legit state (program baru, belum ada blocker).
+        if (err instanceof ApiRequestError && err.status >= 400) {
+          console.error('[Atlas] Gagal memuat blocker program:', err.status, err.message)
+          setBlockersError(true)
+        } else {
+          // Parsing error / unexpected — log saja, biarkan empty state default.
+          console.warn('[Atlas] Blocker load warning (treated as empty):', err)
+        }
       })
       .finally(() => setBlockersLoading(false))
   }, [numId])
