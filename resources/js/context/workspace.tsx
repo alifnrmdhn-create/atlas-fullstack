@@ -517,7 +517,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
     try {
       const results = await Promise.allSettled([
-        api.get<DashboardApiPayload>('/dashboard'),
+        api.get<DashboardApiPayload>('/workspace/overview'),
         api.get<CollectionResponse<ChannelSummary>>('/channels'),
         api.get<CollectionResponse<Program>>('/programs'),
         api.get<TasksResponse>('/tasks'),

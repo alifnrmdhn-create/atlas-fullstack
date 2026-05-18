@@ -41,10 +41,11 @@ Route::middleware('auth')->group(function () {
             'scorecardSnapshot' => $scorecard->homeSnapshot($request->user()),
         ]);
     })->name('home');
-    // /dashboard tetap dipertahankan: endpoint ini melayani JSON API yang
-    // dipakai HomeView (lihat resources/js/context/workspace.tsx). Kita hanya
-    // menghapus item dari sidebar; halaman Inertia tetap accessible via deep link.
-    Route::get('/dashboard', [WorkspaceController::class, 'dashboard'])->name('dashboard');
+    // Workspace overview JSON — dipakai HomeView untuk agregasi cross-modul
+    // (lihat resources/js/context/workspace.tsx). Tidak punya halaman Inertia.
+    Route::get('/workspace/overview', [WorkspaceController::class, 'workspaceOverview'])->name('workspace.overview');
+    // Transitional redirect: bookmark/URL lama `/dashboard` → home.
+    Route::get('/dashboard', fn () => redirect('/'));
     Route::get('/roadmap', fn () => Inertia::render('RoadmapView'))->name('roadmap');
     Route::get('/execution', fn () => Inertia::render('WorkboardView'))->name('execution');
     Route::get('/execution/tasks/{id}', [TaskController::class, 'show'])->name('execution.tasks.show');

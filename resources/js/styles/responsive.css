@@ -172,7 +172,7 @@
   border-color: transparent;
 }
 
-/* Presence row (used in DashboardView, PresenceView) */
+/* Presence row (used in PresenceView) */
 .presence-row {
   display: flex;
   align-items: center;

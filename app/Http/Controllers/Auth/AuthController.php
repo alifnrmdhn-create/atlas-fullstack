@@ -52,8 +52,6 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        // Home V2 (/) is now the canonical landing page; /dashboard is legacy
-        // (still routable for power users via deep-link, not surfaced in UI).
         return redirect()->intended('/');
     }
 

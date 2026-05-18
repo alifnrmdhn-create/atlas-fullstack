@@ -255,7 +255,6 @@ function prefetchRoute(path: string) {
     '/admin/thresholds': () => import('../Pages/AdminThresholdsView'),
     '/channels': () => import('../Pages/ChannelsViewWrapper'),
     '/': () => import('../Pages/HomeView'),
-    '/dashboard': () => import('../Pages/DashboardView'),
     '/execution': () => import('../Pages/WorkboardView'),
     '/penugasan': () => import('../Pages/AssignmentsView'),
     '/fokus': () => import('../Pages/InboxView'),
