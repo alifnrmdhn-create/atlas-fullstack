@@ -155,6 +155,15 @@ function IconSettings() {
     </svg>
   )
 }
+function IconGlossary() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 2.5h7.5a2 2 0 0 1 2 2v9H4.5a1.5 1.5 0 0 1-1.5-1.5z" />
+      <path d="M3 11.5h9.5" />
+      <path d="M5.5 5.5h5M5.5 8h3.5" />
+    </svg>
+  )
+}
 function IconChannels() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
@@ -263,6 +272,7 @@ function prefetchRoute(path: string) {
     '/laporan-bulanan': () => import('../Pages/MonthlyReportsView'),
     '/laporan-risiko': () => import('../Pages/RiskReportsView'),
     '/playbook': () => import('../Pages/PlaybookView'),
+    '/glossary': () => import('../Pages/GlossaryView'),
     '/presence': () => import('../Pages/PresenceView'),
     '/profile': () => import('../Pages/ProfileView'),
     '/programs': () => import('../Pages/ProgramsView'),
@@ -906,6 +916,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     presence:    { path: '/presence',  label: 'Presence',         caption: 'Live team availability',            icon: IconPresence   },
     profile:     { path: '/profile',   label: 'Profile',          caption: 'Account & position hierarchy',      icon: IconProfile    },
     settings:    { path: '/settings',  label: 'Settings',         caption: 'Workspace preferences',             icon: IconSettings   },
+    glossary:    { path: '/glossary',  label: 'Glossary',         caption: 'Vokabulari & istilah ATLAS',        icon: IconGlossary   },
   } satisfies Record<string, NavItem>
 
   // ── Sidebar groups — PDCA-aligned per CLAUDE.md ──────────────────────────
@@ -925,7 +936,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const grpPerformanceMin     = { label: 'Performance', items: [NI.perfSaya] }
   const grpTindakLanjut       = { label: 'Tindak Lanjut', items: [NI.schedule] }
   const grpKomunikasi         = { label: 'Komunikasi', items: [NI.channels] }
-  const grpAkun               = { label: 'Akun',       items: [NI.presence, NI.profile, NI.settings] }
+  const grpAkun               = { label: 'Akun',       items: [NI.presence, NI.profile, NI.settings, NI.glossary] }
   const grpAdmin = {
     label: 'Admin',
     items: [
@@ -993,7 +1004,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     '/': 'Home', '/programs': 'Programs',
     '/goals': 'Goals & KPI', '/activity': 'Team Activity', '/execution': 'Execution', '/penugasan': 'Penugasan', '/reports': 'Analytics', '/laporan-bulanan': 'Monthly Reports', '/laporan-risiko': 'Risk Reports',
     '/fokus': 'Focus', '/channels': 'Channels', '/jadwal': 'Rapat Koordinasi', '/search': 'Search',
-    '/presence': 'Presence', '/profile': 'Profile', '/settings': 'Settings',
+    '/presence': 'Presence', '/profile': 'Profile', '/settings': 'Settings', '/glossary': 'Glossary',
     '/admin/users': 'Users', '/admin/positions': 'Positions',
     '/admin/orgs': 'Companies', '/admin/roles': 'Roles & Permissions',
     '/playbook': 'Playbook',

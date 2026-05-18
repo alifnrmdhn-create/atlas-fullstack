@@ -68,6 +68,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { path: '/presence', label: 'Presence' },
       { path: '/profile', label: 'Profile' },
       { path: '/settings', label: 'Settings' },
+      { path: '/glossary', label: 'Glossary' },
     ],
   },
 ]

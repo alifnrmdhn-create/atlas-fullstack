@@ -66,6 +66,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', fn () => Inertia::render('SettingsView'))->name('settings');
     Route::post('/auth/change-password', [WorkspaceController::class, 'changePassword'])->name('auth.change-password');
     Route::get('/playbook', fn () => Inertia::render('PlaybookView'))->name('playbook');
+    Route::get('/glossary', fn () => Inertia::render('GlossaryView'))->name('glossary');
     // Serve curated markdown docs (single source = base_path('docs/')). Whitelist-gated
     // to prevent leaking internal planning/architecture files. Add filename to $allowed
     // when surfacing a new doc to authenticated users.
