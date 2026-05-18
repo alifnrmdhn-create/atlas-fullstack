@@ -1318,9 +1318,18 @@ export function ProgramDetailView() {
                             <span className="metric__label">Progress</span>
                             <span className="metric__value">
                               {detail.progressPercent}%
-                              {scheduleHealth && (
-                                <span className={`metric__schedule-gap${scheduleHealth.gap < -10 ? ' behind' : scheduleHealth.gap > 10 ? ' ahead' : ''}`}>
-                                  {scheduleHealth.gap > 0 ? `+${scheduleHealth.gap}pp` : `${scheduleHealth.gap}pp`}
+                              {scheduleHealth && Math.abs(scheduleHealth.gap) >= 5 && (
+                                <span
+                                  className={`metric__schedule-gap${scheduleHealth.gap <= -10 ? ' behind' : scheduleHealth.gap >= 10 ? ' ahead' : ''}`}
+                                  title={
+                                    scheduleHealth.gap > 0
+                                      ? `Progress mendahului jadwal: +${Math.round(scheduleHealth.gap)} percentage point dari pace waktu`
+                                      : `Progress tertinggal jadwal: ${Math.round(Math.abs(scheduleHealth.gap))} percentage point di bawah pace waktu`
+                                  }
+                                >
+                                  {scheduleHealth.gap > 0
+                                    ? `↑ ${Math.round(scheduleHealth.gap)}pp di depan`
+                                    : `↓ ${Math.round(Math.abs(scheduleHealth.gap))}pp di belakang`}
                                 </span>
                               )}
                             </span>
