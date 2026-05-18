@@ -2081,15 +2081,18 @@ export function ProgramsView() {
           agar tidak ter-clip oleh overflow:hidden/auto di ancestor mana pun */}
       </div>
       {showBatchExport && createPortal(
-        <>
-          <div className="modal-backdrop" onClick={closeBatchExport} aria-hidden="true" />
+        <div
+          className="modal-backdrop"
+          onClick={() => !batchExporting && closeBatchExport()}
+        >
           <div
             ref={batchDialogRef}
-            className="modal modal--md batch-export-modal"
+            className="modal batch-export-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby={batchTitleId}
             tabIndex={-1}
+            onClick={e => e.stopPropagation()}
           >
             <div className="modal__header">
               <div className="modal-headcopy">
@@ -2187,7 +2190,7 @@ export function ProgramsView() {
               </button>
             </div>
           </div>
-        </>,
+        </div>,
         document.body
       )}
 
