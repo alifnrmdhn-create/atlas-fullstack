@@ -271,6 +271,8 @@ export type ProgramDetail = {
     targetCompletion: string
     startDate: string | null
     actualCompletion: string | null
+    budgetIdr?: number | null
+    budgetSpent?: number | null
     picPersonIds?: number[]
     primaryPicPersonId?: number
     picPersons?: Array<{ id: number; name: string }>

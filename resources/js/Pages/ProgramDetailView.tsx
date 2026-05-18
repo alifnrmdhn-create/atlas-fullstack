@@ -97,6 +97,7 @@ type TaskItem = {
   id: number; code: string; title: string; status: string; percentComplete: number; phaseId: number | null
   startDate?: string | null; targetCompletion?: string; priority?: string
   isBlocked?: boolean
+  output?: string | null
   picPersons?: Array<{ id: number; name: string }>
 }
 
@@ -211,7 +212,15 @@ export function ProgramDetailView() {
   const [progressLog, setProgressLog] = useState<ProgressLogEntry[]>([])
   const [progressLogLoading, setProgressLogLoading] = useState(false)
   const [showProgressForm, setShowProgressForm] = useState(false)
-  const [progressForm, setProgressForm] = useState({
+  const [progressForm, setProgressForm] = useState<{
+    period: string
+    healthAtTime: ProgressLogEntry['healthAtTime']
+    narrative: string
+    kendala: string
+    correctiveAction: string
+    nextStep: string
+    dukunganDibutuhkan: string
+  }>({
     period: (() => {
       // ISO 8601 week: minggu yang berisi Kamis pertama bulan Januari adalah W01
       const now = new Date()
@@ -221,7 +230,7 @@ export function ProgramDetailView() {
       const week = 1 + Math.round((thursday.getTime() - jan4.getTime()) / 604800000)
       return `${thursday.getFullYear()}-W${String(week).padStart(2, '0')}`
     })(),
-    healthAtTime: 'on_track' as const,
+    healthAtTime: 'on_track',
     narrative: '',
     kendala: '',
     correctiveAction: '',
