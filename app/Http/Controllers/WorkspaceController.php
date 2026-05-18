@@ -665,20 +665,43 @@ class WorkspaceController extends Controller
                     ->orderBy('letterIndex')
                     ->orderBy('createdAt'),
                 'tasks.assignee:id,name,avatarUrl',
+                'phases',
+                'phases.tasks' => fn ($q) => $q
+                    ->select([
+                        'id', 'code', 'title', 'description', 'output', 'status',
+                        'percentComplete', 'priority', 'startDate', 'targetCompletion',
+                        'actualCompletion', 'isBlocked', 'blockedReason', 'healthStatus',
+                        'letterIndex', 'phaseId', 'assignedTo', 'initiativeId',
+                    ])
+                    ->orderBy('letterIndex')
+                    ->orderBy('createdAt'),
+                'phases.tasks.assignee:id,name,avatarUrl',
                 'entityPics',
             ])
             ->findOrFail($id);
 
-        // Map task picPersons (alias dari assignee untuk konsistensi UI)
-        $tasks = $workstream->tasks->map(function ($t) {
-            $arr = $t->toArray();
-            $arr['picPersons'] = $t->assignee ? [['id' => $t->assignee->id, 'name' => $t->assignee->name]] : [];
+        // Map task picPersons (alias dari assignee untuk konsistensi UI).
+        // FE iterate atas `phases[].tasks` DAN `tasks` (unphased). Keduanya
+        // butuh picPersons populated — kalau hanya yang top-level, task di
+        // dalam phase tampil "Belum ada PIC" padahal assignee sudah ada.
+        $mapPic = function ($task) {
+            $arr = $task->toArray();
+            $arr['picPersons'] = $task->assignee
+                ? [['id' => $task->assignee->id, 'name' => $task->assignee->name]]
+                : [];
+            return $arr;
+        };
+        $tasks = $workstream->tasks->map($mapPic);
+        $phases = $workstream->phases->map(function ($p) use ($mapPic) {
+            $arr = $p->toArray();
+            $arr['tasks'] = $p->tasks->map($mapPic)->values();
             return $arr;
         });
 
         return response()->json(['data' => [
             ...$workstream->toArray(),
             'tasks' => $tasks,
+            'phases' => $phases,
             'comments' => [],
         ]]);
     }

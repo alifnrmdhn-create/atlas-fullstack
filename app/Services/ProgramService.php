@@ -249,6 +249,11 @@ class ProgramService
                 'workstreams.phases.entityPics',
                 'workstreams.tasks.blockers',
                 'workstreams.tasks.entityPics',
+                // KPI internal aktif — supaya `detail.kpis` terisi di FE tanpa N+1 lazy load.
+                // Tanpa eager-load ini, KPI yang baru disimpan via /kpi-internal tidak muncul
+                // sampai reload halaman penuh (Program model tidak punya $appends 'kpis').
+                'kpis' => fn ($q) => $q->where('isActive', true),
+                'kpiLinks',
             ])
             ->findOrFail($id);
     }

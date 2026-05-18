@@ -42,6 +42,15 @@ class TaskService
         $picPersonIds = $data['picPersonIds'] ?? [];
         unset($data['picPersonIds']);
 
+        // Sync Task.assignedTo dengan primary PIC (mirror logic di update()).
+        // Defensive: kalau caller send picPersonIds tanpa explicit assignedTo,
+        // assignedTo otherwise akan null walaupun EntityPic terisi — bug yang
+        // sama persis dengan yang sebelumnya di update path. Single source of
+        // truth: primary PIC selalu masuk ke Task.assignedTo.
+        if (!empty($picPersonIds) && !isset($data['assignedTo'])) {
+            $data['assignedTo'] = $picPersonIds[0];
+        }
+
         $task = Task::create([
             ...$data,
             'code' => $data['code'] ?? $code,
@@ -78,6 +87,16 @@ class TaskService
                 ? ($data['targetCompletion'] ? new \DateTime($data['targetCompletion']) : null)
                 : $task->targetCompletion->toDateTime();
             $data['plannedWeeks'] = $this->derivePlannedWeeks($start, $end);
+        }
+
+        // Sync Task.assignedTo dengan primary PIC (first picPersonId). Banyak
+        // query baca Task.assignedTo langsung (workstream detail, MyWork, dll),
+        // sehingga primary PIC harus tersimpan di kolom assignedTo selain di
+        // EntityPic polymorphic table. Tanpa sync ini, planning panel save
+        // hanya update EntityPic — UI lain (task row) tampil "Belum ditugaskan"
+        // meski user sudah pilih.
+        if ($picPersonIds !== null) {
+            $data['assignedTo'] = !empty($picPersonIds) ? $picPersonIds[0] : null;
         }
 
         $task->update($data);

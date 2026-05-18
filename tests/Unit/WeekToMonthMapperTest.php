@@ -76,4 +76,35 @@ class WeekToMonthMapperTest extends TestCase
         $this->assertContains(27, $juneWeeks, 'week 27 should belong to June (Jun 29-30)');
         $this->assertContains(27, $julyWeeks, 'week 27 should belong to July (Jul 1-5)');
     }
+
+    public function test_iso_string_format_yyyy_wnn(): void
+    {
+        // Production format dari TaskService::derivePlannedWeeks: "2026-W21".
+        // Bug sebelumnya: intval("2026-W21") → 2026 (year), bukan 21 (week).
+        // Akibatnya tabel Charter selalu kosong. Fix harus parse week part.
+        $planned = ['2026-W21', '2026-W22'];
+        $this->assertTrue(
+            WeekToMonthMapper::isMonthTargeted($planned, 2026, 5),
+            'W21-W22 2026 should target May 2026 (May 18-31)'
+        );
+        $this->assertFalse(
+            WeekToMonthMapper::isMonthTargeted($planned, 2026, 4),
+            'W21-W22 2026 should not target April 2026'
+        );
+    }
+
+    public function test_iso_string_filters_by_year(): void
+    {
+        // Weeks dari year berbeda jangan tercampur — kalau plannedWeeks
+        // punya "2025-W21" dan kita check May 2026, harus return false.
+        $planned = ['2025-W21'];
+        $this->assertFalse(
+            WeekToMonthMapper::isMonthTargeted($planned, 2026, 5),
+            'May 2026 should not match May 2025 weeks'
+        );
+        $this->assertTrue(
+            WeekToMonthMapper::isMonthTargeted($planned, 2025, 5),
+            'May 2025 should match May 2025 weeks'
+        );
+    }
 }

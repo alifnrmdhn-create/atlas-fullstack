@@ -6,6 +6,7 @@ use App\Models\Directorate;
 use App\Models\KpiDefinition;
 use App\Models\OrganizationalUnit;
 use App\Models\Program;
+use App\Models\ProgramKpiLink;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Workstream;
@@ -144,6 +145,24 @@ class ProgramReadinessTest extends TestCase
 
         $r = $program->fresh()->readiness;
         $this->assertFalse($r['hasKpi']);
+    }
+
+    public function test_program_kpi_link_alone_satisfies_hasKpi(): void
+    {
+        // Pilot DKMR pakai dua jalur input KPI: link ke APMS (ProgramKpiLink)
+        // atau define internal (KpiDefinition). Checklist readiness harus
+        // ter-satisfy oleh keduanya — kalau tidak, user yang sudah link APMS
+        // tetap diblokir aktivasi padahal sudah cukup.
+        $program = $this->newProgram();
+        ProgramKpiLink::create([
+            'programId' => $program->id,
+            'apmsKpiCode' => 'KPI-APMS-001',
+            'apmsKpiName' => 'Realisasi Capex',
+            'apmsKpiBobot' => 5.0,
+        ]);
+
+        $r = $program->fresh()->readiness;
+        $this->assertTrue($r['hasKpi']);
     }
 
     public function test_readiness_appears_in_toArray_for_api_response(): void

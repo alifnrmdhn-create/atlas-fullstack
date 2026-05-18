@@ -63,6 +63,12 @@ class Program extends Model
         return $this->hasMany(KpiDefinition::class, 'programId');
     }
 
+    /** Link ke KPI APMS (catalog enterprise) — tidak punya nilai sendiri, hanya reference. */
+    public function kpiLinks(): HasMany
+    {
+        return $this->hasMany(ProgramKpiLink::class, 'programId');
+    }
+
     public function progressLogs(): HasMany
     {
         return $this->hasMany(ProgramProgressLog::class, 'programId')->orderBy('createdAt', 'desc');
@@ -157,9 +163,15 @@ class Program extends Model
             }
         }
 
-        $hasKpi = $this->relationLoaded('kpis')
+        // hasKpi satisfied baik via KpiDefinition internal maupun ProgramKpiLink (APMS).
+        // Tab "KPI APMS" punya dua jalur input — checklist harus konsisten.
+        $hasInternalKpi = $this->relationLoaded('kpis')
             ? $this->kpis->isNotEmpty()
             : $this->kpis()->where('isActive', true)->exists();
+        $hasKpiLink = $this->relationLoaded('kpiLinks')
+            ? $this->kpiLinks->isNotEmpty()
+            : $this->kpiLinks()->exists();
+        $hasKpi = $hasInternalKpi || $hasKpiLink;
 
         return [
             'hasWorkstream' => $hasWorkstream,

@@ -43,7 +43,7 @@ class WeekToMonthMapper
     {
         if (empty($plannedWeeks)) return false;
         $monthWeeks = self::getWeeksInMonth($year, $month);
-        return !empty(array_intersect(self::normalize($plannedWeeks), $monthWeeks));
+        return !empty(array_intersect(self::extractWeekNumbersForYear($plannedWeeks, $year), $monthWeeks));
     }
 
     /** True if any week in the month appears in $actualWeeks. */
@@ -51,12 +51,39 @@ class WeekToMonthMapper
     {
         if (empty($actualWeeks)) return false;
         $monthWeeks = self::getWeeksInMonth($year, $month);
-        return !empty(array_intersect(self::normalize($actualWeeks), $monthWeeks));
+        return !empty(array_intersect(self::extractWeekNumbersForYear($actualWeeks, $year), $monthWeeks));
     }
 
-    /** Coerce mixed input (strings from JSON, ints, nulls) to int[]. */
-    private static function normalize(array $weeks): array
+    /**
+     * Extract week numbers (1–53) yang relevan untuk $year tertentu dari array
+     * input. Mendukung dua format:
+     *   - "YYYY-WNN" (canonical ISO, dipakai TaskService::derivePlannedWeeks
+     *     dan ExecutionGrid). Year prefix di-filter — hanya weeks dengan year
+     *     match yang dimasukkan.
+     *   - Integer/digit-string bare (legacy). Diasumsikan punya $year sama.
+     *
+     * Bug sebelumnya: normalize() pakai intval() yang convert "2026-W21" → 2026
+     * (year part), bukan 21 (week number). Akibatnya tabel timeline charter
+     * selalu kosong meski plannedWeeks ada.
+     *
+     * @return int[]
+     */
+    private static function extractWeekNumbersForYear(array $weeks, int $year): array
     {
-        return array_map('intval', array_filter($weeks, fn ($v) => $v !== null && $v !== ''));
+        $result = [];
+        foreach ($weeks as $v) {
+            if ($v === null || $v === '') continue;
+            if (is_string($v) && preg_match('/^(\d{4})-W(\d{1,2})$/i', $v, $m)) {
+                if ((int) $m[1] === $year) {
+                    $result[] = (int) $m[2];
+                }
+                continue;
+            }
+            if (is_int($v) || (is_string($v) && ctype_digit($v))) {
+                // Legacy bare int format — assume same year as parameter.
+                $result[] = (int) $v;
+            }
+        }
+        return $result;
     }
 }
