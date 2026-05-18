@@ -782,16 +782,16 @@ class MeetingController extends Controller
                     fn ($id) => $id > 0 && $id !== (int) $userId
                 )));
 
-                // Broadcast realtime — WorkboardView / ProgramDetail
-                // Eksekusi tab auto-refresh tanpa user perlu reload.
-                BroadcastService::toUsers('task:updated', [
-                    'task'                 => $task->fresh(),
-                    'source'               => 'meeting-action-item',
-                    'meetingActionItemId'  => $item->id,
-                ], array_values(array_unique(array_filter(
-                    [$assigneeId, $creatorId],
-                    fn ($id) => $id > 0
-                ))));
+                // Broadcast realtime via standard task:changed channel —
+                // mapped di RealtimeProvider TICK_MAP supaya konsumen yang
+                // pakai useRealtime().ticks.task bisa auto-refresh. Saat ini
+                // WorkboardView/ExecutionTab belum hook ke tick ini (lihat
+                // catatan audit Isu #7 di commit history); broadcasting
+                // tetap dikerjakan supaya kalau wiring ditambah nanti,
+                // event sudah ada di stream.
+                BroadcastService::task($task->id, 'completed-via-action-item', [
+                    'meetingActionItemId' => $item->id,
+                ]);
 
                 // Notif personal ke assignee + creator task (kecuali closer-nya).
                 if (!empty($notifyIds)) {
