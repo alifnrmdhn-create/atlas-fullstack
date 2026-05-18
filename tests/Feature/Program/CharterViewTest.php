@@ -115,6 +115,21 @@ class CharterViewTest extends TestCase
         $response->assertRedirect('/login');
     }
 
+    public function test_charter_returns_json_for_xhr_requests(): void
+    {
+        // Multi-program PPTX exporter relies on getting raw payload (not
+        // an Inertia HTML page) — this path is gated by Accept header.
+        $response = $this->actingAs($this->admin)
+            ->getJson("/programs/{$this->scorecardProgram->id}/charter");
+
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'data' => ['program', 'activities', 'status', 'kpi', 'latestProgressLog', 'kpiHistory'],
+        ]);
+        $response->assertJsonPath('data.program.code', 'PRG-SCR');
+        $response->assertJsonPath('data.program.pillar', 'COLLECTING_MORE');
+    }
+
     public function test_authenticated_user_can_view_charter_page(): void
     {
         $response = $this->actingAs($this->admin)
