@@ -10,6 +10,7 @@ use App\Models\MeetingAttendee;
 use App\Models\MeetingDecision;
 use App\Models\Notification;
 use App\Models\Program;
+use App\Models\Task;
 use App\Models\User;
 use App\Services\BroadcastService;
 use App\Support\RolePolicy;
@@ -741,6 +742,7 @@ class MeetingController extends Controller
         }
 
         $prevAssignee = $item->assignedToId;
+        $prevStatus = $item->status;
         $item->update($data);
 
         if (array_key_exists('assignedToId', $data) && $data['assignedToId'] && (int) $data['assignedToId'] !== (int) $prevAssignee && (int) $data['assignedToId'] !== (int) $userId) {
@@ -748,6 +750,65 @@ class MeetingController extends Controller
                 $due = !empty($data['dueDate']) ? ' (deadline ' . \Illuminate\Support\Carbon::parse($data['dueDate'])->format('d M Y') . ')' : '';
                 $title = $meeting?->title ?? 'meeting';
                 $this->notifyMeetingUsers([(int) $data['assignedToId']], 'ACTION_ITEM_ASSIGNED', "Action item di meeting \"{$title}\" di-assign ke Anda: {$item->title}{$due}.", $meeting?->id ?? 0);
+            });
+        }
+
+        // Isu #11 — Act→Do close-loop: action item COMPLETED + linked ke
+        // WorkItem → auto-mark task COMPLETED. One-way only (reopen action
+        // item tidak revert task) supaya progress manual user tidak hilang.
+        // Skip task yg sudah COMPLETED atau CANCELLED (jangan override state
+        // eksplisit).
+        if (
+            isset($data['status'])
+            && $data['status'] === 'COMPLETED'
+            && $prevStatus !== 'COMPLETED'
+            && $item->linkedWorkItemId !== null
+        ) {
+            rescue(function () use ($item, $userId) {
+                $task = Task::find($item->linkedWorkItemId);
+                if (!$task) return;
+                if (in_array($task->status, ['COMPLETED', 'CANCELLED'], true)) return;
+
+                $task->update([
+                    'status'           => 'COMPLETED',
+                    'percentComplete'  => 100,
+                    'actualCompletion' => now(),
+                ]);
+
+                $assigneeId = (int) ($task->assignedTo ?? 0);
+                $creatorId  = (int) ($task->createdBy ?? 0);
+                $notifyIds  = array_values(array_unique(array_filter(
+                    [$assigneeId, $creatorId],
+                    fn ($id) => $id > 0 && $id !== (int) $userId
+                )));
+
+                // Broadcast realtime — WorkboardView / ProgramDetail
+                // Eksekusi tab auto-refresh tanpa user perlu reload.
+                BroadcastService::toUsers('task:updated', [
+                    'task'                 => $task->fresh(),
+                    'source'               => 'meeting-action-item',
+                    'meetingActionItemId'  => $item->id,
+                ], array_values(array_unique(array_filter(
+                    [$assigneeId, $creatorId],
+                    fn ($id) => $id > 0
+                ))));
+
+                // Notif personal ke assignee + creator task (kecuali closer-nya).
+                if (!empty($notifyIds)) {
+                    foreach ($notifyIds as $uid) {
+                        $notif = Notification::create([
+                            'userId'    => $uid,
+                            'type'      => 'TASK_COMPLETED_VIA_ACTION_ITEM',
+                            'message'   => "Task {$task->code} \"{$task->title}\" otomatis diselesaikan via meeting action item.",
+                            'source'    => "meeting-action-item:{$item->id}",
+                            'createdAt' => now(),
+                            'state'     => 'UNREAD',
+                        ]);
+                        BroadcastService::toUsers('notification:created', [
+                            'notification' => $notif,
+                        ], [$uid]);
+                    }
+                }
             });
         }
 
