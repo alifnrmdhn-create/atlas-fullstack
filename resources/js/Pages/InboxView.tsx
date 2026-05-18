@@ -133,7 +133,18 @@ function EscalationSections({ currentUserId }: { currentUserId: number }) {
     }).catch(() => setLoading(false))
   }
 
-  useEffect(() => { refresh() }, [enabled])
+  useEffect(() => {
+    if (enabled) {
+      refresh()
+    } else {
+      // Feature flag di-toggle OFF mid-session — reset state biar tidak
+      // ada stale data kalau flag re-enable lagi.
+      setIncoming([])
+      setMine([])
+      setActiveTriage(null)
+      setLoading(false)
+    }
+  }, [enabled])
 
   if (!enabled) return null
 
