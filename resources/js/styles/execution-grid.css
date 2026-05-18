@@ -32,17 +32,18 @@
 
 /* ── Header rows (2-level: month spanning + week cells) ─────────────────── */
 
+/* Month header — sentence case, konsisten dengan typography refresh. */
 .execution-grid__month {
   background: var(--surface-1);
-  color: var(--text-strong);
-  font-weight: var(--w-semibold);
+  color: var(--text-muted);
+  font-weight: var(--w-medium);
   text-align: center;
   padding: 8px 4px;
   border-bottom: 1px solid var(--panel-border);
   border-right: 1px solid var(--panel-border);
-  font-size: var(--type-xs);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  font-size: 11.5px;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .execution-grid__week {
@@ -76,15 +77,59 @@
   z-index: 2;
 }
 
+/* Header sticky kolom — modern: sentence case, weight medium, smaller
+   contrast. Tampak sebagai label kolom yang ringan, bukan SAP report. */
 .execution-grid__col-sticky--header {
   background: var(--surface-1);
-  color: var(--text-strong);
-  font-weight: var(--w-semibold);
-  font-size: var(--type-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  font-weight: var(--w-medium);
+  font-size: 11.5px;
+  text-transform: none;
+  letter-spacing: 0;
   z-index: 3;
   border-bottom: 1px solid var(--panel-border);
+}
+
+/* Person column chip — avatar inisial + nama, konsisten dengan task row
+   di Struktur tab. Hindari plain text yang terlihat unstructured. */
+.exec-grid-pic {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--text-body);
+  max-width: 100%;
+  min-width: 0;
+}
+.exec-grid-pic__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.exec-grid-pic__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.exec-grid-pic__extra {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.exec-grid-pic--empty {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 11px;
 }
 
 .execution-grid__fase {

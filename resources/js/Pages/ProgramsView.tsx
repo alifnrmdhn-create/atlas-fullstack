@@ -524,15 +524,26 @@ export function ProgramsView() {
   }
 
   // ── Auto-suggest program code ──────────────────────────────────────────
-  // Format: <KODE_DIVISI>-<SINGKATAN_NAMA>-<URUTAN>
-  // Prefix menggunakan kode unit/divisi pembuat, bukan "PRG" yang generik.
-  const suggestCode = (name: string): string => {
+  // Format: PRG-<KODE_DIVISI>-<SINGKATAN_NAMA>-<URUTAN>
+  // Segmen DIVISI di-omit jika tidak ada (user tanpa unit dan belum pilih Divisi Pemilik).
+  const resolveDivisiCode = (ownerUnitId: number | null): string | null => {
+    const rawCode = ownerUnitId
+      ? cpUnits.find(u => u.id === ownerUnitId)?.code
+      : currentUser?.unit?.code
+    if (!rawCode) return null
+    // Strip locale suffix: "DIMR-HLD" → "DIMR", "DKSA-HLD" → "DKSA". Kode tanpa suffix dilewati.
+    return rawCode.split('-')[0]?.toUpperCase() ?? null
+  }
+  const suggestCode = (name: string, divisiCode: string | null): string => {
     const STOP = new Set(['dan', 'di', 'ke', 'dari', 'untuk', 'dengan', 'the', 'of', 'and'])
     const words = name.trim().split(/\s+/).filter(w => w.length > 1 && !STOP.has(w.toLowerCase()))
     const abbr = words.slice(0, 3).map(w => w[0].toUpperCase()).join('')
     const seq = String(programs.length + 1).padStart(3, '0')
-    const prefix = currentUser?.unit?.code?.toUpperCase() ?? 'PRG'
-    return `${prefix}-${abbr || 'X'}-${seq}`
+    const segments = ['PRG']
+    if (divisiCode) segments.push(divisiCode)
+    segments.push(abbr || 'X')
+    segments.push(seq)
+    return segments.join('-')
   }
 
   // ── Computed values ────────────────────────────────────────────────────
@@ -1559,10 +1570,11 @@ export function ProgramsView() {
                           minLength={3}
                           onChange={e => {
                             const name = e.target.value
+                            const divisiCode = resolveDivisiCode(cpOwnerUnitId)
                             setCpForm(f => ({
                               ...f,
                               name,
-                              code: cpCodeManuallyEdited ? f.code : suggestCode(name),
+                              code: cpCodeManuallyEdited ? f.code : suggestCode(name, divisiCode),
                             }))
                           }}
                           placeholder="Nama program"
@@ -1607,7 +1619,21 @@ export function ProgramsView() {
                       <div className="form-field">
                         <label>Tanggal Mulai <span className="form-field__required">*</span></label>
                         <input
-                          onChange={e => setCpForm(f => ({ ...f, startDate: e.target.value }))}
+                          onChange={e => {
+                            const newStart = e.target.value
+                            setCpForm(f => {
+                              // Re-validate: kalau targetEndDate sudah diisi dan
+                              // sekarang start > end, clear targetEndDate supaya
+                              // user explicit re-pilih. Mencegah submit dengan
+                              // tanggal invalid yang lolos HTML5 min check saat
+                              // urutan input start-after-end terjadi.
+                              const next = { ...f, startDate: newStart }
+                              if (next.targetEndDate && newStart && next.targetEndDate < newStart) {
+                                next.targetEndDate = ''
+                              }
+                              return next
+                            })
+                          }}
                           required
                           type="date"
                           value={cpForm.startDate}
@@ -1622,38 +1648,53 @@ export function ProgramsView() {
                           type="date"
                           value={cpForm.targetEndDate}
                         />
+                        {cpForm.startDate && cpForm.targetEndDate && cpForm.targetEndDate < cpForm.startDate && (
+                          <p className="form-field__hint" style={{ color: 'var(--red)' }}>
+                            Target Selesai harus setelah Tanggal Mulai.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </section>
-                  <div className="program-form-grid program-form-grid--equal">
-                    <div className="form-field">
-                      <label>Kelompok</label>
-                      <select
-                        className="form-input"
-                        onChange={e => setCpForm(f => ({ ...f, kelompok: e.target.value }))}
-                        value={cpForm.kelompok}
-                      >
-                        <option value="">— Pilih kelompok —</option>
-                        <option value="SCORECARD">Scorecard</option>
-                        <option value="NON_SCORECARD">Non Scorecard</option>
-                      </select>
+
+                  {/* Section ke-3: Konteks strategis & owner. Sebelumnya field-field
+                      ini orphan (tanpa section header) langsung di-render setelah
+                      Ritme eksekusi — bikin user bingung mana group apa. Section
+                      explicit memberi struktur visual yang konsisten dengan 2 section
+                      sebelumnya. */}
+                  <section className="program-modal-section">
+                    <div className="program-modal-section__intro">
+                      <h4>Konteks strategis &amp; owner</h4>
+                      <p>Pemetaan program ke pilar AGHRIS dan siapa yang bertanggung jawab. Bisa diubah nanti dari halaman detail.</p>
                     </div>
-                    <div className="form-field">
-                      <label>Pilar Strategis</label>
-                      <select
-                        className="form-input"
-                        onChange={e => setCpForm(f => ({ ...f, pilarStrategis: e.target.value }))}
-                        value={cpForm.pilarStrategis}
-                      >
-                        <option value="">— Pilih pilar —</option>
-                        <option value="COLLECTING_MORE">Collecting More</option>
-                        <option value="SPENDING_BETTER">Spending Better</option>
-                        <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
-                        <option value="ENABLER">Program Enabler</option>
-                        <option value="NON_SCORECARD">Non-Scorecard</option>
-                      </select>
+                    <div className="program-form-grid program-form-grid--equal">
+                      <div className="form-field">
+                        <label>Kelompok</label>
+                        <select
+                          className="form-input"
+                          onChange={e => setCpForm(f => ({ ...f, kelompok: e.target.value }))}
+                          value={cpForm.kelompok}
+                        >
+                          <option value="">— Pilih kelompok —</option>
+                          <option value="SCORECARD">Scorecard</option>
+                          <option value="NON_SCORECARD">Non Scorecard</option>
+                        </select>
+                      </div>
+                      <div className="form-field">
+                        <label>Pilar Strategis</label>
+                        <select
+                          className="form-input"
+                          onChange={e => setCpForm(f => ({ ...f, pilarStrategis: e.target.value }))}
+                          value={cpForm.pilarStrategis}
+                        >
+                          <option value="">— Pilih pilar —</option>
+                          <option value="COLLECTING_MORE">Collecting More</option>
+                          <option value="SPENDING_BETTER">Spending Better</option>
+                          <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
+                          <option value="ENABLER">Program Enabler</option>
+                        </select>
+                      </div>
                     </div>
-                  </div>
 
                   <div className="form-field">
                     <label>PIC Utama</label>
@@ -1688,7 +1729,14 @@ export function ProgramsView() {
                       <label>Divisi Pemilik</label>
                       <select
                         className="form-input"
-                        onChange={e => setCpOwnerUnitId(e.target.value ? Number(e.target.value) : null)}
+                        onChange={e => {
+                          const newId = e.target.value ? Number(e.target.value) : null
+                          setCpOwnerUnitId(newId)
+                          if (!cpCodeManuallyEdited && cpForm.name.trim()) {
+                            const divisiCode = resolveDivisiCode(newId)
+                            setCpForm(f => ({ ...f, code: suggestCode(f.name, divisiCode) }))
+                          }
+                        }}
                         value={cpOwnerUnitId ?? currentUser?.unit?.id ?? ''}
                       >
                         <option value="">— Auto (dari unit Anda) —</option>
@@ -1703,6 +1751,7 @@ export function ProgramsView() {
                       </p>
                     </div>
                   )}
+                  </section>
                 </div>
                 <div className="modal__footer">
                   <button
@@ -1746,6 +1795,39 @@ export function ProgramsView() {
                           Program <strong>{cpForm.name}</strong> ini berdampak ke KPI APMS yang mana?
                           Ini membantu melacak kontribusi program terhadap target AGHRIS.
                         </p>
+                      </div>
+
+                      {/* Mutually exclusive choice — radio group lebih akurat dari
+                          checkbox optional. User pilih sumber KPI dulu, baru lihat
+                          UI yang relevan (search atau note). */}
+                      <div className="program-kpi-mode" role="radiogroup" aria-label="Sumber KPI program">
+                        <label className={`program-kpi-mode__opt${!cpHasNoApmsKpi ? ' is-active' : ''}`}>
+                          <input
+                            type="radio"
+                            name="kpi-mode"
+                            checked={!cpHasNoApmsKpi}
+                            onChange={() => setCpHasNoApmsKpi(false)}
+                          />
+                          <div className="program-kpi-mode__body">
+                            <span className="program-kpi-mode__title">Hubungkan ke KPI APMS</span>
+                            <span className="program-kpi-mode__hint">Pilih satu atau beberapa KPI APMS yang program ini dampak langsung.</span>
+                          </div>
+                        </label>
+                        <label className={`program-kpi-mode__opt${cpHasNoApmsKpi ? ' is-active' : ''}`}>
+                          <input
+                            type="radio"
+                            name="kpi-mode"
+                            checked={cpHasNoApmsKpi}
+                            onChange={() => {
+                              setCpHasNoApmsKpi(true)
+                              setCpKpiCodes([])
+                            }}
+                          />
+                          <div className="program-kpi-mode__body">
+                            <span className="program-kpi-mode__title">Set KPI internal sendiri</span>
+                            <span className="program-kpi-mode__hint">Program tidak punya referensi di APMS — definisikan target internal nanti.</span>
+                          </div>
+                        </label>
                       </div>
 
                       {!cpHasNoApmsKpi && (
@@ -1817,21 +1899,9 @@ export function ProgramsView() {
                       )}
                     </section>
 
-                    <label className="program-kpi-toggle">
-                      <input
-                        type="checkbox"
-                        checked={cpHasNoApmsKpi}
-                        onChange={e => {
-                          setCpHasNoApmsKpi(e.target.checked)
-                          if (e.target.checked) setCpKpiCodes([])
-                        }}
-                      />
-                      <span>Program ini tidak memiliki KPI di APMS — saya akan menentukan target sendiri</span>
-                    </label>
-
                     {cpHasNoApmsKpi && (
                       <div className="program-kpi-note">
-                        Anda dapat mendefinisikan KPI internal dari halaman detail program setelah program dibuat.
+                        Setelah program dibuat, definisikan KPI internal dari tab <strong>KPI APMS</strong> di halaman detail.
                       </div>
                     )}
                   </div>
@@ -2021,7 +2091,6 @@ export function ProgramsView() {
                         <option value="SPENDING_BETTER">Spending Better</option>
                         <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
                         <option value="ENABLER">Program Enabler</option>
-                        <option value="NON_SCORECARD">Non-Scorecard</option>
                       </select>
                     </div>
                   </div>
@@ -2202,7 +2271,7 @@ export function ProgramsView() {
                       <span className="batch-export__code">{p.code}</span>
                       <span className="batch-export__name">{p.name}</span>
                       <span className={`batch-export__health batch-export__health--${normalizeHealthStatus(p.healthStatus).toLowerCase()}`}>
-                        {formatStatusLabel(normalizeHealthStatus(p.healthStatus))}
+                        {healthStatusLabel(normalizeHealthStatus(p.healthStatus))}
                       </span>
                     </label>
                   )

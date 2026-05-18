@@ -267,7 +267,7 @@
 }
 
 .wi-section {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 .wi-section:last-child { margin-bottom: 0; }
 
@@ -275,13 +275,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
+/* Modern: sentence case, no tracking, slightly larger font.
+   Bahasa visual baru — section title bukan label-stamp tapi sub-heading
+   yang ringan. */
 .wi-section__title {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--text-muted);
   margin: 0;
   flex: 1;
@@ -295,6 +298,25 @@
   line-height: 1.6;
   color: var(--text-body);
   margin: 0;
+}
+/* Deskripsi program — beri label kecil supaya tidak naked di atas.
+   Layout dua-kolom mengikuti Identitas Strategis di bawahnya supaya
+   ada konsistensi visual antara section di Ringkasan tab. */
+.prog-description {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+.prog-description__label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+@media (max-width: 720px) {
+  .prog-description {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
 }
 
 /* ── Right: sidebar ────────────────────────────────── */
@@ -550,7 +572,7 @@
   color: var(--text-body);
   font-weight: 600;
 }
-/* Planning — muted yellow */
+/* Planning — muted yellow (ada gap di checklist) */
 .prog-lifecycle-banner--planning {
   background: color-mix(in srgb, var(--yellow) 6%, var(--surface-1));
   border-color: color-mix(in srgb, var(--yellow) 25%, var(--panel-border));
@@ -560,6 +582,36 @@
   color: var(--yellow);
 }
 .prog-lifecycle-banner--planning .prog-lifecycle-banner__label { color: var(--yellow); }
+/* Planning-ready — hijau saat checklist 3/3 dan siap aktifkan/ajukan */
+.prog-lifecycle-banner--planning-ready {
+  background: color-mix(in srgb, var(--green) 6%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--green) 25%, var(--panel-border));
+}
+.prog-lifecycle-banner--planning-ready .prog-lifecycle-banner__icon {
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  color: var(--green);
+}
+.prog-lifecycle-banner--planning-ready .prog-lifecycle-banner__label { color: var(--green); }
+/* Pending approval — biru (informational, menunggu external action) */
+.prog-lifecycle-banner--pending {
+  background: color-mix(in srgb, var(--blue, #3b82f6) 5%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--blue, #3b82f6) 22%, var(--panel-border));
+}
+.prog-lifecycle-banner--pending .prog-lifecycle-banner__icon {
+  background: color-mix(in srgb, var(--blue, #3b82f6) 14%, transparent);
+  color: var(--blue, #3b82f6);
+}
+.prog-lifecycle-banner--pending .prog-lifecycle-banner__label { color: var(--blue, #3b82f6); }
+/* Rejected — red */
+.prog-lifecycle-banner--rejected {
+  background: color-mix(in srgb, var(--red, #dc2626) 6%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--red, #dc2626) 25%, var(--panel-border));
+}
+.prog-lifecycle-banner--rejected .prog-lifecycle-banner__icon {
+  background: color-mix(in srgb, var(--red, #dc2626) 14%, transparent);
+  color: var(--red, #dc2626);
+}
+.prog-lifecycle-banner--rejected .prog-lifecycle-banner__label { color: var(--red, #dc2626); }
 /* Execution — green */
 .prog-lifecycle-banner--execution {
   background: color-mix(in srgb, var(--green) 6%, var(--surface-1));
@@ -616,68 +668,63 @@
 }
 
 /* ── Approval confirmation modal ──────────────── */
-.approval-modal {
-  width: 420px;
-  max-width: 92vw;
-  padding: 24px;
+/* Width override: tighter than default modal-surface (500px) — confirmation,
+   not data entry. Loaded AFTER responsive.css's .modal-surface base via higher
+   specificity selector. */
+.modal-surface.approval-modal {
+  width: min(460px, calc(100vw - 32px));
+}
+.approval-modal__field {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 6px;
+  width: 100%;
 }
-.approval-modal__header {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-.approval-modal__icon {
-  flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.approval-modal__icon--info    { background: color-mix(in srgb, var(--indigo-mid) 14%, transparent); color: var(--indigo-mid); }
-.approval-modal__icon--success { background: color-mix(in srgb, var(--green-accent) 14%, transparent); color: var(--green-accent); }
-.approval-modal__icon--danger  { background: color-mix(in srgb, var(--red-accent, #e53935) 12%, transparent); color: var(--red-accent, #e53935); }
-.approval-modal__title {
-  font-size: 15px;
-  font-weight: 700;
+.approval-modal__field-label {
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text-strong);
-  margin: 0 0 4px;
+  letter-spacing: 0.01em;
 }
-.approval-modal__desc {
-  font-size: 13px;
+.approval-modal__field-required {
+  color: var(--red-accent, #e53935);
+  margin-left: 2px;
+}
+.approval-modal__field-hint {
+  font-size: 11px;
   color: var(--text-muted);
-  margin: 0;
-  line-height: 1.5;
+  align-self: flex-end;
+  font-variant-numeric: tabular-nums;
 }
-.approval-modal__desc strong { color: var(--text-body); font-weight: 600; }
 .approval-modal__textarea {
   width: 100%;
-  border: 1px solid var(--panel-border);
-  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-strong) 60%, transparent);
+  border-radius: 8px;
   background: var(--surface-1);
   color: var(--text-body);
   font-size: 13px;
+  line-height: 1.5;
   padding: 10px 12px;
   resize: vertical;
+  min-height: 96px;
   font-family: inherit;
-  transition: border-color 120ms;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
   box-sizing: border-box;
 }
-.approval-modal__textarea:focus { outline: none; border-color: var(--indigo-mid); }
+.approval-modal__textarea:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--indigo) 60%, var(--panel-border-strong));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--indigo) 14%, transparent);
+}
 .approval-modal__error {
-  font-size: 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
   color: var(--red-accent, #e53935);
   margin: 0;
-}
-.approval-modal__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-top: 4px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--red-accent, #e53935) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red-accent, #e53935) 22%, transparent);
+  border-radius: 6px;
 }
 .btn--danger {
   background: var(--red-accent, #e53935);
@@ -972,6 +1019,29 @@
   padding: 14px 12px;
 }
 
+/* Mobile breakpoint — stack jadi single column dengan sidebar di bawah.
+   Hairline border-right diconvert ke border-top supaya visual continuity
+   tetap, dan padding dikurangi supaya tidak boros di small screen. */
+@media (max-width: 900px) {
+  .prog-detail-overview {
+    grid-template-columns: 1fr;
+  }
+  .prog-detail-main {
+    padding: 20px 18px 36px;
+    border-right: 0;
+    border-bottom: 1px solid var(--panel-border);
+    min-height: 0;
+  }
+  .prog-detail-sidebar {
+    min-height: 0;
+    padding: 14px 18px;
+  }
+  .prog-detail-page .prog-detail-tabs {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+}
+
 /* Execution Grid shortcut inside wid-panel */
 .prog-execution-shortcut--card {
   display: block;
@@ -1168,6 +1238,9 @@
   flex: 1;
 }
 
+.prog-detail-page .detail-metrics--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .prog-detail-page .detail-metrics--3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -1177,21 +1250,24 @@
 .prog-detail-page .detail-metrics--5 {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
+/* Sentence case base metric label/value — programs-polish.css di-override
+   dengan more-specific selector untuk page detail. Base ini dipakai di
+   tempat lain (workstream/task overview). */
 .metric__label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  text-transform: none;
+  letter-spacing: 0;
 }
 .metric__value {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
 }
 .metric__dot {
   width: 8px;
@@ -1528,11 +1604,21 @@
 .prog-kpi-error--compact {
   margin: 0;
 }
+/* Empty state KPI APMS — bg subtle + dashed border supaya tidak terkesan
+   halaman mati. Pattern konsisten dengan SectionState polish. */
 .prog-kpi-empty {
-  padding: 16px 0;
+  padding: 24px 16px;
   text-align: center;
-  font-size: 13px;
+  font-size: 12.5px;
+  line-height: 1.55;
   color: var(--text-muted);
+  background: color-mix(in srgb, var(--surface-1) 50%, transparent);
+  border: 1px dashed var(--panel-border);
+  border-radius: 8px;
+  margin: 8px 0;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .prog-kpi-card-list {
   display: flex;
@@ -1547,13 +1633,83 @@
   margin-top: 18px;
 }
 .prog-kpi-card {
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  border-radius: 8px;
   border: 1px solid var(--panel-border);
   background: var(--panel);
+  border-left: 3px solid var(--panel-border);
+  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+  position: relative;
+}
+.prog-kpi-card:hover {
+  background: var(--surface-1);
+  border-color: color-mix(in srgb, var(--panel-border-strong, var(--panel-border)) 80%, transparent);
+}
+.prog-kpi-card:hover .prog-kpi-card__edit {
+  opacity: 1;
 }
 .prog-kpi-card--internal {
   background: var(--surface-1);
+}
+/* Tone accent stripe — left-border colored by status, signal visual cepat.
+   Konsisten dengan workstream-row health stripe pattern di Struktur tab. */
+.prog-kpi-card--tone-green { border-left-color: var(--green); }
+.prog-kpi-card--tone-yellow { border-left-color: var(--yellow); }
+.prog-kpi-card--tone-red { border-left-color: var(--red); }
+.prog-kpi-card--tone-muted { border-left-color: color-mix(in srgb, var(--text-muted) 30%, transparent); }
+
+/* Frequency chip — info kecil di header card. Sentence case "Bulanan/Mingguan"
+   dst, subtle bg supaya tidak teriak. */
+.prog-kpi-card__freq {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* Edit button — hover-only di card header. Pencil SVG dalam square subtle. */
+.prog-kpi-card__edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease, background-color 120ms ease, color 120ms ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.prog-kpi-card__edit:hover {
+  background: var(--surface-2);
+  color: var(--green);
+}
+/* Mobile / touch: always show edit button karena tidak ada hover. */
+@media (hover: none) {
+  .prog-kpi-card__edit { opacity: 1; }
+}
+
+/* Lock badge "Perencanaan" — modern: icon SVG + text, subtle bg.
+   Replace 🔒 emoji yang inconsistent rendering antar OS. */
+.prog-detail-page .prog-kpi-card__action-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  padding: 3px 9px;
+  border-radius: 5px;
+  flex-shrink: 0;
 }
 .prog-kpi-card__head {
   display: flex;
@@ -1689,33 +1845,40 @@
   gap: 6px;
   margin-top: 6px;
 }
+/* Summary pill modern: drop border + ASCII glyph prefix. Dot icon +
+   sentence-case text. Konsisten dengan typography refresh. */
 .prog-kpi-summary-pill {
   display: inline-flex;
   align-items: center;
-  padding: 2px 7px;
-  border-radius: var(--radius-sm);
-  font-size: 10px;
-  font-weight: 600;
-  border: 1px solid transparent;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border: 0;
+}
+.prog-kpi-summary-pill__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: currentColor;
+  flex-shrink: 0;
+  opacity: 0.85;
 }
 .prog-kpi-summary-pill--green {
-  background: var(--green-dim);
-  border-color: var(--green-subtle);
+  background: color-mix(in srgb, var(--green) 10%, transparent);
   color: var(--green);
 }
 .prog-kpi-summary-pill--yellow {
-  background: var(--yellow-dim);
-  border-color: var(--yellow-subtle);
+  background: color-mix(in srgb, var(--yellow) 12%, transparent);
   color: var(--yellow);
 }
 .prog-kpi-summary-pill--red {
-  background: var(--red-dim);
-  border-color: var(--red-subtle);
+  background: color-mix(in srgb, var(--red) 10%, transparent);
   color: var(--red);
 }
 .prog-kpi-summary-pill--muted {
-  background: var(--surface-1);
-  border-color: var(--panel-border);
+  background: var(--surface-2);
   color: var(--text-muted);
 }
 
@@ -6218,19 +6381,22 @@ select.wid-input {
   border: 1px solid var(--panel-border);
   letter-spacing: 0.02em;
 }
+/* Priority chip modern: sentence case, no border (subtle bg-only chip).
+   Tampilkan hanya saat non-default — pattern Linear/Linear where labels
+   hanya muncul ketika punya signal value. */
 .tpp-priority-chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  padding: 2px 7px 2px 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 2px 8px 2px 7px;
   border-radius: 4px;
-  border: 1px solid var(--panel-border);
+  border: 0;
   color: var(--text-muted);
-  background: var(--surface-1);
+  background: var(--surface-2);
 }
 .tpp-priority-chip__dot {
   width: 6px;
@@ -6293,24 +6459,28 @@ select.wid-input {
   outline: none;
 }
 
-/* Section — uses panel-border for dividers, matching channel panels */
+/* Section — uses panel-border for dividers. Padding lebih lega
+   memberi breathing room antara group field, finished feel. */
 .tpp-section {
   border-top: 1px solid var(--panel-border);
-  padding: 10px 0 9px;
+  padding: 14px 0 12px;
 }
-.tpp-section:first-of-type { border-top: none; padding-top: 4px; }
+.tpp-section:first-of-type { border-top: none; padding-top: 6px; }
+.tpp-section:last-of-type { padding-bottom: 6px; }
 
+/* Section label modern: sentence case, normal weight, no tracking.
+   Tampak seperti label kecil yang ringan, bukan form heading koran-gaya. */
 .tpp-section-label {
-  font-size: 9.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .07em;
+  font-size: 11.5px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--text-muted);
   margin: 0 0 6px;
   display: flex;
   align-items: center;
   gap: 6px;
-  opacity: 0.85;
+  opacity: 1;
 }
 .tpp-section-badge {
   font-size: 9px;
@@ -6364,10 +6534,10 @@ select.wid-input {
   min-width: 100px;
 }
 .tpp-date-field__label {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .05em;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--text-muted);
 }
 .tpp-date-btn {
@@ -6712,7 +6882,7 @@ select.wid-input {
   border-radius: 6px;
 }
 
-/* ── Checklist "ready" state + launch CTA ─────────────────────────── */
+/* ── Checklist "ready" state + launch CTA (legacy fallback) ────────── */
 .prog-checklist--ready {
   border-color: color-mix(in srgb, var(--green) 35%, var(--panel-border));
   background: color-mix(in srgb, var(--green) 6%, var(--surface-1));
@@ -6737,6 +6907,260 @@ select.wid-input {
   margin: 0;
   font-size: 11.5px;
   color: var(--text-muted);
+}
+
+/* ── Micro-animations: fade-in pada tab body, lifecycle banner,
+   checklist ribbon, dan workstream preview. Pattern ini memberi
+   feel "responsive & alive" tanpa berlebihan (max 240ms). */
+@keyframes prog-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes prog-slide-in {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.prog-detail-page .prog-detail-overview,
+.prog-detail-page .prog-detail-tab-body {
+  animation: prog-fade-in 180ms ease-out;
+}
+.prog-detail-page .prog-lifecycle-banner,
+.prog-detail-page .prog-checklist-ribbon,
+.prog-detail-page .prog-checklist {
+  animation: prog-fade-in 220ms ease-out;
+}
+.prog-detail-page .workstream-row {
+  animation: prog-slide-in 180ms ease-out backwards;
+}
+.prog-detail-page .workstream-row:nth-child(2) { animation-delay: 40ms; }
+.prog-detail-page .workstream-row:nth-child(3) { animation-delay: 80ms; }
+.prog-detail-page .workstream-row:nth-child(4) { animation-delay: 120ms; }
+.prog-detail-page .workstream-row:nth-child(n+5) { animation-delay: 160ms; }
+
+/* Honor reduced motion preference — disable all animations. */
+@media (prefers-reduced-motion: reduce) {
+  .prog-detail-page .prog-detail-overview,
+  .prog-detail-page .prog-detail-tab-body,
+  .prog-detail-page .prog-lifecycle-banner,
+  .prog-detail-page .prog-checklist-ribbon,
+  .prog-detail-page .prog-checklist,
+  .prog-detail-page .workstream-row {
+    animation: none !important;
+  }
+}
+
+/* ── Workstream preview — ringkas di Ringkasan tab ──────────────────
+   Pattern: hairline section, no card chrome. Tiap row baris flat dengan
+   status dot, nama (clickable), mini progress bar, dan persen. Mirror
+   visual rhythm Identitas Strategis row di atasnya. */
+.prog-ws-preview {
+  border-top: 1px solid var(--panel-border);
+  padding-top: 10px;
+}
+.prog-ws-preview__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.prog-ws-preview__title {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  margin: 0;
+}
+.prog-ws-preview__more {
+  background: transparent;
+  border: 0;
+  font-size: 12px;
+  color: var(--green);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+}
+.prog-ws-preview__more:hover { text-decoration: underline; }
+.prog-ws-preview__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.prog-ws-preview__item {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) 120px 44px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+.prog-ws-preview__item + .prog-ws-preview__item {
+  border-top: 1px solid var(--panel-border);
+}
+.prog-ws-preview__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--text-muted);
+  display: inline-block;
+}
+.prog-ws-preview__dot--green { background: var(--green); }
+.prog-ws-preview__dot--yellow { background: var(--yellow); }
+.prog-ws-preview__dot--red { background: var(--red); }
+.prog-ws-preview__dot--overdue { background: var(--red); }
+.prog-ws-preview__name {
+  background: transparent;
+  border: 0;
+  text-align: left;
+  font-size: 13.5px;
+  color: var(--text-strong);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prog-ws-preview__name:hover { color: var(--green); }
+.prog-ws-preview__track {
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.prog-ws-preview__fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 99px;
+  transition: width 240ms ease;
+}
+.prog-ws-preview__fill--yellow { background: var(--yellow); }
+.prog-ws-preview__fill--red,
+.prog-ws-preview__fill--overdue { background: var(--red); }
+.prog-ws-preview__pct {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 720px) {
+  .prog-ws-preview__item {
+    grid-template-columns: 14px minmax(0, 1fr) 44px;
+  }
+  .prog-ws-preview__track { display: none; }
+}
+
+/* Empty state — saat program belum punya workstream sama sekali. Lebih
+   helpful daripada hide section: kasih CTA langsung ke flow create. */
+.prog-ws-preview--empty {
+  padding-top: 10px;
+}
+.prog-ws-preview__empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--surface-1);
+  border: 1px dashed var(--panel-border);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+.prog-ws-preview__empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.prog-ws-preview__empty-text {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.prog-ws-preview__empty-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.prog-ws-preview__empty-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.prog-ws-preview__empty-cta {
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--green);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+  flex-shrink: 0;
+}
+.prog-ws-preview__empty-cta:hover {
+  background: color-mix(in srgb, var(--green) 8%, transparent);
+  border-color: color-mix(in srgb, var(--green) 35%, var(--panel-border));
+}
+
+/* ── Checklist done ribbon — slim 1-row, dipakai saat allDone ─────── */
+.prog-checklist-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--green) 25%, var(--panel-border));
+  background: color-mix(in srgb, var(--green) 6%, var(--surface-1));
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+.prog-checklist-ribbon__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  color: var(--green);
+}
+.prog-checklist-ribbon__label {
+  font-weight: 600;
+  color: var(--green);
+  letter-spacing: 0.01em;
+}
+.prog-checklist-ribbon__sep {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.prog-checklist-ribbon__hint {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.prog-checklist-ribbon__cta {
+  margin-left: auto;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  flex-shrink: 0;
+}
+@media (max-width: 720px) {
+  .prog-checklist-ribbon__hint { flex-basis: 100%; }
+  .prog-checklist-ribbon__cta { margin-left: 0; flex-basis: 100%; }
 }
 
 /* ── Approval History Log ──────────────────────────────────────────── */

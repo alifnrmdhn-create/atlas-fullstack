@@ -1,8 +1,9 @@
 import { Fragment } from 'react'
-import { MONTH_KEYS, type CharterActivity } from '../../../types/charter'
+import { MONTH_KEYS, type CharterActivity, type CharterPeriod } from '../../../types/charter'
 
 type Props = {
   activities: CharterActivity[]
+  period?: CharterPeriod
 }
 
 /**
@@ -16,7 +17,7 @@ type Props = {
  * Months derived server-side from `plannedWeeks` / `actualWeeks` via
  * WeekToMonthMapper. A week that spans two months counts for both.
  */
-export function ActivityTimelineTable({ activities }: Props) {
+export function ActivityTimelineTable({ activities, period }: Props) {
   if (activities.length === 0) {
     return (
       <div className="atl-empty">
@@ -25,15 +26,40 @@ export function ActivityTimelineTable({ activities }: Props) {
     )
   }
 
+  // Year context strip. Support multi-year programs:
+  //   - Single year (from=2026, to=2026) → "2026"
+  //   - Multi-year (from=2026-05, to=2027-04) → "2026 – 2027"
+  // Note: month columns Jan..Des di-display per year fiscal yang dimulai;
+  // multi-year tampil ambigu apakah column Jan = year-from atau year-to.
+  // Range label memberi context cukup tanpa kompleksitas dual-row.
+  const yearFrom = period?.from?.slice(0, 4) ?? null
+  const yearTo = period?.to?.slice(0, 4) ?? null
+  const year = yearFrom && yearTo && yearFrom !== yearTo
+    ? `${yearFrom} – ${yearTo}`
+    : yearFrom
+
   return (
     <div className="atl-wrap">
       <table className="atl-table" role="table">
         <thead>
+          {year && (
+            <tr>
+              <th className="atl-head atl-head--name" rowSpan={2}>Aktivitas</th>
+              <th className="atl-head atl-head--workstream" rowSpan={2}>Workstream</th>
+              <th className="atl-head atl-head--deliverable" rowSpan={2}>Deliverable</th>
+              <th className="atl-head atl-head--label" rowSpan={2} />
+              <th className="atl-year-row" colSpan={MONTH_KEYS.length}>{year}</th>
+            </tr>
+          )}
           <tr>
-            <th className="atl-head atl-head--name">Aktivitas</th>
-            <th className="atl-head atl-head--workstream">Workstream</th>
-            <th className="atl-head atl-head--deliverable">Deliverable</th>
-            <th className="atl-head atl-head--label" />
+            {!year && (
+              <>
+                <th className="atl-head atl-head--name">Aktivitas</th>
+                <th className="atl-head atl-head--workstream">Workstream</th>
+                <th className="atl-head atl-head--deliverable">Deliverable</th>
+                <th className="atl-head atl-head--label" />
+              </>
+            )}
             {MONTH_KEYS.map(m => (
               <th key={m} className="atl-head atl-head--mon">{m}</th>
             ))}

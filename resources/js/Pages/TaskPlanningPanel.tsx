@@ -236,12 +236,19 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
   }
 
   // ── Keyboard ──────────────────────────────────────────────────────────────
+  // safeClose: block saat saving, dan confirm jika ada draft yang belum di-save.
+  // Dipakai bareng Escape, backdrop click, dan tombol Tutup di header.
+  const safeClose = () => {
+    if (saving) return
+    if (isDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    onClose()
+  }
   useEscKey(() => {
     if (titleEditing)   { setTitleEditing(false);   return }
     if (descEditing)    { setDescEditing(false);     return }
     if (startEditing)   { setStartEditing(false);    return }
     if (tenggatEditing) { setTenggatEditing(false);  return }
-    onClose()
+    safeClose()
   }, true)
 
   const planSummary = summariseWeeks(previewWeeks)
@@ -251,7 +258,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
       {mode === 'overlay' && (
         <div aria-hidden="true"
           className={`tpp-backdrop${closing ? ' tpp-backdrop--closing' : ''}`}
-          onClick={onClose}
+          onClick={safeClose}
         />
       )}
 
@@ -272,7 +279,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                 <svg fill="none" height="9" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 16 16" width="9"><path d="m6 3 5 5-5 5"/></svg>
               </button>
             )}
-            <button className="panel-close-btn tpp-close-btn" onClick={onClose} title="Tutup (Esc)" type="button">
+            <button className="panel-close-btn tpp-close-btn" onClick={safeClose} title="Tutup (Esc)" type="button">
               <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" viewBox="0 0 14 14" width="11"><path d="M1 1l12 12M13 1L1 13"/></svg>
             </button>
           </div>
@@ -293,13 +300,17 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
           <>
             <div className="tpp-body">
 
-              {/* Code + Priority */}
+              {/* Code + Priority — MEDIUM default disembunyikan, tampil hanya
+                  saat non-default (HIGH/CRITICAL/LOW = signal deliberate) supaya
+                  panel tidak ribut dengan info yang sebenarnya default state. */}
               <div className="tpp-chips">
                 <span className="tpp-code-chip">{detail.code}</span>
-                <span className="tpp-priority-chip" data-priority={detail.priority?.toLowerCase()}>
-                  <span className="tpp-priority-chip__dot" />
-                  {PRIORITY_LABELS[detail.priority?.toUpperCase() ?? 'MEDIUM'] ?? detail.priority}
-                </span>
+                {detail.priority && detail.priority.toUpperCase() !== 'MEDIUM' && (
+                  <span className="tpp-priority-chip" data-priority={detail.priority.toLowerCase()}>
+                    <span className="tpp-priority-chip__dot" />
+                    {PRIORITY_LABELS[detail.priority.toUpperCase()] ?? detail.priority}
+                  </span>
+                )}
               </div>
 
               {/* Title */}

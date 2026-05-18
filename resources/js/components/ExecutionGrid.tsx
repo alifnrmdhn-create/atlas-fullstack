@@ -257,8 +257,17 @@ function StepRows({
   onResetActualWeeks?: (stepId: number) => void
 }) {
   const unitLabels = step.picUnits.map((u) => u.shortName ?? u.name).join(', ')
-  const personLabels = step.picPersons.map((p) => p.name).join(', ') ||
-    (step.primaryAssignee ? step.primaryAssignee.name : '—')
+  // Person display: pakai picPersons array kalau ada, fallback ke primaryAssignee.
+  // Tampilkan sebagai avatar chip (FK inisial + nama) konsisten dengan Struktur tab,
+  // bukan plain text. Empty = muted italic placeholder.
+  const personEntries = step.picPersons.length > 0
+    ? step.picPersons
+    : (step.primaryAssignee ? [{ id: step.primaryAssignee.id, name: step.primaryAssignee.name }] : [])
+  const personPrimary = personEntries[0]
+  const personExtra = Math.max(0, personEntries.length - 1)
+  const personInitials = personPrimary
+    ? personPrimary.name.split(' ').map(p => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
+    : ''
   const letter = step.letterIndex ?? letterFallback ?? ''
   const canEdit = !!onToggleActualWeek
   return (
@@ -277,7 +286,15 @@ function StepRows({
         {unitLabels || '—'}
       </div>
       <div className="execution-grid__col-sticky execution-grid__pic-person execution-grid__step-ren">
-        {personLabels}
+        {personPrimary ? (
+          <span className="exec-grid-pic" title={personEntries.map(p => p.name).join(', ')}>
+            <span className="exec-grid-pic__avatar" aria-hidden="true">{personInitials}</span>
+            <span className="exec-grid-pic__name">{personPrimary.name}</span>
+            {personExtra > 0 && <span className="exec-grid-pic__extra">+{personExtra}</span>}
+          </span>
+        ) : (
+          <span className="exec-grid-pic exec-grid-pic--empty">Belum ditugaskan</span>
+        )}
       </div>
       <div className="execution-grid__col-sticky execution-grid__status-label execution-grid__step-ren">
         Plan

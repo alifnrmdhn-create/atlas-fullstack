@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { CommentItem, PresenceUser } from '../types'
+import { useEscKey } from '../hooks/useEscKey'
 
 type IconName =
   | 'pulse'
@@ -390,9 +391,9 @@ const HEALTH_LABELS: Record<string, string> = {
   RED:     'Terlambat',
   OVERDUE: 'Lewat Tenggat',
 }
-export function HealthPill({ status }: { status: 'GREEN' | 'YELLOW' | 'RED' | 'OVERDUE' }) {
+export function HealthPill({ status, title }: { status: 'GREEN' | 'YELLOW' | 'RED' | 'OVERDUE'; title?: string }) {
   return (
-    <span className={`health-pill health-pill--${status.toLowerCase()}`}>
+    <span className={`health-pill health-pill--${status.toLowerCase()}`} title={title}>
       {HEALTH_LABELS[status] ?? status}
     </span>
   )
@@ -744,13 +745,7 @@ export function SidePanel({
   footer?: ReactNode
   width?: number
 }) {
-  // ESC key close
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [open, onClose])
+  useEscKey(onClose, open)
 
   if (!open) return null
   return (

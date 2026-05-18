@@ -8,6 +8,7 @@ import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { formatKpiValue, getKpiFillPercent } from '../lib/kpi'
 import { useDarkMode } from '../lib/useDarkMode'
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import { useEscKey } from '../hooks/useEscKey'
 import { sc as colors } from '../lib/statusColors'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import { EscalationButton } from '../components/Escalation'
@@ -98,6 +99,7 @@ type TaskItem = {
   startDate?: string | null; targetCompletion?: string; priority?: string
   isBlocked?: boolean
   output?: string | null
+  description?: string | null
   picPersons?: Array<{ id: number; name: string }>
 }
 
@@ -112,6 +114,43 @@ type WorkstreamDetail = {
   picPersons?: Array<{ id: number; name: string }>
   phases: PhaseItem[]
   tasks: TaskItem[]
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Penanggung Jawab chip untuk task row di tab Struktur. Tampilkan avatar
+ * inisial + nama (truncate). Saat task belum di-assign, tampilkan placeholder
+ * muted dengan icon — bukan space kosong — supaya user tahu actionable.
+ * +N badge ringkas kalau ada multiple penanggung jawab. Vocab "Penanggung
+ * jawab" konsisten dengan field di planning panel (bukan "PIC").
+ */
+function TaskPicChip({ picPersons }: { picPersons?: Array<{ id: number; name: string }> }) {
+  const list = picPersons ?? []
+  if (list.length === 0) {
+    return (
+      <span className="wi-row__pic wi-row__pic--empty" title="Belum ada penanggung jawab">
+        <svg aria-hidden="true" fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 12 12" width="11">
+          <circle cx="6" cy="4" r="2"/>
+          <path d="M2.5 10c.6-1.8 2-2.6 3.5-2.6S9 8.2 9.5 10"/>
+        </svg>
+        <span className="wi-row__pic-name">Belum ditugaskan</span>
+      </span>
+    )
+  }
+  const primary = list[0]
+  const extra = list.length - 1
+  const initials = primary.name.split(' ').map(p => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
+  return (
+    <span
+      className="wi-row__pic"
+      title={`Penanggung jawab: ${list.map(p => p.name).join(', ')}`}
+    >
+      <span className="wi-row__pic-avatar" aria-hidden="true">{initials}</span>
+      <span className="wi-row__pic-name">{primary.name}</span>
+      {extra > 0 && <span className="wi-row__pic-extra">+{extra}</span>}
+    </span>
+  )
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -319,8 +358,15 @@ export function ProgramDetailView() {
           setProgressForm(f => ({ ...f, narrative: '', kendala: '', correctiveAction: '', nextStep: '', dukunganDibutuhkan: '' }))
           return
         }
-        // Semua KPI sukses → reload detail untuk refresh actualValue
-        await loadDetail(true)
+        // Semua KPI sukses → reload detail untuk refresh actualValue +
+        // overview untuk refresh workspace programs[id].healthStatus (BE
+        // auto-recompute health setelah simpan actual value via
+        // ProgramHealthService).
+        await Promise.all([loadDetail(true), loadOverview('refresh')])
+      } else {
+        // Tidak ada KPI value disimpan, tapi progress log sukses — refresh
+        // overview untuk update progresTerkini di program summary.
+        await loadOverview('refresh')
       }
 
       setShowProgressForm(false)
@@ -338,9 +384,12 @@ export function ProgramDetailView() {
   const [kpiLinkSaving, setKpiLinkSaving] = useState(false)
   const [kpiLinkError, setKpiLinkError] = useState<string | null>(null)
   const [showKpiInternalForm, setShowKpiInternalForm] = useState(false)
-  const [kpiInternal, setKpiInternal] = useState({ code: '', name: '', targetValue: '', unitOfMeasure: '', reviewFrequency: 'MONTHLY' })
+  const [kpiInternal, setKpiInternal] = useState({ name: '', targetValue: '', unitOfMeasure: '', reviewFrequency: 'MONTHLY' })
   const [kpiInternalSaving, setKpiInternalSaving] = useState(false)
   const [kpiInternalError, setKpiInternalError] = useState<string | null>(null)
+  // Edit state — saat user klik pencil di KPI row. Form fields shared dengan
+  // create flow (kpiInternal), tapi submit via PATCH /kpis/{id} bukan POST.
+  const [editingKpiId, setEditingKpiId] = useState<number | null>(null)
   const [recordingKpiId, setRecordingKpiId] = useState<number | null>(null)
   const [kpiActual, setKpiActual] = useState({ measurementDate: new Date().toISOString().slice(0, 10), actualValue: '', statusNotes: '' })
   const [kpiActualSaving, setKpiActualSaving] = useState(false)
@@ -369,7 +418,9 @@ export function ProgramDetailView() {
       })
       setKpiLinkSearch('')
       setKpiLinkDropdownOpen(false)
-      await loadKpiLinks()
+      // loadDetail → readiness.hasKpi terupdate utk checklist; loadOverview → kpiCount
+      // di ProgramsView/HomeFocus terupdate (dua-duanya kebutuhan terpisah).
+      await Promise.all([loadKpiLinks(), loadDetail(true), loadOverview('refresh')])
     } catch (e: unknown) {
       setKpiLinkError(extractErrorMessage(e, 'Gagal menambah link KPI.'))
     } finally {
@@ -380,7 +431,7 @@ export function ProgramDetailView() {
   const removeKpiLink = async (code: string) => {
     try {
       await api.delete(`/programs/${numId}/kpi-links/${code}`)
-      await loadKpiLinks()
+      await Promise.all([loadKpiLinks(), loadDetail(true), loadOverview('refresh')])
     } catch (err) {
       showToast(extractErr(err, 'Gagal menghapus link KPI.'), 'error')
     }
@@ -391,21 +442,54 @@ export function ProgramDetailView() {
     setKpiInternalSaving(true)
     setKpiInternalError(null)
     try {
-      await api.post(`/programs/${numId}/kpi-internal`, {
-        code: kpiInternal.code.trim().toUpperCase(),
-        name: kpiInternal.name.trim(),
-        targetValue: Number(kpiInternal.targetValue),
-        unitOfMeasure: kpiInternal.unitOfMeasure.trim() || undefined,
-        reviewFrequency: kpiInternal.reviewFrequency,
-      })
-      setKpiInternal({ code: '', name: '', targetValue: '', unitOfMeasure: '', reviewFrequency: 'MONTHLY' })
+      if (editingKpiId) {
+        // Edit mode — PATCH /kpis/{id}. Code immutable (auto-gen, tidak boleh
+        // diubah user). Hanya nama, target, satuan, frekuensi yang mutable.
+        await api.patch(`/kpis/${editingKpiId}`, {
+          name: kpiInternal.name.trim(),
+          targetValue: Number(kpiInternal.targetValue),
+          unitOfMeasure: kpiInternal.unitOfMeasure.trim() || null,
+          reviewFrequency: kpiInternal.reviewFrequency,
+        })
+        setEditingKpiId(null)
+      } else {
+        // Create mode — auto-gen code unik dengan prefix program code +
+        // sequence number. Format: PRG-X-Y-K01 / -K02 / dst. Ini guaranteed
+        // unique global karena program code itu sendiri sudah unique.
+        const existingCount = (detail?.kpis ?? []).length
+        const seq = String(existingCount + 1).padStart(2, '0')
+        const autoCode = `${detail?.code ?? `P${numId}`}-K${seq}`
+        await api.post(`/programs/${numId}/kpi-internal`, {
+          code: autoCode,
+          name: kpiInternal.name.trim(),
+          targetValue: Number(kpiInternal.targetValue),
+          unitOfMeasure: kpiInternal.unitOfMeasure.trim() || undefined,
+          reviewFrequency: kpiInternal.reviewFrequency,
+        })
+      }
+      setKpiInternal({ name: '', targetValue: '', unitOfMeasure: '', reviewFrequency: 'MONTHLY' })
       setShowKpiInternalForm(false)
-      await loadDetail(true)
+      // loadDetail → KPI baru/updated muncul di list detail.kpis + readiness.hasKpi update;
+      // loadOverview → kpiCount di ProgramsView terupdate.
+      await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (e: unknown) {
-      setKpiInternalError(extractErrorMessage(e, 'Gagal membuat KPI internal.'))
+      setKpiInternalError(extractErrorMessage(e, editingKpiId ? 'Gagal memperbarui KPI.' : 'Gagal membuat KPI internal.'))
     } finally {
       setKpiInternalSaving(false)
     }
+  }
+
+  // Helper: open form di edit mode dengan pre-filled values dari KPI yang dipilih.
+  const openEditKpi = (kpi: { id: number; name: string; targetValue: number; unitOfMeasure?: string | null; reviewFrequency?: string }) => {
+    setEditingKpiId(kpi.id)
+    setKpiInternal({
+      name: kpi.name,
+      targetValue: String(kpi.targetValue ?? ''),
+      unitOfMeasure: kpi.unitOfMeasure ?? '',
+      reviewFrequency: kpi.reviewFrequency ?? 'MONTHLY',
+    })
+    setShowKpiInternalForm(true)
+    setKpiInternalError(null)
   }
 
   const submitKpiActual = async (e: FormEvent<HTMLFormElement>) => {
@@ -421,7 +505,10 @@ export function ProgramDetailView() {
       })
       setRecordingKpiId(null)
       setKpiActual({ measurementDate: new Date().toISOString().slice(0, 10), actualValue: '', statusNotes: '' })
-      await loadDetail(true)
+      // loadDetail → detail.kpis refresh actualValue;
+      // loadOverview → workspace programs[id].healthStatus refresh (BE auto-
+      // recompute health via ProgramHealthService setelah simpan actual).
+      await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (e: unknown) {
       setKpiActualError(extractErrorMessage(e, 'Gagal menyimpan aktual KPI.'))
     } finally {
@@ -505,6 +592,9 @@ export function ProgramDetailView() {
   })
   const [strategicSaving, setStrategicSaving] = useState(false)
   const [strategicError, setStrategicError] = useState<string | null>(null)
+  // Read-only by default — toggle ke edit mode hanya saat user klik tombol Edit.
+  // Mengurangi form-feel di Ringkasan tab (Notion/Linear pattern).
+  const [strategicEditing, setStrategicEditing] = useState(false)
 
   useEffect(() => {
     setStrategicForm({
@@ -566,7 +656,6 @@ export function ProgramDetailView() {
     code: '', name: '', description: '',
     status: 'IN_PROGRESS', priority: 'MEDIUM',
     startDate: '', targetEndDate: '',
-    budgetIdr: '' as string | number,
     linkedChannelId: '' as string | number,
   })
   const [epPicIds, setEpPicIds] = useState<number[]>([])
@@ -579,6 +668,24 @@ export function ProgramDetailView() {
   const editProgramDialogRef = useDialogFocus<HTMLDivElement>(showEdit || epClosing)
   const editProgramTitleId = useId()
   const editProgramDescId = useId()
+  useEscKey(() => {
+    if (epSaving) return
+    const epDirty = !!detail && (
+      epForm.code !== detail.code ||
+      epForm.name !== detail.name ||
+      epForm.description !== (detail.description ?? '') ||
+      epForm.status !== detail.status ||
+      epForm.priority !== detail.priority ||
+      epForm.startDate !== (detail.startDate?.slice(0, 10) ?? '') ||
+      epForm.targetEndDate !== (detail.targetEndDate?.slice(0, 10) ?? '') ||
+      String(epForm.linkedChannelId ?? '') !== String(detail.linkedChannelId ?? '') ||
+      epPicIds.length !== (detail.picPersonIds?.length ?? 0) ||
+      epPicIds.some(id => !(detail.picPersonIds ?? []).includes(id)) ||
+      epOwnerId !== detail.ownerId
+    )
+    if (epDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    triggerEpClose()
+  }, showEdit || epClosing)
 
   const openEdit = () => {
     if (!detail) return
@@ -590,7 +697,6 @@ export function ProgramDetailView() {
       priority: detail.priority,
       startDate: detail.startDate?.slice(0, 10) ?? '',
       targetEndDate: detail.targetEndDate?.slice(0, 10) ?? '',
-      budgetIdr: detail.budgetIdr ?? '',
       linkedChannelId: detail.linkedChannelId ?? '',
     })
     setEpPicIds(detail.picPersonIds ?? [])
@@ -607,10 +713,6 @@ export function ProgramDetailView() {
     e.preventDefault()
     setEpSaving(true); setEpError(null)
     try {
-      // Normalize numeric inputs: empty string → null (clear), value → number
-      const budgetNum = epForm.budgetIdr === '' || epForm.budgetIdr === null
-        ? null
-        : Number(epForm.budgetIdr)
       const channelNum = epForm.linkedChannelId === '' || epForm.linkedChannelId === null
         ? null
         : Number(epForm.linkedChannelId)
@@ -621,7 +723,6 @@ export function ProgramDetailView() {
         description: epForm.description.trim() || undefined,
         status: epForm.status, priority: epForm.priority,
         startDate: epForm.startDate, targetEndDate: epForm.targetEndDate,
-        budgetIdr: budgetNum,
         linkedChannelId: channelNum,
         picPersonIds: epPicIds,
         ...(epOwnerId && epOwnerId !== detail?.ownerId ? { ownerIdOverride: epOwnerId } : {}),
@@ -659,6 +760,15 @@ export function ProgramDetailView() {
   const ciClosing = closingOverlay === 'create-ini'
   const createWorkstreamDialogRef = useDialogFocus<HTMLDivElement>(showCreateIni || ciClosing)
   const createWorkstreamTitleId = useId()
+  useEscKey(() => {
+    if (ciSaving) return
+    const ciDirty = ciForm.name !== '' || ciForm.description !== '' ||
+      ciForm.startDate !== '' || ciForm.targetCompletion !== '' ||
+      ciForm.status !== 'BACKLOG' || ciForm.priority !== 'MEDIUM' ||
+      ciPicIds.length > 0 || ciOwnerId !== null
+    if (ciDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    triggerCiClose()
+  }, showCreateIni || ciClosing)
 
   const submitCreateIni = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -698,6 +808,22 @@ export function ProgramDetailView() {
   const editWorkstreamDialogRef = useDialogFocus<HTMLDivElement>(showEditIni || eiClosing)
   const editWorkstreamTitleId = useId()
   const editWorkstreamDescId = useId()
+  useEscKey(() => {
+    if (eiSaving) return
+    const eiDirty = !!editIni && (
+      eiForm.name !== editIni.name ||
+      eiForm.description !== (editIni.description ?? '') ||
+      eiForm.status !== editIni.status ||
+      eiForm.priority !== editIni.priority ||
+      eiForm.startDate !== (editIni.startDate?.slice(0, 10) ?? '') ||
+      eiForm.targetCompletion !== (editIni.targetCompletion?.slice(0, 10) ?? '') ||
+      eiPicIds.length !== (editIni.picPersonIds?.length ?? 0) ||
+      eiPicIds.some(id => !(editIni.picPersonIds ?? []).includes(id)) ||
+      eiPrimaryPicId !== (editIni.primaryPicPersonId ?? null)
+    )
+    if (eiDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    triggerEiClose()
+  }, showEditIni || eiClosing)
 
   const openEditIni = (ini: WorkstreamRow) => {
     setEditIni(ini)
@@ -773,6 +899,16 @@ export function ProgramDetailView() {
   const ephClosing = closingOverlay === 'edit-phase'
   const editPhaseDialogRef = useDialogFocus<HTMLDivElement>(showEditPhase || ephClosing)
   const editPhaseTitleId = useId()
+  useEscKey(() => {
+    if (ephSaving) return
+    const ephDirty = !!editPhase && (
+      ephForm.name !== editPhase.name ||
+      ephForm.status !== editPhase.status ||
+      ephForm.description !== ''
+    )
+    if (ephDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    triggerEphClose()
+  }, showEditPhase || ephClosing)
 
   const openEditPhase = (phase: PhaseItem) => {
     setEditPhase(phase)
@@ -831,6 +967,12 @@ export function ProgramDetailView() {
   const cpClosing = closingOverlay === 'create-phase'
   const createPhaseDialogRef = useDialogFocus<HTMLDivElement>(showCreatePhase || cpClosing)
   const createPhaseTitleId = useId()
+  useEscKey(() => {
+    if (cpSaving) return
+    const cpDirty = cpForm.name !== '' || cpForm.description !== '' || cpForm.status !== 'PLANNING'
+    if (cpDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    triggerCpClose()
+  }, showCreatePhase || cpClosing)
 
   const reloadIniDetail = useCallback(async (workstreamId: number) => {
     try {
@@ -852,7 +994,7 @@ export function ProgramDetailView() {
       triggerCpClose()
       void reloadIniDetail(cpWorkstreamId)
     } catch (err: unknown) {
-      setCpError(extractErrorMessage(err, 'Gagal membuat task.'))
+      setCpError(extractErrorMessage(err, 'Gagal membuat phase.'))
     } finally {
       setCpSaving(false)
     }
@@ -862,16 +1004,27 @@ export function ProgramDetailView() {
   const [showCreateSubTask, setShowCreateSubTask] = useState(false)
   const [cstPhaseId, setCstPhaseId] = useState<number | null>(null)
   const [cstWorkstreamId, setCstWorkstreamId] = useState<number | null>(null)
-  const [cstForm, setCstForm] = useState({ title: '', description: '', priority: 'MEDIUM', startDate: '', targetCompletion: '' })
+  const [cstForm, setCstForm] = useState({ title: '', description: '', priority: 'MEDIUM', startDate: '', targetCompletion: '', assignedTo: null as number | null })
   const [cstSaving, setCstSaving] = useState(false)
   const [cstError, setCstError] = useState<string | null>(null)
+  const [cstDirectory, setCstDirectory] = useState<Array<{ id: number; name: string; positionTitle: string | null }>>([])
+  const [cstPicSearch, setCstPicSearch] = useState('')
   const triggerCstClose = useCallback(() => closeOverlay('create-subtask', () => {
     setShowCreateSubTask(false); setCstError(null); setCstPhaseId(null); setCstWorkstreamId(null)
-    setCstForm({ title: '', description: '', priority: 'MEDIUM', startDate: '', targetCompletion: '' })
+    setCstForm({ title: '', description: '', priority: 'MEDIUM', startDate: '', targetCompletion: '', assignedTo: null })
+    setCstPicSearch('')
   }), [closeOverlay])
   const cstClosing = closingOverlay === 'create-subtask'
   const createSubTaskDialogRef = useDialogFocus<HTMLDivElement>(showCreateSubTask || cstClosing)
   const createSubTaskTitleId = useId()
+  useEscKey(() => {
+    if (cstSaving) return
+    const cstDirty = cstForm.title !== '' || cstForm.description !== '' ||
+      cstForm.priority !== 'MEDIUM' || cstForm.startDate !== '' ||
+      cstForm.targetCompletion !== '' || cstForm.assignedTo !== null
+    if (cstDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    triggerCstClose()
+  }, showCreateSubTask || cstClosing)
 
   const submitCreateSubTask = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -887,6 +1040,7 @@ export function ProgramDetailView() {
         status: 'BACKLOG',
         startDate: cstForm.startDate ? new Date(cstForm.startDate).toISOString() : undefined,
         targetCompletion: cstForm.targetCompletion ? new Date(cstForm.targetCompletion).toISOString() : undefined,
+        assignedTo: cstForm.assignedTo ?? undefined,
       })
       triggerCstClose()
       void reloadIniDetail(cstWorkstreamId)
@@ -903,6 +1057,11 @@ export function ProgramDetailView() {
   const [approvalModal, setApprovalModal] = useState<'approve' | 'reject' | 'submit' | null>(null)
   const [rejectNote, setRejectNote] = useState('')
   const [approvedSuccess, setApprovedSuccess] = useState(false)
+  useEscKey(() => {
+    if (approvalLoading) return
+    if (approvalModal === 'reject' && rejectNote !== '' && !window.confirm('Buang catatan yang sudah diketik?')) return
+    setApprovalModal(null); setRejectNote(''); setApprovalError(null)
+  }, approvalModal !== null)
 
   const submitForApproval = async () => {
     setApprovalLoading(true); setApprovalError(null)
@@ -982,29 +1141,27 @@ export function ProgramDetailView() {
         />
         {detail && (
           <>
-            <HealthPill status={normalizeHealthStatus(detail.healthStatus)} />
+            {/* HealthPill tooltip menggantikan "ⓘ auto" chip terpisah supaya
+                header tidak penuh meta indicator. Mouseover pill memberi info
+                "auto-derived from..." tanpa menambah visual noise. */}
+            <HealthPill
+              status={normalizeHealthStatus(detail.healthStatus)}
+              title={detail.autoHealthComputedAt
+                ? `Auto-derived dari workstream + KPI + task overdue + open blockers. Last computed: ${new Date(detail.autoHealthComputedAt).toLocaleString('id-ID')}`
+                : undefined}
+            />
             {detail.kelompok && (
               <span className={`prog-detail-header__kelompok prog-detail-header__kelompok--${detail.kelompok === 'SCORECARD' ? 'scorecard' : 'non'}`}>
                 {detail.kelompok === 'SCORECARD' ? 'Scorecard' : 'Non Scorecard'}
               </span>
             )}
-            {detail.autoHealthComputedAt && (
-              <span
-                className="prog-detail-header__auto"
-                title={`Auto-derived dari workstream + KPI + task overdue + open blockers. Last computed: ${new Date(detail.autoHealthComputedAt).toLocaleString('id-ID')}`}
-              >
-                ⓘ auto
-              </span>
+            {/* Approval pill: Draft & Pending dihapus dari header — keduanya
+                sudah dikomunikasikan lebih jelas via lifecycle banner di bawah
+                (warna + label + hint). Pill "Ditolak" tetap tampil di header
+                karena perlu visual urgency tinggi, tidak boleh terlewat. */}
+            {detail.approvalStatus === 'REJECTED' && (
+              <span className="prog-approval-pill prog-approval-pill--danger">Ditolak</span>
             )}
-            {detail.approvalStatus && detail.approvalStatus !== 'ACTIVE' && (() => {
-              const tone = detail.approvalStatus === 'REJECTED' ? 'danger'
-                : detail.approvalStatus === 'DRAFT' || detail.approvalStatus === 'PLANNING' ? 'warning'
-                : 'info'
-              const pillLabel = tone === 'warning' ? 'Draft'
-                : tone === 'danger' ? 'Ditolak'
-                : detail.approvalStatus === 'PENDING_KASUB' ? 'Pending Kasub' : 'Pending Kadiv'
-              return <span className={`prog-approval-pill prog-approval-pill--${tone}`}>{pillLabel}</span>
-            })()}
           </>
         )}
         <div className="wi-detail-header__actions">
@@ -1062,17 +1219,12 @@ export function ProgramDetailView() {
         </div>
       ) : detail ? (
         <div className="wi-detail-titlebar">
+          {/* Title bar meta — HealthPill, auto chip, approval pill SUDAH ada di
+              breadcrumb header (line ~1058). Disengaja tidak diulang di sini agar
+              tidak terjadi duplikasi visual. Title bar fokus pada kode + prioritas
+              + owner — info yang tidak ada di breadcrumb. */}
           <div className="wi-detail-titlebar__meta">
             <span className="code-badge wi-detail-titlebar__code">{detail.code}</span>
-            <HealthPill status={normalizeHealthStatus(detail.healthStatus)} />
-            {detail.autoHealthComputedAt && (
-              <span
-                style={{ fontSize: 10.5, color: 'var(--text-muted)', cursor: 'help' }}
-                title={`Auto-derived dari workstream + KPI + task overdue + open blockers. Last computed: ${new Date(detail.autoHealthComputedAt).toLocaleString('id-ID')}`}
-              >
-                ⓘ auto
-              </span>
-            )}
             <span className="wi-detail-titlebar__priority">
               <span className={`work-card__dot work-card__dot--${detail.priority.toLowerCase()}`} />
               {detail.priority}
@@ -1080,15 +1232,6 @@ export function ProgramDetailView() {
             {programSummary?.owner && (
               <span className="wi-detail-assignee-chip">{programSummary.owner.name}</span>
             )}
-            {detail.approvalStatus && detail.approvalStatus !== 'ACTIVE' && (() => {
-              const tone = detail.approvalStatus === 'REJECTED' ? 'danger'
-                : detail.approvalStatus === 'DRAFT' || detail.approvalStatus === 'PLANNING' ? 'warning'
-                : 'info'
-              const pillLabel = tone === 'warning' ? 'Draft'
-                : tone === 'danger' ? 'Ditolak'
-                : detail.approvalStatus === 'PENDING_KASUB' ? 'Pending Kasub' : 'Pending Kadiv'
-              return <span className={`prog-approval-pill prog-approval-pill--${tone}`}>{pillLabel}</span>
-            })()}
           </div>
           <h1 className="wi-detail-title">{detail.name}</h1>
           {/* Rejection note */}
@@ -1120,20 +1263,26 @@ export function ProgramDetailView() {
         else if (!inPlanning) return null
 
         const label = phase === 'planning' ? 'Fase Perencanaan' : phase === 'execution' ? 'Fase Eksekusi' : 'Selesai'
-        const icon = phase === 'planning'
+        // Icon set: planning (file), planning-ready (check), pending (clock),
+        // rejected (alert), execution (play), done (check).
+        const planningIcon = phase === 'planning'
           ? <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="12" aria-hidden="true"><path d="M2.5 2h6l3 3v7H2.5z"/><path d="M8.5 2v3h3M5 8h4M5 10h3"/></svg>
-          : phase === 'execution'
+          : null
+        const icon = phase === 'execution'
           ? <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="12" aria-hidden="true"><path d="M4 3v8l7-4z"/></svg>
-          : <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="12" aria-hidden="true"><path d="m2.5 7 3 3 6-7"/></svg>
+          : phase === 'done'
+          ? <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="12" aria-hidden="true"><path d="m2.5 7 3 3 6-7"/></svg>
+          : planningIcon
 
         // Pre-compute checklist state — dipakai banner hint + checklist section.
-        // Sinkron dengan logic di line ~1712 (checks array).
+        // Sinkron dengan logic di checks array (~line 1840).
+        // Channel sengaja TIDAK dipakai sebagai gate: opsional dari sisi bisnis.
+        // hasKpi pakai detail.readiness (fresh dari /programs/{id}), bukan workspace
+        // cache yang bisa stale antara save KPI dan refresh overview.
         const checklistDone = (
           !!(detail.description?.trim())
           && !!detail.readiness?.hasWorkstream && !!detail.readiness?.hasTask
-          && !!(detail.budgetIdr && detail.budgetIdr > 0)
-          && !!(programSummary?.linkedChannel)
-          && !!(programSummary?.kpiCount && programSummary.kpiCount > 0)
+          && !!detail.readiness?.hasKpi
         )
 
         let hint: React.ReactNode = null
@@ -1155,9 +1304,28 @@ export function ProgramDetailView() {
           hint = endDate ? <>Ditutup {new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</> : null
         }
 
+        // Variant menentukan warna banner. "planning" punya 4 sub-state:
+        // - planning-ready (hijau): checklist 3/3, siap aktifkan/ajukan.
+        // - pending (biru): menunggu KASUBDIV/KADIV menyetujui.
+        // - rejected (merah): perlu revisi.
+        // - planning (kuning): ada gap di checklist, default state.
+        let variant: string = phase
+        if (phase === 'planning') {
+          if (status === 'PENDING_KASUB' || status === 'PENDING_KADIV') variant = 'pending'
+          else if (status === 'REJECTED') variant = 'rejected'
+          else if (status === 'DRAFT' && checklistDone) variant = 'planning-ready'
+        }
+        const readyIcon = <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="12" aria-hidden="true"><path d="m2.5 7 3 3 6-7"/></svg>
+        const pendingIcon = <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="12" aria-hidden="true"><circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 1.5"/></svg>
+        const rejectedIcon = <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="12" aria-hidden="true"><circle cx="7" cy="7" r="5.5"/><path d="M7 4v3M7 10h.01"/></svg>
+        const finalIcon = variant === 'planning-ready' ? readyIcon
+          : variant === 'pending' ? pendingIcon
+          : variant === 'rejected' ? rejectedIcon
+          : icon
+
         return (
-          <div className={`prog-lifecycle-banner prog-lifecycle-banner--${phase}`}>
-            <span className="prog-lifecycle-banner__icon">{icon}</span>
+          <div className={`prog-lifecycle-banner prog-lifecycle-banner--${variant}`}>
+            <span className="prog-lifecycle-banner__icon">{finalIcon}</span>
             <span className="prog-lifecycle-banner__label">{label}</span>
             {hint && <span className="prog-lifecycle-banner__hint">· {hint}</span>}
           </div>
@@ -1200,30 +1368,48 @@ export function ProgramDetailView() {
               {/* Left: description + metrics */}
               <div className="prog-detail-main">
                 {detail.description && (
-                  <div className="wi-section">
+                  <div className="wi-section prog-description">
+                    <span className="prog-description__label">Deskripsi</span>
                     <p className="wi-desc">{detail.description}</p>
                   </div>
                 )}
 
-                {/* ── Identitas Strategis: Pilar + Objective (Charter Phase 1) ── */}
+                {/* ── Identitas Strategis: read-only by default, toggle edit ──
+                    Pattern Notion: section tampak sebagai display (label+value)
+                    by default. User klik "Edit" untuk activate form mode.
+                    Mengurangi form-feel pada overview screen tanpa kehilangan
+                    inline edit capability. */}
                 {(() => {
                   const canEditStrategic = roleAccess.canEditProgram(isOwner)
                     && !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '')
-                  const dirty =
-                    (strategicForm.strategicObjective ?? '') !== (detail.strategicObjective ?? '') ||
-                    (strategicForm.pilarStrategis ?? '') !== (detail.pilarStrategis ?? '')
                   const hasAnyValue = !!(detail.strategicObjective || detail.pilarStrategis)
                   if (!canEditStrategic && !hasAnyValue) return null
+                  const pilarLabel = detail.pilarStrategis
+                    ? detail.pilarStrategis.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                    : null
                   return (
                     <div className="wi-section prog-strategic">
                       <div className="prog-strategic__head">
                         <h3 className="prog-strategic__title">Identitas Strategis</h3>
                         {strategicSaving && <span className="prog-strategic__status">Menyimpan…</span>}
                         {strategicError && <span className="prog-strategic__status prog-strategic__status--error">{strategicError}</span>}
+                        {canEditStrategic && !strategicEditing && (
+                          <button
+                            type="button"
+                            className="prog-strategic__edit-btn"
+                            onClick={() => setStrategicEditing(true)}
+                            aria-label="Edit identitas strategis"
+                          >
+                            <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="11" aria-hidden="true">
+                              <path d="M8 2l2 2-6 6L2 10l0-2z"/>
+                            </svg>
+                            Edit
+                          </button>
+                        )}
                       </div>
                       <div className="prog-strategic__row">
                         <label className="prog-strategic__label">Pilar Strategis</label>
-                        {canEditStrategic ? (
+                        {strategicEditing ? (
                           <select
                             className="wi-input prog-strategic__input"
                             value={strategicForm.pilarStrategis}
@@ -1235,38 +1421,51 @@ export function ProgramDetailView() {
                             <option value="SPENDING_BETTER">Spending Better</option>
                             <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
                             <option value="ENABLER">Program Enabler</option>
-                            <option value="NON_SCORECARD">Non-Scorecard</option>
                           </select>
                         ) : (
-                          <span className="prog-strategic__value">
-                            {detail.pilarStrategis ? detail.pilarStrategis.replace(/_/g, ' ') : '—'}
+                          <span className={`prog-strategic__value${!pilarLabel ? ' prog-strategic__value--empty' : ''}`}>
+                            {pilarLabel ?? 'Belum diisi'}
                           </span>
                         )}
                       </div>
                       <div className="prog-strategic__row">
                         <label className="prog-strategic__label">Strategic Objective</label>
-                        {canEditStrategic ? (
+                        {strategicEditing ? (
                           <textarea
                             className="wi-input prog-strategic__input"
                             rows={2}
                             maxLength={1000}
                             value={strategicForm.strategicObjective}
-                            onChange={e => setStrategicForm(f => ({ ...f, strategicObjective: e.target.value }))}
+                            onChange={e => {
+                              setStrategicForm(f => ({ ...f, strategicObjective: e.target.value }))
+                              const ta = e.currentTarget
+                              ta.style.height = 'auto'
+                              ta.style.height = `${Math.min(ta.scrollHeight, 240)}px`
+                            }}
+                            ref={(el) => {
+                              if (el && strategicEditing) {
+                                el.style.height = 'auto'
+                                el.style.height = `${Math.min(el.scrollHeight, 240)}px`
+                              }
+                            }}
                             placeholder="Contoh: Efektivitas Pengawasan Pendanaan Pemerintah"
                             disabled={strategicSaving}
                           />
                         ) : (
-                          <span className="prog-strategic__value">
-                            {detail.strategicObjective || '—'}
+                          <span className={`prog-strategic__value${!detail.strategicObjective ? ' prog-strategic__value--empty' : ''}`}>
+                            {detail.strategicObjective || 'Belum diisi'}
                           </span>
                         )}
                       </div>
-                      {canEditStrategic && dirty && (
+                      {strategicEditing && (
                         <div className="prog-strategic__actions">
                           <button
                             type="button"
                             className="wi-btn wi-btn--primary wi-btn--sm"
-                            onClick={saveStrategic}
+                            onClick={async () => {
+                              await saveStrategic()
+                              setStrategicEditing(false)
+                            }}
                             disabled={strategicSaving}
                           >
                             {strategicSaving ? 'Menyimpan…' : 'Simpan'}
@@ -1280,10 +1479,11 @@ export function ProgramDetailView() {
                                 pilarStrategis: detail.pilarStrategis ?? '',
                               })
                               setStrategicError(null)
+                              setStrategicEditing(false)
                             }}
                             disabled={strategicSaving}
                           >
-                            Reset
+                            Batal
                           </button>
                         </div>
                       )}
@@ -1328,11 +1528,20 @@ export function ProgramDetailView() {
                       return { pctTime, gap }
                     })()
 
-                    const cols = kpiHealth !== null ? 4 : 3
+                    // Hanya tampilkan Alignment kalau ada data — '—' placeholder
+                    // memberi visual noise tanpa info. Sama untuk KPI Health (sudah
+                    // di-gate kpiHealth!==null). Workstream selalu tampil karena
+                    // structural info.
+                    const showAlignment = detail.strategicAlignment != null
+                    const cols = 1 + (showAlignment ? 1 : 0) + 1 + (kpiHealth !== null ? 1 : 0)
+                    const wsCount = (detail.workstreams ?? []).length
                     return (
                       <>
                         <div className={`detail-metrics detail-metrics--${cols}`}>
-                          <div className="metric">
+                          {/* Progress dengan inline mini progress bar — info visual,
+                              bukan hanya raw "0%" text. Bar mengisi proporsi progress
+                              vs total, sub-text menjelaskan pace waktu. */}
+                          <div className="metric metric--with-bar">
                             <span className="metric__label">Progress</span>
                             <span className="metric__value">
                               {detail.progressPercent}%
@@ -1351,19 +1560,34 @@ export function ProgramDetailView() {
                                 </span>
                               )}
                             </span>
+                            <div className="metric__bar" role="presentation" aria-hidden="true">
+                              <div
+                                className={`metric__bar-fill${scheduleHealth && scheduleHealth.gap <= -10 ? ' metric__bar-fill--behind' : scheduleHealth && scheduleHealth.gap >= 10 ? ' metric__bar-fill--ahead' : ''}`}
+                                style={{ width: `${Math.max(2, Math.min(100, detail.progressPercent))}%` }}
+                              />
+                            </div>
                             {scheduleHealth && (
                               <span className="metric__sub">{scheduleHealth.pctTime}% waktu terpakai</span>
                             )}
                           </div>
-                          <Metric
-                            label="Alignment"
-                            value={
-                              detail.strategicAlignment != null
-                                ? `${detail.strategicAlignment}%`
-                                : '—'
-                            }
-                          />
-                          <Metric label="Workstream" value={`${(detail.workstreams ?? []).length}`} />
+                          {showAlignment && (
+                            <Metric label="Alignment" value={`${detail.strategicAlignment}%`} />
+                          )}
+                          {/* Workstream count → click-through ke tab Struktur. Tampil
+                              sebagai metrik tapi jadi entry point eksplisit ke detail. */}
+                          <button
+                            type="button"
+                            className="metric metric--clickable"
+                            onClick={() => setActiveTab('workstream')}
+                            aria-label={`Lihat ${wsCount} workstream`}
+                          >
+                            <span className="metric__label">Workstream</span>
+                            <span className="metric__value">
+                              {wsCount}
+                              <svg className="metric__arrow" fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="11" aria-hidden="true"><path d="M3 6h6M6 3l3 3-3 3"/></svg>
+                            </span>
+                            <span className="metric__sub">Lihat struktur</span>
+                          </button>
                           {kpiHealth !== null && (
                             <div className="metric">
                               <span className="metric__label">KPI Health</span>
@@ -1374,8 +1598,12 @@ export function ProgramDetailView() {
                             </div>
                           )}
                         </div>
-                        {/* KPI monitoring panel — only shown when internal KPIs exist */}
-                        {(detail.kpis ?? []).length > 0 && (
+                        {/* KPI monitoring panel — hanya tampil saat minimal 1 KPI
+                            sudah punya actualValue. Jika semua KPI masih "Belum ada
+                            data", panel ini cuma noise (header + 1 row kosong) yang
+                            tidak memberi info actionable. Setelah ada data baru
+                            tampilkan untuk monitoring status per indikator. */}
+                        {kpisWithData.length > 0 && (
                           <div className="program-kpi-health">
                             <div className="program-kpi-health__title">
                               KPI Internal — Status per Indikator
@@ -1431,6 +1659,83 @@ export function ProgramDetailView() {
                     )
                   })()}
                 </div>
+
+                {/* ── Workstream preview — ringkas, 3 row teratas dengan progress ──
+                    Mengisi white space Ringkasan dengan substansi yang sudah ada.
+                    User dapat scan progress workstream tanpa pindah tab; klik nama
+                    untuk drill ke detail workstream. */}
+                {(detail.workstreams ?? []).length === 0 ? (
+                  <div className="wi-section prog-ws-preview prog-ws-preview--empty">
+                    <div className="prog-ws-preview__empty">
+                      <span className="prog-ws-preview__empty-icon" aria-hidden="true">
+                        <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 22 22" width="20">
+                          <rect height="14" rx="2" width="16" x="3" y="4"/>
+                          <path d="M7 9h8M7 13h5"/>
+                        </svg>
+                      </span>
+                      <div className="prog-ws-preview__empty-text">
+                        <p className="prog-ws-preview__empty-title">Belum ada workstream</p>
+                        <p className="prog-ws-preview__empty-hint">Pecah program menjadi workstream untuk mulai mendistribusikan task ke tim.</p>
+                      </div>
+                      <button
+                        type="button"
+                        className="prog-ws-preview__empty-cta"
+                        onClick={() => {
+                          setActiveTab('workstream')
+                          setShowCreateIni(true)
+                        }}
+                      >
+                        Buat workstream pertama →
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="wi-section prog-ws-preview">
+                    <div className="prog-ws-preview__head">
+                      <h3 className="prog-ws-preview__title">Workstream</h3>
+                      {(detail.workstreams ?? []).length > 3 && (
+                        <button
+                          type="button"
+                          className="prog-ws-preview__more"
+                          onClick={() => setActiveTab('workstream')}
+                        >
+                          Lihat semua {(detail.workstreams ?? []).length} →
+                        </button>
+                      )}
+                    </div>
+                    <ul className="prog-ws-preview__list">
+                      {(detail.workstreams ?? []).slice(0, 3).map(ws => {
+                        const pct = Math.max(0, Math.min(100, ws.progressPercent ?? 0))
+                        const tone = (ws.healthStatus ?? 'GREEN').toLowerCase()
+                        return (
+                          <li key={ws.id} className="prog-ws-preview__item">
+                            <span className={`prog-ws-preview__dot prog-ws-preview__dot--${tone}`} aria-hidden="true" />
+                            <button
+                              type="button"
+                              className="prog-ws-preview__name"
+                              onClick={() => {
+                                // Workstream detail dibuka via overlay di tab Struktur
+                                // (selectedIniId pattern), bukan via route terpisah.
+                                setActiveTab('workstream')
+                                setSelectedIniId(ws.id)
+                              }}
+                              title={ws.name}
+                            >
+                              {ws.name}
+                            </button>
+                            <div className="prog-ws-preview__track" aria-hidden="true">
+                              <div
+                                className={`prog-ws-preview__fill prog-ws-preview__fill--${tone}`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className="prog-ws-preview__pct">{pct}%</span>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                )}
 
                 {/* ── Blocker callout — visible di Ringkasan tanpa perlu pindah tab ── */}
                 {blockersError && (
@@ -1769,21 +2074,55 @@ export function ProgramDetailView() {
 
                 {/* ── Completeness checklist (Perencanaan phase only) ── */}
                 {['DRAFT', 'PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') && (() => {
+                  // Checklist gating: hanya item wajib untuk eksekusi. Channel sengaja
+                  // diturunkan ke modal Edit Program saja (opsional, tidak gate aktivasi).
+                  // hasKpi memuaskan baik via KPI APMS link maupun KPI internal (lihat
+                  // Program::getReadinessAttribute), jadi label memakai "KPI" generik.
                   const checks = [
                     { done: !!(detail.description?.trim()), label: 'Deskripsi program diisi', cta: openEdit },
                     { done: !!detail.readiness?.hasWorkstream && !!detail.readiness?.hasTask, label: 'Minimal 1 workstream dengan 1 task', cta: () => setActiveTab('workstream') },
-                    { done: !!(detail.budgetIdr && detail.budgetIdr > 0), label: 'Anggaran program diatur', cta: openEdit },
-                    { done: !!(programSummary?.linkedChannel), label: 'Channel komunikasi dihubungkan', cta: openEdit },
-                    { done: !!(programSummary?.kpiCount && programSummary.kpiCount > 0), label: 'KPI APMS ditautkan', cta: () => setActiveTab('kpi') },
+                    { done: !!detail.readiness?.hasKpi, label: 'KPI ditautkan (APMS atau internal)', cta: () => setActiveTab('kpi') },
                   ]
                   const doneCount = checks.filter(c => c.done).length
                   const allDone = doneCount === checks.length
-                  return (
-                    <div className={`prog-checklist${allDone ? ' prog-checklist--ready' : ''}`}>
-                      <div className="prog-checklist__head">
-                        <span className="prog-checklist__title">
-                          {allDone ? 'Program siap dieksekusi' : 'Siapkan Program Agar Tim Bisa Mulai'}
+
+                  // Saat allDone, render compact ribbon (1 row inline) — full panel
+                  // dengan progress bar + list + hint paragraph terasa berlebihan
+                  // ketika checklist sudah selesai. Mode pending tetap pakai full UI.
+                  if (allDone && detail.approvalStatus === 'DRAFT') {
+                    const role = currentUser?.roleType?.toUpperCase() ?? ''
+                    const isKadivAdmin = ['KADIV', 'SUPERADMIN', 'ADMIN'].includes(role)
+                    const isSubmitter = detail.submittedById === currentUser?.id || detail.ownerId === currentUser?.id
+                    if (!isKadivAdmin && !isSubmitter) return null
+                    const nextApprover = role === 'KASUBDIV' ? 'KADIV' : 'KASUBDIV'
+                    return (
+                      <div className="prog-checklist-ribbon">
+                        <span className="prog-checklist-ribbon__icon" aria-hidden="true">
+                          <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 14 14" width="14"><path d="m2.5 7 3 3 6-7"/></svg>
                         </span>
+                        <span className="prog-checklist-ribbon__label">Program siap dieksekusi</span>
+                        <span className="prog-checklist-ribbon__sep" aria-hidden="true">·</span>
+                        <span className="prog-checklist-ribbon__hint">
+                          {isKadivAdmin
+                            ? 'Tim langsung bisa eksekusi setelah diaktifkan.'
+                            : `Persetujuan ${nextApprover} dibutuhkan sebelum eksekusi dimulai.`}
+                        </span>
+                        <button
+                          className="btn btn--primary prog-checklist-ribbon__cta"
+                          disabled={approvalLoading}
+                          onClick={() => isKadivAdmin ? void activateProgram() : setApprovalModal('submit')}
+                          type="button"
+                        >
+                          {isKadivAdmin ? 'Mulai Eksekusi →' : `Ajukan ke ${nextApprover} →`}
+                        </button>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div className="prog-checklist">
+                      <div className="prog-checklist__head">
+                        <span className="prog-checklist__title">Siapkan Program Agar Tim Bisa Mulai</span>
                         <span className="prog-checklist__count">{doneCount}/{checks.length}</span>
                       </div>
                       <div className="prog-checklist__track">
@@ -1805,75 +2144,10 @@ export function ProgramDetailView() {
                           </li>
                         ))}
                       </ul>
-                      {allDone && detail.approvalStatus === 'DRAFT' && (() => {
-                        const role = currentUser?.roleType?.toUpperCase() ?? ''
-                        const isKadivAdmin = ['KADIV', 'SUPERADMIN', 'ADMIN'].includes(role)
-                        const isSubmitter = detail.submittedById === currentUser?.id || detail.ownerId === currentUser?.id
-                        if (isKadivAdmin) {
-                          return (
-                            <div className="prog-checklist__cta">
-                              <button
-                                className="btn btn--primary prog-checklist__launch"
-                                disabled={approvalLoading}
-                                onClick={() => void activateProgram()}
-                                type="button"
-                              >
-                                Mulai Eksekusi →
-                              </button>
-                              <p className="prog-checklist__cta-hint">Program akan langsung aktif dan bisa dieksekusi tim.</p>
-                            </div>
-                          )
-                        }
-                        if (isSubmitter) {
-                          const nextApprover = role === 'KASUBDIV' ? 'KADIV' : 'KASUBDIV'
-                          return (
-                            <div className="prog-checklist__cta">
-                              <button
-                                className="btn btn--primary prog-checklist__launch"
-                                disabled={approvalLoading}
-                                onClick={() => setApprovalModal('submit')}
-                                type="button"
-                              >
-                                Ajukan ke {nextApprover} →
-                              </button>
-                              <p className="prog-checklist__cta-hint">Eksekusi dimulai setelah {nextApprover} menyetujui.</p>
-                            </div>
-                          )
-                        }
-                        return null
-                      })()}
                     </div>
                   )
                 })()}
 
-                {/* Budget burn */}
-                {detail.budgetIdr !== null && detail.budgetIdr > 0 && (
-                  <div className="wi-section">
-                    <div className="wi-section__header">
-                      <h3 className="wi-section__title">
-                        {PIcon.chart}
-                        Budget
-                      </h3>
-                      <span className="wi-section__meta">
-                        {(detail.budgetSpent / 1e9).toFixed(1)}M / {(detail.budgetIdr / 1e9).toFixed(1)}M IDR
-                      </span>
-                    </div>
-                    <div className="progress-bar-track">
-                      {(() => {
-                        const pct = Math.min((detail.budgetSpent / detail.budgetIdr!) * 100, 100)
-                        const cls = pct >= 90 ? 'off-track' : pct >= 70 ? 'at-risk' : 'on-track'
-                        return (
-                          <>
-                            <div className={`progress-bar-fill ${cls}`} style={{ width: `${pct}%` }} />
-                          </>
-                        )
-                      })()}
-                    </div>
-                    <p className="program-budget__usage">
-                      {Math.round((detail.budgetSpent / detail.budgetIdr!) * 100)}% terpakai
-                    </p>
-                  </div>
-                )}
               </div>
 
               {/* Right: sidebar — wid-panel cards */}
@@ -1956,7 +2230,7 @@ export function ProgramDetailView() {
                       <div className="wi-sidebar-row" style={{ marginTop: 6 }}>
                         <span className="wi-sidebar-label">Prioritas</span>
                         <span className={`wi-priority-badge wi-priority-badge--${detail.priority.toLowerCase()}`}>
-                          {detail.priority}
+                          {detail.priority.charAt(0) + detail.priority.slice(1).toLowerCase()}
                         </span>
                       </div>
                       {programSummary?.owner && (
@@ -1983,8 +2257,8 @@ export function ProgramDetailView() {
                     </div>
                   </section>
 
-                  {/* ── Info Strategis panel ── */}
-                  {(detail.kelompok || detail.pilarStrategis || detail.progresTerkini || detail.dukunganDibutuhkan) && (
+                  {/* ── Info Strategis panel ── (Pilar dihapus — duplikat body) */}
+                  {(detail.kelompok || detail.progresTerkini || detail.dukunganDibutuhkan) && (
                   <section className="wid-panel">
                     <div className="wid-panel__head wid-panel__head--compact">
                       <h3 className="wid-panel__title">
@@ -2010,14 +2284,9 @@ export function ProgramDetailView() {
                           </span>
                         </div>
                       )}
-                      {detail.pilarStrategis && (
-                        <div className="wi-sidebar-row" style={{ marginTop: 6 }}>
-                          <span className="wi-sidebar-label">Pilar</span>
-                          <span className="wi-sidebar-value">
-                            {detail.pilarStrategis.replace(/_/g, ' ')}
-                          </span>
-                        </div>
-                      )}
+                      {/* Pilar Strategis sengaja dihilangkan dari sidebar — sudah tampil
+                          sebagai field editable di body (section "Identitas Strategis").
+                          Duplikasi membuat info terasa redundan dan menambah noise. */}
                       {detail.progresTerkini && (
                         <div className="wi-sidebar-row wi-sidebar-row--block" style={{ marginTop: 8 }}>
                           <span className="wi-sidebar-label">Progres Terkini</span>
@@ -2081,7 +2350,12 @@ export function ProgramDetailView() {
                     {PIcon.layers}
                     Workstream
                   </h3>
-                  <span className="section-badge">{(detail.workstreams ?? []).length}</span>
+                  {/* Badge count dihilangkan saat <= 1 — info redundan karena list
+                      langsung di bawah heading. Tampilkan hanya saat banyak supaya
+                      user dapat scan total dengan cepat. */}
+                  {(detail.workstreams ?? []).length > 1 && (
+                    <span className="section-badge">{(detail.workstreams ?? []).length}</span>
+                  )}
                 </div>
                 {roleAccess.canCreateWorkstream && (
                   <button className="btn btn--ghost program-detail-section-btn" onClick={() => {
@@ -2098,7 +2372,10 @@ export function ProgramDetailView() {
               </div>
 
               {(detail.workstreams ?? []).length === 0 ? (
-                <SectionState title="Belum ada workstream" text="Workstream akan muncul setelah ditambahkan." />
+                <SectionState
+                  title="Belum ada workstream"
+                  text="Pecah program menjadi workstream untuk mulai mendistribusikan task ke tim."
+                />
               ) : (
                 <div className="workstream-list">
                   {(detail.workstreams ?? [])
@@ -2119,12 +2396,33 @@ export function ProgramDetailView() {
                             onKeyDown={e => e.key === 'Enter' && setSelectedIniId(ini.id)}
                             role="button"
                             tabIndex={0}
+                            data-health={normalizeHealthStatus(ini.healthStatus).toLowerCase()}
+                            aria-label={`Workstream ${ini.name}, status: ${normalizeHealthStatus(ini.healthStatus)}`}
                           >
-                            <HealthPill status={normalizeHealthStatus(ini.healthStatus)} />
+                            {/* HealthPill (At Risk/On Track) dihilangkan dari row header.
+                                Status sudah dikomunikasikan via border-left accent yang
+                                colored sesuai health (data-health attribute), kombinasi
+                                dengan aria-label untuk screen reader. Dua indikator =
+                                redundant + ambil real-estate yang dipakai lebih baik
+                                untuk content title. */}
                             <div className="workstream-row__info">
                               <strong>{ini.name}</strong>
                               <span className="workstream-row__meta">
                                 <span className="code-badge workstream-row__code">{ini.code}</span>
+                                {/* Health status text — eksplisit dropdown setelah
+                                    HealthPill dihapus dari row. Stripe kiri tetap
+                                    tampil sebagai cue, text ini supaya tidak perlu
+                                    hover untuk tahu status. Hanya tampil saat non-green
+                                    (At Risk/Terlambat) — green tidak perlu disebut,
+                                    progress bar sudah menunjukkan health implisit. */}
+                                {(() => {
+                                  const h = normalizeHealthStatus(ini.healthStatus)
+                                  if (h === 'GREEN') return null
+                                  const label = h === 'YELLOW' ? 'At Risk' : h === 'RED' ? 'Terlambat' : 'Lewat tenggat'
+                                  return (
+                                    <span className={`workstream-row__health workstream-row__health--${h.toLowerCase()}`}>{label}</span>
+                                  )
+                                })()}
                                 {(ini.startDate || ini.targetCompletion) && (
                                   <span className="workstream-row__dates">
                                     {fmtDateShort(ini.startDate)} → {fmtDateShort(ini.targetCompletion)}
@@ -2173,18 +2471,22 @@ export function ProgramDetailView() {
                             {roleAccess.canCreateWorkstream && (
                               <div className="workstream-row__actions" onClick={e => e.stopPropagation()}>
                                 <button
-                                  className="btn btn--ghost workstream-row__action"
+                                  className="ws-icon-btn"
                                   onClick={() => openEditIni(ini)}
                                   type="button"
+                                  title="Edit workstream"
+                                  aria-label="Edit workstream"
                                 >
-                                  Edit
+                                  <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="14"><path d="M9.5 2.5 11.5 4.5 4.5 11.5 2 12l.5-2.5z"/></svg>
                                 </button>
                                 <button
-                                  className={`btn btn--ghost workstream-row__action${isConfirmDel ? ' workstream-row__action--danger' : ''}`}
+                                  className={`ws-icon-btn ws-icon-btn--danger${isConfirmDel ? ' is-confirm' : ''}`}
                                   onClick={() => setConfirmDelIniId(isConfirmDel ? null : ini.id)}
                                   type="button"
+                                  title="Hapus workstream"
+                                  aria-label="Hapus workstream"
                                 >
-                                  ×
+                                  <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="14"><path d="M3 4h8M5.5 4V2.5h3V4M4.5 4l.5 7.5h4l.5-7.5M6 6.5v3M8 6.5v3"/></svg>
                                 </button>
                               </div>
                             )}
@@ -2219,9 +2521,10 @@ export function ProgramDetailView() {
                               {iniDetailLoading ? (
                                 <div className="workstream-detail-panel__body"><SkeletonStack lines={[90, 75, 60]} /></div>
                               ) : iniDetail ? (() => {
+                                // Tasks with phaseId only counted via phases (avoid double-count when workstream.tasks also returns them)
                                 const allTasks = [
                                   ...((iniDetail.phases ?? []).flatMap(p => p.tasks)),
-                                  ...(iniDetail.tasks ?? []),
+                                  ...((iniDetail.tasks ?? []).filter(t => !t.phaseId)),
                                 ]
                                 const taskCount = allTasks.length
                                 const doneCount = allTasks.filter(t => t.status === 'COMPLETED' || t.percentComplete === 100).length
@@ -2229,12 +2532,15 @@ export function ProgramDetailView() {
                                 const phaseCount = (iniDetail.phases ?? []).length
                                 return (
                                 <>
-                                  {(phaseCount > 0 || taskCount > 0 || iniDetail.description) && (
+                                  {/* Workstream info baseline: chips "1 Phase / 1 Task"
+                                      sengaja dihilangkan — count sudah tertulis di phase
+                                      header ("0/1 selesai") + di task list itself. Yang
+                                      signal kuat (Selesai, Blocker) tetap tampil sebagai
+                                      chip karena memberi info actionable. */}
+                                  {(iniDetail.description || doneCount > 0 || blockerCount > 0) && (
                                     <div className="workstream-panel-info">
-                                      {(phaseCount > 0 || taskCount > 0) && (
+                                      {(doneCount > 0 || blockerCount > 0) && (
                                         <span className="workstream-panel-info__stats">
-                                          {phaseCount > 0 && <span className="ws-stat">{phaseCount} Phase</span>}
-                                          {taskCount > 0 && <span className="ws-stat">{taskCount} Task</span>}
                                           {doneCount > 0 && <span className="ws-stat ws-stat--done">{doneCount} Selesai</span>}
                                           {blockerCount > 0 && <span className="ws-stat ws-stat--blocker">{blockerCount} Blocker</span>}
                                         </span>
@@ -2249,7 +2555,13 @@ export function ProgramDetailView() {
 
                                   {(iniDetail.phases ?? []).length === 0 && (iniDetail.tasks ?? []).length === 0 ? (
                                     <div className="workstream-empty-body">
-                                      <p className="workstream-empty-body__text">Belum ada task di workstream ini.</p>
+                                      <p className="workstream-empty-body__text">
+                                        <strong>Belum ada phase &amp; task di workstream ini.</strong>
+                                        <span className="workstream-empty-body__hint">
+                                          Mulai dengan menambahkan phase pertama untuk mengelompokkan tahapan,
+                                          atau task langsung jika tidak butuh pengelompokan.
+                                        </span>
+                                      </p>
                                       {roleAccess.canCreateWorkstream && (
                                         <button
                                           className="btn btn--ghost workstream-empty-body__btn"
@@ -2265,7 +2577,7 @@ export function ProgramDetailView() {
                                       {(iniDetail.phases ?? []).map((phase, idx) => (
                                         <div key={phase.id} className="phase-group">
                                           <div className="phase-group__header">
-                                            <span className="phase-group__eyebrow">PHASE</span>
+                                            <span className="phase-group__eyebrow">Phase</span>
                                             <span className="phase-group__order">{idx + 1}</span>
                                             <span className="phase-group__name">{phase.name}</span>
                                             {phase.tasks.length > 0 && (
@@ -2309,21 +2621,34 @@ export function ProgramDetailView() {
                                                     <span className="code-badge">{item.code}</span>
                                                     <div className="wi-row__info-text">
                                                       <span className="wi-row__title">{item.title}</span>
+                                                      {item.description && (
+                                                        <span className="wi-row__desc" title={item.description}>
+                                                          {item.description}
+                                                        </span>
+                                                      )}
                                                       {item.output && (
                                                         <span className="wi-row__output" title={`Output: ${item.output}`}>
                                                           → {item.output}
                                                         </span>
                                                       )}
-                                                      {(item.startDate || item.targetCompletion || (item.picPersons ?? []).length > 0) && (
+                                                      {(item.startDate || item.targetCompletion) && (
                                                         <span className="wi-row__meta">
-                                                          {(item.startDate || item.targetCompletion) ? `${fmtDateShort(item.startDate)} → ${fmtDateShort(item.targetCompletion)}` : null}
-                                                          {(item.picPersons ?? []).length > 0 ? ` · ${item.picPersons![0].name}${item.picPersons!.length > 1 ? ` +${item.picPersons!.length - 1}` : ''}` : null}
+                                                          {fmtDateShort(item.startDate)} → {fmtDateShort(item.targetCompletion)}
                                                         </span>
                                                       )}
                                                     </div>
                                                   </div>
                                                   <div className="wi-row__right">
-                                                    {item.priority && <span className={`wi-row__priority wi-row__priority--${item.priority.toLowerCase()}`} title={item.priority} />}
+                                                    {/* PIC chip — primary assignee dengan avatar inisial.
+                                                        Fallback "Belum ada PIC" muted kalau task belum di-assign,
+                                                        memberi cue actionable bukan info hilang. */}
+                                                    <TaskPicChip picPersons={item.picPersons} />
+                                                    {/* Priority dot disembunyikan saat MEDIUM (default).
+                                                        Tampil hanya untuk HIGH/CRITICAL/LOW = signal deliberate.
+                                                        Konsisten dengan panel TaskPlanningPanel yang juga hide MEDIUM. */}
+                                                    {item.priority && item.priority.toUpperCase() !== 'MEDIUM' && (
+                                                      <span className={`wi-row__priority wi-row__priority--${item.priority.toLowerCase()}`} title={item.priority} />
+                                                    )}
                                                     <span className="wi-pct">{item.percentComplete}%</span>
                                                     {!['BACKLOG', 'READY'].includes(item.status) && (
                                                       <span className="wi-status-chip" data-status={item.status}>{formatStatusLabel(item.status)}</span>
@@ -2335,7 +2660,14 @@ export function ProgramDetailView() {
                                             {roleAccess.canCreateWorkstream && (
                                               <button
                                                 className="btn btn--ghost wi-add-subtask-btn"
-                                                onClick={() => { setCstPhaseId(phase.id); setCstWorkstreamId(ini.id); setShowCreateSubTask(true) }}
+                                                onClick={() => {
+                                                  setCstPhaseId(phase.id); setCstWorkstreamId(ini.id); setShowCreateSubTask(true)
+                                                  if (cstDirectory.length === 0) {
+                                                    void api.get<{ data: Array<{ id: number; name: string; positionTitle: string | null }> }>('/users/directory')
+                                                      .then(r => setCstDirectory(r.data ?? []))
+                                                      .catch(() => { /* non-fatal: PIC selector akan kosong */ })
+                                                  }
+                                                }}
                                                 type="button"
                                               >
                                                 + Tambah Task
@@ -2345,13 +2677,13 @@ export function ProgramDetailView() {
                                         </div>
                                       ))}
 
-                                      {(iniDetail.tasks ?? []).length > 0 && (
+                                      {(iniDetail.tasks ?? []).filter(t => !t.phaseId).length > 0 && (
                                         <div className="phase-group">
                                           <div className="phase-group__header phase-group__header--unphased">
                                             <span className="phase-group__name">Task tanpa phase</span>
                                           </div>
                                           <div className="phase-group__tasks">
-                                            {(iniDetail.tasks ?? []).map(item => (
+                                            {(iniDetail.tasks ?? []).filter(t => !t.phaseId).map(item => (
                                               <button
                                                 key={item.id}
                                                 className="wi-row"
@@ -2363,20 +2695,25 @@ export function ProgramDetailView() {
                                                   <span className="code-badge">{item.code}</span>
                                                   <div className="wi-row__info-text">
                                                     <span className="wi-row__title">{item.title}</span>
+                                                    {item.description && (
+                                                      <span className="wi-row__desc" title={item.description}>
+                                                        {item.description}
+                                                      </span>
+                                                    )}
                                                     {item.output && (
                                                       <span className="wi-row__output" title={`Output: ${item.output}`}>
                                                         → {item.output}
                                                       </span>
                                                     )}
-                                                    {(item.startDate || item.targetCompletion || (item.picPersons ?? []).length > 0) && (
+                                                    {(item.startDate || item.targetCompletion) && (
                                                       <span className="wi-row__meta">
-                                                        {(item.startDate || item.targetCompletion) ? `${fmtDateShort(item.startDate)} → ${fmtDateShort(item.targetCompletion)}` : null}
-                                                        {(item.picPersons ?? []).length > 0 ? ` · ${item.picPersons![0].name}${item.picPersons!.length > 1 ? ` +${item.picPersons!.length - 1}` : ''}` : null}
+                                                        {fmtDateShort(item.startDate)} → {fmtDateShort(item.targetCompletion)}
                                                       </span>
                                                     )}
                                                   </div>
                                                 </div>
                                                 <div className="wi-row__right">
+                                                  <TaskPicChip picPersons={item.picPersons} />
                                                   {item.priority && <span className={`wi-row__priority wi-row__priority--${item.priority.toLowerCase()}`} title={item.priority} />}
                                                   <span className="wi-pct">{item.percentComplete}%</span>
                                                   <span className="wi-status-chip" data-status={item.status}>{formatStatusLabel(item.status)}</span>
@@ -2450,22 +2787,43 @@ export function ProgramDetailView() {
                   {PIcon.blocker}
                   Hambatan Program
                 </h3>
-                <span className={`section-badge${blockers.length > 0 ? ' section-badge--red' : ''}`}>
-                  {blockers.length} open
-                </span>
+                {/* Badge count: hide saat 0. "0 open" = noise tanpa info actionable.
+                    Tampilkan hanya saat ada blocker aktif sebagai signal scan-cepat. */}
+                {blockers.length > 0 && (
+                  <span className="section-badge section-badge--red">
+                    {blockers.length} open
+                  </span>
+                )}
               </div>
               {blockersLoading ? (
                 <SkeletonStack lines={[90, 75, 60]} />
-              ) : blockers.length === 0 ? (
-                <SectionState icon="✅" title="Tidak ada blocker aktif" text="Program ini berjalan tanpa hambatan." />
-              ) : (
+              ) : blockers.length === 0 ? (() => {
+                // Context-aware empty state: planning phase (program belum aktif)
+                // vs eksekusi (program aktif, tapi memang tidak ada blocker).
+                // Beda message supaya user paham apakah ini "belum bisa report"
+                // atau "memang aman".
+                const inPlanning = ['DRAFT', 'PLANNING', 'PENDING_KASUB', 'PENDING_KADIV', 'REJECTED']
+                  .includes(detail.approvalStatus ?? '')
+                return inPlanning ? (
+                  <SectionState
+                    title="Belum ada hambatan dilaporkan"
+                    text="Tab ini akan aktif penuh setelah program masuk fase Eksekusi. Tim dapat melaporkan blocker langsung dari task yang mereka kerjakan."
+                  />
+                ) : (
+                  <SectionState
+                    title="Tidak ada hambatan aktif"
+                    text="Program berjalan tanpa blocker. Status akan ter-update otomatis saat tim melaporkan hambatan dari task."
+                  />
+                )
+              })() : (
                 <div className="program-list-stack">
                   {blockers.map(b => {
                     const severity = b.severity in SEV_COLOR ? b.severity : 'LOW'
+                    const severityLabel = severity.charAt(0) + severity.slice(1).toLowerCase()
                     return (
                       <div key={b.id} className={`blocker-item blocker-item--${severity}`}>
                         <span className={`severity-badge severity-badge--${severity}`}>
-                          {b.severity}
+                          {severityLabel}
                         </span>
                         <div className="blocker-item__body">
                           <div className="blocker-item__title">{b.title}</div>
@@ -2473,8 +2831,8 @@ export function ProgramDetailView() {
                             {b.task.workstream.name} › {b.task.title}
                           </div>
                         </div>
-                        <span className="blocker-item__age">
-                          {b.daysOpen === 0 ? 'Hari ini' : `${b.daysOpen}h`}
+                        <span className="blocker-item__age" title="Berapa lama blocker ini dilaporkan">
+                          {b.daysOpen === 0 ? 'Hari ini' : `${b.daysOpen} hari`}
                         </span>
                         <button
                           className="btn btn--ghost blocker-item__action"
@@ -2502,31 +2860,37 @@ export function ProgramDetailView() {
                     {PIcon.kpi}
                     KPI APMS Terkait
                   </h3>
-                  <span className="section-badge">{kpiLinks.length}</span>
+                  {/* Badge count: hide saat 0 — redundant info ketika empty state
+                      sudah komunikasi "Belum ada KPI yang terhubung". */}
+                  {kpiLinks.length > 0 && (
+                    <span className="section-badge">{kpiLinks.length}</span>
+                  )}
                   {detail?.hasNoApmsKpi && (
                     <span className="prog-kpi-flag prog-kpi-flag--warning">Tidak ada KPI APMS</span>
                   )}
-                  <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
                     {apmsLastFetchedAt && (() => {
                       const minsAgo = Math.floor((Date.now() - new Date(apmsLastFetchedAt).getTime()) / 60000)
                       const isStale = minsAgo >= 15
                       return (
                         <span
-                          style={{ fontSize: 11, color: isStale ? 'var(--yellow)' : 'var(--text-muted)' }}
+                          style={{ fontSize: 11.5, color: isStale ? 'var(--yellow)' : 'var(--text-muted)' }}
                           title={`Data APMS diambil ${new Date(apmsLastFetchedAt).toLocaleTimeString('id-ID')}`}
                         >
-                          {isStale ? '⚠ ' : ''}APMS {minsAgo < 1 ? 'baru saja' : `${minsAgo} menit lalu`}
+                          Sinkron {minsAgo < 1 ? 'baru saja' : `${minsAgo} menit lalu`}
                         </span>
                       )
                     })()}
                     <button
                       type="button"
-                      className="btn btn--ghost"
-                      style={{ fontSize: 11, padding: '3px 8px' }}
+                      className="prog-kpi-sync-btn"
                       onClick={() => void refreshApmsKpis()}
                       title="Sync ulang data KPI dari APMS/AGHRIS"
                     >
-                      ↺ Sync APMS
+                      <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="11" aria-hidden="true">
+                        <path d="M1.5 5a4.5 4.5 0 0 1 8-2.5L10.5 2M10.5 7a4.5 4.5 0 0 1-8 2.5L1.5 10M10.5 1.5v2.5h-2.5M3.5 8h-2v2.5"/>
+                      </svg>
+                      Sync
                     </button>
                   </div>
                 </div>
@@ -2578,10 +2942,13 @@ export function ProgramDetailView() {
                 <p className="prog-kpi-error">{kpiLinkError}</p>
               )}
 
-              {/* KPI link list */}
+              {/* KPI link list — empty state lebih informatif. Saat hasNoApmsKpi
+                  flagged, copy berbeda karena user sengaja skip APMS. */}
               {kpiLinks.length === 0 ? (
                 <div className="prog-kpi-empty">
-                  Belum ada KPI APMS yang terhubung ke program ini.
+                  {detail?.hasNoApmsKpi
+                    ? 'Program ini tidak dihubungkan ke KPI APMS. Lihat bagian Target KPI Internal di bawah untuk mendefinisikan metrik program.'
+                    : 'Cari kode atau nama KPI APMS di atas untuk menghubungkan program dengan target AGHRIS yang relevan.'}
                 </div>
               ) : (
                 <div className="kpi-link-list prog-kpi-card-list">
@@ -2669,12 +3036,35 @@ export function ProgramDetailView() {
                         else acc.green++
                         return acc
                       }, { green: 0, yellow: 0, red: 0, unset: 0 })
+                      // Summary chips dengan status dot, drop ASCII arrows
+                      // (▲ ~ ▼ —) yang terlihat amatir. Status dipresentasi
+                      // via dot+text yang konsisten dengan rest of UI.
                       return (
                         <div className="prog-kpi-summary">
-                          {counts.green > 0 && <span className="prog-kpi-summary-pill prog-kpi-summary-pill--green">▲ {counts.green} On Track</span>}
-                          {counts.yellow > 0 && <span className="prog-kpi-summary-pill prog-kpi-summary-pill--yellow">~ {counts.yellow} At Risk</span>}
-                          {counts.red > 0 && <span className="prog-kpi-summary-pill prog-kpi-summary-pill--red">▼ {counts.red} Off Track</span>}
-                          {counts.unset > 0 && <span className="prog-kpi-summary-pill prog-kpi-summary-pill--muted">— {counts.unset} Belum diukur</span>}
+                          {counts.green > 0 && (
+                            <span className="prog-kpi-summary-pill prog-kpi-summary-pill--green">
+                              <span className="prog-kpi-summary-pill__dot" />
+                              {counts.green} on track
+                            </span>
+                          )}
+                          {counts.yellow > 0 && (
+                            <span className="prog-kpi-summary-pill prog-kpi-summary-pill--yellow">
+                              <span className="prog-kpi-summary-pill__dot" />
+                              {counts.yellow} at risk
+                            </span>
+                          )}
+                          {counts.red > 0 && (
+                            <span className="prog-kpi-summary-pill prog-kpi-summary-pill--red">
+                              <span className="prog-kpi-summary-pill__dot" />
+                              {counts.red} off track
+                            </span>
+                          )}
+                          {counts.unset > 0 && (
+                            <span className="prog-kpi-summary-pill prog-kpi-summary-pill--muted">
+                              <span className="prog-kpi-summary-pill__dot" />
+                              {counts.unset} belum diukur
+                            </span>
+                          )}
                         </div>
                       )
                     })()}
@@ -2682,7 +3072,13 @@ export function ProgramDetailView() {
                   <button
                     className="btn btn--ghost prog-kpi-internal__toggle"
                     type="button"
-                    onClick={() => setShowKpiInternalForm(v => !v)}
+                    onClick={() => {
+                      if (showKpiInternalForm) {
+                        setEditingKpiId(null)
+                        setKpiInternal({ name: '', targetValue: '', unitOfMeasure: '', reviewFrequency: 'MONTHLY' })
+                      }
+                      setShowKpiInternalForm(v => !v)
+                    }}
                   >
                     {showKpiInternalForm ? 'Batal' : '+ Buat Target'}
                   </button>
@@ -2692,25 +3088,19 @@ export function ProgramDetailView() {
                     {kpiInternalError && (
                       <p className="prog-kpi-error prog-kpi-error--compact">{kpiInternalError}</p>
                     )}
-                    <div className="prog-form-grid prog-form-grid--wide">
-                      <div className="form-field prog-form-field">
-                        <label>Kode <span className="form-field__required">*</span></label>
-                        <input
-                          required minLength={2} maxLength={40}
-                          placeholder="e.g. KPI-001"
-                          value={kpiInternal.code}
-                          onChange={e => setKpiInternal(f => ({ ...f, code: e.target.value.toUpperCase() }))}
-                        />
-                      </div>
-                      <div className="form-field prog-form-field">
-                        <label>Nama KPI <span className="form-field__required">*</span></label>
-                        <input
-                          required minLength={2} maxLength={120}
-                          placeholder="Nama metrik"
-                          value={kpiInternal.name}
-                          onChange={e => setKpiInternal(f => ({ ...f, name: e.target.value }))}
-                        />
-                      </div>
+                    {/* Kode field DIHAPUS — auto-generated dari programCode + sequence
+                        (lihat submitKpiInternal). User tidak perlu memikirkan
+                        unique-ness; sistem generate `PRG-X-Y-K01`, `-K02`, dst.
+                        Pada edit mode, code tetap immutable (BE patch endpoint
+                        tidak terima field code). */}
+                    <div className="form-field prog-form-field">
+                      <label>Nama KPI <span className="form-field__required">*</span></label>
+                      <input
+                        required minLength={2} maxLength={120}
+                        placeholder="Nama metrik"
+                        value={kpiInternal.name}
+                        onChange={e => setKpiInternal(f => ({ ...f, name: e.target.value }))}
+                      />
                     </div>
                     <div className="prog-form-grid prog-form-grid--triple">
                       <div className="form-field prog-form-field">
@@ -2736,10 +3126,10 @@ export function ProgramDetailView() {
                           value={kpiInternal.reviewFrequency}
                           onChange={e => setKpiInternal(f => ({ ...f, reviewFrequency: e.target.value }))}
                         >
-                          <option value="WEEKLY">Weekly</option>
-                          <option value="MONTHLY">Monthly</option>
-                          <option value="QUARTERLY">Quarterly</option>
-                          <option value="ANNUALLY">Annually</option>
+                          <option value="WEEKLY">Mingguan</option>
+                          <option value="MONTHLY">Bulanan</option>
+                          <option value="QUARTERLY">Kuartalan</option>
+                          <option value="ANNUALLY">Tahunan</option>
                         </select>
                       </div>
                     </div>
@@ -2747,9 +3137,9 @@ export function ProgramDetailView() {
                       <button
                         className="profile-save-btn"
                         type="submit"
-                        disabled={kpiInternalSaving || !kpiInternal.code || !kpiInternal.name || !kpiInternal.targetValue}
+                        disabled={kpiInternalSaving || !kpiInternal.name || !kpiInternal.targetValue}
                       >
-                        {kpiInternalSaving ? 'Menyimpan…' : 'Simpan KPI'}
+                        {kpiInternalSaving ? 'Menyimpan…' : (editingKpiId ? 'Simpan Perubahan' : 'Simpan KPI')}
                       </button>
                     </div>
                   </form>
@@ -2765,12 +3155,43 @@ export function ProgramDetailView() {
                       const kpiStatus = !hasActual ? 'UNSET' : actual >= warn ? 'GREEN' : actual >= crit ? 'YELLOW' : 'RED'
                       const kpiTone = kpiStatus === 'UNSET' ? 'muted' : kpiStatus.toLowerCase()
                       const isRecording = recordingKpiId === kpi.id
+                      // Color accent border-left berdasarkan status — memberikan
+                      // signal visual cepat tanpa user perlu baca text status.
+                      // Pattern Linear/Notion: row dengan colored stripe.
                       return (
-                        <div key={kpi.id} className="prog-kpi-card prog-kpi-card--internal">
+                        <div
+                          key={kpi.id}
+                          className={`prog-kpi-card prog-kpi-card--internal prog-kpi-card--tone-${kpiTone}`}
+                        >
                           <div className="prog-kpi-card__head">
                             <span className="code-badge">{kpi.code}</span>
                             <span className="prog-kpi-card__name">{kpi.name}</span>
-                            <span className={`prog-kpi-status prog-kpi-status--${kpiTone}`}>{kpiStatus !== 'UNSET' ? kpiStatus : '—'}</span>
+                            {kpi.reviewFrequency && (
+                              <span className="prog-kpi-card__freq" title="Frekuensi pengukuran">
+                                {kpi.reviewFrequency === 'WEEKLY' ? 'Mingguan'
+                                  : kpi.reviewFrequency === 'MONTHLY' ? 'Bulanan'
+                                  : kpi.reviewFrequency === 'QUARTERLY' ? 'Kuartalan'
+                                  : 'Tahunan'}
+                              </span>
+                            )}
+                            <span className={`prog-kpi-status prog-kpi-status--${kpiTone}`}>
+                              {kpiStatus !== 'UNSET' ? kpiStatus : '—'}
+                            </span>
+                            {/* Edit button — hover-only di KPI card. Authorization
+                                check: tidak boleh edit saat PENDING_KASUB/KADIV. */}
+                            {!['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') && (
+                              <button
+                                type="button"
+                                className="prog-kpi-card__edit"
+                                onClick={() => openEditKpi(kpi)}
+                                title="Edit KPI"
+                                aria-label="Edit KPI"
+                              >
+                                <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="12" aria-hidden="true">
+                                  <path d="M9.5 2.5 11.5 4.5 4.5 11.5 2 12l.5-2.5z"/>
+                                </svg>
+                              </button>
+                            )}
                             {detail.approvalStatus === 'ACTIVE' ? (
                               <button
                                 type="button"
@@ -2784,7 +3205,11 @@ export function ProgramDetailView() {
                                 className="prog-kpi-card__action-locked"
                                 title="Nilai aktual KPI bisa diisi setelah program masuk fase Eksekusi"
                               >
-                                🔒 Perencanaan
+                                <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="11" aria-hidden="true">
+                                  <rect height="6" rx="1" width="8" x="2" y="5"/>
+                                  <path d="M4 5V3.5a2 2 0 0 1 4 0V5"/>
+                                </svg>
+                                Perencanaan
                               </span>
                             )}
                           </div>
@@ -2843,7 +3268,7 @@ export function ProgramDetailView() {
       ) : null}
 
       {/* ── Modal: Edit Program ──────────────────────────────────────── */}
-      {(showEdit || epClosing) && (
+      {(showEdit || epClosing) && createPortal(
         <div
           className={`modal-backdrop${epClosing ? ' modal-backdrop--closing' : ''}`}
           onClick={() => !epSaving && triggerEpClose()}
@@ -2918,27 +3343,6 @@ export function ProgramDetailView() {
                       <label>Target Selesai</label>
                       <input onChange={e => setEpForm(f => ({ ...f, targetEndDate: e.target.value }))} type="date" value={epForm.targetEndDate} />
                     </div>
-                  </div>
-                  <div className="form-field">
-                    <label>
-                      Anggaran (IDR)
-                      <span className="form-field__hint"> · opsional, isi 0 atau kosongkan kalau belum diatur</span>
-                    </label>
-                    <input
-                      className="form-input"
-                      type="number"
-                      min={0}
-                      step="any"
-                      inputMode="numeric"
-                      placeholder="0"
-                      value={epForm.budgetIdr === '' ? '' : String(epForm.budgetIdr)}
-                      onChange={e => setEpForm(f => ({ ...f, budgetIdr: e.target.value }))}
-                    />
-                    {epForm.budgetIdr !== '' && Number(epForm.budgetIdr) > 0 && (
-                      <span className="form-field__hint" style={{ marginTop: 4 }}>
-                        Rp {Number(epForm.budgetIdr).toLocaleString('id-ID')}
-                      </span>
-                    )}
                   </div>
                   <div className="form-field">
                     <label>
@@ -3022,11 +3426,12 @@ export function ProgramDetailView() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* ── Modal: Create Workstream ─────────────────────────────────── */}
-      {(showCreateIni || ciClosing) && (
+      {(showCreateIni || ciClosing) && createPortal(
         <div
           className={`modal-backdrop${ciClosing ? ' modal-backdrop--closing' : ''}`}
           onClick={() => !ciSaving && triggerCiClose()}
@@ -3065,37 +3470,26 @@ export function ProgramDetailView() {
                     <input onChange={e => setCiForm(f => ({ ...f, targetCompletion: e.target.value }))} required type="date" value={ciForm.targetCompletion} />
                   </div>
                 </div>
-                <div className="prog-form-grid prog-form-grid--equal">
-                  <div className="form-field">
-                    <label>Prioritas</label>
-                    <select className="form-input" onChange={e => setCiForm(f => ({ ...f, priority: e.target.value }))} value={ciForm.priority}>
-                      <option value="CRITICAL">Critical</option>
-                      <option value="HIGH">High</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="LOW">Low</option>
-                    </select>
-                  </div>
-                  <div className="form-field">
-                    <label>
-                      Owner Workstream
-                      <span className="form-field__hint"> · reviewer task yang masuk IN_REVIEW</span>
-                    </label>
-                    <select
-                      className="form-input"
-                      value={ciOwnerId ?? currentUser?.id ?? ''}
-                      onChange={e => setCiOwnerId(Number(e.target.value))}
-                    >
-                      {userDirectory.length === 0 && currentUser && (
-                        <option value={currentUser.id}>{currentUser.name} (Anda)</option>
-                      )}
-                      {userDirectory.map(u => (
-                        <option key={u.id} value={u.id}>
-                          {u.name}{u.id === currentUser?.id ? ' (Anda)' : ''}
-                          {u.positionTitle ? ` — ${u.positionTitle}` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="form-field">
+                  <label>
+                    Owner Workstream
+                    <span className="form-field__hint"> · reviewer task yang masuk IN_REVIEW</span>
+                  </label>
+                  <select
+                    className="form-input"
+                    value={ciOwnerId ?? currentUser?.id ?? ''}
+                    onChange={e => setCiOwnerId(Number(e.target.value))}
+                  >
+                    {userDirectory.length === 0 && currentUser && (
+                      <option value={currentUser.id}>{currentUser.name} (Anda)</option>
+                    )}
+                    {userDirectory.map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.name}{u.id === currentUser?.id ? ' (Anda)' : ''}
+                        {u.positionTitle ? ` — ${u.positionTitle}` : ''}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="form-field">
                   <label>Penanggung Jawab</label>
@@ -3158,11 +3552,12 @@ export function ProgramDetailView() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* ── Modal: Edit Workstream ──────────────────────────────────── */}
-      {(showEditIni || eiClosing) && (
+      {(showEditIni || eiClosing) && createPortal(
         <div
           className={`modal-backdrop${eiClosing ? ' modal-backdrop--closing' : ''}`}
           onClick={() => !eiSaving && triggerEiClose()}
@@ -3191,7 +3586,7 @@ export function ProgramDetailView() {
                   <label>Deskripsi</label>
                   <textarea className="composer__input prog-modal-textarea" maxLength={400} onChange={e => setEiForm(f => ({ ...f, description: e.target.value }))} rows={2} value={eiForm.description} />
                 </div>
-                <div className="prog-form-grid prog-form-grid--equal">
+                {detail?.approvalStatus === 'ACTIVE' && (
                   <div className="form-field">
                     <label>Status</label>
                     <select className="form-input" onChange={e => setEiForm(f => ({ ...f, status: e.target.value }))} value={eiForm.status}>
@@ -3203,16 +3598,7 @@ export function ProgramDetailView() {
                       <option value="COMPLETED">Completed</option>
                     </select>
                   </div>
-                  <div className="form-field">
-                    <label>Prioritas</label>
-                    <select className="form-input" onChange={e => setEiForm(f => ({ ...f, priority: e.target.value }))} value={eiForm.priority}>
-                      <option value="CRITICAL">Critical</option>
-                      <option value="HIGH">High</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="LOW">Low</option>
-                    </select>
-                  </div>
-                </div>
+                )}
                 <div className="prog-form-grid prog-form-grid--equal">
                   <div className="form-field">
                     <label>Tanggal Mulai</label>
@@ -3282,10 +3668,11 @@ export function ProgramDetailView() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
       {/* ── Modal: Edit Phase (Tugas) ───────────────────────────────────── */}
-      {(showEditPhase || ephClosing) && (
+      {(showEditPhase || ephClosing) && createPortal(
         <div
           className={`modal-backdrop${ephClosing ? ' modal-backdrop--closing' : ''}`}
           onClick={() => !ephSaving && triggerEphClose()}
@@ -3320,11 +3707,12 @@ export function ProgramDetailView() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* ── Modal: Create Phase (Tugas) ─────────────────────────────────── */}
-      {(showCreatePhase || cpClosing) && (
+      {(showCreatePhase || cpClosing) && createPortal(
         <div
           className={`modal-backdrop${cpClosing ? ' modal-backdrop--closing' : ''}`}
           onClick={() => !cpSaving && triggerCpClose()}
@@ -3373,11 +3761,12 @@ export function ProgramDetailView() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* ── Modal: Create Subtask ────────────────────────────────────────── */}
-      {(showCreateSubTask || cstClosing) && (
+      {(showCreateSubTask || cstClosing) && createPortal(
         <div
           className={`modal-backdrop${cstClosing ? ' modal-backdrop--closing' : ''}`}
           onClick={() => !cstSaving && triggerCstClose()}
@@ -3433,13 +3822,44 @@ export function ProgramDetailView() {
                   </div>
                 </div>
                 <div className="form-field">
-                  <label>Prioritas</label>
-                  <select className="form-input" onChange={e => setCstForm(f => ({ ...f, priority: e.target.value }))} value={cstForm.priority}>
-                    <option value="CRITICAL">Critical</option>
-                    <option value="HIGH">High</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="LOW">Low</option>
-                  </select>
+                  <label>Penanggung Jawab (PIC)</label>
+                  <div className="wid-team-row__chips" style={{ paddingTop: 2 }}>
+                    {cstForm.assignedTo ? (() => {
+                      const person = cstDirectory.find(u => u.id === cstForm.assignedTo)
+                      return (
+                        <span className="wid-pic-chip">
+                          {person?.name ?? `#${cstForm.assignedTo}`}
+                          <button aria-label="Hapus PIC" className="wid-pic-chip__remove"
+                            disabled={cstSaving} onClick={() => setCstForm(f => ({ ...f, assignedTo: null }))} type="button">×</button>
+                        </span>
+                      )
+                    })() : null}
+                    <div className="wid-pic-adder">
+                      <input
+                        className="wid-pic-search"
+                        disabled={cstSaving}
+                        onChange={e => setCstPicSearch(e.target.value)}
+                        placeholder={cstForm.assignedTo ? 'Ganti…' : '+ Tugaskan…'}
+                        value={cstPicSearch}
+                      />
+                      {cstPicSearch.length > 0 && (() => {
+                        const filtered = cstDirectory
+                          .filter(u => u.id !== cstForm.assignedTo && u.name.toLowerCase().includes(cstPicSearch.toLowerCase()))
+                          .slice(0, 6)
+                        return filtered.length > 0 ? (
+                          <div className="wid-pic-dropdown">
+                            {filtered.map(u => (
+                              <button className="wid-pic-dropdown__item" key={u.id}
+                                onMouseDown={() => { setCstForm(f => ({ ...f, assignedTo: u.id })); setCstPicSearch('') }} type="button">
+                                <span className="wid-pic-dropdown__name">{u.name}</span>
+                                {u.positionTitle && <span className="wid-pic-dropdown__role">{u.positionTitle}</span>}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null
+                      })()}
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="modal__footer">
@@ -3450,7 +3870,8 @@ export function ProgramDetailView() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {toast && (
@@ -3467,28 +3888,31 @@ export function ProgramDetailView() {
 
       {/* ── Approval confirmation modals ─────────────────────────────── */}
     {approvalModal && createPortal(
-      <div className="modal-overlay" onClick={() => { if (!approvalLoading) { setApprovalModal(null); setRejectNote(''); setApprovalError(null) } }}>
-        <div className="modal-box approval-modal" onClick={e => e.stopPropagation()}>
+      (() => {
+        const approverRole = (currentUser?.roleType?.toUpperCase() === 'KASUBDIV') ? 'KADIV' : 'KASUBDIV'
+        const close = () => { setApprovalModal(null); setRejectNote(''); setApprovalError(null) }
+        return (
+      <div className="modal-overlay" onClick={() => { if (!approvalLoading) close() }}>
+        <div aria-modal="true" className="modal-surface approval-modal" onClick={e => e.stopPropagation()} role="dialog">
           {approvalModal === 'submit' && (
             <>
-              <div className="approval-modal__header">
-                <div className="approval-modal__icon approval-modal__icon--info">
-                  <svg fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="22"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
-                </div>
-                <div>
-                  <h3 className="approval-modal__title">Ajukan Persetujuan</h3>
-                  <p className="approval-modal__desc">
-                    Program <strong>{detail?.name}</strong> akan dikirim ke{' '}
-                    {(currentUser?.roleType?.toUpperCase() === 'KASUBDIV') ? 'KADIV' : 'KASUBDIV'}
-                    {' '}untuk ditinjau. Lanjutkan?
+              <div className="modal-header">
+                <div className="modal-headcopy">
+                  <span className="modal-kicker">Persetujuan</span>
+                  <span className="modal-title">Ajukan ke {approverRole}?</span>
+                  <p className="modal-subtitle">
+                    Program <strong>{detail?.name}</strong> akan dikirim ke {approverRole} untuk ditinjau. Konten program akan dikunci hingga ada keputusan.
                   </p>
                 </div>
+                <button aria-label="Tutup" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
+                  <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
+                </button>
               </div>
-              {approvalError && <p className="approval-modal__error">{approvalError}</p>}
-              <div className="approval-modal__footer">
-                <button className="btn btn--ghost" disabled={approvalLoading} onClick={() => { setApprovalModal(null); setApprovalError(null) }} type="button">Batal</button>
+              {approvalError && <div className="modal-body"><p className="approval-modal__error">{approvalError}</p></div>}
+              <div className="modal-footer">
+                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Batal</button>
                 <button className="btn btn--primary" disabled={approvalLoading} onClick={() => void submitForApproval()} type="button">
-                  {approvalLoading ? 'Mengirim…' : 'Ya, Ajukan'}
+                  {approvalLoading ? 'Mengirim…' : `Ajukan ke ${approverRole}`}
                 </button>
               </div>
             </>
@@ -3496,20 +3920,23 @@ export function ProgramDetailView() {
 
           {approvalModal === 'approve' && (
             <>
-              <div className="approval-modal__header">
-                <div className="approval-modal__icon approval-modal__icon--success">
-                  <svg fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="22"><path d="m3 12 6 6L21 6"/></svg>
+              <div className="modal-header">
+                <div className="modal-headcopy">
+                  <span className="modal-kicker">Konfirmasi</span>
+                  <span className="modal-title">Setujui program?</span>
+                  <p className="modal-subtitle">
+                    Program <strong>{detail?.name}</strong> akan diaktifkan dan masuk ke fase eksekusi. Tindakan ini tidak dapat dibatalkan.
+                  </p>
                 </div>
-                <div>
-                  <h3 className="approval-modal__title">Setujui Program</h3>
-                  <p className="approval-modal__desc">Program <strong>{detail?.name}</strong> akan disetujui dan menjadi <strong>Active</strong>. Tindakan ini tidak dapat dibatalkan.</p>
-                </div>
+                <button aria-label="Tutup" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
+                  <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
+                </button>
               </div>
-              {approvalError && <p className="approval-modal__error">{approvalError}</p>}
-              <div className="approval-modal__footer">
-                <button className="btn btn--ghost" disabled={approvalLoading} onClick={() => { setApprovalModal(null); setApprovalError(null) }} type="button">Batal</button>
+              {approvalError && <div className="modal-body"><p className="approval-modal__error">{approvalError}</p></div>}
+              <div className="modal-footer">
+                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Batal</button>
                 <button className="btn btn--primary" disabled={approvalLoading} onClick={() => void submitApprove()} type="button">
-                  {approvalLoading ? 'Menyetujui…' : 'Ya, Setujui'}
+                  {approvalLoading ? 'Menyetujui…' : 'Setujui & Aktifkan'}
                 </button>
               </div>
             </>
@@ -3517,27 +3944,36 @@ export function ProgramDetailView() {
 
           {approvalModal === 'reject' && (
             <>
-              <div className="approval-modal__header">
-                <div className="approval-modal__icon approval-modal__icon--danger">
-                  <svg fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="22"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+              <div className="modal-header">
+                <div className="modal-headcopy">
+                  <span className="modal-kicker">Konfirmasi</span>
+                  <span className="modal-title">Tolak program?</span>
+                  <p className="modal-subtitle">
+                    PIC <strong>{detail?.name}</strong> akan menerima notifikasi dan dapat memperbaiki sebelum mengajukan ulang.
+                  </p>
                 </div>
-                <div>
-                  <h3 className="approval-modal__title">Tolak Program</h3>
-                  <p className="approval-modal__desc">Berikan alasan penolakan untuk program <strong>{detail?.name}</strong>.</p>
-                </div>
+                <button aria-label="Tutup" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
+                  <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
+                </button>
               </div>
-              <textarea
-                autoFocus
-                className="approval-modal__textarea"
-                maxLength={500}
-                onChange={e => setRejectNote(e.target.value)}
-                placeholder="Tuliskan alasan penolakan…"
-                rows={3}
-                value={rejectNote}
-              />
-              {approvalError && <p className="approval-modal__error">{approvalError}</p>}
-              <div className="approval-modal__footer">
-                <button className="btn btn--ghost" disabled={approvalLoading} onClick={() => { setApprovalModal(null); setRejectNote(''); setApprovalError(null) }} type="button">Batal</button>
+              <div className="modal-body">
+                <label className="approval-modal__field">
+                  <span className="approval-modal__field-label">Alasan penolakan <span className="approval-modal__field-required">*</span></span>
+                  <textarea
+                    autoFocus
+                    className="approval-modal__textarea"
+                    maxLength={500}
+                    onChange={e => setRejectNote(e.target.value)}
+                    placeholder="Tuliskan apa yang perlu diperbaiki…"
+                    rows={4}
+                    value={rejectNote}
+                  />
+                  <span className="approval-modal__field-hint">{rejectNote.length} / 500</span>
+                </label>
+                {approvalError && <p className="approval-modal__error">{approvalError}</p>}
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Batal</button>
                 <button className="btn btn--danger" disabled={approvalLoading || !rejectNote.trim()} onClick={() => void submitReject()} type="button">
                   {approvalLoading ? 'Menolak…' : 'Tolak Program'}
                 </button>
@@ -3545,7 +3981,9 @@ export function ProgramDetailView() {
             </>
           )}
         </div>
-      </div>,
+      </div>
+        )
+      })(),
       document.body,
     )}
     </div>

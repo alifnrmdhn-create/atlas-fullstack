@@ -268,14 +268,17 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
             </>
           )}
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            {visibleWorkstreams.length}/{workstreams.length} ws · {totalSteps} sub-tahap
+            {visibleWorkstreams.length === workstreams.length
+              ? `${workstreams.length} workstream`
+              : `${visibleWorkstreams.length} dari ${workstreams.length} workstream`}
+            {' · '}
+            {totalSteps} tahapan
           </span>
         </div>
       </div>
 
       {visibleWorkstreams.length === 0 ? (
         <SectionState
-          icon="🔍"
           title="Tidak ada workstream yang Anda pimpin"
           text="Nonaktifkan filter 'Saya saja' untuk melihat semua workstream program ini."
           compact
@@ -292,7 +295,7 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
             >
               {w.name}
               <span className="workstream-pill__count">
-                {w.phaseCount}🪜 · {w.taskCount}▫
+                {w.phaseCount} fase · {w.taskCount} task
               </span>
             </button>
           ))}
@@ -306,7 +309,7 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
       )}
 
       {gridError && !gridLoading && (
-        <SectionState icon="⚠️" title="Gagal memuat grid" text={gridError} />
+        <SectionState title="Gagal memuat grid" text={gridError} />
       )}
 
       {!gridLoading && !gridError && grid && (

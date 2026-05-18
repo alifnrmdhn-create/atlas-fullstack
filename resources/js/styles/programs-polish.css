@@ -689,12 +689,11 @@
 }
 
 
-/* ───────── Header bar: flatten chrome + add proper inset ─────────
-   Breadcrumb + back nav. Pattern A: no panel chrome — sit flat at top.
-   Horizontal 32px matches the tabs row inset, so back-button / breadcrumb /
-   board-button do NOT touch the workspace card edges.                     */
+/* ───────── Header bar: tighter padding for denser visual ─────────
+   Pattern A flat — no chrome, just inset. Vertical padding dikurangi
+   supaya breadcrumb + title bar tidak terlalu lebar di vertical. */
 .prog-detail-page .wi-detail-header {
-  padding: 14px 32px 6px !important;
+  padding: 10px 32px 4px !important;
   margin-bottom: 0 !important;
   background: transparent !important;
   border: 0 !important;
@@ -704,7 +703,7 @@
 
 /* ───────── Title bar: tighter, hierarchy clear, same horizontal inset ──── */
 .prog-detail-page .wi-detail-titlebar {
-  padding: 6px 32px 14px !important;
+  padding: 2px 32px 10px !important;
   margin: 0 !important;
   background: transparent !important;
   border: 0 !important;
@@ -725,31 +724,30 @@
   margin-left: 2px;
 }
 
-/* ── Scorecard / Non-Scorecard pill (PTPN PPT identifier). */
+/* ── Scorecard / Non-Scorecard chip — sentence case, no uppercase tracking,
+   no border. Flat label yang ngalir di header bar. */
 .prog-detail-page .prog-detail-header__kelompok {
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: 4px;
-  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 2px 8px;
+  border-radius: 5px;
+  border: 0;
 }
 .prog-detail-page .prog-detail-header__kelompok--scorecard {
   color: var(--indigo);
-  background: color-mix(in srgb, var(--indigo) 10%, transparent);
-  border-color: color-mix(in srgb, var(--indigo) 25%, transparent);
+  background: color-mix(in srgb, var(--indigo) 9%, transparent);
 }
 .prog-detail-page .prog-detail-header__kelompok--non {
   color: var(--text-muted);
   background: var(--surface-2);
-  border-color: var(--panel-border);
 }
 .prog-detail-page .wi-detail-title {
-  font-size: 22px !important;
+  font-size: 20px !important;
   line-height: 1.25 !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.01em !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.015em !important;
   margin: 0 !important;
 }
 
@@ -765,7 +763,10 @@
 }
 .prog-detail-page .prog-lifecycle-banner {
   padding: 6px 12px !important;
-  margin: 0 0 16px !important;
+  /* Inset 32px horizontally to align with .wi-detail-titlebar gutter so
+     border tidak menempel ke inner edge workspace panel; 8px top margin
+     memberi napas dari title bar di atas (yang sebelumnya 0 -> menempel). */
+  margin: 8px 32px 16px !important;
   border-radius: 6px !important;
   font-size: 11.5px !important;
   gap: 6px !important;
@@ -804,22 +805,26 @@
   gap: 3px !important;
   min-height: 0 !important;
 }
+/* Modern: sentence case label, no tracking. Less "corporate report 2008",
+   more "Linear/Notion property strip". Value tetap dominant tapi tidak
+   teriak — 20px cukup untuk overview metrik. */
 .prog-detail-page .detail-metrics .metric__label {
-  font-size: 10.5px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
   color: var(--text-muted) !important;
   margin: 0 !important;
 }
 .prog-detail-page .detail-metrics .metric__value {
-  font-size: 22px !important;
+  font-size: 20px !important;
   font-weight: 600 !important;
-  line-height: 1.1 !important;
+  line-height: 1.15 !important;
   color: var(--text-strong) !important;
   display: flex !important;
   align-items: baseline !important;
   gap: 6px !important;
+  letter-spacing: -0.01em !important;
 }
 .prog-detail-page .detail-metrics .metric__schedule-gap {
   font-size: 11px !important;
@@ -837,10 +842,69 @@
   color: var(--green) !important;
   background: color-mix(in srgb, var(--green) 8%, transparent) !important;
 }
+/* Override base .metric > span text-transform: uppercase dari programs.css.
+   Sub-text harus sentence case ("waktu terpakai", "Lihat struktur") untuk
+   konsisten dengan typography refresh. !important diperlukan karena base
+   selector punya specificity tinggi via direct-child combinator. */
 .prog-detail-page .detail-metrics .metric__sub {
   font-size: 11px !important;
   color: var(--text-muted) !important;
   margin: 0 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-weight: 400 !important;
+}
+/* Sama untuk label utama (Progress / Workstream) — di base juga di-uppercase
+   karena `.metric > span` rule. Override eksplisit di sini. */
+.prog-detail-page .detail-metrics .metric__label {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+/* Mini progress bar di bawah metric value — visual reinforce daripada
+   raw percentage. Width drives by Progress%, color shifts kalau jadwal
+   behind/ahead. */
+.prog-detail-page .detail-metrics .metric__bar {
+  width: 100%;
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+.prog-detail-page .detail-metrics .metric__bar-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 99px;
+  transition: width 240ms ease;
+}
+.prog-detail-page .detail-metrics .metric__bar-fill--behind { background: var(--red); }
+.prog-detail-page .detail-metrics .metric__bar-fill--ahead { background: var(--green); }
+
+/* Metric sebagai tombol click-through (Workstream count → tab Struktur).
+   Tampil identik dengan metric biasa, tapi hover state + arrow icon
+   memberi tahu user ini interaktif. */
+.prog-detail-page .detail-metrics .metric--clickable {
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  padding: 4px 8px 4px 0;
+  margin: -4px -8px -4px 0;
+  border-radius: 6px;
+  transition: background-color 120ms ease;
+  font: inherit;
+  color: inherit;
+}
+.prog-detail-page .detail-metrics .metric--clickable:hover {
+  background: var(--surface-2);
+}
+.prog-detail-page .detail-metrics .metric--clickable:hover .metric__arrow {
+  transform: translateX(2px);
+}
+.prog-detail-page .detail-metrics .metric__arrow {
+  color: var(--text-muted);
+  margin-left: 2px;
+  transition: transform 140ms ease;
 }
 
 
@@ -892,22 +956,41 @@
 .prog-detail-page .prog-detail-sidebar .wid-panel:last-child {
   border-bottom: 0 !important;
 }
+/* ───────── Right rail: unified property list (Notion-style) ─────────
+   Drop panel headings entirely + drop visible divider antar panel.
+   Rail jadi satu kolom property rows yang scroll natural. Hairline
+   tipis antar group (timeline/status/strategic) jadi visual cue grup
+   tanpa membutuhkan judul section eksplisit. */
 .prog-detail-page .prog-detail-sidebar .wid-panel__head {
-  padding: 14px 22px 4px !important;
-  border-bottom: 0 !important;
-}
-.prog-detail-page .prog-detail-sidebar .wid-panel__title {
-  font-size: 10.5px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
-  color: var(--text-muted) !important;
-}
-.prog-detail-page .prog-detail-sidebar .wid-panel__icon {
-  opacity: 0.6 !important;
+  display: none !important;
 }
 .prog-detail-page .prog-detail-sidebar .wid-panel__body {
-  padding: 4px 22px 16px !important;
+  padding: 10px 22px !important;
+}
+.prog-detail-page .prog-detail-sidebar .wid-panel:first-child .wid-panel__body {
+  padding-top: 18px !important;
+}
+.prog-detail-page .prog-detail-sidebar .wid-panel:last-child .wid-panel__body {
+  padding-bottom: 18px !important;
+}
+/* Status & Priority badge — sentence case di sidebar property list.
+   Base wid-status-tag dan wi-priority-badge text-transform: uppercase
+   untuk konteks lain (kanban, board). Di overview properties, sentence
+   case lebih konsisten dengan typography refresh. */
+.prog-detail-page .prog-detail-sidebar .wid-status-tag,
+.prog-detail-page .prog-detail-sidebar .wi-priority-badge {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-weight: 600 !important;
+  font-size: 11.5px !important;
+}
+/* Ultra-subtle inter-group divider. Lighter dari panel-border default
+   untuk kesan grouped tapi tidak terpotong jadi kartu terpisah. */
+.prog-detail-page .prog-detail-sidebar .wid-panel + .wid-panel {
+  border-top: 1px solid color-mix(in srgb, var(--panel-border) 60%, transparent) !important;
+}
+.prog-detail-page .prog-detail-sidebar .wid-panel {
+  border-bottom: 0 !important;
 }
 
 
@@ -918,15 +1001,19 @@
 .prog-detail-page .prog-detail-sidebar .wid-panel__icon {
   display: none !important;
 }
+/* Section titles modern: sentence case, no uppercase, no tracking.
+   "Identitas Strategis" / "Budget" tampil sentence-case langsung tanpa
+   transformation, mengikuti bahasa Linear/Notion. */
 .prog-detail-page .prog-detail-main .wi-section__title {
-  font-size: 10.5px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.06em !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
   color: var(--text-muted) !important;
-  gap: 0 !important;
+  gap: 6px !important;
 }
 .prog-detail-page .prog-detail-main .wi-section__header {
-  margin-bottom: 10px !important;
+  margin-bottom: 8px !important;
 }
 
 
@@ -1020,22 +1107,25 @@
   padding: 0 !important;
 }
 .prog-detail-page .program-detail-section-title-row {
-  gap: 6px !important;
+  gap: 8px !important;
 }
 .prog-detail-page .program-detail-section-title > svg {
   display: none !important;
 }
+/* Sentence case section title — konsisten dengan Ringkasan tab.
+   "WORKSTREAM" / "PHASE" jadul-corporate; "Workstream" / "Phase" modern
+   tone shift dengan satu CSS change. */
 .prog-detail-page .program-detail-section-title {
-  font-size: 10.5px !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
-  color: var(--text-muted) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: var(--text-strong) !important;
   gap: 0 !important;
 }
 .prog-detail-page .program-detail-section-head .section-badge {
-  font-size: 10.5px !important;
-  font-weight: 600 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
   background: var(--surface-2) !important;
   color: var(--text-muted) !important;
   padding: 1px 7px !important;
@@ -1082,24 +1172,26 @@
   box-shadow: none !important;
 }
 .prog-detail-page .workstream-row--active {
-  background: transparent !important;
-  border-left-color: var(--indigo) !important;
-}
-/* Health-derived left-border accent (subtle scan cue, no full bg tint).
-   HealthPill uses lowercased status: red/yellow/green/overdue. */
-.prog-detail-page .workstream-row:has(.health-pill--red),
-.prog-detail-page .workstream-row:has(.health-pill--overdue) {
-  border-left-color: var(--red) !important;
-}
-.prog-detail-page .workstream-row:has(.health-pill--yellow) {
-  border-left-color: var(--yellow) !important;
-}
-.prog-detail-page .workstream-row:has(.health-pill--green) {
+  background: var(--surface-1) !important;
   border-left-color: var(--green) !important;
 }
-/* Active expanded state takes precedence — indigo overrides health */
+/* Health-derived left-border accent (subtle scan cue, no full bg tint).
+   Pakai data-health attribute karena HealthPill child sudah dihilangkan
+   (redundant dengan stripe). Status lowercase: red/yellow/green/overdue. */
+.prog-detail-page .workstream-row[data-health="red"],
+.prog-detail-page .workstream-row[data-health="overdue"] {
+  border-left-color: var(--red) !important;
+}
+.prog-detail-page .workstream-row[data-health="yellow"] {
+  border-left-color: var(--yellow) !important;
+}
+.prog-detail-page .workstream-row[data-health="green"] {
+  border-left-color: var(--green) !important;
+}
+/* Active expanded state takes precedence — green overrides health.
+   Konsisten dengan accent color theme ATLAS (hijau, bukan indigo). */
 .prog-detail-page .workstream-row--active {
-  border-left-color: var(--indigo) !important;
+  border-left-color: var(--green) !important;
 }
 
 /* Workstream row title slightly bigger to anchor the row */
@@ -1107,16 +1199,153 @@
   font-size: 13.5px !important;
 }
 
-/* Progress bar: thicker track, more visible fill */
+/* Progress bar: thicker track, more visible fill. Min-width pada track
+   memastikan progress bar selalu terlihat sebagai visual anchor, bahkan
+   saat 0% (kalau hilang, row terlihat sparse/unfinished). */
+.prog-detail-page .workstream-row__progress {
+  min-width: 130px !important;
+}
 .prog-detail-page .workstream-row__progress .progress-bar {
   height: 6px !important;
-  background: var(--surface-2) !important;
+  width: 100% !important;
+  min-width: 80px !important;
+  background: color-mix(in srgb, var(--text-muted) 14%, transparent) !important;
   border-radius: 99px !important;
   overflow: hidden !important;
+  flex: 1 !important;
 }
 .prog-detail-page .workstream-row__progress .progress-bar__fill {
-  background: var(--indigo) !important;
+  background: var(--green) !important;
   border-radius: 99px !important;
+}
+.prog-detail-page .workstream-row__progress > span {
+  color: var(--text-body) !important;
+  font-weight: 600 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Hover-only actions — pattern Linear/Notion. Edit/× buttons hidden saat
+   row default, fade-in on hover. Reduces visual noise pada row default
+   state, supaya konten utama (title, dates, PIC) tidak teredam. */
+.prog-detail-page .workstream-row__actions {
+  opacity: 0 !important;
+  transition: opacity 120ms ease !important;
+  pointer-events: none !important;
+  display: flex !important;
+  gap: 2px !important;
+}
+.prog-detail-page .workstream-row:hover .workstream-row__actions,
+.prog-detail-page .workstream-row:focus-within .workstream-row__actions,
+.prog-detail-page .workstream-row--active .workstream-row__actions {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Icon button untuk Edit/Delete workstream — compact square dengan
+   hover bg, mengganti "Edit"/"×" text yang terlihat plain & unfinished. */
+.ws-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.ws-icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--text-strong);
+}
+.ws-icon-btn--danger:hover {
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  color: var(--red);
+}
+.ws-icon-btn.is-confirm {
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  color: var(--red);
+}
+
+/* "+ Tambah Task" — hover-only show, di bawah task list dalam phase group. */
+.prog-detail-page .wi-add-subtask-btn {
+  opacity: 0 !important;
+  transition: opacity 120ms ease !important;
+}
+.prog-detail-page .phase-group:hover .wi-add-subtask-btn,
+.prog-detail-page .phase-group:focus-within .wi-add-subtask-btn {
+  opacity: 1 !important;
+}
+
+/* "+ Tambah Phase" — light green block sengaja TIDAK hover-only. Itu CTA
+   primer untuk hierarchy planning, harus visible sebagai entry-point. */
+
+/* Workstream row inline health text — eksplisit non-green status.
+   Subtle text-style chip (no border, sentence case) yang memberi info
+   "At Risk" / "Terlambat" tanpa user perlu hover stripe kiri. */
+.prog-detail-page .workstream-row__health {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0;
+}
+.prog-detail-page .workstream-row__health--yellow {
+  color: var(--yellow);
+  background: color-mix(in srgb, var(--yellow) 12%, transparent);
+}
+.prog-detail-page .workstream-row__health--red,
+.prog-detail-page .workstream-row__health--overdue {
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+}
+
+/* ───────── Color accent injection ─────────
+   Halaman dominan gray = lusuh. Inject green accent di:
+   - code-badge (workstream + task code) → subtle green-tinted bg
+   - workstream title → bolder weight, full strong color
+   - dates "20 Mei → 31 Mei" → neutral but tabular numeric
+   - "13 hari lagi" deadline link → distinct color based on urgency */
+.prog-detail-page .workstream-row .code-badge,
+.prog-detail-page .wi-row .code-badge,
+.prog-detail-page .tpp-code-chip {
+  background: color-mix(in srgb, var(--green) 7%, transparent) !important;
+  color: color-mix(in srgb, var(--green) 90%, var(--text-strong)) !important;
+  border-color: color-mix(in srgb, var(--green) 18%, var(--panel-border)) !important;
+}
+
+/* Workstream title weight stronger — anchor row dengan title yang
+   confident, bukan plain medium weight. */
+.prog-detail-page .workstream-row__info strong {
+  font-weight: 600 !important;
+  color: var(--text-strong) !important;
+  letter-spacing: -0.005em !important;
+}
+
+/* Workstream/Task dates: tabular numeric supaya angka aligned, lebih
+   readable saat scan-down list. */
+.prog-detail-page .workstream-row__dates,
+.prog-detail-page .wi-row__meta {
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Deadline "X hari lagi" tetap link-style tapi tone disesuaikan urgency.
+   Default green (aman). Yellow/red diatur via tone class. */
+.prog-detail-page .program-deadline {
+  font-weight: 600 !important;
+  color: var(--green) !important;
+}
+.prog-detail-page .program-deadline--yellow,
+.prog-detail-page .program-deadline--at-risk {
+  color: var(--yellow) !important;
+}
+.prog-detail-page .program-deadline--red,
+.prog-detail-page .program-deadline--overdue,
+.prog-detail-page .program-deadline--terlambat {
+  color: var(--red) !important;
 }
 .prog-detail-page .workstream-row__progress > span {
   color: var(--text-strong) !important;
@@ -1140,47 +1369,50 @@
   margin-bottom: 12px !important;
 }
 
-/* Stat badges (3 Task / 2 Selesai / 1 Blocker): unify weight */
+/* Stat badges (1 Phase / 1 Task / 0 Selesai / 0 Blocker): flat, no border.
+   Background subtle, dipakai sebagai inline summary text bukan pill-pill. */
 .prog-detail-page .ws-stat {
-  font-size: 11px !important;
-  padding: 2px 8px !important;
-  border-radius: 99px !important;
-  background: var(--surface-1) !important;
-  border: 1px solid var(--panel-border) !important;
+  font-size: 11.5px !important;
+  padding: 1px 7px !important;
+  border-radius: 4px !important;
+  background: var(--surface-2) !important;
+  border: 0 !important;
   color: var(--text-muted) !important;
   font-weight: 500 !important;
+  letter-spacing: 0 !important;
 }
 .prog-detail-page .ws-stat--done {
   background: color-mix(in srgb, var(--green) 10%, transparent) !important;
-  border-color: color-mix(in srgb, var(--green) 25%, transparent) !important;
   color: var(--green) !important;
 }
 .prog-detail-page .ws-stat--blocker {
   background: color-mix(in srgb, var(--red) 10%, transparent) !important;
-  border-color: color-mix(in srgb, var(--red) 25%, transparent) !important;
   color: var(--red) !important;
 }
 
 
-/* ── Phase group header: "PHASE 1 · Name · 2/3 selesai" inline */
+/* ── Phase group header: "Phase 1 Name 2/3 selesai" inline modern.
+   Drop bg surface-1 dari base — Pattern A: flat hairlines, no card-in-card. */
 .prog-detail-page .phase-group__header {
   padding: 8px 0 !important;
+  background: transparent !important;
   border-bottom: 1px solid var(--panel-border) !important;
   margin-bottom: 4px !important;
 }
 .prog-detail-page .phase-group__eyebrow {
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.06em !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
   color: var(--text-muted) !important;
 }
 
 /* "Task tanpa phase" header (no phase eyebrow): style as quiet subheader */
 .prog-detail-page .phase-group__header--unphased .phase-group__name {
-  font-size: 10.5px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
   color: var(--text-muted) !important;
 }
 
@@ -1247,12 +1479,34 @@
 }
 
 
-/* ── Empty workstream body: slim down */
+/* ── Empty workstream body: helpful CTA + descriptive hint */
 .prog-detail-page .workstream-empty-body {
-  padding: 16px !important;
-  background: transparent !important;
+  padding: 20px 18px !important;
+  background: color-mix(in srgb, var(--surface-1) 50%, transparent) !important;
   border: 1px dashed var(--panel-border) !important;
-  border-radius: 6px !important;
+  border-radius: 8px !important;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.prog-detail-page .workstream-empty-body__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+.prog-detail-page .workstream-empty-body__text strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.prog-detail-page .workstream-empty-body__hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 420px;
 }
 
 
@@ -1317,12 +1571,16 @@
   color: var(--text-strong) !important;
 }
 
-/* Severity badge — keep tone-aware but tighter */
+/* Severity badge — sentence case, konsisten dengan refresh typography.
+   "CRITICAL/HIGH/MEDIUM/LOW" → tampil text sumber. CSS hilangkan uppercase
+   forcing, jadi text-content akan tampil as-is — kita render title-case
+   di TSX untuk friendliness. */
 .prog-detail-page .blocker-item .severity-badge {
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  padding: 2px 7px !important;
-  letter-spacing: 0.04em !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  padding: 2px 8px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
   flex-shrink: 0 !important;
 }
 
@@ -1331,24 +1589,55 @@
    Tab KPI APMS — Pattern A polish
    ════════════════════════════════════════════════════════════════════ */
 
-/* KPI head: demote title row consistent with other tabs */
+/* KPI head: sentence case title konsisten dengan tab lain. */
 .prog-detail-page .prog-kpi-head__title > svg {
   display: none !important;
 }
 .prog-detail-page .prog-kpi-head__title {
-  font-size: 10.5px !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
-  color: var(--text-muted) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: var(--text-strong) !important;
   gap: 0 !important;
 }
 .prog-detail-page .prog-kpi-head__title-row {
   margin-bottom: 8px !important;
 }
 .prog-detail-page .prog-kpi-flag {
-  font-size: 10.5px !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
   padding: 2px 8px !important;
+  border-radius: 4px !important;
+}
+/* Sync button — icon + label compact, ghost style. Lebih clean dari
+   button bertekstur "↺ Sync APMS" yang sebelumnya. */
+.prog-kpi-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-body);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.prog-kpi-sync-btn:hover {
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--green) 30%, var(--panel-border));
+  color: var(--green);
+}
+.prog-kpi-sync-btn svg {
+  opacity: 0.7;
+}
+.prog-kpi-sync-btn:hover svg {
+  opacity: 1;
 }
 
 
@@ -1490,21 +1779,42 @@
 }
 
 
-/* ───────── Tabs: hairline divider, less weight ───────── */
+/* ───────── Tabs: pill style modern (Linear/Vercel) ─────────
+   Drop bottom border + underline accent. Active state pakai subtle
+   filled bg dengan strong text — fokus pada chip selection, bukan rail
+   underline. Hover state lebih lembut, transition halus. */
 .prog-detail-page .prog-detail-tabs {
-  border-bottom: 1px solid var(--panel-border) !important;
-  margin-bottom: 18px !important;
-  gap: 4px !important;
+  border-bottom: 0 !important;
+  margin-bottom: 14px !important;
+  padding: 2px 32px 4px !important;
+  gap: 2px !important;
+  background: transparent !important;
 }
 .prog-detail-page .prog-detail-tab {
   font-size: 13px !important;
   font-weight: 500 !important;
-  padding: 8px 14px !important;
+  padding: 5px 11px !important;
   background: transparent !important;
-  border-radius: 0 !important;
+  border: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 6px !important;
+  color: var(--text-muted) !important;
+  margin-bottom: 0 !important;
+  transition: background-color 120ms ease, color 120ms ease !important;
 }
+.prog-detail-page .prog-detail-tab:hover:not(.prog-detail-tab--active) {
+  background: color-mix(in srgb, var(--text-muted) 8%, transparent) !important;
+  color: var(--text-body) !important;
+}
+/* Tab active state: filled bg lebih kontras + subtle ring untuk presence.
+   surface-2 sebelumnya terlalu lembut di light theme — ganti pakai mix
+   text-muted 14% supaya jelas tab mana yang aktif. */
 .prog-detail-page .prog-detail-tab--active {
+  background: color-mix(in srgb, var(--text-strong) 8%, transparent) !important;
+  color: var(--text-strong) !important;
   font-weight: 600 !important;
+  border-bottom: 0 !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-muted) 12%, transparent) !important;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1514,19 +1824,22 @@
    ════════════════════════════════════════════════════════════════════ */
 .prog-strategic {
   border-top: 1px solid var(--panel-border);
-  padding-top: 16px;
+  padding-top: 10px;
 }
 .prog-strategic__head {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 2px;
 }
+/* Sentence case + smaller weight. Heading sebenarnya berfungsi sebagai
+   group label property list — kalau terlalu kuat (uppercase tracking)
+   ia menarik perhatian melebihi nilainya. */
 .prog-strategic__title {
   font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--text-muted);
   margin: 0;
 }
@@ -1537,12 +1850,81 @@
 .prog-strategic__status--error {
   color: var(--red);
 }
+/* "Edit" hover-button — hanya tampil saat read-only mode + user authorized.
+   Pattern Notion: subtle text-link dengan icon kecil. Hover dimuncul lebih
+   prominent. */
+.prog-strategic__edit-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.prog-strategic__edit-btn:hover {
+  background: var(--surface-2);
+  color: var(--green);
+}
+/* Empty value text muted italic — supaya beda visual dari real value. */
+.prog-strategic__value--empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ───────── Empty state polish ─────────
+   Section state base mungkin sparse — beri padding + soft bg + center
+   alignment supaya empty state terasa intentional, bukan halaman blank.
+   Dipakai di tab Hambatan / Workstream empty / dll. */
+.prog-detail-page .section-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 36px 24px;
+  text-align: center;
+  border: 1px dashed var(--panel-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-1) 50%, transparent);
+  margin: 12px 0;
+}
+.prog-detail-page .section-state__icon {
+  font-size: 24px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--green) 10%, transparent);
+}
+.prog-detail-page .section-state strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-strong);
+  letter-spacing: -0.005em;
+}
+.prog-detail-page .section-state p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 360px;
+}
 .prog-strategic__row {
   display: grid;
   grid-template-columns: 160px 1fr;
   gap: 12px;
   align-items: start;
-  padding: 8px 0;
+  padding: 6px 0;
 }
 .prog-strategic__row + .prog-strategic__row {
   border-top: 1px solid var(--panel-border);
@@ -1550,7 +1932,7 @@
 .prog-strategic__label {
   font-size: 12px;
   color: var(--text-muted);
-  padding-top: 8px;
+  padding-top: 7px;
 }
 .prog-strategic__value {
   font-size: 13.5px;
@@ -1558,13 +1940,59 @@
   padding: 6px 0;
   line-height: 1.5;
 }
+/* Ghost input style — input tampak seperti plain text by default.
+   Border tipis muncul saat hover supaya user tahu field interaktif.
+   Focus state pakai border tegas + ring lembut. Pattern ini dipakai
+   Linear & Notion untuk overview screens yang tidak boleh kelihatan
+   "form-y" tapi tetap inline-editable. */
 .prog-strategic__input {
   font-size: 13.5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 5px 8px;
+  color: var(--text-strong);
+  width: 100%;
+  transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+}
+.prog-strategic__input:hover:not(:focus):not(:disabled) {
+  border-color: var(--panel-border);
+  background: var(--surface-1);
+}
+.prog-strategic__input:focus {
+  outline: none;
+  border-color: var(--green);
+  background: var(--surface-1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 12%, transparent);
+}
+.prog-strategic__input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+/* Textarea Strategic Objective — auto-grow style, minimum 1 baris.
+   Tanpa override ini, rows=2 default browser memberi tinggi terlalu lega
+   untuk content singkat. min-height kontrol agar 1 baris content tidak
+   menyisakan setengah baris kosong di bawah. */
+textarea.prog-strategic__input {
+  min-height: 28px;
+  line-height: 1.5;
+  resize: vertical;
+}
+/* Select — hilangkan native dropdown arrow yang khas browser jadul,
+   ganti dengan caret SVG inline. */
+select.prog-strategic__input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%2399a1ad' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M3 4.5 6 7.5l3-3'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  cursor: pointer;
 }
 .prog-strategic__actions {
   display: flex;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 6px;
   padding-left: 172px;
 }
 @media (max-width: 720px) {
@@ -1633,10 +2061,10 @@
 }
 .batch-export__row {
   display: grid;
-  grid-template-columns: 24px 90px 1fr auto;
+  grid-template-columns: 20px max-content minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 12px;
+  padding: 10px 14px;
   font-size: 12.5px;
   cursor: pointer;
   user-select: none;
@@ -1667,7 +2095,7 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  grid-template-columns: 24px 1fr auto;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
 }
 .batch-export__row--head:hover {
   background: var(--surface-1);
@@ -1683,13 +2111,15 @@
 }
 .batch-export__code {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 500;
   color: var(--text-muted);
-  padding: 2px 6px;
+  padding: 3px 7px;
   background: var(--surface-1);
+  border: 1px solid var(--panel-border-soft, var(--panel-border));
   border-radius: 4px;
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 .batch-export__name {
   font-weight: 500;

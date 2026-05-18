@@ -161,7 +161,6 @@ export type PilarStrategis =
   | 'SPENDING_BETTER'
   | 'INNOVATIVE_FINANCING'
   | 'ENABLER'
-  | 'NON_SCORECARD'
 
 export type Program = {
   id: number
@@ -236,8 +235,6 @@ export type ProgramDetail = {
   startDate: string
   targetEndDate: string
   actualEndDate?: string | null
-  budgetIdr: number | null
-  budgetSpent: number
   linkedChannelId?: number
   approvalStatus?: string
   rejectionNote?: string

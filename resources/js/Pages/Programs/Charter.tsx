@@ -43,7 +43,7 @@ export default function Charter() {
             <div className="charter-grid">
               <section className="charter-grid__main">
                 <h2 className="charter-section-title">Aktivitas &amp; Timeline</h2>
-                <ActivityTimelineTable activities={activities} />
+                <ActivityTimelineTable activities={activities} period={program.period} />
               </section>
               <aside className="charter-grid__side">
                 <StatusPanel status={status} />
