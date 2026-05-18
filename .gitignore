@@ -31,3 +31,6 @@ docs/**/*.pdf
 docs/**/*.docx
 docs/**/*.xlsx
 docs/**/.DS_Store
+
+# Local handover/snapshot docs
+/STATUS_ATLAS.md
