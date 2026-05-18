@@ -175,11 +175,11 @@
   padding: 0 8px;
   border-radius: var(--ds-radius-pill);
   background: var(--ds-neutral-100);
-  font-size: 10px;
-  font-weight: var(--ds-weight-semibold);
+  font-size: 11px;
+  font-weight: var(--ds-weight-medium);
   color: var(--ds-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 /* ─── Primary action button ─────────────────────────────── */
@@ -360,12 +360,14 @@
   color: var(--ds-text-tertiary);
 }
 
+/* Kanban column label — sentence case modern (Linear/Notion). Sebelumnya
+   uppercase 0.04em tracking jadul. */
 .workboard-v2 .kanban-col__label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: var(--ds-weight-semibold);
   color: var(--ds-text-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .workboard-v2 .section-badge {

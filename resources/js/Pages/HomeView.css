@@ -1706,13 +1706,14 @@
   padding-left: 4px;
   background: var(--panel, #fff);
 }
+/* Table head sentence case — konsisten dengan typography refresh app-wide. */
 .hv__deadline-row--head {
   background: var(--surface-1, #f3f4f6);
-  font-weight: 600;
-  font-size: 11px;
+  font-weight: 500;
+  font-size: 11.5px;
   color: var(--text-muted, #6b7280);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  text-transform: none;
+  letter-spacing: 0;
   cursor: default;
 }
 .hv__deadline-row--head:hover {
@@ -1804,11 +1805,11 @@
 .hv__rollup-row:hover { background: var(--surface-2, #f9fafb); }
 .hv__rollup-row--head {
   background: var(--surface-1, #f3f4f6);
-  font-weight: 600;
-  font-size: 11px;
+  font-weight: 500;
+  font-size: 11.5px;
   color: var(--text-muted, #6b7280);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  text-transform: none;
+  letter-spacing: 0;
   cursor: default;
 }
 .hv__rollup-row--head:hover { background: var(--surface-1, #f3f4f6); }
@@ -1898,13 +1899,15 @@
   min-width: 0;
   flex: 1 1 auto;
 }
+/* Code badge — drop text-transform (data sudah uppercase native), tighter
+   letter-spacing. Code displayed as-is dari sumber data. */
 .hv__direktorat-card__code {
   font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
   font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
-  text-transform: uppercase;
+  text-transform: none;
 }
 .hv__direktorat-card__name {
   font-size: 13px;
@@ -1946,8 +1949,8 @@
   font-size: 10px;
   font-weight: 500;
   color: var(--text-muted);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 .hv__direktorat-card__divisi-name {
   color: var(--text-strong);
