@@ -1590,13 +1590,17 @@
   max-height: calc(100vh - 64px);
 }
 
-.programs-v2__cta--secondary {
+/* Specificity must match `.programs-v2 .programs-v2__cta` (0,2,0)
+   to override its !important background. Without the .programs-v2
+   ancestor here, the dark-green base wins and pairs with text-strong
+   → green button with unreadable dark text. */
+.programs-v2 .programs-v2__cta--secondary {
   background: transparent !important;
   border: 1px solid var(--panel-border) !important;
   color: var(--text-strong) !important;
   box-shadow: none !important;
 }
-.programs-v2__cta--secondary:hover {
+.programs-v2 .programs-v2__cta--secondary:hover {
   border-color: var(--indigo) !important;
   color: var(--indigo) !important;
   background: color-mix(in srgb, var(--indigo) 6%, transparent) !important;
