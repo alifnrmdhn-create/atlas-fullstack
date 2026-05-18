@@ -30,6 +30,7 @@ Thumbs.db
 docs/**/*.pdf
 docs/**/*.docx
 docs/**/*.xlsx
+docs/**/*.pptx
 docs/**/.DS_Store
 
 # Local handover/snapshot docs
