@@ -574,6 +574,36 @@
 }
 .program-row__main--static { cursor: default; }
 
+/* Charter quick-view button — discoverability shortcut, selalu visible.
+   Click navigate ke /programs/{id}/charter (parallel route ke edit-mode). */
+.program-row__charter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 5px 10px;
+  margin-right: 4px;
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+}
+.program-row__charter-btn:hover {
+  border-color: var(--indigo);
+  color: var(--indigo);
+  background: color-mix(in srgb, var(--indigo) 7%, transparent);
+}
+.program-row__charter-btn:focus-visible {
+  outline: 2px solid var(--indigo);
+  outline-offset: 2px;
+}
+
 .program-row__kebab-wrap {
   position: relative;
   display: flex;

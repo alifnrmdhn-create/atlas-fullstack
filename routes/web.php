@@ -16,6 +16,7 @@ use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\MonthlyReportController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PhaseController;
+use App\Http\Controllers\Program\CharterController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\RealtimeController;
 use App\Http\Controllers\RiskReportController;
@@ -40,10 +41,11 @@ Route::middleware('auth')->group(function () {
             'scorecardSnapshot' => $scorecard->homeSnapshot($request->user()),
         ]);
     })->name('home');
-    // /dashboard tetap dipertahankan: endpoint ini melayani JSON API yang
-    // dipakai HomeView (lihat resources/js/context/workspace.tsx). Kita hanya
-    // menghapus item dari sidebar; halaman Inertia tetap accessible via deep link.
-    Route::get('/dashboard', [WorkspaceController::class, 'dashboard'])->name('dashboard');
+    // Workspace overview JSON — dipakai HomeView untuk agregasi cross-modul
+    // (lihat resources/js/context/workspace.tsx). Tidak punya halaman Inertia.
+    Route::get('/workspace/overview', [WorkspaceController::class, 'workspaceOverview'])->name('workspace.overview');
+    // Transitional redirect: bookmark/URL lama `/dashboard` → home.
+    Route::get('/dashboard', fn () => redirect('/'));
     Route::get('/roadmap', fn () => Inertia::render('RoadmapView'))->name('roadmap');
     Route::get('/execution', fn () => Inertia::render('WorkboardView'))->name('execution');
     Route::get('/execution/tasks/{id}', [TaskController::class, 'show'])->name('execution.tasks.show');
@@ -131,6 +133,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/reject',   [ProgramController::class, 'reject'])->name('reject');
         Route::patch('/{id}/archive', [ProgramController::class, 'archive'])->name('archive');
         Route::patch('/{id}/restore', [ProgramController::class, 'restore'])->name('restore');
+
+        // Charter View (read-only, parallel to /{id})
+        Route::get('/{program}/charter', [CharterController::class, 'show'])->name('charter');
 
         // Sub-resources
         Route::get('/{id}/execution-grid',      [ExecutionGridController::class, 'executionGrid'])->name('execution-grid');

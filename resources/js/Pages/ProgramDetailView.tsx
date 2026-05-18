@@ -97,6 +97,7 @@ type TaskItem = {
   id: number; code: string; title: string; status: string; percentComplete: number; phaseId: number | null
   startDate?: string | null; targetCompletion?: string; priority?: string
   isBlocked?: boolean
+  output?: string | null
   picPersons?: Array<{ id: number; name: string }>
 }
 
@@ -211,7 +212,15 @@ export function ProgramDetailView() {
   const [progressLog, setProgressLog] = useState<ProgressLogEntry[]>([])
   const [progressLogLoading, setProgressLogLoading] = useState(false)
   const [showProgressForm, setShowProgressForm] = useState(false)
-  const [progressForm, setProgressForm] = useState({
+  const [progressForm, setProgressForm] = useState<{
+    period: string
+    healthAtTime: ProgressLogEntry['healthAtTime']
+    narrative: string
+    kendala: string
+    correctiveAction: string
+    nextStep: string
+    dukunganDibutuhkan: string
+  }>({
     period: (() => {
       // ISO 8601 week: minggu yang berisi Kamis pertama bulan Januari adalah W01
       const now = new Date()
@@ -221,7 +230,7 @@ export function ProgramDetailView() {
       const week = 1 + Math.round((thursday.getTime() - jan4.getTime()) / 604800000)
       return `${thursday.getFullYear()}-W${String(week).padStart(2, '0')}`
     })(),
-    healthAtTime: 'on_track' as const,
+    healthAtTime: 'on_track',
     narrative: '',
     kendala: '',
     correctiveAction: '',
@@ -229,6 +238,26 @@ export function ProgramDetailView() {
     dukunganDibutuhkan: '',
   })
   const [progressFormSaving, setProgressFormSaving] = useState(false)
+  // Composite Weekly Update — KPI aktual yang dimasukkan bareng progress log.
+  // Map kpiId → string input value. Saat submit progress log, parallel POST
+  // ke /kpis/{id}/values untuk setiap entry yang nilainya non-empty.
+  const [weeklyKpiActuals, setWeeklyKpiActuals] = useState<Record<number, string>>({})
+  const [weeklyKpiErrors, setWeeklyKpiErrors] = useState<string[]>([])
+
+  // Derive measurementDate (YYYY-MM-DD, Jumat = end-of-work-week) dari ISO week
+  // string "YYYY-Www". Fallback: hari ini.
+  const isoWeekToFridayDate = (period: string): string => {
+    const m = period.match(/^(\d{4})-W(\d{1,2})$/)
+    if (!m) return new Date().toISOString().slice(0, 10)
+    const year = parseInt(m[1], 10)
+    const week = parseInt(m[2], 10)
+    const jan4 = new Date(year, 0, 4)
+    const jan4IsoDay = ((jan4.getDay() + 6) % 7) + 1 // 1=Mon..7=Sun
+    const w01Mon = new Date(year, 0, 4 - jan4IsoDay + 1)
+    const friday = new Date(w01Mon)
+    friday.setDate(w01Mon.getDate() + (week - 1) * 7 + 4)
+    return friday.toISOString().slice(0, 10)
+  }
 
   const loadProgressLog = useCallback(async () => {
     setProgressLogLoading(true)
@@ -243,7 +272,10 @@ export function ProgramDetailView() {
   const submitProgressLog = async () => {
     if (!progressForm.narrative.trim()) return
     setProgressFormSaving(true)
+    setWeeklyKpiErrors([])
     try {
+      // (1) Save progress log — narrative + PICA fields. Wajib sukses lebih
+      //     dulu karena ini source of truth weekly update.
       const res = await api.post<{ data: ProgressLogEntry }>(`/programs/${numId}/progress-log`, progressForm)
       setProgressLog(prev => {
         const existing = prev.findIndex(e => e.period === res.data.period)
@@ -254,8 +286,46 @@ export function ProgramDetailView() {
         }
         return [res.data, ...prev]
       })
+
+      // (2) Save KPI actuals (kalau ada yang diisi). Parallel POST per KPI.
+      //     Kegagalan per-KPI di-collect sebagai partial error, tidak rollback
+      //     progress log karena bedanya audit trail vs measurement.
+      const kpiEntries = Object.entries(weeklyKpiActuals)
+        .filter(([, v]) => v.trim() !== '' && !Number.isNaN(Number(v)))
+      if (kpiEntries.length > 0) {
+        const measurementDate = isoWeekToFridayDate(progressForm.period)
+        const settled = await Promise.allSettled(kpiEntries.map(([kpiId, value]) =>
+          api.post(`/kpis/${kpiId}/values`, {
+            measurementDate,
+            actualValue: Number(value),
+          })
+        ))
+        const failed = settled
+          .map((r, i) => ({ r, kpiId: kpiEntries[i][0] }))
+          .filter(({ r }) => r.status === 'rejected')
+          .map(({ kpiId, r }) => {
+            const kpi = (detail?.kpis ?? []).find(k => String(k.id) === kpiId)
+            const label = kpi?.name ?? `KPI #${kpiId}`
+            const msg = (r as PromiseRejectedResult).reason instanceof Error
+              ? (r as PromiseRejectedResult).reason.message
+              : 'gagal menyimpan'
+            return `${label}: ${msg}`
+          })
+        if (failed.length > 0) {
+          setWeeklyKpiErrors(failed)
+          // Tetap close form? Tidak — biar user lihat error + retry. Tapi
+          // progress log sudah tersimpan, jadi clear narrative dst.
+          await loadDetail(true)
+          setProgressForm(f => ({ ...f, narrative: '', kendala: '', correctiveAction: '', nextStep: '', dukunganDibutuhkan: '' }))
+          return
+        }
+        // Semua KPI sukses → reload detail untuk refresh actualValue
+        await loadDetail(true)
+      }
+
       setShowProgressForm(false)
       setProgressForm(f => ({ ...f, narrative: '', kendala: '', correctiveAction: '', nextStep: '', dukunganDibutuhkan: '' }))
+      setWeeklyKpiActuals({})
     } finally {
       setProgressFormSaving(false)
     }
@@ -413,6 +483,40 @@ export function ProgramDetailView() {
       sessionStorage.removeItem(key)
     }
   }, [numId])
+
+  // ── Identitas Strategis (Charter View Phase 1) ────────────────────────
+  // Inline editable: pilarStrategis (5-value enum) + strategicObjective
+  // (free text). Sumber data ke Charter View read-only di Phase 2.
+  const [strategicForm, setStrategicForm] = useState({
+    strategicObjective: '',
+    pilarStrategis: '',
+  })
+  const [strategicSaving, setStrategicSaving] = useState(false)
+  const [strategicError, setStrategicError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setStrategicForm({
+      strategicObjective: detail?.strategicObjective ?? '',
+      pilarStrategis: detail?.pilarStrategis ?? '',
+    })
+    setStrategicError(null)
+  }, [detail?.strategicObjective, detail?.pilarStrategis])
+
+  const saveStrategic = async () => {
+    if (!detail) return
+    setStrategicSaving(true); setStrategicError(null)
+    try {
+      await api.put(`/programs/${numId}`, {
+        strategicObjective: strategicForm.strategicObjective.trim() || null,
+        pilarStrategis: strategicForm.pilarStrategis || null,
+      })
+      await loadDetail(true)
+    } catch (err: unknown) {
+      setStrategicError(extractErrorMessage(err, 'Gagal menyimpan.'))
+    } finally {
+      setStrategicSaving(false)
+    }
+  }
 
   // ── Workstream sub-detail ─────────────────────────────────────────────
   const [selectedIniId, setSelectedIniId] = useState<number | null>(null)
@@ -886,6 +990,19 @@ export function ProgramDetailView() {
               Board
             </button>
           )}
+          {detail && (
+            <button
+              className="icon-btn wi-detail-header__board-btn charter-link"
+              onClick={() => navigate(`/programs/${numId}/charter`)}
+              type="button"
+              title="Buka tampilan Charter (single-page, read-only)"
+            >
+              Lihat sebagai Charter
+              <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10">
+                <path d="M3 6h6M6 3l3 3-3 3" />
+              </svg>
+            </button>
+          )}
           {detail && roleAccess.canEditProgram(isOwner) &&
             !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') && (
             <button className="btn btn--ghost wi-detail-header__btn" onClick={openEdit} type="button">
@@ -1043,6 +1160,93 @@ export function ProgramDetailView() {
                     <p className="wi-desc">{detail.description}</p>
                   </div>
                 )}
+
+                {/* ── Identitas Strategis: Pilar + Objective (Charter Phase 1) ── */}
+                {(() => {
+                  const canEditStrategic = roleAccess.canEditProgram(isOwner)
+                    && !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '')
+                  const dirty =
+                    (strategicForm.strategicObjective ?? '') !== (detail.strategicObjective ?? '') ||
+                    (strategicForm.pilarStrategis ?? '') !== (detail.pilarStrategis ?? '')
+                  const hasAnyValue = !!(detail.strategicObjective || detail.pilarStrategis)
+                  if (!canEditStrategic && !hasAnyValue) return null
+                  return (
+                    <div className="wi-section prog-strategic">
+                      <div className="prog-strategic__head">
+                        <h3 className="prog-strategic__title">Identitas Strategis</h3>
+                        {strategicSaving && <span className="prog-strategic__status">Menyimpan…</span>}
+                        {strategicError && <span className="prog-strategic__status prog-strategic__status--error">{strategicError}</span>}
+                      </div>
+                      <div className="prog-strategic__row">
+                        <label className="prog-strategic__label">Pilar Strategis</label>
+                        {canEditStrategic ? (
+                          <select
+                            className="wi-input prog-strategic__input"
+                            value={strategicForm.pilarStrategis}
+                            onChange={e => setStrategicForm(f => ({ ...f, pilarStrategis: e.target.value }))}
+                            disabled={strategicSaving}
+                          >
+                            <option value="">— Pilih pilar —</option>
+                            <option value="COLLECTING_MORE">Collecting More</option>
+                            <option value="SPENDING_BETTER">Spending Better</option>
+                            <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
+                            <option value="ENABLER">Program Enabler</option>
+                            <option value="NON_SCORECARD">Non-Scorecard</option>
+                          </select>
+                        ) : (
+                          <span className="prog-strategic__value">
+                            {detail.pilarStrategis ? detail.pilarStrategis.replace(/_/g, ' ') : '—'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="prog-strategic__row">
+                        <label className="prog-strategic__label">Strategic Objective</label>
+                        {canEditStrategic ? (
+                          <textarea
+                            className="wi-input prog-strategic__input"
+                            rows={2}
+                            maxLength={1000}
+                            value={strategicForm.strategicObjective}
+                            onChange={e => setStrategicForm(f => ({ ...f, strategicObjective: e.target.value }))}
+                            placeholder="Contoh: Efektivitas Pengawasan Pendanaan Pemerintah"
+                            disabled={strategicSaving}
+                          />
+                        ) : (
+                          <span className="prog-strategic__value">
+                            {detail.strategicObjective || '—'}
+                          </span>
+                        )}
+                      </div>
+                      {canEditStrategic && dirty && (
+                        <div className="prog-strategic__actions">
+                          <button
+                            type="button"
+                            className="wi-btn wi-btn--primary wi-btn--sm"
+                            onClick={saveStrategic}
+                            disabled={strategicSaving}
+                          >
+                            {strategicSaving ? 'Menyimpan…' : 'Simpan'}
+                          </button>
+                          <button
+                            type="button"
+                            className="wi-btn wi-btn--ghost wi-btn--sm"
+                            onClick={() => {
+                              setStrategicForm({
+                                strategicObjective: detail.strategicObjective ?? '',
+                                pilarStrategis: detail.pilarStrategis ?? '',
+                              })
+                              setStrategicError(null)
+                            }}
+                            disabled={strategicSaving}
+                          >
+                            Reset
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+
                 <div className="wi-section">
 
                   {(() => {
@@ -1262,6 +1466,50 @@ export function ProgramDetailView() {
                             placeholder="Ceritakan perkembangan program minggu ini..."
                           />
                         </div>
+
+                        {/* ── KPI Aktual Minggu Ini — composite weekly entry ──
+                            Numbers behind the narrative. Optional; biarkan kosong
+                            kalau tidak ada update. Submit progress log akan
+                            otomatis POST setiap entry yang terisi sebagai
+                            KpiValue dengan measurementDate = Jumat ISO week. */}
+                        {(detail.kpis ?? []).length > 0 && (
+                          <div className="prog-progress-form__row prog-progress-form__row--kpi">
+                            <label className="prog-progress-form__label">
+                              KPI Aktual Minggu Ini
+                              <span className="prog-progress-form__hint">opsional · isi yang berubah saja</span>
+                            </label>
+                            <div className="prog-progress-form__kpi-list">
+                              {(detail.kpis ?? []).map(kpi => {
+                                const lastActual = kpi.actualValue != null
+                                  ? formatKpiValue(kpi.actualValue, kpi.unitOfMeasure ?? '', kpi.dataType ?? undefined)
+                                  : null
+                                const targetLabel = formatKpiValue(kpi.targetValue, kpi.unitOfMeasure ?? '', kpi.dataType ?? undefined)
+                                return (
+                                  <div key={kpi.id} className="prog-progress-form__kpi-item">
+                                    <div className="prog-progress-form__kpi-meta">
+                                      <span className="prog-progress-form__kpi-name">{kpi.name}</span>
+                                      <span className="prog-progress-form__kpi-sub">
+                                        Target {targetLabel}
+                                        {lastActual ? ` · terakhir ${lastActual}` : ' · belum ada actual'}
+                                      </span>
+                                    </div>
+                                    <input
+                                      className="wi-input prog-progress-form__kpi-input"
+                                      type="number"
+                                      step="any"
+                                      inputMode="decimal"
+                                      value={weeklyKpiActuals[kpi.id] ?? ''}
+                                      onChange={e => setWeeklyKpiActuals(s => ({ ...s, [kpi.id]: e.target.value }))}
+                                      placeholder={lastActual ?? '—'}
+                                      aria-label={`Aktual baru untuk ${kpi.name}`}
+                                    />
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="prog-progress-form__row">
                           <label className="prog-progress-form__label">Kendala / Problem Identification</label>
                           <textarea
@@ -1302,6 +1550,17 @@ export function ProgramDetailView() {
                             placeholder="Support yang diperlukan dari stakeholder (opsional)"
                           />
                         </div>
+                        {weeklyKpiErrors.length > 0 && (
+                          <div className="prog-progress-form__kpi-errors" role="alert">
+                            <strong>Progres tersimpan,</strong> tapi {weeklyKpiErrors.length} KPI gagal disimpan:
+                            <ul>
+                              {weeklyKpiErrors.map((msg, i) => <li key={i}>{msg}</li>)}
+                            </ul>
+                            <p className="prog-progress-form__kpi-errors-hint">
+                              Coba lagi dari tab KPI atau retry submit setelah perbaikan.
+                            </p>
+                          </div>
+                        )}
                         <div className="prog-progress-form__actions">
                           <button
                             className="wi-btn wi-btn--primary wi-btn--sm"

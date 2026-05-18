@@ -41,12 +41,8 @@ class WorkspaceController extends Controller
         return Inertia::render($component);
     }
 
-    public function dashboard(Request $request): JsonResponse|Response
+    public function workspaceOverview(Request $request): JsonResponse
     {
-        if (!$request->expectsJson()) {
-            return Inertia::render('DashboardView');
-        }
-
         $orgScope = OrgScope::forUser($request->user());
         $scopedUnitIds = $orgScope->unitIds ?: [0];
 

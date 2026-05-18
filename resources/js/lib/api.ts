@@ -103,10 +103,16 @@ async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
 
         if (response.status === 401 || response.status === 419) {
             // 401 = not authenticated, 419 = CSRF token mismatch / session expired
-            // Biarkan caller decide — di Inertia biasanya auto redirect ke /login
-            window.dispatchEvent(new CustomEvent('atlas:auth-expired', {
-                detail: { message, status: response.status }
-            }))
+            // Guard: jangan dispatch saat user sudah di /login — kalau tidak,
+            // polling yang masih in-flight saat logout akan trigger router.visit
+            // berulang ke /login dan bikin form reset terus-menerus.
+            const onLoginPage = typeof window !== 'undefined'
+                && window.location.pathname.startsWith('/login')
+            if (!onLoginPage) {
+                window.dispatchEvent(new CustomEvent('atlas:auth-expired', {
+                    detail: { message, status: response.status }
+                }))
+            }
         }
 
         throw new ApiRequestError(response.status, message, payload?.errors)

@@ -135,8 +135,62 @@
   --ds-ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* Dark mode reserved — not implementing in foundation week.
- * When added: override neutral scale only, keep brand/semantic identical. */
+/* ─── Dark theme ─────────────────────────────────────────────
+ * Override surface / text / border aliases only. Brand and semantic
+ * 500/600 stay identical — same hue, different surrounding context.
+ * Pale 50-tints (status backdrops) flip to dark-tinted overlays.
+ * Values align with legacy --panel/--text/--app-bg in tokens.css so
+ * --ds-* pages and legacy shell read as one coherent dark theme. */
+[data-theme="dark"] {
+  /* Neutral scale — index-mirror inversion (0↔950, 50↔900, …).
+   * Files that consume --ds-neutral-* DIRECTLY (column headers, priority
+   * dots, sunken backgrounds across 20+ pages) need this to flip; aliases
+   * alone don't cover those direct references. */
+  --ds-neutral-0:   #09090B;
+  --ds-neutral-50:  #18181B;
+  --ds-neutral-100: #27272A;
+  --ds-neutral-200: #3F3F46;
+  --ds-neutral-300: #52525B;
+  --ds-neutral-400: #71717A;
+  --ds-neutral-500: #A1A1AA;
+  --ds-neutral-600: #D4D4D8;
+  --ds-neutral-700: #E4E4E7;
+  --ds-neutral-800: #F4F4F5;
+  --ds-neutral-900: #FAFAFA;
+  --ds-neutral-950: #FFFFFF;
+
+  /* Aliases — explicit dark values aligned with legacy --panel/--app-bg
+   * for visual coherence with the shell. These win over the neutral-
+   * inversion auto-mapping where the relationship between page and card
+   * needs to differ (card slightly LIFTED from page in dark, opposite
+   * of light-mode where card is the lightest surface). */
+  --ds-surface-page:    #0A0A0B;
+  --ds-surface-card:    #111114;
+  --ds-surface-sunken:  #16161A;
+  --ds-surface-hover:   rgba(255,255,255,0.04);
+
+  --ds-text-primary:    #E2E8F0;
+  --ds-text-secondary:  #B8C4D4;
+  --ds-text-tertiary:   #7A8CA6;
+  --ds-text-disabled:   #5A6A85;
+  --ds-text-on-brand:   #FFFFFF;
+
+  --ds-border-subtle:   rgba(255,255,255,0.06);
+  --ds-border-default:  rgba(255,255,255,0.10);
+  --ds-border-strong:   rgba(255,255,255,0.16);
+
+  /* Status backdrops — pale tints replaced with dark-tinted overlays */
+  --ds-red-50:    rgba(220,38,38,0.14);
+  --ds-amber-50:  rgba(217,119,6,0.14);
+  --ds-green-50:  rgba(22,163,74,0.14);
+
+  /* Elevation — drop shadow opacities lifted (was tuned for light bg) */
+  --ds-shadow-popover: 0 1px 2px rgba(0,0,0,0.32), 0 4px 12px rgba(0,0,0,0.40);
+  --ds-shadow-modal:   0 4px 12px rgba(0,0,0,0.40), 0 24px 48px rgba(0,0,0,0.56);
+
+  /* Focus ring inner gap should match the surface, not pure white */
+  --ds-ring-focus: 0 0 0 2px var(--ds-surface-card), 0 0 0 4px var(--ds-brand-500);
+}
 
 /* ─── Reset for design-system scope ──────────────────────── */
 .ds {

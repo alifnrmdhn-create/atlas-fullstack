@@ -12,7 +12,8 @@ import {
 } from '../components/ui'
 import { TimelineGantt } from '../components/TimelineGantt'
 import type { TimelineGanttProgram } from '../components/TimelineGantt'
-import { api } from '../lib/api'
+import { api, extractErrorMessage } from '../lib/api'
+import type { CharterPayload } from '../types/charter'
 import { formatKpiValue, formatKpiValueParts, getKpiFillPercent } from '../lib/kpi'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
@@ -198,6 +199,82 @@ export function ProgramsView() {
 
   // Declare modal-open flags early so useEscKey priority can reference them
   const [showCreateProgram, setShowCreateProgram] = useState(false)
+
+  // ── Batch Charter Export (Isu #5) ─────────────────────────────────────
+  // Modal: pilih N program → fetch /programs/{id}/charter (JSON) parallel
+  // → exportProgramsCharterBatch composes 1 deck multi-slide → download.
+  // Use case: Pak Dirkeu rapat MRC → 1 file PPTX untuk semua program direktorat.
+  const [showBatchExport, setShowBatchExport] = useState(false)
+  const [batchSelectedIds, setBatchSelectedIds] = useState<Set<number>>(new Set())
+  const [batchSearch, setBatchSearch] = useState('')
+  const [batchExporting, setBatchExporting] = useState(false)
+  const [batchError, setBatchError] = useState<string | null>(null)
+  const closeBatchExport = () => {
+    if (batchExporting) return
+    setShowBatchExport(false)
+    setBatchSelectedIds(new Set())
+    setBatchSearch('')
+    setBatchError(null)
+  }
+  useEscKey(closeBatchExport, showBatchExport)
+  const batchDialogRef = useDialogFocus<HTMLDivElement>(showBatchExport)
+  const batchTitleId = useId()
+  const batchFilteredPrograms = useMemo(() => {
+    const q = batchSearch.trim().toLowerCase()
+    if (!q) return programs
+    return programs.filter(p =>
+      p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)
+    )
+  }, [programs, batchSearch])
+  const batchAllVisibleSelected = batchFilteredPrograms.length > 0
+    && batchFilteredPrograms.every(p => batchSelectedIds.has(p.id))
+  const toggleBatchAll = () => {
+    if (batchAllVisibleSelected) {
+      // Deselect just the visible ones (keep selection of non-visible).
+      setBatchSelectedIds(prev => {
+        const next = new Set(prev)
+        batchFilteredPrograms.forEach(p => next.delete(p.id))
+        return next
+      })
+    } else {
+      setBatchSelectedIds(prev => {
+        const next = new Set(prev)
+        batchFilteredPrograms.forEach(p => next.add(p.id))
+        return next
+      })
+    }
+  }
+  const toggleBatchOne = (id: number) => {
+    setBatchSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  const handleBatchExport = async () => {
+    if (batchSelectedIds.size === 0 || batchExporting) return
+    setBatchExporting(true)
+    setBatchError(null)
+    try {
+      const ids = Array.from(batchSelectedIds)
+      // Fetch payload parallel — Charter route returns JSON when Accept header
+      // is application/json (api lib sets this by default).
+      const payloads = await Promise.all(
+        ids.map(id => api.get<{ data: CharterPayload }>(`/programs/${id}/charter`)
+          .then(r => r.data))
+      )
+      // Lazy import — pptxgenjs bundle (~377 KB) hanya dimuat saat user
+      // benar-benar export. Sama dengan single-export ExportButton.
+      const { exportProgramsCharterBatch } = await import('../lib/exporters/programCharterPptx')
+      await exportProgramsCharterBatch(payloads)
+      closeBatchExport()
+    } catch (e: unknown) {
+      setBatchError(extractErrorMessage(e, 'Gagal membuat PPTX batch.'))
+    } finally {
+      setBatchExporting(false)
+    }
+  }
 
   // ── Overlay animation helper (must be defined before any modal that uses it) ──
   const [closingOverlay, setClosingOverlay] = useState<string | null>(null)
@@ -549,6 +626,16 @@ export function ProgramsView() {
           {roleAccess.isMonitoringOnly && (
             <span className="role-monitoring-badge">Monitoring</span>
           )}
+          {programs.length > 0 && (
+            <button
+              className="programs-v2__cta programs-v2__cta--secondary"
+              onClick={() => setShowBatchExport(true)}
+              type="button"
+              title="Export Charter PPTX untuk beberapa program sekaligus (rapat MRC / direksi)"
+            >
+              Export Charter PPTX
+            </button>
+          )}
           {roleAccess.canCreateProgram && (
             <button
               className="programs-v2__cta"
@@ -803,6 +890,21 @@ export function ProgramsView() {
                                   </span>
                                 )}
                               </div>
+                            </button>
+                            {/* Charter quick-view button — direct shortcut ke
+                                /programs/{id}/charter tanpa drill-in ke edit
+                                view. Selalu visible untuk discoverability. */}
+                            <button
+                              className="program-row__charter-btn"
+                              onClick={e => { e.stopPropagation(); navigate(`/programs/${prog.id}/charter`) }}
+                              type="button"
+                              title="Lihat sebagai Charter (single-page, read-only)"
+                              aria-label={`Lihat ${prog.code} sebagai Charter`}
+                            >
+                              Charter
+                              <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10" aria-hidden="true">
+                                <path d="M3 6h6M6 3l3 3-3 3" />
+                              </svg>
                             </button>
                             {/* Kebab wrap SELALU dirender dengan width tetap (44px) agar
                                 semua baris identik — button di-hide via visibility:hidden
@@ -1507,9 +1609,11 @@ export function ProgramsView() {
                         value={cpForm.pilarStrategis}
                       >
                         <option value="">— Pilih pilar —</option>
-                        <option value="ENABLER">Enabler</option>
+                        <option value="COLLECTING_MORE">Collecting More</option>
                         <option value="SPENDING_BETTER">Spending Better</option>
                         <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
+                        <option value="ENABLER">Program Enabler</option>
+                        <option value="NON_SCORECARD">Non-Scorecard</option>
                       </select>
                     </div>
                   </div>
@@ -1868,9 +1972,11 @@ export function ProgramsView() {
                         value={editProgram.pilarStrategis}
                       >
                         <option value="">— Pilih pilar —</option>
-                        <option value="ENABLER">Enabler</option>
+                        <option value="COLLECTING_MORE">Collecting More</option>
                         <option value="SPENDING_BETTER">Spending Better</option>
                         <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
+                        <option value="ENABLER">Program Enabler</option>
+                        <option value="NON_SCORECARD">Non-Scorecard</option>
                       </select>
                     </div>
                   </div>
@@ -1974,6 +2080,120 @@ export function ProgramsView() {
       {/* Kebab dropdown + backdrop — di-render via portal ke document.body
           agar tidak ter-clip oleh overflow:hidden/auto di ancestor mana pun */}
       </div>
+      {showBatchExport && createPortal(
+        <div
+          className="modal-backdrop"
+          onClick={() => !batchExporting && closeBatchExport()}
+        >
+          <div
+            ref={batchDialogRef}
+            className="modal batch-export-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={batchTitleId}
+            tabIndex={-1}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="modal__header">
+              <div className="modal-headcopy">
+                <h3 className="modal__title" id={batchTitleId}>Export Charter PPTX</h3>
+                <p className="modal__subtitle">
+                  Pilih beberapa program — 1 file PPTX, 1 slide per program.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="modal__close"
+                onClick={closeBatchExport}
+                disabled={batchExporting}
+                aria-label="Tutup"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal__body">
+              <input
+                type="search"
+                className="form-input batch-export__search"
+                placeholder="Cari kode atau nama program…"
+                value={batchSearch}
+                onChange={e => setBatchSearch(e.target.value)}
+                disabled={batchExporting}
+                autoFocus
+              />
+              <div className="batch-export__list">
+                <label className="batch-export__row batch-export__row--head">
+                  <input
+                    type="checkbox"
+                    checked={batchAllVisibleSelected}
+                    onChange={toggleBatchAll}
+                    disabled={batchExporting || batchFilteredPrograms.length === 0}
+                    aria-label="Pilih semua program yang terlihat"
+                  />
+                  <span className="batch-export__head-label">
+                    {batchAllVisibleSelected ? 'Bersihkan' : 'Pilih semua'}
+                    {' '}({batchFilteredPrograms.length})
+                  </span>
+                  <span className="batch-export__head-counter">
+                    {batchSelectedIds.size} dipilih
+                  </span>
+                </label>
+                {batchFilteredPrograms.length === 0 ? (
+                  <div className="batch-export__empty">
+                    {batchSearch
+                      ? `Tidak ada program yang cocok dengan "${batchSearch}".`
+                      : 'Belum ada program.'}
+                  </div>
+                ) : batchFilteredPrograms.map(p => {
+                  const selected = batchSelectedIds.has(p.id)
+                  return (
+                    <label key={p.id} className={`batch-export__row${selected ? ' batch-export__row--selected' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleBatchOne(p.id)}
+                        disabled={batchExporting}
+                      />
+                      <span className="batch-export__code">{p.code}</span>
+                      <span className="batch-export__name">{p.name}</span>
+                      <span className={`batch-export__health batch-export__health--${normalizeHealthStatus(p.healthStatus).toLowerCase()}`}>
+                        {formatStatusLabel(normalizeHealthStatus(p.healthStatus))}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="modal__footer">
+              {batchError && (
+                <span className="batch-export__error" role="alert">{batchError}</span>
+              )}
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={closeBatchExport}
+                disabled={batchExporting}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={handleBatchExport}
+                disabled={batchSelectedIds.size === 0 || batchExporting}
+              >
+                {batchExporting
+                  ? `Menyiapkan ${batchSelectedIds.size} program…`
+                  : batchSelectedIds.size === 0
+                    ? 'Pilih minimal 1 program'
+                    : `Export ${batchSelectedIds.size} program →`}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {kebabMenu !== null && createPortal(
         <>
           <div className="kebab-close-backdrop" onClick={closeKebab} />

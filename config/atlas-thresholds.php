@@ -92,4 +92,17 @@ return [
     'wip' => [
         'in_progress_per_user' => env('ATLAS_WIP_IN_PROGRESS', 5),
     ],
+
+    // ── Strategic pillars (Charter View — Mei 2026) ───────────────────────────
+    // Lima pilar strategis PTPN III. Source of truth untuk dropdown label di
+    // frontend (di-share via Inertia) dan validasi `pilarStrategis` di
+    // ProgramController. Tambah/ubah key di sini saja — jangan hardcode di
+    // controller atau view. Sinkron dengan enum app/Enums/PilarStrategis.php.
+    'pillars' => [
+        'COLLECTING_MORE'      => 'Collecting More',
+        'SPENDING_BETTER'      => 'Spending Better',
+        'INNOVATIVE_FINANCING' => 'Innovative Financing',
+        'ENABLER'              => 'Program Enabler',
+        'NON_SCORECARD'        => 'Non-Scorecard',
+    ],
 ];

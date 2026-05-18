@@ -156,7 +156,12 @@ export type CommentItem = {
 }
 
 export type Kelompok = 'SCORECARD' | 'NON_SCORECARD'
-export type PilarStrategis = 'ENABLER' | 'SPENDING_BETTER' | 'INNOVATIVE_FINANCING'
+export type PilarStrategis =
+  | 'COLLECTING_MORE'
+  | 'SPENDING_BETTER'
+  | 'INNOVATIVE_FINANCING'
+  | 'ENABLER'
+  | 'NON_SCORECARD'
 
 export type Program = {
   id: number
@@ -220,6 +225,7 @@ export type ProgramDetail = {
   code: string
   name: string
   description?: string
+  strategicObjective?: string | null
   ownerId: number
   ownerUnitId?: number
   status: string
@@ -265,6 +271,8 @@ export type ProgramDetail = {
     targetCompletion: string
     startDate: string | null
     actualCompletion: string | null
+    budgetIdr?: number | null
+    budgetSpent?: number | null
     picPersonIds?: number[]
     primaryPicPersonId?: number
     picPersons?: Array<{ id: number; name: string }>

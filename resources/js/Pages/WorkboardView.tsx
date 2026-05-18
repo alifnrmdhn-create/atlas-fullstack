@@ -481,16 +481,35 @@ export function WorkboardView() {
   return (
     <div className="ds workboard-v2 view-workboard">
       <div className="workboard-v2__inner">
-      <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Execution Board</h2>
-        <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">
-          {roleAccess.isMonitoringOnly
-            ? 'Pantau status eksekusi semua task dan blocker di direktorat Anda.'
-            : roleAccess.isOfficer
-            ? 'Kelola dan selesaikan task yang ditugaskan kepada Anda.'
-            : 'Kelola workstream, task, dan blocker tim secara real-time.'}
-        </span>
+      {/* ── Identity row: title + subtitle + primary CTA ── */}
+      <div className="wb-toolbar-identity">
+        <div className="wb-toolbar-identity__title-block">
+          <h2 className="view-toolbar__title">Execution Board</h2>
+          <span className="view-toolbar__subtitle">
+            {roleAccess.isMonitoringOnly
+              ? 'Pantau status eksekusi semua task dan blocker di direktorat Anda.'
+              : roleAccess.isOfficer
+              ? 'Kelola dan selesaikan task yang ditugaskan kepada Anda.'
+              : 'Kelola workstream, task, dan blocker tim secara real-time.'}
+          </span>
+        </div>
+        <div className="wb-toolbar-identity__actions">
+          {!roleAccess.isMonitoringOnly && roleAccess.canCreateWorkstream && (
+            <button className="toolbar-action-btn" onClick={() => void openCreateWI()}>
+              + Tugas Baru
+            </button>
+          )}
+          {boardStatus.message ? (
+            <div className={`board-status-msg${boardStatus.message.includes('failed') ? ' board-status-msg--error' : ''}`}>
+              {boardStatus.saving ? <span className="spinner" /> : null}
+              {boardStatus.message}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* ── Filters + state row: toggles + selects + stats ── */}
+      <div className="view-toolbar wb-toolbar-filters">
         <div className="view-toggle">
           {(['kanban', 'list', 'blockers'] as BoardMode[]).map(mode => (
             <button className={`view-toggle-btn${boardMode === mode ? ' active' : ''}`} key={mode} onClick={() => setBoardMode(mode)}>
@@ -605,17 +624,6 @@ export function WorkboardView() {
               <em>done</em>
             </span>
           </div>
-          {!roleAccess.isMonitoringOnly && roleAccess.canCreateWorkstream && (
-            <button className="toolbar-action-btn" onClick={() => void openCreateWI()}>
-              + Tugas Baru
-            </button>
-          )}
-          {boardStatus.message ? (
-            <div className={`board-status-msg${boardStatus.message.includes('failed') ? ' board-status-msg--error' : ''}`}>
-              {boardStatus.saving ? <span className="spinner" /> : null}
-              {boardStatus.message}
-            </div>
-          ) : null}
         </div>
       </div>
 

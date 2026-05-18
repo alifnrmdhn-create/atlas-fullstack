@@ -852,3 +852,45 @@
     var(--panel-shadow-xl),
     0 18px 44px color-mix(in srgb, var(--stat-card-accent) 10%, transparent);
 }
+
+/* ─── Onboarding tour (Shepherd.js) — dark mode override ─────────────
+ * Shepherd's bundled CSS hardcodes a white tooltip + dark text. In dark
+ * mode that pops out as a bright card on a dark canvas. Override the
+ * surfaces to match our --panel/--text tokens. Scoped to .atlas-tour-step
+ * (class added on every step in useOnboardingTour) so we don't fight
+ * Shepherd usages elsewhere. */
+[data-theme="dark"] .shepherd-element.atlas-tour-step,
+[data-theme="dark"] .atlas-tour-step .shepherd-content {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--panel-shadow-xl);
+}
+[data-theme="dark"] .atlas-tour-step .shepherd-header {
+  background: transparent;
+  border-bottom: 1px solid var(--panel-border-soft);
+  padding-bottom: 8px;
+}
+[data-theme="dark"] .atlas-tour-step .shepherd-title {
+  color: var(--text-strong);
+}
+[data-theme="dark"] .atlas-tour-step .shepherd-text {
+  color: var(--text);
+}
+[data-theme="dark"] .atlas-tour-step .shepherd-cancel-icon {
+  color: var(--text-muted);
+}
+[data-theme="dark"] .atlas-tour-step .shepherd-cancel-icon:hover {
+  color: var(--text-strong);
+}
+[data-theme="dark"] .atlas-tour-step .shepherd-footer {
+  background: transparent;
+  border-top: 1px solid var(--panel-border-soft);
+  padding-top: 10px;
+}
+/* Arrow caret — Shepherd renders a triangle via ::before. Match the panel
+ * background + border so it reads as a continuation of the tooltip. */
+[data-theme="dark"] .atlas-tour-step .shepherd-arrow:before {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+}

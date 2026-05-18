@@ -1,9 +1,11 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Head, usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
+import { useOnboardingTour } from '../hooks/useOnboardingTour'
 import { SkeletonBlock, SectionState } from '../components/ui'
+import { EscalationButton } from '../components/Escalation'
 import './HomeView.css'
 
 /* ─── Inertia props ─────────────────────────────────────────── */
@@ -25,6 +27,14 @@ type ScorecardSnapshot = {
   /** User's own direktorat — header context for directorate-level views.
    * Null for portfolio (DIRUT oversees all, no singular "own"). */
   ownItem: { kode: string; nama: string; nilai: number } | null
+  /** Full direktorat × divisi grid — present only at portfolio level
+   * (BOD/DIRUT/Admin). Powers the cross-direktorat matrix section. */
+  grid?: Array<{
+    kode: string
+    nama: string
+    nilai: number
+    divisi: Array<{ kode: string; nama: string; nilai: number }>
+  }>
 }
 
 /* ─── Helpers ───────────────────────────────────────────────── */
@@ -386,6 +396,62 @@ export default function HomeView() {
   const { props } = usePage<{ scorecardSnapshot: ScorecardSnapshot }>()
   const scorecard = props.scorecardSnapshot
 
+  // Inline confirmation badge — set of program IDs yang baru saja
+  // di-escalate (replace tombol Eskalasi dengan "✓ Tereskalasi" selama
+  // 5 detik). Mencegah double-escalate dan kasih feedback visual tanpa
+  // bergantung pada toast global yang belum ada di codebase.
+  const [recentlyEscalated, setRecentlyEscalated] = useState<Set<number>>(new Set())
+  const markEscalated = (programId: number) => {
+    setRecentlyEscalated(prev => new Set(prev).add(programId))
+    setTimeout(() => {
+      setRecentlyEscalated(prev => {
+        const next = new Set(prev)
+        next.delete(programId)
+        return next
+      })
+    }, 5000)
+  }
+
+  // Isu #8 — Onboarding tour PDCA. Trigger sekali untuk user baru di Home
+  // (page primer). Hook idempotent: cek toursCompleted di auth.user, kalau
+  // sudah pernah, skip. Trigger setelah programSummary loaded supaya
+  // sidebar selectors sudah ada di DOM saat Shepherd attach.
+  useOnboardingTour('pdca-orientation', { trigger: programSummary !== null })
+
+  // ── React Rules of Hooks: SEMUA hooks harus dipanggil sebelum early return ──
+  // Sebelumnya useCountUp + useRef + useFlashOnChange dipanggil setelah
+  // early return loading — bug latent yang baru tersurface lewat HMR. Sekarang
+  // semua hook di sini dengan safe defaults; nilainya akan refresh otomatis
+  // setelah programSummary tersedia (count-up + flash-on-change keduanya
+  // sudah handle perubahan input).
+  const summaryView = programSummary?.summary
+  const tlmView = (summaryView?.terlambat ?? 0) + (summaryView?.overdue ?? 0)
+  const needsActionView = programSummary?.needsAction ?? []
+  const controlsView = programSummary?.controls ?? []
+  const criticalControlCountView = controlsView.filter(
+    c => c.severity === 'CRITICAL' || c.severity === 'HIGH'
+  ).length
+  const onTrackProgramCountView = summaryView?.onTrack ?? 0
+  const actionCountView = tlmView + needsActionView.length + criticalControlCountView
+  const summaryTotalView = summaryView?.total ?? 0
+
+  const onTrackAnim = useCountUp(onTrackProgramCountView, { delay: 300, duration: 700 })
+  const actionCountAnim = useCountUp(actionCountView, { delay: 300, duration: 700 })
+  const totalAnim = useCountUp(summaryTotalView, { delay: 300, duration: 700 })
+  const avgKpiAnim = useCountUp(scorecard.avgItem, { delay: 420, duration: 800 })
+  const totalPortfolioAnim = useCountUp(summaryTotalView, { delay: 420, duration: 700 })
+
+  const onTrackRef = React.useRef<HTMLSpanElement>(null)
+  const actionCountRef = React.useRef<HTMLSpanElement>(null)
+  const totalRef = React.useRef<HTMLSpanElement>(null)
+  const avgKpiRef = React.useRef<HTMLSpanElement>(null)
+  const totalPortfolioRef = React.useRef<HTMLSpanElement>(null)
+  useFlashOnChange(onTrackRef, onTrackProgramCountView)
+  useFlashOnChange(actionCountRef, actionCountView)
+  useFlashOnChange(totalRef, summaryTotalView)
+  useFlashOnChange(avgKpiRef, scorecard.avgItem)
+  useFlashOnChange(totalPortfolioRef, summaryTotalView)
+
   if (overviewStatus.loading && !programSummary) {
     return (
       <div className="ds home-v2">
@@ -458,27 +524,9 @@ export default function HomeView() {
   const actionCount = tlm + needsAction.length + criticalControlCount
   const now = new Date()
 
-  /* Count-up — delays aligned with section stagger fade-in (stats=260ms,
-   * portfolio=380ms). Numbers tick up just as their section settles in. */
-  const onTrackAnim = useCountUp(onTrackProgramCount, { delay: 300, duration: 700 })
-  const actionCountAnim = useCountUp(actionCount, { delay: 300, duration: 700 })
-  const totalAnim = useCountUp(summary.total, { delay: 300, duration: 700 })
-  const avgKpiAnim = useCountUp(scorecard.avgItem, { delay: 420, duration: 800 })
-  const totalPortfolioAnim = useCountUp(summary.total, { delay: 420, duration: 700 })
-
-  /* Real-time flash — when these values change (via SSE or partial Inertia
-   * reload), the corresponding stat element flashes for 1.5s. First render
-   * is skipped (count-up handles the initial entry). */
-  const onTrackRef = React.useRef<HTMLSpanElement>(null)
-  const actionCountRef = React.useRef<HTMLSpanElement>(null)
-  const totalRef = React.useRef<HTMLSpanElement>(null)
-  const avgKpiRef = React.useRef<HTMLSpanElement>(null)
-  const totalPortfolioRef = React.useRef<HTMLSpanElement>(null)
-  useFlashOnChange(onTrackRef, onTrackProgramCount)
-  useFlashOnChange(actionCountRef, actionCount)
-  useFlashOnChange(totalRef, summary.total)
-  useFlashOnChange(avgKpiRef, scorecard.avgItem)
-  useFlashOnChange(totalPortfolioRef, summary.total)
+  // NOTE: useCountUp + useRef + useFlashOnChange hooks dipindah ke atas
+  // sebelum early return (line 423+) supaya patuh React Rules of Hooks.
+  // Variabel onTrackAnim, totalAnim, *Ref, dst. tetap available di sini.
 
   const priorities: Priority[] = []
   if (tlm > 0) {
@@ -1009,29 +1057,51 @@ export default function HomeView() {
                     ? `${Math.abs(days)} hari lewat`
                     : days === 0 ? 'Hari ini'
                     : `${days} hari lagi`
+                  const canEscalate = urgency === 'critical' || urgency === 'urgent'
                   return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="hv__deadline-row"
-                      onClick={() => openProgramWorkspace(p.id)}
-                    >
-                      <span className="hv__deadline-program">
-                        <span className="hv__deadline-code">{p.code}</span>
-                        <span className="hv__deadline-name">{p.name}</span>
-                      </span>
-                      <span className="hv__deadline-divisi">{p.divisi || '—'}</span>
-                      <span className="hv__deadline-date">{p.targetEndDate ?? '—'}</span>
-                      <span className="hv__deadline-countdown" data-urgency={urgency}>
-                        {daysLabel}
-                      </span>
-                      <span className="hv__deadline-progress" title={p.progresTerkini ?? ''}>
-                        {p.progresTerkini ? p.progresTerkini : <em className="hv__deadline-empty">—</em>}
-                      </span>
-                      <span className="hv__deadline-support" title={p.dukunganDibutuhkan ?? ''}>
-                        {p.dukunganDibutuhkan ? p.dukunganDibutuhkan : <em className="hv__deadline-empty">—</em>}
-                      </span>
-                    </button>
+                    <div key={p.id} className="hv__deadline-row-wrap">
+                      <button
+                        type="button"
+                        className="hv__deadline-row"
+                        onClick={() => openProgramWorkspace(p.id)}
+                      >
+                        <span className="hv__deadline-program">
+                          <span className="hv__deadline-code">{p.code}</span>
+                          <span className="hv__deadline-name">{p.name}</span>
+                        </span>
+                        <span className="hv__deadline-divisi">{p.divisi || '—'}</span>
+                        <span className="hv__deadline-date">{p.targetEndDate ?? '—'}</span>
+                        <span className="hv__deadline-countdown" data-urgency={urgency}>
+                          {daysLabel}
+                        </span>
+                        <span className="hv__deadline-progress" title={p.progresTerkini ?? ''}>
+                          {p.progresTerkini ? p.progresTerkini : <em className="hv__deadline-empty">—</em>}
+                        </span>
+                        <span className="hv__deadline-support" title={p.dukunganDibutuhkan ?? ''}>
+                          {p.dukunganDibutuhkan ? p.dukunganDibutuhkan : <em className="hv__deadline-empty">—</em>}
+                        </span>
+                      </button>
+                      {canEscalate && (
+                        <div className="hv__row-action">
+                          {recentlyEscalated.has(p.id) ? (
+                            <span className="hv__row-escalated" role="status">✓ Tereskalasi</span>
+                          ) : (
+                            <EscalationButton
+                              sourceType="AD_HOC"
+                              prefillTitle={`Deadline ketat: ${p.code} — ${p.name}`}
+                              prefillDescription={[
+                                `${daysLabel} dari deadline ${p.targetEndDate ?? '—'}.`,
+                                p.progresTerkini ? `\nProgres terkini: ${p.progresTerkini}` : '',
+                                p.dukunganDibutuhkan ? `\nCatatan PIC: ${p.dukunganDibutuhkan}` : '',
+                              ].join('').trim()}
+                              linkedProgramId={p.id}
+                              size="sm"
+                              onCreated={() => markEscalated(p.id)}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
               </div>
@@ -1059,29 +1129,47 @@ export default function HomeView() {
                               : tone === 'amber' ? 'At Risk'
                               : tone === 'green' ? 'On Track'
                               : 'Idle / Draft'
+                  const canEscalate = tone === 'red' || tone === 'amber'
                   return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="hv__list-row"
-                      onClick={() => openProgramWorkspace(p.id)}
-                    >
-                      <span className="hv__list-code">{p.code}</span>
-                      <span className="hv__list-name">{p.name}</span>
-                      <span className="hv__list-divisi">{p.divisi || '—'}</span>
-                      <span className="hv__list-bar" aria-hidden>
-                        <span
-                          className="hv__list-bar-fill"
-                          data-tone={tone}
-                          style={{ width: `${Math.min(Math.max(p.progressPercent, 0), 100)}%` }}
-                        />
-                      </span>
-                      <span className="hv__list-pct">{Math.round(p.progressPercent)}%</span>
-                      <span className="hv__list-status">
-                        <span className="hv__eyebrow-dot" data-tone={tone} aria-hidden />
-                        {label}
-                      </span>
-                    </button>
+                    <div key={p.id} className="hv__list-row-wrap">
+                      <button
+                        type="button"
+                        className="hv__list-row"
+                        onClick={() => openProgramWorkspace(p.id)}
+                      >
+                        <span className="hv__list-code">{p.code}</span>
+                        <span className="hv__list-name">{p.name}</span>
+                        <span className="hv__list-divisi">{p.divisi || '—'}</span>
+                        <span className="hv__list-bar" aria-hidden>
+                          <span
+                            className="hv__list-bar-fill"
+                            data-tone={tone}
+                            style={{ width: `${Math.min(Math.max(p.progressPercent, 0), 100)}%` }}
+                          />
+                        </span>
+                        <span className="hv__list-pct">{Math.round(p.progressPercent)}%</span>
+                        <span className="hv__list-status">
+                          <span className="hv__eyebrow-dot" data-tone={tone} aria-hidden />
+                          {label}
+                        </span>
+                      </button>
+                      {canEscalate && (
+                        <div className="hv__row-action">
+                          {recentlyEscalated.has(p.id) ? (
+                            <span className="hv__row-escalated" role="status">✓ Tereskalasi</span>
+                          ) : (
+                            <EscalationButton
+                              sourceType="AD_HOC"
+                              prefillTitle={`Butuh dukungan: ${p.code} — ${p.name}`}
+                              prefillDescription={`Program berstatus ${label}, progress ${Math.round(p.progressPercent)}%.`}
+                              linkedProgramId={p.id}
+                              size="sm"
+                              onCreated={() => markEscalated(p.id)}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
               </div>
@@ -1093,6 +1181,62 @@ export default function HomeView() {
                 >
                   Lihat semua program ({summary.total}) <span aria-hidden>→</span>
                 </button>
+              </div>
+            </section>
+          )}
+
+          {/* ─── Matrix Direktorat (cross-direktorat scorecard) ───────────
+              Visible hanya untuk BOD/DIRUT/Admin (level=portfolio). Sumber
+              data ScorecardSummaryService::direktoratGrid via homeSnapshot,
+              sinkron dengan PDF reference (Mei 2026): 6 direktorat dengan
+              sub-divisi-nya. */}
+          {scorecard.grid && scorecard.grid.length > 0 && (
+            <section className="hv__section">
+              <header className="hv__sec-head">
+                <h2 className="hv__sec-title">Matrix Direktorat</h2>
+                <span className="hv__sec-meta">
+                  {scorecard.grid.length} direktorat · {scorecard.periode}
+                </span>
+              </header>
+              <div className="hv__direktorat-grid">
+                {scorecard.grid.map(d => {
+                  const tone = d.nilai >= 100 ? 'green' : d.nilai >= 80 ? 'amber' : 'red'
+                  return (
+                    <button
+                      key={d.kode}
+                      className="hv__direktorat-card"
+                      data-tone={tone}
+                      onClick={() => navigate(`/performance/scorecard?periode=${scorecard.periode}`)}
+                      type="button"
+                    >
+                      <div className="hv__direktorat-card__head">
+                        <div className="hv__direktorat-card__title">
+                          <span className="hv__direktorat-card__code">{d.kode}</span>
+                          <span className="hv__direktorat-card__name">{d.nama}</span>
+                        </div>
+                        <span className="hv__direktorat-card__nilai" data-tone={tone}>
+                          {d.nilai.toFixed(1)}%
+                        </span>
+                      </div>
+                      {d.divisi.length > 0 && (
+                        <ul className="hv__direktorat-card__divisi">
+                          {d.divisi.map(div => {
+                            const divTone = div.nilai >= 100 ? 'green' : div.nilai >= 80 ? 'amber' : 'red'
+                            return (
+                              <li key={div.kode} className="hv__direktorat-card__divisi-row">
+                                <span className="hv__direktorat-card__divisi-code">{div.kode}</span>
+                                <span className="hv__direktorat-card__divisi-name">{div.nama}</span>
+                                <span className="hv__direktorat-card__divisi-nilai" data-tone={divTone}>
+                                  {div.nilai.toFixed(1)}%
+                                </span>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </section>
           )}
@@ -1110,7 +1254,7 @@ export default function HomeView() {
                   <span className="hv__rollup-num">On Track</span>
                   <span className="hv__rollup-num">At Risk</span>
                   <span className="hv__rollup-num">Terlambat</span>
-                  <span className="hv__rollup-num">Selesai</span>
+                  <span className="hv__rollup-num">Completed</span>
                   <span className="hv__rollup-num">Total</span>
                   <span className="hv__rollup-num">% On Track</span>
                 </div>

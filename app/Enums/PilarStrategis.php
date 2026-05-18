@@ -4,7 +4,9 @@ namespace App\Enums;
 
 enum PilarStrategis: string
 {
-    case Enabler            = 'ENABLER';
-    case SpendingBetter     = 'SPENDING_BETTER';
+    case CollectingMore      = 'COLLECTING_MORE';
+    case SpendingBetter      = 'SPENDING_BETTER';
     case InnovativeFinancing = 'INNOVATIVE_FINANCING';
+    case Enabler             = 'ENABLER';
+    case NonScorecard        = 'NON_SCORECARD';
 }

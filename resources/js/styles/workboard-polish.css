@@ -1,0 +1,239 @@
+/* ════════════════════════════════════════════════════════════════════
+   Workboard Polish — Pattern A consistency for /execution (Eksekusi PDCA)
+   ────────────────────────────────────────────────────────────────────
+   Scope-isolated polish for WorkboardView. Imported after responsive.css
+   for specificity wins. Touches: header split, kanban columns, empty
+   states, stats tone-aware, selects, attention queue.
+   ════════════════════════════════════════════════════════════════════ */
+
+
+/* ───────── Header row 1: identity (title + subtitle + CTA) ───────── */
+.workboard-v2 .wb-toolbar-identity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 0 14px;
+  margin: 0 0 14px;
+  border-bottom: 1px solid var(--panel-border-soft, var(--panel-border));
+}
+.workboard-v2 .wb-toolbar-identity__title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.workboard-v2 .wb-toolbar-identity .view-toolbar__title {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.018em !important;
+  line-height: 1.2 !important;
+  color: var(--text-strong) !important;
+  margin: 0 !important;
+}
+.workboard-v2 .wb-toolbar-identity .view-toolbar__subtitle {
+  font-size: 12.5px !important;
+  color: var(--text-muted) !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+}
+.workboard-v2 .wb-toolbar-identity__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.workboard-v2 .wb-toolbar-identity .toolbar-action-btn {
+  height: 32px !important;
+  padding: 0 14px !important;
+  border-radius: 8px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  background: var(--indigo) !important;
+  color: white !important;
+  border: 0 !important;
+  cursor: pointer;
+}
+.workboard-v2 .wb-toolbar-identity .toolbar-action-btn:hover {
+  background: var(--indigo-dark) !important;
+  transform: translateY(-1px);
+}
+
+
+/* ───────── Header row 2: filters + selects + stats ─────────
+   Flatten chrome, tighten gaps. */
+.workboard-v2 .wb-toolbar-filters {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  padding: 0 0 14px !important;
+  margin: 0 0 16px !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+.workboard-v2 .wb-toolbar-filters .view-toggle {
+  display: inline-flex;
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 0;
+}
+.workboard-v2 .wb-toolbar-filters .view-toggle-btn {
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  padding: 5px 10px !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  color: var(--text-muted) !important;
+}
+.workboard-v2 .wb-toolbar-filters .view-toggle-btn:hover {
+  color: var(--text-body) !important;
+  background: transparent !important;
+}
+.workboard-v2 .wb-toolbar-filters .view-toggle-btn.active {
+  background: var(--surface-1) !important;
+  color: var(--text-strong) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+
+/* ───────── Program / Workstream native selects: polish ───────── */
+.workboard-v2 .wb-toolbar-filters .wb-program-filter {
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  height: 30px !important;
+  padding: 0 28px 0 10px !important;
+  background: var(--surface-1) !important;
+  border: 1px solid var(--panel-border) !important;
+  border-radius: 6px !important;
+  color: var(--text-body) !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'><path d='M2.5 4 5 6.5 7.5 4' stroke='%236b7280' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  max-width: 220px !important;
+}
+.workboard-v2 .wb-toolbar-filters .wb-program-filter:hover {
+  border-color: var(--panel-border-strong, var(--panel-border)) !important;
+}
+
+
+/* ───────── Stats summary: tone-aware ───────── */
+.workboard-v2 .wb-toolbar-filters .view-toolbar__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.workboard-v2 .wb-daily-summary {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 4px 12px !important;
+  background: var(--surface-1) !important;
+  border: 1px solid var(--panel-border) !important;
+  border-radius: 6px !important;
+}
+.workboard-v2 .wb-summary-stat {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 4px !important;
+  font-size: 11.5px !important;
+  color: var(--text-muted) !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 4px 0 !important;
+  cursor: default !important;
+}
+.workboard-v2 .wb-summary-stat[type="button"]:not(:disabled) {
+  cursor: pointer !important;
+}
+.workboard-v2 .wb-summary-stat__num {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--text-strong) !important;
+  font-variant-numeric: tabular-nums;
+}
+.workboard-v2 .wb-summary-stat em {
+  font-style: normal !important;
+  font-weight: 500 !important;
+}
+/* Tone-aware: when count > 0, light up appropriate color */
+.workboard-v2 .wb-summary-stat--overdue:not(.is-zero) .wb-summary-stat__num {
+  color: var(--red) !important;
+}
+.workboard-v2 .wb-summary-stat--overdue:not(.is-zero) em {
+  color: var(--red) !important;
+}
+.workboard-v2 .wb-summary-stat--today:not(.is-zero) .wb-summary-stat__num {
+  color: var(--yellow) !important;
+}
+.workboard-v2 .wb-stats__blocked .wb-summary-stat__num {
+  color: var(--red) !important;
+}
+/* Zero counts: muted */
+.workboard-v2 .wb-summary-stat.is-zero .wb-summary-stat__num {
+  color: var(--text-muted) !important;
+  font-weight: 600 !important;
+}
+
+
+/* ───────── Kanban board: minimal column polish ─────────
+   Leave the original column chrome alone (border, radius, ::before
+   colored accent bar). Just tighten label weight and section-badge.    */
+.workboard-v2 .kanban-board {
+  padding-top: 4px !important;
+}
+.workboard-v2 .kanban-col__label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+}
+
+
+/* ───────── Empty column state: subtle, no dashed border ─────────
+   Was: bold dashed box "Drop items here" per empty column (5x noise).
+   Now: faint single-line muted text, no chrome. Only appears on hover
+   during drag (still functional, just not screaming when idle).      */
+.workboard-v2 .kanban-col__empty,
+.workboard-v2 .kanban-col__empty--dashed {
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  text-align: center !important;
+  padding: 12px 8px !important;
+  opacity: 0.45 !important;
+  transition: opacity 140ms;
+}
+.workboard-v2 .kanban-col__body:hover .kanban-col__empty,
+.workboard-v2 .kanban-col--drop-target .kanban-col__empty {
+  opacity: 0.85 !important;
+}
+.workboard-v2 .kanban-col__body {
+  padding: 8px !important;
+  min-height: 200px !important;
+}
+
+
+/* ───────── Attention Queue: section polish ─────────
+   "Attention Queue" + Top N badge → micro-uppercase muted heading,
+   tighter card chrome, tone-aware pills.                              */
+.workboard-v2 .view-workboard .attention-queue-header,
+.workboard-v2 [class*="attention-queue"] {
+  /* Best-effort selector — actual classes verified via screenshot only */
+}
+
+
+/* ───────── Rollback banner: tighten ───────── */
+.workboard-v2 .board-rollback-banner {
+  padding: 10px 14px !important;
+  border-radius: 8px !important;
+  margin-bottom: 12px !important;
+}

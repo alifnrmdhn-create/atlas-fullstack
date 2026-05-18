@@ -3,11 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Blocker;
+use App\Models\ChannelMember;
+use App\Models\ChannelMessage;
+use App\Models\EntityPic;
 use App\Models\KpiDefinition;
+use App\Models\Notification;
 use App\Models\Program;
 use App\Models\ProgramApprovalLog;
 use App\Models\ProgramProgressLog;
 use App\Models\ProgramKpiLink;
+use App\Models\Task;
+use App\Models\User;
+use App\Models\Workstream;
 use App\Services\BroadcastService;
 use App\Services\ProgramHealthService;
 use App\Services\ProgramService;
@@ -180,7 +187,7 @@ class ProgramController extends Controller
             'picPersonIds.*' => 'integer|exists:User,id',
             'hasNoApmsKpi' => 'nullable|boolean',
             'kelompok' => 'nullable|in:SCORECARD,NON_SCORECARD',
-            'pilarStrategis' => 'nullable|in:ENABLER,SPENDING_BETTER,INNOVATIVE_FINANCING',
+            'pilarStrategis' => 'nullable|in:' . implode(',', array_keys(config('atlas-thresholds.pillars', []))),
             'progresTerkini' => 'nullable|string|max:2000',
             'dukunganDibutuhkan' => 'nullable|string|max:2000',
         ]);
@@ -220,7 +227,7 @@ class ProgramController extends Controller
             'picPersonIds' => 'nullable|array',
             'picPersonIds.*' => 'integer|exists:User,id',
             'kelompok' => 'nullable|in:SCORECARD,NON_SCORECARD',
-            'pilarStrategis' => 'nullable|in:ENABLER,SPENDING_BETTER,INNOVATIVE_FINANCING',
+            'pilarStrategis' => 'nullable|in:' . implode(',', array_keys(config('atlas-thresholds.pillars', []))),
             'progresTerkini' => 'nullable|string|max:2000',
             'dukunganDibutuhkan' => 'nullable|string|max:2000',
         ]);
@@ -295,8 +302,8 @@ class ProgramController extends Controller
         ProgramApprovalLog::record($id, 'ACTIVATED', $prevStatus, 'ACTIVE', $request->user()->id, $request->user()->name);
         BroadcastService::program($id, 'approved');
 
-        // Sprint 5 — Plan→Do handoff
-        $this->notifyTaskAssignees($program);
+        // Sprint 5 — Plan→Do handoff (+enhancement 2026-05: post ke linkedChannel)
+        $this->notifyProgramActivation($program, $request->user());
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $program->fresh()]);
@@ -306,25 +313,64 @@ class ProgramController extends Controller
     }
 
     /**
-     * Sprint 5 — Plan→Do handoff. Saat program jadi ACTIVE, kirim notifikasi
-     * ke setiap user yang punya task di-assign di program tsb. Group per user
-     * (1 notif per user yang berisi count tasks), bukan 1 notif per task.
+     * Plan→Do handoff saat program transition ke ACTIVE.
+     *
+     * Dua channel awareness:
+     *  1. Notifikasi personal ke setiap stakeholder yang perlu tahu —
+     *     gabungan dari task assignee, PIC personnel Program, Workstream
+     *     owner, dan Program owner. Dedupe + skip activator. Pesan
+     *     menyesuaikan: kalau user punya task ter-assign, sebut count-nya;
+     *     kalau tidak, message generic "eksekusi dimulai".
+     *  2. Kalau program punya linkedChannelId, post satu system message
+     *     ke channel program — semua member channel langsung tahu tanpa
+     *     menunggu notification panel di-buka.
+     *
+     * Semua dibungkus rescue() — failure di notifikasi tidak boleh
+     * memblokir aksi utama (status sudah berubah ke ACTIVE).
      */
-    private function notifyTaskAssignees(Program $program): void
+    private function notifyProgramActivation(Program $program, User $activator): void
     {
-        rescue(function () use ($program) {
-            $taskRows = \App\Models\Task::query()
+        // ── (1) Notifikasi personal ──
+        rescue(function () use ($program, $activator) {
+            $taskRows = Task::query()
                 ->whereHas('workstream', fn ($q) => $q->where('programId', $program->id))
                 ->whereNotNull('assignedTo')
                 ->get(['assignedTo']);
+            $taskCountByUser = $taskRows->groupBy('assignedTo')->map(fn ($g) => $g->count());
 
-            $byUser = $taskRows->groupBy('assignedTo');
-            foreach ($byUser as $userId => $tasks) {
-                $count = $tasks->count();
-                $notif = \App\Models\Notification::create([
+            $picUserIds = EntityPic::query()
+                ->where('entityType', 'Program')
+                ->where('entityId', $program->id)
+                ->pluck('userId')->all();
+
+            $workstreamOwners = Workstream::query()
+                ->where('programId', $program->id)
+                ->whereNotNull('ownerId')
+                ->pluck('ownerId')->all();
+
+            $ownerIds = $program->ownerId ? [$program->ownerId] : [];
+
+            $allRecipients = collect([
+                ...array_keys($taskCountByUser->toArray()),
+                ...$picUserIds,
+                ...$workstreamOwners,
+                ...$ownerIds,
+            ])
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->reject(fn ($id) => $id === $activator->id)
+                ->values();
+
+            foreach ($allRecipients as $userId) {
+                $taskCount = (int) ($taskCountByUser[$userId] ?? 0);
+                $message = $taskCount > 0
+                    ? "Program {$program->name} aktif. {$taskCount} tugas di pipeline Anda."
+                    : "Program {$program->name} aktif — eksekusi dimulai.";
+
+                $notif = Notification::create([
                     'userId' => $userId,
                     'type' => 'PROGRAM_TASKS_ASSIGNED',
-                    'message' => "Program {$program->name} aktif. {$count} tugas di pipeline Anda.",
+                    'message' => $message,
                     'source' => "program:{$program->id}",
                     'createdAt' => now(),
                     'state' => 'UNREAD',
@@ -333,9 +379,45 @@ class ProgramController extends Controller
                 // Frontend handler reads event.notification.id — payload MUST wrap the model row.
                 BroadcastService::toUsers('notification:created', [
                     'notification' => $notif,
-                ], [(int) $userId]);
+                ], [$userId]);
             }
         });
+
+        // ── (2) Post message ke channel program (kalau di-link) ──
+        if ($program->linkedChannelId) {
+            rescue(function () use ($program, $activator) {
+                $taskCount = Task::query()
+                    ->whereHas('workstream', fn ($q) => $q->where('programId', $program->id))
+                    ->count();
+
+                $tail = $taskCount > 0
+                    ? "{$taskCount} task siap di-eksekusi tim."
+                    : 'Tim bisa mulai menambah task ke workstream.';
+                $content = "🚀 Program *{$program->name}* aktif — eksekusi dimulai. {$tail}";
+
+                $msg = ChannelMessage::create([
+                    'channelId' => $program->linkedChannelId,
+                    'userId' => $activator->id,
+                    'content' => $content,
+                    'attachments' => null,
+                    'parentMessageId' => null,
+                    'replyCount' => 0,
+                    'isPinned' => false,
+                    'isEdited' => false,
+                    'searchableText' => mb_strtolower($content),
+                ]);
+
+                $msg->load('author:id,name,avatarUrl,roleType,positionTitle');
+                $memberIds = ChannelMember::query()
+                    ->where('channelId', $program->linkedChannelId)
+                    ->pluck('userId')->all();
+
+                BroadcastService::toUsers('channel:message:created', [
+                    'channelId' => $program->linkedChannelId,
+                    'message' => $msg,
+                ], $memberIds);
+            });
+        }
     }
 
     public function approve(Request $request, int $id): JsonResponse|RedirectResponse
@@ -353,7 +435,7 @@ class ProgramController extends Controller
             $program->update(['approvalStatus' => 'ACTIVE']);
             ProgramApprovalLog::record($id, 'APPROVED', $prevStatus, 'ACTIVE', $user->id, $user->name);
             // Sprint 5 — Plan→Do handoff (KADIV approval triggers ACTIVE)
-            $this->notifyTaskAssignees($program);
+            $this->notifyProgramActivation($program, $user);
         } else {
             abort(403, 'Anda tidak memiliki izin untuk menyetujui program ini pada tahap ini');
         }

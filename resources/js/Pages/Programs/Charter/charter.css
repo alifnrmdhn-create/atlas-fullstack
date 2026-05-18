@@ -1,0 +1,643 @@
+/* ════════════════════════════════════════════════════════════════════
+   Charter View — read-only program brief mirroring DKMR KPI PPT format.
+   Pattern A: .page-shell outer card, hairline dividers, no card-in-card.
+   ────────────────────────────────────────────────────────────────────
+   Layout sections land per commit in section 5.11 of CHARTER_VIEW_PLAN:
+   - Scaffold (this commit): placeholder content only
+   - ActivityTimelineTable
+   - StatusPanel / UpdatePanel / PicaNextStepRow / KpiProgressTable
+   - Print CSS for A4 landscape
+   ════════════════════════════════════════════════════════════════════ */
+
+.charter-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text-strong);
+}
+
+.charter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.charter-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ── Header strip (metadata top row) ──────────────────────────────── */
+.cs-header {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr auto;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+}
+.cs-header__col {
+  min-width: 0;
+}
+.cs-header__col--so {
+  border-right: 1px solid var(--panel-border);
+  padding-right: 14px;
+}
+.cs-header__col--actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  align-items: flex-end;
+}
+.cs-header__label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.cs-header__so {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-strong);
+  line-height: 1.35;
+  word-wrap: break-word;
+}
+.cs-header__pillar {
+  margin-top: 4px;
+  display: inline-block;
+  padding: 2px 8px;
+  background: color-mix(in srgb, var(--indigo) 12%, transparent);
+  color: var(--indigo);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.cs-header__value {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-strong);
+  line-height: 1.35;
+}
+.cs-header__sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.cs-header__sub--muted {
+  font-style: italic;
+}
+.cs-health {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.cs-export {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--panel-border);
+  background: var(--surface-1);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+.cs-export--ready {
+  background: var(--indigo);
+  border-color: var(--indigo);
+  color: #fff;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+}
+.cs-export--ready:hover:not(:disabled) {
+  background: var(--indigo-dark, var(--indigo));
+  transform: translateY(-1px);
+}
+.cs-export--ready:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+.cs-export-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.cs-export-error {
+  font-size: 10.5px;
+  color: var(--red);
+  text-align: right;
+  max-width: 180px;
+}
+
+/* ── 2-col grid: timeline + side rail ─────────────────────────────── */
+.charter-grid {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.charter-grid__main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.charter-grid__side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+@media (max-width: 1100px) {
+  .charter-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Status panel (side rail) ─────────────────────────────────────── */
+.cs-status {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+.cs-status__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.cs-status__label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.cs-status__big {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+  line-height: 1.1;
+}
+.cs-status__health-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.cs-status__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.cs-status__health-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-strong);
+}
+.cs-status__breakdown {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--panel-border);
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.cs-status__breakdown-num {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.cs-status__breakdown-sep,
+.cs-status__breakdown-total {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.cs-status__breakdown-label {
+  margin-left: 4px;
+}
+
+/* ── Update panel (side rail) ─────────────────────────────────────── */
+.cs-update {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+.cs-update__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.cs-update__label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.cs-update__period {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.cs-update__note {
+  font-size: 12.5px;
+  color: var(--text-strong);
+  line-height: 1.55;
+  margin: 0;
+}
+.cs-update__empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+/* ── PICA next-step row ───────────────────────────────────────────── */
+.cs-pica {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.cs-pica__card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  min-width: 0;
+}
+.cs-pica__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.cs-pica__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cs-pica__block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cs-pica__block + .cs-pica__block {
+  padding-top: 10px;
+  border-top: 1px solid var(--panel-border);
+}
+.cs-pica__block-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cs-pica__block-text {
+  font-size: 12.5px;
+  color: var(--text-strong);
+  line-height: 1.5;
+  margin: 0;
+}
+.cs-pica__empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+}
+@media (max-width: 900px) {
+  .cs-pica {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── KPI Progress table ───────────────────────────────────────────── */
+.kpt-wrap {
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  overflow: hidden;
+}
+.kpt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+.kpt-head {
+  background: var(--surface-1);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--panel-border);
+  white-space: nowrap;
+}
+.kpt-head--mon {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  width: 60px;
+  padding: 8px 6px;
+}
+.kpt-head--label {
+  min-width: 60px;
+}
+.kpt-row--target {
+  border-bottom: 0;
+}
+.kpt-row--real {
+  border-bottom: 1px solid var(--panel-border);
+}
+.kpt-cell {
+  padding: 6px 8px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+  border-left: 1px solid var(--panel-border-soft, var(--panel-border));
+}
+.kpt-cell--name {
+  text-align: left;
+  font-weight: 500;
+  padding: 8px 12px;
+  vertical-align: middle;
+  border-left: 0;
+  min-width: 200px;
+}
+.kpt-cell--label {
+  text-align: left;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  background: var(--surface-1);
+  padding: 6px 8px;
+  border-left: 0;
+}
+.kpt-cell--mon.is-above {
+  background: color-mix(in srgb, var(--green) 22%, transparent);
+  color: var(--text-strong);
+  font-weight: 600;
+}
+.kpt-empty {
+  padding: 28px;
+  text-align: center;
+  color: var(--text-muted);
+  border: 1px dashed var(--panel-border);
+  border-radius: var(--radius-lg);
+  font-size: 12.5px;
+  font-style: italic;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PRINT — A4 landscape, hide app chrome, force exact colors
+   ────────────────────────────────────────────────────────────────────
+   Plan section 5.8: Cmd+P should produce a rapi single-page brief.
+   Page-break-inside avoided on each section card so they don't split.
+   ════════════════════════════════════════════════════════════════════ */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0.6cm;
+  }
+
+  /* Hide app shell chrome — only the Charter content should print */
+  .sidebar,
+  .topbar,
+  .notif-toast,
+  .charter-export-button {
+    display: none !important;
+  }
+
+  /* Reset workspace and page-shell so content fills the printable area */
+  .workspace,
+  .workspace__content,
+  .page-shell,
+  .page-shell__inner {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    min-height: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Force exact colors for status/health cells (default browsers strip
+     backgrounds to save ink — we need the green/orange to print) */
+  .charter-page,
+  .charter-page * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  .charter-page {
+    font-size: 9pt;
+    color: #1f2937;
+    gap: 10px;
+  }
+  .charter-section-title {
+    font-size: 9pt;
+    margin: 0 0 4px;
+  }
+
+  /* Tighten card paddings for print */
+  .cs-header,
+  .cs-status,
+  .cs-update,
+  .cs-pica__card,
+  .atl-wrap,
+  .kpt-wrap {
+    padding: 10px 12px;
+    border-radius: 4px;
+    border: 1px solid #d1d5db;
+    box-shadow: none !important;
+  }
+  .atl-wrap,
+  .kpt-wrap {
+    padding: 0;
+  }
+
+  /* Pillar badge prints flat */
+  .cs-header__pillar {
+    background: #e0e7ff !important;
+    color: #4338ca !important;
+  }
+
+  /* Keep activity table on one page if possible */
+  .atl-wrap,
+  .kpt-wrap {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .charter-grid {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .cs-pica {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Slightly smaller table fonts for print fit */
+  .atl-table,
+  .kpt-table {
+    font-size: 8.5pt;
+  }
+  .atl-head,
+  .kpt-head {
+    font-size: 7.5pt;
+    padding: 5px 7px;
+  }
+  .atl-cell,
+  .kpt-cell {
+    padding: 4px 6px;
+  }
+
+  /* Hide the disabled Export button — already covered by
+     .charter-export-button selector above, but defensive double rule */
+  .cs-export {
+    display: none !important;
+  }
+}
+
+/* ── Activity Timeline Table ──────────────────────────────────────
+   12-month grid mirroring DKMR PPT slide 21. Each activity = two
+   rows (Target / Real). Pattern A: hairline divider on outer card,
+   no card-in-card on rows. */
+.atl-wrap {
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  overflow: hidden;
+}
+.atl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+.atl-head {
+  background: var(--surface-1);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--panel-border);
+  white-space: nowrap;
+}
+.atl-head--mon {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  width: 38px;
+  padding: 8px 4px;
+}
+.atl-head--name { min-width: 160px; }
+.atl-head--workstream { min-width: 120px; }
+.atl-head--deliverable { min-width: 140px; }
+.atl-head--label { width: 48px; padding: 8px 6px; }
+
+.atl-row {
+  border-bottom: 1px solid var(--panel-border);
+}
+.atl-row:last-child {
+  border-bottom: 0;
+}
+.atl-row--target {
+  border-bottom: 0;
+}
+.atl-row--real {
+  border-bottom: 1px solid var(--panel-border);
+}
+.atl-row--real .atl-cell--label,
+.atl-row--real .atl-cell--mon {
+  border-top: 1px solid var(--panel-border-soft, var(--panel-border));
+}
+
+.atl-cell {
+  padding: 8px 10px;
+  vertical-align: middle;
+  color: var(--text-strong);
+}
+.atl-cell--name {
+  font-weight: 500;
+  line-height: 1.35;
+  vertical-align: top;
+  padding-top: 12px;
+}
+.atl-cell--workstream {
+  color: var(--text-muted);
+  font-size: 11px;
+  vertical-align: top;
+  padding-top: 12px;
+}
+.atl-cell--deliverable {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  vertical-align: top;
+  padding-top: 12px;
+}
+.atl-cell--label {
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 6px 8px;
+  background: var(--surface-1);
+}
+.atl-cell--mon {
+  padding: 4px;
+  text-align: center;
+  border-left: 1px solid var(--panel-border-soft, var(--panel-border));
+}
+
+/* Cell color states — per PPT slide 21 vocabulary */
+.atl-cell--mon.is-target {
+  background: color-mix(in srgb, var(--green) 18%, transparent);
+}
+.atl-cell--mon.is-realized {
+  background: var(--green);
+}
+.atl-cell--mon.is-below {
+  background: color-mix(in srgb, var(--orange, #f59e0b) 65%, transparent);
+}
+
+.atl-muted {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.atl-empty {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-muted);
+  border: 1px dashed var(--panel-border);
+  border-radius: var(--radius-lg);
+  font-size: 12.5px;
+}

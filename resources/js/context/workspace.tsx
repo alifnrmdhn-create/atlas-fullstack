@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react'
 import type { Dispatch, FormEvent, ReactNode, SetStateAction } from 'react'
+import { router } from '@inertiajs/react'
 import { api, extractErrorMessage, sessionStorage } from '../lib/api'
 import { useAuth as useInertiaAuth } from '../hooks/useAuth'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
@@ -506,9 +507,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const handleLogout = async () => {
     setLogoutPending(false)
     setAuthStatus('logging_out')
-    try { await api.post('/logout', {}) } catch { /* always clear */ }
-    // Wait for the app-shell exit animation (~300ms) before unmounting
-    setTimeout(() => signOutToEntry('You have been signed out.'), 400)
+    // Pakai Inertia router: redirect ke /login di-handle in-protocol, layout
+    // (RealtimeProvider, WorkspaceProvider) ter-unmount bersih saat page swap.
+    // Hindari fetch + manual navigate — bisa race dengan polling yang lagi
+    // in-flight, balas 401, dispatch auth-expired, lalu refresh /login berulang.
+    router.post('/logout', {}, {
+      onError: () => signOutToEntry('Logout gagal. Mencoba reset lokal.'),
+    })
   }
 
   // ── Data loading ─────────────────────────────────────────
@@ -517,7 +522,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
     try {
       const results = await Promise.allSettled([
-        api.get<DashboardApiPayload>('/dashboard'),
+        api.get<DashboardApiPayload>('/workspace/overview'),
         api.get<CollectionResponse<ChannelSummary>>('/channels'),
         api.get<CollectionResponse<Program>>('/programs'),
         api.get<TasksResponse>('/tasks'),

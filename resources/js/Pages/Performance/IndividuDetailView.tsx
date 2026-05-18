@@ -92,7 +92,16 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
           <div style={{ fontSize: 13, color: 'var(--ds-red-600)' }}>{error}</div>
         </Card>
       )}
-      {!loading && !error && data && (
+      {!loading && !error && data && (() => {
+        // Detect sparse data — when weeks with actual tasks < 4, the
+        // aggregate hit-rate is statistically meaningless. Mute the
+        // alarm color and show a clarifying hint.
+        const weeksWithData = data.weeks.filter(w => w.total > 0).length
+        const sparseData = weeksWithData < 4
+        const consistencyColor = sparseData
+          ? 'var(--ds-text-secondary)'
+          : `var(--ds-${ledgerTone(data.hitRateAggregate)}-600)`
+        return (
         <Card padding="md" data-tour="commitment-ledger">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: 32, marginBottom: 16 }}>
             <div>
@@ -105,10 +114,15 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
               <div style={{
                 fontSize: 24, fontWeight: 600,
                 fontVariantNumeric: 'tabular-nums',
-                color: `var(--ds-${ledgerTone(data.hitRateAggregate)}-600)`,
+                color: consistencyColor,
               }}>
                 {data.hitRateAggregate !== null ? `${data.hitRateAggregate.toFixed(1)}%` : '—'}
               </div>
+              {sparseData && (
+                <div style={{ fontSize: 11, color: 'var(--ds-text-tertiary)', marginTop: 4 }}>
+                  Belum cukup data — {weeksWithData} dari {data.lookbackWeeks} minggu tercatat
+                </div>
+              )}
             </div>
             <div>
               <div style={{
@@ -163,7 +177,8 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
             Sumber: Tasks + Action Items + Penugasan dengan dueDate dalam window. Hit = selesai sebelum due.
           </div>
         </Card>
-      )}
+        )
+      })()}
     </section>
   )
 }

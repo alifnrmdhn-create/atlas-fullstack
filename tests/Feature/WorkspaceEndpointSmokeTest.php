@@ -236,7 +236,7 @@ class WorkspaceEndpointSmokeTest extends TestCase
     {
         $this->actingAs($this->admin);
 
-        $this->getJson('/dashboard')
+        $this->getJson('/workspace/overview')
             ->assertOk()
             ->assertJsonStructure([
                 'generatedAt',

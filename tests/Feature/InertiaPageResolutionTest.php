@@ -58,7 +58,6 @@ class InertiaPageResolutionTest extends TestCase
     {
         return [
             'home' => ['/', 'HomeView'],
-            'dashboard alias' => ['/dashboard', 'DashboardView'],
             'roadmap alias' => ['/roadmap', 'RoadmapView'],
             'execution alias' => ['/execution', 'WorkboardView'],
             'focus alias' => ['/fokus', 'InboxView'],

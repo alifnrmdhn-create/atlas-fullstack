@@ -1506,3 +1506,229 @@
 .prog-detail-page .prog-detail-tab--active {
   font-weight: 600 !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   Identitas Strategis (Pilar + Objective) — Ringkasan tab inline edit
+   Charter View Phase 1. Pattern A: hairline above, two-column row,
+   no card-in-card.
+   ════════════════════════════════════════════════════════════════════ */
+.prog-strategic {
+  border-top: 1px solid var(--panel-border);
+  padding-top: 16px;
+}
+.prog-strategic__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.prog-strategic__title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0;
+}
+.prog-strategic__status {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.prog-strategic__status--error {
+  color: var(--red);
+}
+.prog-strategic__row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 8px 0;
+}
+.prog-strategic__row + .prog-strategic__row {
+  border-top: 1px solid var(--panel-border);
+}
+.prog-strategic__label {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding-top: 8px;
+}
+.prog-strategic__value {
+  font-size: 13.5px;
+  color: var(--text-strong);
+  padding: 6px 0;
+  line-height: 1.5;
+}
+.prog-strategic__input {
+  font-size: 13.5px;
+}
+.prog-strategic__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding-left: 172px;
+}
+@media (max-width: 720px) {
+  .prog-strategic__row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .prog-strategic__actions {
+    padding-left: 0;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Batch Charter Export modal (Isu #5)
+   Modal di /programs untuk pilih N program → 1 PPTX deck multi-slide.
+   Lebih lebar dari modal default (640px vs 420px) supaya checkbox list
+   tidak terlalu sempit.
+   ════════════════════════════════════════════════════════════════════ */
+
+.batch-export-modal {
+  width: 640px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 64px);
+}
+
+.programs-v2__cta--secondary {
+  background: transparent !important;
+  border: 1px solid var(--panel-border) !important;
+  color: var(--text-strong) !important;
+  box-shadow: none !important;
+}
+.programs-v2__cta--secondary:hover {
+  border-color: var(--indigo) !important;
+  color: var(--indigo) !important;
+  background: color-mix(in srgb, var(--indigo) 6%, transparent) !important;
+  transform: none !important;
+}
+
+.batch-export__search {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  background: var(--surface-1);
+  color: var(--text-strong);
+}
+.batch-export__search:focus {
+  outline: 2px solid var(--indigo);
+  outline-offset: 2px;
+  border-color: var(--indigo);
+}
+
+.batch-export__list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  max-height: 50vh;
+  overflow-y: auto;
+  background: var(--panel);
+}
+.batch-export__row {
+  display: grid;
+  grid-template-columns: 24px 90px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+  user-select: none;
+  border-top: 1px solid var(--panel-border-soft, var(--panel-border));
+  transition: background var(--transition);
+}
+.batch-export__row:first-child {
+  border-top: 0;
+}
+.batch-export__row:hover {
+  background: var(--surface-1);
+}
+.batch-export__row--selected {
+  background: color-mix(in srgb, var(--indigo) 8%, transparent);
+}
+.batch-export__row input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+.batch-export__row--head {
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--panel-border);
+  border-top: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  grid-template-columns: 24px 1fr auto;
+}
+.batch-export__row--head:hover {
+  background: var(--surface-1);
+}
+.batch-export__head-label {
+  font-weight: 600;
+}
+.batch-export__head-counter {
+  font-weight: 500;
+  color: var(--indigo);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.batch-export__code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  background: var(--surface-1);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.batch-export__name {
+  font-weight: 500;
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.batch-export__health {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.batch-export__health--green,
+.batch-export__health--on_track {
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  color: var(--green);
+}
+.batch-export__health--yellow,
+.batch-export__health--at_risk {
+  background: color-mix(in srgb, var(--yellow) 16%, transparent);
+  color: var(--yellow-dark, var(--yellow));
+}
+.batch-export__health--red,
+.batch-export__health--terlambat,
+.batch-export__health--overdue {
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  color: var(--red);
+}
+.batch-export__empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-style: italic;
+}
+.batch-export__error {
+  flex: 1 1 auto;
+  font-size: 11.5px;
+  color: var(--red);
+  font-style: italic;
+}

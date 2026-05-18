@@ -122,23 +122,6 @@ function IconReports() {
     </svg>
   )
 }
-function IconMonthlyReport() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2.5" y="2.5" width="11" height="11" rx="1.4" />
-      <path d="M5 1.5v2M11 1.5v2M2.5 6h11" />
-      <path d="m6 9.5 1.4 1.4L10.5 8" />
-    </svg>
-  )
-}
-function IconRiskReport() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 1.8 13.5 4v4.5c0 3-2.4 5-5.5 5.7C4.9 13.5 2.5 11.5 2.5 8.5V4Z" />
-      <path d="M8 6v3M8 11v0.2" />
-    </svg>
-  )
-}
 function IconInbox() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
@@ -272,7 +255,6 @@ function prefetchRoute(path: string) {
     '/admin/thresholds': () => import('../Pages/AdminThresholdsView'),
     '/channels': () => import('../Pages/ChannelsViewWrapper'),
     '/': () => import('../Pages/HomeView'),
-    '/dashboard': () => import('../Pages/DashboardView'),
     '/execution': () => import('../Pages/WorkboardView'),
     '/penugasan': () => import('../Pages/AssignmentsView'),
     '/fokus': () => import('../Pages/InboxView'),
@@ -908,8 +890,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
     penugasan:   { path: '/penugasan', label: 'Penugasan',        caption: 'Tugas harian di luar Program',      icon: IconAssignments, shortcut: 'G A' },
     goals:       { path: '/goals',      label: 'Goals & KPI',   caption: 'Manage KPI organisasi & tracking capaian',  icon: IconGoals    },
     activity:    { path: '/activity',   label: 'Team Activity', caption: 'Leaderboard sesi & aktivitas harian tim',   icon: IconActivity },
-    laporanBulanan:{ path: '/laporan-bulanan', label: 'Laporan Bulanan', caption: 'Status & approval laporan bulanan',  icon: IconMonthlyReport },
-    laporanRisiko: { path: '/laporan-risiko',  label: 'Laporan Risiko',  caption: 'Status & approval laporan risiko',   icon: IconRiskReport    },
     reports:       { path: '/reports',         label: 'Analytics',       caption: 'KPI, program health & leaderboard',  icon: IconReports       },
     perfScorecard: { path: '/performance/scorecard', label: 'Scorecard',       caption: 'Ranking capaian direktorat & divisi',  icon: IconScorecard    },
     perfDirektorat:{ path: '/performance/kolegial',  label: 'KPI Direktorat',  caption: 'Capaian KPI bersama jajaran direksi',  icon: IconKpiKolegial  },
@@ -924,7 +904,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   } satisfies Record<string, NavItem>
 
   // ── Sidebar groups — PDCA-aligned per CLAUDE.md ──────────────────────────
-  // Order: Perencanaan (Plan) → Eksekusi (Do) → Performance + Pelaporan (Check)
+  // Order: Perencanaan (Plan) → Eksekusi (Do) → Performance (Check)
   // → Tindak Lanjut (Act) → Komunikasi → Akun → Admin.
   // KPI items sit flat under "Performance" (no nested sub-label "kpi" anymore).
   const grpPerencanaan        = { label: 'Perencanaan', items: [NI.programs] }
@@ -935,8 +915,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const grpPerformanceFull    = { label: 'Performance', items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfSaya] }
   const grpPerformanceMid     = { label: 'Performance', items: [NI.perfDivisi, NI.perfSaya] }
   const grpPerformanceMin     = { label: 'Performance', items: [NI.perfSaya] }
-  const grpPelaporan          = { label: 'Pelaporan',   items: [NI.laporanBulanan, NI.laporanRisiko, NI.reports] }
-  const grpPelaporanReadOnly  = { label: 'Pelaporan',   items: [NI.laporanBulanan, NI.laporanRisiko] }
   const grpTindakLanjut       = { label: 'Tindak Lanjut', items: [NI.schedule] }
   const grpKomunikasi         = { label: 'Komunikasi', items: [NI.channels] }
   const grpAkun               = { label: 'Akun',       items: [NI.presence, NI.profile, NI.settings] }
@@ -955,12 +933,15 @@ export function AppShell({ children }: { children?: ReactNode }) {
   }
 
   // ── Role-aware nav groups (PDCA flow) ──────────────────────────────────────
-  // BOD / KADIV       → semua: Plan, Do, Performance lengkap, Pelaporan, Act, Komunikasi, Akun
-  // KASUBDIV          → Plan, Do, Performance mid (KPI Divisi + KPI Saya), Pelaporan, Act, Komunikasi, Akun
-  // OFFICER/ASISTEN   → Do prioritas, KPI Saya, Pelaporan read, Act, Komunikasi, Akun
+  // BOD / KADIV       → semua: Plan, Do, Performance lengkap, Act, Komunikasi, Akun
+  // KASUBDIV          → Plan, Do, Performance mid (KPI Divisi + KPI Saya), Act, Komunikasi, Akun
+  // OFFICER/ASISTEN   → Do prioritas, KPI Saya, Act, Komunikasi, Akun
   // Default (Admin)   → full nav
-  // NOTE: grup "Pelaporan" sengaja dihilangkan dari sidebar (per permintaan user 2026-05-10).
-  // Akan di-revisit nanti — JANGAN munculkan kembali tanpa permintaan eksplisit.
+  // NOTE: grup "Pelaporan" dihilangkan dari semua surface navigasi utama
+  // (sidebar + Command Palette + breadcrumb) per permintaan user 2026-05-10.
+  // Halaman /laporan-bulanan & /laporan-risiko tetap hidup: accessible via
+  // direct URL, notif deep-link, dan link di Analytics/Home focus card.
+  // Re-enable: tambah grup di blok ini + restore section di lib/nav-config.ts.
   const navGroups: { label: string; items: NavItem[] }[] = (() => {
     if (role === 'BOD' || role === 'KADIV') {
       return [
@@ -1088,7 +1069,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
                 'Perencanaan':   'plan',
                 'Eksekusi':      'do',
                 'Performance':   'check',
-                'Pelaporan':     'check',
                 'Tindak Lanjut': 'act',
                 'Komunikasi':    'utility',
                 'Akun':          'utility',
