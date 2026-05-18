@@ -272,12 +272,13 @@ class ProgramCharterService
 
                 $target = $latest?->targetValue !== null ? (float) $latest->targetValue : null;
                 $real = $latest ? (float) $latest->actualValue : null;
-                $above = ($target !== null && $real !== null) ? $real >= $target : false;
+                $status = $this->cellStatus($target, $real);
 
                 $months[$label] = [
                     'target'      => $target,
                     'real'        => $real,
-                    'aboveTarget' => $above,
+                    'aboveTarget' => $status === 'above', // backward-compat
+                    'status'      => $status,
                 ];
             }
 
@@ -289,6 +290,27 @@ class ProgramCharterService
         })->all();
 
         return ['rows' => $rows];
+    }
+
+    /**
+     * Status capaian per cell KPI bulanan — mirror PDF DKMR ikon
+     * (Above / On / Below / N/A).
+     *
+     * Toleransi ±5% di sekitar target dianggap "On". Asumsikan polaritas
+     * maximize (mayoritas KPI scorecard). KPI minimize jarang dipakai
+     * di kontek scorecard direktorat dan bisa di-handle nanti via
+     * KpiDefinition.polarity field.
+     */
+    private function cellStatus(?float $target, ?float $real): string
+    {
+        if ($target === null || $real === null) return 'na';
+        if ($target == 0.0) {
+            return $real == 0.0 ? 'on' : 'above';
+        }
+        $ratio = $real / $target;
+        if ($ratio >= 1.05) return 'above';
+        if ($ratio >= 0.95) return 'on';
+        return 'below';
     }
 
     /** Map healthStatus + approvalStatus to charter vocabulary. */

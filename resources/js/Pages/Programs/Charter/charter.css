@@ -519,11 +519,33 @@
   padding: 6px 8px;
   border-left: 0;
 }
-.kpt-cell--mon.is-above {
-  background: color-mix(in srgb, var(--green) 22%, transparent);
-  color: var(--text-strong);
+/* ── Status tinting per cell (Above/On/Below/N/A) ───────────────────
+   Mirrors PDF DKMR slide 20 icons — ▲ above, ● on (±5%), ▼ below. */
+.kpt-cell--mon[data-status="above"] {
+  background: color-mix(in srgb, var(--green, #16a34a) 18%, transparent);
   font-weight: 600;
 }
+.kpt-cell--mon[data-status="on"] {
+  background: color-mix(in srgb, var(--green, #16a34a) 8%, transparent);
+}
+.kpt-cell--mon[data-status="below"] {
+  background: color-mix(in srgb, var(--red, #dc2626) 14%, transparent);
+  font-weight: 600;
+}
+.kpt-cell__value {
+  display: inline-block;
+}
+.kpt-cell__glyph {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 10px;
+  line-height: 1;
+  vertical-align: middle;
+  font-variant-numeric: normal;
+}
+.kpt-cell__glyph[data-status="above"] { color: var(--green-strong, #16a34a); }
+.kpt-cell__glyph[data-status="on"]    { color: var(--amber-strong, #ca8a04); }
+.kpt-cell__glyph[data-status="below"] { color: var(--red-strong, #dc2626); }
 .kpt-empty {
   padding: 28px;
   text-align: center;

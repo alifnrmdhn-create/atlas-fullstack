@@ -1,5 +1,5 @@
 import { Fragment } from 'react'
-import { MONTH_KEYS, type CharterKpiHistory } from '../../../types/charter'
+import { MONTH_KEYS, type CharterCellStatus, type CharterKpiHistory } from '../../../types/charter'
 
 type Props = {
   history: CharterKpiHistory
@@ -7,13 +7,32 @@ type Props = {
 
 function formatNumber(value: number | null): string {
   if (value === null || value === undefined) return '—'
-  // Compact id-ID number formatting with up to 2 decimals
   return value.toLocaleString('id-ID', { maximumFractionDigits: 2 })
+}
+
+/** Symbol indikator capaian: ▲ above target, ● on target (±5%), ▼ below. */
+function statusGlyph(status: CharterCellStatus): string {
+  switch (status) {
+    case 'above': return '▲'
+    case 'on':    return '●'
+    case 'below': return '▼'
+    default:      return ''
+  }
+}
+
+function statusAria(status: CharterCellStatus): string {
+  switch (status) {
+    case 'above': return 'di atas target'
+    case 'on':    return 'sesuai target'
+    case 'below': return 'di bawah target'
+    default:      return 'belum diukur'
+  }
 }
 
 /**
  * Bottom KPI table — one row per active KPI, two sub-rows (Target/Real)
- * across 12 months. Cells with real ≥ target are highlighted.
+ * across 12 months. Each Real cell shows a small status glyph (▲/●/▼)
+ * mirroring DKMR PDF "Above/On/Below target" icons (slide 20).
  */
 export function KpiProgressTable({ history }: Props) {
   if (history.rows.length === 0) {
@@ -51,13 +70,24 @@ export function KpiProgressTable({ history }: Props) {
                 <td className="kpt-cell kpt-cell--label">Real</td>
                 {MONTH_KEYS.map(m => {
                   const cell = row.months[m]
-                  const above = cell.real !== null && cell.aboveTarget
+                  const status = cell.status ?? (cell.aboveTarget ? 'above' : 'na')
                   return (
                     <td
                       key={m}
-                      className={`kpt-cell kpt-cell--mon${above ? ' is-above' : ''}`}
+                      className="kpt-cell kpt-cell--mon"
+                      data-status={status}
                     >
-                      {formatNumber(cell.real)}
+                      <span className="kpt-cell__value">{formatNumber(cell.real)}</span>
+                      {status !== 'na' && cell.real !== null && (
+                        <span
+                          className="kpt-cell__glyph"
+                          data-status={status}
+                          aria-label={statusAria(status)}
+                          title={statusAria(status)}
+                        >
+                          {statusGlyph(status)}
+                        </span>
+                      )}
                     </td>
                   )
                 })}

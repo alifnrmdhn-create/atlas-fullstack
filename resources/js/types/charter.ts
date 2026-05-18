@@ -75,10 +75,13 @@ export type CharterProgressLog = {
   supportNeeded: string | null
 }
 
+export type CharterCellStatus = 'above' | 'on' | 'below' | 'na'
+
 export type CharterKpiHistoryMonth = {
   target: number | null
   real: number | null
-  aboveTarget: boolean
+  aboveTarget: boolean // backward-compat — prefer `status`
+  status: CharterCellStatus
 }
 
 export type CharterKpiHistoryRow = {
