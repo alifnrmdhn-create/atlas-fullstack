@@ -4,6 +4,7 @@ import { Card, Pill } from '../../design-system'
 import { ForecastBadge } from '../../components/ui'
 import { computeForecastFromStrings } from '../../lib/forecast'
 import { scoreTone, fillRatio, realisasiPercent } from './_shared'
+import { InsightPanel, type InsightPayload } from './InsightPanel'
 import './Performance.css'
 
 type KpiItem = {
@@ -76,6 +77,7 @@ type SingleProps = {
   peers: Peer[]
   kpiItems: KpiItem[]
   topPerformers: Performer[]
+  insight: InsightPayload
   periode: string
 }
 
@@ -235,7 +237,7 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
   )
 }
 
-function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, periode }: SingleProps) {
+function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insight, periode }: SingleProps) {
   const navigate = useInertiaNavigate()
 
   const tone = scoreTone(divisi.nilai)
@@ -296,6 +298,11 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, period
               <div className="perf-subject__bar-fill" data-tone={tone} style={{ width: `${bar}%` }} />
             </div>
           </Card>
+
+          {/* ─── Insight Utama (auto-derived) ───── */}
+          <section className="perf__section">
+            <InsightPanel insight={insight} />
+          </section>
 
           {/* ─── KPI list ─────────────────────────── */}
           <section className="perf__section">

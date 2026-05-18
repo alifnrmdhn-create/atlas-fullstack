@@ -5,6 +5,7 @@ import { Card, Pill } from '../../design-system'
 import { ForecastBadge } from '../../components/ui'
 import { computeForecast } from '../../lib/forecast'
 import { scoreTone, fillRatio, realisasiPercent, formatVal } from './_shared'
+import { InsightPanel, type InsightPayload } from './InsightPanel'
 import './Performance.css'
 
 type KpiItem = {
@@ -36,6 +37,7 @@ type Direktur = {
 type PageProps = {
   direktur: Direktur
   kpiGroups: KpiGroup[]
+  insight: InsightPayload
   periode: string
 }
 
@@ -48,7 +50,7 @@ const PERSPEKTIF_COLORS: Record<string, string> = {
 }
 
 export default function KolegialDetailView() {
-  const { direktur, kpiGroups, periode } = usePage<PageProps>().props
+  const { direktur, kpiGroups, insight, periode } = usePage<PageProps>().props
   const navigate = useInertiaNavigate()
   const [activeFilter, setActiveFilter] = useState<string>('all')
 
@@ -106,6 +108,11 @@ export default function KolegialDetailView() {
               <div className="perf-subject__bar-fill" data-tone={totalTone} style={{ width: `${totalBar}%` }} />
             </div>
           </Card>
+
+          {/* ─── Insight Utama (auto-derived) ───── */}
+          <section className="perf__section">
+            <InsightPanel insight={insight} />
+          </section>
 
           {/* ─── Perspektif filter ───────────────── */}
           <div className="perf-filter-row">

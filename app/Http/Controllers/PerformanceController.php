@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Auth\OrgScope;
+use App\Services\KpiInsightService;
 use App\Services\ScorecardSummaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ class PerformanceController extends Controller
 {
     public function __construct(
         private readonly ScorecardSummaryService $scorecard,
+        private readonly KpiInsightService $insight,
     ) {}
 
     // ── Direktur list for lookup ───────────────────────────────────────────
@@ -122,7 +124,17 @@ class PerformanceController extends Controller
 
         $kpiGroups = $this->getDummyKolegialKpi($direktur['kode']);
 
-        return Inertia::render('Performance/KolegialDetailView', compact('direktur', 'kpiGroups', 'periode'));
+        // Flatten kpi groups for insight derive (treat 'target' as 'sasaran').
+        $flatItems = collect($kpiGroups)
+            ->flatMap(fn ($g) => $g['items'] ?? [])
+            ->map(fn ($it) => array_merge($it, [
+                'sasaran'   => $it['target']    ?? null,
+                'realisasi' => $it['realisasi'] ?? null,
+            ]))
+            ->all();
+        $insight = $this->insight->deriveFromKpiItems($flatItems);
+
+        return Inertia::render('Performance/KolegialDetailView', compact('direktur', 'kpiGroups', 'insight', 'periode'));
     }
 
     // ── Scorecard Direktorat & Divisi ─────────────────────────────────────
@@ -198,9 +210,10 @@ class PerformanceController extends Controller
         $kpiItems       = $this->getDummyDivisiKpi($divisi['kode']);
         $topPerformers  = $this->getDummyDivisiTopPerformers($divisi['kode']);
         $mode = 'single';
+        $insight = $this->insight->deriveFromKpiItems($kpiItems);
 
         return Inertia::render('Performance/DivisiView', compact(
-            'mode', 'divisi', 'direktorat', 'peers', 'kpiItems', 'topPerformers', 'periode'
+            'mode', 'divisi', 'direktorat', 'peers', 'kpiItems', 'topPerformers', 'insight', 'periode'
         ));
     }
 
