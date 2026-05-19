@@ -7681,6 +7681,18 @@ select.wid-input {
 .prog-progress-log__health--positive { background: #dcfce7; color: #166534; }
 .prog-progress-log__health--warning  { background: #fef3c7; color: #92400e; }
 .prog-progress-log__health--danger   { background: #fee2e2; color: #991b1b; }
+/* "Telat" badge — submit setelah Sabtu 12:00 WIB. Tampil di samping health
+   chip supaya compliance miss langsung kelihatan saat scan list. */
+.prog-progress-log__late {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: #fee2e2;
+  color: #991b1b;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 .prog-progress-log__meta { font-size: 11px; color: var(--text-muted, #9ca3af); margin-left: auto; }
 .prog-progress-log__narrative { font-size: 13px; color: var(--text-primary, #111827); margin: 0 0 4px; line-height: 1.5; }
 .prog-progress-log__kendala,

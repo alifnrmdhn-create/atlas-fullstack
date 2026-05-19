@@ -1726,7 +1726,7 @@ export function ProgramsView() {
       </div>
 
       {/* ── Modal: Buat Program ───────────────────────────────────────── */}
-      {(showCreateProgram || closingOverlay === 'create-program') && (
+      {(showCreateProgram || closingOverlay === 'create-program') && createPortal(
         <div
           className={`modal-backdrop${closingOverlay === 'create-program' ? ' modal-backdrop--closing' : ''}`}
           onClick={() => !cpSaving && closeCpModal()}
@@ -2156,7 +2156,8 @@ export function ProgramsView() {
               )
             })()}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Archive tab ─────────────────────────────────────────────────────── */}
@@ -2229,7 +2230,7 @@ export function ProgramsView() {
       )}
 
       {/* ── Modal: Edit Program ────────────────────────────────────────────── */}
-      {(!!editProgram || closingOverlay === 'edit-program') && (
+      {(!!editProgram || closingOverlay === 'edit-program') && createPortal(
         <div
           className={`modal-backdrop${closingOverlay === 'edit-program' ? ' modal-backdrop--closing' : ''}`}
           onClick={() => !epSaving && closeEditProgram()}
@@ -2369,11 +2370,12 @@ export function ProgramsView() {
               </form>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Modal: Konfirmasi Archive ─────────────────────────────────────── */}
-      {(!!archiveTarget || closingOverlay === 'archive-program') && (
+      {(!!archiveTarget || closingOverlay === 'archive-program') && createPortal(
         <div
           className={`modal-backdrop${closingOverlay === 'archive-program' ? ' modal-backdrop--closing' : ''}`}
           onClick={() => !archiveSaving && closeArchiveModal()}
@@ -2403,11 +2405,12 @@ export function ProgramsView() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Modal: Konfirmasi Restore ─────────────────────────────────────── */}
-      {(!!restoreTarget || closingOverlay === 'restore-program') && (
+      {(!!restoreTarget || closingOverlay === 'restore-program') && createPortal(
         <div
           className={`modal-backdrop${closingOverlay === 'restore-program' ? ' modal-backdrop--closing' : ''}`}
           onClick={() => !restoreSaving && closeRestoreModal()}
@@ -2429,7 +2432,8 @@ export function ProgramsView() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Kebab dropdown + backdrop — di-render via portal ke document.body

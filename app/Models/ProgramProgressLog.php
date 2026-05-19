@@ -15,6 +15,7 @@ class ProgramProgressLog extends Model
     protected $casts = [
         'createdAt' => 'datetime',
         'updatedAt' => 'datetime',
+        'isLate' => 'boolean',
     ];
 
     public function program(): BelongsTo

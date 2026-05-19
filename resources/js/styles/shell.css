@@ -774,9 +774,12 @@
   flex-direction: column;
   overflow: hidden;
   height: 100%;
-  /* transform: translate(0,0) makes workspace the containing block for
-     position:fixed children — backdrop inset:0 covers workspace only. */
-  transform: translate(0, 0);
+  /* TRANSFORM DIHAPUS 2026-05-19: sebelumnya `transform: translate(0,0)`
+   * memaksa workspace jadi containing block untuk `position: fixed` children,
+   * sehingga modal-backdrop ter-scope ke workspace saja (sidebar tidak ikut
+   * di-dim). Sesuai feedback Pak — modal global harus cover viewport penuh.
+   * Tanpa transform, position:fixed kembali ke perilaku standar (viewport-
+   * relative). Side-panel + toast notif juga jadi viewport-anchored (better). */
   /* Workspace is now an INVISIBLE flex container holding two separate
      floating cards (topbar + workspace__content) with a gap between them.
      Card chrome moved onto each child below. */

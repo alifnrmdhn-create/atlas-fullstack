@@ -19,6 +19,7 @@ use App\Services\BroadcastService;
 use App\Services\OrgChainService;
 use App\Services\ProgramHealthService;
 use App\Services\ProgramService;
+use App\Services\WeeklyDeadlineService;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -34,6 +35,7 @@ class ProgramController extends Controller
         private ProgramService $programService,
         private ProgramHealthService $healthService,
         private OrgChainService $orgChain,
+        private WeeklyDeadlineService $weeklyDeadline,
     ) {}
 
     private function validationError(Request $request, string $message): JsonResponse|RedirectResponse
@@ -885,8 +887,10 @@ class ProgramController extends Controller
         $this->programService->assertAccess($request->user(), $id);
 
         $data = $request->validate([
-            // YYYY-W01..W53 atau YYYY-01..12 (bulan valid saja)
-            'period'             => ['required', 'string', 'regex:/^\d{4}-(W(?:0[1-9]|[1-4]\d|5[0-3])|0[1-9]|1[0-2])$/'],
+            // Weekly-only sejak 2026-05-19. Aplikasi wajib weekly basis dengan
+            // deadline Sabtu 12:00 WIB. Entry historis monthly (format YYYY-MM)
+            // tetap di-display read-only, tapi insert/update baru harus weekly.
+            'period'             => ['required', 'string', 'regex:/^\d{4}-W(?:0[1-9]|[1-4]\d|5[0-3])$/'],
             'healthAtTime'       => 'required|in:on_track,at_risk,terlambat,overdue',
             'narrative'          => 'required|string|max:3000',
             'kendala'            => 'nullable|string|max:2000',
@@ -896,21 +900,29 @@ class ProgramController extends Controller
         ]);
 
         $user = $request->user();
+        $isLate = $this->weeklyDeadline->isLateSubmission($data['period']);
 
-        $log = DB::transaction(function () use ($id, $data, $user) {
+        $log = DB::transaction(function () use ($id, $data, $user, $isLate) {
             // firstOrCreate mempertahankan createdById asli saat entry diupdate
             $log = ProgramProgressLog::firstOrCreate(
                 ['programId' => $id, 'period' => $data['period']],
                 ['createdById' => $user->id, 'createdByName' => $user->name]
             );
-            $log->fill([
+            // wasRecentlyCreated = true hanya pada submit pertama. Edit susulan
+            // tidak boleh mengubah flag isLate — yang dinilai compliance adalah
+            // submit pertama, bukan revisi.
+            $fillData = [
                 'healthAtTime'       => $data['healthAtTime'],
                 'narrative'          => $data['narrative'],
                 'kendala'            => $data['kendala'] ?? null,
                 'correctiveAction'   => $data['correctiveAction'] ?? null,
                 'nextStep'           => $data['nextStep'] ?? null,
                 'dukunganDibutuhkan' => $data['dukunganDibutuhkan'] ?? null,
-            ])->save();
+            ];
+            if ($log->wasRecentlyCreated) {
+                $fillData['isLate'] = $isLate;
+            }
+            $log->fill($fillData)->save();
 
             // Backward-compat: sync ke field Program agar tampil di legacy views
             Program::where('id', $id)->update([
@@ -924,6 +936,87 @@ class ProgramController extends Controller
         BroadcastService::program($id, 'updated', ['progressUpdated' => true]);
 
         return response()->json(['data' => $log], 201);
+    }
+
+    /**
+     * Meta untuk Refleksi Mingguan: state deadline minggu berjalan + prefill
+     * suggestions (health, narrative template, kendala dari blocker open).
+     * Dipakai FE saat user membuka form refleksi — supaya tidak hadap blank.
+     */
+    public function reflectionMeta(Request $request, int $id): JsonResponse
+    {
+        $this->programService->assertAccess($request->user(), $id);
+
+        $program = Program::findOrFail($id);
+        $weekIso = $this->weeklyDeadline->currentWeekIso();
+
+        $existingLog = ProgramProgressLog::query()
+            ->where('programId', $id)
+            ->where('period', $weekIso)
+            ->first();
+
+        $hasSubmitted = $existingLog !== null;
+        $activatedAt  = $program->activatedAt ? \Carbon\Carbon::parse($program->activatedAt) : null;
+
+        $summary = $this->weeklyDeadline->summary($weekIso, $hasSubmitted, $activatedAt);
+        $prefill = $this->buildReflectionPrefill($program);
+
+        return response()->json([
+            'data' => array_merge($summary, [
+                'prefill' => $prefill,
+                'existingLogId' => $existingLog?->id,
+            ]),
+        ]);
+    }
+
+    /**
+     * Bangun suggested pre-fill content. PIC tetap review & edit sebelum submit
+     * — ini cuma "kepala isi" supaya friction turun. Sengaja konservatif:
+     * health & narrative selalu ada, kendala hanya kalau memang ada blocker open.
+     */
+    private function buildReflectionPrefill(Program $program): array
+    {
+        $healthMap = [
+            'GREEN'   => 'on_track',
+            'YELLOW'  => 'at_risk',
+            'RED'     => 'terlambat',
+            'OVERDUE' => 'overdue',
+        ];
+        $healthLabelMap = [
+            'GREEN'   => 'On Track',
+            'YELLOW'  => 'At Risk',
+            'RED'     => 'Terlambat',
+            'OVERDUE' => 'Lewat Tenggat',
+        ];
+        $statusRaw  = strtoupper((string) ($program->healthStatus ?? 'GREEN'));
+        $health     = $healthMap[$statusRaw] ?? 'on_track';
+        $healthLbl  = $healthLabelMap[$statusRaw] ?? 'On Track';
+
+        $pct = (int) round((float) ($program->progressPercent ?? 0));
+
+        // Blocker open via Task → Workstream → programId. Severity HIGH/CRITICAL
+        // saja — MEDIUM terlalu noisy untuk auto-prefill. Pakai whereHas Eloquent
+        // (mengikuti pola ProgramHealthService) supaya schema search_path handled
+        // benar.
+        $blockerTitles = Blocker::query()
+            ->whereHas('task.workstream', fn ($q) => $q->where('programId', $program->id))
+            ->where('status', 'OPEN')
+            ->whereIn('severity', ['HIGH', 'CRITICAL'])
+            ->orderByRaw("CASE severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 ELSE 2 END")
+            ->limit(5)
+            ->pluck('title')
+            ->all();
+
+        $narrative = "Posisi minggu ini: {$pct}% progress · status {$healthLbl}.";
+        $kendala = empty($blockerTitles)
+            ? ''
+            : "Blocker aktif:\n" . implode("\n", array_map(fn ($t) => "- {$t}", $blockerTitles));
+
+        return [
+            'healthAtTime' => $health,
+            'narrative'    => $narrative,
+            'kendala'      => $kendala,
+        ];
     }
 
     public function storeKpiInternal(Request $request, int $id): JsonResponse|RedirectResponse

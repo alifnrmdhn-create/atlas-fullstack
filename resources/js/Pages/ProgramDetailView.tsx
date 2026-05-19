@@ -6,7 +6,7 @@ import { useWorkspace } from '../hooks/useWorkspace'
 import { api, ApiRequestError, extractErrorMessage } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { formatKpiValue, getKpiFillPercent } from '../lib/kpi'
-import { periodToLabel, currentIsoWeek, currentMonth, isIsoWeek } from '../lib/periodFormat'
+import { periodToLabel, currentIsoWeek } from '../lib/periodFormat'
 import { useDarkMode } from '../lib/useDarkMode'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
@@ -254,10 +254,50 @@ export function ProgramDetailView() {
     createdById: number
     createdByName: string | null
     createdAt: string
+    isLate?: boolean
+  }
+  // Meta dari /reflection-meta endpoint: state machine deadline + prefill
+  // suggestions per (program × minggu berjalan). Fetched saat detail ACTIVE.
+  type ReflectionState = 'OPEN' | 'DUE_SOON' | 'URGENT' | 'LATE' | 'MISSED'
+  type ReflectionMeta = {
+    weekIso: string
+    cutoff: string | null
+    deadline: string | null
+    state: ReflectionState
+    exempt: boolean
+    hasSubmitted: boolean
+    now: string
+    timezone: string
+    prefill: {
+      healthAtTime: ProgressLogEntry['healthAtTime']
+      narrative: string
+      kendala: string
+    }
+    existingLogId: number | null
   }
   const [progressLog, setProgressLog] = useState<ProgressLogEntry[]>([])
   const [progressLogLoading, setProgressLogLoading] = useState(false)
   const [showProgressForm, setShowProgressForm] = useState(false)
+  const [reflectionMeta, setReflectionMeta] = useState<ReflectionMeta | null>(null)
+  const progressSectionRef = useRef<HTMLDivElement | null>(null)
+  const openProgressForm = useCallback(() => {
+    // Apply prefill saat form pertama dibuka — hanya untuk field kosong supaya
+    // tidak overwrite isi yang user sudah ketik / draft restore. Set period ke
+    // minggu berjalan (dari server, bukan client clock) supaya konsisten.
+    setProgressForm(f => {
+      const meta = reflectionMeta
+      if (!meta || meta.exempt || meta.hasSubmitted) return f
+      const pf = meta.prefill
+      return {
+        ...f,
+        period: f.period || meta.weekIso,
+        healthAtTime: f.healthAtTime || pf.healthAtTime,
+        narrative: f.narrative.trim() ? f.narrative : pf.narrative,
+        kendala: f.kendala.trim() ? f.kendala : pf.kendala,
+      }
+    })
+    setShowProgressForm(true)
+  }, [reflectionMeta])
   const [progressForm, setProgressForm] = useState<{
     period: string
     healthAtTime: ProgressLogEntry['healthAtTime']
@@ -289,10 +329,9 @@ export function ProgramDetailView() {
     flushOnSSEEvents: ['program:changed'],
   })
 
-  // Mode periode: 'week' default (DKMR PDF dominan minggu-ke-N), 'month' fallback
-  // untuk program dengan reporting bulanan. Auto-sync ke progressForm.period saat
-  // ganti mode (current week ↔ current month).
-  const [periodMode, setPeriodMode] = useState<'week' | 'month'>('week')
+  // Periode: weekly-only sejak 2026-05-19. Aplikasi wajib weekly basis dengan
+  // deadline Sabtu 12:00 WIB (rule bisnis PTPN). Entry historis monthly tetap
+  // di-display read-only, tapi input baru harus ISO week.
   // Composite Weekly Update — KPI aktual yang dimasukkan bareng progress log.
   // Map kpiId → string input value. Saat submit progress log, parallel POST
   // ke /kpis/{id}/values untuk setiap entry yang nilainya non-empty.
@@ -321,6 +360,17 @@ export function ProgramDetailView() {
       setProgressLog(res.data ?? [])
     } finally {
       setProgressLogLoading(false)
+    }
+  }, [numId])
+
+  const loadReflectionMeta = useCallback(async () => {
+    if (!Number.isFinite(numId)) return
+    try {
+      const res = await api.get<{ data: ReflectionMeta }>(`/programs/${numId}/reflection-meta`)
+      setReflectionMeta(res.data ?? null)
+    } catch {
+      // non-fatal — section masih bisa render tanpa meta, badge cuma tidak muncul
+      setReflectionMeta(null)
     }
   }, [numId])
 
@@ -395,6 +445,8 @@ export function ProgramDetailView() {
       setShowProgressForm(false)
       setProgressForm(f => ({ ...f, narrative: '', kendala: '', correctiveAction: '', nextStep: '', dukunganDibutuhkan: '' }))
       setWeeklyKpiActuals({})
+      // Refresh meta supaya badge state berubah (OPEN/DUE_SOON → submitted)
+      void loadReflectionMeta()
     } finally {
       setProgressFormSaving(false)
     }
@@ -583,8 +635,9 @@ export function ProgramDetailView() {
     if (activeTab === 'ringkasan') {
       void loadApprovalLog()
       void loadProgressLog()
+      void loadReflectionMeta()
     }
-  }, [activeTab, loadApprovalLog, loadProgressLog])
+  }, [activeTab, loadApprovalLog, loadProgressLog, loadReflectionMeta])
 
   // ── Sprint 5 — Check→Act bridge: prefill ProgressLog dari meeting context ──
   useEffect(() => {
@@ -693,6 +746,14 @@ export function ProgramDetailView() {
   const [userDirectory, setUserDirectory] = useState<Array<{ id: number; name: string; positionTitle?: string | null }>>([])
   const triggerEpClose = useCallback(() => closeOverlay('edit-program', () => { setShowEdit(false); setEpError(null) }), [closeOverlay])
   const epClosing = closingOverlay === 'edit-program'
+  // Modal Refleksi Mingguan — refactor dari inline form 2026-05-19. Focus task,
+  // dedicated surface supaya tidak mendominasi tab Ringkasan.
+  const triggerProgressFormClose = useCallback(() => closeOverlay('reflection', () => setShowProgressForm(false)), [closeOverlay])
+  const progressFormClosing = closingOverlay === 'reflection'
+  const reflectionTitleId = useId()
+  const reflectionDescId = useId()
+  const reflectionDialogRef = useDialogFocus<HTMLDivElement>(showProgressForm || progressFormClosing)
+  useEscKey(() => { if (!progressFormSaving) triggerProgressFormClose() }, showProgressForm || progressFormClosing)
   const editProgramDialogRef = useDialogFocus<HTMLDivElement>(showEdit || epClosing)
   const editProgramTitleId = useId()
   const editProgramDescId = useId()
@@ -1497,7 +1558,7 @@ export function ProgramDetailView() {
                       <div className="prog-hero__edit-actions">
                         <button
                           type="button"
-                          className="wi-btn wi-btn--primary wi-btn--sm"
+                          className="btn btn--primary"
                           onClick={async () => {
                             // hanya tutup kalau sukses — kalau error, biarkan form
                             // tetap terbuka supaya user bisa baca pesan & retry.
@@ -1510,7 +1571,7 @@ export function ProgramDetailView() {
                         </button>
                         <button
                           type="button"
-                          className="wi-btn wi-btn--ghost wi-btn--sm"
+                          className="btn btn--ghost"
                           onClick={() => {
                             setStrategicForm({
                               strategicObjective: detail.strategicObjective ?? '',
@@ -2041,227 +2102,25 @@ export function ProgramDetailView() {
                   </div>
                 )}
 
-                {/* ── Progress Log ── */}
+                {/* ── Progress Log (Refleksi Mingguan) ──
+                    Section ringan: header + tombol trigger modal + list entries.
+                    Form refleksi pindah ke modal supaya focus, tidak mendominasi
+                    halaman. Status deadline pindah ke panel kanan (compact pill). */}
                 {detail.approvalStatus === 'ACTIVE' && (
-                  <div className="wi-section">
+                  <div className="wi-section" ref={progressSectionRef}>
                     <div className="wi-section__header">
-                      <h3 className="wi-section__title">{PIcon.activity} Riwayat Progress</h3>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {showProgressForm && (
-                          <DraftStatusBadge
-                            status={progressDraft.status}
-                            lastSavedAt={progressDraft.lastSavedAt}
-                          />
-                        )}
-                        <button
-                          className="wi-btn wi-btn--sm wi-btn--outline"
-                          onClick={() => setShowProgressForm(v => !v)}
-                        >
-                          {showProgressForm ? 'Tutup' : '+ Update Progress'}
-                        </button>
-                      </div>
+                      <h3 className="wi-section__title">{PIcon.activity} Riwayat Refleksi</h3>
+                      <button
+                        type="button"
+                        className="btn btn--ghost"
+                        onClick={openProgressForm}
+                      >
+                        + Refleksi Mingguan
+                      </button>
                     </div>
 
-                    {showProgressForm && (
-                      <div className="prog-progress-form">
-                        {progressDraft.hasDraft && progressDraft.status === 'restored' && progressDraft.lastSavedAt && (
-                          <DraftRestoreBanner
-                            savedAt={progressDraft.lastSavedAt}
-                            onRestore={() => {
-                              const p = progressDraft.restoredPayload as Partial<typeof progressForm> | null
-                              if (p) setProgressForm(f => ({ ...f, ...p }))
-                              progressDraft.acceptRestore()
-                            }}
-                            onDiscard={() => { void progressDraft.discard() }}
-                          />
-                        )}
-                        <div className="prog-progress-form__row">
-                          <label className="prog-progress-form__label">Periode</label>
-                          <div className="prog-period-picker">
-                            <div className="prog-period-picker__mode" role="tablist" aria-label="Mode periode">
-                              <button
-                                type="button"
-                                role="tab"
-                                aria-selected={periodMode === 'week'}
-                                className="prog-period-picker__mode-btn"
-                                data-active={periodMode === 'week'}
-                                onClick={() => {
-                                  if (periodMode === 'week') return
-                                  setPeriodMode('week')
-                                  setProgressForm(f => ({ ...f, period: currentIsoWeek() }))
-                                }}
-                              >
-                                Mingguan
-                              </button>
-                              <button
-                                type="button"
-                                role="tab"
-                                aria-selected={periodMode === 'month'}
-                                className="prog-period-picker__mode-btn"
-                                data-active={periodMode === 'month'}
-                                onClick={() => {
-                                  if (periodMode === 'month') return
-                                  setPeriodMode('month')
-                                  setProgressForm(f => ({ ...f, period: currentMonth() }))
-                                }}
-                              >
-                                Bulanan
-                              </button>
-                            </div>
-                            <input
-                              type={periodMode === 'week' ? 'week' : 'month'}
-                              className="wi-input prog-period-picker__input"
-                              value={progressForm.period}
-                              onChange={e => setProgressForm(f => ({ ...f, period: e.target.value }))}
-                              aria-describedby="prog-period-preview"
-                            />
-                            <span
-                              id="prog-period-preview"
-                              className="prog-period-picker__preview"
-                              data-format={isIsoWeek(progressForm.period) ? 'week' : 'month'}
-                            >
-                              {periodToLabel(progressForm.period)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="prog-progress-form__row">
-                          <label className="prog-progress-form__label">Health</label>
-                          <select
-                            className="wi-input"
-                            value={progressForm.healthAtTime}
-                            onChange={e => setProgressForm(f => ({ ...f, healthAtTime: e.target.value as ProgressLogEntry['healthAtTime'] }))}
-                          >
-                            <option value="on_track">On Track</option>
-                            <option value="at_risk">At Risk</option>
-                            <option value="terlambat">Terlambat</option>
-                            <option value="overdue">Lewat Tenggat</option>
-                          </select>
-                        </div>
-                        <div className="prog-progress-form__row">
-                          <label className="prog-progress-form__label">Progres Terkini *</label>
-                          <textarea
-                            className="wi-input"
-                            rows={3}
-                            value={progressForm.narrative}
-                            onChange={e => setProgressForm(f => ({ ...f, narrative: e.target.value }))}
-                            placeholder="Ceritakan perkembangan program minggu ini..."
-                          />
-                        </div>
-
-                        {/* ── KPI Aktual Minggu Ini — composite weekly entry ──
-                            Numbers behind the narrative. Optional; biarkan kosong
-                            kalau tidak ada update. Submit progress log akan
-                            otomatis POST setiap entry yang terisi sebagai
-                            KpiValue dengan measurementDate = Jumat ISO week. */}
-                        {(detail.kpis ?? []).length > 0 && (
-                          <div className="prog-progress-form__row prog-progress-form__row--kpi">
-                            <label className="prog-progress-form__label">
-                              KPI Aktual Minggu Ini
-                              <span className="prog-progress-form__hint">opsional · isi yang berubah saja</span>
-                            </label>
-                            <div className="prog-progress-form__kpi-list">
-                              {(detail.kpis ?? []).map(kpi => {
-                                const lastActual = kpi.actualValue != null
-                                  ? formatKpiValue(kpi.actualValue, kpi.unitOfMeasure ?? '', kpi.dataType ?? undefined)
-                                  : null
-                                const targetLabel = formatKpiValue(kpi.targetValue, kpi.unitOfMeasure ?? '', kpi.dataType ?? undefined)
-                                return (
-                                  <div key={kpi.id} className="prog-progress-form__kpi-item">
-                                    <div className="prog-progress-form__kpi-meta">
-                                      <span className="prog-progress-form__kpi-name">{kpi.name}</span>
-                                      <span className="prog-progress-form__kpi-sub">
-                                        Target {targetLabel}
-                                        {lastActual ? ` · terakhir ${lastActual}` : ' · belum ada actual'}
-                                      </span>
-                                    </div>
-                                    <input
-                                      className="wi-input prog-progress-form__kpi-input"
-                                      type="number"
-                                      step="any"
-                                      inputMode="decimal"
-                                      value={weeklyKpiActuals[kpi.id] ?? ''}
-                                      onChange={e => setWeeklyKpiActuals(s => ({ ...s, [kpi.id]: e.target.value }))}
-                                      placeholder={lastActual ?? '—'}
-                                      aria-label={`Aktual baru untuk ${kpi.name}`}
-                                    />
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="prog-progress-form__row">
-                          <label className="prog-progress-form__label">Kendala / Problem Identification</label>
-                          <textarea
-                            className="wi-input"
-                            rows={2}
-                            value={progressForm.kendala}
-                            onChange={e => setProgressForm(f => ({ ...f, kendala: e.target.value }))}
-                            placeholder="Hambatan yang dihadapi minggu ini (opsional)"
-                          />
-                        </div>
-                        <div className="prog-progress-form__row">
-                          <label className="prog-progress-form__label">Corrective Action</label>
-                          <textarea
-                            className="wi-input"
-                            rows={2}
-                            value={progressForm.correctiveAction}
-                            onChange={e => setProgressForm(f => ({ ...f, correctiveAction: e.target.value }))}
-                            placeholder="Tindakan korektif yang diambil untuk mengatasi kendala (opsional)"
-                          />
-                        </div>
-                        <div className="prog-progress-form__row">
-                          <label className="prog-progress-form__label">Next Step</label>
-                          <textarea
-                            className="wi-input"
-                            rows={2}
-                            value={progressForm.nextStep}
-                            onChange={e => setProgressForm(f => ({ ...f, nextStep: e.target.value }))}
-                            placeholder="Langkah selanjutnya & target periode berikutnya (opsional)"
-                          />
-                        </div>
-                        <div className="prog-progress-form__row">
-                          <label className="prog-progress-form__label">Dukungan Dibutuhkan</label>
-                          <textarea
-                            className="wi-input"
-                            rows={2}
-                            value={progressForm.dukunganDibutuhkan}
-                            onChange={e => setProgressForm(f => ({ ...f, dukunganDibutuhkan: e.target.value }))}
-                            placeholder="Support yang diperlukan dari stakeholder (opsional)"
-                          />
-                        </div>
-                        {weeklyKpiErrors.length > 0 && (
-                          <div className="prog-progress-form__kpi-errors" role="alert">
-                            <strong>Progres tersimpan,</strong> tapi {weeklyKpiErrors.length} KPI gagal disimpan:
-                            <ul>
-                              {weeklyKpiErrors.map((msg, i) => <li key={i}>{msg}</li>)}
-                            </ul>
-                            <p className="prog-progress-form__kpi-errors-hint">
-                              Coba lagi dari tab KPI atau retry submit setelah perbaikan.
-                            </p>
-                          </div>
-                        )}
-                        <div className="prog-progress-form__actions">
-                          <button
-                            className="wi-btn wi-btn--primary wi-btn--sm"
-                            onClick={submitProgressLog}
-                            disabled={progressFormSaving || !progressForm.narrative.trim()}
-                          >
-                            {progressFormSaving ? 'Menyimpan…' : 'Simpan Update'}
-                          </button>
-                          <button
-                            className="wi-btn wi-btn--ghost wi-btn--sm"
-                            onClick={() => setShowProgressForm(false)}
-                          >
-                            Batal
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
                     {progressLogLoading && progressLog.length === 0 ? (
-                      <div className="prog-approval-log-skeleton" aria-label="Memuat riwayat progress">
+                      <div className="prog-approval-log-skeleton" aria-label="Memuat riwayat refleksi">
                         <div className="prog-approval-log-skeleton__entry">
                           <SkeletonBlock width="60%" height={14} />
                           <SkeletonBlock width="42%" height={11} />
@@ -2272,11 +2131,11 @@ export function ProgramDetailView() {
                         </div>
                       </div>
                     ) : progressLog.length === 0 ? (
-                      // CTA echo dihapus — tombol "+ Update Progress" sudah di
+                      // CTA echo dihapus — tombol "+ Refleksi Mingguan" sudah di
                       // header section ini, dan sidebar kanan punya empty state
                       // dengan CTA jelas. Slim line cukup supaya section tidak
                       // looks broken (header tanpa body).
-                      <p className="hd-muted" style={{ fontSize: 12, margin: '2px 0 0' }}>Belum ada riwayat update.</p>
+                      <p className="hd-muted" style={{ fontSize: 12, margin: '2px 0 0' }}>Belum ada refleksi.</p>
                     ) : (
                       <div className="prog-progress-log">
                         {progressLog.map(entry => {
@@ -2295,6 +2154,9 @@ export function ProgramDetailView() {
                                 <span className={`prog-progress-log__health prog-progress-log__health--${tone}`}>
                                   {healthLabel[entry.healthAtTime] ?? entry.healthAtTime}
                                 </span>
+                                {entry.isLate && (
+                                  <span className="prog-progress-log__late" title="Submit setelah deadline Sabtu 12:00">Telat</span>
+                                )}
                                 <span className="prog-progress-log__meta">{entry.createdByName} · {date}</span>
                               </div>
                               <p className="prog-progress-log__narrative">{entry.narrative}</p>
@@ -2494,20 +2356,97 @@ export function ProgramDetailView() {
                       return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
                     } catch { return iso }
                   }
+                  const isActive = detail.approvalStatus === 'ACTIVE'
+                  // Compact status pill — derived dari reflectionMeta. Tone
+                  // state-aware (open/due-soon/urgent/late/exempt/submitted).
+                  const statusPill = (() => {
+                    if (!isActive || !reflectionMeta) return null
+                    const m = reflectionMeta
+                    if (m.exempt) {
+                      return { tone: 'exempt', icon: '⓵', text: 'Mulai minggu depan' }
+                    }
+                    if (m.hasSubmitted) {
+                      return { tone: 'submitted', icon: '✓', text: 'Sudah masuk minggu ini' }
+                    }
+                    const fmtShort = (iso: string | null) => {
+                      if (!iso) return ''
+                      const d = new Date(iso)
+                      return d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }) +
+                        ' jam ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })
+                    }
+                    const fmtCountdown = () => {
+                      if (!m.deadline) return ''
+                      const ms = new Date(m.deadline).getTime() - new Date(m.now).getTime()
+                      if (ms <= 0) return ''
+                      const mins = Math.floor(ms / 60000)
+                      if (mins < 60) return `${mins} menit lagi`
+                      const hours = Math.floor(mins / 60)
+                      const restMins = mins % 60
+                      return restMins > 0 ? `${hours}j ${restMins}m lagi` : `${hours} jam lagi`
+                    }
+                    switch (m.state) {
+                      case 'OPEN':
+                        return { tone: 'open', icon: '⏱', text: `Deadline ${fmtShort(m.deadline)}` }
+                      case 'DUE_SOON':
+                        return { tone: 'due-soon', icon: '⏱', text: `Jatuh tempo ${fmtShort(m.deadline)}` }
+                      case 'URGENT':
+                        return { tone: 'urgent', icon: '⚠', text: `Deadline ${fmtCountdown()}` }
+                      case 'LATE':
+                        return { tone: 'late', icon: '⚠', text: 'Telat · masih bisa submit' }
+                      case 'MISSED':
+                        return { tone: 'missed', icon: '✕', text: 'Refleksi minggu ini terlewat' }
+                      default:
+                        return null
+                    }
+                  })()
                   return (
                     <div className="prog-update-panel">
                       <div className="prog-update-panel__head">
-                        <span className="prog-update-panel__label">Update Saat Ini</span>
+                        <span className="prog-update-panel__label">Refleksi Terakhir</span>
                         {latest && (
                           <span className="prog-update-panel__period">{formatPeriod(latest.createdAt)}</span>
                         )}
                       </div>
+                      {statusPill && (
+                        <div className={`reflection-status reflection-status--${statusPill.tone}`} role="status">
+                          <span className="reflection-status__icon" aria-hidden="true">{statusPill.icon}</span>
+                          <span className="reflection-status__text">{statusPill.text}</span>
+                        </div>
+                      )}
                       {latest?.narrative ? (
-                        <p className="prog-update-panel__note">{latest.narrative}</p>
+                        <>
+                          <p className="prog-update-panel__note">{latest.narrative}</p>
+                          {isActive && !reflectionMeta?.exempt && (
+                            <button
+                              type="button"
+                              className="prog-update-panel__action"
+                              onClick={openProgressForm}
+                            >
+                              {reflectionMeta?.hasSubmitted ? 'Edit refleksi' : '+ Refleksi Mingguan'}
+                            </button>
+                          )}
+                        </>
+                      ) : isActive && !reflectionMeta?.exempt ? (
+                        <div className="prog-update-panel__empty-state">
+                          <p className="prog-update-panel__empty">Belum ada refleksi minggu ini.</p>
+                          <button
+                            type="button"
+                            className="prog-update-panel__action prog-update-panel__action--primary"
+                            onClick={openProgressForm}
+                          >
+                            + Refleksi Mingguan
+                          </button>
+                          <span className="prog-update-panel__hint">
+                            Catat posisi & kendala — muncul di Charter &amp; KPI Saya.
+                          </span>
+                        </div>
+                      ) : isActive ? (
+                        <p className="prog-update-panel__empty">
+                          Refleksi pertama jatuh tempo minggu depan.
+                        </p>
                       ) : (
                         <p className="prog-update-panel__empty">
-                          Belum ada update progress.<br />
-                          <span className="prog-update-panel__cta">Klik &quot;+ Update Progress&quot; di kolom utama</span>
+                          Refleksi mingguan bisa dicatat setelah program aktif.
                         </p>
                       )}
                     </div>
@@ -4395,6 +4334,233 @@ export function ProgramDetailView() {
       </div>
         )
       })(),
+      document.body,
+    )}
+
+    {/* ── Modal: Refleksi Mingguan ───────────────────────────────────────
+        Dedicated focused surface. Sebelumnya inline form yang mendominasi
+        tab Ringkasan; sekarang user buka modal saat siap menulis. */}
+    {(showProgressForm || progressFormClosing) && detail && createPortal(
+      <div
+        className={`modal-backdrop${progressFormClosing ? ' modal-backdrop--closing' : ''}`}
+        onClick={() => !progressFormSaving && triggerProgressFormClose()}
+      >
+        <div
+          aria-describedby={reflectionDescId}
+          aria-labelledby={reflectionTitleId}
+          aria-modal="true"
+          className="modal modal--wide"
+          ref={reflectionDialogRef}
+          role="dialog"
+          tabIndex={-1}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="modal__header">
+            <div className="modal-headcopy">
+              <span className="modal-kicker">{detail.code} · {periodToLabel(progressForm.period)}</span>
+              <h3 className="modal__title" id={reflectionTitleId}>Refleksi Mingguan</h3>
+              <p className="modal-subtitle" id={reflectionDescId}>
+                {reflectionMeta && !reflectionMeta.exempt && reflectionMeta.deadline ? (() => {
+                  const d = new Date(reflectionMeta.deadline)
+                  const dateStr = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })
+                  const timeStr = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })
+                  return `Posisi s.d. Jumat · Deadline submit ${dateStr} jam ${timeStr} WIB.`
+                })() : 'Posisi s.d. Jumat · Catatan reflektif minggu ini.'}
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <DraftStatusBadge
+                status={progressDraft.status}
+                lastSavedAt={progressDraft.lastSavedAt}
+              />
+              <button
+                aria-label="Tutup"
+                className="modal__close"
+                disabled={progressFormSaving}
+                onClick={triggerProgressFormClose}
+                type="button"
+              >
+                <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12">
+                  <path d="m1 1 10 10M11 1 1 11" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <form onSubmit={e => { e.preventDefault(); void submitProgressLog() }}>
+            <div className="modal__body">
+              {progressDraft.hasDraft && progressDraft.status === 'restored' && progressDraft.lastSavedAt && (
+                <DraftRestoreBanner
+                  savedAt={progressDraft.lastSavedAt}
+                  onRestore={() => {
+                    const p = progressDraft.restoredPayload as Partial<typeof progressForm> | null
+                    if (p) setProgressForm(f => ({ ...f, ...p }))
+                    progressDraft.acceptRestore()
+                  }}
+                  onDiscard={() => { void progressDraft.discard() }}
+                />
+              )}
+
+              <div className="reflection-form">
+                <div className="reflection-form__row">
+                  <label className="reflection-form__label" htmlFor="reflection-period">Periode</label>
+                  <div className="reflection-form__period">
+                    <input
+                      id="reflection-period"
+                      type="week"
+                      className="reflection-form__input"
+                      value={progressForm.period}
+                      onChange={e => setProgressForm(f => ({ ...f, period: e.target.value }))}
+                    />
+                    <span className="reflection-form__period-label">{periodToLabel(progressForm.period)}</span>
+                  </div>
+                </div>
+
+                <div className="reflection-form__row">
+                  <label className="reflection-form__label" htmlFor="reflection-health">Health</label>
+                  <select
+                    id="reflection-health"
+                    className="reflection-form__input"
+                    value={progressForm.healthAtTime}
+                    onChange={e => setProgressForm(f => ({ ...f, healthAtTime: e.target.value as ProgressLogEntry['healthAtTime'] }))}
+                  >
+                    <option value="on_track">On Track</option>
+                    <option value="at_risk">At Risk</option>
+                    <option value="terlambat">Terlambat</option>
+                    <option value="overdue">Lewat Tenggat</option>
+                  </select>
+                </div>
+
+                <div className="reflection-form__row">
+                  <label className="reflection-form__label" htmlFor="reflection-narrative">
+                    Progres terkini <span className="reflection-form__required">*</span>
+                  </label>
+                  <textarea
+                    id="reflection-narrative"
+                    className="reflection-form__input reflection-form__textarea"
+                    rows={3}
+                    value={progressForm.narrative}
+                    onChange={e => setProgressForm(f => ({ ...f, narrative: e.target.value }))}
+                    placeholder="Ceritakan posisi program minggu ini..."
+                    required
+                  />
+                </div>
+
+                {(detail.kpis ?? []).length > 0 && (
+                  <div className="reflection-form__row">
+                    <label className="reflection-form__label">
+                      KPI aktual minggu ini
+                      <span className="reflection-form__hint">opsional · isi yang berubah saja</span>
+                    </label>
+                    <div className="reflection-form__kpis">
+                      {(detail.kpis ?? []).map(kpi => {
+                        const lastActual = kpi.actualValue != null
+                          ? formatKpiValue(kpi.actualValue, kpi.unitOfMeasure ?? '', kpi.dataType ?? undefined)
+                          : null
+                        const targetLabel = formatKpiValue(kpi.targetValue, kpi.unitOfMeasure ?? '', kpi.dataType ?? undefined)
+                        return (
+                          <div key={kpi.id} className="reflection-form__kpi-item">
+                            <div className="reflection-form__kpi-meta">
+                              <span className="reflection-form__kpi-name">{kpi.name}</span>
+                              <span className="reflection-form__kpi-sub">
+                                Target {targetLabel}
+                                {lastActual ? ` · terakhir ${lastActual}` : ' · belum ada actual'}
+                              </span>
+                            </div>
+                            <input
+                              className="reflection-form__input reflection-form__kpi-input"
+                              type="number"
+                              step="any"
+                              inputMode="decimal"
+                              value={weeklyKpiActuals[kpi.id] ?? ''}
+                              onChange={e => setWeeklyKpiActuals(s => ({ ...s, [kpi.id]: e.target.value }))}
+                              placeholder={lastActual ?? '—'}
+                              aria-label={`Aktual baru untuk ${kpi.name}`}
+                            />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="reflection-form__row">
+                  <label className="reflection-form__label" htmlFor="reflection-kendala">Kendala</label>
+                  <textarea
+                    id="reflection-kendala"
+                    className="reflection-form__input reflection-form__textarea"
+                    rows={2}
+                    value={progressForm.kendala}
+                    onChange={e => setProgressForm(f => ({ ...f, kendala: e.target.value }))}
+                    placeholder="Hambatan yang dihadapi minggu ini (opsional)"
+                  />
+                </div>
+
+                <div className="reflection-form__row">
+                  <label className="reflection-form__label" htmlFor="reflection-corrective">Corrective action</label>
+                  <textarea
+                    id="reflection-corrective"
+                    className="reflection-form__input reflection-form__textarea"
+                    rows={2}
+                    value={progressForm.correctiveAction}
+                    onChange={e => setProgressForm(f => ({ ...f, correctiveAction: e.target.value }))}
+                    placeholder="Tindakan korektif untuk mengatasi kendala (opsional)"
+                  />
+                </div>
+
+                <div className="reflection-form__row">
+                  <label className="reflection-form__label" htmlFor="reflection-nextstep">Next step</label>
+                  <textarea
+                    id="reflection-nextstep"
+                    className="reflection-form__input reflection-form__textarea"
+                    rows={2}
+                    value={progressForm.nextStep}
+                    onChange={e => setProgressForm(f => ({ ...f, nextStep: e.target.value }))}
+                    placeholder="Langkah selanjutnya & target periode berikutnya (opsional)"
+                  />
+                </div>
+
+                <div className="reflection-form__row">
+                  <label className="reflection-form__label" htmlFor="reflection-dukungan">Dukungan dibutuhkan</label>
+                  <textarea
+                    id="reflection-dukungan"
+                    className="reflection-form__input reflection-form__textarea"
+                    rows={2}
+                    value={progressForm.dukunganDibutuhkan}
+                    onChange={e => setProgressForm(f => ({ ...f, dukunganDibutuhkan: e.target.value }))}
+                    placeholder="Support yang diperlukan dari stakeholder (opsional)"
+                  />
+                </div>
+
+                {weeklyKpiErrors.length > 0 && (
+                  <div className="reflection-form__error" role="alert">
+                    <strong>Refleksi tersimpan,</strong> tapi {weeklyKpiErrors.length} KPI gagal disimpan:
+                    <ul>
+                      {weeklyKpiErrors.map((msg, i) => <li key={i}>{msg}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="modal__footer">
+              <button
+                type="button"
+                className="btn btn--ghost"
+                disabled={progressFormSaving}
+                onClick={triggerProgressFormClose}
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="btn btn--primary"
+                disabled={progressFormSaving || !progressForm.narrative.trim()}
+              >
+                {progressFormSaving ? 'Menyimpan…' : 'Simpan Refleksi'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>,
       document.body,
     )}
     </div>

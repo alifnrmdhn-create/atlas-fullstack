@@ -162,6 +162,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}/approval-log',   [ProgramController::class, 'approvalLog'])->name('approval-log');
         Route::get('/{id}/progress-log',   [ProgramController::class, 'progressLog'])->name('progress-log.index');
         Route::post('/{id}/progress-log',  [ProgramController::class, 'storeProgressLog'])->name('progress-log.store');
+        Route::get('/{id}/reflection-meta', [ProgramController::class, 'reflectionMeta'])->name('reflection-meta');
     });
 
     // ── Tasks ─────────────────────────────────────────────────────────────────

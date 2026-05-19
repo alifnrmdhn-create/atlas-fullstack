@@ -38,6 +38,43 @@ return [
         'stale_after_days' => env('ATLAS_PROGRESS_STALE_DAYS', 7),
     ],
 
+    // ── Refleksi Mingguan (May 2026) ──────────────────────────────────────────
+    // Cadence wajib mingguan: data posisi s.d. Jumat, deadline submit Sabtu
+    // 12:00 WIB. Setelah deadline submit tetap diizinkan tapi di-flag isLate.
+    // Holiday-aware: kalau Jumat/Sabtu libur, cutoff & deadline geser ke hari
+    // kerja terdekat. Update list 'holidays' tiap awal tahun.
+    'reflection' => [
+        'timezone'         => 'Asia/Jakarta',
+        'cutoff_dow'       => 5,  // ISO day-of-week: 5 = Friday (end-of-data)
+        'deadline_dow'     => 6,  // ISO day-of-week: 6 = Saturday (submit deadline)
+        'deadline_hour'    => 12, // jam 12:00 (noon)
+        'urgent_hours_before' => 1, // 1 jam sebelum deadline → state URGENT
+        'due_soon_dow'     => 5,  // Mulai Jumat 00:00 = DUE_SOON window
+        // National holidays Indonesia 2026 (format YYYY-MM-DD).
+        // Update setiap tahun. Sumber: SKB 3 Menteri tentang Hari Libur Nasional
+        // dan Cuti Bersama. List ini menggeser cutoff & deadline ke hari kerja.
+        'holidays' => [
+            '2026-01-01', // Tahun Baru Masehi
+            '2026-02-17', // Tahun Baru Imlek
+            '2026-03-19', // Hari Suci Nyepi
+            '2026-03-20', // Cuti Bersama Nyepi
+            '2026-03-21', // Idul Fitri 1447 H
+            '2026-03-22', // Idul Fitri 1447 H
+            '2026-03-23', // Cuti Bersama Idul Fitri
+            '2026-03-24', // Cuti Bersama Idul Fitri
+            '2026-04-03', // Wafat Isa Al-Masih
+            '2026-05-01', // Hari Buruh
+            '2026-05-14', // Kenaikan Isa Al-Masih
+            '2026-05-21', // Hari Raya Waisak
+            '2026-05-29', // Idul Adha 1447 H
+            '2026-06-19', // Tahun Baru Islam 1448 H
+            '2026-08-17', // Hari Kemerdekaan RI
+            '2026-08-28', // Maulid Nabi Muhammad SAW
+            '2026-12-18', // Isra Mi'raj Nabi Muhammad SAW
+            '2026-12-25', // Hari Raya Natal
+        ],
+    ],
+
     // ── Auto-health discrepancy (Sprint 5) ────────────────────────────────────
     // Berapa "level beda" antara self-reported vs auto-derived sebelum
     // discrepancy badge ditampilkan ke reviewer.
