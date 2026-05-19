@@ -244,6 +244,8 @@ export type ProgramDetail = {
   pendingReviewer?: { id: number; name: string; roleType: string | null; positionTitle: string | null } | null
   /** When the program entered current PENDING state — ISO datetime, only when PENDING_*. */
   pendingSinceAt?: string | null
+  /** When the program transitioned to ACTIVE — ISO datetime, only when status='ACTIVE'. */
+  activatedAt?: string | null
   kelompok?: Kelompok | null
   pilarStrategis?: PilarStrategis | null
   progresTerkini?: string | null

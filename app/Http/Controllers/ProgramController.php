@@ -97,6 +97,7 @@ class ProgramController extends Controller
         $payload = $program->toArray();
         $payload['pendingReviewer'] = $this->resolvePendingReviewer($program);
         $payload['pendingSinceAt'] = $this->resolvePendingSinceAt($program);
+        $payload['activatedAt'] = $this->resolveActivatedAt($program);
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $payload]);
@@ -545,6 +546,23 @@ class ProgramController extends Controller
         $entry = ProgramApprovalLog::query()
             ->where('programId', $program->id)
             ->where('toStatus', $program->approvalStatus)
+            ->orderByDesc('createdAt')
+            ->first();
+        return $entry?->createdAt?->toIso8601String();
+    }
+
+    /**
+     * Resolve when the program transitioned to ACTIVE state (via KADIV approve
+     * atau direct activate). Returns ISO string atau null kalau status bukan
+     * ACTIVE / belum pernah diaktivasi. FE pakai ini untuk render
+     * post-activation hint banner (~7 hari setelah aktif).
+     */
+    private function resolveActivatedAt(Program $program): ?string
+    {
+        if ($program->approvalStatus !== 'ACTIVE') return null;
+        $entry = ProgramApprovalLog::query()
+            ->where('programId', $program->id)
+            ->where('toStatus', 'ACTIVE')
             ->orderByDesc('createdAt')
             ->first();
         return $entry?->createdAt?->toIso8601String();

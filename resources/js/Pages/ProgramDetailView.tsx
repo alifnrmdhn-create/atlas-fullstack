@@ -1055,6 +1055,20 @@ export function ProgramDetailView() {
   const [approvalModal, setApprovalModal] = useState<'approve' | 'reject' | 'submit' | 'withdraw' | null>(null)
   const [rejectNote, setRejectNote] = useState('')
   const [approvedSuccess, setApprovedSuccess] = useState(false)
+
+  // Post-activation hint banner dismiss state — per-program, session-scoped.
+  // SessionStorage (bukan localStorage) supaya banner muncul lagi di tab/window
+  // baru — user di session berbeda mungkin perlu lihat hint lagi.
+  const banDismissKey = numId ? `atlas:program-active-banner-dismissed:${numId}` : ''
+  const [activationBannerDismissed, setActivationBannerDismissed] = useState(() => {
+    if (typeof window === 'undefined' || !banDismissKey) return false
+    return !!sessionStorage.getItem(banDismissKey)
+  })
+  const dismissActivationBanner = () => {
+    if (banDismissKey) sessionStorage.setItem(banDismissKey, '1')
+    setActivationBannerDismissed(true)
+  }
+
   useEscKey(() => {
     if (approvalLoading) return
     if (approvalModal === 'reject' && rejectNote !== '' && !window.confirm('Buang catatan yang sudah diketik?')) return
@@ -1464,6 +1478,49 @@ export function ProgramDetailView() {
             <span className="prog-lifecycle-banner__icon">{finalIcon}</span>
             <span className="prog-lifecycle-banner__label">{label}</span>
             {hint && <span className="prog-lifecycle-banner__hint">· {hint}</span>}
+          </div>
+        )
+      })()}
+
+      {/* ── Post-activation hint banner ──────────────────────────────────
+          Tampil 7 hari pertama setelah program transition ke ACTIVE.
+          Tujuan: jembatani gap antara "approval selesai" (Plan done) dan
+          "mulai eksekusi" (Do start) — PIC sering bingung "OK sudah aktif,
+          sekarang ngapain?". Banner kasih CTA eksplisit ke Board.
+          Dismissable per-session per-program. */}
+      {detail && detail.approvalStatus === 'ACTIVE' && detail.activatedAt
+        && !activationBannerDismissed && (() => {
+        const daysSince = (Date.now() - new Date(detail.activatedAt).getTime()) / 86400000
+        if (daysSince > 7) return null
+        return (
+          <div className="prog-activation-banner" role="status">
+            <span className="prog-activation-banner__icon" aria-hidden="true">
+              <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="14"><path d="M4 3v8l7-4z"/></svg>
+            </span>
+            <div className="prog-activation-banner__body">
+              <strong className="prog-activation-banner__title">Program baru aktif · siap dieksekusi</strong>
+              <span className="prog-activation-banner__hint">
+                Buka Board untuk drag-drop task harian. Struktur masih bisa disempurnakan dari tab Struktur sambil tim mulai work.
+              </span>
+            </div>
+            <div className="prog-activation-banner__actions">
+              <button
+                className="btn btn--primary prog-activation-banner__cta"
+                onClick={() => navigate(`/execution?programId=${numId}`)}
+                type="button"
+              >
+                Buka Board →
+              </button>
+              <button
+                aria-label="Tutup hint"
+                className="prog-activation-banner__dismiss"
+                onClick={dismissActivationBanner}
+                title="Tutup (muncul kembali di session baru)"
+                type="button"
+              >
+                <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
+              </button>
+            </div>
           </div>
         )
       })()}
