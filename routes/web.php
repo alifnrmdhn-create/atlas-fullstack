@@ -66,6 +66,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', fn () => Inertia::render('SettingsView'))->name('settings');
     Route::post('/auth/change-password', [WorkspaceController::class, 'changePassword'])->name('auth.change-password');
     Route::get('/playbook', fn () => Inertia::render('PlaybookView'))->name('playbook');
+    // Serve curated markdown docs (single source = base_path('docs/')). Whitelist-gated
+    // to prevent leaking internal planning/architecture files. Add filename to $allowed
+    // when surfacing a new doc to authenticated users.
+    Route::get('/docs/{file}', function (string $file) {
+        $allowed = ['ATLAS_PLAYBOOK.md'];
+        abort_unless(in_array($file, $allowed, true), 404);
+        $path = base_path("docs/{$file}");
+        abort_unless(is_file($path), 404);
+        return response()->file($path, ['Content-Type' => 'text/markdown; charset=UTF-8']);
+    })->where('file', '[A-Za-z0-9_.-]+\.md')->name('docs.show');
     // Internal — design system preview (foundation primitives)
     Route::get('/design-system', fn () => Inertia::render('DesignSystemView'))->name('design-system');
     // Post-MVP — Pilot DKM metrics dashboard (admin-only)
@@ -131,6 +141,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/activate', [ProgramController::class, 'activate'])->name('activate');
         Route::post('/{id}/approve',  [ProgramController::class, 'approve'])->name('approve');
         Route::post('/{id}/reject',   [ProgramController::class, 'reject'])->name('reject');
+        Route::post('/{id}/withdraw', [ProgramController::class, 'withdraw'])->name('withdraw');
         Route::patch('/{id}/archive', [ProgramController::class, 'archive'])->name('archive');
         Route::patch('/{id}/restore', [ProgramController::class, 'restore'])->name('restore');
 

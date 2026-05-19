@@ -101,7 +101,9 @@
 .pb-nav__item {
   -webkit-appearance: none;
   appearance: none;
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   width: 100%;
   background: none;
   border: none;
@@ -109,16 +111,18 @@
   outline: none;
   box-shadow: none;
   text-align: left;
-  padding: 4px 0 4px 10px;
-  margin: 1px 0;
+  padding: 5px 8px 5px 10px;
+  margin: 0;
   cursor: pointer;
   font-family: inherit;
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.4;
   color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Allow wrap to 2-3 lines instead of ellipsis. Label info (PDCA prefix) is
+   * useful for orientation — preserve it rather than truncate. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
   border-radius: 0 3px 3px 0;
   transition: color 0.12s, border-color 0.12s, background 0.12s;
 }
@@ -136,12 +140,14 @@
 .pb-nav__idx {
   display: inline-block;
   min-width: 16px;
+  padding-top: 2px;
   font-size: 9.5px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--text-muted);
   opacity: 0.45;
-  margin-right: 5px;
   flex-shrink: 0;
+  text-align: right;
 }
 .pb-nav__item--active .pb-nav__idx {
   color: var(--green-ink);
@@ -227,47 +233,48 @@
   color: var(--text);
 }
 
-/* ── Intro card (pre-H2 content) + section cards ─────────────────────────── */
+/* ── Intro + sections (Pattern A: flat surface + hairline dividers) ─────────
+ * Halaman lain ATLAS (Home, Profile, Performance) sudah migrasi ke pola
+ * "single surface + hairline" — playbook ikut sama. Tidak ada card-in-card. */
 
 .pb-body .pb-intro {
-  margin-bottom: 12px;
-  padding: 14px 18px;
-  border: 1px solid var(--panel-border);
-  border-radius: 8px;
-  background: var(--surface);
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
-/* Tighten blockquote margin inside intro card */
+/* Tighten blockquote margin inside intro */
 .pb-body .pb-intro .pb-bq {
   margin-bottom: 4px;
 }
 
 .pb-body .pb-section {
-  margin-bottom: 8px;
-  padding: 18px 22px;
-  border: 1px solid var(--panel-border);
-  border-radius: 8px;
-  background: var(--surface);
+  margin: 0;
+  padding: 24px 0 4px;
+  border: 0;
+  border-top: 1px solid var(--surface-overlay);
+  border-radius: 0;
+  background: transparent;
 }
 
-/* Reference sections (unnumbered: Referensi Jabatan, Glosarium, etc.) */
-.pb-body .pb-section--ref {
-  background: var(--surface-overlay-faint);
-}
-.pb-body .pb-section--ref .pb-h2 {
-  border-bottom: none;
-  color: var(--text-muted);
-  font-size: 12.5px;
-  margin-bottom: 10px;
-  padding-bottom: 0;
+/* First section: no hairline above (intro provides rhythm) */
+.pb-body .pb-intro + .pb-section,
+.pb-body > .pb-section:first-child {
+  border-top: 0;
+  padding-top: 4px;
 }
 
-/* Remove compound margin on last child so card padding alone controls spacing */
+/* Reference sections (unnumbered) — uniform with numbered ones.
+ * Pakem: konten foundational (Glosarium, Referensi Jabatan) bukan appendix,
+ * jadi tidak diberi styling muted. Class .pb-section--ref tetap dirender
+ * oleh parser untuk TOC divider logic — di sini sengaja tidak ada override. */
+
+/* Remove compound margin on last child so section padding alone controls spacing */
 .pb-body .pb-intro > *:last-child,
 .pb-body .pb-section > *:last-child {
   margin-bottom: 0;
 }
-
 
 /* Tables and pre inside sections — prevent double bottom gap */
 .pb-body .pb-section .pb-table-wrap:last-child,
@@ -275,14 +282,15 @@
   margin-bottom: 0;
 }
 
-/* Section headings */
+/* Section headings — bare type, no underline (section hairline does dividing) */
 .pb-body .pb-h2 {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
-  margin: 0 0 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--panel-border);
+  margin: 0 0 14px;
+  padding-bottom: 0;
+  border-bottom: 0;
   color: var(--text-strong, var(--text));
+  letter-spacing: -0.005em;
   scroll-margin-top: 60px;
 }
 
@@ -602,27 +610,14 @@
   box-shadow: var(--panel-shadow);
 }
 
-:root:not([data-theme="dark"]) .pb-state,
-:root:not([data-theme="dark"]) .pb-body .pb-intro,
-:root:not([data-theme="dark"]) .pb-body .pb-section {
+/* Light mode: only the loading/error state keeps card chrome (distinct UX role).
+ * Sections and intro use the flat surface — no gradient / shadow / border. */
+:root:not([data-theme="dark"]) .pb-state {
   border-color: color-mix(in srgb, var(--panel-border) 70%, var(--green-subtle));
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--panel) 94%, var(--surface-1)), var(--panel)),
     var(--panel);
   box-shadow: var(--panel-shadow-md);
-}
-
-:root:not([data-theme="dark"]) .pb-body .pb-intro {
-  background:
-    radial-gradient(circle at 6% 0%, color-mix(in srgb, var(--green-dim) 68%, transparent) 0 28%, transparent 58%),
-    linear-gradient(135deg, color-mix(in srgb, var(--panel) 90%, var(--green-dim)), var(--panel));
-}
-
-:root:not([data-theme="dark"]) .pb-body .pb-section--ref {
-  background:
-    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--yellow-dim) 50%, transparent) 0 26%, transparent 58%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, var(--yellow-dim)), var(--panel));
-  border-color: color-mix(in srgb, var(--yellow-subtle) 58%, var(--panel-border));
 }
 
 :root:not([data-theme="dark"]) .pb-body .pb-h2 {
@@ -656,34 +651,77 @@
 
 /* ── Mermaid flowchart container ──────────────────────────────────────────── */
 
+/* Pattern A — mermaid sits on the same surface, no card chrome. Container
+ * still scrolls when SVG overflows on narrow viewports. */
 .pb-mermaid {
-  margin: 1.25rem 0;
-  padding: 1rem 0.75rem 0.75rem;
-  background: linear-gradient(160deg, #f8faf8 0%, #f0f4f0 100%);
-  border: 1px solid #d4e3d4;
-  border-radius: 10px;
-  overflow: auto;
+  margin: 14px 0;
+  padding: 8px 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  overflow-x: auto;
   text-align: center;
-  box-shadow: 0 1px 4px rgba(45, 106, 79, 0.06), 0 0 0 1px rgba(45, 106, 79, 0.04);
   position: relative;
-}
-
-/* subtle top accent line */
-.pb-mermaid::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 1.5rem;
-  right: 1.5rem;
-  height: 2px;
-  background: linear-gradient(90deg, #2d6a4f, transparent);
-  border-radius: 0 0 2px 2px;
 }
 
 .pb-mermaid svg {
   display: block;
   margin: 0 auto;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.04));
+}
+
+/* Root-cause fix for mermaid label clipping.
+ *
+ * .pb-body cascades font-size:13.5px into all descendants. Mermaid measures
+ * labels offscreen at its theme fontSize (12.5px) and sizes rects from that
+ * measurement. When SVG inserts into .pb-body, text inherits 13.5px and
+ * renders LARGER than measured — clipping ~1-2 chars per node.
+ *
+ * Fix: pin every text-bearing element under .pb-mermaid to 12.5px system-ui
+ * with !important so it wins regardless of mermaid output mode (SVG <text>,
+ * <tspan>, or HTML inside <foreignObject>). Container-level font-size also
+ * set so any descendant we forgot inherits from .pb-mermaid, not .pb-body. */
+.pb-mermaid {
+  font-size: 12.5px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+.pb-mermaid svg text,
+.pb-mermaid svg tspan,
+.pb-mermaid svg .nodeLabel,
+.pb-mermaid svg .label,
+.pb-mermaid svg foreignObject,
+.pb-mermaid svg foreignObject *,
+.pb-mermaid svg foreignObject div,
+.pb-mermaid svg foreignObject span {
+  font-size: 12.5px !important;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0 !important;
+}
+
+/* Force white text on dark-fill nodes.
+ *
+ * With htmlLabels:false, mermaid v11 doesn't reliably translate
+ * `classDef ... color:#ffffff` into SVG text fill — the text frequently
+ * inherits the default dark fill, which is invisible against dark-green
+ * shapes (start/done/tier1-3/p1-2/api/bus/sse/ui/err).
+ *
+ * Pin the fill explicitly per dark-bg class. List has to be exhaustive: any
+ * classDef with a dark fill must appear here, or its label silently goes
+ * unreadable. */
+.pb-mermaid svg g.start text,    .pb-mermaid svg g.start tspan,    .pb-mermaid svg g.start .nodeLabel,    .pb-mermaid svg g.start foreignObject *,
+.pb-mermaid svg g.done text,     .pb-mermaid svg g.done tspan,     .pb-mermaid svg g.done .nodeLabel,     .pb-mermaid svg g.done foreignObject *,
+.pb-mermaid svg g.err text,      .pb-mermaid svg g.err tspan,      .pb-mermaid svg g.err .nodeLabel,      .pb-mermaid svg g.err foreignObject *,
+.pb-mermaid svg g.api text,      .pb-mermaid svg g.api tspan,      .pb-mermaid svg g.api .nodeLabel,      .pb-mermaid svg g.api foreignObject *,
+.pb-mermaid svg g.bus text,      .pb-mermaid svg g.bus tspan,      .pb-mermaid svg g.bus .nodeLabel,      .pb-mermaid svg g.bus foreignObject *,
+.pb-mermaid svg g.sse text,      .pb-mermaid svg g.sse tspan,      .pb-mermaid svg g.sse .nodeLabel,      .pb-mermaid svg g.sse foreignObject *,
+.pb-mermaid svg g.ui text,       .pb-mermaid svg g.ui tspan,       .pb-mermaid svg g.ui .nodeLabel,       .pb-mermaid svg g.ui foreignObject *,
+.pb-mermaid svg g.p1 text,       .pb-mermaid svg g.p1 tspan,       .pb-mermaid svg g.p1 .nodeLabel,       .pb-mermaid svg g.p1 foreignObject *,
+.pb-mermaid svg g.p2 text,       .pb-mermaid svg g.p2 tspan,       .pb-mermaid svg g.p2 .nodeLabel,       .pb-mermaid svg g.p2 foreignObject *,
+.pb-mermaid svg g.tier1 text,    .pb-mermaid svg g.tier1 tspan,    .pb-mermaid svg g.tier1 .nodeLabel,    .pb-mermaid svg g.tier1 foreignObject *,
+.pb-mermaid svg g.tier2 text,    .pb-mermaid svg g.tier2 tspan,    .pb-mermaid svg g.tier2 .nodeLabel,    .pb-mermaid svg g.tier2 foreignObject *,
+.pb-mermaid svg g.tier3 text,    .pb-mermaid svg g.tier3 tspan,    .pb-mermaid svg g.tier3 .nodeLabel,    .pb-mermaid svg g.tier3 foreignObject * {
+  fill: #ffffff !important;
+  color: #ffffff !important;
 }
 
 /* make edge labels clean */
@@ -715,12 +753,8 @@
   padding: 0.5rem;
 }
 
-[data-theme="dark"] .pb-mermaid {
-  background: linear-gradient(160deg, color-mix(in srgb, var(--panel) 80%, #1e3a2f) 0%, var(--panel) 100%);
-  border-color: color-mix(in srgb, #2d6a4f 30%, var(--border));
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-}
-
+/* Dark mode: mermaid surface inherits transparent — only text fill needs override
+ * so SVG labels read against the dark canvas. */
 [data-theme="dark"] .pb-mermaid svg text {
   fill: var(--text, #f3f4f6) !important;
 }

@@ -65,16 +65,20 @@ type ExecutionPulse = {
 const STATUS_ORDER = ['IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'CANCELLED']
 const VALID_SEVERITIES = new Set(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'])
 
-const approvalBadge = (status?: string | null) => {
-  switch (status) {
+const approvalBadge = (prog: { approvalStatus?: string | null; rejectionNote?: string | null }) => {
+  // Rejected = DRAFT + rejectionNote populated. The literal 'REJECTED' status
+  // never persists (BE reverts to DRAFT) — must check the compound or the
+  // badge never renders. Check FIRST so DRAFT case below doesn't shadow it.
+  if (prog.approvalStatus === 'DRAFT' && prog.rejectionNote) {
+    return { label: 'Ditolak', tone: 'red' as const }
+  }
+  switch (prog.approvalStatus) {
     case 'DRAFT':
       return { label: 'Draft', tone: 'yellow' as const }
     case 'PENDING_KASUB':
       return { label: 'Pend. Kasub', tone: 'blue' as const }
     case 'PENDING_KADIV':
       return { label: 'Pend. Kadiv', tone: 'blue' as const }
-    case 'REJECTED':
-      return { label: 'Ditolak', tone: 'red' as const }
     default:
       return null
   }
@@ -863,7 +867,7 @@ export function ProgramsView() {
                         const bCount = blockerCountByProgram[prog.id] ?? 0
                         const days = prog.targetEndDate ? daysUntil(prog.targetEndDate) : null
                         const deadlineInfo = days !== null ? formatDaysLabel(days) : null
-                        const approvalInfo = approvalBadge(prog.approvalStatus)
+                        const approvalInfo = approvalBadge(prog)
                         const healthTone = sc === 'on-track' ? 'green' : sc === 'at-risk' ? 'yellow' : 'red'
                         const isOwner = (prog as { ownerId?: number }).ownerId === currentUser?.id
                         const showActions = roleAccess.canEditProgram(isOwner) || roleAccess.canArchiveProgram(isOwner)
@@ -999,7 +1003,7 @@ export function ProgramsView() {
                             const h = normalizeHealthStatus(prog.healthStatus)
                             const sc = h === 'GREEN' ? 'on-track' : h === 'YELLOW' ? 'at-risk' : 'off-track'
                             const hClass = h === 'GREEN' ? 'health-green' : h === 'YELLOW' ? 'health-yellow' : 'health-red'
-                            const approvalInfo = approvalBadge(prog.approvalStatus)
+                            const approvalInfo = approvalBadge(prog)
                             const bCount = blockerCountByProgram[prog.id] ?? 0
                             const days = prog.targetEndDate ? daysUntil(prog.targetEndDate) : null
                             const deadlineInfo = days !== null ? formatDaysLabel(days) : null

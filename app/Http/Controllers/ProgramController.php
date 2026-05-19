@@ -16,6 +16,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\Workstream;
 use App\Services\BroadcastService;
+use App\Services\OrgChainService;
 use App\Services\ProgramHealthService;
 use App\Services\ProgramService;
 use App\Support\RolePolicy;
@@ -32,6 +33,7 @@ class ProgramController extends Controller
     public function __construct(
         private ProgramService $programService,
         private ProgramHealthService $healthService,
+        private OrgChainService $orgChain,
     ) {}
 
     private function validationError(Request $request, string $message): JsonResponse|RedirectResponse
@@ -89,11 +91,18 @@ class ProgramController extends Controller
     {
         $this->programService->assertAccess($request->user(), $id);
         $program = $this->programService->findOrFail($id);
+        // Inject computed approval-flow fields. Dilakukan controller-level
+        // (bukan model accessor) supaya tidak menambah query di endpoint list
+        // yang serialize banyak program sekaligus — di sini cost-nya tertanggung.
+        $payload = $program->toArray();
+        $payload['pendingReviewer'] = $this->resolvePendingReviewer($program);
+        $payload['pendingSinceAt'] = $this->resolvePendingSinceAt($program);
+
         if ($request->expectsJson()) {
-            return response()->json(['data' => $program]);
+            return response()->json(['data' => $payload]);
         }
 
-        return Inertia::render('ProgramDetailView', ['program' => $program]);
+        return Inertia::render('ProgramDetailView', ['program' => $payload]);
     }
 
     // ── API-style JSON endpoints (Inertia router calls these via router.get()) ──
@@ -283,6 +292,15 @@ class ProgramController extends Controller
         ProgramApprovalLog::record($id, 'SUBMITTED', $prevStatus, $nextStatus, $user->id, $user->name);
         BroadcastService::program($id, 'updated', ['approvalStatus' => $nextStatus]);
 
+        $targetRole = $nextStatus === 'PENDING_KADIV' ? 'KADIV' : 'KASUBDIV';
+        $this->notifyApprovalEvent(
+            program: $program,
+            recipientIds: $this->resolveReviewerIds($user, $targetRole),
+            type: 'PROGRAM_NEEDS_APPROVAL',
+            message: "Program \"{$program->name}\" menunggu persetujuan Anda.",
+            excludeUserId: $user->id,
+        );
+
         if ($request->expectsJson()) {
             return response()->json(['data' => $program->fresh()]);
         }
@@ -299,6 +317,12 @@ class ProgramController extends Controller
         $program = Program::findOrFail($id);
         if ($program->approvalStatus !== 'DRAFT') {
             return $this->validationError($request, 'Hanya program DRAFT yang dapat diaktifkan.');
+        }
+        // Block direct activation while program is in revision (just rejected).
+        // PIC harus memperbaiki & resubmit dulu — KADIV tidak boleh mem-bypass
+        // koreksi yang baru saja diminta sendiri lewat tombol "Mulai Eksekusi".
+        if (!empty($program->rejectionNote) && !RolePolicy::isAdminOrAbove($request->user()->roleType)) {
+            return $this->validationError($request, 'Program baru ditolak — PIC perlu memperbaiki dan mengajukan ulang sebelum diaktifkan.');
         }
         $prevStatus = $program->approvalStatus;
         $program->update(['approvalStatus' => 'ACTIVE', 'rejectionNote' => null]);
@@ -423,6 +447,109 @@ class ProgramController extends Controller
         }
     }
 
+    /**
+     * Create + broadcast notification rows for an approval-flow event
+     * (submit / approve-escalate / reject). Dedupe recipients, skip the actor.
+     * Failure tidak boleh memblokir aksi utama — semua dibungkus rescue().
+     *
+     * @param  array<int>  $recipientIds
+     */
+    private function notifyApprovalEvent(
+        Program $program,
+        array $recipientIds,
+        string $type,
+        string $message,
+        ?int $excludeUserId = null,
+    ): void {
+        rescue(function () use ($program, $recipientIds, $type, $message, $excludeUserId) {
+            $targets = collect($recipientIds)
+                ->map(fn ($id) => (int) $id)
+                ->filter()
+                ->unique()
+                ->reject(fn ($id) => $excludeUserId !== null && $id === $excludeUserId)
+                ->values();
+
+            foreach ($targets as $userId) {
+                $notif = Notification::create([
+                    'userId' => $userId,
+                    'type' => $type,
+                    'message' => $message,
+                    'source' => "program:{$program->id}",
+                    'createdAt' => now(),
+                    'state' => 'UNREAD',
+                ]);
+
+                BroadcastService::toUsers('notification:created', [
+                    'notification' => $notif,
+                ], [$userId]);
+            }
+        });
+    }
+
+    /**
+     * Resolve next-stage reviewer(s) for a program submitter. Walks the org
+     * supervisor chain from $submitter and returns IDs of users matching the
+     * target role. Returns [] kalau tidak ada match (fail-quiet — caller
+     * decides what to do).
+     *
+     * @return array<int>
+     */
+    private function resolveReviewerIds(User $submitter, string $targetRole): array
+    {
+        return $this->orgChain
+            ->resolveSupervisorsByRole($submitter, $targetRole)
+            ->pluck('id')
+            ->all();
+    }
+
+    /**
+     * Resolve the user(s) currently expected to act on a PENDING program.
+     * Returns null kalau status bukan PENDING_* atau submitter tidak diketahui.
+     * Untuk multiple match, ambil yang pertama (kasus jarang — biasanya 1 KADIV
+     * per chain). UI menampilkan satu nama supaya tidak overload.
+     */
+    private function resolvePendingReviewer(Program $program): ?array
+    {
+        if (!in_array($program->approvalStatus, ['PENDING_KASUB', 'PENDING_KADIV'], true)) {
+            return null;
+        }
+        $submitterId = $program->submittedById ?? $program->ownerId;
+        if (!$submitterId) return null;
+        $submitter = User::find($submitterId);
+        if (!$submitter) return null;
+
+        $targetRole = $program->approvalStatus === 'PENDING_KADIV' ? 'KADIV' : 'KASUBDIV';
+        $reviewer = $this->orgChain
+            ->resolveSupervisorsByRole($submitter, $targetRole)
+            ->first();
+        if (!$reviewer) return null;
+
+        return [
+            'id' => $reviewer->id,
+            'name' => $reviewer->name,
+            'roleType' => $reviewer->roleType,
+            'positionTitle' => $reviewer->positionTitle,
+        ];
+    }
+
+    /**
+     * Resolve when the program entered its current PENDING state — dari log
+     * SUBMITTED/APPROVED yang transition ke current status. Returns ISO string
+     * atau null. Digunakan FE untuk render "Diajukan X jam lalu".
+     */
+    private function resolvePendingSinceAt(Program $program): ?string
+    {
+        if (!in_array($program->approvalStatus, ['PENDING_KASUB', 'PENDING_KADIV'], true)) {
+            return null;
+        }
+        $entry = ProgramApprovalLog::query()
+            ->where('programId', $program->id)
+            ->where('toStatus', $program->approvalStatus)
+            ->orderByDesc('createdAt')
+            ->first();
+        return $entry?->createdAt?->toIso8601String();
+    }
+
     public function approve(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $program = Program::findOrFail($id);
@@ -434,6 +561,17 @@ class ProgramController extends Controller
         if ($prevStatus === 'PENDING_KASUB' && $role === 'KASUBDIV') {
             $program->update(['approvalStatus' => 'PENDING_KADIV']);
             ProgramApprovalLog::record($id, 'APPROVED', $prevStatus, 'PENDING_KADIV', $user->id, $user->name);
+            // Escalate to KADIV — notify next-stage reviewers. Use submitter's
+            // org chain (bukan KASUBDIV-nya sendiri) supaya KADIV yang tepat di
+            // hierarki PIC yang dapat ping, bukan KADIV-nya KASUBDIV.
+            $submitter = $program->submittedById ? User::find($program->submittedById) : $user;
+            $this->notifyApprovalEvent(
+                program: $program,
+                recipientIds: $this->resolveReviewerIds($submitter ?? $user, 'KADIV'),
+                type: 'PROGRAM_NEEDS_APPROVAL',
+                message: "Program \"{$program->name}\" siap untuk persetujuan KADIV.",
+                excludeUserId: $user->id,
+            );
         } elseif ($prevStatus === 'PENDING_KADIV' && in_array($role, ['KADIV', 'ADMIN', 'SUPERADMIN'], true)) {
             $program->update(['approvalStatus' => 'ACTIVE']);
             ProgramApprovalLog::record($id, 'APPROVED', $prevStatus, 'ACTIVE', $user->id, $user->name);
@@ -470,11 +608,75 @@ class ProgramController extends Controller
         ProgramApprovalLog::record($id, 'REJECTED', $prevStatus, 'DRAFT', $request->user()->id, $request->user()->name, $data['note']);
         BroadcastService::program($id, 'rejected');
 
+        // Notify PIC (owner + submitter, deduped) — tanpa ini PIC tidak tahu
+        // programnya ditolak sampai mereka buka halaman program. Reviewer yang
+        // menolak (rejecter) di-exclude dari recipient.
+        $recipientIds = collect([$program->ownerId, $program->submittedById])
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $rejecter = $request->user();
+        $noteSnippet = mb_strimwidth($data['note'], 0, 80, '…');
+        $this->notifyApprovalEvent(
+            program: $program,
+            recipientIds: $recipientIds,
+            type: 'PROGRAM_REJECTED',
+            message: "Program \"{$program->name}\" ditolak {$rejecter->name}: {$noteSnippet}",
+            excludeUserId: $rejecter->id,
+        );
+
         if ($request->expectsJson()) {
             return response()->json(['data' => $program->fresh()]);
         }
 
         return back()->with('success', 'Program ditolak dan dikembalikan ke Draft.');
+    }
+
+    /**
+     * Tarik kembali pengajuan — PIC (submitter/owner) membatalkan submission
+     * mereka sendiri saat reviewer belum bertindak. Status kembali ke DRAFT
+     * (clear rejectionNote agar tidak terlihat seperti rejected oleh sistem),
+     * reviewer yang sedang menunggu di-notifikasi.
+     */
+    public function withdraw(Request $request, int $id): JsonResponse|RedirectResponse
+    {
+        $program = Program::findOrFail($id);
+        $user = $request->user();
+        $role = strtoupper($user->roleType);
+
+        $isOwnerOrSubmitter = in_array($user->id, [$program->submittedById, $program->ownerId], true);
+        $isAdmin = in_array($role, ['SUPERADMIN', 'ADMIN'], true);
+        if (!$isOwnerOrSubmitter && !$isAdmin) {
+            abort(403, 'Hanya PIC/pembuat program yang dapat menarik kembali pengajuan.');
+        }
+        if (!in_array($program->approvalStatus, ['PENDING_KASUB', 'PENDING_KADIV'], true)) {
+            return $this->validationError($request, 'Hanya program yang sedang menunggu persetujuan yang dapat ditarik kembali.');
+        }
+
+        // Snapshot reviewer SEBELUM status berubah supaya notifikasi-nya tepat.
+        $prevStatus = $program->approvalStatus;
+        $submitter = $program->submittedById ? User::find($program->submittedById) : $user;
+        $reviewerRole = $prevStatus === 'PENDING_KADIV' ? 'KADIV' : 'KASUBDIV';
+        $reviewerIds = $this->resolveReviewerIds($submitter ?? $user, $reviewerRole);
+
+        $program->update(['approvalStatus' => 'DRAFT', 'rejectionNote' => null]);
+        ProgramApprovalLog::record($id, 'WITHDRAWN', $prevStatus, 'DRAFT', $user->id, $user->name);
+        BroadcastService::program($id, 'updated', ['approvalStatus' => 'DRAFT']);
+
+        // Notify reviewer(s) — mereka tidak perlu lagi review program ini.
+        $this->notifyApprovalEvent(
+            program: $program,
+            recipientIds: $reviewerIds,
+            type: 'PROGRAM_WITHDRAWN',
+            message: "Pengajuan program \"{$program->name}\" ditarik kembali oleh {$user->name}.",
+            excludeUserId: $user->id,
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $program->fresh()]);
+        }
+        return back()->with('success', 'Pengajuan ditarik kembali — program kembali ke Draft.');
     }
 
     public function archive(Request $request, int $id): JsonResponse|RedirectResponse

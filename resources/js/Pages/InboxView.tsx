@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import type { Blocker, ChannelSummary, FocusPolicy, Meeting, MyWorkDecision, NotificationItem, Program, Task } from '../types'
 import { ActionPanel, actionPanelTitleFor } from '../components/ActionPanel'
 import { CollapsibleSection, AgingIndicator } from '../components/ui'
+import { getProgramDisplayStatus } from '../lib/programStatus'
 import { useFeatureFlag } from '../hooks/useFeatureFlag'
 import { useOnboardingTour } from '../hooks/useOnboardingTour'
 import { EscalationTriagePanel, type EscalationRequest as EscalationRequestType } from '../components/Escalation'
@@ -456,6 +457,7 @@ function notificationRoleCue(notification: NotificationItem): string {
   if (notification.type === 'MENTION') return 'Anda disebut dalam diskusi'
   if (notification.type === 'BLOCKER_CREATED') return 'Anda perlu bantu unblock'
   if (notification.type === 'PROGRAM_NEEDS_APPROVAL' || notification.type === 'APPROVAL') return 'Anda pemberi keputusan'
+  if (notification.type === 'PROGRAM_REJECTED') return 'Anda PIC program yang ditolak'
   if (notification.type === 'REPORT_NEEDS_REVISION') return 'Anda perlu koreksi laporan'
   if (notification.type === 'DEADLINE_APPROACHING') return 'Anda pemilik tenggat'
   if (notification.type === 'TASK_ASSIGNED') return 'Anda pemilik tugas'
@@ -467,6 +469,7 @@ function notificationNextCue(notification: NotificationItem): string {
   if (notification.type === 'MENTION') return 'Buka konteks dan respon bila perlu'
   if (notification.type === 'BLOCKER_CREATED') return 'Follow up hambatan'
   if (notification.type === 'PROGRAM_NEEDS_APPROVAL' || notification.type === 'APPROVAL') return 'Putuskan agar program bisa lanjut'
+  if (notification.type === 'PROGRAM_REJECTED') return 'Perbaiki sesuai catatan, lalu ajukan ulang'
   if (notification.type === 'REPORT_NEEDS_REVISION') return 'Revisi sebelum proses lanjut'
   if (notification.type === 'DEADLINE_APPROACHING') return 'Amankan sebelum lewat tenggat'
   if (notification.type === 'TASK_ASSIGNED') return 'Mulai atau update progres'
@@ -604,12 +607,18 @@ function programFocusItem(program: Program, isStrategic: boolean): FocusItem {
     (PRIORITY_SCORE[program.priority] ?? 8) +
     Math.max(0, 10 - Math.round(program.progressPercent / 10))
 
+  // Status label: pakai display-status helper yang approval-aware. Tanpa ini,
+  // program PENDING_KADIV tampil sebagai "IN PROGRESS" (raw operational status)
+  // padahal sebenarnya menunggu approval — bikin user bingung soal posisi
+  // sebenarnya. Untuk program rejected (DRAFT+rejectionNote) juga jadi "Perlu
+  // revisi" instead of "DRAFT".
+  const displayStatus = getProgramDisplayStatus(program).label
   return {
     id: `program-${program.id}`,
     kind: 'program',
     section: 'atrisk',
     title: program.name,
-    meta: `${program.code} · ${program.status.replace(/_/g, ' ')}`,
+    meta: `${program.code} · ${displayStatus}`,
     reason: program.healthStatus === 'RED'
       ? 'Program merah dan berpotensi berdampak ke portofolio'
       : 'Program kuning perlu dipantau sebelum memburuk',
@@ -671,6 +680,7 @@ function notificationFocusItem(notification: NotificationItem): FocusItem {
   const requiresAction = notification.requiresAction ?? (
     notification.type === 'REPORT_NEEDS_REVISION' ||
     notification.type === 'PROGRAM_NEEDS_APPROVAL' ||
+    notification.type === 'PROGRAM_REJECTED' ||
     notification.type === 'DEADLINE_APPROACHING' ||
     notification.type === 'BLOCKER_CREATED' ||
     notification.type === 'TASK_ASSIGNED' ||
@@ -682,6 +692,7 @@ function notificationFocusItem(notification: NotificationItem): FocusItem {
     notification.priority === 'HIGH' ||
     notification.type === 'REPORT_NEEDS_REVISION' ||
     notification.type === 'PROGRAM_NEEDS_APPROVAL' ||
+    notification.type === 'PROGRAM_REJECTED' ||
     notification.type === 'DEADLINE_APPROACHING' ||
     notification.type === 'BLOCKER_CREATED'
 
@@ -981,9 +992,16 @@ export function InboxView() {
   // ── At-risk programs: role-aware source ────────────────────────────────────
   // BOD/KADIV: see ALL at-risk programs in their scope (portfolio view)
   // Others: see only programs they own
+  //
+  // ACTIVE-only filter: "perlu dipantau sebelum memburuk" cuma make sense untuk
+  // program yang sedang berjalan. DRAFT/PENDING_*/COMPLETED tidak relevan —
+  // belum ada eksekusi yang bisa memburuk, atau sudah ditutup. Memunculkan
+  // mereka di feed at-risk = noise (PIC PENDING tidak bisa "intervensi" apa-apa,
+  // mereka menunggu approval; program COMPLETED ya sudah selesai).
+  const isActive = (p: Program) => p.approvalStatus === 'ACTIVE'
   const myAtRisk = isStrategic
-    ? programs.filter(p => p.healthStatus === 'RED' || p.healthStatus === 'YELLOW')
-    : (myWork?.programs ?? [])
+    ? programs.filter(p => isActive(p) && (p.healthStatus === 'RED' || p.healthStatus === 'YELLOW'))
+    : (myWork?.programs ?? []).filter(isActive)
 
   // ── Notifications ──────────────────────────────────────────────────────────
   const MENTION_TYPES = new Set(['MENTION', 'APPROVAL', 'DM_RECEIVED'])
@@ -1001,6 +1019,7 @@ export function InboxView() {
   const actionableOtherUnread = otherUnread.filter(n =>
     n.type === 'REPORT_NEEDS_REVISION' ||
     n.type === 'PROGRAM_NEEDS_APPROVAL' ||
+    n.type === 'PROGRAM_REJECTED' ||
     n.type === 'DEADLINE_APPROACHING' ||
     n.type === 'BLOCKER_CREATED' ||
     n.type === 'TASK_ASSIGNED'

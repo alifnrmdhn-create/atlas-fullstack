@@ -19,6 +19,7 @@ import {
   SectionState,
   SkeletonBlock,
   SkeletonStack,
+  formatRelativeTime,
 } from '../components/ui'
 import type { ProgramDetail, ProgramKpiLink } from '../types'
 import { ExecutionTab } from '../components/ExecutionTab'
@@ -1054,7 +1055,7 @@ export function ProgramDetailView() {
   // ── Approval actions ──────────────────────────────────────────────────
   const [approvalLoading, setApprovalLoading] = useState(false)
   const [approvalError, setApprovalError] = useState<string | null>(null)
-  const [approvalModal, setApprovalModal] = useState<'approve' | 'reject' | 'submit' | null>(null)
+  const [approvalModal, setApprovalModal] = useState<'approve' | 'reject' | 'submit' | 'withdraw' | null>(null)
   const [rejectNote, setRejectNote] = useState('')
   const [approvedSuccess, setApprovedSuccess] = useState(false)
   useEscKey(() => {
@@ -1068,7 +1069,7 @@ export function ProgramDetailView() {
     try {
       await api.post(`/programs/${numId}/submit`, {})
       setApprovalModal(null)
-      await Promise.all([loadDetail(true), loadOverview('refresh')])
+      await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
     } catch (e: unknown) {
       setApprovalError(extractErrorMessage(e, 'Gagal mengajukan persetujuan.'))
     } finally { setApprovalLoading(false) }
@@ -1078,7 +1079,7 @@ export function ProgramDetailView() {
     setApprovalLoading(true); setApprovalError(null)
     try {
       await api.post(`/programs/${numId}/activate`, {})
-      await Promise.all([loadDetail(true), loadOverview('refresh')])
+      await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
     } catch (e: unknown) {
       setApprovalError(extractErrorMessage(e, 'Gagal mengaktifkan program.'))
     } finally { setApprovalLoading(false) }
@@ -1090,7 +1091,7 @@ export function ProgramDetailView() {
       await api.post(`/programs/${numId}/approve`, {})
       setApprovalModal(null)
       setApprovedSuccess(true)
-      await Promise.all([loadDetail(true), loadOverview('refresh')])
+      await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
       // Redirect ke /programs setelah 2.5 detik
       setTimeout(() => navigate('/programs'), 2500)
     } catch (e: unknown) {
@@ -1104,9 +1105,20 @@ export function ProgramDetailView() {
     try {
       await api.post(`/programs/${numId}/reject`, { note: rejectNote.trim() })
       setApprovalModal(null); setRejectNote('')
-      await Promise.all([loadDetail(true), loadOverview('refresh')])
+      await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
     } catch (e: unknown) {
       setApprovalError(extractErrorMessage(e, 'Gagal menolak program.'))
+    } finally { setApprovalLoading(false) }
+  }
+
+  const submitWithdraw = async () => {
+    setApprovalLoading(true); setApprovalError(null)
+    try {
+      await api.post(`/programs/${numId}/withdraw`, {})
+      setApprovalModal(null)
+      await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
+    } catch (e: unknown) {
+      setApprovalError(extractErrorMessage(e, 'Gagal menarik pengajuan.'))
     } finally { setApprovalLoading(false) }
   }
 
@@ -1128,6 +1140,66 @@ export function ProgramDetailView() {
     ['blocker',    'Hambatan'],
     ['kpi',        'KPI APMS'],
   ]
+
+  // ── Approval log section (extracted) ─────────────────────────────────
+  // Rendered at top of Ringkasan tab when program is PENDING approval atau
+  // baru ditolak — itu konteks paling penting saat itu. Di state ACTIVE/
+  // DRAFT-segar, section ini turun ke posisi normal (di bawah Workstream).
+  const renderApprovalLogSection = () => {
+    if (!(approvalLog.length > 0 || approvalLogLoading)) return null
+    const actionLabel: Record<string, string> = {
+      SUBMITTED: 'Diajukan', APPROVED: 'Disetujui',
+      REJECTED: 'Ditolak', ACTIVATED: 'Diaktifkan', COMPLETED: 'Diselesaikan',
+      WITHDRAWN: 'Ditarik kembali',
+    }
+    const actionTone: Record<string, string> = {
+      SUBMITTED: 'info', APPROVED: 'positive',
+      REJECTED: 'danger', ACTIVATED: 'positive', COMPLETED: 'positive',
+      WITHDRAWN: 'muted',
+    }
+    return (
+      <div className="wi-section">
+        <div className="wi-section__header">
+          <h3 className="wi-section__title">{PIcon.activity} Riwayat Persetujuan</h3>
+        </div>
+        {approvalLogLoading && approvalLog.length === 0 ? (
+          <p className="hd-muted" style={{ fontSize: 12 }}>Memuat…</p>
+        ) : (
+          <div className="prog-approval-log">
+            {approvalLog.map((entry) => {
+              const tone = actionTone[entry.action] ?? 'default'
+              const label = actionLabel[entry.action] ?? entry.action
+              const date = new Date(entry.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+              return (
+                <div key={entry.id} className={`prog-approval-log__entry prog-approval-log__entry--${tone}`}>
+                  <span className="prog-approval-log__dot" />
+                  <div className="prog-approval-log__body">
+                    <span className="prog-approval-log__action">{label}</span>
+                    {entry.toStatus && (
+                      <span className="prog-approval-log__status">→ {entry.toStatus.replace(/_/g, ' ')}</span>
+                    )}
+                    <span className="prog-approval-log__meta">
+                      {entry.byUserName} · {date}
+                    </span>
+                    {entry.note && (
+                      <p className="prog-approval-log__note">{entry.note}</p>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // True kalau Riwayat Persetujuan harus di-pin ke atas Ringkasan tab.
+  const _detailStatus = detail?.approvalStatus ?? ''
+  const _isRejected = _detailStatus === 'DRAFT' && !!detail?.rejectionNote
+  const pinApprovalLogTop = approvalLog.length > 0 && (
+    _detailStatus === 'PENDING_KASUB' || _detailStatus === 'PENDING_KADIV' || _isRejected
+  )
 
   return (
     <div className="ds program-detail-v2 prog-detail-page">
@@ -1159,7 +1231,7 @@ export function ProgramDetailView() {
                 sudah dikomunikasikan lebih jelas via lifecycle banner di bawah
                 (warna + label + hint). Pill "Ditolak" tetap tampil di header
                 karena perlu visual urgency tinggi, tidak boleh terlewat. */}
-            {detail.approvalStatus === 'REJECTED' && (
+            {detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote && (
               <span className="prog-approval-pill prog-approval-pill--danger">Ditolak</span>
             )}
           </>
@@ -1190,7 +1262,10 @@ export function ProgramDetailView() {
               </svg>
             </button>
           )}
-          {detail && roleAccess.canEditProgram(isOwner) &&
+          {detail && roleAccess.canEditProgram(
+              isOwner,
+              detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote,
+            ) &&
             !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') && (
             <button className="btn btn--ghost wi-detail-header__btn" onClick={openEdit} type="button">
               Edit
@@ -1208,6 +1283,24 @@ export function ProgramDetailView() {
               <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Tolak</button>
               <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Setujui</button>
             </>
+          )}
+          {/* Tarik kembali pengajuan — hanya untuk PIC (submitter/owner) saat
+              status PENDING_*. Reviewer tidak butuh ini, mereka pakai Tolak.
+              Skip kalau user sendiri yang bertindak sebagai reviewer (KADIV
+              yang juga submitter — jarang tapi mungkin), karena tombol Setujui
+              di atas sudah jadi escape hatch yang lebih sehat. */}
+          {detail && ['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') &&
+            (detail.submittedById === currentUser?.id || detail.ownerId === currentUser?.id) &&
+            !(detail.approvalStatus === 'PENDING_KASUB' && roleAccess.canApproveAsKasub) &&
+            !(detail.approvalStatus === 'PENDING_KADIV' && roleAccess.canApproveAsKadiv) && (
+            <button
+              className="btn btn--ghost wi-detail-header__btn"
+              disabled={approvalLoading}
+              onClick={() => setApprovalModal('withdraw')}
+              type="button"
+            >
+              Tarik kembali
+            </button>
           )}
         </div>
       </div>
@@ -1234,8 +1327,8 @@ export function ProgramDetailView() {
             )}
           </div>
           <h1 className="wi-detail-title">{detail.name}</h1>
-          {/* Rejection note */}
-          {detail.approvalStatus === 'REJECTED' && detail.rejectionNote && (
+          {/* Rejection note. Status reverts to DRAFT (not REJECTED) after reject. */}
+          {detail.approvalStatus === 'DRAFT' && detail.rejectionNote && (
             <p className="prog-approval-note">Catatan penolakan: {detail.rejectionNote}</p>
           )}
           {approvedSuccess && (
@@ -1254,7 +1347,10 @@ export function ProgramDetailView() {
       {/* ── Lifecycle phase banner ───────────────────────────────────── */}
       {detail && (() => {
         const status = detail.approvalStatus ?? 'DRAFT'
-        const inPlanning = ['DRAFT', 'PLANNING', 'PENDING_KASUB', 'PENDING_KADIV', 'REJECTED'].includes(status)
+        // Rejected = status reverts to DRAFT + rejectionNote populated. Literal
+        // 'REJECTED' never persists — historic checks on it were dead code.
+        const isRejected = status === 'DRAFT' && !!detail.rejectionNote
+        const inPlanning = ['DRAFT', 'PLANNING', 'PENDING_KASUB', 'PENDING_KADIV'].includes(status)
         const inExecution = status === 'ACTIVE'
         const inDone = status === 'COMPLETED'
         let phase: 'planning' | 'execution' | 'done' = 'planning'
@@ -1287,14 +1383,15 @@ export function ProgramDetailView() {
 
         let hint: React.ReactNode = null
         if (phase === 'planning') {
-          if (status === 'DRAFT') {
+          // isRejected dicek FIRST — DRAFT-with-note adalah special case dari DRAFT.
+          if (isRejected) hint = 'Perlu revisi — lihat catatan penolakan di atas.'
+          else if (status === 'DRAFT') {
             hint = checklistDone
               ? 'Checklist lengkap — klik tombol di bawah untuk aktifkan / ajukan persetujuan.'
               : 'Lengkapi persiapan di checklist, lalu aktifkan program.'
           }
-          else if (status === 'PENDING_KASUB') hint = 'Menunggu persetujuan KASUBDIV.'
-          else if (status === 'PENDING_KADIV') hint = 'Menunggu persetujuan KADIV.'
-          else if (status === 'REJECTED') hint = 'Perlu revisi — lihat catatan penolakan di atas.'
+          else if (status === 'PENDING_KASUB') hint = 'Menunggu persetujuan KASUBDIV. Struktur & rencana masih bisa disempurnakan; eksekusi aktif setelah disetujui.'
+          else if (status === 'PENDING_KADIV') hint = 'Menunggu persetujuan KADIV. Struktur & rencana masih bisa disempurnakan; eksekusi aktif setelah disetujui.'
         } else if (phase === 'execution') {
           const days = detail.targetEndDate ? daysUntil(detail.targetEndDate) : null
           const dl = days !== null ? formatDaysLabel(days) : null
@@ -1311,8 +1408,10 @@ export function ProgramDetailView() {
         // - planning (kuning): ada gap di checklist, default state.
         let variant: string = phase
         if (phase === 'planning') {
-          if (status === 'PENDING_KASUB' || status === 'PENDING_KADIV') variant = 'pending'
-          else if (status === 'REJECTED') variant = 'rejected'
+          // isRejected dicek FIRST agar tidak ter-shadow oleh planning-ready
+          // (rejected program juga punya status='DRAFT' & bisa checklistDone).
+          if (isRejected) variant = 'rejected'
+          else if (status === 'PENDING_KASUB' || status === 'PENDING_KADIV') variant = 'pending'
           else if (status === 'DRAFT' && checklistDone) variant = 'planning-ready'
         }
         const readyIcon = <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="12" aria-hidden="true"><path d="m2.5 7 3 3 6-7"/></svg>
@@ -1367,6 +1466,10 @@ export function ProgramDetailView() {
             <div className="prog-detail-overview">
               {/* Left: description + metrics */}
               <div className="prog-detail-main">
+                {/* Riwayat Persetujuan di-pin ke atas saat status PENDING atau
+                    baru ditolak — konteks paling relevan saat itu (PIC perlu
+                    lihat catatan reviewer / status submission tanpa scroll). */}
+                {pinApprovalLogTop && renderApprovalLogSection()}
                 {detail.description && (
                   <div className="wi-section prog-description">
                     <span className="prog-description__label">Deskripsi</span>
@@ -1380,7 +1483,10 @@ export function ProgramDetailView() {
                     Mengurangi form-feel pada overview screen tanpa kehilangan
                     inline edit capability. */}
                 {(() => {
-                  const canEditStrategic = roleAccess.canEditProgram(isOwner)
+                  const canEditStrategic = roleAccess.canEditProgram(
+                      isOwner,
+                      detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote,
+                    )
                     && !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '')
                   const hasAnyValue = !!(detail.strategicObjective || detail.pilarStrategis)
                   if (!canEditStrategic && !hasAnyValue) return null
@@ -2016,64 +2122,22 @@ export function ProgramDetailView() {
                   </div>
                 )}
 
-                {/* ── Approval History Log ── */}
-                {(approvalLog.length > 0 || approvalLogLoading) && (
-                  <div className="wi-section">
-                    <div className="wi-section__header">
-                      <h3 className="wi-section__title">{PIcon.activity} Riwayat Persetujuan</h3>
-                    </div>
-                    {approvalLogLoading && approvalLog.length === 0 ? (
-                      <p className="hd-muted" style={{ fontSize: 12 }}>Memuat…</p>
-                    ) : (
-                      <div className="prog-approval-log">
-                        {approvalLog.map((entry) => {
-                          const actionLabel: Record<string, string> = {
-                            SUBMITTED: 'Diajukan', APPROVED: 'Disetujui',
-                            REJECTED: 'Ditolak', ACTIVATED: 'Diaktifkan', COMPLETED: 'Diselesaikan',
-                          }
-                          const actionTone: Record<string, string> = {
-                            SUBMITTED: 'info', APPROVED: 'positive',
-                            REJECTED: 'danger', ACTIVATED: 'positive', COMPLETED: 'positive',
-                          }
-                          const tone = actionTone[entry.action] ?? 'default'
-                          const label = actionLabel[entry.action] ?? entry.action
-                          const date = new Date(entry.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-                          return (
-                            <div key={entry.id} className={`prog-approval-log__entry prog-approval-log__entry--${tone}`}>
-                              <span className="prog-approval-log__dot" />
-                              <div className="prog-approval-log__body">
-                                <span className="prog-approval-log__action">{label}</span>
-                                {entry.toStatus && (
-                                  <span className="prog-approval-log__status">→ {entry.toStatus.replace(/_/g, ' ')}</span>
-                                )}
-                                <span className="prog-approval-log__meta">
-                                  {entry.byUserName} · {date}
-                                </span>
-                                {entry.note && (
-                                  <p className="prog-approval-log__note">{entry.note}</p>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* ── Approval History Log (posisi bawah, hanya kalau tidak
+                    di-pin ke atas — lihat pinApprovalLogTop di atas) ── */}
+                {!pinApprovalLogTop && renderApprovalLogSection()}
 
-                {/* ── Pending hint (approval-wait states only) ── */}
-                {detail.approvalStatus && ['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus) && (
-                  <div className="prog-pending-hint">
-                    {PIcon.info}
-                    <span>
-                      Menunggu persetujuan {detail.approvalStatus === 'PENDING_KASUB' ? 'KASUBDIV' : 'KADIV'}.
-                      Struktur &amp; rencana masih bisa disempurnakan; fitur eksekusi aktif setelah program disetujui.
-                    </span>
-                  </div>
-                )}
+                {/* prog-pending-hint dihapus 2026-05-19 — sudah diserap ke
+                    hint lifecycle banner di atas. Sebelumnya pesan "Menunggu
+                    persetujuan KADIV" tampil 3 kali (status pill sidebar + banner
+                    + hint box) padahal info-nya identik. */}
 
-                {/* ── Completeness checklist (Perencanaan phase only) ── */}
-                {['DRAFT', 'PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') && (() => {
+                {/* ── Completeness checklist (DRAFT only) ──
+                    Sebelumnya juga muncul untuk PENDING_KASUB/PENDING_KADIV — tapi
+                    di state PENDING checklist sudah pasti 3/3 (kalau tidak, submit
+                    di-block sebelum endpoint), jadi panel cuma jadi visual noise
+                    tanpa action. PIC saat PENDING hanya perlu konteks "menunggu" +
+                    timeline, bukan ditampilkan to-do yang sudah selesai. */}
+                {detail.approvalStatus === 'DRAFT' && (() => {
                   // Checklist gating: hanya item wajib untuk eksekusi. Channel sengaja
                   // diturunkan ke modal Edit Program saja (opsional, tidak gate aktivasi).
                   // hasKpi memuaskan baik via KPI APMS link maupun KPI internal (lihat
@@ -2091,29 +2155,43 @@ export function ProgramDetailView() {
                   // ketika checklist sudah selesai. Mode pending tetap pakai full UI.
                   if (allDone && detail.approvalStatus === 'DRAFT') {
                     const role = currentUser?.roleType?.toUpperCase() ?? ''
+                    const isAdmin = ['SUPERADMIN', 'ADMIN'].includes(role)
                     const isKadivAdmin = ['KADIV', 'SUPERADMIN', 'ADMIN'].includes(role)
                     const isSubmitter = detail.submittedById === currentUser?.id || detail.ownerId === currentUser?.id
+                    const isInRevision = !!detail.rejectionNote
+                    // Post-rejection: only PIC (owner/submitter) sees the resubmit CTA.
+                    // KADIV reviewer step back agar tidak mem-bypass koreksi yang
+                    // baru diminta sendiri lewat "Mulai Eksekusi". Admin tetap bisa
+                    // override (escape hatch). Lihat ProgramController::activate.
+                    if (isInRevision && !isSubmitter && !isAdmin) return null
                     if (!isKadivAdmin && !isSubmitter) return null
                     const nextApprover = role === 'KASUBDIV' ? 'KADIV' : 'KASUBDIV'
+                    // Saat in-revision, PIC harus resubmit (bukan langsung activate)
+                    // bahkan kalau dia kebetulan KADIV — flow approval harus utuh.
+                    const useActivate = isKadivAdmin && !isInRevision
                     return (
                       <div className="prog-checklist-ribbon">
                         <span className="prog-checklist-ribbon__icon" aria-hidden="true">
                           <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 14 14" width="14"><path d="m2.5 7 3 3 6-7"/></svg>
                         </span>
-                        <span className="prog-checklist-ribbon__label">Program siap dieksekusi</span>
+                        <span className="prog-checklist-ribbon__label">
+                          {isInRevision ? 'Siap diajukan ulang' : 'Program siap dieksekusi'}
+                        </span>
                         <span className="prog-checklist-ribbon__sep" aria-hidden="true">·</span>
                         <span className="prog-checklist-ribbon__hint">
-                          {isKadivAdmin
-                            ? 'Tim langsung bisa eksekusi setelah diaktifkan.'
-                            : `Persetujuan ${nextApprover} dibutuhkan sebelum eksekusi dimulai.`}
+                          {isInRevision
+                            ? `Ajukan ulang ke ${nextApprover} setelah perbaikan selesai.`
+                            : useActivate
+                              ? 'Tim langsung bisa eksekusi setelah diaktifkan.'
+                              : `Persetujuan ${nextApprover} dibutuhkan sebelum eksekusi dimulai.`}
                         </span>
                         <button
                           className="btn btn--primary prog-checklist-ribbon__cta"
                           disabled={approvalLoading}
-                          onClick={() => isKadivAdmin ? void activateProgram() : setApprovalModal('submit')}
+                          onClick={() => useActivate ? void activateProgram() : setApprovalModal('submit')}
                           type="button"
                         >
-                          {isKadivAdmin ? 'Mulai Eksekusi →' : `Ajukan ke ${nextApprover} →`}
+                          {useActivate ? 'Mulai Eksekusi →' : `Ajukan ke ${nextApprover} →`}
                         </button>
                       </div>
                     )
@@ -2252,6 +2330,26 @@ export function ProgramDetailView() {
                         <div className="wi-sidebar-row" style={{ marginTop: 6 }}>
                           <span className="wi-sidebar-label">Pengusul</span>
                           <span className="wi-sidebar-value">{detail.submittedByName}</span>
+                        </div>
+                      )}
+                      {/* Reviewer + lama menunggu — hanya saat PENDING_*. PIC
+                          tahu siapa yang sedang memegang bola & sudah berapa lama,
+                          tidak perlu nebak atau menunggu dalam ketidakpastian. */}
+                      {detail.pendingReviewer && (
+                        <div className="wi-sidebar-row" style={{ marginTop: 6 }}>
+                          <span className="wi-sidebar-label">Menunggu</span>
+                          <span className="wi-sidebar-value">
+                            {detail.pendingReviewer.name}
+                            <span className="hd-muted" style={{ fontSize: 11, marginLeft: 6 }}>
+                              ({detail.pendingReviewer.roleType})
+                            </span>
+                          </span>
+                        </div>
+                      )}
+                      {detail.pendingSinceAt && (
+                        <div className="wi-sidebar-row" style={{ marginTop: 6 }}>
+                          <span className="wi-sidebar-label">Diajukan</span>
+                          <span className="wi-sidebar-value">{formatRelativeTime(detail.pendingSinceAt).text}</span>
                         </div>
                       )}
                     </div>
@@ -2802,7 +2900,9 @@ export function ProgramDetailView() {
                 // vs eksekusi (program aktif, tapi memang tidak ada blocker).
                 // Beda message supaya user paham apakah ini "belum bisa report"
                 // atau "memang aman".
-                const inPlanning = ['DRAFT', 'PLANNING', 'PENDING_KASUB', 'PENDING_KADIV', 'REJECTED']
+                // 'REJECTED' literal never persists — rejected programs already have
+                // status='DRAFT' (with rejectionNote), so DRAFT alone covers them.
+                const inPlanning = ['DRAFT', 'PLANNING', 'PENDING_KASUB', 'PENDING_KADIV']
                   .includes(detail.approvalStatus ?? '')
                 return inPlanning ? (
                   <SectionState
@@ -3976,6 +4076,32 @@ export function ProgramDetailView() {
                 <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Batal</button>
                 <button className="btn btn--danger" disabled={approvalLoading || !rejectNote.trim()} onClick={() => void submitReject()} type="button">
                   {approvalLoading ? 'Menolak…' : 'Tolak Program'}
+                </button>
+              </div>
+            </>
+          )}
+
+          {approvalModal === 'withdraw' && (
+            <>
+              <div className="modal-header">
+                <div className="modal-headcopy">
+                  <span className="modal-kicker">Konfirmasi</span>
+                  <span className="modal-title">Tarik kembali pengajuan?</span>
+                  <p className="modal-subtitle">
+                    Program <strong>{detail?.name}</strong> akan kembali ke status Draft.
+                    {detail?.pendingReviewer && <> {detail.pendingReviewer.name} akan menerima notifikasi bahwa tidak perlu lagi review.</>}
+                    {' '}Anda bisa ajukan ulang kapan saja setelah revisi selesai.
+                  </p>
+                </div>
+                <button aria-label="Tutup" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
+                  <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
+                </button>
+              </div>
+              {approvalError && <div className="modal-body"><p className="approval-modal__error">{approvalError}</p></div>}
+              <div className="modal-footer">
+                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Batal</button>
+                <button className="btn btn--primary" disabled={approvalLoading} onClick={() => void submitWithdraw()} type="button">
+                  {approvalLoading ? 'Menarik…' : 'Ya, tarik kembali'}
                 </button>
               </div>
             </>

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useId, useRef } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import { useEscKey } from '../hooks/useEscKey'
 import { PicaCompositePanel } from '../components/PicaCompositePanel'
 import { formatRoleLabel } from '../lib/roleLabel'
 import type { Meeting, MeetingType, PresenceStatus } from '../types'
@@ -266,11 +267,13 @@ export function MeetingDetailPanel({
   const deleteDecisionTitleId = useId()
   const deleteDecisionDescId = useId()
   const [decisionDeleteSaving, setDecisionDeleteSaving] = useState(false)
+  useEscKey(() => { if (!decisionDeleteSaving) setConfirmDeleteDecision(null) }, confirmDeleteDecision !== null)
   const [confirmDeleteActionItem, setConfirmDeleteActionItem] = useState<number | null>(null)
   const deleteActionItemDialogRef = useDialogFocus<HTMLDivElement>(confirmDeleteActionItem !== null)
   const deleteActionItemTitleId = useId()
   const deleteActionItemDescId = useId()
   const [actionItemDeleteSaving, setActionItemDeleteSaving] = useState(false)
+  useEscKey(() => { if (!actionItemDeleteSaving) setConfirmDeleteActionItem(null) }, confirmDeleteActionItem !== null)
   const [toggleLoading, setToggleLoading] = useState<number | null>(null)
 
   // ── Status lifecycle loading ──────────────────────────────────────────────
@@ -288,6 +291,15 @@ export function MeetingDetailPanel({
   })
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
+  useEscKey(() => {
+    if (editSaving) return
+    const editDirty = editForm.title !== meeting.title ||
+      editForm.description !== (meeting.description ?? '') ||
+      editForm.meetingType !== meeting.meetingType ||
+      editForm.location !== (meeting.location ?? '')
+    if (editDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    setShowEdit(false); setEditError(null)
+  }, showEdit)
 
   // ── Postpone meeting ─────────────────────────────────────────────────────
   const [showPostpone, setShowPostpone] = useState(false)
@@ -297,6 +309,11 @@ export function MeetingDetailPanel({
   const [postponeReason, setPostponeReason] = useState('')
   const [postponeSaving, setPostponeSaving] = useState(false)
   const [postponeError, setPostponeError] = useState<string | null>(null)
+  useEscKey(() => {
+    if (postponeSaving) return
+    if (postponeReason !== '' && !window.confirm('Buang alasan yang sudah diketik?')) return
+    setShowPostpone(false); setPostponeReason(''); setPostponeError(null)
+  }, showPostpone)
 
   // ── Push to workboard ─────────────────────────────────────────────────────
   const [pushItem, setPushItem] = useState<ActionItem | null>(null)
@@ -307,6 +324,12 @@ export function MeetingDetailPanel({
   const [pushForm, setPushForm] = useState({ workstreamId: '', targetCompletion: '' })
   const [pushSaving, setPushSaving] = useState(false)
   const [pushError, setPushError] = useState<string | null>(null)
+  useEscKey(() => {
+    if (pushSaving) return
+    const pushDirty = pushForm.workstreamId !== '' || pushForm.targetCompletion !== ''
+    if (pushDirty && !window.confirm('Buang pilihan yang sudah diisi?')) return
+    setPushItem(null); setPushError(null)
+  }, pushItem !== null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 

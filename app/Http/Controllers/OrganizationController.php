@@ -96,7 +96,8 @@ class OrganizationController extends Controller
 
         $programs = $programQuery
             ->select([
-                'id', 'code', 'name', 'ownerUnitId', 'healthStatus', 'status',
+                'id', 'code', 'name', 'ownerId', 'ownerUnitId', 'submittedById',
+                'healthStatus', 'status',
                 'startDate', 'targetEndDate', 'progressPercent', 'approvalStatus', 'updatedAt',
                 'kelompok', 'pilarStrategis', 'progresTerkini', 'dukunganDibutuhkan',
             ])
@@ -179,14 +180,30 @@ class OrganizationController extends Controller
         })->filter(fn ($c) => $c['total'] > 0)->values();
 
         // ── 3. Perlu Tindakan (needs executive action) ─────────────────────
-        // Programs waiting for approval (director must decide)
+        // Only programs the current user CAN act on right now:
+        //   - PENDING_KASUB → visible to KASUBDIV/ADMIN/SUPERADMIN
+        //   - PENDING_KADIV → visible to KADIV/ADMIN/SUPERADMIN
+        // PLUS: filter out user's own submissions — submitter melihat sendiri
+        // submission-nya sebagai "perlu tindakan" = ghost work, bola sudah di
+        // tangan reviewer. ASISTEN/BOD/OFFICER tidak approve apa-apa → kosong.
+        $canApproveStatuses = [];
+        if (in_array($role, ['KASUBDIV', 'ADMIN', 'SUPERADMIN'], true)) {
+            $canApproveStatuses[] = 'PENDING_KASUB';
+        }
+        if (in_array($role, ['KADIV', 'ADMIN', 'SUPERADMIN'], true)) {
+            $canApproveStatuses[] = 'PENDING_KADIV';
+        }
         $pendingApproval = $programs
-            ->whereIn('approvalStatus', ['PENDING_KASUB', 'PENDING_KADIV'])
+            ->whereIn('approvalStatus', $canApproveStatuses)
+            ->filter(fn ($p) => $p->submittedById !== $user->id && $p->ownerId !== $user->id)
             ->map(fn ($p) => [
                 'id'     => $p->id,
                 'code'   => $p->code,
                 'name'   => $p->name,
-                'reason' => $p->approvalStatus === 'PENDING_KADIV' ? 'Menunggu persetujuan Direktur' : 'Menunggu persetujuan Kasubdiv',
+                // Note: "Direktur" sengaja dihindari — di hierarki PTPN III
+                // Direktur = level Direksi (board), bukan KADIV. Pakai "Kepala
+                // Divisi" / "Kepala Sub Divisi" yang sesuai struktur jabatan.
+                'reason' => $p->approvalStatus === 'PENDING_KADIV' ? 'Menunggu persetujuan Kepala Divisi' : 'Menunggu persetujuan Kepala Sub Divisi',
                 'tag'    => 'approval',
                 'divisi' => $units->firstWhere('id', $p->ownerUnitId)?->code ?? '-',
             ]);

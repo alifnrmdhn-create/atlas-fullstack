@@ -40,7 +40,11 @@ class AuthServiceProvider extends ServiceProvider
         );
 
         Gate::define('edit-program', fn (User $user, Program $program) =>
-            RolePolicy::canEditProgram($user->roleType, $program->ownerId === $user->id)
+            RolePolicy::canEditProgram(
+                $user->roleType,
+                $program->ownerId === $user->id,
+                $program->approvalStatus === 'DRAFT' && !empty($program->rejectionNote),
+            )
         );
 
         Gate::define('delete-program', fn (User $user, Program $program) =>

@@ -3,6 +3,7 @@ import { usePage } from '@inertiajs/react'
 import { api } from '../lib/api'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
+import { useEscKey } from '../hooks/useEscKey'
 import { MON_FULL, STATUS } from '../types/monthlyReports'
 
 type RiskReportSummary = {
@@ -236,6 +237,13 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
   const [units, setUnits]   = useState<OrgUnit[]>([])
   const [saving, setSaving] = useState(false)
   const [err, setErr]       = useState<string | null>(null)
+  useEscKey(() => {
+    if (saving) return
+    // Dirty: user sudah memilih unit atau mengubah bulan/tahun dari default
+    const dirty = unitId !== '' || month !== now.getMonth() + 1 || year !== now.getFullYear()
+    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    onClose()
+  }, true)
 
   useEffect(() => {
     api.get<{ data: OrgUnit[] }>('/organization/units')

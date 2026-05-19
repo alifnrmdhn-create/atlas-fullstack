@@ -2478,7 +2478,7 @@
 .schedule-modal--xs { max-width: 340px; }
 .schedule-modal--sm { max-width: 400px; }
 .schedule-modal--md { max-width: 420px; }
-.schedule-modal--lg { max-width: 500px; }
+.schedule-modal--lg { width: min(960px, calc(100vw - 48px)); max-width: calc(100vw - 48px); }
 .schedule-modal--confirm { max-width: 360px; }
 .schedule-modal__body {
   display: flex;

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useId } from 'react'
 import type { FormEvent } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import { useEscKey } from '../hooks/useEscKey'
 import { api } from '../lib/api'
 import type { Kpi } from '../types'
 import './SmallPagesViews.css'
@@ -190,6 +191,22 @@ export function GoalsView() {
   const [kpiForm, setKpiForm] = useState<KpiForm>(emptyKpiForm())
   const [kpiSaving, setKpiSaving] = useState(false)
   const [kpiError, setKpiError] = useState<string | null>(null)
+  useEscKey(() => {
+    if (kpiSaving) return
+    // Dirty: bandingkan form dgn snapshot (editingKpi ada → vs original, kalau create → vs empty)
+    const empty = emptyKpiForm()
+    const baseline = editingKpi
+      ? { code: editingKpi.code, name: editingKpi.name, description: '',
+          metricType: editingKpi.metricType ?? 'PERCENTAGE', dataType: editingKpi.dataType ?? 'NUMERIC',
+          targetValue: String(editingKpi.targetValue), unitOfMeasure: editingKpi.unitOfMeasure ?? '',
+          reviewFrequency: editingKpi.reviewFrequency ?? 'MONTHLY',
+          isLeadingIndicator: editingKpi.isLeadingIndicator, isActive: true }
+      : empty
+    const dirty = (Object.keys(baseline) as Array<keyof typeof baseline>)
+      .some(k => kpiForm[k] !== baseline[k])
+    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    setShowKpiModal(false); setEditingKpi(null); setKpiError(null)
+  }, showKpiModal)
 
   const openCreateKpi = () => {
     setEditingKpi(null)
@@ -255,6 +272,7 @@ export function GoalsView() {
   const deleteKpiDescId = useId()
   const [kpiDeleteSaving, setKpiDeleteSaving] = useState(false)
   const [kpiDeleteError, setKpiDeleteError] = useState<string | null>(null)
+  useEscKey(() => { if (!kpiDeleteSaving) { setConfirmDeleteKpi(null); setKpiDeleteError(null) } }, confirmDeleteKpi !== null)
 
   const doDeleteKpi = async () => {
     if (!confirmDeleteKpi) return

@@ -1,13 +1,13 @@
 # ATLAS — Panduan Penggunaan & Evaluasi
 
-> Panduan penggunaan ATLAS untuk seluruh tim — langkah-langkah operasional dari setiap fitur, dilengkapi catatan evaluasi implementasi untuk kebutuhan teknis.
+> Panduan penggunaan ATLAS untuk seluruh tim — langkah-langkah operasional dari setiap fitur, mengikuti siklus PDCA (Plan-Do-Check-Act), dilengkapi catatan evaluasi implementasi untuk kebutuhan teknis.
 
 ## Referensi Jabatan
 
 | Kode | Jabatan |
 |------|---------|
-| BOD | Direksi |
-| KADIV | Kepala Divisi |
+| BOD | Direksi (termasuk Direktur Utama / DIRUT) |
+| KADIV | Kepala Divisi (Direktur fungsional) |
 | KASUBDIV | Kepala Sub-Divisi |
 | ASISTEN | Asisten |
 | OFFICER | Staff/Officer |
@@ -21,17 +21,23 @@ Istilah-istilah berikut digunakan di seluruh ATLAS dan panduan ini.
 
 | Istilah | Penjelasan |
 |---------|------------|
+| **PDCA** | Siklus *Plan-Do-Check-Act* — kerangka kerja yang melandasi struktur sidebar ATLAS: Perencanaan → Eksekusi → Performance → Tindak Lanjut. |
 | **Program** | Proyek atau kegiatan strategis jangka menengah/panjang. Satu Program dapat memiliki banyak Workstream. Contoh: *Audit Internal 2026*. |
 | **Workstream** | Jalur kerja dalam satu Program — mengelompokkan Phase dan Task berdasarkan bidang atau tim. Contoh: *Audit Divisi Keuangan*. |
-| **Phase** | Tahapan utama dalam sebuah Workstream. Mengelompokkan Task yang saling berkaitan. Tampil sebagai container bernomor di tab Workstream. Contoh: *Pengumpulan Dokumen*. |
+| **Phase** | Tahapan utama dalam sebuah Workstream. Mengelompokkan Task yang saling berkaitan. Tampil sebagai container bernomor di tab Struktur. Contoh: *Pengumpulan Dokumen*. |
 | **Task** | Satu unit pekerjaan konkret di dalam sebuah Phase — memiliki status, assignee, prioritas, dan batas waktu. Muncul di **Papan Kerja (Execution)**. Contoh: *Kumpulkan laporan arus kas Q1*. |
 | **Subtask** | Checklist langkah-langkah di dalam sebuah Task. Tidak berdiri sendiri dan tidak muncul di Papan Kerja. Contoh: *Email ke treasury minta data Januari*. |
+| **Penugasan** | Tugas ad-hoc di luar struktur Program — diberikan langsung dari atasan ke bawahan, biasanya disertai bukti penyelesaian (file/link/catatan). |
 | **Blocker** | Hambatan yang menghalangi penyelesaian task — perlu dilaporkan agar PIC & atasan dapat menindaklanjuti. |
+| **Eskalasi** | Permintaan dukungan ke atasan untuk membuka hambatan kerja (*Clear the Path*). Bisa dibuat dari Blocker, Progress Log, Action Item, atau ad-hoc. |
 | **PIC** | *Person in Charge* — penanggung jawab suatu task, workstream, atau program. |
 | **Assignee** | Pengguna yang ditugaskan untuk mengerjakan suatu Task. |
 | **RSVP** | Konfirmasi kehadiran rapat: Hadir, Tidak Hadir, atau Delegasi (menunjuk pengganti). |
 | **Action Items** | Daftar tindak lanjut yang disepakati dalam rapat, lengkap dengan penanggung jawab dan batas waktu. |
-| **Health Score** | Nilai otomatis (0–100) yang mencerminkan kesehatan program berdasarkan progres task dan blocker aktif. |
+| **PICA** | *Problem · Identification · Corrective action · Action* — kerangka kerja rapat koordinasi yang menelusuri hambatan dan tindakan korektif. |
+| **Health Score** | Indikator kesehatan program (Green / Yellow / Red) yang dihitung otomatis dari workstream, KPI, task overdue, dan blocker aktif. |
+| **Scorecard** | Ringkasan ranking capaian KPI seluruh direktorat & divisi — surface eksekutif di modul Performance. |
+| **Charter** | Tampilan satu halaman read-only Program — mirror format KPI Charter dengan tabel aktivitas bulanan dan progress KPI. |
 | **Thread** | Rangkaian balasan dalam satu pesan di Channel — agar diskusi tidak campur dengan pesan lain. |
 | **KPI** | *Key Performance Indicator* — indikator kinerja terukur yang dipantau secara berkala. |
 
@@ -42,31 +48,52 @@ Istilah-istilah berikut digunakan di seluruh ATLAS dan panduan ini.
 
 ### 1. Alur Autentikasi & Navigasi Awal
 
-Setelah login berhasil, sistem menentukan halaman awal berdasarkan jabatan pengguna.
+Login menggunakan **NIK atau User ID** (bukan email). Setelah berhasil, seluruh pengguna mendarat di halaman **Home** — konten Home bersifat *role-aware* (otomatis menyesuaikan ringkasan ke skup jabatan).
 
 ```mermaid
 flowchart TD
     A([Mulai]):::start --> B[Halaman Login]:::proc
-    B --> C{Kredensial valid?}:::decision
+    B --> C{NIK / User ID + password valid?}:::decision
     C -- Tidak --> D[Tampil pesan error]:::warn
     D --> B
-    C -- Ya --> E[Buat JWT session]:::proc
-    E --> F{Jabatan user?}:::decision
-    F -- BOD atau KADIV --> G[Dashboard]:::proc
-    F -- OFFICER atau ASISTEN --> H[Papan Kerja]:::proc
-    F -- KASUBDIV atau ADMIN --> I[Fokus]:::proc
-    G --> J([Gunakan ATLAS]):::done
-    H --> J
-    I --> J
+    C -- Ya --> E[Buat session]:::proc
+    E --> F[/ Home — ringkasan eksekutif/]:::proc
+    F --> G{Skup konten}:::decision
+    G -- BOD / DIRUT --> H[Portfolio matrix direktorat]:::proc
+    G -- KADIV --> I[Direktorat sendiri]:::proc
+    G -- KASUBDIV / OFFICER / ASISTEN --> J[Unit sendiri]:::proc
+    H --> K([Gunakan ATLAS]):::done
+    I --> K
+    J --> K
 
-    classDef start    fill:#1e3a2f,stroke:#1e3a2f,color:#fff
-    classDef done     fill:#166534,stroke:#166534,color:#fff
-    classDef proc     fill:#fff,stroke:#2d6a4f,color:#1a1a1a,stroke-width:1.5px
-    classDef decision fill:#fef9c3,stroke:#ca8a04,color:#713f12
-    classDef warn     fill:#fff7ed,stroke:#ea580c,color:#7c2d12
+    classDef start    fill:#1e3a2f,stroke:#14532d,color:#ffffff
+    classDef done     fill:#15803d,stroke:#166534,color:#ffffff
+    classDef proc     fill:#ffffff,stroke:#059669,color:#0F172A,stroke-width:1.5px
+    classDef decision fill:#fde68a,stroke:#b45309,color:#451a03,stroke-width:1.5px
+    classDef warn     fill:#fed7aa,stroke:#c2410c,color:#7c2d12,stroke-width:1.5px
 ```
 
-### 2. Hierarki Entitas Data
+### 2. Sidebar PDCA
+
+Sidebar ATLAS mengikuti urutan siklus PDCA. Grup & item bersifat *role-aware* — pengguna hanya melihat menu yang relevan untuk jabatannya.
+
+```mermaid
+flowchart LR
+    P[Perencanaan<br/>Plan]:::plan --> D[Eksekusi<br/>Do]:::do
+    D --> C[Performance<br/>Check]:::check
+    C --> A[Tindak Lanjut<br/>Act]:::act
+    A --> K[Komunikasi]:::comm
+    K --> AK[Akun]:::akun
+
+    classDef plan  fill:#bfdbfe,stroke:#2563eb,color:#1e3a8a,stroke-width:2px
+    classDef do    fill:#fde68a,stroke:#b45309,color:#451a03,stroke-width:2px
+    classDef check fill:#bbf7d0,stroke:#16a34a,color:#14532d,stroke-width:2px
+    classDef act   fill:#fecaca,stroke:#b91c1c,color:#7f1d1d,stroke-width:2px
+    classDef comm  fill:#ddd6fe,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px
+    classDef akun  fill:#cbd5e1,stroke:#64748b,color:#1e293b,stroke-width:1.5px
+```
+
+### 3. Hierarki Entitas Data
 
 Hubungan antar entitas utama di ATLAS — dari Program sampai Subtask.
 
@@ -79,6 +106,7 @@ flowchart TD
     S[Subtask]:::tier5
     B[Blocker]:::danger
     K[KPI]:::kpi
+    E[Eskalasi]:::esc
 
     P -->|1 ke N| W
     P -->|1 ke N| K
@@ -86,17 +114,19 @@ flowchart TD
     Ph -->|1 ke N| T
     T -->|1 ke N| S
     T -->|0 ke N| B
+    B -->|0..1| E
 
-    classDef tier1  fill:#1e3a2f,stroke:#1e3a2f,color:#fff,stroke-width:2px
-    classDef tier2  fill:#2d6a4f,stroke:#2d6a4f,color:#fff
-    classDef tier3  fill:#52976e,stroke:#52976e,color:#fff
-    classDef tier4  fill:#86c49a,stroke:#52976e,color:#1a1a1a
-    classDef tier5  fill:#d1fae5,stroke:#86c49a,color:#1a1a1a
-    classDef danger fill:#fee2e2,stroke:#dc2626,color:#991b1b
-    classDef kpi    fill:#dbeafe,stroke:#2563eb,color:#1e40af
+    classDef tier1  fill:#1e3a2f,stroke:#14532d,color:#ffffff,stroke-width:2px
+    classDef tier2  fill:#166534,stroke:#14532d,color:#ffffff
+    classDef tier3  fill:#15803d,stroke:#166534,color:#ffffff
+    classDef tier4  fill:#4ade80,stroke:#16a34a,color:#14532d
+    classDef tier5  fill:#bbf7d0,stroke:#4ade80,color:#14532d
+    classDef danger fill:#fecaca,stroke:#b91c1c,color:#7f1d1d,stroke-width:1.5px
+    classDef kpi    fill:#bfdbfe,stroke:#2563eb,color:#1e40af,stroke-width:1.5px
+    classDef esc    fill:#fde68a,stroke:#b45309,color:#451a03
 ```
 
-### 3. Alur Approval Program
+### 4. Alur Approval Program
 
 Pembuatan program melewati alur persetujuan berjenjang sesuai jabatan pembuat.
 
@@ -118,38 +148,66 @@ flowchart LR
     AKS -- Setuju --> PK
     AKS -- Tolak --> Rejected
 
-    classDef start    fill:#1e3a2f,stroke:#1e3a2f,color:#fff
-    classDef done     fill:#166534,stroke:#166534,color:#fff
-    classDef err      fill:#dc2626,stroke:#dc2626,color:#fff
-    classDef proc     fill:#fff,stroke:#2d6a4f,color:#1a1a1a,stroke-width:1.5px
-    classDef pending  fill:#fef3c7,stroke:#f59e0b,color:#78350f
-    classDef neutral  fill:#f1f5f9,stroke:#94a3b8,color:#334155
-    classDef decision fill:#fef9c3,stroke:#ca8a04,color:#713f12
+    classDef start    fill:#1e3a2f,stroke:#14532d,color:#ffffff
+    classDef done     fill:#15803d,stroke:#166534,color:#ffffff
+    classDef err      fill:#dc2626,stroke:#991b1b,color:#ffffff
+    classDef proc     fill:#ffffff,stroke:#059669,color:#0F172A,stroke-width:1.5px
+    classDef pending  fill:#fde68a,stroke:#b45309,color:#451a03,stroke-width:1.5px
+    classDef neutral  fill:#e2e8f0,stroke:#64748b,color:#1e293b,stroke-width:1.5px
+    classDef decision fill:#fde68a,stroke:#b45309,color:#451a03,stroke-width:1.5px
 ```
 
-### 4. Alur Eksekusi Task
+### 5. Alur Eksekusi Task
 
 Siklus hidup sebuah Task mulai dari pembuatan hingga selesai.
 
 ```mermaid
 flowchart LR
-    C([Mulai]):::start --> Todo[TODO]:::neutral
-    Todo -->|Mulai kerja| Prog[IN_PROGRESS]:::active
-    Prog -->|Selesai| Done([DONE]):::done
+    C([Mulai]):::start --> Todo[BACKLOG]:::neutral
+    Todo -->|Siapkan| Ready[READY]:::ready
+    Ready -->|Mulai kerja| Prog[IN_PROGRESS]:::active
+    Prog -->|Submit review| Rev[IN_REVIEW]:::review
+    Rev -->|Approved| Done([COMPLETED]):::done
     Prog -->|Ada hambatan| Block[Blocker]:::err
     Block -->|Resolved| Prog
     Todo -->|Batalkan| Cancel([CANCELLED]):::cancel
     Prog -->|Batalkan| Cancel
 
-    classDef start   fill:#1e3a2f,stroke:#1e3a2f,color:#fff
-    classDef done    fill:#166534,stroke:#166534,color:#fff
-    classDef active  fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a,stroke-width:2px
-    classDef err     fill:#fee2e2,stroke:#dc2626,color:#991b1b
-    classDef neutral fill:#f1f5f9,stroke:#94a3b8,color:#334155
-    classDef cancel  fill:#f3f4f6,stroke:#9ca3af,color:#6b7280
+    classDef start   fill:#1e3a2f,stroke:#14532d,color:#ffffff
+    classDef done    fill:#15803d,stroke:#166534,color:#ffffff
+    classDef active  fill:#bfdbfe,stroke:#2563eb,color:#1e3a8a,stroke-width:2px
+    classDef ready   fill:#fde68a,stroke:#b45309,color:#451a03
+    classDef review  fill:#ddd6fe,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px
+    classDef err     fill:#fecaca,stroke:#b91c1c,color:#7f1d1d,stroke-width:1.5px
+    classDef neutral fill:#e2e8f0,stroke:#64748b,color:#1e293b,stroke-width:1.5px
+    classDef cancel  fill:#cbd5e1,stroke:#64748b,color:#475569,stroke-width:1.5px
 ```
 
-### 5. Alur Real-Time (SSE)
+### 6. Alur Eskalasi (Clear the Path)
+
+Eskalasi membuka jalur cepat ke atasan saat pekerjaan terhambat.
+
+```mermaid
+flowchart LR
+    S([Pekerja]):::start --> Btn[Klik Butuh Dukungan]:::proc
+    Btn --> Mod[Isi konteks + target<br/>atasan]:::proc
+    Mod --> Open[REQUESTED]:::pending
+    Open --> Triage{Atasan triase}:::decision
+    Triage -- Commit --> Comm[COMMITTED<br/>due date]:::active
+    Triage -- Reroute --> Open
+    Triage -- Decline --> Decl([DECLINED]):::err
+    Comm -->|Tindakan selesai| Res([RESOLVED]):::done
+
+    classDef start    fill:#1e3a2f,stroke:#14532d,color:#ffffff
+    classDef done     fill:#15803d,stroke:#166534,color:#ffffff
+    classDef err      fill:#dc2626,stroke:#991b1b,color:#ffffff
+    classDef proc     fill:#ffffff,stroke:#059669,color:#0F172A,stroke-width:1.5px
+    classDef pending  fill:#fde68a,stroke:#b45309,color:#451a03,stroke-width:1.5px
+    classDef active   fill:#bfdbfe,stroke:#2563eb,color:#1e3a8a
+    classDef decision fill:#fde68a,stroke:#b45309,color:#451a03,stroke-width:1.5px
+```
+
+### 7. Alur Real-Time (SSE)
 
 Setiap mutasi data dikirim ke semua client secara real-time via Server-Sent Events.
 
@@ -163,14 +221,14 @@ flowchart LR
 
     API --> EB --> SSE --> FE --> UI
 
-    classDef api fill:#1e3a2f,stroke:#1e3a2f,color:#fff
-    classDef bus fill:#2d6a4f,stroke:#2d6a4f,color:#fff
-    classDef sse fill:#52976e,stroke:#52976e,color:#fff
-    classDef fe  fill:#86c49a,stroke:#52976e,color:#1a1a1a
-    classDef ui  fill:#166534,stroke:#166534,color:#fff
+    classDef api fill:#1e3a2f,stroke:#14532d,color:#ffffff
+    classDef bus fill:#166534,stroke:#14532d,color:#ffffff
+    classDef sse fill:#15803d,stroke:#166534,color:#ffffff
+    classDef fe  fill:#4ade80,stroke:#16a34a,color:#14532d
+    classDef ui  fill:#15803d,stroke:#166534,color:#ffffff
 ```
 
-### 6. Alur Komunikasi (Channel & DM)
+### 8. Alur Komunikasi (Channel & DM)
 
 Pesan dikirim melalui REST, disimpan di database, lalu di-broadcast ke seluruh subscriber channel.
 
@@ -184,12 +242,12 @@ flowchart LR
     Bus --> SSE[SSE Broadcast]:::p3
     SSE --> End([Client render pesan]):::done
 
-    classDef start fill:#1e3a2f,stroke:#1e3a2f,color:#fff
-    classDef done  fill:#166534,stroke:#166534,color:#fff
-    classDef proc  fill:#fff,stroke:#2d6a4f,color:#1a1a1a,stroke-width:1.5px
-    classDef p1    fill:#2d6a4f,stroke:#2d6a4f,color:#fff
-    classDef p2    fill:#52976e,stroke:#52976e,color:#fff
-    classDef p3    fill:#74b08a,stroke:#52976e,color:#1a1a1a
+    classDef start fill:#1e3a2f,stroke:#14532d,color:#ffffff
+    classDef done  fill:#15803d,stroke:#166534,color:#ffffff
+    classDef proc  fill:#ffffff,stroke:#059669,color:#0F172A,stroke-width:1.5px
+    classDef p1    fill:#166534,stroke:#14532d,color:#ffffff
+    classDef p2    fill:#15803d,stroke:#166534,color:#ffffff
+    classDef p3    fill:#4ade80,stroke:#16a34a,color:#14532d
 ```
 
 ---
@@ -201,11 +259,11 @@ flowchart LR
 ### Cara Login
 
 1. Buka ATLAS di browser — masuk ke halaman login
-2. Masukkan **email** dan **password** Anda
-3. Klik tombol **Masuk**
-4. Sistem akan mengarahkan Anda otomatis ke halaman utama sesuai jabatan
+2. Masukkan **NIK** atau **User ID** Anda (bukan email)
+3. Masukkan **password**, lalu klik **Masuk**
+4. Sistem akan mengarahkan Anda ke halaman **Home** — ringkasan eksekutif yang otomatis menyesuaikan skup jabatan Anda
 
-> 💡 **Lupa password?** Klik tautan "Lupa Password" di halaman login, masukkan email Anda, dan ikuti instruksi yang dikirimkan ke email.
+> 💡 **Lupa password?** Hubungi admin sistem untuk reset — halaman self-service reset belum tersedia.
 
 ### Cara Logout
 
@@ -215,38 +273,115 @@ flowchart LR
 
 **Status: ✅ Lengkap**
 
-> 🔧 *Catatan teknis: Token sesi tidak memiliki expiry time — berlaku selama akun aktif di database. Halaman reset password (frontend) belum dibuat meskipun endpoint sudah tersedia.*
+> 🔧 *Catatan teknis: Login mendukung NIK atau User ID (bukan email). Token sesi tidak memiliki expiry time — berlaku selama akun aktif di database. Halaman reset password self-service (frontend) belum dibuat.*
 
 
-## 2. Halaman Utama per Jabatan
+## 2. Navigasi Sidebar & Halaman per Jabatan
 
 **Siapa yang bisa:** Semua pengguna
 
-Setelah login, ATLAS akan membawa Anda ke halaman yang sesuai dengan jabatan Anda secara otomatis.
+Sidebar ATLAS disusun mengikuti siklus PDCA, dan otomatis menyembunyikan menu yang tidak relevan untuk jabatan Anda.
 
-### Halaman Awal per Jabatan
+### Halaman Awal Setelah Login
 
-| Jabatan | Halaman Awal | Alasan |
-|---------|-------------|--------|
-| BOD, KADIV | Dashboard | Ringkasan eksekutif & KPI |
-| OFFICER, ASISTEN | Papan Kerja | Tugas harian langsung tersedia |
-| KASUBDIV, ADMIN | Fokus | Inbox prioritas & tindakan pending |
+Seluruh pengguna mendarat di **Home** (`/`) — namun **konten Home berbeda per jabatan**:
 
-### Menu yang Tersedia
+| Jabatan | Konten Home |
+|---------|-------------|
+| BOD / DIRUT | Matrix Direktorat (semua 6 direktorat + sub-divisi), Program ketat deadline, KPI portfolio |
+| KADIV (Direktur fungsional) | Direktorat sendiri, KPI direktorat, program butuh perhatian |
+| KASUBDIV | Unit sendiri, KPI divisi, divisi dengan delay |
+| OFFICER / ASISTEN | Unit sendiri, KPI personal, komitmen hari ini |
 
-Semua halaman dapat diakses melalui menu navigasi di sisi kiri layar:
+### Grup Menu Sidebar (PDCA)
 
-- **TODAY** — Fokus: notifikasi & tugas Anda hari ini
-- **STRATEGIC** — Programs & Dashboard
-- **EXECUTION** — Papan Kerja
-- **REPORTS** — Analytics & Laporan Bulanan
-- **COMMS** — Channels, Jadwal, Pencarian
-- **ACCOUNT** — Kehadiran, Profil, Pengaturan
+| Grup | Item | Fase PDCA |
+|------|------|-----------|
+| **Perencanaan** | Programs | Plan |
+| **Eksekusi** | Execution (Papan Kerja), Penugasan | Do |
+| **Performance** | Scorecard, KPI Direktorat, KPI Divisi, KPI Saya, KPI Individu | Check |
+| **Tindak Lanjut** | Rapat Koordinasi | Act |
+| **Komunikasi** | Channels | — |
+| **Akun** | Presence, Profile, Settings | — |
+| **Admin** *(ADMIN/SUPERADMIN)* | Companies, Positions, Users, Roles, Pilot Metrics, Thresholds | — |
+
+> 💡 Roadmap (visual timeline portofolio) dan halaman Fokus diakses lewat shortcut, breadcrumb, dan deep-link — tidak menempati slot sidebar tetap agar sidebar tetap ringkas.
+
+### Skup Item Performance per Jabatan
+
+| Jabatan | Scorecard | KPI Direktorat | KPI Divisi | KPI Saya |
+|---------|:--------:|:--------------:|:----------:|:--------:|
+| BOD / DIRUT | ✓ | ✓ | ✓ | — |
+| KADIV | ✓ | ✓ | ✓ | ✓ |
+| KASUBDIV | — | — | ✓ | ✓ |
+| OFFICER / ASISTEN | — | — | — | ✓ |
+
+> 💡 **KPI Individu** (browse semua karyawan) tersedia untuk semua jabatan via tombol pada Scorecard atau direct URL `/performance/individu`.
+
+**Status: ✅ Lengkap**
+
+> 🔧 *Catatan teknis: Grup "Pelaporan" (Laporan Bulanan, Laporan Risiko, Analytics) sengaja dihilangkan dari sidebar sejak 10 Mei 2026. Halaman tetap hidup di `/laporan-bulanan`, `/laporan-risiko`, dan `/reports` — diakses via deep-link notifikasi atau link kontekstual.*
+
+
+## 3. Home — Ringkasan Eksekutif
+
+**Siapa yang bisa:** Semua pengguna (konten *role-aware*)
+
+Home adalah ringkasan satu halaman yang menggantikan dashboard lama — menyajikan apa yang penting **sekarang** untuk peran Anda.
+
+### Bagian Utama Home
+
+- **Sapaan & narasi prioritas** — kalimat ringkas berisi 1–2 prioritas terpenting hari ini
+- **Statistik ringkas** — On track / Perlu aksi / Program aktif
+- **Prioritas (hero + secondary)** — kartu besar untuk item paling kritis (RED), diikuti 0–3 item lain (AMBER)
+- **KPI Achievement** — rata-rata capaian, top 3 KPI, item di bawah 80%
+- **Status Program** — komposisi On Track / At Risk / Terlambat / Draft, plus sparkline tren 14 hari
+- **Divisi dengan delay** — chips divisi yang punya task overdue
+- **Program ketat deadline** — tabel 10 program dengan deadline terdekat, lengkap tombol Eskalasi inline
+- **Program butuh perhatian** — diurut tingkat keparahan, tombol Eskalasi inline
+- **Matrix Direktorat** *(BOD/DIRUT only)* — 6 kartu direktorat dengan rincian sub-divisi
+- **Status per Divisi** *(rollup)* — tabel divisi: on-track / at-risk / terlambat / completed
+
+> 💡 Bila semua aman, Home menampilkan kartu "celebration" — bukan dashboard kosong.
 
 **Status: ✅ Lengkap**
 
 
-## 3. Program & Workstream
+## 4. Fokus — Antrian Pekerjaan Saya
+
+**Siapa yang bisa:** Semua pengguna
+
+Fokus adalah inbox prioritas — menggabungkan tugas, blocker, mention, approval, eskalasi, dan undangan rapat menjadi satu antrian yang sudah diurut tingkat urgensi.
+
+### Cara Akses
+
+- Klik shortcut **Focus** di topbar (angka merah = jumlah item belum tertangani)
+- Atau tekan **G F** dari mana saja
+
+### Bagian Utama Fokus
+
+- **Komitmen Hari Ini** — tugas + action item + penugasan yang jatuh tempo hari ini
+- **Clear the Path** *(jika fitur aktif)* — eskalasi masuk + eskalasi aktif milik saya
+- **Strip filter skup** — Semua / Aksi / Risiko / Komunikasi / Jadwal (masing-masing dengan badge angka)
+- **Tiga ember urgensi**:
+  1. **Sekarang** — 1 item hero (besar, dengan pernyataan dampak)
+  2. **Hari Ini** — 5 item kompak berikutnya
+  3. **Bisa Ditunda** — sisanya (collapse)
+
+Setiap item menampilkan: ikon jenis, judul, meta, alasan urgensi, cue aksi berikutnya, dan tombol primary/secondary.
+
+### Aksi Cepat
+
+- Klik item → langsung ke detail/workspace yang relevan
+- Klik chip skup → filter daftar
+- Klik **Tandai Semua Dibaca** di header
+
+> 💡 Empty state ("semuanya beres") adalah kartu celebration — bukan tampilan kosong.
+
+**Status: ✅ Lengkap**
+
+
+## 5. Perencanaan — Program & Workstream
 
 **Siapa yang bisa:** KADIV (langsung aktif) · KASUBDIV (perlu approval KADIV) · ASISTEN (perlu approval KASUBDIV → KADIV) · Semua (lihat)
 
@@ -261,12 +396,12 @@ Program adalah unit kerja strategis utama di ATLAS. Di dalamnya terdapat Workstr
 | Level | Contoh | Di mana terlihat |
 |-------|--------|-----------------|
 | **Program** | Audit Internal 2026 | Menu Programs |
-| **Workstream** | ↳ Audit Divisi Keuangan | Tab Workstream di detail Program |
-| **Phase** | &nbsp;&nbsp;↳ Pengumpulan Dokumen | Tab Workstream — container bernomor |
-| **Task** | &nbsp;&nbsp;&nbsp;&nbsp;↳ Kumpulkan laporan arus kas Q1 | Tab Workstream + **Papan Kerja (Execution)** |
+| **Workstream** | ↳ Audit Divisi Keuangan | Tab Struktur di detail Program |
+| **Phase** | &nbsp;&nbsp;↳ Pengumpulan Dokumen | Tab Struktur — container bernomor |
+| **Task** | &nbsp;&nbsp;&nbsp;&nbsp;↳ Kumpulkan laporan arus kas Q1 | Tab Struktur + **Papan Kerja (Execution)** |
 | **Subtask** | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳ Email ke treasury minta data Januari | Detail Task saja — tidak muncul di Papan Kerja |
 
-> 💡 **Perbedaan kunci:** Task adalah unit terkecil yang *bisa dikerjakan dan dilacak* di Papan Kerja. Phase adalah wadah pengelompokan Task dalam satu Workstream — tidak muncul di Papan Kerja. Subtask adalah checklist langkah kecil di dalam sebuah Task — tidak muncul di mana pun selain detail task itu sendiri.
+> 💡 **Perbedaan kunci:** Task adalah unit terkecil yang *bisa dikerjakan dan dilacak* di Papan Kerja. Phase adalah wadah pengelompokan Task dalam satu Workstream. Subtask adalah checklist langkah kecil di dalam Task.
 
 ### Alur Persetujuan Program
 
@@ -285,6 +420,16 @@ Program adalah unit kerja strategis utama di ATLAS. Di dalamnya terdapat Workstr
 
 > 💡 Program berstatus non-ACTIVE menampilkan **banner notifikasi** di halaman detail dengan tombol aksi sesuai peran Anda.
 
+### Tab di Detail Program
+
+| Tab | Isi |
+|-----|-----|
+| **Ringkasan** | Metrik kunci, readiness checklist, banner status, link cepat |
+| **Struktur** | Workstream → Phase → Task (hierarki kerja) |
+| **Jadwal** | Grid Ren/Real mingguan — perbandingan rencana vs realisasi per minggu |
+| **Hambatan** | Daftar Blocker aktif & terselesaikan di program ini |
+| **KPI APMS** | Hubungkan KPI APMS dan kelola KPI internal program |
+
 ### Cara Membuat Program Baru
 
 1. Buka menu **Programs** di sidebar
@@ -293,20 +438,16 @@ Program adalah unit kerja strategis utama di ATLAS. Di dalamnya terdapat Workstr
 4. Klik **Simpan** — program baru akan muncul di daftar
 5. Semua anggota tim akan melihat program baru secara real-time
 
-> 💡 Setelah program dibuat, Anda dapat membuka detailnya dan menambahkan **Workstream** sebagai jalur kerja di dalamnya.
-
 ### Cara Menambah Workstream
 
-1. Buka detail program yang dituju
-2. Klik tab **Workstream**, lalu klik **+ Workstream Baru**
+1. Buka detail program → tab **Struktur**
+2. Klik **+ Workstream Baru**
 3. Isi nama, kode, tanggal mulai/selesai, dan pilih PIC
 4. Klik **Simpan**
 
 ### Cara Menambah Phase
 
-Phase adalah tahapan dalam sebuah Workstream. Buat Phase terlebih dahulu sebelum menambahkan Task.
-
-1. Buka detail program → tab **Workstream**
+1. Buka detail program → tab **Struktur**
 2. Klik nama Workstream untuk membuka panel detailnya
 3. Klik **+ Tambah Phase**
 4. Isi nama Phase (contoh: *Fase Persiapan*, *Analisis Data*, *Penyusunan Laporan*)
@@ -314,9 +455,7 @@ Phase adalah tahapan dalam sebuah Workstream. Buat Phase terlebih dahulu sebelum
 
 ### Cara Menambah Task
 
-Task adalah unit kerja yang akan muncul di **Papan Kerja (Execution)** dan bisa di-assign ke anggota tim.
-
-**Dari tab Workstream (direkomendasikan untuk task dalam Phase):**
+**Dari tab Struktur (untuk task dalam Phase):**
 1. Buka panel detail Workstream → klik Phase yang dituju
 2. Klik **+ Tambah Task** di bawah Phase tersebut
 3. Isi judul, prioritas, assignee, tanggal mulai, dan target selesai
@@ -333,32 +472,95 @@ Program **tidak dapat diubah** selama dalam proses persetujuan (status `PENDING_
 
 ### Health Score Program
 
-Health Score dihitung otomatis dari **tiga sinyal** dan diperbarui setiap kali ada perubahan data:
+Health Score dihitung otomatis dari **empat sinyal** dan diperbarui setiap kali ada perubahan data:
 
 | Sinyal | Kondisi RED | Kondisi YELLOW |
 |--------|-------------|----------------|
 | **Workstream** | Ada ≥1 Workstream aktif berstatus RED | Ada ≥1 Workstream aktif berstatus YELLOW |
-| **Risiko** | Ada ≥2 risiko HIGH terbuka | Ada ≥1 risiko HIGH terbuka |
-| **KPI Internal** | ≥2 KPI di bawah ambang kritis | ≥1 KPI di bawah ambang kritis atau warning |
+| **KPI** | ≥2 KPI di bawah ambang kritis | ≥1 KPI di bawah ambang kritis atau warning |
+| **Task overdue** | ≥3 task terlambat aktif | ≥1 task terlambat aktif |
+| **Blocker** | Ada ≥1 blocker SEVERITY=HIGH terbuka | Ada ≥1 blocker MEDIUM terbuka |
 
-> **Aturan:** Sinyal terburuk menang (RED > YELLOW > GREEN). KPI hanya dihitung jika sudah ada nilai aktual yang diinput.
+> **Aturan:** Sinyal terburuk menang (RED > YELLOW > GREEN). KPI hanya dihitung jika sudah ada nilai aktual.
 
 Health diperbarui otomatis setiap kali:
-- Nilai aktual KPI diinput (`+ Input Nilai`)
+- Nilai aktual KPI diinput
 - Status atau progres Task diubah
 - Workstream diperbarui
+- Blocker dibuat/diresolve
 
-### Fitur Lain di Program
+Selain trigger otomatis, scheduler `atlas:compute-health` me-rekompute health setiap 30 menit sebagai jaring pengaman.
 
-- **Tab KPI** — hubungkan KPI APMS dan buat KPI internal dengan target & threshold; panel monitoring menampilkan status tiap indikator secara visual
-- **Tab Diskusi** — komentar & diskusi tim dalam konteks program
-- **Tab Timeline** — jadwal program secara visual
-- **Health Score** — indikator kesehatan program berbasis tiga sinyal: workstream, risiko, dan KPI
+### Vocabulary Status
+
+ATLAS menggunakan empat label resmi untuk status pengerjaan: **On Track** · **At Risk** · **Terlambat** · **Completed**. Hindari variasi lain di label UI agar konsisten.
 
 **Status: ✅ Lengkap**
 
 
-## 4. Papan Kerja (Workboard)
+## 6. Perencanaan — Charter Program (Read-Only)
+
+**Siapa yang bisa:** Semua pengguna dengan akses ke program
+
+Charter adalah tampilan satu halaman read-only sebuah Program — mirror format KPI Charter, cocok untuk presentasi atau export.
+
+### Cara Membuka Charter
+
+1. Buka detail Program
+2. Klik tombol **Charter** di header (atau langsung ke URL `/programs/{id}/charter`)
+
+### Isi Charter
+
+- **Header strip** — kode, nama, badge status, sasaran strategis, tombol Export
+- **Tabel aktivitas bulanan** — baris Target/Real per Task, kolom Januari–Desember
+- **Status panel & latest update** — sidebar kanan dengan ringkasan kondisi terkini
+- **PICA & Langkah Selanjutnya** — diturunkan dari progress log terbaru
+- **KPI Progress Table** — historis capaian KPI per bulan
+
+### Export
+
+Klik **Export PPTX** di header untuk mengunduh deck satu program. ATLAS juga mendukung export massal (N program → 1 deck) lewat tombol **Export Batch** di halaman list Programs.
+
+> 💡 Charter **hanya menampilkan**. Untuk edit data, kembali ke 5 tab Program (Ringkasan/Struktur/Jadwal/Hambatan/KPI).
+
+**Status: ✅ Lengkap**
+
+
+## 7. Perencanaan — Roadmap Portfolio
+
+**Siapa yang bisa:** Semua pengguna (skup berbeda per jabatan)
+
+Roadmap menyajikan portofolio Program secara visual — lane atau timeline — untuk melihat distribusi kerja, beban, dan kesehatan.
+
+### Cara Akses
+
+- Tekan **G R** dari mana saja, atau buka URL `/roadmap`
+- Bisa juga dari Command Palette (⌘K → "Roadmap")
+
+### Mode Tampilan
+
+| Mode | Untuk apa |
+|------|-----------|
+| **Lanes** | Program dikelompokkan per dimensi pilihan: Status / Prioritas / Kesehatan |
+| **Timeline** | Gantt-style — start–end program di sumbu waktu |
+
+### Skup per Jabatan
+
+| Jabatan | Default pengelompokan | Skup data |
+|---------|----------------------|-----------|
+| BOD / KADIV | Kesehatan (Green/Yellow/Red) | Semua program direktoratnya (BOD: portfolio penuh) |
+| Lainnya | Status | Program di unit-nya |
+
+### Yang Ditampilkan
+
+- **Summary metrics** — total, aktif, rata-rata %, jumlah at-risk
+- **Lane program cards** — kode, nama, progres %, risk score (≥10), owner
+- **Program Alignment matrix** *(strategic view)* — 8 program teratas, persentase alignment
+
+**Status: ✅ Lengkap**
+
+
+## 8. Eksekusi — Papan Kerja (Workboard)
 
 **Siapa yang bisa:** Semua pengguna (OFFICER/ASISTEN terutama)
 
@@ -366,7 +568,7 @@ Papan Kerja adalah tempat utama untuk mengelola dan memantau tugas harian. Terse
 
 ### Cara Menggunakan Papan Kerja
 
-1. Klik **Execution** di sidebar
+1. Klik **Execution** di sidebar (atau tekan **G E**)
 2. Pilih tampilan **Board** atau **List** di bagian atas
 3. Filter berdasarkan **Program** atau **Workstream** sesuai kebutuhan
 
@@ -393,15 +595,50 @@ Papan Kerja adalah tempat utama untuk mengelola dan memantau tugas harian. Terse
 - Menambahkan **Subtask** sebagai checklist langkah-langkah
 - Menulis komentar atau diskusi
 - Melaporkan **blocker** (hambatan) jika ada
+- Membuat **Eskalasi** (Clear the Path) bila perlu dukungan atasan
 
-> 💡 **Tugas Saya:** Gunakan filter "My Tasks" untuk melihat hanya tugas yang ditugaskan kepada Anda.
+> 💡 **WIP limit** — sistem mengingatkan jika beban IN_PROGRESS Anda melampaui batas wajar, agar tim tidak overload.
 
 **Status: ✅ Lengkap**
 
-> 🔧 *Catatan teknis: Endpoint `/api/my-work` baru 397B — implementasi sangat minimal, perlu dikembangkan untuk view personal yang lebih kaya.*
+
+## 9. Eksekusi — Penugasan (Ad-Hoc Task)
+
+**Siapa yang bisa:** BOD/KADIV/KASUBDIV/ADMIN (memberi) · Semua (terima/kerjakan)
+
+Penugasan adalah tugas ad-hoc di luar struktur Program — perintah cepat dari atasan ke bawahan, biasanya disertai bukti penyelesaian.
+
+### Cara Akses
+
+Klik **Penugasan** di sidebar (grup Eksekusi), atau tekan **G A**.
+
+### Kolom Kanban Penugasan
+
+Backlog → In Progress → In Review → Completed (kolom Blocked muncul bila ada penugasan terhambat).
+
+### Cara Memberi Penugasan
+
+1. Buka halaman **Penugasan**
+2. Klik **+ Penugasan Baru**
+3. Pilih penerima dari direktori organisasi (sistem menampilkan preview rantai approval bila diperlukan)
+4. Isi judul, deskripsi, prioritas, target selesai, dan jenis bukti yang diharapkan (file / link / catatan)
+5. Klik **Kirim** — penerima langsung mendapat notifikasi
+
+### Cara Menyelesaikan Penugasan
+
+1. Tarik kartu dari Backlog → In Progress saat mulai
+2. Klik kartu untuk membuka detail; unggah bukti (file/link/catatan)
+3. Tarik ke In Review — pemberi tugas akan diminta menyetujui
+4. Pemberi tugas klik **Setujui** → kartu pindah ke Completed
+
+### Filter
+
+Mine / Given to me / Team / All / Awaiting review — chips di bagian atas memudahkan menyaring antrian.
+
+**Status: ✅ Lengkap**
 
 
-## 5. Grid Ren/Real Mingguan
+## 10. Eksekusi — Grid Ren/Real Mingguan
 
 **Siapa yang bisa:** KADIV, BOD (baca) · KASUBDIV (input)
 
@@ -410,7 +647,7 @@ Grid Ren/Real adalah tampilan perbandingan **rencana** (minggu ke berapa suatu t
 ### Cara Mengakses Grid
 
 1. Buka menu **Programs**, pilih program yang dituju
-2. Klik tab **Execution Grid** (Tab 3)
+2. Klik tab **Jadwal**
 3. Pilih **Workstream** dari selector di bagian atas
 4. Grid akan menampilkan seluruh Phase dan Task dengan kolom per minggu
 
@@ -425,104 +662,186 @@ Grid Ren/Real adalah tampilan perbandingan **rencana** (minggu ke berapa suatu t
 
 Garis hijau vertikal menunjukkan **posisi minggu saat ini**.
 
-> 💡 Realisasi dihitung **otomatis** dari status Task. Tidak perlu input manual untuk realisasi — sistem membacanya dari progress task.
+> 💡 Realisasi dihitung **otomatis** dari status Task. Tidak perlu input manual — sistem membacanya dari progress task.
 
 **Status: ✅ Baca & Otomatis Lengkap**
 
-> 🔧 *Catatan teknis: Edit manual per-cell (V2) belum ada — belum ada UI untuk mengubah `plannedWeeks` atau `actualWeeks` langsung dari grid. PRG-SGN-002 dan PRG-SGN-003 belum memiliki data Phase sehingga belum muncul di grid.*
+> 🔧 *Catatan teknis: Edit manual per-cell (V2) belum ada — belum ada UI untuk mengubah `plannedWeeks` atau `actualWeeks` langsung dari grid.*
 
 
-## 6. KPI & Indikator Kinerja
-
-**Siapa yang bisa:** KADIV, ADMIN (kelola) · BOD, KADIV (pantau) · PIC (input nilai)
-
-KPI (Key Performance Indicator) adalah indikator kinerja yang dipantau secara berkala. ATLAS menghubungkan KPI langsung ke Program.
-
-### Cara Melihat KPI
-
-1. Buka **Dashboard** — widget KPI menampilkan ringkasan indikator utama
-2. Atau buka **Analytics** di sidebar untuk tampilan lengkap
-
-### Cara Menambah Nilai Realisasi KPI
-
-1. Buka detail KPI yang dituju
-2. Klik **+ Input Nilai**
-3. Masukkan nilai realisasi, periode, dan catatan (opsional)
-4. Klik **Simpan** — nilai tersimpan dan grafik diperbarui
-
-### Cara Menghubungkan KPI ke Program
-
-1. Buka detail Program
-2. Pilih tab **KPI**
-3. Klik **+ Hubungkan KPI**
-4. Pilih KPI dari daftar, klik **Simpan**
-
-> 💡 KPI yang terhubung ke program akan muncul di **Dashboard** sebagai leading indicator kinerja program tersebut.
-
-**Status: ✅ Lengkap**
-
-> 🔧 *Catatan teknis: Integrasi APMS (sinkronisasi ke/dari sistem PTPN Holding) — route ada di backend, namun implementasi frontend belum terverifikasi.*
-
-
-## 7. Blocker — Hambatan Kerja
+## 11. Eksekusi — Blocker (Hambatan Kerja)
 
 **Siapa yang bisa:** Semua (laporkan) · PIC, KADIV (resolusi/eskalasi)
 
-Blocker adalah hambatan yang menghalangi penyelesaian suatu tugas atau program. Melaporkan blocker membantu tim mengidentifikasi dan menyelesaikan masalah lebih cepat.
+Blocker adalah hambatan yang menghalangi penyelesaian suatu tugas atau program.
 
 ### Cara Melaporkan Blocker
 
 1. Buka detail Task yang terhambat
 2. Klik **+ Tambah Blocker**
-3. Isi judul, deskripsi hambatan, dan tingkat keparahan
-4. Klik **Simpan** — PIC dan KADIV akan mendapat notifikasi
+3. Isi judul, deskripsi hambatan, dan tingkat keparahan (LOW/MEDIUM/HIGH)
+4. Klik **Simpan** — PIC dan KADIV mendapat notifikasi; blocker otomatis dipertimbangkan dalam Health Score
 
-### Cara Menyelesaikan atau Mengeskalaasikan Blocker
+### Cara Menyelesaikan atau Mengeskalasikan Blocker
 
-1. Buka daftar blocker dari **Papan Kerja** (tab Blockers) atau dari detail Program
+1. Buka daftar blocker dari **Papan Kerja** (tab Blockers) atau dari tab Hambatan di detail Program
 2. Klik blocker yang ingin ditangani
-3. Pilih **Tandai Selesai** atau **Eskalasi ke atasan**
-4. Tambahkan catatan penyelesaian, lalu simpan
+3. Pilih:
+   - **Tandai Selesai** dengan ringkasan resolusi (countermeasure)
+   - **Eskalasi ke atasan** → membuka modal Clear the Path
+4. Simpan
 
-> 💡 Setiap blocker memiliki **channel diskusi** tersendiri — Anda bisa langsung mendiskusikan hambatan tersebut bersama tim terkait tanpa keluar dari konteks blocker.
+> 💡 Setiap blocker memiliki **channel diskusi** tersendiri — diskusi tersimpan dalam konteks hambatan.
 
 **Status: ✅ Lengkap**
 
 
-## 8. Jadwal & Rapat
+## 12. Performance — Scorecard Eksekutif
+
+**Siapa yang bisa:** Semua pengguna (skup *role-aware*: BOD/DIRUT melihat semua, jabatan lain melihat skup-nya)
+
+Scorecard adalah surface eksekutif paling tinggi di modul Performance — ranking capaian KPI seluruh direktorat dan divisi.
+
+### Cara Akses
+
+Sidebar → grup **Performance** → **Scorecard**.
+
+### Yang Ditampilkan
+
+- **Header** — rata-rata capaian, total entitas, jumlah di bawah 80%
+- **Top 3 Direktorat** — kartu ranking dengan progress bar
+- **Top 3 Divisi** — kartu ranking, klik untuk masuk ke detail divisi
+- **Semua Direktorat** — grid 6 direktorat + breakdown sub-divisi di bawahnya
+- **Legend warna** — merah (<80%), amber (80–99%), hijau (≥100%)
+
+### Aksi Cepat
+
+- Klik kartu Direktorat → masuk ke **KPI Direktorat** (Kolegial)
+- Klik kartu Divisi → masuk ke **KPI Divisi**
+
+**Status: ✅ Lengkap**
+
+
+## 13. Performance — KPI Direktorat (Kolegial)
+
+**Siapa yang bisa:** BOD/DIRUT (semua direktorat) · KADIV (direktorat sendiri)
+
+KPI Kolegial menyajikan capaian kolektif jajaran direksi — termasuk hero card untuk Direktur Utama bila Anda adalah DIRUT.
+
+### Cara Akses
+
+Sidebar → **Performance** → **KPI Direktorat**.
+
+### Yang Ditampilkan
+
+- **Header** — periode, konteks peran
+- **Summary stats** — total KPI, rata-rata %, jumlah on-target, jumlah di bawah target
+- **Hero Direktur Utama** *(jika user DIRUT)* — skor besar, tag perspektif strategis
+- **Grid 5 Direktur** — kartu per direktur dengan skor & jumlah KPI, klik untuk masuk ke detail
+
+### Detail per Direktur
+
+Halaman detail menampilkan KPI tiap direktur, dikelompokkan per perspektif strategis (Ekonomi & Sosial, IMB, Teknologi, dll). Filter tab per perspektif tersedia di atas daftar.
+
+**Status: ✅ Lengkap**
+
+
+## 14. Performance — KPI Divisi
+
+**Siapa yang bisa:** BOD/DIRUT, KADIV (semua divisi dalam direktorat) · KASUBDIV (divisi sendiri)
+
+### Cara Akses
+
+Sidebar → **Performance** → **KPI Divisi**. Bila Anda BOD fungsional tanpa divisi tertentu, tampilan default adalah **mode komparasi** (semua divisi side-by-side).
+
+### Yang Ditampilkan
+
+- **Mode komparasi** *(BOD fungsional)* — kartu setiap divisi: skor, rank, jumlah KPI, jumlah on-target / at-risk
+- **Mode detail** *(satu divisi)* — daftar KPI lengkap (target, realisasi, skor, forecast, definisi, bobot), peer divisi di sidebar, top performer divisi di sidebar
+
+### Aksi Cepat
+
+- Klik kartu divisi (mode komparasi) → masuk ke mode detail
+- Klik peer divisi → navigasi ke divisi tersebut
+- Klik KPI → buka definisi lengkap
+
+**Status: ✅ Lengkap**
+
+
+## 15. Performance — KPI Saya & KPI Individu
+
+**Siapa yang bisa:** Semua pengguna (KPI Saya = personal · KPI Individu = browse semua karyawan)
+
+### KPI Saya — Halaman Personal
+
+Sidebar → **Performance** → **KPI Saya**.
+
+Yang ditampilkan:
+- Header personal (nama, jabatan, unit, periode, total KPI)
+- Daftar KPI Anda: target, realisasi, skor, bobot, forecast badge
+- **Commitment Ledger** *(jika fitur aktif)* — rolling 8–12 minggu, hit-rate %, counter streak
+
+### Commitment Ledger (3-Source)
+
+Ledger mengukur tingkat penepatan komitmen Anda dari tiga sumber:
+- **Tasks** — task yang ditugaskan / Anda ambil
+- **Meeting Action Items** — action item dari rapat dengan penanggung jawab = Anda
+- **Penugasan** — penugasan ad-hoc dengan penerima = Anda
+
+Hit-rate, streak, dan tren mingguan ditampilkan agar Anda dapat melihat konsistensi sendiri.
+
+### KPI Individu — Browse Semua
+
+Sidebar → **Performance** → **KPI Individu** (atau klik **KPI Individu** dari Scorecard).
+
+Yang ditampilkan:
+- Tombol **KPI Saya** (shortcut ke skor pribadi)
+- **Top performers** — dikelompokkan per direktorat/unit
+- **Org accordion** — expand direktorat → klik divisi untuk filter performer di unit tersebut
+- Klik baris performer → masuk ke detail KPI orang tersebut (skup terbatas oleh policy)
+
+**Status: ✅ Lengkap**
+
+
+## 16. Tindak Lanjut — Rapat Koordinasi
 
 **Siapa yang bisa:** Semua (lihat & RSVP) · Organizer (buat & kelola)
 
-Halaman Jadwal adalah pusat manajemen rapat — dari undangan, RSVP, notulen, hingga action items.
+Halaman Rapat Koordinasi adalah pusat manajemen rapat — dari undangan, RSVP, notulen, hingga action items.
+
+### Cara Akses
+
+Sidebar → grup **Tindak Lanjut** → **Rapat Koordinasi**, atau tekan **G R**.
 
 ### Cara Membuat Rapat
 
-1. Buka **Schedule** di sidebar
-2. Klik **+ Buat Rapat**
-3. Isi judul, tanggal/waktu, lokasi, dan pilih peserta
-4. Hubungkan ke Program (opsional)
-5. Klik **Simpan** — undangan otomatis terkirim ke semua peserta
+1. Klik **+ Buat Rapat**
+2. Isi judul, tanggal/waktu, lokasi, dan pilih peserta
+3. Hubungkan ke Program (opsional)
+4. Klik **Simpan** — undangan otomatis terkirim ke semua peserta
 
 ### Cara Merespons Undangan (RSVP)
 
 1. Anda akan menerima notifikasi undangan rapat
-2. Buka notifikasi atau langsung buka halaman **Schedule**
-3. Temukan rapat yang dimaksud, klik **RSVP**
+2. Buka notifikasi atau halaman **Rapat Koordinasi**
+3. Temukan rapat, klik **RSVP**
 4. Pilih: **Hadir**, **Tidak Hadir**, atau **Delegasi** (tunjuk pengganti)
 
 ### Saat & Setelah Rapat — Notulen & Action Items
 
-1. Buka detail rapat dari halaman **Schedule**
+1. Buka detail rapat
 2. Isi **Notulen** di kolom yang tersedia
 3. Tambahkan **Keputusan** yang dihasilkan
-4. Buat **Action Items** — tandai siapa yang bertanggung jawab dan kapan batas waktunya
+4. Buat **Action Items** — tandai PIC dan batas waktu
 5. Action Items dapat langsung **dijadikan Task** di Papan Kerja dengan satu klik
 
-> 💡 Fitur **Briefing Sebelum Rapat** menampilkan otomatis: status program terkait, blocker aktif, dan action items yang belum selesai dari rapat sebelumnya.
+> 💡 **PICA Composite Panel** menampilkan 4-cell grid (Problem / Identification / Corrective / Action) untuk rapat tipe RAPAT_KOORDINASI — membantu menelusuri akar masalah & tindakan korektif.
+
+> 💡 **Briefing Sebelum Rapat** otomatis menampilkan: status program terkait, blocker aktif, action items yang belum selesai dari rapat sebelumnya.
 
 ### Status Siklus Rapat
 
-Rapat memiliki alur status: **Terjadwal → Berlangsung → Selesai**. Rapat juga bisa **Ditunda** atau **Dibatalkan**.
+Terjadwal → Berlangsung → Selesai. Rapat juga bisa **Ditunda** atau **Dibatalkan**.
 
 ### Siapa yang Bisa Melihat Rapat
 
@@ -534,50 +853,58 @@ Rapat memiliki alur status: **Terjadwal → Berlangsung → Selesai**. Rapat jug
 
 **Status: ✅ Lengkap (V1 + V2 + V3)**
 
-> 🔧 *Catatan teknis: V4 belum tersedia — Meeting Cost (perhitungan person-hours) dan integrasi Google Calendar OAuth belum diimplementasi.*
+> 🔧 *Catatan teknis: V4 belum tersedia — Meeting Cost (person-hours) dan integrasi Google Calendar OAuth belum diimplementasi.*
 
 
-## 9. Laporan Bulanan
+## 17. Tindak Lanjut — Eskalasi (Clear the Path)
 
-**Siapa yang bisa:** KASUBDIV, KADIV (buat & submit) · KADIV, BOD (review & approve)
+**Siapa yang bisa:** Semua (mengajukan) · Atasan dalam rantai org (triase) — fitur aktif untuk pilot DKM
 
-Laporan Bulanan adalah laporan periodik yang berisi progres dan capaian unit kerja, lengkap dengan file Excel pendukung.
+Eskalasi (*Clear the Path*) adalah jalur cepat ke atasan saat pekerjaan terhambat — atasan dapat **commit** untuk membantu, **reroute** ke peer, atau **decline** dengan alasan.
 
-### Cara Membuat Laporan Baru
+> 💡 **Status fitur:** Aktif untuk **pilot DKM** (Divisi Kepatuhan Manajemen) sejak Sprint 4. Dikontrol oleh feature flag `FEATURE_CLEAR_THE_PATH` di config. Saat flag OFF, semua surface UI (button, panel, section di Fokus) otomatis disembunyikan.
 
-1. Buka **Monthly Reports** di sidebar
-2. Klik **+ Buat Laporan**
-3. Pilih tahun, bulan, dan unit kerja
-4. Hubungkan ke program yang relevan (opsional)
-5. Klik **Simpan**
+### Cara Mengajukan Eskalasi
 
-### Cara Mengunggah File Laporan
+1. Klik tombol **Butuh Dukungan Atasan** — tersedia di Home, detail Program, panel Task, panel Blocker, dan detail Action Item
+2. Modal eskalasi terbuka dengan konteks yang sudah ter-prefill (program/task/blocker yang relevan)
+3. Isi judul, deskripsi situasi, dan target atasan (sistem menyarankan atasan langsung)
+4. Klik **Kirim** — atasan menerima notifikasi & item muncul di Fokus mereka
 
-1. Buka laporan yang sudah dibuat
-2. Klik **Upload File** dan pilih file Excel laporan Anda
-3. Sistem akan mengekstrak data metrik dari file secara otomatis
-4. Periksa hasil ekstraksi, lalu klik **Submit untuk Review**
+### Sumber Eskalasi
 
-### Cara Review & Approve Laporan
+Eskalasi bersifat *polymorphic* — sumbernya bisa salah satu dari:
+- **BLOCKER** — dibuat dari hambatan task
+- **PROGRESS_LOG** — dibuat dari log progress program
+- **ACTION_ITEM** — dibuat dari action item rapat
+- **AD_HOC** — tanpa sumber spesifik
 
-1. Anda akan mendapat notifikasi saat ada laporan masuk
-2. Buka laporan dari halaman **Monthly Reports**
-3. Periksa konten dan data metrik
-4. Klik **Setujui** atau **Kembalikan** dengan catatan
+### Cara Atasan Menanggapi (Triage)
 
-### Alur Status Laporan
+Atasan melihat eskalasi masuk di **Fokus** (section *Clear the Path → Eskalasi Masuk*). Klik item membuka **TriagePanel** di sisi kanan dengan tiga aksi:
 
-| Status | Arti |
-|--------|------|
-| DRAFT | Sedang disiapkan |
-| SUBMITTED | Sudah disubmit, menunggu review |
-| APPROVED | Disetujui |
-| REJECTED | Dikembalikan untuk perbaikan |
+| Aksi | Efek | Shortcut |
+|------|------|----------|
+| **Commit** | Atasan menerima eskalasi & set due date — status menjadi COMMITTED | **C** |
+| **Reroute** | Teruskan ke peer/atasan lain dengan alasan | **R** |
+| **Decline** | Tolak dengan catatan | **D** |
+| **Resolve** | Setelah commit & action selesai — tandai RESOLVED | — |
 
-**Status: ✅ Lengkap**
+### Status Eskalasi
+
+REQUESTED → (COMMITTED | DECLINED | rerouted-back-to-REQUESTED) → RESOLVED
+
+### Yang Mengajukan Lihat
+
+- Section *Clear the Path → Eskalasi Saya* di Fokus menampilkan eskalasi aktif yang Anda ajukan beserta statusnya
+- Notifikasi setiap perubahan state (committed, declined, resolved)
+
+**Status: ✅ Lengkap untuk pilot DKM** *(feature flag scoped)*
+
+> 🔧 *Catatan teknis: Flag `FEATURE_CLEAR_THE_PATH` mendukung nilai `enabled` (semua user), `disabled`, atau prefiks DKM seperti `DKM` / `DBS`. `FeatureFlagService::isEnabled` (BE) + `useFeatureFlag` (FE) menjadi gate tunggal — saat OFF, escalation state di Fokus juga di-cleanup (lihat commit f6651be).*
 
 
-## 10. Komunikasi — Channel & Pesan Langsung
+## 18. Komunikasi — Channel & Pesan Langsung
 
 **Siapa yang bisa:** Semua pengguna
 
@@ -585,17 +912,17 @@ ATLAS memiliki sistem komunikasi internal — Channel untuk diskusi tim dan DM u
 
 ### Menggunakan Channel
 
-1. Buka **Channels** di sidebar
+1. Buka **Channels** di sidebar (atau tekan **G C**)
 2. Pilih channel yang ingin diikuti
 3. Ketik pesan di kolom bawah, tekan Enter untuk kirim
 4. Balas pesan dengan klik **Balas** untuk membuat thread diskusi
 5. Tambahkan reaksi emoji dengan hover di atas pesan
 
-> 💡 Setiap **Blocker** memiliki channel diskusi otomatis — percakapan langsung tersimpan dalam konteks hambatan tersebut.
+> 💡 Setiap **Blocker** memiliki channel diskusi otomatis — percakapan langsung tersimpan dalam konteks hambatan.
 
 ### Menggunakan Pesan Langsung (DM)
 
-1. Klik ikon pesan atau cari pengguna via **Search**
+1. Klik ikon pesan atau cari pengguna via **Search** (⌘K)
 2. Ketik dan kirim pesan secara private
 3. Riwayat DM tersimpan dan bisa dicari
 
@@ -608,81 +935,51 @@ ATLAS memiliki sistem komunikasi internal — Channel untuk diskusi tim dan DM u
 **Status: ✅ Lengkap**
 
 
-## 11. Notifikasi & Fokus
+## 19. Akun — Kehadiran, Profil, Pengaturan
 
-**Siapa yang bisa:** Semua pengguna
+**Siapa yang bisa:** Semua pengguna (lihat & update status sendiri) · BOD, KADIV (pantau tim)
 
-Halaman **Fokus** adalah inbox prioritas Anda — semua notifikasi penting dari seluruh modul ATLAS terkumpul di sini.
-
-### Cara Menggunakan Fokus
-
-1. Klik **Focus** di bagian atas sidebar
-2. Lihat ringkasan: tugas aktif, blocker, mention, dan program berisiko
-3. Klik item apapun untuk langsung membuka konteks yang relevan
-4. Klik **Tandai Dibaca** pada notifikasi yang sudah ditindaklanjuti
-
-### Jenis Notifikasi yang Anda Terima
-
-- Undangan rapat dan respons RSVP
-- Tugas baru yang ditugaskan ke Anda
-- Perubahan status tugas milik Anda
-- Mention (@nama) di komentar atau pesan
-- Laporan yang perlu di-review atau hasil review
-- Blocker baru yang dibuat atau diselesaikan
-
-> 💡 Angka merah di ikon lonceng di topbar menunjukkan jumlah notifikasi yang belum dibaca.
-
-**Status: ✅ Lengkap**
-
-
-## 12. Kehadiran & Status Tim
-
-**Siapa yang bisa:** Semua (lihat & update status sendiri) · BOD, KADIV (pantau tim)
-
-Halaman Kehadiran menampilkan siapa yang sedang online, apa yang sedang dikerjakan, dan status ketersediaan seluruh anggota tim.
-
-### Cara Update Status Anda
+### Kehadiran (Presence)
 
 1. Buka **Presence** di sidebar
-2. Di panel kanan, pilih status dari daftar Quick Set:
-   - Sedang bekerja, Dalam meeting, Istirahat, Work from home, dll.
-3. Anda bisa menambahkan **pesan status** (misalnya: "Review laporan Q1")
+2. Pilih status dari Quick Set: *Sedang bekerja, Dalam meeting, Istirahat, Work from home*, dll.
+3. Tambahkan **pesan status** (misalnya: "Review laporan Q1")
 4. Klik **Update Status**
 
-### Cara Melihat Status Tim
+Status online diperbarui otomatis saat Anda membuka/menutup ATLAS. Lihat tim dikelompokkan per divisi/sub-divisi — warna hijau (online), kuning (away), abu (offline).
 
-1. Buka **Presence**
-2. Tim dikelompokkan per divisi/sub-divisi
-3. Status setiap anggota ditampilkan real-time — warna hijau (online), kuning (away), abu (offline)
+### Profil
 
-> 💡 Status online diperbarui otomatis saat Anda membuka dan menutup ATLAS. Anda juga bisa mengatur status manual kapan saja.
+Buka **Profile** untuk melihat hierarki jabatan Anda, ubah foto, dan ganti password lewat **Auth → Change Password**.
+
+### Pengaturan (Settings)
+
+Workspace preferences — termasuk theme (light/dark) dan notifikasi.
 
 **Status: ✅ Lengkap**
 
 
-## 13. Pencarian
+## 20. Pencarian Global
 
 **Siapa yang bisa:** Semua pengguna
-
-Fitur pencarian memungkinkan Anda menemukan apa saja di ATLAS dengan cepat — program, tugas, pesan, hingga anggota tim.
 
 ### Cara Mencari
 
 1. Tekan **⌘K** (Mac) atau **Ctrl+K** (Windows) dari mana saja
 2. Atau klik ikon pencarian di topbar
-3. Ketik kata kunci yang dicari
+3. Ketik kata kunci
 4. Hasil dikelompokkan per kategori: Program, Tugas, Channel, Pengguna
 
 **Status: ✅ Ada**
 
-> 🔧 *Catatan teknis: Cakupan full-text search perlu diverifikasi lebih lanjut — route handler saat ini cukup ringkas (12KB).*
+> 🔧 *Catatan teknis: Cakupan full-text search masih terbatas — route handler ringkas (~12 KB). Untuk pencarian mendalam, gunakan Command Palette untuk navigasi cepat.*
 
 
-## 14. Administrasi Sistem
+## 21. Administrasi Sistem
 
 **Siapa yang bisa:** ADMIN, SUPERADMIN
 
-Modul administrasi untuk mengelola pengguna, struktur organisasi, dan konfigurasi hak akses.
+Modul administrasi untuk mengelola pengguna, struktur organisasi, konfigurasi hak akses, plus monitoring pilot dan tuning threshold.
 
 ### Kelola Pengguna
 
@@ -694,63 +991,92 @@ Modul administrasi untuk mengelola pengguna, struktur organisasi, dan konfiguras
 
 ### Kelola Struktur Organisasi
 
-1. Buka **Admin → Organizations**
-2. Tambah atau edit Direktorat, Divisi, dan Sub-Divisi
+1. Buka **Admin → Companies** (Direktorat & unit) atau **Admin → Positions** (jabatan)
+2. Tambah atau edit Direktorat, Divisi, Sub-Divisi, jabatan
 3. Perubahan langsung tercermin di seluruh modul ATLAS
 
 ### Konfigurasi Hak Akses (Role)
 
-1. Buka **Admin → Roles** (SUPERADMIN only)
-2. Lihat dan atur permission matrix per jabatan
+1. Buka **Admin → Roles**
+2. Lihat & atur permission matrix per jabatan
 3. Simpan — perubahan berlaku langsung tanpa restart
+
+### Pilot Metrics (Pilot DKM Dashboard)
+
+`Admin → Pilot Metrics` — dashboard khusus untuk memantau metrik adopsi & efektivitas pilot DKM:
+- Adopsi fitur Clear the Path
+- Cycle time eskalasi (request → resolve)
+- Distribusi outcome (commit / reroute / decline)
+- Comparison antara DKM (treatment) dan divisi lain (control)
+
+### Thresholds *(SUPERADMIN)*
+
+`Admin → Thresholds` — tuning angka sistem tanpa redeploy. Mengubah ambang aging, carryover, dan threshold yang awalnya di-set lewat `config/atlas-thresholds.php`. Perubahan berlaku live setelah save.
 
 **Status: ✅ Lengkap**
 
 
-## 15. Ringkasan Status Implementasi
+## 22. Ringkasan Status Implementasi
 
 Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan evaluator.
 
 | Modul | Backend | Frontend | Realtime | Status |
 |-------|---------|----------|----------|--------|
-| Login & Session | ✅ | ✅ | — | ✅ |
-| Navigasi per Role | ✅ | ✅ | — | ✅ |
+| Login (NIK/UserID) & Session | ✅ | ✅ | — | ✅ |
+| Navigasi PDCA per Role | ✅ | ✅ | — | ✅ |
+| Home (Ringkasan Eksekutif) | ✅ | ✅ | ✅ | ✅ |
+| Fokus (Inbox) | ✅ | ✅ | ✅ | ✅ |
 | Program CRUD | ✅ | ✅ | ✅ | ✅ |
 | Program Approval (DRAFT→ACTIVE) | ✅ | ✅ | ✅ | ✅ |
+| Charter View Program | ✅ | ✅ | — | ✅ |
+| Charter Export PPTX (single + batch) | ✅ | ✅ | — | ✅ |
+| Roadmap (Lanes + Timeline) | ✅ | ✅ | ✅ | ✅ |
 | Workstream CRUD | ✅ | ✅ | ✅ | ✅ |
-| Workstream tab info (PIC, tanggal, prioritas, blocker) | ✅ | ✅ | — | ✅ |
-| Label Phase/Task/Subtask (konsistensi terminologi) | ✅ | ✅ | — | ✅ |
-| Task (Papan Kerja) | ✅ | ✅ | ✅ | ✅ |
-| Execution Grid (baca) | ✅ | ✅ | ✅ | ✅ |
-| Execution Grid (edit cell) | ❌ | ❌ | — | ❌ V2 |
+| Phase / Task / Subtask | ✅ | ✅ | ✅ | ✅ |
+| Papan Kerja (Workboard) | ✅ | ✅ | ✅ | ✅ |
+| Penugasan (Assignment + approval chain) | ✅ | ✅ | ✅ | ✅ |
+| Grid Ren/Real (baca otomatis) | ✅ | ✅ | ✅ | ✅ |
+| Grid Ren/Real (edit cell manual) | ❌ | ❌ | — | ❌ V2 |
+| Blocker (CRUD + resolution + escalation) | ✅ | ✅ | ✅ | ✅ |
 | KPI Tracking (internal + APMS link) | ✅ | ✅ | ✅ | ✅ |
-| KPI-Driven Program Health | ✅ | ✅ | ✅ | ✅ |
+| Program Health (workstream + KPI + overdue + blocker) | ✅ | ✅ | ✅ | ✅ |
+| Scheduler `atlas:compute-health` (30 min) | ✅ | — | — | ✅ |
+| Performance — Scorecard | ✅ | ✅ | ✅ | ✅ |
+| Performance — KPI Direktorat (Kolegial) | ✅ | ✅ | ✅ | ✅ |
+| Performance — KPI Divisi | ✅ | ✅ | ✅ | ✅ |
+| Performance — KPI Saya | ✅ | ✅ | ✅ | ✅ |
+| Performance — KPI Individu | ✅ | ✅ | ✅ | ✅ |
+| Commitment Ledger (3-source) | ✅ | ✅ | ✅ | ✅ |
 | Integrasi APMS (live sync) | ❌ | ⚠️ | — | ⚠️ |
-| Blocker | ✅ | ✅ | ✅ | ✅ |
 | Meeting V1 (CRUD + RSVP) | ✅ | ✅ | ✅ | ✅ |
 | Meeting V2 (Notulen + Action Items) | ✅ | ✅ | ✅ | ✅ |
 | Meeting V3 (Prep Packet) | ✅ | ✅ | — | ✅ |
+| PICA Composite Panel (RAPAT_KOORDINASI) | ✅ | ✅ | ✅ | ✅ |
 | Meeting V4 (Cost + Google Calendar) | ❌ | ❌ | — | ❌ |
+| Eskalasi (Clear the Path) — pilot DKM | ✅ | ✅ | ✅ | ✅ flag |
 | Focus Blocks | ✅ | ✅ | — | ✅ |
-| Laporan Bulanan | ✅ | ✅ | ✅ | ✅ |
-| Channels + Pesan | ✅ | ✅ | ✅ | ✅ |
+| Channels + Pesan + Thread + Reaksi | ✅ | ✅ | ✅ | ✅ |
 | Direct Message | ✅ | ✅ | ✅ | ✅ |
-| Notifikasi & Fokus | ✅ | ✅ | ✅ | ✅ |
+| Notifikasi | ✅ | ✅ | ✅ | ✅ |
 | Kehadiran Tim | ✅ | ✅ | ✅ | ✅ |
 | Pencarian | ✅ | ✅ | — | ✅ |
-| Admin Users/Org/Roles | ✅ | ✅ | — | ✅ |
+| Admin Users/Org/Roles/Positions | ✅ | ✅ | — | ✅ |
+| Admin Pilot Metrics | ✅ | ✅ | — | ✅ |
+| Admin Thresholds (SUPERADMIN) | ✅ | ✅ | — | ✅ |
+| PDCA Onboarding Tour | ✅ | ✅ | — | ✅ |
 | My Work (personal view) | ⚠️ | ✅ | ✅ | ⚠️ |
 | Realtime SSE | ✅ | ✅ | — | ✅ |
+| Laporan Bulanan *(diakses via deep-link, tidak di sidebar)* | ✅ | ✅ | ✅ | ✅ |
+| Laporan Risiko *(diakses via deep-link, tidak di sidebar)* | ✅ | ✅ | ✅ | ✅ |
 
 ### Gap Prioritas
 
-- ❌ **Execution Grid edit (V2)** — belum ada UI klik-sel untuk ubah rencana/realisasi manual
+- ❌ **Grid Ren/Real edit (V2)** — belum ada UI klik-sel untuk ubah rencana/realisasi manual
 - ❌ **Meeting V4** — Google Calendar OAuth dan kalkulasi biaya rapat belum diimplementasi
-- ❌ **APMS Live Sync** — fetch data real dari AGHRIS belum diimplementasi; KPI APMS saat ini masih menggunakan seed data. KPI internal (buat sendiri) sudah berfungsi penuh termasuk monitoring health
-- ⚠️ **My Work** — endpoint minimal, perlu dikembangkan untuk view personal lebih lengkap
-- ⚠️ **PRG-SGN-002 & PRG-SGN-003** — belum memiliki data Phase, tidak akan muncul di Execution Grid
+- ❌ **APMS Live Sync** — fetch data real dari AGHRIS belum diimplementasi; KPI APMS masih menggunakan seed data. KPI internal berfungsi penuh termasuk monitoring health
+- ⚠️ **My Work endpoint** — implementasi minimal, sebagian besar fungsionalitas sudah diserap ke Fokus dan Papan Kerja
 
-**Status: ✅ Evaluasi Lengkap per 22 Apr 2026**
+**Status: ✅ Evaluasi Lengkap per 18 Mei 2026** (Sprint 0–5 MVP selesai 8 Mei 2026)
 
 
-*Panduan ini mencerminkan kondisi implementasi ATLAS per 22 Apr 2026. Perbarui dokumen setiap ada perubahan fitur signifikan.*
+*Panduan ini mencerminkan kondisi implementasi ATLAS per 18 Mei 2026. Perbarui dokumen setiap ada perubahan fitur signifikan.*

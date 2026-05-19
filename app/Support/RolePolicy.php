@@ -47,10 +47,20 @@ class RolePolicy
         return self::isAdminOrAbove($r) || in_array($r, ['kadiv', 'kasubdiv', 'asisten'], true);
     }
 
-    public static function canEditProgram(?string $role, bool $isOwner): bool
+    /**
+     * Edit izin untuk program.
+     *
+     * `$isInRevision` = program baru ditolak & sedang menunggu PIC memperbaiki
+     * (approvalStatus === 'DRAFT' && rejectionNote !== null). Selama state ini
+     * hanya owner & admin yang boleh edit — KADIV/KASUBDIV reviewer "step back"
+     * agar tidak mem-bypass koreksi yang baru saja mereka minta sendiri.
+     */
+    public static function canEditProgram(?string $role, bool $isOwner, bool $isInRevision = false): bool
     {
         $r = self::norm($role);
-        if (self::isAdminOrAbove($r) || $r === 'kadiv') return true;
+        if (self::isAdminOrAbove($r)) return true;
+        if ($isInRevision) return $isOwner;
+        if ($r === 'kadiv') return true;
         if (($r === 'kasubdiv' || $r === 'asisten') && $isOwner) return true;
         return false;
     }

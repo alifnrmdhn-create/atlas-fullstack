@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\OrgScope;
 use App\Services\ScorecardSummaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,10 +26,29 @@ class PerformanceController extends Controller
     ];
 
     // ── KPI Kolegial Overview ─────────────────────────────────────────────
-    public function kolegial(Request $request): Response
+    public function kolegial(Request $request): Response|RedirectResponse
     {
         $periode = $request->query('periode') ?? now()->format('Y-m');
-        $grid = $this->scorecard->direktoratGrid($request->user(), $periode);
+        $user = $request->user();
+        $scope = $user ? OrgScope::forUser($user) : null;
+
+        // BOD-fungsional → scope mereka cuma 1 direktorat sendiri, jadi landing
+        // overview tidak masuk akal (single card kosong). Langsung redirect ke
+        // detail KPI direktorat mereka (19 KPI breakdown per perspektif).
+        if ($scope && strtoupper($user->roleType ?? '') === 'BOD' && !$scope->isExecutive && $user->directorateId) {
+            $directorate = $user->directorate;
+            if ($directorate) {
+                $codeAlias = ['DIR-KMR' => 'DKM'];
+                $aliased = $codeAlias[$directorate->code] ?? $directorate->code;
+                $slug = strtolower($aliased);
+                return redirect()->route('performance.kolegial.detail', array_filter([
+                    'slug' => $slug,
+                    'periode' => $request->query('periode'),
+                ]));
+            }
+        }
+
+        $grid = $this->scorecard->direktoratGrid($user, $periode);
 
         // Normalize DB code → direkturList key. DB has 'DIR-KMR' as the
         // canonical Directorate.code, but direkturList uses 'DKM' (short
@@ -139,18 +159,34 @@ class PerformanceController extends Controller
 
     // ── KPI Divisi (Sprint 2) ──────────────────────────────────────────────
     /**
-     * Halaman KPI per-divisi. Resolve $kode dari user.unitId kalau null.
-     * Render Performance/DivisiView dengan KPI strip + peer divisi + top performer.
+     * Halaman KPI per-divisi. Dua mode render berbasis role + $kode:
+     *
+     *   - BOD-fungsional (Direktur Keuangan/Bisnis/Aset/SDM/Produksi) + no $kode
+     *     → comparison mode: tampil semua divisi di direktoratnya side-by-side.
+     *   - Else (KADIV/KASUBDIV/Officer atau BOD dengan $kode eksplisit)
+     *     → single mode: detail satu divisi (existing behavior).
+     *
+     * DIRUT (portfolio-level) tanpa $kode redirect ke scorecard karena dia
+     * tidak punya "satu direktorat" — scorecard sudah punya full grid.
      *
      * Note: data dummy. Integrasi data riil di Sprint 6.
      */
-    public function divisi(Request $request, ?string $kode = null): Response
+    public function divisi(Request $request, ?string $kode = null): Response|RedirectResponse
     {
         $periode = $request->query('periode', '2026-03');
+        $user = $request->user();
+        $scope = $user ? OrgScope::forUser($user) : null;
 
-        // Resolve default kode dari unit user kalau tidak diberikan
-        $resolvedKode = $kode ?? $this->resolveUserDivisi($request->user());
+        if ($kode === null && $scope && strtoupper($user->roleType ?? '') === 'BOD') {
+            // DIRUT (portfolio) → scorecard. BOD-fungsional → comparison.
+            if ($scope->isExecutive) {
+                return redirect()->route('performance.scorecard', ['periode' => $periode]);
+            }
+            return $this->divisiComparison($user, $periode);
+        }
 
+        // Single divisi mode (existing)
+        $resolvedKode = $kode ?? $this->resolveUserDivisi($user);
         $divisiInfo = $this->lookupDivisi($resolvedKode);
         $direktorat = $divisiInfo['direktorat'];
         $divisi     = $divisiInfo['divisi'];
@@ -158,10 +194,92 @@ class PerformanceController extends Controller
 
         $kpiItems       = $this->getDummyDivisiKpi($divisi['kode']);
         $topPerformers  = $this->getDummyDivisiTopPerformers($divisi['kode']);
+        $mode = 'single';
 
         return Inertia::render('Performance/DivisiView', compact(
-            'divisi', 'direktorat', 'peers', 'kpiItems', 'topPerformers', 'periode'
+            'mode', 'divisi', 'direktorat', 'peers', 'kpiItems', 'topPerformers', 'periode'
         ));
+    }
+
+    /**
+     * Comparison view: 3-up grid divisi di direktorat user (BOD-fungsional).
+     * Pull divisi list dari getDirektoratGrid() dummy, top KPIs per divisi
+     * dari getDummyDivisiKpi(). Akan switch ke ScorecardSummaryService di Sprint 6.
+     */
+    private function divisiComparison(\App\Models\User $user, string $periode): Response
+    {
+        // DB Directorate.code → grid kode alias (sama dengan kolegial() codeAlias)
+        $codeAlias = ['DIR-KMR' => 'DKM'];
+        $directorate = $user->directorate;
+        $dirCode = $directorate ? ($codeAlias[$directorate->code] ?? $directorate->code) : null;
+
+        $gridDir = null;
+        if ($dirCode) {
+            foreach ($this->getDirektoratGrid() as $row) {
+                if ($row['kode'] === $dirCode) { $gridDir = $row; break; }
+            }
+        }
+
+        if (!$gridDir) {
+            // Fallback: direktorat user tidak ada di grid dummy → empty state.
+            return Inertia::render('Performance/DivisiView', [
+                'mode' => 'comparison',
+                'direktorat' => $directorate
+                    ? ['kode' => $directorate->code, 'nama' => $directorate->name, 'nilai' => 0.0]
+                    : ['kode' => '—', 'nama' => 'Direktorat tidak terdeteksi', 'nilai' => 0.0],
+                'divisiList' => [],
+                'periode' => $periode,
+            ]);
+        }
+
+        $divisiList = [];
+        foreach ($gridDir['divisi'] as $idx => $div) {
+            $kpiItems = $this->getDummyDivisiKpi($div['kode']);
+            // Top 5 KPI by bobot — yang paling berkontribusi ke skor divisi
+            usort($kpiItems, fn ($a, $b) => ($b['bobot'] ?? 0) <=> ($a['bobot'] ?? 0));
+            $keyKpis = array_map(fn ($k) => [
+                'kode'      => $k['kode'],
+                'nama'      => $k['nama'],
+                'bobot'     => $k['bobot'],
+                'satuan'    => $k['satuan'],
+                'polaritas' => $k['polaritas'],
+                'sasaran'   => $k['sasaran'],
+                'realisasi' => $k['realisasi'],
+                'skor'      => $k['skor'],
+            ], array_slice($kpiItems, 0, 5));
+
+            // Summary: on-target vs at-risk count (skor/bobot >= 100% = on target)
+            $onTarget = 0; $atRisk = 0;
+            foreach ($kpiItems as $k) {
+                $bobot = (float) ($k['bobot'] ?? 0);
+                $skor  = (float) ($k['skor'] ?? 0);
+                $pct   = $bobot > 0 ? ($skor / $bobot) * 100 : 0;
+                if ($pct >= 95) $onTarget++; else $atRisk++;
+            }
+
+            $divisiList[] = [
+                'kode'        => $div['kode'],
+                'nama'        => $div['nama'],
+                'nilai'       => $div['nilai'],
+                'rank'        => $idx + 1,
+                'totalDivisi' => count($gridDir['divisi']),
+                'kpiCount'    => count($kpiItems),
+                'onTarget'    => $onTarget,
+                'atRisk'      => $atRisk,
+                'keyKpis'     => $keyKpis,
+            ];
+        }
+
+        return Inertia::render('Performance/DivisiView', [
+            'mode' => 'comparison',
+            'direktorat' => [
+                'kode'  => $gridDir['kode'],
+                'nama'  => $gridDir['nama'],
+                'nilai' => $gridDir['nilai'],
+            ],
+            'divisiList' => $divisiList,
+            'periode' => $periode,
+        ]);
     }
 
     /** Resolve kode divisi dari user. Default DKSA kalau tidak ketemu. */

@@ -321,6 +321,7 @@ const ACTION_NOTIF_TYPES = new Set([
   'DM_RECEIVED',
   'MENTION',
   'PROGRAM_NEEDS_APPROVAL',
+  'PROGRAM_REJECTED',
   'REPORT_NEEDS_REVISION',
   'DEADLINE_APPROACHING',
   'TASK_ASSIGNED',
@@ -343,6 +344,8 @@ const NOTIF_FALLBACK_CONTEXT: Record<string, { roleImpact: string; impact: strin
   DM_RECEIVED: { roleImpact: 'Anda penerima pesan langsung', impact: 'Percakapan kerja menunggu respon' },
   MENTION: { roleImpact: 'Anda disebut dalam diskusi', impact: 'Ada konteks yang mungkin membutuhkan respon' },
   PROGRAM_NEEDS_APPROVAL: { roleImpact: 'Anda approver program', impact: 'Program belum bisa lanjut tanpa approval' },
+  PROGRAM_REJECTED: { roleImpact: 'Anda PIC program', impact: 'Perbaiki sesuai catatan, lalu ajukan ulang' },
+  PROGRAM_WITHDRAWN: { roleImpact: 'Anda reviewer program', impact: 'Pengajuan ditarik PIC — tidak perlu review lagi' },
   REPORT_NEEDS_REVISION: { roleImpact: 'Anda perlu memperbaiki laporan', impact: 'Siklus review tertahan sampai revisi masuk' },
   TASK_ASSIGNED: { roleImpact: 'Anda PIC tugas', impact: 'Menunggu tindak lanjut dari Anda' },
   // Sprint 4 — Clear the Path
@@ -371,6 +374,7 @@ function notificationIntentLabel(notification: NotificationItem): string {
   if (notification.type === 'MENTION') return 'Buka percakapan'
   if (notification.type === 'BLOCKER_CREATED') return 'Follow up'
   if (notification.type === 'PROGRAM_NEEDS_APPROVAL' || notification.type === 'APPROVAL') return 'Review'
+  if (notification.type === 'PROGRAM_REJECTED') return 'Perbaiki & ajukan ulang'
   if (notification.type === 'REPORT_NEEDS_REVISION') return 'Revisi'
   if (notification.type === 'DEADLINE_APPROACHING') return 'Cek deadline'
   if (notification.type === 'TASK_ASSIGNED') return 'Kerjakan'
@@ -707,7 +711,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
     MENTION: 'Mention', APPROVAL: 'Approval',
     BLOCKER_CREATED: 'Blocker', TASK_ASSIGNED: 'Tugas',
     PROGRAM_NEEDS_APPROVAL: 'Approval', PROGRAM_APPROVED: 'Program',
-    PROGRAM_REJECTED: 'Program', REPORT_AWAITING_REVIEW: 'Laporan',
+    PROGRAM_REJECTED: 'Program', PROGRAM_WITHDRAWN: 'Program',
+    REPORT_AWAITING_REVIEW: 'Laporan',
     REPORT_AWAITING_APPROVAL: 'Laporan', REPORT_APPROVED: 'Laporan',
     REPORT_REJECTED: 'Laporan', REPORT_NEEDS_REVISION: 'Laporan',
     DEADLINE_APPROACHING: 'Deadline', DM_RECEIVED: 'DM',
@@ -911,7 +916,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const grpEksekusi           = { label: 'Eksekusi',    items: [NI.execution, NI.penugasan] }
   const grpEksekusiReadOnly   = { label: 'Eksekusi',    items: [NI.execution, NI.penugasan] }
   // Performance hierarchy: Scorecard → KPI Direktorat → KPI Divisi → KPI Saya.
+  // BOD: tanpa "KPI Saya" — Direksi tidak punya KPI personal, scope-nya = direktorat.
+  // KADIV: full set (KPI Saya = personal Kadiv sebagai individu).
   // KASUBDIV: hanya KPI Divisi & KPI Saya. OFFICER/ASISTEN: hanya KPI Saya.
+  const grpPerformanceBod     = { label: 'Performance', items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi] }
   const grpPerformanceFull    = { label: 'Performance', items: [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfSaya] }
   const grpPerformanceMid     = { label: 'Performance', items: [NI.perfDivisi, NI.perfSaya] }
   const grpPerformanceMin     = { label: 'Performance', items: [NI.perfSaya] }
@@ -933,7 +941,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
   }
 
   // ── Role-aware nav groups (PDCA flow) ──────────────────────────────────────
-  // BOD / KADIV       → semua: Plan, Do, Performance lengkap, Act, Komunikasi, Akun
+  // BOD               → Plan, Do, Performance BOD (no KPI Saya), Act, Komunikasi, Akun
+  // KADIV             → Plan, Do, Performance lengkap, Act, Komunikasi, Akun
   // KASUBDIV          → Plan, Do, Performance mid (KPI Divisi + KPI Saya), Act, Komunikasi, Akun
   // OFFICER/ASISTEN   → Do prioritas, KPI Saya, Act, Komunikasi, Akun
   // Default (Admin)   → full nav
@@ -943,7 +952,14 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // direct URL, notif deep-link, dan link di Analytics/Home focus card.
   // Re-enable: tambah grup di blok ini + restore section di lib/nav-config.ts.
   const navGroups: { label: string; items: NavItem[] }[] = (() => {
-    if (role === 'BOD' || role === 'KADIV') {
+    if (role === 'BOD') {
+      return [
+        grpPerencanaan, grpEksekusi, grpPerformanceBod,
+        grpTindakLanjut, grpKomunikasi, grpAkun,
+        ...(isAdmin ? [grpAdmin] : []),
+      ]
+    }
+    if (role === 'KADIV') {
       return [
         grpPerencanaan, grpEksekusi, grpPerformanceFull,
         grpTindakLanjut, grpKomunikasi, grpAkun,

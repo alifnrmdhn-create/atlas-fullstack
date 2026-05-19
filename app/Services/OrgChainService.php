@@ -149,4 +149,19 @@ class OrgChainService
         $chain = $this->getEscalationChain($user, self::MAX_DEPTH);
         return $chain->contains(fn (User $u) => $u->id === $candidate->id);
     }
+
+    /**
+     * Walk supervisor chain dari $user dan kembalikan semua user yang punya
+     * roleType cocok (case-insensitive). Berguna untuk resolve approver/
+     * reviewer di approval flow (siapa KASUBDIV/KADIV di atas PIC ini).
+     *
+     * @return Collection<int, User>
+     */
+    public function resolveSupervisorsByRole(User $user, string $targetRole): Collection
+    {
+        $target = strtoupper($targetRole);
+        return $this->getEscalationChain($user, self::MAX_DEPTH)
+            ->filter(fn (User $u) => strtoupper($u->roleType ?? '') === $target)
+            ->values();
+    }
 }

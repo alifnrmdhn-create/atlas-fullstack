@@ -14,6 +14,7 @@ import { api } from '../lib/api'
 import { useFeatureFlag } from '../hooks/useFeatureFlag'
 import { useOnboardingTour } from '../hooks/useOnboardingTour'
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import { useEscKey } from '../hooks/useEscKey'
 import { AgingIndicator, SidePanel } from './ui'
 
 export type EscalationSourceType = 'BLOCKER' | 'PROGRESS_LOG' | 'ACTION_ITEM' | 'AD_HOC'
@@ -122,6 +123,14 @@ export function EscalationCreateModal({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const isDirty = title !== prefillTitle || description !== prefillDescription
+  const safeClose = () => {
+    if (saving) return
+    if (isDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    onClose()
+  }
+  useEscKey(safeClose, true)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -142,7 +151,7 @@ export function EscalationCreateModal({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={safeClose}>
       <div
         className="modal escalation-modal"
         ref={dialogRef}
@@ -160,7 +169,7 @@ export function EscalationCreateModal({
               <h3 id={titleId} className="modal__title">Butuh Dukungan Atasan</h3>
               <p className="modal-subtitle">Sistem akan otomatis mengarahkan ke atasan langsung Anda untuk disposition.</p>
             </div>
-            <button type="button" className="modal__close" onClick={onClose} aria-label="Tutup">
+            <button type="button" className="modal__close" onClick={safeClose} aria-label="Tutup">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="m1 1 10 10M11 1 1 11" />
               </svg>
@@ -197,7 +206,7 @@ export function EscalationCreateModal({
             )}
           </div>
           <div className="modal__footer">
-            <button type="button" className="btn btn--ghost" onClick={onClose} disabled={saving}>Batal</button>
+            <button type="button" className="btn btn--ghost" onClick={safeClose} disabled={saving}>Batal</button>
             <button type="submit" className="btn btn--primary" disabled={saving || title.trim().length < 3}>
               {saving ? 'Mengirim…' : 'Ajukan Eskalasi'}
             </button>
@@ -256,10 +265,21 @@ export function EscalationTriagePanel({
     }
   }
 
+  // Saving guard: Escape & backdrop click di SidePanel jangan menutup panel
+  // saat ada request in-flight. Saat user sedang di sub-form (mode != 'view'),
+  // serahkan Escape ke sub-form yang akan step-back ke 'view'; tanpa cek ini
+  // window listener parent akan fire bareng dan menutup panel sekaligus.
+  // Form-level dirty confirm dipegang masing-masing sub-form.
+  const safeClose = () => {
+    if (saving) return
+    if (mode !== 'view') return
+    onClose()
+  }
+
   return (
     <SidePanel
       open
-      onClose={onClose}
+      onClose={safeClose}
       title={request.title}
       subtitle={`${request.code} · diajukan oleh ${request.requester?.name ?? '—'}`}
     >
@@ -389,6 +409,8 @@ function DispositionDetails({ req }: { req: EscalationRequest }) {
 function CommitForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel: () => void; onSubmit: (due: string, note: string) => void }) {
   const [due, setDue] = useState('')
   const [note, setNote] = useState('')
+  const safeCancel = makeSafeCancel(saving, due !== '' || note !== '', onCancel)
+  useEscKey(safeCancel, true)
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(due, note) }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -399,33 +421,37 @@ function CommitForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel:
         <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Catatan (opsional)</span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={1000} style={{ ...inputStyle, resize: 'vertical' }} />
       </label>
-      <FormActions saving={saving} primaryLabel="Commit" onCancel={onCancel} />
+      <FormActions saving={saving} primaryLabel="Commit" onCancel={safeCancel} />
     </form>
   )
 }
 
 function DeclineForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel: () => void; onSubmit: (reason: string) => void }) {
   const [reason, setReason] = useState('')
+  const safeCancel = makeSafeCancel(saving, reason !== '', onCancel)
+  useEscKey(safeCancel, true)
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(reason) }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Alasan menolak *</span>
         <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} required minLength={5} maxLength={1000} autoFocus style={{ ...inputStyle, resize: 'vertical' }} />
       </label>
-      <FormActions saving={saving} primaryLabel="Decline" disabled={reason.trim().length < 5} onCancel={onCancel} />
+      <FormActions saving={saving} primaryLabel="Decline" disabled={reason.trim().length < 5} onCancel={safeCancel} />
     </form>
   )
 }
 
 function ResolveForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel: () => void; onSubmit: (note: string) => void }) {
   const [note, setNote] = useState('')
+  const safeCancel = makeSafeCancel(saving, note !== '', onCancel)
+  useEscKey(safeCancel, true)
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(note) }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Catatan penyelesaian *</span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} required minLength={5} maxLength={1000} autoFocus style={{ ...inputStyle, resize: 'vertical' }} />
       </label>
-      <FormActions saving={saving} primaryLabel="Tandai Selesai" disabled={note.trim().length < 5} onCancel={onCancel} />
+      <FormActions saving={saving} primaryLabel="Tandai Selesai" disabled={note.trim().length < 5} onCancel={safeCancel} />
     </form>
   )
 }
@@ -434,6 +460,8 @@ function RerouteForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel
   const [targetId, setTargetId] = useState('')
   const [note, setNote] = useState('')
   const id = parseInt(targetId, 10)
+  const safeCancel = makeSafeCancel(saving, targetId !== '' || note !== '', onCancel)
+  useEscKey(safeCancel, true)
   return (
     <form onSubmit={(e) => { e.preventDefault(); if (id) onSubmit(id, note) }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -445,9 +473,23 @@ function RerouteForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel
         <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Catatan (opsional)</span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={500} style={{ ...inputStyle, resize: 'vertical' }} />
       </label>
-      <FormActions saving={saving} primaryLabel="Reroute" disabled={!id} onCancel={onCancel} />
+      <FormActions saving={saving} primaryLabel="Reroute" disabled={!id} onCancel={safeCancel} />
     </form>
   )
+}
+
+/**
+ * Bungkus onCancel agar:
+ *   - Diam saat ada async in-flight (saving=true)
+ *   - Tampilkan confirm() saat ada perubahan yg belum disimpan
+ * Dipakai untuk Escape (via useEscKey) dan tombol Batal di sub-form triage.
+ */
+function makeSafeCancel(saving: boolean, isDirty: boolean, onCancel: () => void): () => void {
+  return () => {
+    if (saving) return
+    if (isDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    onCancel()
+  }
 }
 
 function FormActions({ saving, primaryLabel, disabled, onCancel }: { saving: boolean; primaryLabel: string; disabled?: boolean; onCancel: () => void }) {

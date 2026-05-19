@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import './MonthlyReportDetailDIMR.css'
 import { api } from '../lib/api'
+import { useEscKey } from '../hooks/useEscKey'
 import {
   type RiskReport, type RiskSnapshot, type RiskKRI,
   type RiskStrategy, type RiskGovernance, type RiskLossEvent,
@@ -965,6 +966,13 @@ function RatingModal({ report, onClose, onSaved }: {
   const [rmiScore, setRmiScore]               = useState(report.rmiScore ? String(report.rmiScore) : '')
   const [saving, setSaving] = useState(false)
   const [err, setErr]       = useState<string | null>(null)
+  useEscKey(() => {
+    if (saving) return
+    const dirty = compositeRating !== (report.compositeRating ?? '') ||
+      rmiScore !== (report.rmiScore ? String(report.rmiScore) : '')
+    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    onClose()
+  }, true)
 
   const save = async () => {
     setSaving(true); setErr(null)
@@ -1041,6 +1049,7 @@ function KriEditModal({ report, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
+  const initialDraftsRef = useRef<string>('')
   const [drafts, setDrafts] = useState<KriDraft[]>(
     (report.riskSnapshots ?? []).map((snap, si) => ({
       snapshotIdx: si,
@@ -1063,6 +1072,13 @@ function KriEditModal({ report, onClose, onSaved }: {
   )
   const [saving, setSaving] = useState(false)
   const [err, setErr]       = useState<string | null>(null)
+  useEffect(() => { if (initialDraftsRef.current === '') initialDraftsRef.current = JSON.stringify(drafts) }, [drafts])
+  useEscKey(() => {
+    if (saving) return
+    const dirty = initialDraftsRef.current !== '' && JSON.stringify(drafts) !== initialDraftsRef.current
+    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    onClose()
+  }, true)
 
   const updateKri = (si: number, ki: number, field: string, val: string | boolean) => {
     setDrafts(prev => prev.map((d, i) =>
@@ -1215,6 +1231,7 @@ function LossEventModal({ report, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
+  const initialEventsRef = useRef<string>('')
   const [events, setEvents] = useState<LossDraft[]>(
     (report.lossEvents ?? []).map(e => ({
       eventDate: e.eventDate.slice(0, 10),
@@ -1230,6 +1247,13 @@ function LossEventModal({ report, onClose, onSaved }: {
   )
   const [saving, setSaving] = useState(false)
   const [err, setErr]       = useState<string | null>(null)
+  useEffect(() => { if (initialEventsRef.current === '') initialEventsRef.current = JSON.stringify(events) }, [events])
+  useEscKey(() => {
+    if (saving) return
+    const dirty = initialEventsRef.current !== '' && JSON.stringify(events) !== initialEventsRef.current
+    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    onClose()
+  }, true)
 
   const update = (idx: number, field: keyof LossDraft, val: string | boolean) => {
     setEvents(prev => prev.map((e, i) => i === idx ? { ...e, [field]: val } : e))

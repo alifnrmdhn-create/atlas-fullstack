@@ -46,7 +46,31 @@ type Performer = {
   nilai: number
 }
 
-type PageProps = {
+type KeyKpi = {
+  kode: string
+  nama: string
+  bobot: number
+  satuan: string
+  polaritas: 'maximize' | 'minimize'
+  sasaran: string
+  realisasi: string
+  skor: number
+}
+
+type DivisiCompare = {
+  kode: string
+  nama: string
+  nilai: number
+  rank: number
+  totalDivisi: number
+  kpiCount: number
+  onTarget: number
+  atRisk: number
+  keyKpis: KeyKpi[]
+}
+
+type SingleProps = {
+  mode: 'single'
   divisi: Divisi
   direktorat: Direktorat
   peers: Peer[]
@@ -55,8 +79,163 @@ type PageProps = {
   periode: string
 }
 
+type ComparisonProps = {
+  mode: 'comparison'
+  direktorat: Direktorat
+  divisiList: DivisiCompare[]
+  periode: string
+}
+
+type PageProps = SingleProps | ComparisonProps
+
 export default function DivisiView() {
-  const { divisi, direktorat, peers, kpiItems, topPerformers, periode } = usePage<PageProps>().props
+  const props = usePage<PageProps>().props
+  if (props.mode === 'comparison') {
+    return <ComparisonView {...props} />
+  }
+  return <SingleView {...props} />
+}
+
+function ComparisonView({ direktorat, divisiList, periode }: ComparisonProps) {
+  const navigate = useInertiaNavigate()
+  const avgNilai = divisiList.length > 0
+    ? divisiList.reduce((s, d) => s + d.nilai, 0) / divisiList.length
+    : 0
+  const tone = scoreTone(direktorat.nilai)
+
+  return (
+    <>
+      <Head title={`KPI Divisi · ${direktorat.nama}`} />
+      <div className="ds perf">
+        <div className="perf__inner">
+          <header className="perf__header">
+            <div className="perf__header-left">
+              <button className="perf__back" onClick={() => navigate('/performance/scorecard')} type="button">
+                <IconBack />
+                Scorecard
+              </button>
+              <h1 className="perf__title">KPI Divisi</h1>
+              <span className="perf__subtitle">{direktorat.nama}</span>
+            </div>
+            <div className="perf__header-actions">
+              <span className="perf__period-pill">
+                <IconCalendar />
+                {periode}
+              </span>
+            </div>
+          </header>
+
+          {/* Direktorat overview — flat inline header, no nested card (Pattern A) */}
+          <section className="perf-compare__hero">
+            <div className="perf-compare__hero-meta">
+              <span className="perf-compare__hero-eyebrow">Direktorat</span>
+              <h2 className="perf-compare__hero-name">{direktorat.nama}</h2>
+              <div className="perf-compare__hero-sub">
+                <span className="perf-compare__hero-code">{direktorat.kode}</span>
+                <span>·</span>
+                <span>{divisiList.length} divisi</span>
+                <span>·</span>
+                <span>rata-rata divisi {avgNilai.toFixed(2)}%</span>
+              </div>
+            </div>
+            <div className="perf-compare__hero-score">
+              <span className="perf-compare__hero-score-val" data-tone={tone}>
+                {direktorat.nilai.toFixed(2)}%
+              </span>
+              <span className="perf-compare__hero-score-lbl">Nilai direktorat · {periode}</span>
+            </div>
+          </section>
+
+          {divisiList.length === 0 ? (
+            <Card padding="md" className="perf-empty">
+              <div className="perf-empty__title">Belum ada divisi</div>
+              <div>Direktorat ini belum punya data divisi di periode {periode}.</div>
+            </Card>
+          ) : (
+            <div className="perf-compare-grid">
+              {divisiList.map(div => (
+                <DivisiCompareCard key={div.kode} div={div} />
+              ))}
+            </div>
+          )}
+
+          <p className="perf-footnote">Capaian KPI Divisi maksimal: 110%</p>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function DivisiCompareCard({ div }: { div: DivisiCompare }) {
+  const tone = scoreTone(div.nilai)
+  const allOnTarget = div.atRisk === 0 && div.kpiCount > 0
+  const statusTone = allOnTarget ? 'green' : (div.atRisk > div.onTarget ? 'red' : 'amber')
+
+  // Find max bobot for relative bar widths
+  const maxBobot = div.keyKpis.length > 0
+    ? Math.max(...div.keyKpis.map(k => k.bobot || 0))
+    : 1
+
+  return (
+    <Link href={`/performance/divisi/${div.kode.toLowerCase()}`} className="perf-compare-card">
+      <div className="perf-compare-card__top">
+        <span className="perf-compare-card__rank-pill">Rank #{div.rank} / {div.totalDivisi}</span>
+        <span className="perf-compare-card__arrow" aria-hidden="true">→</span>
+      </div>
+
+      <div className="perf-compare-card__hero">
+        <h3 className="perf-compare-card__name">{div.nama}</h3>
+        <div className="perf-compare-card__sub">
+          <span className="perf-compare-card__code">{div.kode}</span>
+          <span className="perf-compare-card__sep">·</span>
+          <span>{div.kpiCount} KPI</span>
+        </div>
+        <div className="perf-compare-card__score-row">
+          <span className="perf-compare-card__score" data-tone={tone}>
+            {div.nilai.toFixed(2)}<span className="perf-compare-card__score-pct">%</span>
+          </span>
+          <span className="perf-compare-card__status" data-tone={statusTone}>
+            {allOnTarget
+              ? `Semua ${div.kpiCount} KPI on target`
+              : `${div.onTarget}/${div.kpiCount} on target`}
+          </span>
+        </div>
+      </div>
+
+      <div className="perf-compare-card__divider" />
+
+      <div className="perf-compare-card__kpis">
+        <span className="perf-compare-card__kpis-label">Kontribusi terbesar · bobot</span>
+        {div.keyKpis.length === 0 ? (
+          <span className="perf-compare-card__kpi-empty">Belum ada KPI</span>
+        ) : (
+          div.keyKpis.map(k => {
+            const pct = realisasiPercent(k.sasaran, k.realisasi, k.polaritas)
+            const itemTone = scoreTone(pct)
+            const barWidth = maxBobot > 0 ? (k.bobot / maxBobot) * 100 : 0
+            return (
+              <div key={k.kode} className="perf-compare-card__kpi">
+                <span className="perf-compare-card__kpi-name" title={k.nama}>{k.nama}</span>
+                <div className="perf-compare-card__kpi-bar" aria-hidden="true">
+                  <div
+                    className="perf-compare-card__kpi-bar-fill"
+                    data-tone={itemTone}
+                    style={{ width: `${barWidth}%` }}
+                  />
+                </div>
+                <span className="perf-compare-card__kpi-skor" data-tone={itemTone}>
+                  {k.skor.toFixed(1)}
+                </span>
+              </div>
+            )
+          })
+        )}
+      </div>
+    </Link>
+  )
+}
+
+function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, periode }: SingleProps) {
   const navigate = useInertiaNavigate()
 
   const tone = scoreTone(divisi.nilai)
@@ -70,9 +249,9 @@ export default function DivisiView() {
           {/* ─── Header ──────────────────────────── */}
           <header className="perf__header">
             <div className="perf__header-left">
-              <button className="perf__back" onClick={() => navigate('/performance/scorecard')} type="button">
+              <button className="perf__back" onClick={() => navigate('/performance/divisi')} type="button">
                 <IconBack />
-                Scorecard
+                Divisi
               </button>
               <h1 className="perf__title">{divisi.nama}</h1>
             </div>

@@ -728,20 +728,31 @@ function LinkedProgramsSection({
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 
-function Modal({ title, subtitle, onClose, children, footer }: {
+function Modal({ title, subtitle, onClose, children, footer, isDirty = false, busy = false }: {
   title: string
   subtitle?: string
   onClose: () => void
   children: React.ReactNode
   footer?: React.ReactNode
+  // Opsional: kalau form di dalam modal punya draft state, oper isDirty agar
+  // Escape/backdrop/tombol X tampilkan confirm sebelum menutup. busy=true
+  // (mis. sedang submit) memblok semua close path agar request in-flight
+  // tidak terinterupsi.
+  isDirty?: boolean
+  busy?: boolean
 }) {
   const dialogRef = useDialogFocus<HTMLDivElement>(true)
-  useEscKey(onClose, true)
+  const safeClose = () => {
+    if (busy) return
+    if (isDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    onClose()
+  }
+  useEscKey(safeClose, true)
   const titleId = useId()
   const subtitleId = useId()
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={safeClose}>
       <div aria-describedby={subtitle ? subtitleId : undefined} aria-labelledby={titleId} aria-modal="true" className="modal-surface mrd-modal-surface" ref={dialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-headcopy">
@@ -749,7 +760,7 @@ function Modal({ title, subtitle, onClose, children, footer }: {
             <span className="modal-title" id={titleId}>{title}</span>
             {subtitle ? <p className="modal-subtitle" id={subtitleId}>{subtitle}</p> : null}
           </div>
-          <button aria-label="Tutup" className="modal__close" onClick={onClose} type="button">
+          <button aria-label="Tutup" className="modal__close" onClick={safeClose} type="button">
             <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
           </button>
         </div>
@@ -1166,6 +1177,7 @@ export function MonthlyReportDetailView() {
           title="Upload Data Excel"
           subtitle="Perbarui isi laporan detail ini dengan import indikator dari template Excel yang sesuai."
           onClose={() => setModal(null)}
+          busy={uploading}
         >
           <section className="modal-section modal-section--soft">
             <div className="modal-section__intro">
@@ -1207,6 +1219,8 @@ export function MonthlyReportDetailView() {
           title="Review & Approval"
           subtitle="Pilih keputusan review dan tambahkan konteks singkat bila laporan perlu revisi atau penolakan."
           onClose={() => setModal(null)}
+          busy={busy}
+          isDirty={approveForm.action !== 'APPROVED' || approveForm.note !== ''}
           footer={(
             <>
               <button className="btn" onClick={() => setModal(null)} type="button">Batal</button>
@@ -1246,6 +1260,13 @@ export function MonthlyReportDetailView() {
           title="Edit Ringkasan Eksekutif"
           subtitle="Rapikan narasi utama laporan agar pembaca eksekutif bisa memahami capaian dan isu penting dengan cepat."
           onClose={() => setModal(null)}
+          busy={busy}
+          isDirty={
+            !!report && (
+              narrativeForm.narrativeSummary !== (report.narrativeSummary ?? '') ||
+              narrativeForm.highlights !== (report.highlights ?? '')
+            )
+          }
           footer={(
             <>
               <button className="btn" onClick={() => setModal(null)} type="button">Batal</button>
@@ -1280,6 +1301,7 @@ export function MonthlyReportDetailView() {
         <Modal
           title="Preview Import dari Atlas"
           onClose={() => setModal(null)}
+          busy={busy}
           footer={
             <>
               <button className="btn" onClick={() => setModal(null)} type="button">Batal</button>

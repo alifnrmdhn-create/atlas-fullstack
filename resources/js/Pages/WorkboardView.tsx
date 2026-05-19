@@ -28,6 +28,7 @@ type WaitingItem = {
   task:   Task
 }
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import { useEscKey } from '../hooks/useEscKey'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import './WorkboardView.css'
 
@@ -330,6 +331,10 @@ export function WorkboardView() {
     setPromptError(null)
     setDragState({ itemId: null, overStatus: null })
   }
+  useEscKey(() => {
+    if (promptText !== '' && !window.confirm('Buang catatan yang sudah diketik?')) return
+    cancelPendingTransition()
+  }, pendingTransition !== null)
 
   const byProgram = (items: typeof workGroups[0]['items']) =>
     boardFilterProgramId
@@ -420,6 +425,7 @@ export function WorkboardView() {
     setClosingWIOverlay(name)
     setTimeout(() => { action(); setClosingWIOverlay(null) }, 150)
   }
+  // Escape handler for showCreateWI defined after wiForm/wiSaving — lihat di bawah.
 
   type DirectoryUser = { id: number; name: string; positionTitle: string | null; roleType: string; unit?: { name: string } }
   type WorkstreamOption = { id: number; code: string; name: string; program?: { code: string; name: string } }
@@ -436,6 +442,13 @@ export function WorkboardView() {
   })
   const [wiSaving, setWiSaving] = useState(false)
   const [wiError, setWiError] = useState<string | null>(null)
+  useEscKey(() => {
+    if (wiSaving) return
+    const wiDirty = wiForm.workstreamId !== '' || wiForm.title !== '' || wiForm.description !== '' ||
+      wiForm.status !== 'BACKLOG' || wiForm.priority !== 'MEDIUM' || wiForm.assignedTo !== ''
+    if (wiDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    closeWIOverlay('create-wi', () => { setShowCreateWI(false); setWiError(null) })
+  }, showCreateWI || closingWIOverlay === 'create-wi')
 
   const openCreateWI = async () => {
     setShowCreateWI(true)
@@ -941,37 +954,22 @@ export function WorkboardView() {
                 <section className="modal-section modal-section--soft">
                   <div className="modal-section__intro">
                     <h4>Eksekusi</h4>
-                    <p>Tentukan status awal, tingkat prioritas, dan penanggung jawab supaya item ini siap dipantau dari board.</p>
+                    <p>Tentukan status awal dan penanggung jawab supaya item ini siap dipantau dari board.</p>
                   </div>
-                  <div className="wb-form-grid wb-form-grid--equal">
-                    <div className="form-field">
-                      <label>Status</label>
-                      <select
-                        className="form-input"
-                        onChange={e => setWiForm(f => ({ ...f, status: e.target.value }))}
-                        value={wiForm.status}
-                      >
-                        <option value="BACKLOG">Backlog</option>
-                        <option value="READY">Ready</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="BLOCKED">Blocked</option>
-                        <option value="IN_REVIEW">In Review</option>
-                        <option value="COMPLETED">Completed</option>
-                      </select>
-                    </div>
-                    <div className="form-field">
-                      <label>Prioritas</label>
-                      <select
-                        className="form-input"
-                        onChange={e => setWiForm(f => ({ ...f, priority: e.target.value }))}
-                        value={wiForm.priority}
-                      >
-                        <option value="CRITICAL">Critical</option>
-                        <option value="HIGH">High</option>
-                        <option value="MEDIUM">Medium</option>
-                        <option value="LOW">Low</option>
-                      </select>
-                    </div>
+                  <div className="form-field">
+                    <label>Status</label>
+                    <select
+                      className="form-input"
+                      onChange={e => setWiForm(f => ({ ...f, status: e.target.value }))}
+                      value={wiForm.status}
+                    >
+                      <option value="BACKLOG">Backlog</option>
+                      <option value="READY">Ready</option>
+                      <option value="IN_PROGRESS">In Progress</option>
+                      <option value="BLOCKED">Blocked</option>
+                      <option value="IN_REVIEW">In Review</option>
+                      <option value="COMPLETED">Completed</option>
+                    </select>
                   </div>
                   <div className="form-field">
                     <label>Penanggung Jawab</label>

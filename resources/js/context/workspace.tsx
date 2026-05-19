@@ -304,6 +304,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       roleType: user.roleType,
       positionTitle: user.positionTitle ?? undefined,
       avatarUrl: user.avatarUrl ?? undefined,
+      unit: user.unit ?? undefined,
     }
   }
 

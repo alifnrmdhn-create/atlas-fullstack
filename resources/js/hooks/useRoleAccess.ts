@@ -29,10 +29,17 @@ export function useRoleAccess() {
     /** Can create an workstream within a program */
     canCreateWorkstream: isAnyOf('SUPERADMIN', 'ADMIN', 'KADIV', 'KASUBDIV', 'ASISTEN'),
 
-    /** Can edit a program they own; KADIV can edit any in their division */
-    canEditProgram: (isOwner: boolean) =>
-      isAnyOf('SUPERADMIN', 'ADMIN', 'KADIV') ||
-      (isAnyOf('KASUBDIV', 'ASISTEN') && isOwner),
+    /**
+     * Can edit a program they own; KADIV can edit any in their division.
+     * `isInRevision` = program baru ditolak & menunggu PIC memperbaiki —
+     * selama state ini hanya owner & admin yang boleh edit (KADIV reviewer
+     * step back agar tidak mem-bypass koreksi yang baru diminta sendiri).
+     */
+    canEditProgram: (isOwner: boolean, isInRevision: boolean = false) => {
+      if (isAnyOf('SUPERADMIN', 'ADMIN')) return true
+      if (isInRevision) return isOwner
+      return isAnyOf('KADIV') || (isAnyOf('KASUBDIV', 'ASISTEN') && isOwner)
+    },
 
     /** Can delete a program they own */
     canDeleteProgram: (isOwner: boolean) =>

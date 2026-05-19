@@ -48,7 +48,7 @@ function statusClass(line: string): string {
 }
 
 type TocEntry = { id: string; label: string; num: number | null }
-type ParseResult = { html: string; toc: TocEntry[]; h1: string; mermaidSources: string[] }
+type ParseResult = { html: string; toc: TocEntry[]; h1: string; mermaidSources: string[]; updatedAt: string | null }
 
 function parse(md: string): ParseResult {
   const lines = md.split('\n')
@@ -180,7 +180,12 @@ function parse(md: string): ParseResult {
   if (inIntro) out.push('</div>')
   if (inSection) out.push('</section>')
 
-  return { html: out.join('\n'), toc, h1, mermaidSources }
+  // Extract "Diperbarui" date from the footer line. Pattern matches Indonesian
+  // dates like "18 Mei 2026" or "8 Mei 2026" appearing after "per ".
+  const dateMatch = md.match(/per\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})/)
+  const updatedAt = dateMatch ? dateMatch[1] : null
+
+  return { html: out.join('\n'), toc, h1, mermaidSources, updatedAt }
 }
 
 // ── Mermaid ───────────────────────────────────────────────────────────────────
@@ -194,14 +199,22 @@ mermaid.initialize({
     primaryTextColor: '#1a1a1a',
     lineColor: '#6b7280',
     edgeLabelBackground: '#f8faf8',
-    fontFamily: '"Inter", system-ui, -apple-system, sans-serif',
-    fontSize: '12px',
+    // System fonts only — eliminates the web-font load race that previously
+    // caused mermaid to measure node text with fallback metrics, leaving rects
+    // narrower than the rendered glyphs. system-ui is always available so
+    // measurement and paint use the same font.
+    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    fontSize: '12.5px',
     nodeBorder: '#2d6a4f',
     clusterBkg: '#f0f7f0',
     titleColor: '#1a1a1a',
     edgeColor: '#6b7280',
   },
-  flowchart: { curve: 'basis', padding: 10, useMaxWidth: true, htmlLabels: true, nodeSpacing: 30, rankSpacing: 40 },
+  // htmlLabels=false → SVG <text> + getBBox for accurate label measurement.
+  // CSS rule `.pb-mermaid svg text { font-size: 12.5px; font-family: ... }` in
+  // PlaybookView.css isolates rendered text from the .pb-body cascade so it
+  // matches mermaid's offscreen measurement (root-cause fix for clipping).
+  flowchart: { curve: 'basis', padding: 12, useMaxWidth: true, htmlLabels: false, nodeSpacing: 36, rankSpacing: 44 },
 })
 
 const MERMAID_RE = /\x00MERMAID:(\d+)\x00/
@@ -212,12 +225,26 @@ function MermaidDiagram({ source }: { source: string }) {
   useEffect(() => {
     if (!ref.current || !source) return
     const el = ref.current
-    const uid = 'mrd' + Math.random().toString(36).slice(2, 11)
-    mermaid.render(uid, source)
-      .then(({ svg }) => {
-        if (!el) return
+    let cancelled = false
+
+    const render = async () => {
+      // Wait until the page web fonts (Inter) are ready before rendering, so
+      // mermaid measures glyph widths against the actual font — not a fallback
+      // metric that would size rects narrower than the eventual rendered text.
+      // Hard cap at 2s so a font-loading hiccup never blocks the diagram.
+      try {
+        await Promise.race([
+          document.fonts?.ready ?? Promise.resolve(),
+          new Promise(resolve => setTimeout(resolve, 2000)),
+        ])
+      } catch { /* noop */ }
+      if (cancelled) return
+
+      const uid = 'mrd' + Math.random().toString(36).slice(2, 11)
+      try {
+        const { svg } = await mermaid.render(uid, source)
+        if (cancelled || !el) return
         el.innerHTML = svg
-        // Make SVG scale to container width while keeping natural aspect ratio
         const svgEl = el.querySelector<SVGSVGElement>('svg')
         if (svgEl) {
           const w = parseFloat(svgEl.getAttribute('width') || '0')
@@ -230,8 +257,13 @@ function MermaidDiagram({ source }: { source: string }) {
           svgEl.style.width = '100%'
           svgEl.style.height = 'auto'
         }
-      })
-      .catch(err => { if (el) el.innerHTML = `<p class="pb-mermaid__err">${String(err)}</p>` })
+      } catch (err) {
+        if (el && !cancelled) el.innerHTML = `<p class="pb-mermaid__err">${String(err)}</p>`
+      }
+    }
+
+    void render()
+    return () => { cancelled = true }
   }, [source])
 
   return <div className="pb-mermaid" ref={ref}><span className="pb-mermaid__spin" /></div>
@@ -254,8 +286,6 @@ function PlaybookContent({ html, sources }: { html: string; sources: string[] })
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-
-const UPDATED = '22 Apr 2026'
 
 export function PlaybookView() {
   const [data, setData] = useState<ParseResult | null>(null)
@@ -333,8 +363,12 @@ export function PlaybookView() {
           <h1 className="pb-topbar__title">{data.h1 || 'ATLAS Playbook'}</h1>
           <p className="pb-topbar__sub">
             <span>{data.toc.filter(t => t.num !== null).length} workflow</span>
-            <span className="pb-topbar__dot" aria-hidden="true" />
-            <span>Diperbarui {UPDATED}</span>
+            {data.updatedAt && (
+              <>
+                <span className="pb-topbar__dot" aria-hidden="true" />
+                <span>Diperbarui {data.updatedAt}</span>
+              </>
+            )}
           </p>
         </div>
       </header>

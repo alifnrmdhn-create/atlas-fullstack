@@ -2,6 +2,7 @@ import { useState, useEffect, useId } from 'react'
 import type { FormEvent } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useDialogFocus } from '../hooks/useDialogFocus'
+import { useEscKey } from '../hooks/useEscKey'
 import './AdminViews.css'
 import { api } from '../lib/api'
 
@@ -50,11 +51,22 @@ export function AdminOrgsView() {
   const [dirForm, setDirForm] = useState(emptyDirForm())
   const [dirSaving, setDirSaving] = useState(false)
   const [dirError, setDirError] = useState<string | null>(null)
+  useEscKey(() => {
+    if (dirSaving) return
+    const baseline = editingDir
+      ? { code: editingDir.code, name: editingDir.name, shortName: editingDir.shortName ?? '',
+          domain: editingDir.domain ?? '', isActive: editingDir.isActive ?? true }
+      : emptyDirForm()
+    const dirty = (Object.keys(baseline) as Array<keyof typeof baseline>).some(k => dirForm[k] !== baseline[k])
+    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    setDirModal(null); setEditingDir(null); setDirError(null)
+  }, dirModal !== null)
   const [deleteDirId, setDeleteDirId] = useState<number | null>(null)
   const deleteDirectorateDialogRef = useDialogFocus<HTMLDivElement>(deleteDirId !== null)
   const deleteDirectorateTitleId = useId()
   const deleteDirectorateDescId = useId()
   const [deleteDirSaving, setDeleteDirSaving] = useState(false)
+  useEscKey(() => { if (!deleteDirSaving) setDeleteDirId(null) }, deleteDirId !== null)
 
   // Unit modal
   const [unitModal, setUnitModal] = useState<'create' | 'edit' | null>(null)
@@ -65,11 +77,23 @@ export function AdminOrgsView() {
   const [unitForm, setUnitForm] = useState(emptyUnitForm())
   const [unitSaving, setUnitSaving] = useState(false)
   const [unitError, setUnitError] = useState<string | null>(null)
+  useEscKey(() => {
+    if (unitSaving) return
+    const baseline = editingUnit
+      ? { code: editingUnit.code, name: editingUnit.name, description: editingUnit.description ?? '',
+          unitType: editingUnit.unitType, directorateId: String(editingUnit.directorateId ?? ''),
+          isActive: editingUnit.isActive ?? true }
+      : emptyUnitForm()
+    const dirty = (Object.keys(baseline) as Array<keyof typeof baseline>).some(k => unitForm[k] !== baseline[k])
+    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    setUnitModal(null); setEditingUnit(null); setUnitError(null)
+  }, unitModal !== null)
   const [deleteUnitId, setDeleteUnitId] = useState<number | null>(null)
   const deleteUnitDialogRef = useDialogFocus<HTMLDivElement>(deleteUnitId !== null)
   const deleteUnitTitleId = useId()
   const deleteUnitDescId = useId()
   const [deleteUnitSaving, setDeleteUnitSaving] = useState(false)
+  useEscKey(() => { if (!deleteUnitSaving) setDeleteUnitId(null) }, deleteUnitId !== null)
 
   const isAuthorized = ['admin', 'superadmin', 'ADMIN', 'SUPERADMIN'].includes(currentUser?.roleType ?? '')
 

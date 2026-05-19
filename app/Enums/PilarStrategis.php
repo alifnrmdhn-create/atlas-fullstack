@@ -8,5 +8,4 @@ enum PilarStrategis: string
     case SpendingBetter      = 'SPENDING_BETTER';
     case InnovativeFinancing = 'INNOVATIVE_FINANCING';
     case Enabler             = 'ENABLER';
-    case NonScorecard        = 'NON_SCORECARD';
 }

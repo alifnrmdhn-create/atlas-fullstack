@@ -49,6 +49,7 @@ class HandleInertiaRequests extends Middleware
                     'positionTitle' => $user->positionTitle,
                     'avatarUrl' => $user->avatarUrl,
                     'unitId' => $user->unitId,
+                    'unit' => $user->unit?->only(['id', 'code', 'name']),
                     'directorateId' => $user->directorateId,
                     'managerUserId' => $user->managerUserId,
                     'toursCompleted' => $user->toursCompleted ?? [],

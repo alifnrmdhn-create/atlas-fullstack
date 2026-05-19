@@ -18,15 +18,20 @@ export type ProgramDisplayStatus = {
 }
 
 export function getProgramDisplayStatus(
-  program: { status?: string | null; approvalStatus?: string | null },
+  program: { status?: string | null; approvalStatus?: string | null; rejectionNote?: string | null },
 ): ProgramDisplayStatus {
   const a = program.approvalStatus ?? ''
   const s = program.status ?? ''
+  // Rejected programs revert to approvalStatus='DRAFT' with rejectionNote set.
+  // The literal 'REJECTED' value never persists, so detection MUST use the
+  // (DRAFT + rejectionNote) compound — historic check on === 'REJECTED' was
+  // dead code that made rejected programs look like fresh drafts.
+  const isRejected = a === 'DRAFT' && !!program.rejectionNote
 
+  if (isRejected)                        return { label: 'Perlu revisi',      tone: 'rejected',  slug: 'blocked' }
   if (a === 'DRAFT' || a === 'PLANNING') return { label: 'Perencanaan',      tone: 'planning',  slug: 'backlog' }
   if (a === 'PENDING_KASUB')             return { label: 'Menunggu KASUBDIV', tone: 'pending',   slug: 'in-review' }
   if (a === 'PENDING_KADIV')             return { label: 'Menunggu KADIV',    tone: 'pending',   slug: 'in-review' }
-  if (a === 'REJECTED')                  return { label: 'Perlu revisi',      tone: 'rejected',  slug: 'blocked' }
 
   // ACTIVE (Eksekusi) or COMPLETED phase — fall back to operational status
   if (s === 'COMPLETED')                 return { label: 'Completed',         tone: 'done',      slug: 'completed' }

@@ -662,16 +662,47 @@ export function TaskDetailView() {
   const [blDeleteConfirmId, setBlDeleteConfirmId] = useState<number | null>(null)
   const [blDeleteSaving, setBlDeleteSaving] = useState(false)
 
+  // Helper: Escape boleh menutup edit mode hanya jika tidak ada perubahan,
+  // atau user mengonfirmasi buang draft.
+  const confirmDiscard = (): boolean =>
+    window.confirm('Buang perubahan yang belum disimpan?')
+
   useEscKey(() => setPriorityEditing(false), priorityEditing)
-  useEscKey(() => { setShowCreateBlocker(false); setBlError(null) }, showCreateBlocker)
-  useEscKey(() => setBlEditTarget(null), blEditTarget !== null)
-  useEscKey(() => setBlStatusTarget(null), blStatusTarget !== null)
+  useEscKey(() => {
+    const blDirty = blForm.code !== '' || blForm.title !== '' || blForm.description !== '' || blForm.assignedTo !== '' || blForm.severity !== 'HIGH'
+    if (blDirty && !confirmDiscard()) return
+    setShowCreateBlocker(false); setBlError(null)
+  }, showCreateBlocker)
+  useEscKey(() => {
+    const orig = blEditTarget ? detail?.blockers?.find(b => b.id === blEditTarget.id) : null
+    const dirty = !!orig && !!blEditTarget && (
+      blEditTarget.title !== orig.title ||
+      blEditTarget.description !== (orig.description ?? '') ||
+      blEditTarget.severity !== orig.severity
+    )
+    if (dirty && !confirmDiscard()) return
+    setBlEditTarget(null)
+  }, blEditTarget !== null)
+  useEscKey(() => {
+    if (blStatusTarget && blStatusTarget.resolution !== '' && !confirmDiscard()) return
+    setBlStatusTarget(null)
+  }, blStatusTarget !== null)
   useEscKey(() => setBlDeleteConfirmId(null), blDeleteConfirmId !== null)
   useEscKey(() => setShowAssigneeEdit(false), showAssigneeEdit)
-  useEscKey(() => setTitleEditing(false), titleEditing)
-  useEscKey(() => setDescEditing(false), descEditing)
+  useEscKey(() => {
+    if (detail && titleDraft !== detail.title && !confirmDiscard()) return
+    setTitleEditing(false)
+  }, titleEditing)
+  useEscKey(() => {
+    if (detail && descDraft !== (detail.description ?? '') && !confirmDiscard()) return
+    setDescEditing(false)
+  }, descEditing)
   useEscKey(() => setShowHelp(false), showHelp)
-  useEscKey(() => setTenggatEditing(false), tenggatEditing)
+  useEscKey(() => {
+    const currentTenggat = detail?.targetCompletion?.slice(0, 10) ?? ''
+    if (tenggatDraft !== currentTenggat && !confirmDiscard()) return
+    setTenggatEditing(false)
+  }, tenggatEditing)
   useEscKey(() => setShowQuickSwitch(false), showQuickSwitch)
 
   // ── Meta shortcuts (always active, even when typing in input) ─────

@@ -8,6 +8,7 @@ export type AuthUser = {
     positionTitle?: string | null
     avatarUrl?: string | null
     unitId?: number | null
+    unit?: { id: number; code: string; name: string } | null
     directorateId?: number | null
     managerUserId?: number | null
 }

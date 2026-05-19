@@ -240,6 +240,10 @@ export type ProgramDetail = {
   rejectionNote?: string
   submittedById?: number
   submittedByName?: string | null
+  /** Currently expected reviewer (KASUBDIV/KADIV) — only set when status is PENDING_*. */
+  pendingReviewer?: { id: number; name: string; roleType: string | null; positionTitle: string | null } | null
+  /** When the program entered current PENDING state — ISO datetime, only when PENDING_*. */
+  pendingSinceAt?: string | null
   kelompok?: Kelompok | null
   pilarStrategis?: PilarStrategis | null
   progresTerkini?: string | null

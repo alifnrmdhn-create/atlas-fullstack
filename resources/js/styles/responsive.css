@@ -1852,7 +1852,7 @@
 }
 .channel-sidebar__browse-btn:hover { background: var(--indigo-dim); border-color: var(--indigo); color: var(--indigo); }
 
-.modal--wide { width: 560px; }
+.modal--wide { width: min(960px, calc(100vw - 48px)); }
 .browse-list {
   max-height: 400px;
   overflow-y: auto;
@@ -2367,13 +2367,11 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: color-mix(in srgb, var(--scrim) 52%, transparent);
+  background: color-mix(in srgb, var(--scrim) 60%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9000;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
   animation: fade-in 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .modal-backdrop--closing {
@@ -3086,9 +3084,7 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: color-mix(in srgb, var(--scrim) 52%, transparent);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  background: color-mix(in srgb, var(--scrim) 60%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9678,9 +9674,7 @@ a svg,
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: color-mix(in srgb, var(--scrim) 52%, transparent);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  background: color-mix(in srgb, var(--scrim) 60%, transparent);
   z-index: 9000;
   display: flex;
   align-items: center;
@@ -11599,9 +11593,7 @@ a svg,
   justify-content: center;
   /* top pad = topbar height so modal centers in area below topbar (topbar z-index: 9500) */
   padding: calc(var(--topbar-height, 52px) + 16px) clamp(16px, 3vw, 32px) clamp(16px, 3vw, 32px);
-  background: color-mix(in srgb, var(--scrim) 52%, transparent);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  background: color-mix(in srgb, var(--scrim) 60%, transparent);
   animation: fade-backdrop 180ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -11629,12 +11621,11 @@ a svg,
   overflow: hidden;
   border-radius: clamp(20px, 2vw, 24px);
   border: 1px solid color-mix(in srgb, var(--panel-border-strong) 42%, transparent);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 96%, var(--surface-2) 4%) 0%, color-mix(in srgb, var(--panel) 92%, var(--surface-1) 8%) 100%);
+  background: var(--panel);
   box-shadow:
-    0 36px 96px color-mix(in srgb, var(--scrim) 74%, transparent),
-    0 14px 36px color-mix(in srgb, var(--scrim) 34%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 12%, transparent);
+    0 18px 48px color-mix(in srgb, var(--scrim) 32%, transparent),
+    0 6px 14px color-mix(in srgb, var(--scrim) 18%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 10%, transparent);
   animation: scale-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -11643,13 +11634,13 @@ a svg,
 }
 
 .modal--wide {
-  width: min(640px, calc(100vw - 32px));
-  max-width: calc(100vw - 32px);
+  width: min(960px, calc(100vw - 48px));
+  max-width: calc(100vw - 48px);
 }
 
 .admin-modal-panel {
-  width: min(720px, calc(100vw - 32px));
-  max-width: calc(100vw - 32px);
+  width: min(960px, calc(100vw - 48px));
+  max-width: calc(100vw - 48px);
 }
 
 .admin-modal-panel--compact {
