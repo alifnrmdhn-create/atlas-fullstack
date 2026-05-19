@@ -15,6 +15,7 @@ import { useRoleAccess } from '../hooks/useRoleAccess'
 import { EscalationButton } from '../components/Escalation'
 import { TraceStrip, type TraceNode } from '../components/TraceStrip'
 import {
+  Avatar,
   HealthPill,
   Metric,
   SectionState,
@@ -1219,7 +1220,7 @@ export function ProgramDetailView() {
                       {entry.byUserName} · {date}
                     </span>
                     {entry.note && (
-                      <p className="prog-approval-log__note">{entry.note}</p>
+                      <div className="prog-approval-log__note">{entry.note}</div>
                     )}
                   </div>
                 </div>
@@ -1240,147 +1241,106 @@ export function ProgramDetailView() {
 
   return (
     <div className="ds program-detail-v2 prog-detail-page">
-      {/* ── Breadcrumb header ──────────────────────────────────────────── */}
-      <div className="wi-detail-header">
+      {/* ── Breadcrumb (slim) ──────────────────────────────────────────── */}
+      <div className="wi-detail-header wi-detail-header--slim">
         <TraceStrip
           nodes={[
             { label: 'Programs', href: '/programs' },
             ...(detail ? [{ code: detail.code } as TraceNode] : []),
           ]}
         />
-        {detail && (
-          <>
-            {/* HealthPill tooltip menggantikan "ⓘ auto" chip terpisah supaya
-                header tidak penuh meta indicator. Mouseover pill memberi info
-                "auto-derived from..." tanpa menambah visual noise. */}
-            <HealthPill
-              status={normalizeHealthStatus(detail.healthStatus)}
-              title={detail.autoHealthComputedAt
-                ? `Auto-derived dari workstream + KPI + task overdue + open blockers. Last computed: ${new Date(detail.autoHealthComputedAt).toLocaleString('id-ID')}`
-                : undefined}
-            />
-            {detail.kelompok && (
-              <span className={`prog-detail-header__kelompok prog-detail-header__kelompok--${detail.kelompok === 'SCORECARD' ? 'scorecard' : 'non'}`}>
-                {detail.kelompok === 'SCORECARD' ? 'Scorecard' : 'Non Scorecard'}
-              </span>
-            )}
-            {/* Approval pill: Draft & Pending dihapus dari header — keduanya
-                sudah dikomunikasikan lebih jelas via lifecycle banner di bawah
-                (warna + label + hint). Pill "Ditolak" tetap tampil di header
-                karena perlu visual urgency tinggi, tidak boleh terlewat. */}
-            {detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote && (
-              <span className="prog-approval-pill prog-approval-pill--danger">Ditolak</span>
-            )}
-          </>
-        )}
-        <div className="wi-detail-header__actions">
-          {/* Zone 1 — view switchers. Board & Charter sama-sama "buka view
-              alternatif", grouping membuat header tidak terlihat seperti
-              barisan tombol acak. */}
-          {detail && (
-            <div className="wi-detail-header__group wi-detail-header__group--views">
-              <button
-                className="icon-btn wi-detail-header__board-btn"
-                onClick={() => navigate(`/execution?programId=${numId}`)}
-                type="button"
-              >
-                <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10">
-                  <path d="M2 10 10 2M5 2h5v5" />
-                </svg>
-                Board
-              </button>
-              <button
-                className="icon-btn wi-detail-header__board-btn charter-link"
-                onClick={() => navigate(`/programs/${numId}/charter`)}
-                type="button"
-                title="Buka tampilan Charter (single-page, read-only)"
-              >
-                Lihat sebagai Charter
-                <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10">
-                  <path d="M3 6h6M6 3l3 3-3 3" />
-                </svg>
-              </button>
-            </div>
-          )}
-          {/* Zone 2 — primary action (Edit) + approval actions (Tolak/Setujui/
-              Tarik kembali). Visual separator (hairline divider) di-render
-              otomatis via CSS sibling selector kalau zone 1 ada. */}
-          {detail && (
-            ((roleAccess.canEditProgram(
-                isOwner,
-                detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote,
-              ) && !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? ''))
-              || detail.approvalStatus === 'PENDING_KASUB'
-              || detail.approvalStatus === 'PENDING_KADIV')
-          ) && (
-            <div className="wi-detail-header__group wi-detail-header__group--actions">
-              {roleAccess.canEditProgram(
-                  isOwner,
-                  detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote,
-                ) &&
-                !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') && (
-                <button className="btn btn--ghost wi-detail-header__btn" onClick={openEdit} type="button">
-                  Edit
-                </button>
-              )}
-              {detail.approvalStatus === 'PENDING_KASUB' && roleAccess.canApproveAsKasub && (
-                <>
-                  <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Tolak</button>
-                  <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Setujui</button>
-                </>
-              )}
-              {detail.approvalStatus === 'PENDING_KADIV' && roleAccess.canApproveAsKadiv && (
-                <>
-                  <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Tolak</button>
-                  <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Setujui</button>
-                </>
-              )}
-              {/* Tarik kembali pengajuan — hanya untuk PIC (submitter/owner) saat
-                  status PENDING_*. Reviewer tidak butuh ini, mereka pakai Tolak.
-                  Skip kalau user sendiri yang bertindak sebagai reviewer (KADIV
-                  yang juga submitter — jarang tapi mungkin), karena tombol Setujui
-                  di atas sudah jadi escape hatch yang lebih sehat. */}
-              {['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') &&
-                (detail.submittedById === currentUser?.id || detail.ownerId === currentUser?.id) &&
-                !(detail.approvalStatus === 'PENDING_KASUB' && roleAccess.canApproveAsKasub) &&
-                !(detail.approvalStatus === 'PENDING_KADIV' && roleAccess.canApproveAsKadiv) && (
-                <button
-                  className="btn btn--ghost wi-detail-header__btn"
-                  disabled={approvalLoading}
-                  onClick={() => setApprovalModal('withdraw')}
-                  type="button"
-                >
-                  Tarik kembali
-                </button>
-              )}
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* ── Title bar ─────────────────────────────────────────────────── */}
+      {/* ── Title row + lifecycle/approval actions ─────────────────────── */}
       {loading ? (
-        <div className="wi-detail-titlebar wi-detail-titlebar--loading">
+        <div className="prog-title-row">
           <SkeletonBlock height={24} width="320px" />
         </div>
       ) : detail ? (
-        <div className="wi-detail-titlebar">
-          {/* Title bar meta — HealthPill, auto chip, approval pill SUDAH ada di
-              breadcrumb header (line ~1058). Disengaja tidak diulang di sini agar
-              tidak terjadi duplikasi visual. Title bar fokus pada kode + prioritas
-              + owner — info yang tidak ada di breadcrumb. */}
-          <div className="wi-detail-titlebar__meta">
-            <span className="code-badge wi-detail-titlebar__code">{detail.code}</span>
-            <span className="wi-detail-titlebar__priority">
-              <span className={`work-card__dot work-card__dot--${detail.priority.toLowerCase()}`} />
-              {detail.priority}
-            </span>
-            {programSummary?.owner && (
-              <span className="wi-detail-assignee-chip">{programSummary.owner.name}</span>
-            )}
+        <>
+          <div className="prog-title-row">
+            <h1 className="prog-title-row__title">{detail.name}</h1>
+            <div className="prog-title-row__meta">
+              <span className="prog-title-row__priority">
+                <span className={`prog-title-row__priority-dot prog-title-row__priority-dot--${detail.priority.toLowerCase()}`} />
+                {detail.priority}
+              </span>
+              {detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote && (
+                <span className="prog-approval-pill prog-approval-pill--danger">Ditolak</span>
+              )}
+            </div>
+            {/* View switchers + lifecycle/approval actions — sebaris di title row.
+                Board + Charter dipindah dari hero panel supaya hero col 4 cuma
+                punya status indicators (Health + Kelompok), tidak crammed. */}
+            <div className="wi-detail-header__actions">
+              <div className="wi-detail-header__group wi-detail-header__group--views">
+                <button
+                  className="icon-btn wi-detail-header__board-btn"
+                  onClick={() => navigate(`/execution?programId=${numId}`)}
+                  type="button"
+                >
+                  <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10">
+                    <path d="M2 10 10 2M5 2h5v5" />
+                  </svg>
+                  Board
+                </button>
+                <button
+                  className="icon-btn wi-detail-header__board-btn charter-link"
+                  onClick={() => navigate(`/programs/${numId}/charter`)}
+                  type="button"
+                  title="Buka tampilan Charter (single-page, read-only)"
+                >
+                  Charter
+                  <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10">
+                    <path d="M3 6h6M6 3l3 3-3 3" />
+                  </svg>
+                </button>
+              </div>
+              {((roleAccess.canEditProgram(
+                  isOwner,
+                  detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote,
+                ) && !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? ''))
+                || detail.approvalStatus === 'PENDING_KASUB'
+                || detail.approvalStatus === 'PENDING_KADIV') && (
+                <div className="wi-detail-header__group wi-detail-header__group--actions">
+                  {roleAccess.canEditProgram(
+                      isOwner,
+                      detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote,
+                    ) &&
+                    !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') && (
+                    <button className="btn btn--ghost wi-detail-header__btn" onClick={openEdit} type="button">
+                      Edit
+                    </button>
+                  )}
+                  {detail.approvalStatus === 'PENDING_KASUB' && roleAccess.canApproveAsKasub && (
+                    <>
+                      <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Tolak</button>
+                      <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Setujui</button>
+                    </>
+                  )}
+                  {detail.approvalStatus === 'PENDING_KADIV' && roleAccess.canApproveAsKadiv && (
+                    <>
+                      <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Tolak</button>
+                      <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Setujui</button>
+                    </>
+                  )}
+                  {['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') &&
+                    (detail.submittedById === currentUser?.id || detail.ownerId === currentUser?.id) &&
+                    !(detail.approvalStatus === 'PENDING_KASUB' && roleAccess.canApproveAsKasub) &&
+                    !(detail.approvalStatus === 'PENDING_KADIV' && roleAccess.canApproveAsKadiv) && (
+                    <button
+                      className="btn btn--ghost wi-detail-header__btn"
+                      disabled={approvalLoading}
+                      onClick={() => setApprovalModal('withdraw')}
+                      type="button"
+                    >
+                      Tarik kembali
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-          <h1 className="wi-detail-title">{detail.name}</h1>
-          {/* Rejection note. Status reverts to DRAFT (not REJECTED) after reject. */}
           {detail.approvalStatus === 'DRAFT' && detail.rejectionNote && (
             <p className="prog-approval-note">Catatan penolakan: {detail.rejectionNote}</p>
           )}
@@ -1390,9 +1350,110 @@ export function ProgramDetailView() {
               <span>Program disetujui! Mengalihkan ke daftar program…</span>
             </div>
           )}
-        </div>
+
+          {/* ── Hero panel ──────────────────────────────────────────────
+              Strategic Objective + Pilar | PIC | Periode | Health + ViewSwitchers.
+              Adopsi pola Charter — info-dense horizontal grid, bukan title-only. */}
+          {(() => {
+            const pillarLabel = detail.pilarStrategis
+              ? detail.pilarStrategis.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+              : null
+            const formatDateID = (s: string) =>
+              new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+            const startStr = detail.startDate ? formatDateID(detail.startDate) : '—'
+            const endStr = detail.targetEndDate ? formatDateID(detail.targetEndDate) : '—'
+            const dlInfo = detail.targetEndDate
+              ? formatDaysLabel(daysUntil(detail.targetEndDate))
+              : null
+            const canEditStrategicHero = roleAccess.canEditProgram(
+                isOwner,
+                detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote,
+              )
+              && !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '')
+            return (
+              <header className="prog-hero">
+                <div className="prog-hero__col">
+                  <div className="prog-hero__label-row">
+                    <span className="prog-hero__label">Strategic Objective</span>
+                    {canEditStrategicHero && !strategicEditing && (
+                      <button
+                        type="button"
+                        className="prog-hero__edit-btn"
+                        onClick={() => setStrategicEditing(true)}
+                        title="Edit Strategic Objective &amp; Pilar Strategis"
+                        aria-label="Edit identitas strategis"
+                      >
+                        <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="11" aria-hidden="true">
+                          <path d="M8 2l2 2-6 6L2 10l0-2z"/>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  {detail.strategicObjective ? (
+                    <div className="prog-hero__so" title={detail.strategicObjective}>
+                      {detail.strategicObjective}
+                    </div>
+                  ) : (
+                    <div className="prog-hero__so prog-hero__so--empty">Belum diisi</div>
+                  )}
+                  {pillarLabel && (
+                    <span className="prog-hero__pillar">{pillarLabel}</span>
+                  )}
+                </div>
+
+                <div className="prog-hero__col">
+                  <div className="prog-hero__label">PIC Utama</div>
+                  {programSummary?.owner ? (
+                    <div className="prog-hero__value">
+                      <Avatar name={programSummary.owner.name} size={22} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {programSummary.owner.name}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="prog-hero__value prog-hero__so--empty">Belum ditetapkan</div>
+                  )}
+                  {(detail.picPersons ?? []).length > 0 && (
+                    <div className="prog-hero__sub">
+                      +{(detail.picPersons ?? []).length} tim pendukung
+                    </div>
+                  )}
+                </div>
+
+                <div className="prog-hero__col">
+                  <div className="prog-hero__label">Periode</div>
+                  <div className="prog-hero__value">
+                    {startStr} → {endStr}
+                  </div>
+                  {dlInfo && (
+                    <div className={`prog-hero__sub prog-hero__sub--${dlInfo.tone === 'critical' ? 'danger' : dlInfo.tone === 'warning' ? 'warn' : 'accent'}`}>
+                      {dlInfo.label}
+                    </div>
+                  )}
+                </div>
+
+                <div className="prog-hero__col prog-hero__col--status">
+                  <div className="prog-hero__label">Status</div>
+                  <div className="prog-hero__status-stack">
+                    <HealthPill
+                      status={normalizeHealthStatus(detail.healthStatus)}
+                      title={detail.autoHealthComputedAt
+                        ? `Auto-derived dari workstream + KPI + task overdue + open blockers. Last computed: ${new Date(detail.autoHealthComputedAt).toLocaleString('id-ID')}`
+                        : undefined}
+                    />
+                    {detail.kelompok && (
+                      <span className={`prog-detail-header__kelompok prog-detail-header__kelompok--${detail.kelompok === 'SCORECARD' ? 'scorecard' : 'non'}`}>
+                        {detail.kelompok === 'SCORECARD' ? 'Scorecard' : 'Non Scorecard'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </header>
+            )
+          })()}
+        </>
       ) : (
-        <div className="wi-detail-titlebar">
+        <div className="prog-title-row">
           <p className="wi-detail-titlebar__empty">Program tidak ditemukan.</p>
         </div>
       )}
@@ -1559,9 +1620,9 @@ export function ProgramDetailView() {
 
           {/* ── RINGKASAN ─────────────────────────────────────────────── */}
           {activeTab === 'ringkasan' && (
-            <div className="prog-detail-overview">
-              {/* Left: description + metrics */}
-              <div className="prog-detail-main">
+            <div className="prog-overview-v2">
+              {/* Left: description + workstream + activity log */}
+              <div className="prog-overview-v2__main">
                 {/* Riwayat Persetujuan di-pin ke atas saat status PENDING atau
                     baru ditolak — konteks paling relevan saat itu (PIC perlu
                     lihat catatan reviewer / status submission tanpa scroll). */}
@@ -1573,19 +1634,17 @@ export function ProgramDetailView() {
                   </div>
                 )}
 
-                {/* ── Identitas Strategis: read-only by default, toggle edit ──
-                    Pattern Notion: section tampak sebagai display (label+value)
-                    by default. User klik "Edit" untuk activate form mode.
-                    Mengurangi form-feel pada overview screen tanpa kehilangan
-                    inline edit capability. */}
-                {(() => {
+                {/* ── Identitas Strategis: only renders when user is editing.
+                    Display values pindah ke Hero panel (Strategic Objective + Pilar).
+                    Body section sekarang khusus edit mode — trigger via "Edit"
+                    pencil icon di Hero panel kolom Strategic Objective. */}
+                {strategicEditing && (() => {
                   const canEditStrategic = roleAccess.canEditProgram(
                       isOwner,
                       detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote,
                     )
                     && !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '')
-                  const hasAnyValue = !!(detail.strategicObjective || detail.pilarStrategis)
-                  if (!canEditStrategic && !hasAnyValue) return null
+                  if (!canEditStrategic) return null
                   const pilarLabel = detail.pilarStrategis
                     ? detail.pilarStrategis.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
                     : null
@@ -1737,60 +1796,14 @@ export function ProgramDetailView() {
                     const showAlignment = detail.strategicAlignment != null
                     const cols = 1 + (showAlignment ? 1 : 0) + 1 + (kpiHealth !== null ? 1 : 0)
                     const wsCount = (detail.workstreams ?? []).length
+                    // Sprint 4: Progress + Workstream + Alignment metrics dihapus —
+                    // semua info sudah tersedia di Hero panel atau side rail tanpa duplikasi.
+                    // KPI Health tetap ditampilkan inline kalau ada data — info penting
+                    // strategis yang tidak terwakili di hero/side rail.
                     return (
                       <>
-                        <div className={`detail-metrics detail-metrics--${cols}`}>
-                          {/* Progress dengan inline mini progress bar — info visual,
-                              bukan hanya raw "0%" text. Bar mengisi proporsi progress
-                              vs total, sub-text menjelaskan pace waktu. */}
-                          <div className="metric metric--with-bar">
-                            <span className="metric__label">Progress</span>
-                            <span className="metric__value">
-                              {detail.progressPercent}%
-                              {scheduleHealth && Math.abs(scheduleHealth.gap) >= 5 && (
-                                <span
-                                  className={`metric__schedule-gap${scheduleHealth.gap <= -10 ? ' behind' : scheduleHealth.gap >= 10 ? ' ahead' : ''}`}
-                                  title={
-                                    scheduleHealth.gap > 0
-                                      ? `Progress mendahului jadwal: +${Math.round(scheduleHealth.gap)} percentage point dari pace waktu`
-                                      : `Progress tertinggal jadwal: ${Math.round(Math.abs(scheduleHealth.gap))} percentage point di bawah pace waktu`
-                                  }
-                                >
-                                  {scheduleHealth.gap > 0
-                                    ? `↑ ${Math.round(scheduleHealth.gap)}pp di depan`
-                                    : `↓ ${Math.round(Math.abs(scheduleHealth.gap))}pp di belakang`}
-                                </span>
-                              )}
-                            </span>
-                            <div className="metric__bar" role="presentation" aria-hidden="true">
-                              <div
-                                className={`metric__bar-fill${scheduleHealth && scheduleHealth.gap <= -10 ? ' metric__bar-fill--behind' : scheduleHealth && scheduleHealth.gap >= 10 ? ' metric__bar-fill--ahead' : ''}`}
-                                style={{ width: `${Math.max(2, Math.min(100, detail.progressPercent))}%` }}
-                              />
-                            </div>
-                            {scheduleHealth && (
-                              <span className="metric__sub">{scheduleHealth.pctTime}% waktu terpakai</span>
-                            )}
-                          </div>
-                          {showAlignment && (
-                            <Metric label="Alignment" value={`${detail.strategicAlignment}%`} />
-                          )}
-                          {/* Workstream count → click-through ke tab Struktur. Tampil
-                              sebagai metrik tapi jadi entry point eksplisit ke detail. */}
-                          <button
-                            type="button"
-                            className="metric metric--clickable"
-                            onClick={() => setActiveTab('workstream')}
-                            aria-label={`Lihat ${wsCount} workstream`}
-                          >
-                            <span className="metric__label">Workstream</span>
-                            <span className="metric__value">
-                              {wsCount}
-                              <svg className="metric__arrow" fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="11" aria-hidden="true"><path d="M3 6h6M6 3l3 3-3 3"/></svg>
-                            </span>
-                            <span className="metric__sub">Lihat struktur</span>
-                          </button>
-                          {kpiHealth !== null && (
+                        {kpiHealth !== null && (
+                          <div className="detail-metrics detail-metrics--1">
                             <div className="metric">
                               <span className="metric__label">KPI Health</span>
                               <span className={`metric__value metric__value--${kpiHealth.toLowerCase()}`}>
@@ -1798,8 +1811,8 @@ export function ProgramDetailView() {
                                 {kpiHealthLabel}
                               </span>
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                         {/* KPI monitoring panel — hanya tampil saat minimal 1 KPI
                             sudah punya actualValue. Jika semua KPI masih "Belum ada
                             data", panel ini cuma noise (header + 1 row kosong) yang
@@ -2372,8 +2385,95 @@ export function ProgramDetailView() {
 
               </div>
 
-              {/* Right: sidebar — wid-panel cards */}
-              <div className="prog-detail-sidebar">
+              {/* Right: side rail — ProgressStatusPanel + UpdatePanel (Sprint 4)
+                  Pola Charter: side rail substantive (% Progress visual + latest
+                  update narrative), bukan list 6 plain-text facts yang dulu boros
+                  whitespace. */}
+              <aside className="prog-overview-v2__side">
+                {(() => {
+                  const pct = Math.max(0, Math.min(100, detail.progressPercent ?? 0))
+                  const health = normalizeHealthStatus(detail.healthStatus)
+                  const healthTone = health === 'GREEN' ? 'on-track' : health === 'YELLOW' ? 'at-risk' : 'off-track'
+                  const wsList = detail.workstreams ?? []
+                  const wsTotal = wsList.length
+                  const wsDone = wsList.filter(w => (w.progressPercent ?? 0) >= 100).length
+                  const disp = getProgramDisplayStatus(detail)
+                  return (
+                    <div className={`prog-status-panel prog-status-panel--${healthTone}`}>
+                      <div className="prog-status-panel__label">% Progress</div>
+                      <div className="prog-status-panel__big">{pct}%</div>
+                      <div className="prog-status-panel__bar" aria-hidden="true">
+                        <div className="prog-status-panel__bar-fill" style={{ width: `${Math.max(2, pct)}%` }} />
+                      </div>
+                      <div className="prog-status-panel__health-row">
+                        <span className={`prog-status-panel__dot prog-status-panel__dot--${healthTone}`} />
+                        <span className="prog-status-panel__health-label">{disp.label}</span>
+                      </div>
+                      {wsTotal > 0 && (
+                        <div className="prog-status-panel__breakdown">
+                          <span className="prog-status-panel__breakdown-num">{wsDone}</span>
+                          <span className="prog-status-panel__breakdown-sep">/</span>
+                          <span className="prog-status-panel__breakdown-total">{wsTotal}</span>
+                          <span>workstream selesai</span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+
+                {(() => {
+                  const latest = progressLog[0]
+                  const formatPeriod = (iso: string) => {
+                    try {
+                      return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                    } catch { return iso }
+                  }
+                  return (
+                    <div className="prog-update-panel">
+                      <div className="prog-update-panel__head">
+                        <span className="prog-update-panel__label">Update Saat Ini</span>
+                        {latest && (
+                          <span className="prog-update-panel__period">{formatPeriod(latest.createdAt)}</span>
+                        )}
+                      </div>
+                      {latest?.narrative ? (
+                        <p className="prog-update-panel__note">{latest.narrative}</p>
+                      ) : (
+                        <p className="prog-update-panel__empty">
+                          Belum ada update progress.<br />
+                          <span className="prog-update-panel__cta">Klik &quot;+ Update Progress&quot; di kolom utama</span>
+                        </p>
+                      )}
+                    </div>
+                  )
+                })()}
+
+                {(detail.progresTerkini || detail.dukunganDibutuhkan) && (
+                  <div className="prog-update-panel">
+                    {detail.progresTerkini && (
+                      <>
+                        <div className="prog-update-panel__head">
+                          <span className="prog-update-panel__label">Progres Terkini</span>
+                        </div>
+                        <p className="prog-update-panel__note">{detail.progresTerkini}</p>
+                      </>
+                    )}
+                    {detail.dukunganDibutuhkan && (
+                      <>
+                        <div className="prog-update-panel__head" style={{ marginTop: detail.progresTerkini ? 12 : 0 }}>
+                          <span className="prog-update-panel__label">Dukungan Dibutuhkan</span>
+                        </div>
+                        <p className="prog-update-panel__note">{detail.dukunganDibutuhkan}</p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </aside>
+              {/* Sprint 4: wid-sidebar lama dihapus total. Side rail di atas
+                  sudah cover info paling penting (Status + Update). Info detail
+                  lain (Tim PIC, Pengusul, Channel link) bisa dilihat lewat tab
+                  lain atau Edit modal. */}
+              <div className="prog-overview-v2__hidden-legacy" style={{ display: 'none', visibility: 'hidden', height: 0, overflow: 'hidden' }} aria-hidden="true">
                 <div className="wid-sidebar">
 
                   {/* ── Timeline panel ── */}

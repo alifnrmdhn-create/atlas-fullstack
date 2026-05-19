@@ -1025,14 +1025,16 @@
 }
 
 
-/* ───────── Riwayat Persetujuan: 2-line compact format ─────────
-   Was: 4 stacked rows per entry (action / →status / by·date / note).
-   Now: row 1 inline = "Action → STATUS · by · date"; row 2 = note.   */
+/* ───────── Riwayat Persetujuan: compact column layout ─────────
+   Sprint 3+ JSX: __head wraps action+status, lalu __meta dan __note as
+   siblings dalam __body (flex column). Sebelumnya body force row+wrap
+   yang bikin __note dengan padding+baseline mis-align — terlihat ada
+   "garis memotong tulisan" karena baseline alignment menyeret padded
+   box ke posisi yang aneh. Sekarang explicit column. */
 .prog-detail-page .prog-approval-log__body {
-  flex-direction: row !important;
-  flex-wrap: wrap !important;
-  align-items: baseline !important;
-  gap: 6px !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 3px !important;
 }
 .prog-detail-page .prog-approval-log__action {
   font-size: 12.5px !important;
@@ -1042,22 +1044,150 @@
 }
 .prog-detail-page .prog-approval-log__meta {
   font-size: 11.5px !important;
-  /* No margin-left:auto — flow naturally inline with the action label.
-     auto-push creates awkward 600px gap in wide columns. */
-}
-.prog-detail-page .prog-approval-log__meta::before {
-  content: '·';
-  color: var(--text-muted);
-  margin: 0 4px 0 2px;
 }
 .prog-detail-page .prog-approval-log__note {
-  flex-basis: 100% !important;
-  margin-top: 2px !important;
+  margin-top: 4px !important;
   font-size: 11.5px !important;
+  width: 100%;
 }
-/* Tighter entry padding now that they're more compact */
+/* Tighter entry padding */
 .prog-detail-page .prog-approval-log__entry {
   padding: 6px 0 !important;
+}
+
+/* Ultimate brute-force: hapus SEMUA border-top/bottom/shadow/outline di
+   approval log area termasuk semua descendant dan pseudo-element. Lalu
+   restore 2 border-left yang kita butuhkan: timeline vertikal dan red bar. */
+.prog-detail-page .prog-approval-log,
+.prog-detail-page .prog-approval-log *,
+.prog-detail-page .prog-approval-log *::before,
+.prog-detail-page .prog-approval-log *::after,
+.prog-detail-page .prog-approval-log::before,
+.prog-detail-page .prog-approval-log::after {
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  text-decoration: none !important;
+}
+.prog-detail-page .prog-approval-log {
+  border-left: 2px solid var(--panel-border-strong, var(--panel-border)) !important;
+}
+.prog-detail-page .prog-approval-log__entry--danger .prog-approval-log__note {
+  border-left: 3px solid var(--red) !important;
+}
+
+/* GLOBAL NUCLEAR — sekarang scope DI-EXPANSI ke ENTIRE prog-detail-page (bukan
+   cuma prog-detail-body). Termasuk wrapper terluar + tabs + breadcrumb + hero
+   + sidebar + body. Plus pseudo-element pada prog-detail-page itself.
+   Restore manual sesuai kebutuhan setelah nuke. */
+.prog-detail-page,
+.prog-detail-page::before,
+.prog-detail-page::after,
+.prog-detail-page *,
+.prog-detail-page *::before,
+.prog-detail-page *::after {
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  text-decoration: none !important;
+  background-image: none !important;
+}
+/* Restore tab bar border-bottom (visual divider tabs ↔ content) */
+.prog-detail-page .prog-detail-tabs {
+  border-bottom: 1px solid var(--panel-border) !important;
+}
+/* Restore active tab underline indicator */
+.prog-detail-page .prog-detail-tab--active {
+  border-bottom: 2.5px solid var(--text-strong) !important;
+}
+/* Restore hero panel ring (subtle outline) — pakai box-shadow soft */
+.prog-detail-page .prog-hero {
+  box-shadow: 0 0 0 1px var(--panel-border) !important;
+}
+/* Restore approval log dots — white ring around colored center + tone box-shadow */
+.prog-detail-page .prog-approval-log__dot {
+  border: 2.5px solid var(--surface-1) !important;
+}
+.prog-detail-page .prog-approval-log__entry--positive .prog-approval-log__dot {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--green) 60%, transparent) !important;
+}
+.prog-detail-page .prog-approval-log__entry--danger .prog-approval-log__dot {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--red) 60%, transparent) !important;
+}
+.prog-detail-page .prog-approval-log__entry--info .prog-approval-log__dot {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--blue) 60%, transparent) !important;
+}
+.prog-detail-page .prog-approval-log__entry .prog-approval-log__dot:not(.prog-approval-log__entry--positive *):not(.prog-approval-log__entry--danger *):not(.prog-approval-log__entry--info *) {
+  box-shadow: 0 0 0 1px var(--panel-border-strong, var(--panel-border)) !important;
+}
+
+/* Restore side rail panel soft shadow (kita pakai drop shadow soft, bukan ring 1px) */
+.prog-detail-page .prog-overview-v2__side .prog-status-panel,
+.prog-detail-page .prog-overview-v2__side .prog-update-panel {
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--panel-border) 50%, transparent) !important;
+}
+/* Restore Update Panel empty box dashed border */
+.prog-detail-page .prog-update-panel__empty {
+  border: 1px dashed var(--panel-border) !important;
+}
+/* Restore status panel divider between bar and health row */
+.prog-detail-page .prog-status-panel__health-row {
+  border-top: 1px solid var(--panel-border) !important;
+}
+/* Restore approval log status badge (ACTIVE/PENDING/DRAFT tone tinted bg) — bg-color
+   preserved from base but check spec ulang */
+.prog-detail-page .prog-approval-log__status {
+  background: var(--surface-2) !important;
+}
+.prog-detail-page .prog-approval-log__entry--positive .prog-approval-log__status {
+  background: color-mix(in srgb, var(--green) 10%, transparent) !important;
+}
+.prog-detail-page .prog-approval-log__entry--danger .prog-approval-log__status {
+  background: color-mix(in srgb, var(--red) 10%, transparent) !important;
+}
+.prog-detail-page .prog-approval-log__entry--info .prog-approval-log__status {
+  background: color-mix(in srgb, var(--blue) 10%, transparent) !important;
+}
+/* Restore yang harus ada: */
+.prog-detail-page .prog-overview-v2__main .prog-approval-log {
+  border-left: 2px solid var(--panel-border-strong, var(--panel-border)) !important;
+}
+.prog-detail-page .prog-overview-v2__main .prog-approval-log__entry--danger .prog-approval-log__note {
+  border-left: 3px solid var(--red) !important;
+}
+.prog-detail-page .prog-overview-v2__main .workstream-list {
+  border-top: 1px solid var(--panel-border) !important;
+}
+.prog-detail-page .prog-overview-v2__main .workstream-row {
+  border-bottom: 1px solid var(--panel-border) !important;
+}
+/* Side rail panels: kasih SOFT drop shadow (bukan ring 1px) supaya tidak ada
+   tepi tajam yang bisa sejajar dengan row Ditolak yang panjang. */
+.prog-detail-page .prog-overview-v2__side .prog-status-panel,
+.prog-detail-page .prog-overview-v2__side .prog-update-panel {
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--panel-border) 50%, transparent) !important;
+}
+
+/* Section header dalam Ringkasan body — hairline border-bottom (Sprint 1)
+   ternyata bikin visual noise di semua section, terutama Riwayat Progress
+   (kosong) yang menghasilkan garis horizontal yang tidak ada gunanya.
+   Brute-force: hapus border-bottom di SEMUA wi-section__header dalam main
+   column. Section break sudah cukup terbaca via gap 22px antar section
+   plus typography difference. */
+.prog-detail-page .prog-overview-v2__main .wi-section__header {
+  border-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 10px !important;
+}
+
+/* prog-ws-preview border-top juga dihapus dari Ringkasan body — origin
+   class buat layout berbeda; di pattern hero+side rail kita, hairline
+   top di workstream preview bikin redundant divider. */
+.prog-detail-page .prog-overview-v2__main .prog-ws-preview {
+  border-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 
@@ -2154,3 +2284,429 @@ select.prog-strategic__input {
   color: var(--red);
   font-style: italic;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   Sprint 4 — Ringkasan Hero + Side Rail (Charter-pattern adoption)
+   ────────────────────────────────────────────────────────────────────
+   Restructure ProgramDetailView Ringkasan tab dengan pola Charter:
+   - Hero panel: horizontal grid SO+Pillar | PIC | Periode | Status+Actions
+   - Body 2-col: main 1.55fr + side rail 1fr (ProgressStatusPanel + UpdatePanel)
+   - Buang title-only header + chip cluster + 6-row plain sidebar
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Hero Panel ───────────────────────────────────────────────────── */
+.prog-hero {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr auto;
+  gap: 0;
+  margin: 12px 28px 14px;
+  padding: 12px 18px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+}
+.prog-hero__col {
+  min-width: 0;
+  padding: 0 16px;
+  border-left: 1px solid color-mix(in srgb, var(--panel-border) 65%, transparent);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.prog-hero__col:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.prog-hero__col--actions {
+  padding-left: 20px;
+  border-left: 1px solid color-mix(in srgb, var(--panel-border) 65%, transparent);
+  align-items: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.prog-hero__col--status {
+  flex-shrink: 0;
+  min-width: 150px;
+}
+.prog-hero__status-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.prog-hero__label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.prog-hero__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.prog-hero__label-row .prog-hero__label {
+  margin-bottom: 0;
+}
+.prog-hero__edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.prog-hero__edit-btn:hover {
+  background: var(--surface-2);
+  color: var(--green);
+}
+.prog-hero__so {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-strong);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.prog-hero__so--empty {
+  color: var(--text-muted);
+  font-style: italic;
+  font-weight: 400;
+}
+.prog-hero__pillar {
+  align-self: flex-start;
+  margin-top: 5px;
+  padding: 1px 8px;
+  background: color-mix(in srgb, var(--indigo) 12%, transparent);
+  color: var(--indigo);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.prog-hero__value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-strong);
+  line-height: 1.35;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prog-hero__value .avatar { flex-shrink: 0; }
+.prog-hero__sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.prog-hero__sub--accent {
+  color: var(--text-strong);
+  font-weight: 500;
+}
+.prog-hero__sub--warn {
+  color: var(--yellow);
+  font-weight: 500;
+}
+.prog-hero__sub--danger {
+  color: var(--red);
+  font-weight: 500;
+}
+.prog-hero__health-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.prog-hero__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.prog-hero__action-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--panel-border);
+  margin: 0 4px;
+}
+@media (max-width: 1080px) {
+  .prog-hero {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 0;
+  }
+  .prog-hero__col {
+    border-left: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .prog-hero__col--actions {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+    padding-left: 0;
+    border-top: 1px solid var(--panel-border);
+    padding-top: 14px;
+  }
+  .prog-hero__actions { justify-content: flex-start; }
+}
+
+/* ── Title row above hero ─────────────────────────────────────────── */
+.prog-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 12px 0 0;
+  padding: 0 28px;
+}
+.prog-title-row__title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text-strong);
+  line-height: 1.25;
+  margin: 0;
+}
+.prog-title-row__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+/* Actions pushed to far right via margin-left auto, sebaris title + meta. */
+.prog-title-row .wi-detail-header__actions {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+/* Slim breadcrumb header — hapus chip cluster, jadi navigasi murni. */
+.wi-detail-header--slim {
+  padding: 6px 28px;
+  height: auto;
+  min-height: 32px;
+  border-bottom: 1px solid var(--panel-border-soft, var(--panel-border));
+}
+
+/* Rejection note + approval success banner — page-level horizontal padding
+   supaya align dengan title row & hero panel di atas/bawahnya. */
+.prog-detail-page > .prog-approval-note,
+.prog-detail-page > .prog-approval-success-banner {
+  margin-left: 28px;
+  margin-right: 28px;
+}
+.prog-title-row__priority {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--surface-2);
+}
+.prog-title-row__priority-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.prog-title-row__priority-dot--high { background: var(--red); }
+.prog-title-row__priority-dot--medium { background: var(--yellow); }
+.prog-title-row__priority-dot--low { background: var(--green); }
+.prog-title-row__priority-dot--critical { background: var(--red); }
+
+/* ── New body grid (replaces prog-detail-overview when active) ─────── */
+.prog-overview-v2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr);
+  gap: 20px;
+  align-items: start;
+  padding: 16px 28px 64px;
+  flex: 1;
+}
+.prog-overview-v2__main {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+.prog-overview-v2__side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  position: sticky;
+  top: 16px;
+}
+@media (max-width: 1080px) {
+  .prog-overview-v2 {
+    grid-template-columns: 1fr;
+  }
+  .prog-overview-v2__side {
+    position: static;
+  }
+}
+
+/* ── Progress Status Panel (side rail) ──────────────────────────────
+   Border solid 1px ganti dengan subtle box-shadow + soft bg supaya bottom
+   edge tidak terlihat tajam. Sebelumnya bottom border-nya secara optik
+   sejajar dengan Ditolak entry yang tinggi (karena rejection note di bawah),
+   user mengira itu garis horizontal memotong main column. */
+.prog-status-panel {
+  background: var(--panel);
+  border: 0;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--panel-border) 60%, transparent);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.prog-status-panel__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.prog-status-panel__big {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  margin-top: 6px;
+  line-height: 1.05;
+}
+.prog-status-panel__bar {
+  height: 6px;
+  width: 100%;
+  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+.prog-status-panel__bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 240ms ease;
+  background: var(--green);
+}
+.prog-status-panel--on-track .prog-status-panel__bar-fill { background: var(--green); }
+.prog-status-panel--at-risk .prog-status-panel__bar-fill { background: var(--yellow); }
+.prog-status-panel--off-track .prog-status-panel__bar-fill { background: var(--red); }
+.prog-status-panel__sub {
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.prog-status-panel__health-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--panel-border);
+}
+.prog-status-panel__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.prog-status-panel__dot--on-track { background: var(--green); }
+.prog-status-panel__dot--at-risk { background: var(--yellow); }
+.prog-status-panel__dot--off-track { background: var(--red); }
+.prog-status-panel__health-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-strong);
+}
+.prog-status-panel__breakdown {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.prog-status-panel__breakdown-num {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.prog-status-panel__breakdown-sep,
+.prog-status-panel__breakdown-total {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Update Panel (side rail — latest progress narrative) ────────────
+   Border solid 1px ganti dengan subtle box-shadow soft — sama alasan
+   dengan prog-status-panel di atas: bottom border-nya bikin garis tajam
+   yang secara optik "memotong" main column saat ditolak entry tinggi. */
+.prog-update-panel {
+  background: var(--panel);
+  border: 0;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--panel-border) 60%, transparent);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.prog-update-panel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.prog-update-panel__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.prog-update-panel__period {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.prog-update-panel__note {
+  font-size: 12.5px;
+  color: var(--text-strong);
+  line-height: 1.55;
+  margin: 0;
+}
+.prog-update-panel__empty {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0;
+  padding: 14px 12px;
+  border: 1px dashed var(--panel-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-1) 40%, transparent);
+  text-align: center;
+}
+.prog-update-panel__cta {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--green);
+  font-weight: 500;
+  text-decoration: none;
+}
+.prog-update-panel__cta:hover { text-decoration: underline; }
