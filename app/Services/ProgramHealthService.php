@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Blocker;
 use App\Models\KpiDefinition;
 use App\Models\Program;
+use App\Models\ProgramApprovalLog;
 use App\Models\Task;
 use App\Models\Workstream;
 
@@ -26,6 +27,18 @@ class ProgramHealthService
 
     public function recompute(int $programId): string
     {
+        // Grace period: program yang baru aktif tidak boleh langsung kena
+        // At Risk / Terlambat. UI banner "Program baru aktif · siap dieksekusi"
+        // jadi kontradiktif kalau status di header sudah At Risk. Skip
+        // computation selama N hari sejak ACTIVATED.
+        if ($this->isWithinGracePeriod($programId)) {
+            Program::query()->where('id', $programId)->update([
+                'healthStatus' => 'GREEN',
+                'autoHealthComputedAt' => now(),
+            ]);
+            return 'GREEN';
+        }
+
         [$workstreams, $kpis] = [
             Workstream::query()
                 ->where('programId', $programId)
@@ -73,6 +86,28 @@ class ProgramHealthService
         ]);
 
         return $health;
+    }
+
+    /**
+     * Cek apakah program masih dalam grace period sejak terakhir kali ACTIVATED.
+     * Return false untuk program yang belum pernah aktif (tidak ada log).
+     * Pakai approval log, bukan timestamp di Program, supaya re-activation
+     * (mis. setelah COMPLETED → ACTIVE lagi) juga reset grace.
+     */
+    private function isWithinGracePeriod(int $programId): bool
+    {
+        $days = (int) config('atlas-thresholds.auto_health.grace_period_days', 7);
+        if ($days <= 0) return false;
+
+        $lastActivated = ProgramApprovalLog::query()
+            ->where('programId', $programId)
+            ->where('toStatus', 'ACTIVE')
+            ->orderByDesc('createdAt')
+            ->value('createdAt');
+
+        if (! $lastActivated) return false;
+        // Pakai isFuture() — Carbon 3 diffInDays returns signed float, abs lebih jelas.
+        return $lastActivated->copy()->addDays($days)->isFuture();
     }
 
     /** Sprint 5 — task overdue ratio signal. */

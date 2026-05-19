@@ -299,24 +299,25 @@ Seluruh pengguna mendarat di **Home** (`/`) — namun **konten Home berbeda per 
 |------|------|-----------|
 | **Perencanaan** | Programs | Plan |
 | **Eksekusi** | Execution (Papan Kerja), Penugasan | Do |
-| **Performance** | Scorecard, KPI Direktorat, KPI Divisi, KPI Saya, KPI Individu | Check |
+| **Performance** | Executive Summary, Scorecard, KPI Direktorat, KPI Divisi, KPI Saya, KPI Individu | Check |
 | **Tindak Lanjut** | Rapat Koordinasi | Act |
 | **Komunikasi** | Channels | — |
-| **Akun** | Presence, Profile, Settings | — |
+| **Akun** | Presence, Profile, Settings, Glossary | — |
 | **Admin** *(ADMIN/SUPERADMIN)* | Companies, Positions, Users, Roles, Pilot Metrics, Thresholds | — |
 
 > 💡 Roadmap (visual timeline portofolio) dan halaman Fokus diakses lewat shortcut, breadcrumb, dan deep-link — tidak menempati slot sidebar tetap agar sidebar tetap ringkas.
 
 ### Skup Item Performance per Jabatan
 
-| Jabatan | Scorecard | KPI Direktorat | KPI Divisi | KPI Saya |
-|---------|:--------:|:--------------:|:----------:|:--------:|
-| BOD / DIRUT | ✓ | ✓ | ✓ | — |
-| KADIV | ✓ | ✓ | ✓ | ✓ |
-| KASUBDIV | — | — | ✓ | ✓ |
-| OFFICER / ASISTEN | — | — | — | ✓ |
+| Jabatan | Executive | Scorecard | KPI Direktorat | KPI Divisi | KPI Saya |
+|---------|:--------:|:--------:|:--------------:|:----------:|:--------:|
+| BOD / DIRUT | ✓ | ✓ | ✓ | ✓ | — |
+| KADIV | ✓ | ✓ | ✓ | ✓ | ✓ |
+| KASUBDIV | — | — | — | ✓ | ✓ |
+| OFFICER / ASISTEN | — | — | — | — | ✓ |
 
 > 💡 **KPI Individu** (browse semua karyawan) tersedia untuk semua jabatan via tombol pada Scorecard atau direct URL `/performance/individu`.
+> 💡 **Glossary** (`/glossary`) — daftar vokabulari ATLAS yang dapat dicari, mirror dari Glosarium Istilah di playbook ini. Diakses lewat grup Akun.
 
 **Status: ✅ Lengkap**
 
@@ -372,10 +373,11 @@ Setiap item menampilkan: ikon jenis, judul, meta, alasan urgensi, cue aksi berik
 
 ### Aksi Cepat
 
-- Klik item → langsung ke detail/workspace yang relevan
+- Klik item → langsung ke **halaman detail** (bukan list) — deep-link ke konteks spesifik (task panel terbuka, program tab Hambatan, dst)
 - Klik chip skup → filter daftar
 - Klik **Tandai Semua Dibaca** di header
 
+> 💡 Setiap item menampilkan **sumber notifikasi** dalam bahasa manusia (mis. "dari Pak Budi (KASUBDIV Keuangan)" alih-alih ID mentah) dan **CTA spesifik per verb** ("Setujui", "Buka", "Tindaklanjuti") — bukan tombol generik.
 > 💡 Empty state ("semuanya beres") adalah kartu celebration — bukan tampilan kosong.
 
 **Status: ✅ Lengkap**
@@ -418,7 +420,11 @@ Program adalah unit kerja strategis utama di ATLAS. Di dalamnya terdapat Workstr
 - **ACTIVE** — aktif, program berjalan normal
 - **REJECTED** — ditolak, kembali ke DRAFT dengan catatan (bisa direvisi & diajukan ulang)
 
-> 💡 Program berstatus non-ACTIVE menampilkan **banner notifikasi** di halaman detail dengan tombol aksi sesuai peran Anda.
+> 💡 Program berstatus non-ACTIVE menampilkan **banner notifikasi** di halaman detail dengan tombol aksi sesuai peran Anda. Setelah ACTIVE, muncul **toast konfirmasi** + badge **"Berjalan"**, plus *post-activation hint banner* yang menjembatani Plan → Do (saran: tambah Workstream/Task pertama bila belum ada).
+
+### Governance Pasca-Aktif
+
+Setelah Program ACTIVE, perubahan pada **commitment field** (target, deadline, KPI link, owner) akan **otomatis tercatat di audit log** dan men-notify Direktur Utama / PIC terkait. Tujuannya: menjaga akuntabilitas atas commitment yang sudah disepakati di approval — perubahan boleh, tapi tidak senyap.
 
 ### Tab di Detail Program
 
@@ -515,7 +521,7 @@ Charter adalah tampilan satu halaman read-only sebuah Program — mirror format 
 - **Tabel aktivitas bulanan** — baris Target/Real per Task, kolom Januari–Desember
 - **Status panel & latest update** — sidebar kanan dengan ringkasan kondisi terkini
 - **PICA & Langkah Selanjutnya** — diturunkan dari progress log terbaru
-- **KPI Progress Table** — historis capaian KPI per bulan
+- **KPI Progress Table** — historis capaian KPI per bulan, dengan **status icon per-cell** (▲ above target / ● on target / ▼ below target) sehingga performa per bulan terbaca cepat tanpa harus baca angka
 
 ### Export
 
@@ -696,7 +702,37 @@ Blocker adalah hambatan yang menghalangi penyelesaian suatu tugas atau program.
 **Status: ✅ Lengkap**
 
 
-## 12. Performance — Scorecard Eksekutif
+## 12. Performance — Executive Summary
+
+**Siapa yang bisa:** BOD, DIRUT, KADIV
+
+Executive Summary adalah snapshot satu halaman tingkat eksekutif — menggabungkan ranking, tren KPI, dan insight terdepan dalam satu surface. Dirancang untuk dipresentasikan langsung di rapat direksi tanpa perlu beralih layar.
+
+### Cara Akses
+
+Sidebar → grup **Performance** → **Executive Summary**, atau buka URL `/executive`.
+
+### Yang Ditampilkan
+
+- **Header** — periode, skup peran, ringkasan capaian (rata-rata %, jumlah on-target / at-risk)
+- **Leaderboard Direktorat & Divisi** — top performer dengan styling medali (gold/silver/bronze) — disorot 3 teratas, sisanya kompak
+- **KPI Trend Bar Chart** — capaian 6 bulan terakhir per perspektif strategis (Ekonomi & Sosial, IMB, Teknologi, dll)
+- **Insight Utama** — panel auto-derived dari pola KPI: divisi naik daun, anjlok, konsisten — narasi otomatis tanpa input manual
+- **Status Program ringkas** — komposisi On Track / At Risk / Terlambat
+- **Tombol Export PPTX** — generate slide deck siap presentasi (1 file, format eksekutif PTPN)
+
+### Aksi Cepat
+
+- Klik leaderboard row → masuk ke detail direktorat/divisi
+- Klik bar chart segment → drill ke periode tersebut
+- Klik **Export PPTX** → download `.pptx` untuk rapat
+
+> 💡 Beda dengan Scorecard: Executive Summary punya **tren historis** dan **insight narasi**. Scorecard fokus ke snapshot ranking saja. Untuk rapat eksekutif, mulai dari Executive; untuk audit detail, masuk ke Scorecard.
+
+**Status: ✅ Lengkap**
+
+
+## 13. Performance — Scorecard Eksekutif
 
 **Siapa yang bisa:** Semua pengguna (skup *role-aware*: BOD/DIRUT melihat semua, jabatan lain melihat skup-nya)
 
@@ -722,7 +758,7 @@ Sidebar → grup **Performance** → **Scorecard**.
 **Status: ✅ Lengkap**
 
 
-## 13. Performance — KPI Direktorat (Kolegial)
+## 14. Performance — KPI Direktorat (Kolegial)
 
 **Siapa yang bisa:** BOD/DIRUT (semua direktorat) · KADIV (direktorat sendiri)
 
@@ -746,7 +782,7 @@ Halaman detail menampilkan KPI tiap direktur, dikelompokkan per perspektif strat
 **Status: ✅ Lengkap**
 
 
-## 14. Performance — KPI Divisi
+## 15. Performance — KPI Divisi
 
 **Siapa yang bisa:** BOD/DIRUT, KADIV (semua divisi dalam direktorat) · KASUBDIV (divisi sendiri)
 
@@ -768,7 +804,7 @@ Sidebar → **Performance** → **KPI Divisi**. Bila Anda BOD fungsional tanpa d
 **Status: ✅ Lengkap**
 
 
-## 15. Performance — KPI Saya & KPI Individu
+## 16. Performance — KPI Saya & KPI Individu
 
 **Siapa yang bisa:** Semua pengguna (KPI Saya = personal · KPI Individu = browse semua karyawan)
 
@@ -779,6 +815,8 @@ Sidebar → **Performance** → **KPI Saya**.
 Yang ditampilkan:
 - Header personal (nama, jabatan, unit, periode, total KPI)
 - Daftar KPI Anda: target, realisasi, skor, bobot, forecast badge
+- **KPI Trend Bar Chart** — capaian 6 bulan terakhir per KPI, sehingga tren membaik/menurun langsung terlihat
+- **Insight Utama** — panel narasi auto-derived: KPI mana yang naik daun, mana yang konsisten anjlok, tanpa input manual
 - **Commitment Ledger** *(jika fitur aktif)* — rolling 8–12 minggu, hit-rate %, counter streak
 
 ### Commitment Ledger (3-Source)
@@ -803,7 +841,7 @@ Yang ditampilkan:
 **Status: ✅ Lengkap**
 
 
-## 16. Tindak Lanjut — Rapat Koordinasi
+## 17. Tindak Lanjut — Rapat Koordinasi
 
 **Siapa yang bisa:** Semua (lihat & RSVP) · Organizer (buat & kelola)
 
@@ -856,7 +894,7 @@ Terjadwal → Berlangsung → Selesai. Rapat juga bisa **Ditunda** atau **Dibata
 > 🔧 *Catatan teknis: V4 belum tersedia — Meeting Cost (person-hours) dan integrasi Google Calendar OAuth belum diimplementasi.*
 
 
-## 17. Tindak Lanjut — Eskalasi (Clear the Path)
+## 18. Tindak Lanjut — Eskalasi (Clear the Path)
 
 **Siapa yang bisa:** Semua (mengajukan) · Atasan dalam rantai org (triase) — fitur aktif untuk pilot DKM
 
@@ -904,7 +942,7 @@ REQUESTED → (COMMITTED | DECLINED | rerouted-back-to-REQUESTED) → RESOLVED
 > 🔧 *Catatan teknis: Flag `FEATURE_CLEAR_THE_PATH` mendukung nilai `enabled` (semua user), `disabled`, atau prefiks DKM seperti `DKM` / `DBS`. `FeatureFlagService::isEnabled` (BE) + `useFeatureFlag` (FE) menjadi gate tunggal — saat OFF, escalation state di Fokus juga di-cleanup (lihat commit f6651be).*
 
 
-## 18. Komunikasi — Channel & Pesan Langsung
+## 19. Komunikasi — Channel & Pesan Langsung
 
 **Siapa yang bisa:** Semua pengguna
 
@@ -935,7 +973,7 @@ ATLAS memiliki sistem komunikasi internal — Channel untuk diskusi tim dan DM u
 **Status: ✅ Lengkap**
 
 
-## 19. Akun — Kehadiran, Profil, Pengaturan
+## 20. Akun — Kehadiran, Profil, Pengaturan, Glossary
 
 **Siapa yang bisa:** Semua pengguna (lihat & update status sendiri) · BOD, KADIV (pantau tim)
 
@@ -956,10 +994,16 @@ Buka **Profile** untuk melihat hierarki jabatan Anda, ubah foto, dan ganti passw
 
 Workspace preferences — termasuk theme (light/dark) dan notifikasi.
 
+### Glossary (Vokabulari ATLAS)
+
+Halaman `/glossary` — referensi cepat untuk istilah-istilah yang dipakai di ATLAS (Program, Workstream, Phase, PICA, Eskalasi, dst). Konten mirror dari Glosarium Istilah di atas playbook ini, dengan filter pencarian agar mudah dicari saat onboarding atau saat membaca laporan.
+
+Akses: sidebar grup **Akun** → **Glossary**.
+
 **Status: ✅ Lengkap**
 
 
-## 20. Pencarian Global
+## 21. Pencarian Global
 
 **Siapa yang bisa:** Semua pengguna
 
@@ -975,7 +1019,7 @@ Workspace preferences — termasuk theme (light/dark) dan notifikasi.
 > 🔧 *Catatan teknis: Cakupan full-text search masih terbatas — route handler ringkas (~12 KB). Untuk pencarian mendalam, gunakan Command Palette untuk navigasi cepat.*
 
 
-## 21. Administrasi Sistem
+## 22. Administrasi Sistem
 
 **Siapa yang bisa:** ADMIN, SUPERADMIN
 
@@ -1016,7 +1060,7 @@ Modul administrasi untuk mengelola pengguna, struktur organisasi, konfigurasi ha
 **Status: ✅ Lengkap**
 
 
-## 22. Ringkasan Status Implementasi
+## 23. Ringkasan Status Implementasi
 
 Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan evaluator.
 
@@ -1025,10 +1069,15 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 | Login (NIK/UserID) & Session | ✅ | ✅ | — | ✅ |
 | Navigasi PDCA per Role | ✅ | ✅ | — | ✅ |
 | Home (Ringkasan Eksekutif) | ✅ | ✅ | ✅ | ✅ |
-| Fokus (Inbox) | ✅ | ✅ | ✅ | ✅ |
+| Fokus (Inbox) + humanized notif source & verb-specific CTA | ✅ | ✅ | ✅ | ✅ |
+| Glossary page (in-app vokabulari `/glossary`) | — | ✅ | — | ✅ |
 | Program CRUD | ✅ | ✅ | ✅ | ✅ |
-| Program Approval (DRAFT→ACTIVE) | ✅ | ✅ | ✅ | ✅ |
+| Program Approval (DRAFT→ACTIVE) + UX polish | ✅ | ✅ | ✅ | ✅ |
+| Program Governance (audit + notify on post-active commitment edit) | ✅ | ✅ | ✅ | ✅ |
+| Post-activation hint banner (Plan → Do bridge) | — | ✅ | — | ✅ |
+| Progress Log (structured period picker Mingguan/Bulanan) | ✅ | ✅ | — | ✅ |
 | Charter View Program | ✅ | ✅ | — | ✅ |
+| Charter — Per-cell KPI status icons (above/on/below) | — | ✅ | — | ✅ |
 | Charter Export PPTX (single + batch) | ✅ | ✅ | — | ✅ |
 | Roadmap (Lanes + Timeline) | ✅ | ✅ | ✅ | ✅ |
 | Workstream CRUD | ✅ | ✅ | ✅ | ✅ |
@@ -1041,11 +1090,16 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 | KPI Tracking (internal + APMS link) | ✅ | ✅ | ✅ | ✅ |
 | Program Health (workstream + KPI + overdue + blocker) | ✅ | ✅ | ✅ | ✅ |
 | Scheduler `atlas:compute-health` (30 min) | ✅ | — | — | ✅ |
+| Performance — Executive Summary (1-page composite) | ✅ | ✅ | ✅ | ✅ |
+| Executive Summary — PPTX Export | ✅ | ✅ | — | ✅ |
 | Performance — Scorecard | ✅ | ✅ | ✅ | ✅ |
 | Performance — KPI Direktorat (Kolegial) | ✅ | ✅ | ✅ | ✅ |
 | Performance — KPI Divisi | ✅ | ✅ | ✅ | ✅ |
 | Performance — KPI Saya | ✅ | ✅ | ✅ | ✅ |
 | Performance — KPI Individu | ✅ | ✅ | ✅ | ✅ |
+| Insight Utama panel (auto-derived dari KPI) | ✅ | ✅ | ✅ | ✅ |
+| KPI Trend Bar Chart (6 bulan) | ✅ | ✅ | — | ✅ |
+| BOD Leaderboard (medal styling) | — | ✅ | — | ✅ |
 | Commitment Ledger (3-source) | ✅ | ✅ | ✅ | ✅ |
 | Integrasi APMS (live sync) | ❌ | ⚠️ | — | ⚠️ |
 | Meeting V1 (CRUD + RSVP) | ✅ | ✅ | ✅ | ✅ |
@@ -1076,7 +1130,7 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 - ❌ **APMS Live Sync** — fetch data real dari AGHRIS belum diimplementasi; KPI APMS masih menggunakan seed data. KPI internal berfungsi penuh termasuk monitoring health
 - ⚠️ **My Work endpoint** — implementasi minimal, sebagian besar fungsionalitas sudah diserap ke Fokus dan Papan Kerja
 
-**Status: ✅ Evaluasi Lengkap per 18 Mei 2026** (Sprint 0–5 MVP selesai 8 Mei 2026)
+**Status: ✅ Evaluasi Lengkap per 19 Mei 2026** (Sprint 0–5 MVP selesai 8 Mei 2026)
 
 
-*Panduan ini mencerminkan kondisi implementasi ATLAS per 18 Mei 2026. Perbarui dokumen setiap ada perubahan fitur signifikan.*
+*Panduan ini mencerminkan kondisi implementasi ATLAS per 19 Mei 2026. Perbarui dokumen setiap ada perubahan fitur signifikan.*

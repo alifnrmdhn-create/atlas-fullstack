@@ -408,6 +408,24 @@
 }
 .status-form__select:focus, .status-form__input:focus { border-color: var(--accent); }
 
+/* OOO indicator — menggantikan dropdown saat preset Out of office aktif.
+ * Visual mirip <select> read-only supaya layout tidak loncat. */
+.status-form__ooo-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px dashed var(--yellow, #c79a00);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--yellow-dim, color-mix(in srgb, var(--yellow, #c79a00) 12%, transparent));
+  font-weight: 500;
+  cursor: help;
+}
+.status-form__ooo-indicator-emoji { font-size: 14px; line-height: 1; }
+.status-form__ooo-indicator-label { line-height: 1.2; }
+
 /* ─── Presence tab nav ──────────────────────────────────── */
 .presence-tab-nav {
   display: flex;

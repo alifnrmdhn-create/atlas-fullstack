@@ -1178,7 +1178,10 @@
   margin: -4px 0 4px;
   border-radius: 10px;
   border: 1px solid var(--panel-border);
-  background: var(--surface-1);
+  /* Pattern A: white body delineated by border + radius. Was --surface-1
+     (#F6F7F9) which made the entire expanded workstream area read as a gray
+     slab against the white workspace canvas. */
+  background: var(--panel);
   overflow: hidden;
 }
 
@@ -1198,7 +1201,6 @@
 
 /* Task panel inside workstream card */
 .workstream-detail-panel--split .tpp-push-wrap {
-  border-left: 1px solid var(--panel-border);
   overflow-x: hidden; /* clip during width animation */
   overflow-y: visible; /* never clip panel height */
   flex-shrink: 0;
@@ -1210,14 +1212,19 @@
   height: auto;      /* natural height — footer always visible */
   min-height: 300px; /* never too small */
   animation: none;
-  border-left: none;
+  /* 3px green accent stripe = single visual cue between workstream body and
+     planning panel. Replaces the previous 1px panel-border + indigo wash combo
+     which made the panel blend into the canvas. */
+  border-left: 3px solid var(--green);
   box-shadow: none;
   border-radius: 0;
   overflow: visible; /* allow full panel to render — not clipped */
   background: var(--panel);
 }
 :root:not([data-theme="dark"]) .workstream-detail-panel--split .tpp-panel {
-  background: color-mix(in srgb, var(--panel) 96%, var(--indigo) 4%);
+  background:
+    radial-gradient(ellipse 80% 36% at 100% 0%, color-mix(in srgb, var(--green) 5%, transparent), transparent 72%),
+    var(--panel);
   box-shadow: none;
 }
 /* Push animation for inline card panel */
@@ -2240,7 +2247,10 @@
   align-items: center;
   gap: 8px;
   padding: 7px 12px 6px;
-  background: var(--surface-1);
+  /* Transparent — hierarchy cue comes from the bottom hairline alone, so the
+     phase header doesn't read as a gray slab inside the (now white) workstream
+     detail panel. */
+  background: transparent;
   border-bottom: 1px solid var(--panel-border);
 }
 .phase-group__header--unphased {

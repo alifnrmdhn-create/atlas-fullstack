@@ -227,6 +227,7 @@ export type ProgramDetail = {
   strategicObjective?: string | null
   ownerId: number
   ownerUnitId?: number
+  owner?: UserSummary
   status: string
   priority: string
   progressPercent: number

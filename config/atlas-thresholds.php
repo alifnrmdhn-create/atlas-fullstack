@@ -44,6 +44,11 @@ return [
     // Level: GREEN=0, YELLOW=1, RED=2, OVERDUE=3 — diff >= threshold = badge.
     'auto_health' => [
         'discrepancy_level_threshold' => env('ATLAS_HEALTH_DISCREPANCY', 1),
+        // Grace period: program yang baru aktif belum boleh dianggap At Risk /
+        // Terlambat. Tanpa ini, program 1-hari-aktif dengan 0 task overdue tetap
+        // bisa kena YELLOW karena KPI belum input — user bingung "kok baru lahir
+        // sudah sakit?". Health di-force GREEN selama N hari sejak ACTIVATED.
+        'grace_period_days'    => env('ATLAS_HEALTH_GRACE_DAYS',   7),
         // Threshold untuk derive RED:
         'red_overdue_ratio'    => env('ATLAS_HEALTH_RED_OVERDUE',   0.30), // 30% tasks overdue
         'red_blocker_count'    => env('ATLAS_HEALTH_RED_BLOCKERS',  3),

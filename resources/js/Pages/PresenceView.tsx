@@ -349,6 +349,17 @@ export function PresenceView() {
   // OOO date
   const [oooDate, setOooDate] = useState('')
   const isOooActive = presenceDraft.statusEmoji === '🏖️' && presenceDraft.statusMessage.startsWith('OOO')
+  // OOO baru dipilih (template "… s/d …") tapi tanggal kembali belum diisi.
+  const isOooMissingDate = isOooActive && presenceDraft.statusMessage.endsWith('…')
+
+  // Self-heal stale OFFLINE: kalau draft = OFFLINE tapi bukan dari OOO (mis. data lama
+  // sebelum opsi manual "Offline" dihapus), normalize ke ONLINE. OFFLINE sekarang
+  // murni derived (lihat atlas:ghost-cleanup) atau intentional via OOO preset.
+  useEffect(() => {
+    if (presenceDraft.status === 'OFFLINE' && !isOooActive) {
+      setPresenceDraft(cur => ({ ...cur, status: 'ONLINE' }))
+    }
+  }, [presenceDraft.status, isOooActive, setPresenceDraft])
 
   // ── Flash detection (SSE changes) ────────────────────────
   const prevStatusRef = useRef<Map<number, PresenceStatus>>(new Map())
@@ -383,6 +394,10 @@ export function PresenceView() {
   const localHandleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (isSubmitting) return
+    if (isOooMissingDate) {
+      setToast({ msg: 'Isi dulu tanggal kembali untuk Out of office', error: true })
+      return
+    }
     setIsSubmitting(true)
     try {
       await api.put('/users/me/status', presenceDraft)
@@ -834,16 +849,22 @@ export function PresenceView() {
               <div className="status-form__row">
                 <label className="status-form__label status-form__label--grow">
                   Status
-                  <select
-                    className="status-form__select"
-                    onChange={e => setPresenceDraft(cur => ({ ...cur, status: e.target.value as PresenceStatus }))}
-                    value={presenceDraft.status}
-                  >
-                    <option value="ONLINE">🟢 Online</option>
-                    <option value="AWAY">🟡 Away</option>
-                    <option value="DO_NOT_DISTURB">🟣 Heads-down</option>
-                    <option value="OFFLINE">⚫ Offline</option>
-                  </select>
+                  {isOooActive ? (
+                    <div className="status-form__ooo-indicator" title="Status diatur oleh preset Out of office. Pilih status lain di Quick Set untuk keluar dari OOO.">
+                      <span className="status-form__ooo-indicator-emoji">🏖️</span>
+                      <span className="status-form__ooo-indicator-label">Out of office</span>
+                    </div>
+                  ) : (
+                    <select
+                      className="status-form__select"
+                      onChange={e => setPresenceDraft(cur => ({ ...cur, status: e.target.value as PresenceStatus }))}
+                      value={presenceDraft.status === 'OFFLINE' ? 'ONLINE' : presenceDraft.status}
+                    >
+                      <option value="ONLINE">🟢 Online</option>
+                      <option value="AWAY">🟡 Away</option>
+                      <option value="DO_NOT_DISTURB">🟣 Heads-down</option>
+                    </select>
+                  )}
                 </label>
                 <label className="status-form__label">
                   Emoji
@@ -862,9 +883,9 @@ export function PresenceView() {
                 />
               </label>
 
-              <button className="presence-update-btn" disabled={isSubmitting} type="submit">
+              <button className="presence-update-btn" disabled={isSubmitting || isOooMissingDate} type="submit">
                 {isSubmitting && <span className="presence-update-btn__spinner" />}
-                {isSubmitting ? 'Menyimpan…' : 'Update Status'}
+                {isSubmitting ? 'Menyimpan…' : isOooMissingDate ? 'Isi tanggal kembali dulu' : 'Update Status'}
               </button>
             </form>
           </div>

@@ -1055,32 +1055,14 @@
   padding: 6px 0 !important;
 }
 
-/* Ultimate brute-force: hapus SEMUA border-top/bottom/shadow/outline di
-   approval log area termasuk semua descendant dan pseudo-element. Lalu
-   restore 2 border-left yang kita butuhkan: timeline vertikal dan red bar. */
-.prog-detail-page .prog-approval-log,
-.prog-detail-page .prog-approval-log *,
-.prog-detail-page .prog-approval-log *::before,
-.prog-detail-page .prog-approval-log *::after,
-.prog-detail-page .prog-approval-log::before,
-.prog-detail-page .prog-approval-log::after {
-  border-top: 0 !important;
-  border-bottom: 0 !important;
-  box-shadow: none !important;
-  outline: 0 !important;
-  text-decoration: none !important;
-}
-.prog-detail-page .prog-approval-log {
-  border-left: 2px solid var(--panel-border-strong, var(--panel-border)) !important;
-}
-.prog-detail-page .prog-approval-log__entry--danger .prog-approval-log__note {
-  border-left: 3px solid var(--red) !important;
-}
+/* ════════════════════════════════════════════════════════════════════
+   Program Detail page — anti-line nuke (Sprint 4 fallout)
+   ────────────────────────────────────────────────────────────────────
+   Page-wide nuke untuk hapus semua horizontal-line-capable CSS yang
+   menyebabkan garis muncul di area Riwayat Persetujuan. Restore manual
+   element yang harus tetap visible (tabs, hero ring, dots, workstream
+   dividers, side rail panels). */
 
-/* GLOBAL NUCLEAR — sekarang scope DI-EXPANSI ke ENTIRE prog-detail-page (bukan
-   cuma prog-detail-body). Termasuk wrapper terluar + tabs + breadcrumb + hero
-   + sidebar + body. Plus pseudo-element pada prog-detail-page itself.
-   Restore manual sesuai kebutuhan setelah nuke. */
 .prog-detail-page,
 .prog-detail-page::before,
 .prog-detail-page::after,
@@ -1094,19 +1076,45 @@
   text-decoration: none !important;
   background-image: none !important;
 }
-/* Restore tab bar border-bottom (visual divider tabs ↔ content) */
+
+/* Restore: tab bar divider + active underline */
 .prog-detail-page .prog-detail-tabs {
   border-bottom: 1px solid var(--panel-border) !important;
 }
-/* Restore active tab underline indicator */
 .prog-detail-page .prog-detail-tab--active {
   border-bottom: 2.5px solid var(--text-strong) !important;
 }
-/* Restore hero panel ring (subtle outline) — pakai box-shadow soft */
+
+/* Hero panel — flat per Pattern A workspace: no nested card chrome
+   (border / background / shadow), cuma hairline bottom untuk separate
+   dari banner di bawahnya. Override base `.prog-hero` (di Hero Panel
+   block below) yang masih punya legacy border. */
 .prog-detail-page .prog-hero {
-  box-shadow: 0 0 0 1px var(--panel-border) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--panel-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 0 16px !important;
+  padding: 14px 28px 16px !important;
 }
-/* Restore approval log dots — white ring around colored center + tone box-shadow */
+
+/* Restore: side rail panels (soft drop shadow, bukan border) */
+.prog-detail-page .prog-overview-v2__side .prog-status-panel,
+.prog-detail-page .prog-overview-v2__side .prog-update-panel {
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--panel-border) 50%, transparent) !important;
+}
+.prog-detail-page .prog-update-panel__empty {
+  border: 1px dashed var(--panel-border) !important;
+}
+.prog-detail-page .prog-status-panel__health-row {
+  border-top: 1px solid var(--panel-border) !important;
+}
+
+/* Restore: approval log timeline + structure */
+.prog-detail-page .prog-approval-log {
+  border-left: 2px solid var(--panel-border-strong, var(--panel-border)) !important;
+}
 .prog-detail-page .prog-approval-log__dot {
   border: 2.5px solid var(--surface-1) !important;
 }
@@ -1119,28 +1127,30 @@
 .prog-detail-page .prog-approval-log__entry--info .prog-approval-log__dot {
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--blue) 60%, transparent) !important;
 }
-.prog-detail-page .prog-approval-log__entry .prog-approval-log__dot:not(.prog-approval-log__entry--positive *):not(.prog-approval-log__entry--danger *):not(.prog-approval-log__entry--info *) {
-  box-shadow: 0 0 0 1px var(--panel-border-strong, var(--panel-border)) !important;
+.prog-detail-page .prog-approval-log__entry--danger .prog-approval-log__note {
+  border-left: 3px solid var(--red) !important;
 }
 
-/* Restore side rail panel soft shadow (kita pakai drop shadow soft, bukan ring 1px) */
-.prog-detail-page .prog-overview-v2__side .prog-status-panel,
-.prog-detail-page .prog-overview-v2__side .prog-update-panel {
-  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--panel-border) 50%, transparent) !important;
+/* Collapse toggle — "Lihat N entry lainnya" / "Sembunyikan riwayat lama" */
+.prog-detail-page .prog-approval-log__toggle {
+  align-self: flex-start;
+  margin: 4px 0 0 -2px;
+  padding: 4px 10px 4px 14px;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
 }
-/* Restore Update Panel empty box dashed border */
-.prog-detail-page .prog-update-panel__empty {
-  border: 1px dashed var(--panel-border) !important;
+.prog-detail-page .prog-approval-log__toggle:hover {
+  background: var(--surface-2);
+  color: var(--text-strong);
 }
-/* Restore status panel divider between bar and health row */
-.prog-detail-page .prog-status-panel__health-row {
-  border-top: 1px solid var(--panel-border) !important;
-}
-/* Restore approval log status badge (ACTIVE/PENDING/DRAFT tone tinted bg) — bg-color
-   preserved from base but check spec ulang */
-.prog-detail-page .prog-approval-log__status {
-  background: var(--surface-2) !important;
-}
+
+/* Restore: status badge tone bg (ACTIVE/PENDING/DRAFT) */
 .prog-detail-page .prog-approval-log__entry--positive .prog-approval-log__status {
   background: color-mix(in srgb, var(--green) 10%, transparent) !important;
 }
@@ -1150,36 +1160,13 @@
 .prog-detail-page .prog-approval-log__entry--info .prog-approval-log__status {
   background: color-mix(in srgb, var(--blue) 10%, transparent) !important;
 }
-/* Restore yang harus ada: */
-.prog-detail-page .prog-overview-v2__main .prog-approval-log {
-  border-left: 2px solid var(--panel-border-strong, var(--panel-border)) !important;
-}
-.prog-detail-page .prog-overview-v2__main .prog-approval-log__entry--danger .prog-approval-log__note {
-  border-left: 3px solid var(--red) !important;
-}
+
+/* Restore: workstream list dividers (Ringkasan body) */
 .prog-detail-page .prog-overview-v2__main .workstream-list {
   border-top: 1px solid var(--panel-border) !important;
 }
 .prog-detail-page .prog-overview-v2__main .workstream-row {
   border-bottom: 1px solid var(--panel-border) !important;
-}
-/* Side rail panels: kasih SOFT drop shadow (bukan ring 1px) supaya tidak ada
-   tepi tajam yang bisa sejajar dengan row Ditolak yang panjang. */
-.prog-detail-page .prog-overview-v2__side .prog-status-panel,
-.prog-detail-page .prog-overview-v2__side .prog-update-panel {
-  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--panel-border) 50%, transparent) !important;
-}
-
-/* Section header dalam Ringkasan body — hairline border-bottom (Sprint 1)
-   ternyata bikin visual noise di semua section, terutama Riwayat Progress
-   (kosong) yang menghasilkan garis horizontal yang tidak ada gunanya.
-   Brute-force: hapus border-bottom di SEMUA wi-section__header dalam main
-   column. Section break sudah cukup terbaca via gap 22px antar section
-   plus typography difference. */
-.prog-detail-page .prog-overview-v2__main .wi-section__header {
-  border-bottom: 0 !important;
-  padding-bottom: 0 !important;
-  margin-bottom: 10px !important;
 }
 
 /* prog-ws-preview border-top juga dihapus dari Ringkasan body — origin
@@ -1302,7 +1289,9 @@
   box-shadow: none !important;
 }
 .prog-detail-page .workstream-row--active {
-  background: var(--surface-1) !important;
+  /* Stripe hijau di kiri sudah cukup sebagai cue selected; gray bg hanya
+     bikin row terkesan flat-sama-warna dengan body putih di bawahnya. */
+  background: transparent !important;
   border-left-color: var(--green) !important;
 }
 /* Health-derived left-border accent (subtle scan cue, no full bg tint).
@@ -1485,10 +1474,14 @@
 
 /* ── Expanded sub-panel: kill the "panel" card chrome.
    Was: panel border + bg + radius nested inside workstream-row.
-   Now: flat continuation with subtle inset, no chrome.             */
+   Was: gray (--surface-2) inset to differentiate from white row above.
+   Now: white continuation, hairlines top + bottom close the section.
+   The boundaries with the workstream-row above (already bordered) and the
+   following content stay clear via hairlines instead of a gray slab.        */
 .prog-detail-page .workstream-detail-panel {
-  background: var(--surface-2) !important;
+  background: var(--panel) !important;
   border: 0 !important;
+  border-top: 1px solid var(--panel-border) !important;
   border-bottom: 1px solid var(--panel-border) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
@@ -2710,3 +2703,255 @@ select.prog-strategic__input {
   text-decoration: none;
 }
 .prog-update-panel__cta:hover { text-decoration: underline; }
+
+
+/* ════════════════════════════════════════════════════════════════════
+   Tab STRUKTUR — Polish ronde 2 (post Sprint 4)
+   ────────────────────────────────────────────────────────────────────
+   Setelah Sprint 4 fokus di Ringkasan, tab Struktur masih punya elemen
+   yang feel jadul: tinted form-y description box, chunky pill action
+   buttons, green-bordered info banner. Light polish via CSS, no JSX
+   change. Pattern A: flat hairlines, no chrome, ghost text-link actions.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Workstream description "deskripsi workstream A" — drop tinted bg +
+   border-bottom. Plain text yang flow natural di body, tidak terlihat
+   seperti form input box. */
+.prog-detail-page .workstream-panel-info {
+  background: transparent !important;
+  border-bottom: 0 !important;
+  padding: 4px 0 12px !important;
+}
+.prog-detail-page .workstream-panel-info__item--desc {
+  font-size: 12.5px !important;
+  color: var(--text-muted) !important;
+  font-style: normal !important;
+  padding-top: 0 !important;
+  line-height: 1.5 !important;
+}
+
+/* "+ Tambah Phase" button: dari chunky green-tinted pill → ghost text-link
+   subtle muted, hover indigo. Pattern Linear/Notion add-action. */
+.prog-detail-page .wi-add-phase-btn {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 6px 10px !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--text-muted) !important;
+  width: auto !important;
+  text-align: left !important;
+  margin: 8px 0 4px !important;
+  border-radius: 5px !important;
+  align-self: flex-start !important;
+  letter-spacing: 0 !important;
+}
+.prog-detail-page .wi-add-phase-btn:hover {
+  background: var(--surface-2) !important;
+  color: var(--text-strong) !important;
+  border: 0 !important;
+}
+
+/* "+ Tambah Task" sudah ghost-ish dari base, hanya tighten tone. */
+.prog-detail-page .wi-add-subtask-btn {
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  padding: 4px 8px !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--text-muted) !important;
+  margin-top: 4px !important;
+}
+.prog-detail-page .wi-add-subtask-btn:hover {
+  background: var(--surface-2) !important;
+  color: var(--text-strong) !important;
+  border: 0 !important;
+}
+
+/* Info banner "Jadwal Plan tergenerate otomatis dari tanggal task" —
+   dari green-tinted box + border → plain muted inline text. Pattern
+   Linear hint footnote. */
+.prog-detail-page .workstream-ren-hint {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 8px 0 !important;
+  margin-top: 4px !important;
+  font-size: 11.5px !important;
+}
+.prog-detail-page .workstream-ren-hint__text {
+  font-size: 11.5px !important;
+  color: var(--text-muted) !important;
+}
+.prog-detail-page .workstream-ren-hint__link {
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  color: var(--text-muted) !important;
+  text-decoration: none !important;
+}
+.prog-detail-page .workstream-ren-hint__link:hover {
+  color: var(--green) !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px !important;
+}
+
+/* Workstream row header (saat expanded): tighten meta spacing supaya
+   9 elemen tidak crammed. Tidak restructure layout, hanya breathing room. */
+.prog-detail-page .workstream-row__info {
+  gap: 10px !important;
+}
+.prog-detail-page .workstream-row__meta {
+  gap: 10px !important;
+}
+
+/* Phase header: subtle improvement, eyebrow + order + name flow.
+   Sprint 1 polish sudah cover dasar, ini fine-tune typography. */
+.prog-detail-page .phase-group__eyebrow {
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  color: var(--text-muted) !important;
+  opacity: 0.7 !important;
+}
+.prog-detail-page .phase-group__order {
+  color: var(--text-muted) !important;
+  font-weight: 600 !important;
+  margin-right: 6px !important;
+}
+.prog-detail-page .phase-group__name {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--text-strong) !important;
+}
+.prog-detail-page .phase-group__count {
+  font-size: 11px !important;
+  color: var(--text-muted) !important;
+  margin-left: 8px !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   ── Round: structural polish (10/10 review)
+   ─────────────────────────────────────────────────────────────────
+   Issues addressed:
+   • Task-row + phase-header tidak lagi spread "title kiri, meta jauh
+     di kanan". flex:1 di info/name di-cap supaya meta cluster sit
+     adjacent ke title. Whitespace jatuh di kanan, bukan di tengah.
+   • Description workstream pakai eyebrow "Deskripsi" + italic muted
+     supaya tidak terbaca sebagai placeholder leftover.
+   • Phase → task connection diperjelas dengan vertical hairline rail
+     di kiri task list (sub-item visual cue Notion-style).
+   • Tambah Phase (action) vs Jadwal Plan hint (info) sekarang punya
+     treatment berbeda — button affordance vs caption italic. */
+
+/* #1 Task-row alignment: meta cluster (PIC + %) berdampingan dengan
+   title, bukan flush ke edge. flex:1 base bikin info grow ke seluruh
+   sisa ruang → void di tengah. */
+.prog-detail-page .phase-group__tasks .wi-row__info {
+  flex: 0 1 auto !important;
+  max-width: 56% !important;
+}
+.prog-detail-page .phase-group__tasks .wi-row__right {
+  /* Sit immediately after info, jangan auto-margin-push ke kanan. */
+  margin-left: 0 !important;
+}
+
+/* #1 (cont.) Phase header: "0/1 selesai" sit dekat dengan phase name. */
+.prog-detail-page .phase-group__name {
+  flex: 0 1 auto !important;
+}
+
+/* #2 Description workstream: kasih eyebrow + italic muted style. */
+.prog-detail-page .workstream-panel-info__item--desc {
+  font-style: italic !important;
+  font-size: 12.5px !important;
+  color: var(--text-muted) !important;
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 8px !important;
+}
+.prog-detail-page .workstream-panel-info__item--desc::before {
+  content: 'Deskripsi';
+  display: inline-block;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  opacity: 0.65;
+  flex-shrink: 0;
+}
+
+/* #5 Vertical rail: 1px hairline di kiri task list, ngeklaim "task ini
+   masuk phase di atasnya". Pattern Notion/Linear sub-item. */
+.prog-detail-page .phase-group__tasks {
+  border-left: 1px solid var(--panel-border) !important;
+  margin-left: 11px !important;
+  padding-left: 14px !important;
+  padding-top: 4px !important;
+  padding-bottom: 8px !important;
+}
+
+/* #6a "+ Tambah Phase": dashed-border ghost = clearly action affordance
+   (different dari plain muted text). */
+.prog-detail-page .wi-add-phase-btn {
+  border: 1px dashed var(--panel-border) !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  width: auto !important;
+  margin: 12px 0 4px !important;
+  align-self: flex-start !important;
+  letter-spacing: 0 !important;
+  text-align: left !important;
+}
+.prog-detail-page .wi-add-phase-btn:hover {
+  border-style: solid !important;
+  border-color: var(--green) !important;
+  color: var(--green) !important;
+  background: color-mix(in srgb, var(--green) 5%, transparent) !important;
+}
+
+/* #4 Progress bar consistency: task row sekarang punya slim track yang
+   sejajar dengan workstream-row__progress. 48px wide, 3px tall — kecil
+   tapi cukup untuk scan-at-a-glance fill state. Color mengikuti completion
+   threshold: red <40, yellow <80, green ≥80. */
+.prog-detail-page .wi-pct-track {
+  display: inline-block;
+  width: 48px;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--surface-overlay-strong, var(--surface-2));
+  flex-shrink: 0;
+  overflow: hidden;
+  vertical-align: middle;
+}
+.prog-detail-page .wi-pct-fill {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--green);
+  transition: width 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* #6b "Jadwal Plan tergenerate..." hint: italic caption + info bullet
+   prefix → clearly informational, bukan action. */
+.prog-detail-page .workstream-ren-hint {
+  font-style: italic !important;
+  opacity: 0.75 !important;
+  padding: 6px 0 0 !important;
+  margin-top: 8px !important;
+}
+.prog-detail-page .workstream-ren-hint::before {
+  content: '•';
+  margin-right: 8px;
+  font-style: normal;
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+.prog-detail-page .workstream-ren-hint__text {
+  font-style: italic !important;
+}

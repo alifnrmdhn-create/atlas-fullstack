@@ -242,6 +242,7 @@ class ProgramService
         return Program::query()
             ->with([
                 'owner:id,name,avatarUrl,roleType,unitId,positionTitle',
+                'owner.unit:id,name',
                 'coPics',
                 'linkedChannel:id,name',
                 'workstreams.entityPics',

@@ -6418,7 +6418,10 @@ select.wid-input {
   animation: tpp-backdrop-out 150ms var(--ease-exit) both;
 }
 
-/* Panel — same visual weight as .activity-panel / .thread-panel */
+/* Panel — Pattern A: clean white body, hairline border, 3px green accent
+   stripe on the left signaling "Perencanaan" context. The previous treatment
+   mixed --surface-2 12% into the bg which made the panel blend into the
+   workspace canvas behind it; pure white now gives crisp separation. */
 .tpp-panel {
   position: fixed;
   top: 0;
@@ -6428,7 +6431,7 @@ select.wid-input {
   width: 380px;
   max-width: 100vw;
   background: var(--panel);
-  border-left: 1px solid var(--panel-border);
+  border-left: 3px solid var(--green);
   box-shadow: var(--panel-shadow-xl);
   display: flex;
   flex-direction: column;
@@ -6439,25 +6442,23 @@ select.wid-input {
   animation: tpp-panel-out 150ms var(--ease-exit) both;
 }
 
-/* Light-mode premium treatment — identical to .activity-panel rule in responsive.css */
+/* Light-mode: keep panel crisp white (no surface-2 mix). Soft green corner
+   glow echoes the stripe without flooding the body. */
 :root:not([data-theme="dark"]) .tpp-panel {
   background:
-    radial-gradient(ellipse 80% 44% at 100% 0%, color-mix(in srgb, var(--indigo) 6%, transparent), transparent 72%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, var(--surface-2) 12%) 0%, var(--panel) 100%);
-  border-color: color-mix(in srgb, var(--panel-border-strong) 56%, transparent);
+    radial-gradient(ellipse 80% 36% at 100% 0%, color-mix(in srgb, var(--green) 5%, transparent), transparent 72%),
+    var(--panel);
   box-shadow:
     var(--panel-shadow-xl),
     inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 72%, transparent);
 }
 
-/* Header — reuses .panel-header from responsive.css; add exec-link slot */
+/* Header — flat against the body now; only a hairline separator. */
 .tpp-panel .panel-header {
   background: var(--panel);
 }
 :root:not([data-theme="dark"]) .tpp-panel .panel-header {
-  background: linear-gradient(180deg,
-    color-mix(in srgb, var(--surface-2) 62%, transparent),
-    color-mix(in srgb, var(--panel) 88%, transparent));
+  background: transparent;
   border-color: color-mix(in srgb, var(--panel-border-strong) 52%, transparent);
 }
 .tpp-exec-link {

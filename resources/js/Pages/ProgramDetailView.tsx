@@ -225,6 +225,7 @@ export function ProgramDetailView() {
   }
   const [approvalLog, setApprovalLog] = useState<ApprovalLogEntry[]>([])
   const [approvalLogLoading, setApprovalLogLoading] = useState(false)
+  const [approvalLogExpanded, setApprovalLogExpanded] = useState(false)
   const loadApprovalLog = useCallback(async () => {
     if (!numId) return
     setApprovalLogLoading(true)
@@ -1200,34 +1201,57 @@ export function ProgramDetailView() {
               <SkeletonBlock width="36%" height={11} />
             </div>
           </div>
-        ) : (
-          <div className="prog-approval-log">
-            {approvalLog.map((entry) => {
-              const tone = actionTone[entry.action] ?? 'default'
-              const label = actionLabel[entry.action] ?? entry.action
-              const date = new Date(entry.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-              return (
-                <div key={entry.id} className={`prog-approval-log__entry prog-approval-log__entry--${tone}`}>
-                  <span className="prog-approval-log__dot" />
-                  <div className="prog-approval-log__body">
-                    <div className="prog-approval-log__head">
-                      <span className="prog-approval-log__action">{label}</span>
-                      {entry.toStatus && (
-                        <span className="prog-approval-log__status">{entry.toStatus.replace(/_/g, ' ')}</span>
+        ) : (() => {
+          // Default collapse: tampilkan 2 entry terbaru. Sisanya disembunyikan
+          // di balik toggle supaya timeline aktivitas hari-yang-sama (banyak
+          // siklus Diajukan → Ditarik → Diajukan) tidak banjir di Ringkasan.
+          const COLLAPSED_COUNT = 2
+          const hasMore = approvalLog.length > COLLAPSED_COUNT
+          const visible = approvalLogExpanded || !hasMore
+            ? approvalLog
+            : approvalLog.slice(0, COLLAPSED_COUNT)
+          const hiddenCount = approvalLog.length - visible.length
+          return (
+            <div className="prog-approval-log">
+              {visible.map((entry) => {
+                const tone = actionTone[entry.action] ?? 'default'
+                const label = actionLabel[entry.action] ?? entry.action
+                const date = new Date(entry.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                return (
+                  <div key={entry.id} className={`prog-approval-log__entry prog-approval-log__entry--${tone}`}>
+                    <span className="prog-approval-log__dot" />
+                    <div className="prog-approval-log__body">
+                      <div className="prog-approval-log__head">
+                        <span className="prog-approval-log__action">{label}</span>
+                        {entry.toStatus && (
+                          <span className="prog-approval-log__status">{entry.toStatus.replace(/_/g, ' ')}</span>
+                        )}
+                      </div>
+                      <span className="prog-approval-log__meta">
+                        {entry.byUserName} · {date}
+                      </span>
+                      {entry.note && (
+                        <div className="prog-approval-log__note">{entry.note}</div>
                       )}
                     </div>
-                    <span className="prog-approval-log__meta">
-                      {entry.byUserName} · {date}
-                    </span>
-                    {entry.note && (
-                      <div className="prog-approval-log__note">{entry.note}</div>
-                    )}
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+                )
+              })}
+              {hasMore && (
+                <button
+                  type="button"
+                  className="prog-approval-log__toggle"
+                  onClick={() => setApprovalLogExpanded(v => !v)}
+                  aria-expanded={approvalLogExpanded}
+                >
+                  {approvalLogExpanded
+                    ? 'Sembunyikan riwayat lama'
+                    : `Lihat ${hiddenCount} entry lainnya`}
+                </button>
+              )}
+            </div>
+          )
+        })()}
       </div>
     )
   }
@@ -1403,21 +1427,37 @@ export function ProgramDetailView() {
 
                 <div className="prog-hero__col">
                   <div className="prog-hero__label">PIC Utama</div>
-                  {programSummary?.owner ? (
-                    <div className="prog-hero__value">
-                      <Avatar name={programSummary.owner.name} size={22} />
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {programSummary.owner.name}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="prog-hero__value prog-hero__so--empty">Belum ditetapkan</div>
-                  )}
-                  {(detail.picPersons ?? []).length > 0 && (
-                    <div className="prog-hero__sub">
-                      +{(detail.picPersons ?? []).length} tim pendukung
-                    </div>
-                  )}
+                  {(() => {
+                    // detail.owner punya positionTitle + unit (eager-loaded di
+                    // findOrFail), programSummary.owner cuma id/name. Prefer
+                    // detail kalau ada supaya subline jabatan · divisi tampil.
+                    const owner = detail.owner ?? programSummary?.owner ?? null
+                    if (!owner) {
+                      return <div className="prog-hero__value prog-hero__so--empty">Belum ditetapkan</div>
+                    }
+                    const role = owner.positionTitle ?? null
+                    const unit = owner.unit?.name ?? null
+                    const subline = [role, unit].filter(Boolean).join(' · ')
+                    const supportCount = (detail.picPersons ?? []).length
+                    return (
+                      <>
+                        <div className="prog-hero__value">
+                          <Avatar name={owner.name} size={22} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {owner.name}
+                          </span>
+                        </div>
+                        {subline && (
+                          <div className="prog-hero__sub" title={subline}>{subline}</div>
+                        )}
+                        {supportCount > 0 && (
+                          <div className="prog-hero__sub prog-hero__sub--accent">
+                            +{supportCount} tim pendukung
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
                 </div>
 
                 <div className="prog-hero__col">
@@ -2210,7 +2250,11 @@ export function ProgramDetailView() {
                         </div>
                       </div>
                     ) : progressLog.length === 0 ? (
-                      <p className="hd-muted" style={{ fontSize: 12 }}>Belum ada update progress. Klik &quot;+ Update Progress&quot; untuk mulai.</p>
+                      // CTA echo dihapus — tombol "+ Update Progress" sudah di
+                      // header section ini, dan sidebar kanan punya empty state
+                      // dengan CTA jelas. Slim line cukup supaya section tidak
+                      // looks broken (header tanpa body).
+                      <p className="hd-muted" style={{ fontSize: 12, margin: '2px 0 0' }}>Belum ada riwayat update.</p>
                     ) : (
                       <div className="prog-progress-log">
                         {progressLog.map(entry => {
@@ -2469,217 +2513,6 @@ export function ProgramDetailView() {
                   </div>
                 )}
               </aside>
-              {/* Sprint 4: wid-sidebar lama dihapus total. Side rail di atas
-                  sudah cover info paling penting (Status + Update). Info detail
-                  lain (Tim PIC, Pengusul, Channel link) bisa dilihat lewat tab
-                  lain atau Edit modal. */}
-              <div className="prog-overview-v2__hidden-legacy" style={{ display: 'none', visibility: 'hidden', height: 0, overflow: 'hidden' }} aria-hidden="true">
-                <div className="wid-sidebar">
-
-                  {/* ── Timeline panel ── */}
-                  <section className="wid-panel">
-                    <div className="wid-panel__head wid-panel__head--compact">
-                      <h3 className="wid-panel__title">
-                        <span className="wid-panel__icon">{PIcon.calendar}</span>
-                        Timeline
-                      </h3>
-                      <button
-                        aria-expanded={!sidebarCollapsed.timeline}
-                        aria-label={sidebarCollapsed.timeline ? 'Buka panel' : 'Tutup panel'}
-                        className={`wid-panel__collapse${sidebarCollapsed.timeline ? ' is-collapsed' : ''}`}
-                        onClick={() => toggleSidebar('timeline')}
-                        type="button"
-                      >
-                        {PIcon.chevron}
-                      </button>
-                    </div>
-                    <div className={`wid-panel__body${sidebarCollapsed.timeline ? ' is-collapsed' : ''}`}>
-                      {detail.startDate && (
-                        <div className="wi-sidebar-row">
-                          <span className="wi-sidebar-label">Mulai</span>
-                          <span className="wi-sidebar-value">
-                            {new Date(detail.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </span>
-                        </div>
-                      )}
-                      {detail.targetEndDate && (() => {
-                        const days = daysUntil(detail.targetEndDate)
-                        const info = formatDaysLabel(days)
-                        return (
-                          <div className="wi-sidebar-row">
-                            <span className="wi-sidebar-label">Target selesai</span>
-                            <span className="wi-sidebar-value wi-sidebar-value--wrap">
-                              {new Date(detail.targetEndDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                              {' · '}
-                              <span className={`wi-sidebar-deadline wi-sidebar-deadline--${info.tone}`}>{info.label}</span>
-                            </span>
-                          </div>
-                        )
-                      })()}
-                    </div>
-                  </section>
-
-                  {/* ── Status & Priority panel ── */}
-                  <section className="wid-panel">
-                    <div className="wid-panel__head wid-panel__head--compact">
-                      <h3 className="wid-panel__title">
-                        <span className="wid-panel__icon">{PIcon.activity}</span>
-                        Status & Prioritas
-                      </h3>
-                      <button
-                        aria-expanded={!sidebarCollapsed.status}
-                        aria-label={sidebarCollapsed.status ? 'Buka panel' : 'Tutup panel'}
-                        className={`wid-panel__collapse${sidebarCollapsed.status ? ' is-collapsed' : ''}`}
-                        onClick={() => toggleSidebar('status')}
-                        type="button"
-                      >
-                        {PIcon.chevron}
-                      </button>
-                    </div>
-                    <div className={`wid-panel__body${sidebarCollapsed.status ? ' is-collapsed' : ''}`}>
-                      {(() => {
-                        const disp = getProgramDisplayStatus(detail)
-                        return (
-                          <div className="wi-sidebar-row">
-                            <span className="wi-sidebar-label">Status</span>
-                            <span className={`wid-status-tag wid-status-tag--${disp.slug}`}>
-                              <span className="wid-status-tag__dot" />
-                              {disp.label}
-                            </span>
-                          </div>
-                        )
-                      })()}
-                      <div className="wi-sidebar-row" style={{ marginTop: 6 }}>
-                        <span className="wi-sidebar-label">Prioritas</span>
-                        <span className={`wi-priority-badge wi-priority-badge--${detail.priority.toLowerCase()}`}>
-                          {detail.priority.charAt(0) + detail.priority.slice(1).toLowerCase()}
-                        </span>
-                      </div>
-                      {programSummary?.owner && (
-                        <div className="wi-sidebar-row" style={{ marginTop: 6 }}>
-                          <span className="wi-sidebar-label">PIC Utama</span>
-                          <span className="wi-sidebar-value">{programSummary.owner.name}</span>
-                        </div>
-                      )}
-                      {(detail.picPersons ?? []).length > 0 && (
-                        <div className="wi-sidebar-row" style={{ marginTop: 6 }}>
-                          <span className="wi-sidebar-label">Tim PIC</span>
-                          <span className="wi-sidebar-value">
-                            {(detail.picPersons ?? []).map(p => p.name).join(', ')}
-                          </span>
-                        </div>
-                      )}
-                      {detail.submittedById && detail.submittedByName &&
-                        detail.submittedById !== programSummary?.owner?.id && (
-                        <div className="wi-sidebar-row" style={{ marginTop: 6 }}>
-                          <span className="wi-sidebar-label">Pengusul</span>
-                          <span className="wi-sidebar-value">{detail.submittedByName}</span>
-                        </div>
-                      )}
-                      {/* Reviewer + lama menunggu — hanya saat PENDING_*. PIC
-                          tahu siapa yang sedang memegang bola & sudah berapa lama,
-                          tidak perlu nebak atau menunggu dalam ketidakpastian. */}
-                      {detail.pendingReviewer && (
-                        <div className="wi-sidebar-row" style={{ marginTop: 6 }}>
-                          <span className="wi-sidebar-label">Menunggu</span>
-                          <span className="wi-sidebar-value">
-                            {detail.pendingReviewer.name}
-                            <span className="hd-muted" style={{ fontSize: 11, marginLeft: 6 }}>
-                              ({detail.pendingReviewer.roleType})
-                            </span>
-                          </span>
-                        </div>
-                      )}
-                      {detail.pendingSinceAt && (
-                        <div className="wi-sidebar-row" style={{ marginTop: 6 }}>
-                          <span className="wi-sidebar-label">Diajukan</span>
-                          <span className="wi-sidebar-value">{formatRelativeTime(detail.pendingSinceAt).text}</span>
-                        </div>
-                      )}
-                    </div>
-                  </section>
-
-                  {/* ── Info Strategis panel ── (Pilar dihapus — duplikat body) */}
-                  {(detail.kelompok || detail.progresTerkini || detail.dukunganDibutuhkan) && (
-                  <section className="wid-panel">
-                    <div className="wid-panel__head wid-panel__head--compact">
-                      <h3 className="wid-panel__title">
-                        <span className="wid-panel__icon">{PIcon.layers}</span>
-                        Info Strategis
-                      </h3>
-                      <button
-                        aria-expanded={!sidebarCollapsed.strategic}
-                        aria-label={sidebarCollapsed.strategic ? 'Buka panel' : 'Tutup panel'}
-                        className={`wid-panel__collapse${sidebarCollapsed.strategic ? ' is-collapsed' : ''}`}
-                        onClick={() => toggleSidebar('strategic')}
-                        type="button"
-                      >
-                        {PIcon.chevron}
-                      </button>
-                    </div>
-                    <div className={`wid-panel__body${sidebarCollapsed.strategic ? ' is-collapsed' : ''}`}>
-                      {detail.kelompok && (
-                        <div className="wi-sidebar-row">
-                          <span className="wi-sidebar-label">Kelompok</span>
-                          <span className="wi-sidebar-value">
-                            {detail.kelompok === 'SCORECARD' ? 'Scorecard' : 'Non Scorecard'}
-                          </span>
-                        </div>
-                      )}
-                      {/* Pilar Strategis sengaja dihilangkan dari sidebar — sudah tampil
-                          sebagai field editable di body (section "Identitas Strategis").
-                          Duplikasi membuat info terasa redundan dan menambah noise. */}
-                      {detail.progresTerkini && (
-                        <div className="wi-sidebar-row wi-sidebar-row--block" style={{ marginTop: 8 }}>
-                          <span className="wi-sidebar-label">Progres Terkini</span>
-                          <p className="wi-sidebar-value wi-sidebar-value--prose">{detail.progresTerkini}</p>
-                        </div>
-                      )}
-                      {detail.dukunganDibutuhkan && (
-                        <div className="wi-sidebar-row wi-sidebar-row--block" style={{ marginTop: 8 }}>
-                          <span className="wi-sidebar-label">Dukungan Dibutuhkan</span>
-                          <p className="wi-sidebar-value wi-sidebar-value--prose">{detail.dukunganDibutuhkan}</p>
-                        </div>
-                      )}
-                    </div>
-                  </section>
-                  )}
-
-                  {/* ── Channel panel ── (rendered only when channel linked) */}
-                  {programSummary?.linkedChannel && (
-                    <section className="wid-panel">
-                      <div className="wid-panel__head wid-panel__head--compact">
-                        <h3 className="wid-panel__title">
-                          <span className="wid-panel__icon">{PIcon.wifi}</span>
-                          Channel
-                        </h3>
-                        <button
-                          aria-expanded={!sidebarCollapsed.channel}
-                          aria-label={sidebarCollapsed.channel ? 'Buka panel' : 'Tutup panel'}
-                          className={`wid-panel__collapse${sidebarCollapsed.channel ? ' is-collapsed' : ''}`}
-                          onClick={() => toggleSidebar('channel')}
-                          type="button"
-                        >
-                          {PIcon.chevron}
-                        </button>
-                      </div>
-                      <div className={`wid-panel__body${sidebarCollapsed.channel ? ' is-collapsed' : ''}`}>
-                        <div className="wi-sidebar-row">
-                          <span className="wi-sidebar-label">Linked</span>
-                          <span className="wi-sidebar-value">#{programSummary.linkedChannel.name}</span>
-                        </div>
-                        {(programSummary?.messageCount ?? 0) > 0 && (
-                          <div className="wi-sidebar-row">
-                            <span className="wi-sidebar-label">Pesan</span>
-                            <span className="wi-sidebar-value">{programSummary.messageCount}</span>
-                          </div>
-                        )}
-                      </div>
-                    </section>
-                  )}
-
-                </div>
-              </div>
             </div>
           )}
 
@@ -3000,6 +2833,9 @@ export function ProgramDetailView() {
                                                     {item.priority && item.priority.toUpperCase() !== 'MEDIUM' && (
                                                       <span className={`wi-row__priority wi-row__priority--${item.priority.toLowerCase()}`} title={item.priority} />
                                                     )}
+                                                    <span className="wi-pct-track" aria-hidden="true">
+                                                      <span className="wi-pct-fill" style={{ width: `${item.percentComplete}%` }} />
+                                                    </span>
                                                     <span className="wi-pct">{item.percentComplete}%</span>
                                                     {!['BACKLOG', 'READY'].includes(item.status) && (
                                                       <span className="wi-status-chip" data-status={item.status}>{formatStatusLabel(item.status)}</span>
@@ -3066,6 +2902,9 @@ export function ProgramDetailView() {
                                                 <div className="wi-row__right">
                                                   <TaskPicChip picPersons={item.picPersons} />
                                                   {item.priority && <span className={`wi-row__priority wi-row__priority--${item.priority.toLowerCase()}`} title={item.priority} />}
+                                                  <span className="wi-pct-track" aria-hidden="true">
+                                                    <span className="wi-pct-fill" style={{ width: `${item.percentComplete}%` }} />
+                                                  </span>
                                                   <span className="wi-pct">{item.percentComplete}%</span>
                                                   <span className="wi-status-chip" data-status={item.status}>{formatStatusLabel(item.status)}</span>
                                                 </div>
