@@ -348,16 +348,19 @@ class WorkflowMutationSmokeTest extends TestCase
             ->assertJsonPath('data.code', 'KPI-MUT-JSON')
             ->json('data.id');
 
+        // Model casts targetValue/actualValue ke 'float' (lihat KpiDefinition
+        // $casts) — JSON serialize-nya number `95`, BUKAN string `'95.000000'`.
+        // assertJsonPath strict ===, jadi expected harus integer.
         $this->patchJson("/kpis/{$kpiId}", ['targetValue' => 95])
             ->assertOk()
-            ->assertJsonPath('data.targetValue', '95.000000');
+            ->assertJsonPath('data.targetValue', 95);
 
         $this->postJson("/kpis/{$kpiId}/values", [
             'measurementDate' => now()->toDateString(),
             'actualValue' => 96,
         ])
             ->assertCreated()
-            ->assertJsonPath('data.actualValue', '96.000000');
+            ->assertJsonPath('data.actualValue', 96);
 
         $assignmentId = $this->postJson('/assignments', [
             'title' => 'Mutation JSON Assignment',
@@ -367,6 +370,9 @@ class WorkflowMutationSmokeTest extends TestCase
             'watcherIds' => [],
             'evidenceRequired' => false,
             'isPrivate' => false,
+            // dueDate jadi required di AssignmentController (lihat line 71).
+            // +7 hari supaya satisfy `after:today` rule.
+            'dueDate' => now()->addDays(7)->toDateString(),
         ])
             ->assertCreated()
             ->assertJsonPath('data.title', 'Mutation JSON Assignment')
