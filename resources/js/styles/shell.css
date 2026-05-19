@@ -20,6 +20,38 @@
   grid-template-columns: var(--sidebar-width-collapsed) 1fr;
 }
 
+/* Responsive: auto-collapse sidebar di viewport ≤1024px (T1 laptop kantor
+ * dan di bawahnya). Logic JS di AppShell.tsx menambahkan class
+ * .app-shell--collapsed otomatis via media query JS — CSS ini hanya
+ * memastikan grid-template tetap collapsed kalau JS handler belum aktif.
+ * Toggle button disembunyikan supaya tidak confusing (state manual masih
+ * persisted ke localStorage untuk preference saat resize ke viewport lebar).
+ * Lihat docs/responsive-audit-2026-05.md §3.1. */
+@media (max-width: 1024px) {
+  .app-shell { grid-template-columns: var(--sidebar-width-collapsed) 1fr; }
+  .sidebar__collapse-toggle { display: none; }
+
+  /* Topbar: hemat ruang di viewport sempit.
+   * - Period meta ("Q2 · W4 Mei · W21") hidden — info internal team
+   * - Cmdk placeholder + kbd hidden, button jadi icon-only */
+  .topbar__meta-period,
+  .topbar__meta-sep { display: none; }
+  .topbar__cmdk {
+    width: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+  .topbar__cmdk-placeholder,
+  .topbar__cmdk kbd { display: none; }
+}
+
+/* Viewport sangat sempit (tablet portrait): tambahan reduksi */
+@media (max-width: 768px) {
+  /* Date string panjang ("Selasa, 19 Mei 2026") — sembunyikan supaya
+   * topbar tidak overflow. Live indicator masih nampak. */
+  .topbar__meta-date { display: none; }
+}
+
 /* ══ Sidebar — DARK FLOATING PANEL (Stripe Dashboard pattern) ════════════
  * Lifted dark navy slate panel with border-radius + drop shadow + full border.
  * Sits on light canvas with subtle gutter all around. */
@@ -2159,6 +2191,127 @@
 .aging-indicator--yellow { color: #9b6b00; border-color: color-mix(in srgb, #9b6b00 22%, var(--panel-border)); }
 .aging-indicator--orange { color: #d97706; border-color: color-mix(in srgb, #d97706 28%, var(--panel-border)); background: color-mix(in srgb, #d97706 6%, var(--surface-2)); }
 .aging-indicator--red    { color: #c5302d; border-color: color-mix(in srgb, #c5302d 35%, var(--panel-border)); background: color-mix(in srgb, #c5302d 8%, var(--surface-2)); }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * DraftStatusBadge (Sprint 6 — autosave indicator)
+ * ─────────────────────────────────────────────────────────────────────────
+ * Indicator subtle yang nempel di header form: "Tersimpan • 3 detik lalu",
+ * "Menyimpan…", "Offline — backup lokal", dst. Visual mengikuti
+ * aging-indicator (pill kecil border + dot) supaya tidak menambah noise.
+ */
+.draft-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--panel-border);
+  background: var(--surface-2);
+  transition: color 120ms ease, background 120ms ease;
+}
+.draft-status-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.draft-status-badge__label { white-space: nowrap; }
+.draft-status-badge--muted  { color: var(--color-text-muted, #6b7280); }
+.draft-status-badge--green  { color: #1f7a3f; border-color: color-mix(in srgb, #1f7a3f 22%, var(--panel-border)); }
+.draft-status-badge--blue   { color: #2563eb; border-color: color-mix(in srgb, #2563eb 22%, var(--panel-border)); background: color-mix(in srgb, #2563eb 5%, var(--surface-2)); }
+.draft-status-badge--yellow { color: #9b6b00; border-color: color-mix(in srgb, #9b6b00 22%, var(--panel-border)); background: color-mix(in srgb, #9b6b00 6%, var(--surface-2)); }
+.draft-status-badge--red    { color: #c5302d; border-color: color-mix(in srgb, #c5302d 30%, var(--panel-border)); background: color-mix(in srgb, #c5302d 6%, var(--surface-2)); }
+.draft-status-badge--blue .draft-status-badge__dot {
+  animation: draft-status-pulse 1.2s ease-in-out infinite;
+}
+@keyframes draft-status-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * DraftRestoreBanner (Sprint 6 — restore prompt setelah refresh / SSE reload)
+ * ─────────────────────────────────────────────────────────────────────────
+ * Banner full-width di atas form. Sekali muncul, user pilih:
+ * Pulihkan (load draft ke form) atau Buang draf (delete dengan undo 5 detik).
+ */
+.draft-restore-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, #2563eb 25%, var(--panel-border));
+  background: color-mix(in srgb, #2563eb 6%, var(--surface-2));
+  color: var(--color-text-primary);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.draft-restore-banner__icon {
+  font-size: 16px;
+  color: #2563eb;
+  flex-shrink: 0;
+}
+.draft-restore-banner__text { flex: 1; line-height: 1.45; }
+.draft-restore-banner__text strong { font-weight: 600; }
+.draft-restore-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.draft-restore-banner__btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.draft-restore-banner__btn--primary {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+.draft-restore-banner__btn--primary:hover { background: #1d4ed8; }
+.draft-restore-banner__btn--ghost {
+  background: transparent;
+  color: var(--color-text-muted, #6b7280);
+  border-color: var(--panel-border);
+}
+.draft-restore-banner__btn--ghost:hover {
+  color: var(--color-text-primary);
+  border-color: color-mix(in srgb, var(--color-text-muted) 50%, var(--panel-border));
+}
+.draft-restore-banner__dismiss {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted, #6b7280);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+.draft-restore-banner__dismiss:hover {
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-text-muted) 8%, transparent);
+}
+.draft-restore-banner--undo {
+  border-color: color-mix(in srgb, #9b6b00 30%, var(--panel-border));
+  background: color-mix(in srgb, #9b6b00 7%, var(--surface-2));
+}
+.draft-restore-banner--undo .draft-restore-banner__btn--primary {
+  background: #9b6b00;
+  border-color: #9b6b00;
+}
+.draft-restore-banner--undo .draft-restore-banner__btn--primary:hover { background: #7a5400; }
 
 /* ─────────────────────────────────────────────────────────────────────────
  * ForecastBadge (Sprint 5)

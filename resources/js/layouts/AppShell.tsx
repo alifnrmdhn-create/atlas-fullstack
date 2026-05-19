@@ -585,6 +585,24 @@ export function AppShell({ children }: { children?: ReactNode }) {
     startTransition(() => setSidebarCollapsedView(next))
   }
 
+  /* Auto-collapse sidebar di viewport ≤1024 (T1 laptop kantor + di bawahnya).
+   * Preference manual (localStorage) tetap dipertahankan — kalau user resize
+   * ke viewport lebar lagi, sidebar kembali ke preference mereka.
+   * Lihat docs/responsive-audit-2026-05.md §3.1 + token --bp-md. */
+  const [viewportNarrow, setViewportNarrow] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(max-width: 1024px)').matches
+  })
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mql = window.matchMedia('(max-width: 1024px)')
+    const update = (e: MediaQueryListEvent | MediaQueryList) => setViewportNarrow(e.matches)
+    update(mql)
+    mql.addEventListener('change', update)
+    return () => mql.removeEventListener('change', update)
+  }, [])
+  const effectiveCollapsed = sidebarCollapsedView || viewportNarrow
+
   const [tooltipState, setTooltipState] = useState<SidebarTooltipState | null>(null)
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -1011,7 +1029,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const currentPage = PAGE_NAMES[activePath] ?? PAGE_NAMES[pathname] ?? 'ATLAS'
 
   return (
-    <div className={`app-shell${sidebarCollapsedView ? ' app-shell--collapsed' : ''}${hasContextPanel ? ' app-shell--with-panel' : ''}${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}`} ref={shellRef}>
+    <div className={`app-shell${effectiveCollapsed ? ' app-shell--collapsed' : ''}${hasContextPanel ? ' app-shell--with-panel' : ''}${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}`} ref={shellRef}>
       {/* ── Sidebar ── */}
       <aside className="sidebar">
         <div className="sidebar__header">

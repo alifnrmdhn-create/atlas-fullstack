@@ -119,6 +119,12 @@ Tests baseline: 147/148 passing (1 pre-existing KPI decimal serialization di Wor
 4. **Feature flag setiap fitur eksperimental** — gate dengan `useFeatureFlag` di FE, `FeatureFlagService::isEnabled` di BE
 5. **Smart defaults > hard blocks** — auto-prefill, soft visibility, anti-bureaucracy
 6. **Page layout = full-bleed** — halaman primer WAJIB stretch lebar workspace. Dilarang `max-width` fixed + `margin: 0 auto` pada wrapper page-level (whitespace dari padding, bukan cap). Pakai canonical `.page-shell` + `.page-shell__inner` di `resources/js/styles/components.css` untuk halaman baru. Detail aturan + pengecualian (modal, prose, ellipsis) ada di komentar guardrail di file tersebut.
+7. **Responsive baku (Mei 2026)** — wajib didukung 4 device tier: T1 laptop kantor 1366×768, T2 modern 1440-1536, T3 FHD 1920, T4 2K/4K. Aturan:
+   - Breakpoint values **ambil dari `--bp-*` tokens** di `tokens.css` (sm=640, md=1024, lg=1280, xl=1536, 2xl=1920). Jangan karang sendiri — sebelumnya tersebar 20 nilai berbeda di 16 file.
+   - Sidebar **auto-collapse di ≤1024** (handled di `AppShell.tsx` + `shell.css`). Toggle button hidden di narrow viewport.
+   - Mobile <640px **tidak resmi didukung** — tablet portrait 768px = floor.
+   - T4 cap: konten DI DALAM workspace boleh capped 1680px via `.page-shell__cap` utility (opt-in). Workspace itself stays full-bleed.
+   - Audit + roadmap: `docs/responsive-audit-2026-05.md`.
 
 ## Dokumen Reference
 

@@ -17,6 +17,47 @@
   color: var(--text-strong);
 }
 
+/* ── Back navigation row ──────────────────────────────────────────────
+   Slim breadcrumb-style link di atas HeaderStrip. Sengaja low-weight
+   supaya tidak menyaingi action zone (Health badge + Export PPTX). */
+.charter-back {
+  display: flex;
+  align-items: center;
+  margin-bottom: -4px;
+}
+.charter-back__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 4px;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.charter-back__link:hover {
+  background: var(--surface-1);
+  color: var(--text-strong);
+}
+.charter-back__link:focus-visible {
+  outline: 2px solid var(--indigo);
+  outline-offset: 2px;
+}
+.charter-back__link > svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.charter-back__link:hover > svg {
+  opacity: 1;
+}
+@media print {
+  .charter-back { display: none; }
+}
+
 .charter-section {
   display: flex;
   flex-direction: column;
@@ -670,17 +711,52 @@
 /* ── Activity Timeline Table ──────────────────────────────────────
    12-month grid mirroring DKMR PPT slide 21. Each activity = two
    rows (Target / Real). Pattern A: hairline divider on outer card,
-   no card-in-card on rows. */
+   no card-in-card on rows.
+
+   Responsive (2026-05): table membutuhkan lebar minimum ~880px untuk
+   12 kolom bulanan + 4 kolom identitas. Di laptop ≤1024 (sidebar
+   collapsed = ~940 workspace), wrapper di-scroll horizontal dan
+   kolom Aktivitas sticky di kiri supaya konteks tidak hilang saat
+   scroll. Lihat docs/responsive-audit-2026-05.md §3.7. */
 .atl-wrap {
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-lg);
   background: var(--panel);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Subtle gradient hint kalau ada scroll (shadow di kanan saat scrollable) */
+  background-image:
+    linear-gradient(to right, var(--panel), var(--panel)),
+    linear-gradient(to right, var(--panel), var(--panel)),
+    linear-gradient(to right, rgba(15,20,40,0.06), rgba(255,255,255,0)),
+    linear-gradient(to left, rgba(15,20,40,0.06), rgba(255,255,255,0));
+  background-position: left center, right center, left center, right center;
+  background-repeat: no-repeat;
+  background-size: 20px 100%, 20px 100%, 12px 100%, 12px 100%;
+  background-attachment: local, local, scroll, scroll;
 }
 .atl-table {
   width: 100%;
+  min-width: 880px;
   border-collapse: collapse;
   font-size: 11.5px;
+}
+
+/* Sticky kolom Aktivitas — tetap kelihatan saat user scroll horizontal.
+ * Background opaque untuk mask kolom di belakangnya. */
+.atl-head--name,
+.atl-cell--name {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  /* Box-shadow simulating right border (border-collapse breaks sticky border) */
+  box-shadow: inset -1px 0 0 var(--panel-border);
+}
+.atl-head--name {
+  background: var(--surface-1);
+}
+.atl-cell--name {
+  background: var(--panel);
 }
 /* Sentence case header — konsisten dengan typography refresh. */
 .atl-head {

@@ -48,12 +48,23 @@
 
 /* ── Two-column layout ───────────────────────────────────────────────────── */
 
+/* TOC width fluid: 256px di T2+ baseline, shrink ke 200px di laptop kecil.
+ * Tidak pakai breakpoint stepping — clamp() gives smooth transition. */
 .pb-layout {
   display: grid;
-  grid-template-columns: 256px 1fr;
+  grid-template-columns: clamp(200px, 20vw, 280px) 1fr;
   align-items: start;
   gap: 0;
   flex: 1;
+}
+
+/* Tablet portrait & lebih sempit: stack vertikal. TOC jadi horizontal
+ * scroll bar di atas konten. Header tetap sticky. Threshold 768 ==
+ * batas tablet portrait minimum (lihat docs/responsive-audit-2026-05.md). */
+@media (max-width: 768px) {
+  .pb-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ── TOC ─────────────────────────────────────────────────────────────────── */
@@ -68,6 +79,19 @@
   scrollbar-width: none;
 }
 .pb-nav::-webkit-scrollbar { display: none; }
+
+/* Tablet portrait stacked layout: TOC jadi mini-drawer di atas konten.
+ * Max-height dibatasi 240px supaya tidak menggusur konten. Border-right
+ * jadi border-bottom. Tidak sticky (sticky di stacked context terasa janggal). */
+@media (max-width: 768px) {
+  .pb-nav {
+    position: relative;
+    max-height: 240px;
+    padding: 14px 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--panel-border);
+  }
+}
 
 /* Search box — filters TOC entries by label. Sticky at top of nav so it
  * stays accessible while scrolling through long groups. */
@@ -244,8 +268,11 @@
   /* Full-bleed: no max-width on the column. Halaman primer ikut lebar
    * workspace (lihat pakem di components.css → .page-shell). Untuk
    * kenyamanan baca prose panjang, line-length dibatasi pada elemen teks
-   * di bawah, bukan pada container. */
-  padding: 20px 48px 80px 40px;
+   * di bawah, bukan pada container.
+   *
+   * Padding fluid: scale halus dari T1 (1366) ke T4 (4K). Sebelumnya
+   * fixed 40px horizontal → terasa sempit di 4K, terlalu generous di 1366. */
+  padding: var(--space-fluid-md) var(--space-fluid-lg) 56px;
   min-width: 0;
 }
 
@@ -253,7 +280,7 @@
 .pb-content > ul,
 .pb-content > ol,
 .pb-content > blockquote {
-  max-width: 78ch;
+  max-width: var(--content-max-width-prose);
 }
 
 /* Loading / error */
@@ -335,13 +362,13 @@
 
 /* Section headings — bare type, no underline (section hairline does dividing) */
 .pb-body .pb-h2 {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  margin: 0 0 14px;
+  margin: 0 0 12px;
   padding-bottom: 0;
   border-bottom: 0;
   color: var(--text-strong, var(--text));
-  letter-spacing: -0.005em;
+  letter-spacing: -0.008em;
   scroll-margin-top: 20px;
 }
 
@@ -352,7 +379,7 @@
   display: block;
   font-size: 12.5px;
   font-weight: 600;
-  margin: 20px 0 6px;
+  margin: 14px 0 4px;
   color: var(--text);
   letter-spacing: -0.003em;
   scroll-margin-top: 20px;
@@ -558,7 +585,7 @@
 
 .pb-body .pb-table-wrap {
   overflow-x: auto;
-  margin: 8px 0 16px;
+  margin: 4px 0 14px;
   border: 1px solid var(--panel-border);
   border-radius: 7px;
 }
@@ -569,22 +596,28 @@
 }
 .pb-body .pb-table th {
   text-align: left;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 11.5px;
+  font-weight: 600;
   color: var(--text-muted);
-  padding: 7px 12px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--panel-border);
   background: var(--surface-overlay-faint);
   white-space: nowrap;
 }
 .pb-body .pb-table td {
-  padding: 7px 12px;
+  padding: 5px 12px;
   border-bottom: 1px solid var(--panel-border-soft);
   vertical-align: top;
-  line-height: 1.5;
+  line-height: 1.45;
   font-size: 12.5px;
+}
+/* First column shrinks to content width — eliminates over-wide narrow
+ * columns when later columns hold longer prose. Uses width:1% trick which
+ * the table layout algorithm interprets as "as narrow as content allows". */
+.pb-body .pb-table th:first-child,
+.pb-body .pb-table td:first-child {
+  width: 1%;
+  padding-right: 18px;
 }
 .pb-body .pb-table tbody tr:last-child td { border-bottom: none; }
 .pb-body .pb-table tbody tr:hover td {
@@ -595,7 +628,7 @@
 /* ── Blockquote ──────────────────────────────────────────────────────────── */
 
 .pb-body .pb-bq {
-  margin: 6px 0 16px;
+  margin: 4px 0 14px;
   padding: 10px 14px;
   border-left: 3px solid var(--green-subtle);
   background: var(--green-dim);
@@ -627,8 +660,8 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin: 6px 0 12px;
-  padding-bottom: 10px;
+  margin: 2px 0 10px;
+  padding-bottom: 6px;
   border-bottom: 1px solid var(--panel-border);
   font-size: 12px;
 }
@@ -761,9 +794,13 @@
 /* ── Mermaid flowchart container ──────────────────────────────────────────── */
 
 /* Pattern A — mermaid sits on the same surface, no card chrome. Container
- * still scrolls when SVG overflows on narrow viewports. */
+ * still scrolls when SVG overflows on narrow viewports.
+ *
+ * Max-width cap: diagram tidak boleh stretch sampai 2000px+ di monitor 4K
+ * — node label jadi miss-aligned dan visual jadi "berenang" di tengah
+ * area konten. Cap 1200px sesuai practical max readability. */
 .pb-mermaid {
-  margin: 14px 0;
+  margin: 14px auto;
   padding: 8px 0;
   background: transparent;
   border: 0;
@@ -771,11 +808,14 @@
   overflow-x: auto;
   text-align: center;
   position: relative;
+  max-width: 1200px;
 }
 
 .pb-mermaid svg {
   display: block;
   margin: 0 auto;
+  max-width: 100%;
+  height: auto;
 }
 
 /* Root-cause fix for mermaid label clipping.

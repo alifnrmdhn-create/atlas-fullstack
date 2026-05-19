@@ -17,13 +17,20 @@
  *   - Modal, dialog, tooltip, dropdown, command palette
  *   - Sel/cell teks ellipsis (white-space: nowrap)
  *   - Prose panjang (artikel/dokumen): cap di elemen teks (`p`, `ul`)
- *     dengan `max-width: 78ch`, BUKAN di container
+ *     dengan `max-width: var(--content-max-width-prose)`, BUKAN di container
  *   - Kolom kanan/kiri di multi-column layout boleh fixed-width
+ *   - INNER WRAPPER untuk T4 (≥1920px): boleh cap pakai
+ *     `var(--content-max-width-default)` 1680px + `margin: 0 auto` di
+ *     wrapper INNER (bukan .page-shell itself). Lihat audit Mei 2026 §5.
  *
  * Halaman baru: pakai class `.page-shell` + `.page-shell__inner`
  * di bawah ini. Halaman lama yang sudah punya class scoped sendiri
  * (mis. `.fokus-v2__inner`, `.perf__inner`, `.programs-v2__inner`,
- * `.hv__inner`, `.admin-v2`) sudah comply — pertahankan polanya. */
+ * `.hv__inner`, `.admin-v2`) sudah comply — pertahankan polanya.
+ *
+ * Breakpoint values: AMBIL DARI `--bp-*` di tokens.css. Jangan
+ * karang sendiri (sebelumnya 20 nilai berbeda tersebar di codebase).
+ * Konsolidasi 2026-05: sm=640, md=1024, lg=1280, xl=1536, 2xl=1920. */
 
 .page-shell {
   width: 100%;
@@ -33,16 +40,47 @@
 
 .page-shell__inner {
   width: 100%;
-  padding: 24px 32px 48px;
+  /* Padding fluid: scale halus dari T1 (1366) ke T4 (4K) tanpa loncat.
+   * Bottom padding tetap fixed (48px) — bawah halaman butuh ruang
+   * konsisten supaya scrollbar tidak mepet konten. */
+  padding-top: var(--space-fluid-md);
+  padding-right: var(--space-fluid-md);
+  padding-bottom: 48px;
+  padding-left: var(--space-fluid-md);
   box-sizing: border-box;
 }
 
-@media (min-width: 1600px) {
-  .page-shell__inner { padding: 28px 48px 56px; }
+/* Override breakpoints — opt-in. Default fluid sudah handle 90% kasus,
+ * tapi di laptop kecil (≤md / 1024) butuh padding lebih ramping. */
+@media (max-width: 1024px) {
+  .page-shell__inner {
+    padding-top: var(--space-fluid-sm);
+    padding-right: var(--space-fluid-sm);
+    padding-bottom: 40px;
+    padding-left: var(--space-fluid-sm);
+  }
 }
 
-@media (max-width: 980px) {
-  .page-shell__inner { padding: 16px 18px 40px; }
+/* Inner cap util — opt-in untuk halaman yang ingin batasi konten
+ * di monitor 2K+. Pakai di wrapper DI BAWAH .page-shell__inner.
+ * Contoh:
+ *   <div class="page-shell">
+ *     <div class="page-shell__inner">
+ *       <div class="page-shell__cap">...konten halaman...</div>
+ *     </div>
+ *   </div>
+ * Halaman list/dashboard: pakai default cap.
+ * Halaman tabel kompleks (Charter activity): pakai --wide. */
+.page-shell__cap {
+  max-width: var(--content-max-width-default);
+  margin: 0 auto;
+  width: 100%;
+}
+.page-shell__cap--wide {
+  max-width: var(--content-max-width-wide);
+}
+.page-shell__cap--prose {
+  max-width: var(--content-max-width-prose);
 }
 
 /* ─── Panel ──────────────────────────────────────────────────── */

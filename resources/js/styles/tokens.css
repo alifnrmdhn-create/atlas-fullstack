@@ -171,6 +171,56 @@
   --topbar-border: rgba(15,20,40,0.08);
   --topbar-height: 44px;
 
+  /* ─── Responsive breakpoints — single source of truth ─────────
+   * Sebelumnya 20 nilai berbeda tersebar di 16 file (600..1600px).
+   * Konsolidasi ke 5 baku per docs/responsive-audit-2026-05.md.
+   *
+   * CATATAN TEKNIS: CSS custom properties TIDAK bisa langsung dipakai
+   * di `@media (max-width: var(--bp-md))` — spec tidak mendukung.
+   * Token ini berfungsi sebagai DOKUMENTASI nilai baku. Saat menulis
+   * @media, ketik literal angka tapi PILIH dari 5 baku ini saja:
+   *
+   *   @media (max-width: 1024px) { ... }    -- bukan 980, 1000, 1100
+   *   @media (max-width: 1280px) { ... }    -- bukan 1180, 1240, 1320
+   *
+   * Tier device PTPN yang harus didukung:
+   *   T1: 1366×768  laptop kantor ASN/staff       → ≤lg
+   *   T2: 1440×900  MacBook/ThinkPad modern       → md-xl range
+   *   T3: 1920×1080 monitor eksternal FHD         → xl baseline
+   *   T4: ≥1920     2K/4K display direksi         → ≥2xl, inner cap aktif
+   */
+  --bp-sm: 640px;    /* mobile — tidak resmi didukung, fallback off-canvas */
+  --bp-md: 1024px;   /* tablet portrait / laptop kecil — sidebar auto-collapse */
+  --bp-lg: 1280px;   /* laptop standar (T1 1366 baseline) — topbar priority */
+  --bp-xl: 1536px;   /* desktop modern (T2 baseline) */
+  --bp-2xl: 1920px;  /* FHD+ (T4) — inner content cap aktif */
+
+  /* ─── Fluid spacing — clamp(min, preferred, max) ──────────────
+   * Padding workspace/section yang scale halus by viewport — tidak
+   * loncat di breakpoint, mulus dari T1 ke T4. Dipakai di tempat
+   * yang sebelumnya hardcode (cth. .hv__inner padding 28px 32px). */
+  --space-fluid-sm: clamp(12px, 1.5vw, 20px);
+  --space-fluid-md: clamp(20px, 2.5vw, 32px);
+  --space-fluid-lg: clamp(28px, 4vw, 56px);
+
+  /* ─── Content max-width caps ─────────────────────────────────
+   * Per pakem `CLAUDE.md` "Page layout = full-bleed": workspace TETAP
+   * stretch. Tapi konten DI DALAM workspace di-cap supaya tidak
+   * meregang lebar berlebihan di monitor 2K+ (line length jadi lelah
+   * untuk dibaca, tabel jadi spasi liar).
+   *
+   * Cara pakai: di wrapper inner halaman (BUKAN .page-shell itself):
+   *
+   *   .my-page-inner {
+   *     max-width: var(--content-max-width-default);
+   *     margin: 0 auto;
+   *   }
+   *
+   * Tetap ikuti pakem: WORKSPACE itself stays full-bleed. */
+  --content-max-width-prose: 78ch;        /* Playbook body, blockquote panjang */
+  --content-max-width-default: 1680px;    /* halaman list/dashboard standar */
+  --content-max-width-wide: 1920px;       /* tabel kompleks (Charter activity, Workboard) */
+
   /* Avatar — light mode (brand green tint) */
   --avatar-bg: rgba(31,107,53,0.11);
   --avatar-color: #1A5A2C;
