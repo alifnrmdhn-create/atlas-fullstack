@@ -80,8 +80,11 @@ class StrategicFieldsTest extends TestCase
         ]);
     }
 
-    public function test_config_pillars_has_five_canonical_values(): void
+    public function test_config_pillars_has_four_canonical_values(): void
     {
+        // NON_SCORECARD intentionally NOT a pillar — it's a Kelompok value
+        // (lihat comment di config/atlas-thresholds.php). Keep this test in
+        // sync kalau pillars di-rearrange.
         $pillars = config('atlas-thresholds.pillars');
 
         $this->assertIsArray($pillars);
@@ -90,7 +93,6 @@ class StrategicFieldsTest extends TestCase
             'SPENDING_BETTER',
             'INNOVATIVE_FINANCING',
             'ENABLER',
-            'NON_SCORECARD',
         ], array_keys($pillars));
     }
 
@@ -108,18 +110,18 @@ class StrategicFieldsTest extends TestCase
         ]);
     }
 
-    public function test_can_set_new_pillar_non_scorecard(): void
+    public function test_non_scorecard_rejected_as_pillar(): void
     {
+        // NON_SCORECARD is a Kelompok value, not a Pilar — should be
+        // rejected by validation. Test inverted dari versi sebelumnya yang
+        // assert 200 OK; sekarang harus 422 dengan error pada pilarStrategis.
         $response = $this->actingAs($this->admin)
             ->putJson("/programs/{$this->program->id}", [
                 'pilarStrategis' => 'NON_SCORECARD',
             ]);
 
-        $response->assertOk();
-        $this->assertDatabaseHas('Program', [
-            'id' => $this->program->id,
-            'pilarStrategis' => 'NON_SCORECARD',
-        ]);
+        $response->assertStatus(422)
+            ->assertJsonPath('errors.pilarStrategis.0', 'The selected pilar strategis is invalid.');
     }
 
     public function test_existing_pillar_values_still_accepted(): void
