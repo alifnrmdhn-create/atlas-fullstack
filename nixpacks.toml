@@ -15,9 +15,15 @@ cmds = [
 ]
 
 [start]
-# FrankenPHP `php-server` mode: serve dari public/, auto-routing ke index.php.
-# Native SSE (per-connection goroutine, no per-request worker exhaustion).
-# `schedule:work` di-background supaya cleanup broadcast_events, reminders,
-# ghost-cleanup, auto-health compute tetap jalan. Container ephemeral — kalau
-# Railway restart container, scheduler restart bareng FrankenPHP.
-cmd = "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && (php artisan schedule:work --whisper >/dev/null 2>&1 &) && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT"
+# FrankenPHP `php-server` mode: 1 HTTP request = 1 PHP thread sampai response selesai.
+# SSE streams menahan thread sampai TTL (90s) — default num_threads = num_cpu*2 = 4
+# di Railway hobby (2 vCPU) menyebabkan ≥4 user simultan jadi thread starvation.
+# `--num-threads 64` = headroom untuk ~50 user simultan via SSE; ~ribuan via polling.
+# Boot sequence:
+#   1. migrate            — idempotent, aman tiap deploy
+#   2. cache config/routes/views
+#   3. pre-boot cleanup   — flush stale broadcast_events kalau scheduler container lama mati
+#   4. scheduler respawn  — auto-restart loop kalau schedule:work exit (sebelumnya fire-and-forget,
+#                           silent-die kalau ada exception di salah satu scheduled command)
+#   5. frankenphp foreground (main process)
+cmd = "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && (php artisan atlas:cleanup-broadcast-events || true) && (while true; do php artisan schedule:work --whisper; sleep 2; done >/dev/null 2>&1 &) && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT --num-threads 64"
