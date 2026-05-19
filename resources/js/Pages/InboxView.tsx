@@ -1003,14 +1003,20 @@ export function InboxView() {
 
   function navigateToNotifSource(source: string) {
     // Source dapat berupa: "type:id", "name·type:id", atau kombinasi lain
-    // Iterasi semua parts — ambil entitas navigable pertama
+    // Iterasi semua parts — ambil entitas navigable pertama.
+    //
+    // Untuk program & task: navigate ke DETAIL page (/programs/{id}),
+    // bukan list. User klik notif "menunggu persetujuan Anda" memang mau
+    // landed di tempat yang punya tombol Setujui/Tolak, bukan harus cari
+    // sendiri dari list. Plus list-page navigation pernah glitch (URL
+    // berubah tapi component tidak rerender) — detail route lebih stabil.
     for (const part of source.split('·').map(p => p.trim())) {
       const colon = part.indexOf(':')
       if (colon === -1) continue
       const type = part.slice(0, colon)
       const id = Number(part.slice(colon + 1).split(':')[0])
-      if (type === 'task' && !isNaN(id)) { setSelectedTaskId(id); navigate('/execution'); return }
-      if (type === 'program' && !isNaN(id)) { setSelectedProgramId(id); navigate('/programs'); return }
+      if (type === 'task' && !isNaN(id)) { navigate(`/execution/tasks/${id}`); return }
+      if (type === 'program' && !isNaN(id)) { navigate(`/programs/${id}`); return }
       if (type === 'channel' && !isNaN(id)) { setSelectedChannelId(id); navigate('/channels'); return }
       if (type === 'workstream' && !isNaN(id)) { navigate('/programs'); return }
       if (type === 'assignment' && !isNaN(id)) { navigate('/penugasan'); return }
