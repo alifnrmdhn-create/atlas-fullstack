@@ -213,6 +213,18 @@ class ProgramController extends Controller
             ->with('success', 'Program berhasil dibuat.');
     }
 
+    /**
+     * "Commitment fields" — field yang merepresentasikan janji yang KADIV
+     * setujui di approval. Perubahan field ini setelah ACTIVE TIDAK di-block,
+     * tapi di-log + KADIV dinotifikasi (Opsi A governance: transparency over
+     * gate-keeping). Field detail (description, picPersons, progres update,
+     * dll) free-edit tanpa notif.
+     */
+    private const COMMITMENT_FIELDS = [
+        'targetEndDate', 'startDate', 'priority',
+        'budgetIdr', 'kelompok', 'pilarStrategis',
+    ];
+
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $program = Program::findOrFail($id);
@@ -245,9 +257,18 @@ class ProgramController extends Controller
             'dukunganDibutuhkan' => 'nullable|string|max:2000',
         ]);
 
+        // Snapshot SEBELUM update — kalau program ACTIVE, deteksi perubahan
+        // commitment field untuk audit log + notif KADIV (Opsi A governance).
+        $wasActive = $program->approvalStatus === 'ACTIVE';
+        $commitmentChanges = $wasActive ? $this->detectCommitmentChanges($program, $data) : [];
+
         $program = $this->programService->update($id, $data);
         $this->healthService->recompute($id);
         BroadcastService::program($id, 'updated');
+
+        if (!empty($commitmentChanges)) {
+            $this->logCommitmentChanges($program, $commitmentChanges, $request->user());
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $program]);
@@ -485,6 +506,78 @@ class ProgramController extends Controller
                 ], [$userId]);
             }
         });
+    }
+
+    /**
+     * Bandingkan nilai field commitment SEBELUM vs setelah update — return
+     * array of {field, from, to} untuk field yang benar-benar berubah.
+     * Skip kalau field tidak dikirim di request (pakai array_key_exists).
+     *
+     * @return array<int, array{field: string, from: string, to: string}>
+     */
+    private function detectCommitmentChanges(Program $before, array $newData): array
+    {
+        $changes = [];
+        foreach (self::COMMITMENT_FIELDS as $field) {
+            if (!array_key_exists($field, $newData)) continue;
+            $oldVal = $before->{$field};
+            // Normalize Carbon → date string supaya comparison fair
+            if ($oldVal instanceof \Illuminate\Support\Carbon || $oldVal instanceof \Carbon\Carbon) {
+                $oldVal = $oldVal->toDateString();
+            }
+            $newVal = $newData[$field];
+            $oldStr = $oldVal === null ? '' : (string) $oldVal;
+            $newStr = $newVal === null ? '' : (string) $newVal;
+            if ($oldStr !== $newStr) {
+                $changes[] = [
+                    'field' => $field,
+                    'from' => $oldStr === '' ? '—' : $oldStr,
+                    'to' => $newStr === '' ? '—' : $newStr,
+                ];
+            }
+        }
+        return $changes;
+    }
+
+    /**
+     * Log + notify KADIV saat commitment field berubah pada program ACTIVE.
+     * Tidak block aksi — sesuai Opsi A: transparency, bukan gate-keeping.
+     * Audit trail di ProgramApprovalLog supaya history lengkap (sama timeline
+     * dengan SUBMITTED/APPROVED/REJECTED). KADIV bisa diskusi via channel
+     * kalau tidak setuju — tapi value sudah berubah.
+     *
+     * @param array<int, array{field: string, from: string, to: string}> $changes
+     */
+    private function logCommitmentChanges(Program $program, array $changes, User $editor): void
+    {
+        $noteLines = array_map(
+            fn ($c) => "{$c['field']}: {$c['from']} → {$c['to']}",
+            $changes,
+        );
+        $note = implode('; ', $noteLines);
+
+        ProgramApprovalLog::record(
+            $program->id,
+            'COMMITMENT_CHANGED',
+            $program->approvalStatus,
+            $program->approvalStatus,
+            $editor->id,
+            $editor->name,
+            $note,
+        );
+
+        // Notif KADIV via org chain dari submitter (bukan editor — supaya tetap
+        // ke KADIV yang waktu itu approve, walau yang edit beda PIC).
+        $submitter = $program->submittedById ? User::find($program->submittedById) : $editor;
+        $reviewerIds = $this->resolveReviewerIds($submitter ?? $editor, 'KADIV');
+        $fieldList = implode(', ', array_column($changes, 'field'));
+        $this->notifyApprovalEvent(
+            program: $program,
+            recipientIds: $reviewerIds,
+            type: 'PROGRAM_COMMITMENT_CHANGED',
+            message: "Program \"{$program->name}\" diubah {$editor->name} (field: {$fieldList}).",
+            excludeUserId: $editor->id,
+        );
     }
 
     /**

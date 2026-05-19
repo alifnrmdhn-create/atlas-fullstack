@@ -750,6 +750,56 @@
   .prog-activation-banner__actions { margin-left: auto; }
 }
 
+/* ── Edit Program governance hint (ACTIVE state) ─────────────────────
+   Tampil di top of edit modal body saat program sudah aktif. Kasih
+   tahu PIC bahwa commitment field changes akan dicatat + notif KADIV.
+   Visual: subtle blue note, bukan warning (Opsi A philosophy: tidak
+   block, hanya inform). */
+.prog-edit-commitment-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--blue, #3b82f6) 24%, transparent);
+  background: color-mix(in srgb, var(--blue, #3b82f6) 6%, var(--surface-1));
+}
+.prog-edit-commitment-hint__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--blue, #3b82f6) 16%, transparent);
+  color: var(--blue, #3b82f6);
+  margin-top: 1px;
+}
+.prog-edit-commitment-hint__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.prog-edit-commitment-hint__body strong {
+  font-size: 12.5px;
+  color: var(--text-strong);
+  font-weight: 700;
+}
+.prog-edit-commitment-hint__body span {
+  font-size: 12px;
+  color: var(--text-body);
+  line-height: 1.5;
+}
+.prog-edit-commitment-hint__body em {
+  font-style: normal;
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
 /* Rejection note / error below title */
 .prog-approval-note {
   font-size: 12px;

@@ -713,6 +713,7 @@ function notifVerbFor(type: string): string {
     case 'PROGRAM_NEEDS_APPROVAL': case 'APPROVAL': return 'Review'
     case 'PROGRAM_REJECTED': return 'Perbaiki'
     case 'PROGRAM_WITHDRAWN': case 'PROGRAM_APPROVED': return 'Lihat program'
+    case 'PROGRAM_COMMITMENT_CHANGED': return 'Lihat perubahan'
     case 'DM_RECEIVED': return 'Balas'
     case 'MENTION': return 'Buka percakapan'
     case 'BLOCKER_CREATED': return 'Follow up'

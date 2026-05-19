@@ -357,6 +357,7 @@ const NOTIF_FALLBACK_CONTEXT: Record<string, { roleImpact: string; impact: strin
   PROGRAM_NEEDS_APPROVAL: { roleImpact: 'Anda approver program', impact: 'Program belum bisa lanjut tanpa approval' },
   PROGRAM_REJECTED: { roleImpact: 'Anda PIC program', impact: 'Perbaiki sesuai catatan, lalu ajukan ulang' },
   PROGRAM_WITHDRAWN: { roleImpact: 'Anda reviewer program', impact: 'Pengajuan ditarik PIC — tidak perlu review lagi' },
+  PROGRAM_COMMITMENT_CHANGED: { roleImpact: 'Anda KADIV approver program ini', impact: 'PIC ubah commitment (target/priority/budget/dll) — review kalau perlu' },
   REPORT_NEEDS_REVISION: { roleImpact: 'Anda perlu memperbaiki laporan', impact: 'Siklus review tertahan sampai revisi masuk' },
   TASK_ASSIGNED: { roleImpact: 'Anda PIC tugas', impact: 'Menunggu tindak lanjut dari Anda' },
   // Sprint 4 — Clear the Path
@@ -723,6 +724,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     BLOCKER_CREATED: 'Blocker', TASK_ASSIGNED: 'Tugas',
     PROGRAM_NEEDS_APPROVAL: 'Approval', PROGRAM_APPROVED: 'Program',
     PROGRAM_REJECTED: 'Program', PROGRAM_WITHDRAWN: 'Program',
+    PROGRAM_COMMITMENT_CHANGED: 'Commitment',
     REPORT_AWAITING_REVIEW: 'Laporan',
     REPORT_AWAITING_APPROVAL: 'Laporan', REPORT_APPROVED: 'Laporan',
     REPORT_REJECTED: 'Laporan', REPORT_NEEDS_REVISION: 'Laporan',

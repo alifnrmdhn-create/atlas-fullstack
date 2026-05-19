@@ -1175,11 +1175,13 @@ export function ProgramDetailView() {
       SUBMITTED: 'Diajukan', APPROVED: 'Disetujui',
       REJECTED: 'Ditolak', ACTIVATED: 'Diaktifkan', COMPLETED: 'Diselesaikan',
       WITHDRAWN: 'Ditarik kembali',
+      COMMITMENT_CHANGED: 'Commitment diubah',
     }
     const actionTone: Record<string, string> = {
       SUBMITTED: 'info', APPROVED: 'positive',
       REJECTED: 'danger', ACTIVATED: 'positive', COMPLETED: 'positive',
       WITHDRAWN: 'muted',
+      COMMITMENT_CHANGED: 'info',
     }
     return (
       <div className="wi-section">
@@ -3552,6 +3554,23 @@ export function ProgramDetailView() {
             </div>
             <form onSubmit={(e) => void submitEdit(e)}>
               <div className="modal__body">
+                {/* Governance hint untuk program ACTIVE — Opsi A: transparency
+                    over gate-keeping. PIC tetap bisa edit, tapi commitment field
+                    akan ter-log + KADIV dapat notif. Hint kasih clarity supaya
+                    user tidak kaget. */}
+                {detail?.approvalStatus === 'ACTIVE' && (
+                  <div className="prog-edit-commitment-hint" role="note">
+                    <span className="prog-edit-commitment-hint__icon" aria-hidden="true">
+                      <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="14"><circle cx="7" cy="7" r="5.5"/><path d="M7 4.5v3M7 9.5h.01"/></svg>
+                    </span>
+                    <div className="prog-edit-commitment-hint__body">
+                      <strong>Program sudah aktif</strong>
+                      <span>
+                        Perubahan field <em>commitment</em> (target waktu, prioritas, anggaran, kelompok, pilar strategis) akan tercatat di Riwayat Persetujuan dan KADIV diberitahu otomatis. Detail field (deskripsi, PIC, narrative progress) free-edit tanpa notif.
+                      </span>
+                    </div>
+                  </div>
+                )}
                 {epError && <div className="prog-modal-error">{epError}</div>}
                 <section className="modal-section">
                   <div className="modal-section__intro">
