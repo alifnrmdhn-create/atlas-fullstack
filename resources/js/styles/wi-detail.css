@@ -7222,6 +7222,23 @@ select.wid-input {
   flex-shrink: 0;
 }
 .prog-approval-log__entry:first-child .prog-approval-log__dot { top: 8px; }
+
+/* Skeleton variant — placeholder shimmer untuk loading state riwayat. */
+.prog-approval-log-skeleton {
+  padding-left: 14px;
+  border-left: 2px solid var(--panel-border-strong, var(--panel-border));
+  margin-left: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.prog-approval-log-skeleton__entry {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 .prog-approval-log__entry--positive .prog-approval-log__dot {
   background: var(--green);
   box-shadow: 0 0 0 1px var(--green-subtle, var(--green));

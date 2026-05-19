@@ -1901,26 +1901,32 @@
   background: color-mix(in srgb, var(--yellow) 4%, transparent);
   border-color: color-mix(in srgb, var(--yellow) 18%, var(--panel-border));
 }
+/* Identitas Strategis rows — pakem spacing lebih lega untuk mengurangi
+   form-feel. Hairline divider antar row tetap (membantu scanning) tapi
+   pakai panel-border-soft yang lebih halus dari panel-border. */
 .prog-strategic__row {
   display: grid;
   grid-template-columns: 160px 1fr;
-  gap: 12px;
+  gap: 16px;
   align-items: start;
-  padding: 6px 0;
+  padding: 10px 0;
 }
 .prog-strategic__row + .prog-strategic__row {
-  border-top: 1px solid var(--panel-border);
+  border-top: 1px solid var(--panel-border-soft, var(--panel-border));
 }
 .prog-strategic__label {
   font-size: 12px;
+  font-weight: 500;
   color: var(--text-muted);
   padding-top: 7px;
+  letter-spacing: 0;
 }
 .prog-strategic__value {
   font-size: 13.5px;
+  font-weight: 400;
   color: var(--text-strong);
   padding: 6px 0;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 /* Ghost input style — input tampak seperti plain text by default.
    Border tipis muncul saat hover supaya user tahu field interaktif.

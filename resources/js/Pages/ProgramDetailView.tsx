@@ -1173,7 +1173,16 @@ export function ProgramDetailView() {
           <h3 className="wi-section__title">{PIcon.activity} Riwayat Persetujuan</h3>
         </div>
         {approvalLogLoading && approvalLog.length === 0 ? (
-          <p className="hd-muted" style={{ fontSize: 12 }}>Memuat…</p>
+          <div className="prog-approval-log-skeleton" aria-label="Memuat riwayat persetujuan">
+            <div className="prog-approval-log-skeleton__entry">
+              <SkeletonBlock width="55%" height={14} />
+              <SkeletonBlock width="40%" height={11} />
+            </div>
+            <div className="prog-approval-log-skeleton__entry">
+              <SkeletonBlock width="48%" height={14} />
+              <SkeletonBlock width="36%" height={11} />
+            </div>
+          </div>
         ) : (
           <div className="prog-approval-log">
             {approvalLog.map((entry) => {
@@ -2118,7 +2127,16 @@ export function ProgramDetailView() {
                     )}
 
                     {progressLogLoading && progressLog.length === 0 ? (
-                      <p className="hd-muted" style={{ fontSize: 12 }}>Memuat…</p>
+                      <div className="prog-approval-log-skeleton" aria-label="Memuat riwayat progress">
+                        <div className="prog-approval-log-skeleton__entry">
+                          <SkeletonBlock width="60%" height={14} />
+                          <SkeletonBlock width="42%" height={11} />
+                        </div>
+                        <div className="prog-approval-log-skeleton__entry">
+                          <SkeletonBlock width="50%" height={14} />
+                          <SkeletonBlock width="36%" height={11} />
+                        </div>
+                      </div>
                     ) : progressLog.length === 0 ? (
                       <p className="hd-muted" style={{ fontSize: 12 }}>Belum ada update progress. Klik &quot;+ Update Progress&quot; untuk mulai.</p>
                     ) : (

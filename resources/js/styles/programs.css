@@ -305,7 +305,10 @@
   border-left-color: var(--panel-border);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: border-color var(--transition), box-shadow var(--transition);
+  /* Smooth transform untuk micro-interaction — sebelumnya transform: instant,
+     bikin row hover terasa jerky. Cubic-bezier ease-out: cepat di awal, slow
+     di akhir, feel modern (Linear/Notion). */
+  transition: border-color 160ms ease-out, box-shadow 160ms ease-out, transform 160ms ease-out;
   text-align: left;
   width: 100%;
   box-shadow: var(--panel-shadow);
@@ -316,6 +319,10 @@
   border-bottom-color: var(--indigo-mid);
   box-shadow: var(--lift-shadow);
   transform: translateY(-1px);
+}
+.program-row:active {
+  transform: translateY(0);
+  transition-duration: 80ms;
 }
 .program-row--active, .program-row--selected {
   background: var(--indigo-dim);
@@ -525,22 +532,28 @@
 }
 .program-row__owner-block {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
-.program-row__owner {
-  width: auto;
-  max-width: 100%;
+.program-row__owner-block .avatar {
   flex-shrink: 0;
-  font-size: 11.5px;
+}
+.program-row__owner {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-body);
-  text-align: right;
+  text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.program-row__owner--empty {
+  color: var(--text-muted);
+  font-style: italic;
 }
 .program-row__copics {
   font-size: 10px;
@@ -871,9 +884,9 @@
   }
 
   .program-row__owner-block {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
   }
 }
 .program-tab-badge {

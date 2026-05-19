@@ -6,6 +6,7 @@ import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { getProgramDisplayStatus } from '../lib/programStatus'
 import {
+  Avatar,
   HealthPill,
   SectionState,
   SkeletonStack,
@@ -99,6 +100,65 @@ const healthStatusLabel = (status: 'GREEN' | 'YELLOW' | 'RED') => {
 const workstreamSummaryLabel = (count: number | undefined | null) => {
   if (!count || count <= 0) return 'Belum ada workstream'
   return `${count} workstream`
+}
+
+// ── Health Donut — SVG donut chart untuk hero stats strip ──────────────
+// Pure SVG, no chart library. Segments via stroke-dasharray dengan offset
+// kumulatif. Center label menampilkan total program. */
+function HealthDonut({ green, yellow, red, total }: {
+  green: number; yellow: number; red: number; total: number
+}) {
+  const SIZE = 92
+  const STROKE = 12
+  const r = (SIZE - STROKE) / 2
+  const c = 2 * Math.PI * r
+  const cx = SIZE / 2
+  const safeTotal = Math.max(total, 1)
+  const greenLen = (green / safeTotal) * c
+  const yellowLen = (yellow / safeTotal) * c
+  const redLen = (red / safeTotal) * c
+
+  return (
+    <svg
+      viewBox={`0 0 ${SIZE} ${SIZE}`}
+      className="programs-v2__donut"
+      role="img"
+      aria-label={`Distribusi health: On Track ${green}, At Risk ${yellow}, Terlambat ${red}`}
+    >
+      {/* Track ring */}
+      <circle cx={cx} cy={cx} r={r} fill="none"
+        stroke="var(--ds-surface-sunken)" strokeWidth={STROKE} />
+      {/* Segments — rotate -90deg agar mulai dari atas (12 o'clock) */}
+      <g transform={`rotate(-90 ${cx} ${cx})`} strokeLinecap="butt">
+        {green > 0 && (
+          <circle cx={cx} cy={cx} r={r} fill="none"
+            stroke="var(--ds-green-500)" strokeWidth={STROKE}
+            strokeDasharray={`${greenLen} ${c}`}
+            strokeDashoffset={0}
+          />
+        )}
+        {yellow > 0 && (
+          <circle cx={cx} cy={cx} r={r} fill="none"
+            stroke="var(--ds-amber-500)" strokeWidth={STROKE}
+            strokeDasharray={`${yellowLen} ${c}`}
+            strokeDashoffset={-greenLen}
+          />
+        )}
+        {red > 0 && (
+          <circle cx={cx} cy={cx} r={r} fill="none"
+            stroke="var(--ds-red-500)" strokeWidth={STROKE}
+            strokeDasharray={`${redLen} ${c}`}
+            strokeDashoffset={-(greenLen + yellowLen)}
+          />
+        )}
+      </g>
+      {/* Center label */}
+      <text x={cx} y={cx - 2} textAnchor="middle" dominantBaseline="middle"
+        className="programs-v2__donut-num">{total}</text>
+      <text x={cx} y={cx + 14} textAnchor="middle" dominantBaseline="middle"
+        className="programs-v2__donut-label">program</text>
+    </svg>
+  )
 }
 
 // ── Main view ──────────────────────────────────────────────────────────────
@@ -721,40 +781,19 @@ export function ProgramsView() {
       </header>
 
       {/* ── Portfolio stats strip ──────────────────────────────────────────
-          Glance summary: total + health distribution (stacked bar) + avg
-          progress + count yang butuh aksi user. Tidak hanya angka mentah —
-          health bar memberi bobot visual proporsional yang langsung baca. */}
+          Glance summary dengan donut chart sebagai visualisasi utama health
+          distribution. Total program ditampilkan di tengah donut — menghapus
+          stat cell terpisah yang redundan. Pure SVG, no chart library. */}
       {programs.length > 0 && (
         <div className="programs-v2__hero-stats">
-          <div className="programs-v2__stat">
-            <div className="programs-v2__stat-num">{programs.length}</div>
-            <div className="programs-v2__stat-label">Total Program</div>
-          </div>
-
-          <div className="programs-v2__stat programs-v2__stat--bar">
-            <div className="programs-v2__stat-label programs-v2__stat-label--top">Distribusi Health</div>
-            <div className="programs-v2__health-bar" role="img"
-              aria-label={`On Track ${healthMix.green}, At Risk ${healthMix.yellow}, Terlambat ${healthMix.red}`}>
-              {healthMix.green > 0 && (
-                <span className="programs-v2__health-seg programs-v2__health-seg--green"
-                  style={{ flex: healthMix.green }} title={`On Track: ${healthMix.green}`}>
-                  {healthMix.green}
-                </span>
-              )}
-              {healthMix.yellow > 0 && (
-                <span className="programs-v2__health-seg programs-v2__health-seg--yellow"
-                  style={{ flex: healthMix.yellow }} title={`At Risk: ${healthMix.yellow}`}>
-                  {healthMix.yellow}
-                </span>
-              )}
-              {healthMix.red > 0 && (
-                <span className="programs-v2__health-seg programs-v2__health-seg--red"
-                  style={{ flex: healthMix.red }} title={`Terlambat: ${healthMix.red}`}>
-                  {healthMix.red}
-                </span>
-              )}
-            </div>
-            <div className="programs-v2__health-legend">
+          <div className="programs-v2__stat programs-v2__stat--donut">
+            <HealthDonut
+              green={healthMix.green}
+              yellow={healthMix.yellow}
+              red={healthMix.red}
+              total={programs.length}
+            />
+            <div className="programs-v2__health-legend programs-v2__health-legend--column">
               <span className="programs-v2__health-legend-item">
                 <i className="programs-v2__health-dot programs-v2__health-dot--green" />
                 On Track <strong>{healthMix.green}</strong>
@@ -1034,9 +1073,18 @@ export function ProgramsView() {
                                 )}
                               </div>
                               <div className="program-row__owner-block">
-                                <span className="program-row__owner" title={prog.owner?.name ?? 'Belum ditetapkan'}>
-                                  {prog.owner?.name ?? 'Belum ditetapkan'}
-                                </span>
+                                {prog.owner ? (
+                                  <>
+                                    <Avatar name={prog.owner.name} size={24} />
+                                    <span className="program-row__owner" title={prog.owner.name}>
+                                      {prog.owner.name}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="program-row__owner program-row__owner--empty">
+                                    Belum ditetapkan
+                                  </span>
+                                )}
                                 {(prog.picPersons ?? []).length > 0 && (
                                   <span className="program-row__copics" title={(prog.picPersons ?? []).map(p => p.name).join(', ')}>
                                     +{(prog.picPersons ?? []).length}

@@ -180,7 +180,45 @@
   font-weight: 500;
 }
 
-/* ─── Health distribution bar ─── */
+/* ─── Health donut chart (Sprint 3) ─── */
+.programs-v2 .programs-v2__stat--donut {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 18px;
+  flex: 0 0 auto;
+  min-width: 240px;
+}
+.programs-v2 .programs-v2__donut {
+  width: 92px;
+  height: 92px;
+  flex-shrink: 0;
+  display: block;
+}
+.programs-v2 .programs-v2__donut-num {
+  font-family: var(--ds-font-sans);
+  font-size: 22px;
+  font-weight: 700;
+  fill: var(--ds-text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.programs-v2 .programs-v2__donut-label {
+  font-family: var(--ds-font-sans);
+  font-size: 9.5px;
+  font-weight: 600;
+  fill: var(--ds-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.programs-v2 .programs-v2__health-legend--column {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 0;
+}
+
+/* ─── Legacy stacked bar (Sprint 1) — kept for fallback compat ─── */
 .programs-v2 .programs-v2__health-bar {
   display: flex;
   height: 8px;
