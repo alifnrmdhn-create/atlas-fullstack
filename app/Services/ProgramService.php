@@ -124,6 +124,10 @@ class ProgramService
         $in30Days = now()->addDays(30);
         $sevenDaysAgo = now()->subDays(7);
 
+        // Archived program → workstream/blocker/task tetap ada di DB tapi tidak boleh
+        // muncul di Pulse (konsisten dengan Portfolio yang menyembunyikannya).
+        $notArchived = fn ($q) => $q->whereNull('archivedAt');
+
         $blockerQuery = Blocker::query()
             ->where('status', 'OPEN')
             ->with([
@@ -131,6 +135,7 @@ class ProgramService
                 'task.workstream:id,name,programId',
                 'task.workstream.program:id,code,name',
             ])
+            ->whereHas('task.workstream.program', $notArchived)
             ->orderByRaw("CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END")
             ->orderBy('createdAt');
 
@@ -142,6 +147,7 @@ class ProgramService
 
         $wsQuery = Workstream::query()
             ->with(['program:id,code,name'])
+            ->whereHas('program', $notArchived)
             ->where('targetCompletion', '<=', $in30Days)
             ->whereNotIn('status', ['COMPLETED', 'CANCELLED'])
             ->where(fn ($q) => $q
@@ -159,6 +165,7 @@ class ProgramService
                 'workstream:id,name,programId',
                 'workstream.program:id,code,name',
             ])
+            ->whereHas('workstream.program', $notArchived)
             ->whereIn('status', ['IN_PROGRESS', 'IN_REVIEW'])
             ->where('updatedAt', '<', $sevenDaysAgo)
             ->orderBy('updatedAt');
