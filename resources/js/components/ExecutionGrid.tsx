@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react'
+import { Fragment, useMemo, useRef, useEffect, useState } from 'react'
 import type {
   ExecutionGridData,
   ExecutionPhase,
@@ -13,14 +13,14 @@ type Props = {
 
 const WEEK_COL_WIDTH = 38
 
-// Lebar sticky columns (must match execution-grid.css)
+// Lebar info pane (sticky-equivalent). Total = 630px.
+// Output + PIC (Divisi) dihapus 19 Mei 2026 — tidak ada di form input Struktur,
+// selalu render "—", dan ketika masih ada bikin sticky-overlap saat scroll.
 const COL_FASE = 54
 const COL_URAIAN = 320
-const COL_OUTPUT = 220
-const COL_PIC_UNIT = 180
-const COL_PIC_PERSON = 180
+const COL_PIC_PERSON = 200
 const COL_STATUS = 56
-const STICKY_WIDTH = COL_FASE + COL_URAIAN + COL_OUTPUT + COL_PIC_UNIT + COL_PIC_PERSON + COL_STATUS
+const INFO_PANE_WIDTH = COL_FASE + COL_URAIAN + COL_PIC_PERSON + COL_STATUS
 
 function deriveRealCellState(
   step: ExecutionStep,
@@ -34,140 +34,360 @@ function deriveRealCellState(
   return 'on-time'
 }
 
+/**
+ * Sticky-column tabel pakai split-frame layout (a la Notion/Airtable):
+ * info pane di kiri (tidak scroll horizontal) + weeks pane di kanan
+ * (scroll horizontal). Vertical scroll di-share via root scroller.
+ *
+ * Sebelumnya pakai single grid + `position: sticky; left: NNNpx` per sel
+ * info — but sticky offsets pinning cells ke posisi viewport tertentu
+ * sering overlap dengan week cells saat grid-template-columns auto-sized.
+ * Split-frame menghilangkan seluruh kelas bug ini.
+ */
 export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: Props) {
   const { weekRange, monthHeaders, currentWeek, phases, unphasedSteps, workstream } = data
 
-  const gridTemplateColumns = useMemo(
-    () =>
-      `${COL_FASE}px ${COL_URAIAN}px ${COL_OUTPUT}px ${COL_PIC_UNIT}px ${COL_PIC_PERSON}px ${COL_STATUS}px ` +
-      `repeat(${weekRange.weeks.length}, ${WEEK_COL_WIDTH}px)`,
+  const weeksGridTemplateColumns = useMemo(
+    () => `repeat(${weekRange.weeks.length}, ${WEEK_COL_WIDTH}px)`,
     [weekRange.weeks.length],
   )
 
-  const todayLeft = useMemo(() => {
+  const todayLeftInWeeks = useMemo(() => {
     const idx = weekRange.weeks.indexOf(currentWeek)
     if (idx < 0) return null
-    return STICKY_WIDTH + idx * WEEK_COL_WIDTH + WEEK_COL_WIDTH / 2
+    return idx * WEEK_COL_WIDTH + WEEK_COL_WIDTH / 2
   }, [weekRange.weeks, currentWeek])
 
   const totalSteps = phases.reduce((n, p) => n + p.steps.length, 0) + unphasedSteps.length
+
+  // Sinkronisasi vertical scroll antara info pane (overflow hidden) dengan
+  // weeks pane (overflow auto): mouse wheel di info → forward ke weeks scroller.
+  const weeksScrollerRef = useRef<HTMLDivElement | null>(null)
+  const infoPaneRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const info = infoPaneRef.current
+    if (!info) return
+    const handler = (e: WheelEvent) => {
+      const ws = weeksScrollerRef.current
+      if (!ws) return
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        ws.scrollTop += e.deltaY
+        // Don't preventDefault — let page scroll continue kalau weeks pane
+        // sudah di edge.
+      }
+    }
+    info.addEventListener('wheel', handler, { passive: true })
+    return () => info.removeEventListener('wheel', handler)
+  }, [])
+
+  // Highlight scroll shadow di edge info pane saat weeks pane discroll horizontal.
+  const [weeksScrolled, setWeeksScrolled] = useState(false)
+  useEffect(() => {
+    const ws = weeksScrollerRef.current
+    if (!ws) return
+    const onScroll = () => setWeeksScrolled(ws.scrollLeft > 0)
+    ws.addEventListener('scroll', onScroll, { passive: true })
+    return () => ws.removeEventListener('scroll', onScroll)
+  }, [])
 
   if (totalSteps === 0) {
     return (
       <div className="execution-grid">
         <div className="execution-grid__empty">
-          Workstream ini belum memiliki sub-tahap dengan rencana mingguan. Tambah fase & sub-tahap
+          Workstream ini belum memiliki sub-tahap dengan rencana mingguan. Tambah fase &amp; sub-tahap
           untuk mulai tracking Plan/Real.
         </div>
       </div>
     )
   }
 
+  // Build flat list of rows in render order — supaya info pane dan weeks pane
+  // bisa render rows dengan height yang sinkron. Setiap step menghasilkan
+  // dua row (Plan + Real); phase row 1 row.
+  type RowDef =
+    | { kind: 'header-1' }     // month spanning row
+    | { kind: 'header-2' }     // week ordinal row
+    | { kind: 'phase'; phase: ExecutionPhase }
+    | { kind: 'step-plan'; phase?: ExecutionPhase; step: ExecutionStep; letter: string }
+    | { kind: 'step-real'; step: ExecutionStep }
+
+  const rows: RowDef[] = [{ kind: 'header-1' }, { kind: 'header-2' }]
+  phases.forEach((phase) => {
+    rows.push({ kind: 'phase', phase })
+    phase.steps.forEach((step) => {
+      const letter = step.letterIndex ?? ''
+      rows.push({ kind: 'step-plan', phase, step, letter })
+      rows.push({ kind: 'step-real', step })
+    })
+  })
+  if (unphasedSteps.length > 0) {
+    // Phase fallback untuk unphased steps — pakai object placeholder dengan
+    // shape ExecutionPhase minimal. Kalau ada step tanpa phase, kelompokkan
+    // di bawah "Lain-lain".
+    const unphasedPhase: ExecutionPhase = {
+      id: -1,
+      code: 'UNPHASED',
+      order: 0,
+      name: 'Lain-lain (tanpa fase)',
+      status: 'PENDING',
+      picUnits: [],
+      picPersons: [],
+      steps: unphasedSteps,
+      description: null,
+      color: null,
+      healthStatus: null,
+      startWeek: null,
+      endWeek: null,
+    }
+    rows.push({ kind: 'phase', phase: unphasedPhase })
+    unphasedSteps.forEach((step, idx) => {
+      const letter = step.letterIndex ?? String.fromCharCode(97 + idx)
+      rows.push({ kind: 'step-plan', phase: unphasedPhase, step, letter })
+      rows.push({ kind: 'step-real', step })
+    })
+  }
+
+  // Row class — applied to both info pane row + weeks pane row supaya
+  // background/height align.
+  const rowClass = (row: RowDef): string => {
+    switch (row.kind) {
+      case 'header-1': return 'execution-grid__row execution-grid__row--header-month'
+      case 'header-2': return 'execution-grid__row execution-grid__row--header-week'
+      case 'phase':    return 'execution-grid__row execution-grid__row--phase'
+      case 'step-plan': return 'execution-grid__row execution-grid__row--step-plan'
+      case 'step-real': return 'execution-grid__row execution-grid__row--step-real'
+    }
+  }
+
+  const canEdit = !!onToggleActualWeek
+
   return (
     <div className="execution-grid">
-      <div className="execution-grid__scroller">
-        <div className="execution-grid__table" style={{ gridTemplateColumns }}>
-          {/* ── Header row 1: month spanning ─────────────────── */}
+      <div className="execution-grid__layout">
+        {/* ── Left pane: info columns (fixed width, no horizontal scroll) ── */}
+        <div
+          ref={infoPaneRef}
+          className={`execution-grid__info-pane${weeksScrolled ? ' execution-grid__info-pane--scrolled' : ''}`}
+          style={{ width: INFO_PANE_WIDTH, flex: `0 0 ${INFO_PANE_WIDTH}px` }}
+        >
           <div
-            className="execution-grid__col-sticky execution-grid__col-sticky--header execution-grid__fase"
-            style={{ gridRow: '1 / span 2' }}
+            className="execution-grid__info-table"
+            style={{
+              gridTemplateColumns: `${COL_FASE}px ${COL_URAIAN}px ${COL_PIC_PERSON}px ${COL_STATUS}px`,
+            }}
           >
-            Fase
+            {rows.map((row, idx) => {
+              const cls = rowClass(row)
+              if (row.kind === 'header-1') {
+                // Single row spanning all 4 info cols, rendered for visual
+                // continuity dengan month-spanning header di weeks pane.
+                return (
+                  <Fragment key={`info-${idx}`}>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-fase`}>Fase</div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-uraian`}>Uraian Tahapan</div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-person`}>Person</div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-status`}>Status</div>
+                  </Fragment>
+                )
+              }
+              if (row.kind === 'header-2') {
+                // Empty row di info pane — visual continuation dari header-1
+                // (info pane spans both header rows visually karena bg sama).
+                return (
+                  <Fragment key={`info-${idx}`}>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header-empty execution-grid__col-fase`} />
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header-empty execution-grid__col-uraian`} />
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header-empty execution-grid__col-person`} />
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header-empty execution-grid__col-status`} />
+                  </Fragment>
+                )
+              }
+              if (row.kind === 'phase') {
+                const { phase } = row
+                const unitLabels = phase.picUnits.map((u) => u.shortName ?? u.name).join(', ')
+                const personLabels = phase.picPersons.map((p) => p.name).join(', ')
+                return (
+                  <div
+                    key={`info-${idx}`}
+                    className={`${cls} execution-grid__info-phase`}
+                    style={{ gridColumn: '1 / -1' }}
+                  >
+                    <span className="execution-grid__phase-row__order">{phase.order}</span>
+                    <span className="execution-grid__phase-row__name">{phase.name}</span>
+                    {(unitLabels || personLabels || (phase.startWeek && phase.endWeek)) && (
+                      <span className="execution-grid__phase-row__meta">
+                        {unitLabels && <>PIC: {unitLabels}</>}
+                        {unitLabels && personLabels && ' · '}
+                        {personLabels}
+                        {phase.startWeek && phase.endWeek && ` · ${phase.startWeek} → ${phase.endWeek}`}
+                      </span>
+                    )}
+                  </div>
+                )
+              }
+              if (row.kind === 'step-plan') {
+                const { step, letter } = row
+                const personEntries = step.picPersons.length > 0
+                  ? step.picPersons
+                  : (step.primaryAssignee ? [{ id: step.primaryAssignee.id, name: step.primaryAssignee.name }] : [])
+                const personPrimary = personEntries[0]
+                const personExtra = Math.max(0, personEntries.length - 1)
+                const personInitials = personPrimary
+                  ? personPrimary.name.split(' ').map(p => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
+                  : ''
+                return (
+                  <Fragment key={`info-${idx}`}>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__col-fase execution-grid__fase-num`}>{letter}</div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__col-uraian execution-grid__uraian-title`}>{step.title}</div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__col-person`}>
+                      {personPrimary ? (
+                        <span className="exec-grid-pic" title={personEntries.map(p => p.name).join(', ')}>
+                          <span className="exec-grid-pic__avatar" aria-hidden="true">{personInitials}</span>
+                          <span className="exec-grid-pic__name">{personPrimary.name}</span>
+                          {personExtra > 0 && <span className="exec-grid-pic__extra">+{personExtra}</span>}
+                        </span>
+                      ) : (
+                        <span className="exec-grid-pic exec-grid-pic--empty">Belum ditugaskan</span>
+                      )}
+                    </div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__col-status execution-grid__status-pill execution-grid__status-pill--plan`}>Plan</div>
+                  </Fragment>
+                )
+              }
+              // step-real
+              const { step } = row
+              const statusText = (
+                <>
+                  {!['BACKLOG', 'READY'].includes(step.status) && step.status}
+                  {step.percentComplete > 0 && step.percentComplete < 100 && ` · ${step.percentComplete}%`}
+                  {step.isBlocked && ' · 🚧 blocked'}
+                  {!step.actualDerived && step.actualWeeks.length > 0 && ' · manual'}
+                </>
+              )
+              return (
+                <Fragment key={`info-${idx}`}>
+                  <div className={`${cls} execution-grid__info-cell execution-grid__col-fase`} />
+                  <div className={`${cls} execution-grid__info-cell execution-grid__col-uraian execution-grid__uraian-meta`}>
+                    {statusText}
+                  </div>
+                  <div className={`${cls} execution-grid__info-cell execution-grid__col-person`} />
+                  <div className={`${cls} execution-grid__info-cell execution-grid__col-status execution-grid__status-pill execution-grid__status-pill--real`}>
+                    Real
+                    {onResetActualWeeks && !step.actualDerived && step.actualWeeks.length > 0 && (
+                      <button
+                        type="button"
+                        className="execution-grid__reset-btn"
+                        title="Reset ke auto-derive dari status"
+                        onClick={() => onResetActualWeeks(step.id)}
+                      >
+                        ↺
+                      </button>
+                    )}
+                  </div>
+                </Fragment>
+              )
+            })}
           </div>
-          <div
-            className="execution-grid__col-sticky execution-grid__col-sticky--header execution-grid__uraian"
-            style={{ gridRow: '1 / span 2' }}
-          >
-            Uraian Tahapan
-          </div>
-          <div
-            className="execution-grid__col-sticky execution-grid__col-sticky--header execution-grid__output"
-            style={{ gridRow: '1 / span 2' }}
-          >
-            Output
-          </div>
-          <div
-            className="execution-grid__col-sticky execution-grid__col-sticky--header execution-grid__pic-unit"
-            style={{ gridRow: '1 / span 2' }}
-          >
-            PIC (Divisi)
-          </div>
-          <div
-            className="execution-grid__col-sticky execution-grid__col-sticky--header execution-grid__pic-person"
-            style={{ gridRow: '1 / span 2' }}
-          >
-            Person
-          </div>
-          <div
-            className="execution-grid__col-sticky execution-grid__col-sticky--header execution-grid__status-label execution-grid__status-label--real"
-            style={{ gridRow: '1 / span 2', background: 'var(--surface-1)', color: 'var(--text-strong)' }}
-          >
-            Status
-          </div>
-          {monthHeaders.map((mh) => (
-            <div
-              key={`${mh.year}-${mh.monthIndex}`}
-              className="execution-grid__month"
-              style={{ gridColumn: `span ${mh.weeks.length}` }}
-            >
-              {mh.month} {mh.year !== new Date().getFullYear() ? mh.year : ''}
-            </div>
-          ))}
-
-          {/* ── Header row 2: week ordinals ──────────────────── */}
-          {weekRange.weeks.map((iso) => {
-            const ord = Math.ceil(isoWeekToDate(iso).getUTCDate() / 7)
-            return (
-              <div
-                key={iso}
-                className={`execution-grid__week ${iso === currentWeek ? 'execution-grid__week--today' : ''}`}
-                title={iso}
-              >
-                W{ord}
-              </div>
-            )
-          })}
-
-          {/* ── Data rows: phases + steps ─────────────────────── */}
-          {phases.map((phase) => (
-            <PhaseBlock
-              key={phase.id}
-              phase={phase}
-              weeks={weekRange.weeks}
-              currentWeek={currentWeek}
-              onToggleActualWeek={onToggleActualWeek}
-              onResetActualWeeks={onResetActualWeeks}
-            />
-          ))}
-
-          {unphasedSteps.length > 0 && (
-            <>
-              <div className="execution-grid__phase-row" style={{ gridColumn: '1 / -1' }}>
-                <span className="execution-grid__phase-row__order">—</span>
-                <span className="execution-grid__phase-row__name">Lain-lain (tanpa fase)</span>
-              </div>
-              {unphasedSteps.map((step, idx) => (
-                <StepRows
-                  key={step.id}
-                  step={step}
-                  weeks={weekRange.weeks}
-                  currentWeek={currentWeek}
-                  letterFallback={String.fromCharCode(97 + idx)}
-                  onToggleActualWeek={onToggleActualWeek}
-                  onResetActualWeeks={onResetActualWeeks}
-                />
-              ))}
-            </>
-          )}
         </div>
 
-        {todayLeft !== null && (
+        {/* ── Right pane: scrollable weeks ── */}
+        <div ref={weeksScrollerRef} className="execution-grid__weeks-scroller">
           <div
-            className="execution-grid__today-line"
-            style={{ left: todayLeft }}
-            title={`Hari ini — ${currentWeek}`}
-          />
-        )}
+            className="execution-grid__weeks-table"
+            style={{ gridTemplateColumns: weeksGridTemplateColumns }}
+          >
+            {rows.map((row, idx) => {
+              const cls = rowClass(row)
+              if (row.kind === 'header-1') {
+                // Month spanning headers
+                return monthHeaders.map((mh, mIdx) => (
+                  <div
+                    key={`m-${mh.year}-${mh.monthIndex}`}
+                    className={`${cls} execution-grid__month`}
+                    style={{ gridColumn: mIdx === 0 ? `1 / span ${mh.weeks.length}` : `span ${mh.weeks.length}` }}
+                  >
+                    {mh.month} {mh.year !== new Date().getFullYear() ? mh.year : ''}
+                  </div>
+                ))
+              }
+              if (row.kind === 'header-2') {
+                return weekRange.weeks.map((iso) => {
+                  const ord = Math.ceil(isoWeekToDate(iso).getUTCDate() / 7)
+                  return (
+                    <div
+                      key={`w-${iso}`}
+                      className={`${cls} execution-grid__week ${iso === currentWeek ? 'execution-grid__week--today' : ''}`}
+                      title={iso}
+                    >
+                      W{ord}
+                    </div>
+                  )
+                })
+              }
+              if (row.kind === 'phase') {
+                // Phase row di weeks pane — spans all week cols, kosong/divider.
+                return (
+                  <div
+                    key={`p-${idx}-${row.phase.id}`}
+                    className={`${cls} execution-grid__weeks-phase`}
+                    style={{ gridColumn: '1 / -1' }}
+                  />
+                )
+              }
+              if (row.kind === 'step-plan') {
+                const { step } = row
+                return weekRange.weeks.map((w) => {
+                  const isPlanned = step.plannedWeeks.includes(w)
+                  const isToday = w === currentWeek
+                  return (
+                    <div
+                      key={`plan-${step.id}-${w}`}
+                      className={`${cls} execution-grid__cell ${isPlanned ? 'execution-grid__cell--ren' : ''} ${isToday && !isPlanned ? 'execution-grid__cell--today' : ''}`}
+                      title={isPlanned ? `Plan: ${w}` : ''}
+                    />
+                  )
+                })
+              }
+              // step-real
+              const { step } = row
+              return weekRange.weeks.map((w) => {
+                const state = deriveRealCellState(step, w)
+                const isToday = w === currentWeek
+                const stateClass =
+                  state === 'on-time' ? 'execution-grid__cell--real-on-time' :
+                  state === 'late' ? 'execution-grid__cell--real-late' :
+                  state === 'blocked' ? 'execution-grid__cell--real-blocked' : ''
+                return (
+                  <div
+                    key={`real-${step.id}-${w}`}
+                    className={`${cls} execution-grid__cell ${stateClass} ${isToday && state === 'none' ? 'execution-grid__cell--today' : ''} ${canEdit ? 'execution-grid__cell--editable' : ''}`}
+                    title={
+                      canEdit
+                        ? state !== 'none'
+                          ? `Realisasi: ${w} (${state}) — klik untuk hapus`
+                          : `Klik untuk tandai ${w} sebagai realisasi`
+                        : state !== 'none'
+                          ? `Realisasi: ${w} (${state})`
+                          : ''
+                    }
+                    onClick={canEdit ? () => onToggleActualWeek!(step.id, w, step.actualWeeks) : undefined}
+                    role={canEdit ? 'button' : undefined}
+                    tabIndex={canEdit ? 0 : undefined}
+                    onKeyDown={canEdit ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleActualWeek!(step.id, w, step.actualWeeks) } } : undefined}
+                  />
+                )
+              })
+            })}
+          </div>
+
+          {todayLeftInWeeks !== null && (
+            <div
+              className="execution-grid__today-line"
+              style={{ left: todayLeftInWeeks }}
+              title={`Hari ini — ${currentWeek}`}
+            />
+          )}
+        </div>
       </div>
 
       <div className="execution-grid__legend">
@@ -200,190 +420,13 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
   )
 }
 
-function PhaseBlock({
-  phase,
-  weeks,
-  currentWeek,
-  onToggleActualWeek,
-  onResetActualWeeks,
-}: {
-  phase: ExecutionPhase
-  weeks: string[]
-  currentWeek: string
-  onToggleActualWeek?: (stepId: number, week: string, currentActualWeeks: string[]) => void
-  onResetActualWeeks?: (stepId: number) => void
-}) {
-  const unitLabels = phase.picUnits.map((u) => u.shortName ?? u.name).join(', ')
-  const personLabels = phase.picPersons.map((p) => p.name).join(', ')
-  return (
-    <Fragment>
-      <div className="execution-grid__phase-row" style={{ gridColumn: '1 / -1' }}>
-        <span className="execution-grid__phase-row__order">{phase.order}</span>
-        <span className="execution-grid__phase-row__name">{phase.name}</span>
-        <span className="execution-grid__phase-row__meta">
-          {unitLabels && <>PIC: {unitLabels}</>}
-          {unitLabels && personLabels && ' · '}
-          {personLabels}
-          {phase.startWeek && phase.endWeek && ` · ${phase.startWeek} → ${phase.endWeek}`}
-        </span>
-      </div>
-      {phase.steps.map((step) => (
-        <StepRows
-          key={step.id}
-          step={step}
-          weeks={weeks}
-          currentWeek={currentWeek}
-          onToggleActualWeek={onToggleActualWeek}
-          onResetActualWeeks={onResetActualWeeks}
-        />
-      ))}
-    </Fragment>
-  )
-}
-
-function StepRows({
-  step,
-  weeks,
-  currentWeek,
-  letterFallback,
-  onToggleActualWeek,
-  onResetActualWeeks,
-}: {
-  step: ExecutionStep
-  weeks: string[]
-  currentWeek: string
-  letterFallback?: string
-  onToggleActualWeek?: (stepId: number, week: string, currentActualWeeks: string[]) => void
-  onResetActualWeeks?: (stepId: number) => void
-}) {
-  const unitLabels = step.picUnits.map((u) => u.shortName ?? u.name).join(', ')
-  // Person display: pakai picPersons array kalau ada, fallback ke primaryAssignee.
-  // Tampilkan sebagai avatar chip (FK inisial + nama) konsisten dengan Struktur tab,
-  // bukan plain text. Empty = muted italic placeholder.
-  const personEntries = step.picPersons.length > 0
-    ? step.picPersons
-    : (step.primaryAssignee ? [{ id: step.primaryAssignee.id, name: step.primaryAssignee.name }] : [])
-  const personPrimary = personEntries[0]
-  const personExtra = Math.max(0, personEntries.length - 1)
-  const personInitials = personPrimary
-    ? personPrimary.name.split(' ').map(p => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
-    : ''
-  const letter = step.letterIndex ?? letterFallback ?? ''
-  const canEdit = !!onToggleActualWeek
-  return (
-    <Fragment>
-      {/* Ren row */}
-      <div className="execution-grid__col-sticky execution-grid__fase execution-grid__step-ren">
-        {letter}
-      </div>
-      <div className="execution-grid__col-sticky execution-grid__uraian execution-grid__step-ren">
-        {step.title}
-      </div>
-      <div className="execution-grid__col-sticky execution-grid__output execution-grid__step-ren">
-        {step.output ?? '—'}
-      </div>
-      <div className="execution-grid__col-sticky execution-grid__pic-unit execution-grid__step-ren">
-        {unitLabels || '—'}
-      </div>
-      <div className="execution-grid__col-sticky execution-grid__pic-person execution-grid__step-ren">
-        {personPrimary ? (
-          <span className="exec-grid-pic" title={personEntries.map(p => p.name).join(', ')}>
-            <span className="exec-grid-pic__avatar" aria-hidden="true">{personInitials}</span>
-            <span className="exec-grid-pic__name">{personPrimary.name}</span>
-            {personExtra > 0 && <span className="exec-grid-pic__extra">+{personExtra}</span>}
-          </span>
-        ) : (
-          <span className="exec-grid-pic exec-grid-pic--empty">Belum ditugaskan</span>
-        )}
-      </div>
-      <div className="execution-grid__col-sticky execution-grid__status-label execution-grid__step-ren">
-        Plan
-      </div>
-      {weeks.map((w) => {
-        const isPlanned = step.plannedWeeks.includes(w)
-        const isToday = w === currentWeek
-        return (
-          <div
-            key={`ren-${step.id}-${w}`}
-            className={`execution-grid__cell execution-grid__step-ren ${isPlanned ? 'execution-grid__cell--ren' : ''} ${isToday && !isPlanned ? 'execution-grid__cell--today' : ''}`}
-            title={isPlanned ? `Plan: ${w}` : ''}
-          />
-        )
-      })}
-
-      {/* Real row */}
-      <div className="execution-grid__col-sticky execution-grid__fase execution-grid__step-real" />
-      <div
-        className="execution-grid__col-sticky execution-grid__uraian execution-grid__step-real"
-        style={{ color: 'var(--text-muted)', fontSize: 'var(--type-caption)' }}
-      >
-        {/* Only show status when it conveys real progress info — hide default Backlog/Ready */}
-        {!['BACKLOG', 'READY'].includes(step.status) && step.status}
-        {step.percentComplete > 0 && step.percentComplete < 100 && ` · ${step.percentComplete}%`}
-        {step.isBlocked && ' · 🚧 blocked'}
-        {!step.actualDerived && step.actualWeeks.length > 0 && ' · manual'}
-      </div>
-      <div className="execution-grid__col-sticky execution-grid__output execution-grid__step-real" />
-      <div className="execution-grid__col-sticky execution-grid__pic-unit execution-grid__step-real" />
-      <div className="execution-grid__col-sticky execution-grid__pic-person execution-grid__step-real" />
-      <div
-        className="execution-grid__col-sticky execution-grid__status-label execution-grid__status-label--real execution-grid__step-real"
-        title={canEdit ? 'Klik sel Real untuk toggle minggu realisasi' : undefined}
-      >
-        Real
-        {onResetActualWeeks && !step.actualDerived && step.actualWeeks.length > 0 && (
-          <button
-            type="button"
-            className="execution-grid__reset-btn"
-            title="Reset ke auto-derive dari status"
-            onClick={() => onResetActualWeeks(step.id)}
-          >
-            ↺
-          </button>
-        )}
-      </div>
-      {weeks.map((w) => {
-        const state = deriveRealCellState(step, w)
-        const isToday = w === currentWeek
-        const stateClass =
-          state === 'on-time' ? 'execution-grid__cell--real-on-time' :
-          state === 'late' ? 'execution-grid__cell--real-late' :
-          state === 'blocked' ? 'execution-grid__cell--real-blocked' : ''
-        return (
-          <div
-            key={`real-${step.id}-${w}`}
-            className={`execution-grid__cell execution-grid__step-real ${stateClass} ${isToday && state === 'none' ? 'execution-grid__cell--today' : ''} ${canEdit ? 'execution-grid__cell--editable' : ''}`}
-            title={
-              canEdit
-                ? state !== 'none'
-                  ? `Realisasi: ${w} (${state}) — klik untuk hapus`
-                  : `Klik untuk tandai ${w} sebagai realisasi`
-                : state !== 'none'
-                  ? `Realisasi: ${w} (${state})`
-                  : ''
-            }
-            onClick={canEdit ? () => onToggleActualWeek!(step.id, w, step.actualWeeks) : undefined}
-            role={canEdit ? 'button' : undefined}
-            tabIndex={canEdit ? 0 : undefined}
-            onKeyDown={canEdit ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleActualWeek!(step.id, w, step.actualWeeks) } } : undefined}
-          />
-        )
-      })}
-    </Fragment>
-  )
-}
-
-// ── Week helper (minimal client-side ISO-week → Date) ──────────────────────
 function isoWeekToDate(iso: string): Date {
-  const m = /^(\d{4})-W(\d{2})$/.exec(iso)
-  if (!m) return new Date()
-  const year = Number(m[1])
-  const week = Number(m[2])
+  const [yearStr, weekStr] = iso.split('-W')
+  const year = parseInt(yearStr, 10)
+  const week = parseInt(weekStr, 10)
   const jan4 = new Date(Date.UTC(year, 0, 4))
-  const jan4Day = jan4.getUTCDay() || 7
-  const mondayWeek1 = new Date(jan4)
-  mondayWeek1.setUTCDate(jan4.getUTCDate() - jan4Day + 1)
-  const target = new Date(mondayWeek1)
-  target.setUTCDate(mondayWeek1.getUTCDate() + (week - 1) * 7)
-  return target
+  const day = jan4.getUTCDay() || 7
+  const monday = new Date(Date.UTC(year, 0, 4 + 1 - day))
+  monday.setUTCDate(monday.getUTCDate() + (week - 1) * 7)
+  return monday
 }

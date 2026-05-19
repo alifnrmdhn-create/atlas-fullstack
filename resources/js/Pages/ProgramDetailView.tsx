@@ -660,6 +660,7 @@ export function ProgramDetailView() {
   })
   const [epPicIds, setEpPicIds] = useState<number[]>([])
   const [epOwnerId, setEpOwnerId] = useState<number | null>(null)
+  const [epPicQuery, setEpPicQuery] = useState('')
   const [epSaving, setEpSaving] = useState(false)
   const [epError, setEpError] = useState<string | null>(null)
   const [userDirectory, setUserDirectory] = useState<Array<{ id: number; name: string; positionTitle?: string | null }>>([])
@@ -701,6 +702,7 @@ export function ProgramDetailView() {
     })
     setEpPicIds(detail.picPersonIds ?? [])
     setEpOwnerId(detail.ownerId)
+    setEpPicQuery('')
     if (userDirectory.length === 0) {
       void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null }> }>('/users/directory')
         .then(r => setUserDirectory(r.data ?? []))
@@ -725,7 +727,7 @@ export function ProgramDetailView() {
         startDate: epForm.startDate, targetEndDate: epForm.targetEndDate,
         linkedChannelId: channelNum,
         picPersonIds: epPicIds,
-        ...(epOwnerId && epOwnerId !== detail?.ownerId ? { ownerIdOverride: epOwnerId } : {}),
+        ...(epOwnerId && epOwnerId !== detail?.ownerId ? { ownerId: epOwnerId } : {}),
       })
       triggerEpClose()
       await Promise.all([loadDetail(true), loadOverview('refresh')])
@@ -3613,29 +3615,89 @@ export function ProgramDetailView() {
                         </div>
                       )}
                       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--text-muted)' }}>Tim PIC (co-PIC)</label>
-                      <div className="prog-pic-picker">
-                        {userDirectory
-                          .filter(u => u.id !== (epOwnerId ?? detail?.ownerId ?? 0))
-                          .map(u => {
-                            const checked = epPicIds.includes(u.id)
-                            return (
-                              <label key={u.id} className={`prog-pic-option${checked ? ' prog-pic-option--selected' : ''}`}>
-                                <input
-                                  checked={checked}
-                                  className="prog-pic-option__check"
-                                  onChange={() => setEpPicIds(prev =>
-                                    prev.includes(u.id) ? prev.filter(id => id !== u.id) : [...prev, u.id]
-                                  )}
-                                  type="checkbox"
-                                />
-                                <span className="prog-pic-option__name">{u.name}</span>
-                                {u.positionTitle && (
-                                  <span className="prog-pic-option__role">{u.positionTitle}</span>
-                                )}
-                              </label>
+                      {(() => {
+                        const ownerId = epOwnerId ?? detail?.ownerId ?? 0
+                        const selected = epPicIds
+                          .filter(id => id !== ownerId)
+                          .map(id => userDirectory.find(u => u.id === id))
+                          .filter((u): u is { id: number; name: string; positionTitle?: string | null } => !!u)
+                        const q = epPicQuery.trim().toLowerCase()
+                        const candidates = userDirectory.filter(u =>
+                          u.id !== ownerId && !epPicIds.includes(u.id)
+                        )
+                        const filtered = (q
+                          ? candidates.filter(u =>
+                              u.name.toLowerCase().includes(q) ||
+                              (u.positionTitle ?? '').toLowerCase().includes(q)
                             )
-                          })}
-                      </div>
+                          : candidates
+                        ).slice(0, 6)
+                        const addPic = (id: number) => {
+                          setEpPicIds(prev => prev.includes(id) ? prev : [...prev, id])
+                          setEpPicQuery('')
+                        }
+                        const removePic = (id: number) =>
+                          setEpPicIds(prev => prev.filter(x => x !== id))
+                        return (
+                          <div className="prog-pic-search">
+                            {selected.length > 0 && (
+                              <div className="prog-pic-chips">
+                                {selected.map(u => (
+                                  <span key={u.id} className="prog-pic-chip">
+                                    <span className="prog-pic-chip__name">{u.name}</span>
+                                    <button
+                                      aria-label={`Hapus ${u.name}`}
+                                      className="prog-pic-chip__remove"
+                                      onClick={() => removePic(u.id)}
+                                      type="button"
+                                    >
+                                      <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 10 10" width="10"><path d="m1 1 8 8M9 1 1 9" /></svg>
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <div className="prog-pic-searchbox">
+                              <svg className="prog-pic-searchbox__icon" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="14"><circle cx="6" cy="6" r="4.5"/><path d="m12.5 12.5-3-3"/></svg>
+                              <input
+                                className="prog-pic-searchbox__input"
+                                onChange={e => setEpPicQuery(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    if (filtered.length > 0) addPic(filtered[0].id)
+                                  }
+                                }}
+                                placeholder="Cari nama atau jabatan…"
+                                type="text"
+                                value={epPicQuery}
+                              />
+                            </div>
+                            {filtered.length === 0 ? (
+                              <p className="prog-pic-empty">
+                                {q ? 'Tidak ada nama yang cocok.' : 'Semua pengguna sudah dipilih.'}
+                              </p>
+                            ) : (
+                              <ul className="prog-pic-results">
+                                {filtered.map(u => (
+                                  <li key={u.id}>
+                                    <button
+                                      className="prog-pic-result"
+                                      onClick={() => addPic(u.id)}
+                                      type="button"
+                                    >
+                                      <span className="prog-pic-result__name">{u.name}</span>
+                                      {u.positionTitle && (
+                                        <span className="prog-pic-result__role">{u.positionTitle}</span>
+                                      )}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </>
                   )}
                 </section>

@@ -2843,16 +2843,20 @@ select.prog-strategic__input {
    • Tambah Phase (action) vs Jadwal Plan hint (info) sekarang punya
      treatment berbeda — button affordance vs caption italic. */
 
-/* #1 Task-row alignment: meta cluster (PIC + %) berdampingan dengan
-   title, bukan flush ke edge. flex:1 base bikin info grow ke seluruh
-   sisa ruang → void di tengah. */
+/* #1 Task-row alignment: title flex-grow tapi di-cap supaya tidak full
+   stretch (was: 1000px void di tengah karena info flex:1 100%). Meta
+   cluster pakai margin-left:auto untuk memanfaatkan sisa box di kanan,
+   bukan nempel ke title. Internal gap meta dispread supaya elemen
+   tidak crammed satu sama lain. */
 .prog-detail-page .phase-group__tasks .wi-row__info {
-  flex: 0 1 auto !important;
-  max-width: 56% !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  max-width: 60% !important;
 }
 .prog-detail-page .phase-group__tasks .wi-row__right {
-  /* Sit immediately after info, jangan auto-margin-push ke kanan. */
-  margin-left: 0 !important;
+  margin-left: auto !important;
+  margin-right: 12px !important;
+  gap: 16px !important;
 }
 
 /* #1 (cont.) Phase header: "0/1 selesai" sit dekat dengan phase name. */

@@ -40,23 +40,24 @@ async function downloadXlsx(programId: number, workstreamId: number, grid: Execu
 
 function exportGridCSV(grid: ExecutionGridData, programName?: string) {
   const weeks = grid.weekRange.weeks
-  const header = ['Fase', 'Uraian', 'PIC Unit', 'PIC Person', 'Tipe', 'Status', ...weeks]
+  // PIC Unit dihapus dari header — selaras dengan Jadwal grid view yang juga
+  // tidak lagi menampilkan kolom tersebut (tidak ada di form Struktur).
+  const header = ['Fase', 'Uraian', 'PIC Person', 'Tipe', 'Status', ...weeks]
   const rows: string[][] = [header]
 
   const encodeCell = (v: string) => `"${v.replace(/"/g, '""')}"`
 
   const addStep = (phaseLabel: string, step: ExecutionGridData['phases'][number]['steps'][number]) => {
-    const units = step.picUnits.map((u) => u.shortName ?? u.name).join(' / ')
     const persons = step.picPersons.map((p) => p.name).join(' / ') || step.primaryAssignee?.name || ''
     const letter = step.letterIndex ?? ''
 
     const renRow = [
       phaseLabel, `${letter} ${step.title}`.trim(),
-      units, persons, 'Plan', step.status,
+      persons, 'Plan', step.status,
       ...weeks.map((w) => step.plannedWeeks.includes(w) ? '■' : ''),
     ]
     const realRow = [
-      '', '', '', '', 'Real',
+      '', '', '', 'Real',
       step.actualDerived ? 'auto' : 'manual',
       ...weeks.map((w) => step.actualWeeks.includes(w) ? '■' : ''),
     ]

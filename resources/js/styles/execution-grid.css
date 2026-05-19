@@ -1,8 +1,15 @@
 /* ─── Execution Grid (Ren/Real tabel mingguan ala PTPN) ──────────────────────
- * Mengacu pola Excel "Timeline Pengembangan Ubi Kayu" dari PTPN Holding:
- * hierarki Fase → Tahap (sub-step a/b/c), sticky kolom kiri (Fase/Uraian/PIC/
- * Person/Status), minggu dikelompok bulan di header. Dual-row per step: Ren
- * (rencana, biru) di atas, Real (realisasi, hijau/kuning/merah) di bawah.
+ * Split-frame layout (Notion/Airtable pattern):
+ *   .execution-grid__layout = flex container
+ *     .execution-grid__info-pane    → left, fixed width, no horizontal scroll
+ *     .execution-grid__weeks-scroller → right, scrolls horizontal
+ *
+ * Setiap row di-render dua kali (sekali per pane) dengan SAME row class
+ * supaya tinggi sinkron. Tidak lagi pakai `position: sticky` yang
+ * sebelumnya bikin overlap dengan week cells.
+ *
+ * Hierarki Fase → Tahap (sub-step a/b/c), per step dua row: Ren/Plan (biru)
+ * di atas, Real (hijau/kuning/merah) di bawah.
  */
 
 .execution-grid {
@@ -17,22 +24,227 @@
   overflow: hidden;
 }
 
-.execution-grid__scroller {
-  overflow-x: auto;
-  overflow-y: visible;
-  max-width: 100%;
+/* ── Layout container ───────────────────────────────────────────────────── */
+
+.execution-grid__layout {
+  display: flex;
+  align-items: stretch;
+  position: relative;
 }
 
-.execution-grid__table {
+/* ── Info pane (left, fixed width) ──────────────────────────────────────── */
+
+.execution-grid__info-pane {
+  position: relative;
+  z-index: 2;
+  background: var(--panel);
+  border-right: 1px solid var(--panel-border);
+  overflow: hidden;
+  transition: box-shadow 180ms ease;
+}
+
+/* Soft shadow ke kanan saat weeks pane discroll — visual cue bahwa info
+   pane "ngapung" di atas timeline yang scrolling. */
+.execution-grid__info-pane--scrolled {
+  box-shadow: 4px 0 8px -2px color-mix(in srgb, var(--text-strong) 12%, transparent);
+}
+
+.execution-grid__info-table {
   display: grid;
-  /* grid-template-columns di-set via inline style; satu per kolom mingguan */
-  grid-auto-rows: minmax(28px, auto);
-  min-width: max-content;
+  /* Fixed row heights — critical untuk sync dengan weeks pane. Kalau pakai
+     auto, content tinggi di salah satu pane (mis. task title yang wrap)
+     bisa bikin row desync. Kalau title terlalu panjang, gunakan ellipsis. */
+  grid-auto-rows: 32px;
+  /* grid-template-columns di-set inline (Fase / Uraian / Person / Status). */
 }
 
-/* ── Header rows (2-level: month spanning + week cells) ─────────────────── */
+/* ── Weeks pane (right, scrollable) ─────────────────────────────────────── */
 
-/* Month header — sentence case, konsisten dengan typography refresh. */
+.execution-grid__weeks-scroller {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+}
+
+.execution-grid__weeks-table {
+  display: grid;
+  grid-auto-rows: 32px;
+  min-width: max-content;
+  /* grid-template-columns di-set inline: repeat(N, 38px). */
+}
+
+/* ── Row classes (shared across panes, for height sync) ─────────────────── */
+
+.execution-grid__row {
+  /* Each cell uses this base class. Used as a selector hook for
+     row-type-specific styling; height comes from grid-auto-rows. */
+}
+
+.execution-grid__row--header-month,
+.execution-grid__row--header-week {
+  background: var(--surface-1);
+}
+
+/* Header rows tinggi tetap supaya kedua pane align dengan rapi. */
+.execution-grid__row--header-month { min-height: 32px; }
+.execution-grid__row--header-week { min-height: 28px; }
+
+.execution-grid__row--phase {
+  min-height: 36px;
+}
+
+.execution-grid__row--step-plan,
+.execution-grid__row--step-real {
+  min-height: 32px;
+}
+
+.execution-grid__row--step-real {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+/* ── Info pane cells ────────────────────────────────────────────────────── */
+
+.execution-grid__info-cell {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-right: 1px solid var(--panel-border);
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border) 40%, transparent);
+  font-size: var(--type-small);
+  min-width: 0;
+}
+
+.execution-grid__info-cell:last-child {
+  border-right: 0;
+}
+
+.execution-grid__info-cell--header {
+  background: var(--surface-1);
+  color: var(--text-muted);
+  font-weight: var(--w-medium);
+  font-size: 11.5px;
+  text-transform: none;
+}
+
+.execution-grid__info-cell--header-empty {
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.execution-grid__col-fase {
+  justify-content: center;
+  font-weight: var(--w-semibold);
+  font-family: var(--font-mono);
+  color: var(--indigo);
+  font-size: 12px;
+}
+
+.execution-grid__fase-num {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.execution-grid__col-uraian {
+  font-weight: var(--w-medium);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Inner span juga perlu min-width: 0 supaya ellipsis kerja di nested div. */
+}
+
+.execution-grid__uraian-title {
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.execution-grid__uraian-meta {
+  color: var(--text-muted);
+  font-size: var(--type-caption);
+  font-weight: var(--w-normal);
+}
+
+.execution-grid__col-person {
+  color: var(--text-muted);
+  font-size: var(--type-xs);
+  line-height: 1.35;
+}
+
+.execution-grid__col-status {
+  justify-content: center;
+  font-size: var(--type-caption);
+  font-weight: var(--w-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.execution-grid__status-pill--plan {
+  background: var(--blue);
+  color: var(--text-inverse);
+}
+
+.execution-grid__status-pill--real {
+  background: var(--surface-0);
+  color: var(--text-muted);
+  gap: 4px;
+}
+
+/* ── Phase row (info pane) ──────────────────────────────────────────────── */
+
+.execution-grid__info-phase {
+  grid-column: 1 / -1;
+  background: var(--indigo-dim);
+  border-top: 2px solid var(--indigo);
+  border-bottom: 1px solid var(--panel-border);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: var(--w-semibold);
+  color: var(--indigo-dark);
+  font-size: var(--type-small);
+}
+
+.execution-grid__phase-row__order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--indigo);
+  color: var(--text-inverse);
+  font-size: var(--type-caption);
+  font-weight: var(--w-heading);
+  flex-shrink: 0;
+}
+
+.execution-grid__phase-row__name {
+  flex: 1;
+  min-width: 0;
+}
+
+.execution-grid__phase-row__meta {
+  color: var(--text-muted);
+  font-size: var(--type-xs);
+  font-weight: var(--w-normal);
+}
+
+/* Phase row di weeks pane = empty bar dengan match warna info pane. */
+.execution-grid__weeks-phase {
+  grid-column: 1 / -1;
+  background: var(--indigo-dim);
+  border-top: 2px solid var(--indigo);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+/* ── Month + week headers (weeks pane) ──────────────────────────────────── */
+
 .execution-grid__month {
   background: var(--surface-1);
   color: var(--text-muted);
@@ -44,6 +256,9 @@
   font-size: 11.5px;
   letter-spacing: 0;
   text-transform: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .execution-grid__week {
@@ -56,6 +271,9 @@
   font-size: var(--type-caption);
   font-weight: var(--w-medium);
   font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .execution-grid__week--today {
@@ -64,34 +282,8 @@
   font-weight: var(--w-semibold);
 }
 
-/* ── Sticky left columns (5 kolom info) ─────────────────────────────────── */
+/* ── Person column chip ──────────────────────────────────────────────────── */
 
-.execution-grid__col-sticky {
-  position: sticky;
-  background: var(--panel);
-  border-right: 1px solid var(--panel-border);
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  font-size: var(--type-small);
-  z-index: 2;
-}
-
-/* Header sticky kolom — modern: sentence case, weight medium, smaller
-   contrast. Tampak sebagai label kolom yang ringan, bukan SAP report. */
-.execution-grid__col-sticky--header {
-  background: var(--surface-1);
-  color: var(--text-muted);
-  font-weight: var(--w-medium);
-  font-size: 11.5px;
-  text-transform: none;
-  letter-spacing: 0;
-  z-index: 3;
-  border-bottom: 1px solid var(--panel-border);
-}
-
-/* Person column chip — avatar inisial + nama, konsisten dengan task row
-   di Struktur tab. Hindari plain text yang terlihat unstructured. */
 .exec-grid-pic {
   display: inline-flex;
   align-items: center;
@@ -132,125 +324,11 @@
   font-size: 11px;
 }
 
-.execution-grid__fase {
-  left: 0;
-  min-width: 54px;
-  justify-content: center;
-  font-weight: var(--w-semibold);
-  font-family: var(--font-mono);
-  color: var(--indigo);
-}
-
-.execution-grid__uraian {
-  left: 54px;
-  min-width: 320px;
-  max-width: 360px;
-  font-weight: var(--w-medium);
-  line-height: 1.35;
-}
-
-.execution-grid__output {
-  left: 374px;
-  min-width: 220px;
-  max-width: 260px;
-  color: var(--text);
-  font-size: var(--type-xs);
-  line-height: 1.35;
-}
-
-.execution-grid__pic-unit {
-  left: 594px;
-  min-width: 180px;
-  max-width: 220px;
-  color: var(--text);
-  font-size: var(--type-xs);
-  line-height: 1.35;
-}
-
-.execution-grid__pic-person {
-  left: 774px;
-  min-width: 180px;
-  max-width: 220px;
-  color: var(--text-muted);
-  font-size: var(--type-xs);
-  line-height: 1.35;
-}
-
-.execution-grid__status-label {
-  left: 954px;
-  min-width: 56px;
-  max-width: 56px;
-  justify-content: center;
-  font-size: var(--type-caption);
-  font-weight: var(--w-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  background: var(--blue);
-  color: var(--text-inverse);
-  border-right: 1px solid var(--panel-border);
-}
-
-.execution-grid__status-label--real {
-  background: var(--surface-0);
-  color: var(--text-muted);
-}
-
-/* ── Phase header row ───────────────────────────────────────────────────── */
-
-.execution-grid__phase-row {
-  grid-column: 1 / -1;
-  background: var(--indigo-dim);
-  border-top: 2px solid var(--indigo);
-  border-bottom: 1px solid var(--panel-border);
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: var(--w-semibold);
-  color: var(--indigo-dark);
-  font-size: var(--type-small);
-  position: sticky;
-  left: 0;
-  z-index: 1;
-}
-
-.execution-grid__phase-row__order {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--indigo);
-  color: var(--text-inverse);
-  font-size: var(--type-caption);
-  font-weight: var(--w-heading);
-}
-
-.execution-grid__phase-row__name {
-  flex: 1;
-}
-
-.execution-grid__phase-row__meta {
-  color: var(--text-muted);
-  font-size: var(--type-xs);
-  font-weight: var(--w-normal);
-}
-
-/* ── Step rows ──────────────────────────────────────────────────────────── */
-
-.execution-grid__step-ren {
-  background: var(--panel);
-}
-
-.execution-grid__step-real {
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--panel-border);
-}
+/* ── Data cells (weeks pane) ────────────────────────────────────────────── */
 
 .execution-grid__cell {
   border-right: 1px solid var(--panel-border);
-  border-bottom: 1px solid var(--panel-border);
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border) 40%, transparent);
   min-height: 28px;
   position: relative;
 }
@@ -259,12 +337,10 @@
   background: var(--ptpn-green-dim);
 }
 
-/* Ren cell (planned) — solid biru */
 .execution-grid__cell--ren {
   background: var(--blue);
 }
 
-/* Real cell states */
 .execution-grid__cell--real-on-time {
   background: var(--green);
 }
@@ -309,14 +385,14 @@
   outline-offset: -1px;
   z-index: 1;
 }
-.execution-grid__step-real .execution-grid__cell--editable:not([class*='--real-']) {
+.execution-grid__row--step-real .execution-grid__cell--editable:not([class*='--real-']) {
   background: transparent;
 }
-.execution-grid__step-real .execution-grid__cell--editable:not([class*='--real-']):hover {
+.execution-grid__row--step-real .execution-grid__cell--editable:not([class*='--real-']):hover {
   background: color-mix(in srgb, var(--ptpn-green) 14%, transparent);
 }
 
-/* ── Sticky "today" vertical line overlay ───────────────────────────────── */
+/* ── Today vertical line overlay ────────────────────────────────────────── */
 
 .execution-grid__today-line {
   position: absolute;
@@ -325,7 +401,7 @@
   width: 2px;
   background: var(--ptpn-green);
   pointer-events: none;
-  z-index: 4;
+  z-index: 1;
   box-shadow: 0 0 0 2px var(--ptpn-green-dim);
 }
 
@@ -405,7 +481,8 @@
   font-family: var(--font-mono);
 }
 
-/* ── Light mode quality pass: Excel-like grid with more premium depth and readability ── */
+/* ── Light mode: subtle gradients for premium depth ─────────────────────── */
+
 :root:not([data-theme="dark"]) .execution-grid {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 56%, var(--panel) 44%) 0%, var(--panel) 100%);
@@ -415,6 +492,17 @@
     inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 70%, transparent);
 }
 
+:root:not([data-theme="dark"]) .execution-grid__info-pane {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, var(--surface-2) 8%) 0%, var(--panel) 100%);
+}
+
+:root:not([data-theme="dark"]) .execution-grid__info-cell--header,
+:root:not([data-theme="dark"]) .execution-grid__info-cell--header-empty {
+  background: linear-gradient(180deg, var(--surface-1) 0%, color-mix(in srgb, var(--surface-1) 92%, var(--panel) 8%) 100%);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 64%, transparent);
+}
+
 :root:not([data-theme="dark"]) .execution-grid__month {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--ptpn-green) 9%, var(--surface-2) 91%) 0%, color-mix(in srgb, var(--surface-1) 88%, var(--panel) 12%) 100%);
@@ -422,10 +510,9 @@
   border-color: color-mix(in srgb, var(--panel-border-strong) 54%, transparent);
 }
 
-:root:not([data-theme="dark"]) .execution-grid__week,
-:root:not([data-theme="dark"]) .execution-grid__col-sticky--header {
+:root:not([data-theme="dark"]) .execution-grid__week {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 74%, transparent), color-mix(in srgb, var(--surface-1) 88%, transparent));
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 74%, var(--panel) 26%), color-mix(in srgb, var(--surface-1) 88%, var(--panel) 12%));
   border-color: color-mix(in srgb, var(--panel-border-strong) 50%, transparent);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 64%, transparent);
 }
@@ -439,37 +526,7 @@
     inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 58%, transparent);
 }
 
-:root:not([data-theme="dark"]) .execution-grid__col-sticky {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, var(--surface-2) 12%) 0%, var(--panel) 100%);
-  border-color: color-mix(in srgb, var(--panel-border-strong) 48%, transparent);
-}
-
-:root:not([data-theme="dark"]) .execution-grid__phase-row {
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--indigo) 13%, transparent), transparent 64%),
-    linear-gradient(180deg, color-mix(in srgb, var(--indigo-dim) 72%, var(--surface-2) 28%) 0%, color-mix(in srgb, var(--panel) 88%, var(--indigo-dim) 12%) 100%);
-  border-top-color: var(--indigo);
-  border-bottom-color: color-mix(in srgb, var(--indigo) 20%, var(--panel-border) 80%);
-  color: var(--indigo-dark);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 60%, transparent),
-    0 8px 16px color-mix(in srgb, var(--indigo) 6%, transparent);
-}
-
-:root:not([data-theme="dark"]) .execution-grid__phase-row__order {
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 36%, transparent),
-    0 6px 12px color-mix(in srgb, var(--indigo) 16%, transparent);
-}
-
-:root:not([data-theme="dark"]) .execution-grid__step-ren,
-:root:not([data-theme="dark"]) .execution-grid__step-real {
-  background: var(--panel);
-}
-
-:root:not([data-theme="dark"]) .execution-grid__step-real .execution-grid__col-sticky,
-:root:not([data-theme="dark"]) .execution-grid__step-real {
+:root:not([data-theme="dark"]) .execution-grid__row--step-real {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 48%, var(--panel) 52%) 0%, var(--panel) 100%);
 }
@@ -483,92 +540,19 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ptpn-green) 12%, transparent);
 }
 
-:root:not([data-theme="dark"]) .execution-grid__cell--ren,
-:root:not([data-theme="dark"]) .execution-grid__cell--real-on-time,
-:root:not([data-theme="dark"]) .execution-grid__cell--real-late,
-:root:not([data-theme="dark"]) .execution-grid__cell--real-blocked {
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 36%, transparent);
-}
-
-/* Light-theme: re-apply Plan/Real warna karena rule .execution-grid__step-ren/real
-   di atas (line ~421) menimpa background dengan var(--panel). Specificity rule
-   ini sama (0,2,1) dan ditulis SETELAH, jadi menang dalam cascade. */
-:root:not([data-theme="dark"]) .execution-grid__cell--ren {
-  background: var(--blue);
-}
-:root:not([data-theme="dark"]) .execution-grid__cell--real-on-time {
-  background: var(--green);
-}
-:root:not([data-theme="dark"]) .execution-grid__cell--real-late {
-  background: var(--yellow);
-}
-:root:not([data-theme="dark"]) .execution-grid__cell--real-blocked {
-  background: var(--red);
-}
-
-:root:not([data-theme="dark"]) .execution-grid__today-line {
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--ptpn-green) 18%, transparent),
-    0 0 18px color-mix(in srgb, var(--ptpn-green) 30%, transparent);
-}
-
-:root:not([data-theme="dark"]) .execution-grid__legend {
+:root:not([data-theme="dark"]) .execution-grid__info-phase,
+:root:not([data-theme="dark"]) .execution-grid__weeks-phase {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 66%, transparent), color-mix(in srgb, var(--surface-1) 88%, transparent));
-  border-top-color: color-mix(in srgb, var(--panel-border-strong) 52%, transparent);
-}
-
-:root:not([data-theme="dark"]) .execution-grid__legend-swatch {
+    linear-gradient(180deg, color-mix(in srgb, var(--indigo-dim) 72%, var(--surface-2) 28%) 0%, color-mix(in srgb, var(--panel) 88%, var(--indigo-dim) 12%) 100%);
+  border-top-color: var(--indigo);
+  border-bottom-color: color-mix(in srgb, var(--indigo) 20%, var(--panel-border) 80%);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 42%, transparent),
-    0 2px 6px color-mix(in srgb, var(--panel-border-strong) 12%, transparent);
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 60%, transparent),
+    0 8px 16px color-mix(in srgb, var(--indigo) 6%, transparent);
 }
 
-:root:not([data-theme="dark"]) .workstream-pills {
-  border-bottom-color: color-mix(in srgb, var(--panel-border-strong) 52%, transparent);
-}
-
-:root:not([data-theme="dark"]) .workstream-pill {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 72%, transparent), color-mix(in srgb, var(--panel) 92%, transparent));
-  border-color: color-mix(in srgb, var(--panel-border-strong) 52%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 66%, transparent);
-}
-
-:root:not([data-theme="dark"]) .workstream-pill:hover {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--ptpn-green) 9%, var(--surface-2) 91%) 0%, var(--panel) 100%);
+:root:not([data-theme="dark"]) .execution-grid__phase-row__order {
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 62%, transparent),
-    0 8px 16px color-mix(in srgb, var(--ptpn-green) 8%, transparent);
-}
-
-:root:not([data-theme="dark"]) .workstream-pill--active {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--ptpn-green) 88%, var(--accent) 12%) 0%, var(--ptpn-green) 100%);
-  color: var(--text-inverse);
-  border-color: var(--ptpn-green);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 34%, transparent),
-    0 10px 20px color-mix(in srgb, var(--ptpn-green) 20%, transparent);
-}
-
-/* ── Perencanaan notice banner above grid ─────────────────────────── */
-.exec-planning-notice {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  margin: 0 0 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--yellow);
-  background: color-mix(in srgb, var(--yellow) 6%, var(--surface-1));
-  border: 1px solid color-mix(in srgb, var(--yellow) 25%, var(--panel-border));
-}
-.exec-planning-notice svg { flex-shrink: 0; }
-.exec-planning-notice strong {
-  color: var(--yellow);
-  font-weight: 700;
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 36%, transparent),
+    0 6px 12px color-mix(in srgb, var(--indigo) 16%, transparent);
 }

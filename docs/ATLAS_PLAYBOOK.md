@@ -17,29 +17,54 @@
 
 ## Glosarium Istilah
 
-Istilah-istilah berikut digunakan di seluruh ATLAS dan panduan ini.
+Vokabulari yang dipakai di seluruh ATLAS. Status program, atribut perencanaan, dan konsep platform — disusun supaya semua tim pakai istilah yang sama.
+
+### Status Program
+
+Klasifikasi kondisi pelaksanaan program pada periode pelaporan.
+
+| Istilah | Penjelasan |
+|---------|------------|
+| 🟢 **On Track** | Progress sesuai timeline dan tidak ada kendala signifikan. *Contoh: mayoritas aktivitas berjalan; deliverable bulanan terkirim tepat waktu.* |
+| 🟡 **At Risk** | Terdapat kendala yang berpotensi menghambat timeline. Belum melewati deadline, tapi butuh perhatian. *Contoh: persetujuan stakeholder belum keluar; mitigasi dijalankan sebelum target tergeser.* |
+| 🔴 **Terlambat (Delayed)** | Sudah melewati timeline atau target tidak tercapai pada periode pelaporan. *Contoh: deliverable utama belum keluar setelah deadline; perlu eskalasi & rencana pemulihan.* |
+| 🔵 **Completed** | Program telah selesai dan seluruh output telah deliver. Tidak ada aktivitas yang masih open. |
+
+### Istilah Program & Atribut
+
+| Istilah | Penjelasan |
+|---------|------------|
+| **Program Kerja** | Kegiatan atau inisiatif yang direncanakan untuk mencapai target direktorat. Unit perencanaan terbesar di ATLAS. Satu Program dapat memiliki banyak Workstream. *Contoh: Audit Internal 2026.* |
+| **Kelompok (Scorecard / Non-Scorecard)** | Scorecard = program yang kontribusinya diukur lewat KPI direktorat/divisi. Non-Scorecard = program enabler yang mendukung Scorecard. |
+| **Pilar Strategis Keuangan** | Area strategis utama dalam pengelolaan keuangan. ATLAS menggunakan 5 pilar: Collecting More, Spending Better, Innovative Financing, Enabler, Non-Scorecard. |
+| **Output / Laporan** | Hasil konkret dari program kerja. *Contoh: dokumen, surat, laporan, sistem, kebijakan.* |
+| **Deadline** | Batas waktu penyelesaian output program kerja, dipilih dari tanggal yang disediakan saat planning. |
+| **PIC (Person in Charge)** | Individu yang bertanggung jawab utama atas pelaksanaan program, workstream, atau task. Umumnya Kepala Sub Divisi. |
+| **Assignee** | Pengguna yang ditugaskan untuk mengerjakan suatu Task. |
+| **Progress Terkini** | Status realisasi program pada periode pelaporan. Format yang disarankan: "Status + % capaian + keterangan singkat". *Contoh: On Track 75% — penyusunan draft selesai, menunggu reviu DHKM.* |
+| **Dukungan yang Dibutuhkan** | Permintaan bantuan spesifik agar program tetap on track, mengatasi kendala, atau dipercepat penyelesaiannya. Di ATLAS dapat diangkat lewat tombol "Butuh Dukungan Atasan". |
+| **Penugasan** | Tugas ad-hoc di luar struktur Program — diberikan langsung dari atasan ke bawahan, biasanya disertai bukti penyelesaian (file/link/catatan). |
+
+### Konsep ATLAS
 
 | Istilah | Penjelasan |
 |---------|------------|
 | **PDCA** | Siklus *Plan-Do-Check-Act* — kerangka kerja yang melandasi struktur sidebar ATLAS: Perencanaan → Eksekusi → Performance → Tindak Lanjut. |
-| **Program** | Proyek atau kegiatan strategis jangka menengah/panjang. Satu Program dapat memiliki banyak Workstream. Contoh: *Audit Internal 2026*. |
-| **Workstream** | Jalur kerja dalam satu Program — mengelompokkan Phase dan Task berdasarkan bidang atau tim. Contoh: *Audit Divisi Keuangan*. |
-| **Phase** | Tahapan utama dalam sebuah Workstream. Mengelompokkan Task yang saling berkaitan. Tampil sebagai container bernomor di tab Struktur. Contoh: *Pengumpulan Dokumen*. |
-| **Task** | Satu unit pekerjaan konkret di dalam sebuah Phase — memiliki status, assignee, prioritas, dan batas waktu. Muncul di **Papan Kerja (Execution)**. Contoh: *Kumpulkan laporan arus kas Q1*. |
-| **Subtask** | Checklist langkah-langkah di dalam sebuah Task. Tidak berdiri sendiri dan tidak muncul di Papan Kerja. Contoh: *Email ke treasury minta data Januari*. |
-| **Penugasan** | Tugas ad-hoc di luar struktur Program — diberikan langsung dari atasan ke bawahan, biasanya disertai bukti penyelesaian (file/link/catatan). |
+| **Workstream** | Jalur kerja dalam satu Program — mengelompokkan Phase dan Task berdasarkan bidang atau tim. *Contoh: Audit Divisi Keuangan.* |
+| **Phase** | Tahapan utama dalam sebuah Workstream. Mengelompokkan Task yang saling berkaitan. Tampil sebagai container bernomor di tab Struktur. *Contoh: Pengumpulan Dokumen.* |
+| **Task** | Satu unit pekerjaan konkret di dalam sebuah Phase — memiliki status, assignee, prioritas, dan batas waktu. Muncul di **Papan Kerja (Execution)**. *Contoh: Kumpulkan laporan arus kas Q1.* |
+| **Subtask** | Checklist langkah-langkah di dalam sebuah Task. Tidak berdiri sendiri dan tidak muncul di Papan Kerja. *Contoh: Email ke treasury minta data Januari.* |
+| **KPI** | *Key Performance Indicator* — indikator kinerja terukur yang dipantau secara berkala. |
+| **KPI Charter / Charter** | Tampilan satu halaman read-only Program — mirror format KPI Charter dengan tabel aktivitas bulanan, progress KPI, problem identification & corrective action, next step. |
+| **PICA** | *Problem · Identification · Corrective action · Action* — kerangka kerja rapat koordinasi yang menelusuri hambatan dan tindakan korektif. Pasangan field di Progress Log: apa masalahnya, dan tindakan korektif apa yang sudah/akan dilakukan. |
+| **Clear the Path** | Mekanisme eskalasi kendala ke atasan langsung. Otomatis routing ke supervisor, dengan opsi Commit / Reroute / Decline. |
+| **Eskalasi** | Permintaan dukungan ke atasan untuk membuka hambatan kerja (lihat *Clear the Path*). Bisa dibuat dari Blocker, Progress Log, Action Item, atau ad-hoc. |
 | **Blocker** | Hambatan yang menghalangi penyelesaian task — perlu dilaporkan agar PIC & atasan dapat menindaklanjuti. |
-| **Eskalasi** | Permintaan dukungan ke atasan untuk membuka hambatan kerja (*Clear the Path*). Bisa dibuat dari Blocker, Progress Log, Action Item, atau ad-hoc. |
-| **PIC** | *Person in Charge* — penanggung jawab suatu task, workstream, atau program. |
-| **Assignee** | Pengguna yang ditugaskan untuk mengerjakan suatu Task. |
-| **RSVP** | Konfirmasi kehadiran rapat: Hadir, Tidak Hadir, atau Delegasi (menunjuk pengganti). |
-| **Action Items** | Daftar tindak lanjut yang disepakati dalam rapat, lengkap dengan penanggung jawab dan batas waktu. |
-| **PICA** | *Problem · Identification · Corrective action · Action* — kerangka kerja rapat koordinasi yang menelusuri hambatan dan tindakan korektif. |
 | **Health Score** | Indikator kesehatan program (Green / Yellow / Red) yang dihitung otomatis dari workstream, KPI, task overdue, dan blocker aktif. |
 | **Scorecard** | Ringkasan ranking capaian KPI seluruh direktorat & divisi — surface eksekutif di modul Performance. |
-| **Charter** | Tampilan satu halaman read-only Program — mirror format KPI Charter dengan tabel aktivitas bulanan dan progress KPI. |
+| **RSVP** | Konfirmasi kehadiran rapat: Hadir, Tidak Hadir, atau Delegasi (menunjuk pengganti). |
+| **Action Items** | Daftar tindak lanjut yang disepakati dalam rapat, lengkap dengan penanggung jawab dan batas waktu. |
 | **Thread** | Rangkaian balasan dalam satu pesan di Channel — agar diskusi tidak campur dengan pesan lain. |
-| **KPI** | *Key Performance Indicator* — indikator kinerja terukur yang dipantau secara berkala. |
 
 
 ## Alur Proses Sistem
@@ -302,7 +327,7 @@ Seluruh pengguna mendarat di **Home** (`/`) — namun **konten Home berbeda per 
 | **Performance** | Executive Summary, Scorecard, KPI Direktorat, KPI Divisi, KPI Saya, KPI Individu | Check |
 | **Tindak Lanjut** | Rapat Koordinasi | Act |
 | **Komunikasi** | Channels | — |
-| **Akun** | Presence, Profile, Settings, Glossary | — |
+| **Akun** | Presence, Profile, Settings | — |
 | **Admin** *(ADMIN/SUPERADMIN)* | Companies, Positions, Users, Roles, Pilot Metrics, Thresholds | — |
 
 > 💡 Roadmap (visual timeline portofolio) dan halaman Fokus diakses lewat shortcut, breadcrumb, dan deep-link — tidak menempati slot sidebar tetap agar sidebar tetap ringkas.
@@ -317,7 +342,6 @@ Seluruh pengguna mendarat di **Home** (`/`) — namun **konten Home berbeda per 
 | OFFICER / ASISTEN | — | — | — | — | ✓ |
 
 > 💡 **KPI Individu** (browse semua karyawan) tersedia untuk semua jabatan via tombol pada Scorecard atau direct URL `/performance/individu`.
-> 💡 **Glossary** (`/glossary`) — daftar vokabulari ATLAS yang dapat dicari, mirror dari Glosarium Istilah di playbook ini. Diakses lewat grup Akun.
 
 **Status: ✅ Lengkap**
 
@@ -973,7 +997,7 @@ ATLAS memiliki sistem komunikasi internal — Channel untuk diskusi tim dan DM u
 **Status: ✅ Lengkap**
 
 
-## 20. Akun — Kehadiran, Profil, Pengaturan, Glossary
+## 20. Akun — Kehadiran, Profil, Pengaturan
 
 **Siapa yang bisa:** Semua pengguna (lihat & update status sendiri) · BOD, KADIV (pantau tim)
 
@@ -994,11 +1018,7 @@ Buka **Profile** untuk melihat hierarki jabatan Anda, ubah foto, dan ganti passw
 
 Workspace preferences — termasuk theme (light/dark) dan notifikasi.
 
-### Glossary (Vokabulari ATLAS)
-
-Halaman `/glossary` — referensi cepat untuk istilah-istilah yang dipakai di ATLAS (Program, Workstream, Phase, PICA, Eskalasi, dst). Konten mirror dari Glosarium Istilah di atas playbook ini, dengan filter pencarian agar mudah dicari saat onboarding atau saat membaca laporan.
-
-Akses: sidebar grup **Akun** → **Glossary**.
+> 💡 **Vokabulari ATLAS** — referensi istilah Program, Workstream, PICA, Eskalasi, status (On Track / At Risk / Terlambat / Completed), dst tersedia di [Glosarium Istilah](#glosarium-istilah) di awal playbook ini. Diakses lewat menu Playbook di popover akun.
 
 **Status: ✅ Lengkap**
 
@@ -1070,7 +1090,6 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 | Navigasi PDCA per Role | ✅ | ✅ | — | ✅ |
 | Home (Ringkasan Eksekutif) | ✅ | ✅ | ✅ | ✅ |
 | Fokus (Inbox) + humanized notif source & verb-specific CTA | ✅ | ✅ | ✅ | ✅ |
-| Glossary page (in-app vokabulari `/glossary`) | — | ✅ | — | ✅ |
 | Program CRUD | ✅ | ✅ | ✅ | ✅ |
 | Program Approval (DRAFT→ACTIVE) + UX polish | ✅ | ✅ | ✅ | ✅ |
 | Program Governance (audit + notify on post-active commitment edit) | ✅ | ✅ | ✅ | ✅ |

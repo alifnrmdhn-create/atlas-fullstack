@@ -155,15 +155,6 @@ function IconSettings() {
     </svg>
   )
 }
-function IconGlossary() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 2.5h7.5a2 2 0 0 1 2 2v9H4.5a1.5 1.5 0 0 1-1.5-1.5z" />
-      <path d="M3 11.5h9.5" />
-      <path d="M5.5 5.5h5M5.5 8h3.5" />
-    </svg>
-  )
-}
 function IconChannels() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
@@ -272,7 +263,6 @@ function prefetchRoute(path: string) {
     '/laporan-bulanan': () => import('../Pages/MonthlyReportsView'),
     '/laporan-risiko': () => import('../Pages/RiskReportsView'),
     '/playbook': () => import('../Pages/PlaybookView'),
-    '/glossary': () => import('../Pages/GlossaryView'),
     '/executive': () => import('../Pages/ExecutiveSummaryView'),
     '/presence': () => import('../Pages/PresenceView'),
     '/profile': () => import('../Pages/ProfileView'),
@@ -920,7 +910,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
     presence:    { path: '/presence',  label: 'Presence',         caption: 'Live team availability',            icon: IconPresence   },
     profile:     { path: '/profile',   label: 'Profile',          caption: 'Account & position hierarchy',      icon: IconProfile    },
     settings:    { path: '/settings',  label: 'Settings',         caption: 'Workspace preferences',             icon: IconSettings   },
-    glossary:    { path: '/glossary',  label: 'Glossary',         caption: 'Vokabulari & istilah ATLAS',        icon: IconGlossary   },
   } satisfies Record<string, NavItem>
 
   // ── Sidebar groups — PDCA-aligned per CLAUDE.md ──────────────────────────
@@ -940,7 +929,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const grpPerformanceMin     = { label: 'Performance', items: [NI.perfSaya] }
   const grpTindakLanjut       = { label: 'Tindak Lanjut', items: [NI.schedule] }
   const grpKomunikasi         = { label: 'Komunikasi', items: [NI.channels] }
-  const grpAkun               = { label: 'Akun',       items: [NI.presence, NI.profile, NI.settings, NI.glossary] }
+  const grpAkun               = { label: 'Akun',       items: [NI.presence, NI.profile, NI.settings] }
   const grpAdmin = {
     label: 'Admin',
     items: [
@@ -1008,7 +997,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     '/': 'Home', '/programs': 'Programs',
     '/goals': 'Goals & KPI', '/activity': 'Team Activity', '/execution': 'Execution', '/penugasan': 'Penugasan', '/reports': 'Analytics', '/laporan-bulanan': 'Monthly Reports', '/laporan-risiko': 'Risk Reports',
     '/fokus': 'Focus', '/channels': 'Channels', '/jadwal': 'Rapat Koordinasi', '/search': 'Search',
-    '/presence': 'Presence', '/profile': 'Profile', '/settings': 'Settings', '/glossary': 'Glossary',
+    '/presence': 'Presence', '/profile': 'Profile', '/settings': 'Settings',
     '/executive': 'Executive Summary',
     '/admin/users': 'Users', '/admin/positions': 'Positions',
     '/admin/orgs': 'Companies', '/admin/roles': 'Roles & Permissions',
@@ -1286,12 +1275,13 @@ export function AppShell({ children }: { children?: ReactNode }) {
            * title fades in once user scrolls past the page heading. */}
           {(() => {
             const now = new Date()
-            // Sentence case + simpler density. WEEK-N MEI dihapus karena redundant
-            // dengan tanggal yang sudah ada di kiri. Q + W{ISO-week} cukup untuk
-            // konteks PDCA tanpa overload visual ala enterprise dashboard.
+            // Hybrid: sentence case (bukan UPPERCASE) + dua granularitas week.
+            // Week-of-month untuk konteks ritme bulanan (cocok dengan ProgressLog mingguan),
+            // ISO week-of-year sebagai anchor universal kalender perusahaan.
             const dateStr = now.toLocaleDateString('id-ID', {
               weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
             })
+            const monthShort = now.toLocaleDateString('id-ID', { month: 'short' })
             const quarter = Math.floor(now.getMonth() / 3) + 1
             // ISO-week (Mon=1) — week containing first Thursday of the year.
             const tmp = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
@@ -1299,6 +1289,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
             tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum)
             const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1))
             const weekOfYear = Math.ceil(((tmp.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+            // Week-of-month (Mon-aligned): kalender-week ke berapa di bulan ini.
+            const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+            const firstISO = firstOfMonth.getDay() || 7 // Mon=1 … Sun=7
+            const weekOfMonth = Math.ceil((now.getDate() + firstISO - 1) / 7)
             const liveLabel = realtimeStatus === 'connected' ? 'Live'
               : realtimeStatus === 'connecting' ? 'Syncing'
               : realtimeStatus === 'disconnected' ? 'Offline'
@@ -1310,7 +1304,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
               <div className="topbar__meta">
                 <span className="topbar__meta-date">{dateStr}</span>
                 <span className="topbar__meta-sep" aria-hidden>·</span>
-                <span className="topbar__meta-period">Q{quarter} · W{weekOfYear}</span>
+                <span className="topbar__meta-period">Q{quarter} · W{weekOfMonth} {monthShort} · W{weekOfYear}</span>
                 {liveLabel ? (
                   <span
                     className={`topbar__live ${liveClass}`}

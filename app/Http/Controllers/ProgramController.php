@@ -251,11 +251,21 @@ class ProgramController extends Controller
             'linkedChannelId' => 'nullable|integer|exists:Channel,id',
             'picPersonIds' => 'nullable|array',
             'picPersonIds.*' => 'integer|exists:User,id',
+            'ownerId' => 'nullable|integer|exists:User,id',
             'kelompok' => 'nullable|in:SCORECARD,NON_SCORECARD',
             'pilarStrategis' => 'nullable|in:' . implode(',', array_keys(config('atlas-thresholds.pillars', []))),
             'progresTerkini' => 'nullable|string|max:2000',
             'dukunganDibutuhkan' => 'nullable|string|max:2000',
         ]);
+
+        // ownerId change is governance-sensitive — only KADIV or admin can reassign PIC Utama.
+        if (array_key_exists('ownerId', $data) && (int) $data['ownerId'] !== (int) $program->ownerId) {
+            $role = strtoupper($request->user()->roleType ?? '');
+            $isKadivOrAbove = $isAdmin || $role === 'KADIV';
+            if (!$isKadivOrAbove) {
+                unset($data['ownerId']);
+            }
+        }
 
         // Snapshot SEBELUM update — kalau program ACTIVE, deteksi perubahan
         // commitment field untuk audit log + notif KADIV (Opsi A governance).

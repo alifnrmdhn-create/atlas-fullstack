@@ -152,18 +152,26 @@ class WorkspaceController extends Controller
     {
         $user = $request->user();
 
+        // Archived program → workstream/task/blocker tetap ada di DB tapi tidak boleh
+        // muncul di Focus (konsisten dengan Portfolio yang menyembunyikannya, dan
+        // dengan fix Pulse di 679f2cd).
+        $notArchived = fn ($q) => $q->whereNull('archivedAt');
+
         return response()->json(['data' => [
             'role' => $user->roleType,
             'tasks' => Task::query()
                 ->with(['workstream.program:id,code,name,healthStatus,approvalStatus', 'assignee:id,name,roleType,avatarUrl'])
+                ->whereHas('workstream.program', $notArchived)
                 ->where('assignedTo', $user->id)
                 ->orderBy('targetCompletion')
                 ->limit(30)
                 ->get(),
             'blockers' => Blocker::query()
                 ->with(['task.workstream.program:id,code,name,healthStatus,approvalStatus'])
-                ->where('assignedTo', $user->id)
-                ->orWhere('createdBy', $user->id)
+                ->whereHas('task.workstream.program', $notArchived)
+                ->where(fn ($q) => $q
+                    ->where('assignedTo', $user->id)
+                    ->orWhere('createdBy', $user->id))
                 ->orderByDesc('createdAt')
                 ->limit(30)
                 ->get(),
