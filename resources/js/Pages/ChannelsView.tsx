@@ -721,17 +721,30 @@ export function ChannelsView({
   // URL unfurl cache: url → UnfurlData | null (null = fetch in progress or failed)
   const [unfurlCache, setUnfurlCache] = useState<Map<string, UnfurlData | 'loading' | 'error'>>(new Map())
   const apiBase = (typeof import.meta !== 'undefined' && (import.meta as { env?: Record<string, string> }).env?.VITE_API_URL) ?? ''
+  // Cancel in-flight unfurl fetches on channel change / unmount so setState
+  // never runs after the component is gone.
+  const unfurlAbortRef = useRef<AbortController | null>(null)
 
   const fetchUnfurl = (url: string) => {
     if (unfurlCache.has(url)) return
     setUnfurlCache((prev) => new Map(prev).set(url, 'loading'))
+    if (!unfurlAbortRef.current) unfurlAbortRef.current = new AbortController()
+    const signal = unfurlAbortRef.current.signal
     fetch(`${apiBase}/unfurl?url=${encodeURIComponent(url)}`, {
       credentials: 'same-origin',
       headers: { Accept: 'application/json' },
+      signal,
     })
       .then((r) => r.json() as Promise<{ data: UnfurlData }>)
       .then(({ data }) => setUnfurlCache((prev) => new Map(prev).set(url, data)))
-      .catch((err) => { console.error('[Atlas] Gagal unfurl URL:', err); setUnfurlCache((prev) => new Map(prev).set(url, 'error')) })
+      .catch((err) => {
+        if (err?.name === 'AbortError') {
+          // Evict stale 'loading' so a return to this channel can retry.
+          setUnfurlCache((prev) => { const next = new Map(prev); next.delete(url); return next })
+          return
+        }
+        setUnfurlCache((prev) => new Map(prev).set(url, 'error'))
+      })
   }
 
   // Extract first URL from message content
@@ -756,7 +769,12 @@ export function ChannelsView({
     setPendingAttachments([])
     setUploadError(null)
     setShowFormatting(false)
+    unfurlAbortRef.current?.abort()
+    unfurlAbortRef.current = null
   }, [selectedChannelId])
+
+  // Abort any in-flight unfurl on unmount.
+  useEffect(() => () => { unfurlAbortRef.current?.abort() }, [])
 
   // ── Scroll management ────────────────────────────────────────
   const streamRef = useRef<HTMLDivElement>(null)

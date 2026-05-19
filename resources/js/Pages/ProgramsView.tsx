@@ -1003,10 +1003,15 @@ export function ProgramsView() {
                   {filteredPortfolio.length > 0 ? (
                     <div className="program-roster">
                       <div className="program-roster__header" aria-hidden="true">
-                        <span>Program</span>
-                        <span>Status</span>
-                        <span>Progress</span>
-                        <span>PIC</span>
+                        <div className="program-roster__header-main">
+                          <span>Program</span>
+                          <span>Status</span>
+                          <span>Progress</span>
+                          <span>PIC</span>
+                        </div>
+                        {/* Spacer mengikuti area Charter btn + kebab di row, supaya
+                            kolom header benar-benar align dengan kolom konten. */}
+                        <span className="program-roster__header-actions-spacer" aria-hidden="true" />
                       </div>
                       {filteredPortfolio.map((prog) => {
                         const health = normalizeHealthStatus(prog.healthStatus)

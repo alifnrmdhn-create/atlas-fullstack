@@ -45,6 +45,7 @@ class ChannelController extends Controller
         $channel = Channel::query()->with([
             'members.user:id,name,avatarUrl,roleType,positionTitle',
         ])->findOrFail($id);
+        $this->requireChannelReadAccess($request, $channel);
         if ($request->expectsJson()) {
             return response()->json([
                 'channel' => $channel,
@@ -73,21 +74,26 @@ class ChannelController extends Controller
             ->where('type', 'PUBLIC')
             ->withCount(['members', 'messages'])
             ->orderBy('name')
-            ->get()
-            ->map(fn ($c) => [
+            ->get();
+
+        $memberOfIds = ChannelMember::query()
+            ->where('userId', $userId)
+            ->whereIn('channelId', $channels->pluck('id'))
+            ->pluck('channelId')
+            ->all();
+        $memberSet = array_flip($memberOfIds);
+
+        return response()->json([
+            'data' => $channels->map(fn ($c) => [
                 'id' => $c->id,
                 'name' => $c->name,
                 'description' => $c->description,
                 'type' => $c->type,
                 'memberCount' => $c->members_count,
                 'messageCount' => $c->messages_count,
-                'isMember' => ChannelMember::query()
-                    ->where('channelId', $c->id)
-                    ->where('userId', $userId)
-                    ->exists(),
-            ]);
-
-        return response()->json(['data' => $channels]);
+                'isMember' => isset($memberSet[$c->id]),
+            ]),
+        ]);
     }
 
     // ── Mutations ────────────────────────────────────────────────────────────
@@ -143,6 +149,9 @@ class ChannelController extends Controller
             'topicType' => 'nullable|string|max:40',
         ]);
 
+        $channel = Channel::findOrFail($id);
+        $this->requireChannelOwner($request, $channel);
+
         Channel::query()->where('id', $id)->update($data);
         $updated = Channel::findOrFail($id);
 
@@ -159,6 +168,9 @@ class ChannelController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
+        $channel = Channel::findOrFail($id);
+        $this->requireChannelOwner($request, $channel);
+
         $memberIds = ChannelMember::where('channelId', $id)->pluck('userId')->all();
         Channel::query()->where('id', $id)->update(['isArchived' => true]);
 
@@ -238,6 +250,21 @@ class ChannelController extends Controller
 
     public function join(Request $request, int $id): JsonResponse|RedirectResponse
     {
+        $channel = Channel::findOrFail($id);
+        $isAdmin = RolePolicy::isAdminOrAbove($request->user()->roleType);
+
+        if ($channel->isArchived) {
+            return $this->validationError($request, 'Channel sudah diarsipkan.');
+        }
+        if (!$isAdmin) {
+            if ($channel->type !== 'PUBLIC') {
+                abort(403, 'Channel privat hanya bisa diakses melalui undangan.');
+            }
+            if (preg_match('/^dm-\d+-\d+$/', (string) $channel->name)) {
+                abort(403, 'Direct message tidak mendukung join terbuka.');
+            }
+        }
+
         $userId = $request->user()->id;
         $member = ChannelMember::updateOrCreate(
             ['channelId' => $id, 'userId' => $userId],
@@ -310,6 +337,12 @@ class ChannelController extends Controller
     public function toggleMute(Request $request, int $id, int $userId): JsonResponse|RedirectResponse
     {
         $data = $request->validate(['isMuted' => 'required|boolean']);
+        $actor = $request->user();
+        $isAdmin = RolePolicy::isAdminOrAbove($actor->roleType);
+        if (!$isAdmin && $actor->id !== $userId) {
+            abort(403, 'Anda hanya dapat mengubah notifikasi channel milik sendiri.');
+        }
+
         ChannelMember::where('channelId', $id)
             ->where('userId', $userId)
             ->update(['isMuted' => $data['isMuted']]);
@@ -322,6 +355,27 @@ class ChannelController extends Controller
     }
 
     // ── Helper ───────────────────────────────────────────────────────────────
+
+    private function requireChannelOwner(Request $request, Channel $channel): void
+    {
+        $user = $request->user();
+        if (RolePolicy::isAdminOrAbove($user->roleType)) return;
+        if ($channel->createdBy === $user->id) return;
+        abort(403, 'Hanya pembuat channel atau admin yang dapat melakukan aksi ini.');
+    }
+
+    private function requireChannelReadAccess(Request $request, Channel $channel): void
+    {
+        $user = $request->user();
+        if (RolePolicy::isAdminOrAbove($user->roleType)) return;
+        if ($channel->type === 'PUBLIC' && !$channel->isArchived) return;
+        $isMember = ChannelMember::where('channelId', $channel->id)
+            ->where('userId', $user->id)
+            ->exists();
+        if (!$isMember) {
+            abort(403, 'Anda tidak memiliki akses ke channel ini.');
+        }
+    }
 
     private function listForUser(int $userId, string $roleType): array
     {

@@ -1026,19 +1026,13 @@
   box-shadow: none;
 }
 
-/* Identity grows (1fr), state intrinsic ~140px, progress fixed cluster ~340px,
- * owner intrinsic ~200px. This stops the progress column from exploding into
- * empty space on wide viewports while keeping identity (name + meta) the
- * dominant column. */
-/* Column header band — column labels above the rows. Same grid as rows
- * so labels align with column content. Quiet typography (uppercase,
- * letter-spaced) signals "this is a table header". */
+/* Column header — flex container yang mirror row layout (program-row__main
+ * + charter btn + kebab). Header-main pakai grid yang sama persis dengan
+ * program-row__main, dan spacer mengganti ruang charter+kebab supaya kolom
+ * lurus dari header sampai data terakhir. */
 .programs-v2 .program-roster__header {
-  display: grid;
-  grid-template-columns: minmax(280px, 1fr) 120px 200px 160px;
-  gap: 20px;
-  align-items: center;
-  padding: 10px 18px 10px 18px;
+  display: flex;
+  align-items: stretch;
   border-bottom: 1px solid var(--ds-border-subtle);
   font-size: 11px;
   font-weight: 500;
@@ -1046,16 +1040,33 @@
   letter-spacing: 0.05em;
   color: var(--ds-text-tertiary);
 }
+.programs-v2 .program-roster__header-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 120px 200px 160px;
+  gap: 20px;
+  align-items: center;
+  /* Padding mirror persis dengan program-row__main supaya kolom 1 mulai di
+     x yang sama dan kolom terakhir berakhir di x yang sama. */
+  padding: 10px 14px 10px 18px;
+}
+.programs-v2 .program-roster__header-actions-spacer {
+  flex-shrink: 0;
+  /* Charter btn (~80px text+icon+padding) + 4px margin-right + kebab 44px = 128px.
+     Hardcode karena charter btn dimensi konsisten (fixed text "Charter" + arrow). */
+  width: 128px;
+}
 
 @media (max-width: 1280px) {
-  .programs-v2 .program-roster__header {
+  .programs-v2 .program-roster__header-main {
     grid-template-columns: minmax(240px, 1fr) 110px 180px 150px;
     gap: 16px;
   }
 }
 
 @media (max-width: 1024px) {
-  .programs-v2 .program-roster__header {
+  .programs-v2 .program-roster__header-main {
     grid-template-columns: minmax(220px, 1fr) 100px 140px 130px;
     gap: 12px;
   }
@@ -1264,17 +1275,17 @@
 .programs-v2 .program-row__approval-tag--blue   { color: var(--ds-text-secondary); }
 .programs-v2 .program-row__approval-tag--red    { color: var(--ds-red-600); }
 
-/* Progress column — bar + value cluster fills column width.
- * Bar takes remaining space, value pinned right with min-width so values
- * align across rows. Empty state ("Belum dimulai") right-aligned to same
- * x-coord as progress-value via margin-left: auto. */
+/* Progress column — bar+value cluster atau "Belum dimulai" text.
+ * Konsisten LEFT-aligned: header "PROGRESS" sebar-data start di x yang
+ * sama. Bar mengisi sisa column dari kiri, value angka di kanan-bar. */
 .programs-v2 .program-row__progress {
   display: flex;
   align-items: center;
   min-width: 0;
 }
 .programs-v2 .program-row__progress-main {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .programs-v2 .program-row__eyebrow {
@@ -1323,10 +1334,10 @@
   text-align: right;
 }
 
-/* Empty progress — quiet but clearly visible "not started" hint.
- * Sits at right of column to mirror progress-value position in non-empty rows. */
+/* Empty progress — left-aligned di kolom (no margin-left: auto), sehingga
+ * teks "Belum dimulai" start di x yang sama dengan bar pada filled rows.
+ * Konsistensi visual antar baris penting untuk skanning. */
 .programs-v2 .program-row__progress-empty {
-  margin-left: auto;
   font-size: 12.5px;
   font-weight: 400;
   color: var(--ds-text-secondary);

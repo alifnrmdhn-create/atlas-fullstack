@@ -20,6 +20,7 @@ class ChannelMessageController extends Controller
     // GET /channels/:channelId/messages
     public function index(Request $request, int $channelId)
     {
+        $this->requireChannelAccess($request, $channelId, write: false);
         $userId = $request->user()->id;
         $limit = min((int) ($request->query('limit', 50)), 200);
         $offset = max((int) ($request->query('offset', 0)), 0);
@@ -56,6 +57,7 @@ class ChannelMessageController extends Controller
             'attachments' => 'nullable|array',
         ]);
 
+        $this->requireChannelAccess($request, $channelId, write: true);
         $userId = $request->user()->id;
 
         $message = DB::transaction(function () use ($channelId, $userId, $data) {
@@ -193,6 +195,7 @@ class ChannelMessageController extends Controller
     // GET /channels/:channelId/messages/:messageId/thread
     public function thread(Request $request, int $channelId, int $messageId)
     {
+        $this->requireChannelAccess($request, $channelId, write: false);
         $userId = $request->user()->id;
         $hiddenIds = ChannelMessageHidden::where('userId', $userId)->pluck('messageId');
 
@@ -216,6 +219,7 @@ class ChannelMessageController extends Controller
     public function addReaction(Request $request, int $channelId, int $messageId): JsonResponse|RedirectResponse
     {
         $data = $request->validate(['emoji' => 'required|string|max:10']);
+        $this->requireChannelAccess($request, $channelId, write: true);
         $this->toggleReaction($channelId, $messageId, $request->user()->id, $data['emoji'], false);
 
         if ($request->expectsJson()) {
@@ -228,6 +232,7 @@ class ChannelMessageController extends Controller
     // DELETE /channels/:channelId/messages/:messageId/reactions/:emoji
     public function removeReaction(Request $request, int $channelId, int $messageId, string $emoji): JsonResponse|RedirectResponse
     {
+        $this->requireChannelAccess($request, $channelId, write: true);
         $this->toggleReaction($channelId, $messageId, $request->user()->id, $emoji, true);
 
         if ($request->expectsJson()) {
@@ -240,6 +245,7 @@ class ChannelMessageController extends Controller
     // PUT /channels/:channelId/messages/:messageId/pin
     public function togglePin(Request $request, int $channelId, int $messageId): JsonResponse|RedirectResponse
     {
+        $this->requireChannelAccess($request, $channelId, write: true);
         $msg = ChannelMessage::where('channelId', $channelId)->findOrFail($messageId);
         $msg->update(['isPinned' => !$msg->isPinned]);
 
@@ -257,6 +263,31 @@ class ChannelMessageController extends Controller
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Gate every channel-scoped operation. Reads allow PUBLIC channels for any
+     * authenticated user (mirrors ChannelController::listForUser); writes always
+     * require explicit membership (or admin) — so sending into a PUBLIC channel
+     * still requires joining first.
+     */
+    private function requireChannelAccess(Request $request, int $channelId, bool $write): void
+    {
+        $channel = Channel::findOrFail($channelId);
+        $user = $request->user();
+        if (RolePolicy::isAdminOrAbove($user->roleType)) return;
+
+        $isMember = ChannelMember::where('channelId', $channelId)
+            ->where('userId', $user->id)
+            ->exists();
+
+        if ($write) {
+            if (!$isMember) abort(403, 'Hanya anggota channel yang dapat melakukan aksi ini.');
+            return;
+        }
+        if ($isMember) return;
+        if ($channel->type === 'PUBLIC' && !$channel->isArchived) return;
+        abort(403, 'Anda tidak memiliki akses ke channel ini.');
+    }
 
     private function toggleReaction(int $channelId, int $messageId, int $userId, string $emoji, bool $remove): void
     {
