@@ -339,9 +339,9 @@ Route::middleware('auth')->group(function () {
         Route::patch('/positions/{id}/assign',[OrganizationController::class, 'assignPosition'])->name('positions.assign');
     });
 
-    // ── Real-time SSE + Presence ──────────────────────────────────────────────
-    Route::get('/realtime/stream',                  [RealtimeController::class, 'stream'])->name('realtime.stream');
-    // Polling fallback — short-lived request, works behind any proxy. Runs alongside SSE.
+    // ── Real-time event delivery (polling) + Presence ─────────────────────────
+    // SSE di-drop karena tiap koneksi menahan 1 PHP thread sampai TTL — exhaust
+    // pool dengan beberapa user simultan. Polling: tiap request short-lived.
     Route::get('/realtime/poll',                    [RealtimeController::class, 'poll'])->name('realtime.poll');
     Route::post('/realtime/ping',                   [RealtimeController::class, 'ping'])->name('realtime.ping');
     Route::post('/realtime/typing/{channelId}',     [RealtimeController::class, 'typing'])->name('realtime.typing');

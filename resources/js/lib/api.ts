@@ -141,27 +141,6 @@ export const api = {
     }),
 }
 
-function envValue(name: string): string | undefined {
-    return (import.meta as { env?: Record<string, string | undefined> }).env?.[name]
-}
-
-function truthy(value: string | undefined): boolean {
-    return ['1', 'true', 'yes', 'on'].includes((value ?? '').toLowerCase())
-}
-
-function shouldEnableRealtimeSse(): boolean {
-    const flag = envValue('VITE_REALTIME_SSE')
-    if (flag !== undefined) return truthy(flag)
-    if (typeof window === 'undefined') return true
-
-    return !['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname)
-}
-
-export const realtime = {
-    enabled: shouldEnableRealtimeSse,
-    streamUrl: () => shouldEnableRealtimeSse() ? '/realtime/stream' : '',
-}
-
 // Kompatibilitas dengan kode lama yang masih import sessionStorage
 // Di Laravel session auth, frontend tidak perlu manage token — hanya stub agar kompat.
 export const sessionStorage = {

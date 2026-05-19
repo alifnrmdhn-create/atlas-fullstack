@@ -8,118 +8,25 @@ use App\Models\UserSession;
 use App\Models\UserStatus;
 use App\Services\BroadcastService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * SSE endpoint untuk push event real-time ke browser.
+ * Endpoint real-time untuk push event ke browser via polling.
  *
- * Arsitektur: setiap mutation endpoint INSERT event ke tabel broadcast_events.
- * Controller ini polling tabel itu setiap ~2 detik, filter by userId, lalu
- * stream ke client via Server-Sent Events.
+ * Arsitektur: setiap mutation endpoint INSERT ke tabel `broadcast_events`.
+ * Frontend GET /realtime/poll setiap 2 detik dengan ?since={lastEventId};
+ * controller balikkan event id > since yang relevan untuk user.
  *
- * Lifecycle satu koneksi:
- *   1. Mark UserStatus = ONLINE (kalau sebelumnya OFFLINE)
- *   2. Create UserSession record
- *   3. Loop (maks 5 menit per koneksi — client reconnect):
- *        - Query events id > lastEventId, terkait user
- *        - Stream as SSE
- *        - Heartbeat tiap 20 detik
- *        - Abort kalau client disconnect
- *   4. On disconnect: close UserSession (fire-and-forget via shutdown callback
- *      tidak reliable di PHP; ghost-cleanup command yang handle ini)
+ * SSE sempat dipakai tapi di-drop: di FrankenPHP `php-server` mode (dan PHP
+ * shared hosting umumnya), 1 koneksi SSE menahan 1 thread PHP sampai TTL.
+ * Beberapa user simultan langsung exhaust thread pool. Polling murni: tiap
+ * request short-lived, thread cepat balik ke pool, scaling jauh lebih predictable.
  */
 class RealtimeController extends Controller
 {
-    private const STREAM_TTL_SECONDS = 90;        // Reconnect lebih sering — lebih ramah proxy edge yang time-out long connections
-    private const POLL_INTERVAL_US   = 400_000;   // 0.4 detik — typing indicator perlu sub-second delivery via SSE
-    private const HEARTBEAT_SECONDS  = 10;        // Keepalive lebih sering supaya proxy tidak menganggap idle/buffered
-    private const IDLE_THRESHOLD_MS  = 90_000;    // 90 detik gap = sesi baru
-
-    public function stream(Request $request): StreamedResponse
-    {
-        $user = $request->user();
-        abort_unless($user, 401);
-
-        // Set presence ONLINE + create session (sebelum stream mulai)
-        $this->markOnline($user->id);
-
-        return response()->stream(function () use ($user) {
-            // Release session file lock immediately — file-based sessions block
-            // concurrent requests from the same browser until the lock is freed.
-            // Auth data is already captured in $user above, so this is safe.
-            session()->save();
-
-            // Disable PHP output buffering + time limit
-            @set_time_limit(self::STREAM_TTL_SECONDS + 30);
-            @ini_set('output_buffering', 'off');
-            @ini_set('zlib.output_compression', 'off');
-            @ini_set('implicit_flush', '1');
-            @ob_implicit_flush(true);
-            while (ob_get_level()) ob_end_flush();
-
-            // 2KB padding di awal — beberapa proxy/edge butuh response body cukup besar
-            // sebelum mulai meneruskan stream. Komentar SSE (": ...") di-ignore oleh client.
-            echo ': ' . str_repeat(' ', 2048) . "\n\n";
-            flush();
-
-            $this->sendEvent('workspace:ready', [
-                'connectedAt' => now()->toIso8601String(),
-                'userId' => $user->id,
-            ]);
-
-            $lastEventId = (int) (BroadcastEvent::max('id') ?? 0);
-            $lastHeartbeat = time();
-            $startTime = time();
-
-            while (time() - $startTime < self::STREAM_TTL_SECONDS) {
-                if (connection_aborted()) break;
-
-                // Query event terbaru yang relevan untuk user ini
-                $events = BroadcastEvent::query()
-                    ->where('id', '>', $lastEventId)
-                    ->where(function ($q) use ($user) {
-                        $q->whereNull('userIds')
-                          ->orWhereRaw('"userIds"::jsonb @> ?::jsonb', [json_encode($user->id)]);
-                    })
-                    ->orderBy('id')
-                    ->limit(100)
-                    ->get(['id', 'eventType', 'payload']);
-
-                foreach ($events as $event) {
-                    $this->sendEvent($event->eventType, $event->payload, $event->id);
-                    $lastEventId = $event->id;
-                }
-
-                // Heartbeat (comment line "SSE: keep-alive")
-                if (time() - $lastHeartbeat >= self::HEARTBEAT_SECONDS) {
-                    echo ": heartbeat\n\n";
-                    flush();
-                    $lastHeartbeat = time();
-                }
-
-                usleep(self::POLL_INTERVAL_US);
-            }
-
-            // Stream lifetime habis → client reconnect otomatis
-            $this->sendEvent('workspace:reconnect', [
-                'reason' => 'ttl',
-            ]);
-        }, 200, [
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache, no-transform',
-            'Connection' => 'keep-alive',
-            'X-Accel-Buffering' => 'no',
-        ]);
-    }
+    private const IDLE_THRESHOLD_MS = 90_000;    // 90 detik gap = sesi baru
 
     /**
-     * GET /realtime/poll?since=N — polling fallback untuk environment di mana
-     * SSE tidak reliable (mis. `php artisan serve` single-process, proxy buffering).
-     * Mengembalikan event yang relevan untuk user dengan id > $since.
-     *
-     * Frontend menjalankannya berdampingan dengan SSE; dedup terjadi di handler
-     * (mis. notifications.some(n => n.id === event.notification.id)).
+     * GET /realtime/poll?since=N — kembalikan event id > N yang relevan untuk user.
      */
     public function poll(Request $request)
     {
@@ -255,29 +162,4 @@ class RealtimeController extends Controller
         return response()->noContent();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private function sendEvent(string $event, mixed $data, ?int $id = null): void
-    {
-        if ($id !== null) echo "id: {$id}\n";
-        echo "event: {$event}\n";
-        echo 'data: ' . json_encode($data, JSON_UNESCAPED_UNICODE) . "\n\n";
-        flush();
-    }
-
-    private function markOnline(int $userId): void
-    {
-        $now = now();
-
-        $current = UserStatus::where('userId', $userId)->first();
-        $shouldGoOnline = !$current || $current->status === 'OFFLINE';
-
-        if ($shouldGoOnline) {
-            UserStatus::updateOrCreate(
-                ['userId' => $userId],
-                ['status' => 'ONLINE', 'lastActivityAt' => $now]
-            );
-            BroadcastService::presence($userId, 'ONLINE', $now->toIso8601String());
-        }
-    }
 }

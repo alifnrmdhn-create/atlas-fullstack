@@ -2,7 +2,7 @@ import { createContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { usePresencePing } from '../hooks/usePresencePing'
-import { api, realtime } from '../lib/api'
+import { api } from '../lib/api'
 import { RealtimeDispatcher, RealtimeDispatcherContext } from './RealtimeDispatcher'
 
 export type RefreshTicks = {
@@ -60,33 +60,24 @@ const TICK_MAP: Record<string, keyof RefreshTicks> = {
     'channel:channel:archived':   'channel',
 }
 
-// Semua event types yang di-listen dari SSE stream
-const EVENT_TYPES = Object.keys(TICK_MAP).concat([
-    'workspace:update',
-    'channel:typing:start', 'channel:typing:stop',
-    'workspace:ready', 'workspace:reconnect',
-])
-
 export type RealtimeStatus = 'connecting' | 'connected' | 'disconnected' | 'idle'
 
 export type RealtimeContextValue = { ticks: RefreshTicks; status: RealtimeStatus }
 
 export const RealtimeContext = createContext<RealtimeContextValue | null>(null)
 
-const POLL_INTERVAL_MS = 2000          // polling fallback cadence — pendek supaya typing & message terasa realtime saat SSE buffered
+const POLL_INTERVAL_MS = 2000          // polling cadence — 2s cukup realtime untuk notifikasi & presence; ribuan user tetap aman di FrankenPHP
 const POLL_SEED_SENTINEL = 2_147_483_647 // max int — seeds lastEventId tanpa fetch event lama
 
 type PollResponse = { events?: { id: number; eventType: string; payload: unknown }[]; lastEventId?: number }
 
 /**
- * Single-owner SSE EventSource + polling fallback + ticks aggregator + presence ping.
- * Inject di `app.tsx` supaya seluruh aplikasi punya akses ke real-time state
- * via `useRealtime()` (coarse-grained ticks) atau `useRealtimeEvents()` (spesifik).
+ * Polling-based realtime dispatcher + ticks aggregator + presence ping.
  *
- * Dua jalur delivery jalan paralel:
- *   - SSE: long-lived stream, low latency (<1s).
- *   - Polling: HTTP GET /realtime/poll setiap 4 detik. Catch-up kalau SSE
- *     gagal/buffered (umum di belakang reverse proxy seperti Railway edge).
+ * SSE pernah dipakai paralel dengan polling, tapi di FrankenPHP `php-server` mode
+ * tiap koneksi SSE menahan 1 PHP thread sampai TTL — jadi thread starvation
+ * dengan beberapa user simultan. Polling murni: tiap request <100ms, thread
+ * cepat balik, throughput jauh lebih tinggi di shared hosting / Railway.
  *
  * Dedup berbasis event id (`seenIdsRef`) supaya handler tidak fire dua kali.
  *
@@ -126,63 +117,20 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         }
     }
 
-    // SSE ─────────────────────────────────────────────────────────────────
+    // Polling pipeline ─────────────────────────────────────────────────────
+    // Satu-satunya jalur delivery event. Tiap poll request short-lived (<100ms),
+    // jadi thread PHP cepat balik ke pool — ribuan user simultan tetap aman.
     useEffect(() => {
-        if (!enabled || !realtime.enabled()) {
+        if (!enabled) {
             setStatus('idle')
             return
         }
 
-        let source: EventSource | null = null
-        let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-        let reconnectDelay = 1000
-        let cancelled = false
-
-        const connect = () => {
-            if (cancelled) return
-            setStatus('connecting')
-            source = new EventSource(realtime.streamUrl(), { withCredentials: true })
-
-            for (const type of EVENT_TYPES) {
-                source.addEventListener(type, (ev) => {
-                    const msgEv = ev as MessageEvent
-                    let parsed: unknown = msgEv.data
-                    try { parsed = JSON.parse(msgEv.data) } catch { /* keep raw */ }
-                    const id = msgEv.lastEventId ? parseInt(msgEv.lastEventId, 10) : NaN
-                    processEvent(Number.isFinite(id) ? id : null, type, parsed, msgEv)
-                })
-            }
-
-            source.onopen = () => { reconnectDelay = 1000; setStatus('connected') }
-            source.onerror = () => {
-                source?.close()
-                source = null
-                if (cancelled) return
-                setStatus('disconnected')
-                reconnectTimer = setTimeout(connect, reconnectDelay)
-                reconnectDelay = Math.min(reconnectDelay * 2, 30_000)
-            }
-        }
-
-        connect()
-
-        return () => {
-            cancelled = true
-            if (reconnectTimer) clearTimeout(reconnectTimer)
-            source?.close()
-            setStatus('idle')
-        }
-    }, [enabled])
-
-    // Polling fallback ─────────────────────────────────────────────────────
-    // Jalan ALWAYS saat user login. Lengkapi SSE — kalau SSE delivered duluan,
-    // poll tinggal skip via seenIdsRef. Kalau SSE blocked (proxy buffering,
-    // `php artisan serve` worker exhaustion), poll yang deliver.
-    useEffect(() => {
-        if (!enabled) return
-
         let cancelled = false
         let timer: ReturnType<typeof setTimeout> | null = null
+        let consecutiveErrors = 0
+
+        setStatus('connecting')
 
         // Seed lastEventId ke current max — supaya poll pertama tidak banjir
         // event historis (broadcast_events bisa berisi ribuan presence pings).
@@ -192,7 +140,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                 if (res?.lastEventId && res.lastEventId > lastEventIdRef.current) {
                     lastEventIdRef.current = res.lastEventId
                 }
-            } catch { /* offline / 401 — biarkan saja */ }
+                setStatus('connected')
+            } catch { /* offline / 401 — biarkan saja, status akan flip di tick pertama */ }
         }
 
         const tick = async () => {
@@ -206,8 +155,18 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                 if (res?.lastEventId && res.lastEventId > lastEventIdRef.current) {
                     lastEventIdRef.current = res.lastEventId
                 }
-            } catch { /* silent retry */ }
-            timer = setTimeout(tick, POLL_INTERVAL_MS)
+                consecutiveErrors = 0
+                setStatus('connected')
+            } catch {
+                consecutiveErrors++
+                // 2x gagal beruntun = jaringan / server bermasalah → tunjukkan offline indicator
+                if (consecutiveErrors >= 2) setStatus('disconnected')
+            }
+            // Exponential backoff saat error (max 30s) supaya tidak hammer server
+            const delay = consecutiveErrors > 0
+                ? Math.min(POLL_INTERVAL_MS * Math.pow(2, consecutiveErrors - 1), 30_000)
+                : POLL_INTERVAL_MS
+            timer = setTimeout(tick, delay)
         }
 
         void seed().then(() => { if (!cancelled) timer = setTimeout(tick, POLL_INTERVAL_MS) })
@@ -215,6 +174,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         return () => {
             cancelled = true
             if (timer) clearTimeout(timer)
+            setStatus('idle')
         }
     }, [enabled])
 

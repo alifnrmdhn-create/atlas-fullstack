@@ -16,9 +16,9 @@ cmds = [
 
 [start]
 # FrankenPHP `php-server` mode: 1 HTTP request = 1 PHP thread sampai response selesai.
-# SSE streams menahan thread sampai TTL (90s) — default num_threads = num_cpu*2 = 4
-# di Railway hobby (2 vCPU) menyebabkan ≥4 user simultan jadi thread starvation.
-# `--num-threads 64` = headroom untuk ~50 user simultan via SSE; ~ribuan via polling.
+# Thread count = num_cpu*2 default; sebelumnya jadi bottleneck saat masih ada SSE
+# (tiap stream menahan thread 90s). Setelah refactor ke polling murni, tiap request
+# short-lived (<100ms) — thread cepat balik ke pool, default thread count cukup.
 # Boot sequence:
 #   1. migrate            — idempotent, aman tiap deploy
 #   2. cache config/routes/views
@@ -26,4 +26,4 @@ cmds = [
 #   4. scheduler respawn  — auto-restart loop kalau schedule:work exit (sebelumnya fire-and-forget,
 #                           silent-die kalau ada exception di salah satu scheduled command)
 #   5. frankenphp foreground (main process)
-cmd = "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && (php artisan atlas:cleanup-broadcast-events || true) && (while true; do php artisan schedule:work --whisper; sleep 2; done >/dev/null 2>&1 &) && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT --num-threads 64"
+cmd = "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && (php artisan atlas:cleanup-broadcast-events || true) && (while true; do php artisan schedule:work --whisper; sleep 2; done >/dev/null 2>&1 &) && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT"
