@@ -738,8 +738,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     event.preventDefault()
     try {
       await api.put('/users/me/status', presenceDraft)
-      // Presence list is updated via the 'presence:updated' SSE broadcast from the server.
-      // No need to call loadOverview — that would race with the SSE event and cause a flicker.
+      // Optimistic update — sejak realtime pindah ke polling /realtime/poll
+      // (lihat memory project-sse-dropped-polling-only), tanpa patch lokal user
+      // akan lihat presence list "tertinggal" sampai poll cycle berikutnya (~2s).
+      // Poll yang masuk kemudian akan idempoten meng-overwrite dengan data server.
+      if (currentUser) {
+        const nowIso = new Date().toISOString()
+        const meId = currentUser.id
+        setPresence(prev => prev.map(p => p.userId === meId ? { ...p, ...presenceDraft, lastActivityAt: nowIso } : p))
+      }
       setOverviewStatus((cur) => ({ ...cur, message: 'Status berhasil diperbarui.' }))
     } catch {
       setOverviewStatus((cur) => ({ ...cur, message: 'Status gagal diperbarui.' }))

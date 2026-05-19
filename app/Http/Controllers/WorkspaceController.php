@@ -828,6 +828,18 @@ class WorkspaceController extends Controller
             [...$data, 'lastActivityAt' => now()],
         );
 
+        // Broadcast supaya user lain pick up update via polling /realtime/poll (~2s).
+        // Sebelumnya endpoint ini silent → status change hanya keliatan setelah
+        // loadOverview (5 menit) atau full reload. FE handler handlePresenceUpdated
+        // sudah idempoten meng-overwrite local state dengan payload ini.
+        BroadcastService::presence(
+            userId: $status->userId,
+            status: $status->status,
+            lastActivityAt: $status->lastActivityAt?->toIso8601String(),
+            statusEmoji: $data['statusEmoji'] ?? null,
+            statusMessage: $data['statusMessage'] ?? null,
+        );
+
         return response()->json(['data' => $status]);
     }
 

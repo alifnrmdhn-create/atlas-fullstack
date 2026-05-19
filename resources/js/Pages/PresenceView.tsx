@@ -324,7 +324,7 @@ function Toast({ msg, isError, onDone }: { msg: string; isError?: boolean; onDon
 
 // ── Main view ────────────────────────────────────────────────
 export function PresenceView() {
-  const { presence, currentUser, presenceDraft, setPresenceDraft, setSelectedChannelId } = useWorkspace()
+  const { presence, currentUser, presenceDraft, setPresenceDraft, setPresence, setSelectedChannelId } = useWorkspace()
   const navigate  = useInertiaNavigate()
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -401,6 +401,17 @@ export function PresenceView() {
     setIsSubmitting(true)
     try {
       await api.put('/users/me/status', presenceDraft)
+      // Optimistic update row sendiri di main panel. Sejak realtime pindah ke
+      // polling 2s (lihat memory project-sse-dropped-polling-only), tanpa ini
+      // user lihat panel utama "tertinggal" sampai poll cycle berikutnya.
+      if (currentUser) {
+        const nowIso = new Date().toISOString()
+        setPresence(prev => prev.map(p =>
+          p.userId === currentUser.id
+            ? { ...p, status: presenceDraft.status, statusEmoji: presenceDraft.statusEmoji, statusMessage: presenceDraft.statusMessage, lastActivityAt: nowIso }
+            : p
+        ))
+      }
       setToast({ msg: 'Status berhasil diperbarui ✓', error: false })
     } catch {
       setToast({ msg: 'Gagal memperbarui status — coba lagi', error: true })

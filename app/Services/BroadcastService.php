@@ -135,13 +135,19 @@ class BroadcastService
         ]);
     }
 
-    public static function presence(int $userId, string $status, ?string $lastActivityAt = null): void
+    public static function presence(int $userId, string $status, ?string $lastActivityAt = null, ?string $statusEmoji = null, ?string $statusMessage = null): void
     {
-        self::all('presence:updated', [
+        $payload = [
             'userId' => $userId,
             'status' => $status,
             'lastActivityAt' => $lastActivityAt ?? now()->toIso8601String(),
-        ]);
+        ];
+        // Hanya sertakan emoji/message saat caller eksplisit kirim — agar event
+        // dari /realtime/ping (yang tidak tahu message terbaru) tidak menimpa
+        // nilai existing di FE jadi null.
+        if ($statusEmoji !== null) $payload['statusEmoji'] = $statusEmoji;
+        if ($statusMessage !== null) $payload['statusMessage'] = $statusMessage;
+        self::all('presence:updated', $payload);
     }
 
     public static function presenceActivity(int $userId, ?string $lastActivityAt = null): void
