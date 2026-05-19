@@ -676,7 +676,56 @@ function approvalFocusItem(program: ApprovalCandidate, role: string, policy: Foc
   }
 }
 
-function notificationFocusItem(notification: NotificationItem): FocusItem {
+/**
+ * Format notification.source jadi label human-friendly untuk card meta line.
+ * Sebelumnya raw source bocor sebagai "program:24" / "channel:11" — confusing.
+ * Rules:
+ *   - `program:N` → resolve ke program.code (mis. "PRG-DIMR-PPM-002")
+ *   - `Name·entity:id` → return Name (display segment di depan ·)
+ *   - lainnya `entity:id` saja → return '' (hide)
+ */
+function humanizeNotificationMeta(source: string, programs: Program[]): string {
+  if (!source) return ''
+  const parts = source.split('·').map(s => s.trim()).filter(Boolean)
+  if (parts.length > 1) {
+    // First segment biasanya display name (mis. "Dimas Aryo Wibisono" di DM)
+    return parts[0]
+  }
+  const colonIdx = source.indexOf(':')
+  if (colonIdx > 0) {
+    const type = source.slice(0, colonIdx)
+    const id = Number(source.slice(colonIdx + 1).split(':')[0])
+    if (type === 'program' && !isNaN(id)) {
+      const prog = programs.find(p => p.id === id)
+      return prog?.code ?? ''
+    }
+    // task:N / assignment:N / channel:N — tidak punya resolver di scope ini,
+    // hide aja daripada tampil raw.
+    return ''
+  }
+  return source
+}
+
+/** Verb-specific CTA per notification type. Generic "Buka"/"Lihat" lemah —
+ *  user lebih jelas apa yang harus dilakukan. */
+function notifVerbFor(type: string): string {
+  switch (type) {
+    case 'PROGRAM_NEEDS_APPROVAL': case 'APPROVAL': return 'Review'
+    case 'PROGRAM_REJECTED': return 'Perbaiki'
+    case 'PROGRAM_WITHDRAWN': case 'PROGRAM_APPROVED': return 'Lihat program'
+    case 'DM_RECEIVED': return 'Balas'
+    case 'MENTION': return 'Buka percakapan'
+    case 'BLOCKER_CREATED': return 'Follow up'
+    case 'TASK_ASSIGNED': return 'Kerjakan'
+    case 'DEADLINE_APPROACHING': return 'Cek deadline'
+    case 'MEETING_INVITED': return 'Konfirmasi'
+    case 'ACTION_ITEM_ASSIGNED': return 'Kerjakan'
+    case 'CLEAR_PATH_REQUESTED': return 'Disposition'
+    default: return 'Buka'
+  }
+}
+
+function notificationFocusItem(notification: NotificationItem, programs: Program[]): FocusItem {
   const requiresAction = notification.requiresAction ?? (
     notification.type === 'REPORT_NEEDS_REVISION' ||
     notification.type === 'PROGRAM_NEEDS_APPROVAL' ||
@@ -701,12 +750,12 @@ function notificationFocusItem(notification: NotificationItem): FocusItem {
     kind: notification.type === 'MENTION' || notification.type === 'DM_RECEIVED' ? 'mention' : 'notification',
     section: notification.type === 'MENTION' || notification.type === 'DM_RECEIVED' ? 'mention' : 'notif',
     title: NOTIF_TYPE_LABEL[notification.type] ?? notification.type,
-    meta: notification.source.split('·').slice(1).join(' · ') || notification.source,
+    meta: humanizeNotificationMeta(notification.source, programs),
     reason: notification.message,
     impact: notification.impact,
     roleCue: notification.roleImpact ?? notificationRoleCue(notification),
     nextCue: notification.impact ?? notificationNextCue(notification),
-    actionLabel: `${notification.actionLabel ?? (notification.type === 'DM_RECEIVED' ? 'Balas' : 'Buka')} →`,
+    actionLabel: `${notification.actionLabel ?? notifVerbFor(notification.type)} →`,
     score: (isHighSignal ? 66 : requiresAction ? 54 : 42) + recencyScore(notification.createdAt),
     urgency: isHighSignal && notification.type !== 'MENTION' && notification.type !== 'DM_RECEIVED' ? 'warn' : 'info',
     chip: NOTIF_TYPE_LABEL[notification.type] ?? notification.type,
@@ -794,6 +843,13 @@ function ctaFor(item: FocusItem): { label: string; primary: boolean } {
   if (item.kind === 'program')                       return { label: 'Tinjau',      primary: false }
   if (item.kind === 'mention' || item.kind === 'dm') return { label: 'Balas',       primary: false }
   if (item.kind === 'meeting' || item.kind === 'focus') return { label: 'Buka jadwal', primary: false }
+  // Notification cards — strip the " →" suffix yang ditambahkan oleh
+  // notificationFocusItem.actionLabel; promote ke primary kalau urgency-nya warn/critical
+  // (mis. PROGRAM_NEEDS_APPROVAL, PROGRAM_REJECTED) supaya user lihat itu butuh aksi.
+  if (item.kind === 'notification' && item.actionLabel) {
+    const label = item.actionLabel.replace(/\s*→\s*$/, '')
+    return { label, primary: item.urgency === 'warn' || item.urgency === 'critical' }
+  }
   return { label: 'Lihat', primary: false }
 }
 
@@ -1137,8 +1193,8 @@ export function InboxView() {
     })
 
     const notificationItems = [
-      ...mentionGroups.map(group => notificationFocusItem(group.latest)),
-      ...actionableOtherGroups.map(group => notificationFocusItem(group.latest)),
+      ...mentionGroups.map(group => notificationFocusItem(group.latest, programs)),
+      ...actionableOtherGroups.map(group => notificationFocusItem(group.latest, programs)),
     ]
 
     return [
