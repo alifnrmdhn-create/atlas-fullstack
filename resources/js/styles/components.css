@@ -361,32 +361,93 @@
 }
 .skeleton-stack { display: flex; flex-direction: column; gap: 6px; }
 
-/* ─── Section state (empty/loading) ─────────────────────────── */
+/* ─── Section state (empty/loading) ───────────────────────────
+ * Tonal variants: default (neutral), success (positive/healthy),
+ * info (neutral informational), warning (attention). Tone hanya
+ * pengaruhi icon coloring dan subtle aura — copy & layout sama. */
 .section-state {
   padding: 36px 20px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 .section-state--compact { padding: 20px 16px; }
 .section-state__icon,
 .section-state .section-state__icon {
-  font-size: 28px;
+  font-size: 22px;
   line-height: 1;
   margin-bottom: 4px;
-  opacity: 0.55;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--surface-overlay-soft, color-mix(in srgb, var(--text-muted) 8%, transparent));
+  color: var(--text-muted);
+}
+.section-state__icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  fill: none;
+}
+/* Tone variants — icon bg + color */
+.section-state--success .section-state__icon {
+  background: color-mix(in srgb, var(--green) 12%, transparent);
+  color: var(--green);
+}
+.section-state--info .section-state__icon {
+  background: color-mix(in srgb, var(--blue, var(--indigo)) 12%, transparent);
+  color: var(--blue, var(--indigo));
+}
+.section-state--warning .section-state__icon {
+  background: color-mix(in srgb, var(--yellow) 14%, transparent);
+  color: var(--yellow);
 }
 .section-state__title,
 .section-state > strong {
   font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
+  font-weight: 600;
+  color: var(--text-strong);
   margin-bottom: 2px;
+  letter-spacing: -0.005em;
 }
 .section-state__text,
-.section-state > p { font-size: 12px; color: var(--text-muted); max-width: 260px; line-height: 1.5; margin: 0; }
+.section-state > p { font-size: 12.5px; color: var(--text-muted); max-width: 320px; line-height: 1.55; margin: 0; }
+
+/* Optional CTA — small text button */
+.section-state__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-strong);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.section-state__cta:hover {
+  background: var(--surface-overlay-soft, var(--surface-1));
+  border-color: var(--panel-border-strong, var(--text-muted));
+}
+.section-state--success .section-state__cta {
+  border-color: color-mix(in srgb, var(--green) 30%, var(--panel-border));
+  color: var(--green);
+}
+.section-state--success .section-state__cta:hover {
+  background: color-mix(in srgb, var(--green) 6%, transparent);
+}
 
 /* Inline notice */
 .inline-notice {

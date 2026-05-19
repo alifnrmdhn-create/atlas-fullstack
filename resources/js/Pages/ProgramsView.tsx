@@ -1090,9 +1090,28 @@ export function ProgramsView() {
                       })}
                     </div>
                   ) : portfolioSearch ? (
-                    <SectionState icon="🔍" title="Tidak ditemukan" text={`Tidak ada program yang cocok dengan "${portfolioSearch}".`} compact />
+                    <SectionState
+                      tone="info" compact
+                      icon={
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <circle cx="11" cy="11" r="7" />
+                          <path d="m20 20-4-4" />
+                        </svg>
+                      }
+                      title="Tidak ditemukan"
+                      text={`Tidak ada program yang cocok dengan "${portfolioSearch}".`}
+                    />
                   ) : (
-                    <SectionState icon="📁" title="Portfolio kosong" text="Program akan muncul setelah data dimuat." />
+                    <SectionState
+                      tone="info"
+                      icon={
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                        </svg>
+                      }
+                      title="Portfolio kosong"
+                      text="Program akan muncul setelah data dimuat."
+                    />
                   )}
                 </div>
               )}
@@ -1395,7 +1414,16 @@ export function ProgramsView() {
                       </span>
                     </div>
                     {blockers.length === 0 ? (
-                      <SectionState icon="✅" title="No active blockers" text="All blockers have been resolved." compact />
+                      <SectionState
+  tone="success" compact
+  icon={
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 12l5 5L20 7" />
+    </svg>
+  }
+  title="Tidak ada blocker aktif"
+  text="Semua blocker sudah diselesaikan."
+/>
                     ) : (
                       <div className="program-list-stack program-list-stack--tight">
                         {blockers.map(b => {
@@ -1442,7 +1470,16 @@ export function ProgramsView() {
                       </span>
                     </div>
                     {atRisk.length === 0 ? (
-                      <SectionState icon="✅" title="Tidak ada workstream berisiko" text="Semua workstream berjalan sesuai target." compact />
+                      <SectionState
+  tone="success" compact
+  icon={
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 12l5 5L20 7" />
+    </svg>
+  }
+  title="Tidak ada workstream berisiko"
+  text="Semua workstream berjalan sesuai target."
+/>
                     ) : (
                       <div className="program-list-stack program-list-stack--tight">
                         {atRisk.map(ini => {
@@ -1486,7 +1523,16 @@ export function ProgramsView() {
                       <span className="section-badge">{stagnant.length} item</span>
                     </div>
                     {stagnant.length === 0 ? (
-                      <SectionState icon="✅" title="Tidak ada yang stagnan" text="Semua task berjalan aktif." compact />
+                      <SectionState
+  tone="success" compact
+  icon={
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 12l5 5L20 7" />
+    </svg>
+  }
+  title="Tidak ada yang stagnan"
+  text="Semua task berjalan aktif."
+/>
                     ) : (
                       <div className="program-list-stack program-list-stack--tight">
                         {stagnant.map(w => {
@@ -2064,7 +2110,18 @@ export function ProgramsView() {
                 </button>
               </div>
             ) : archivedPrograms.length === 0 ? (
-              <SectionState icon="📦" title="Tidak ada arsip" text="Belum ada program yang diarsipkan." />
+              <SectionState
+  tone="info"
+  icon={
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="4" width="20" height="5" rx="1" />
+      <path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9" />
+      <path d="M10 13h4" />
+    </svg>
+  }
+  title="Tidak ada arsip"
+  text="Belum ada program yang diarsipkan."
+/>
             ) : (
               <div className="program-roster">
                 {archivedPrograms.map(prog => (

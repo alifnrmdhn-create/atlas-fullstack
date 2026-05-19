@@ -125,7 +125,24 @@
   margin-left: auto;
   display: flex;
   align-items: center;
+  gap: 10px;
+}
+/* Zone group dalam header actions — pisahkan view switchers vs edit/approval
+   biar tidak terlihat seperti barisan tombol acak. Hairline divider antar
+   group muncul otomatis via sibling selector. */
+.wi-detail-header__group {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
+}
+.wi-detail-header__group + .wi-detail-header__group::before {
+  content: "";
+  display: inline-block;
+  width: 1px;
+  height: 18px;
+  background: var(--panel-border);
+  margin-right: 4px;
+  flex-shrink: 0;
 }
 
 /* ── Trace strip (entity hierarchy) ──────────────────
@@ -275,23 +292,30 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--panel-border-soft, var(--panel-border));
 }
-/* Modern: sentence case, no tracking, slightly larger font.
-   Bahasa visual baru — section title bukan label-stamp tapi sub-heading
-   yang ringan. */
+/* Pattern A sub-heading — sentence case, bolder/darker untuk scanning rhythm.
+   Sebelumnya 12px/500/muted terasa flat dengan body. Sekarang 13px/600/strong
+   + hairline bottom border di header bikin section break terbaca tanpa heavy
+   typography. */
 .wi-section__title {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   text-transform: none;
   letter-spacing: 0;
-  color: var(--text-muted);
+  color: var(--text-strong);
   margin: 0;
   flex: 1;
   display: flex;
   align-items: center;
   gap: 8px;
   white-space: nowrap;
+}
+.wi-section__title svg {
+  color: var(--text-muted);
+  opacity: 0.7;
 }
 .wi-desc {
   font-size: 13.5px;
@@ -309,8 +333,9 @@
   align-items: baseline;
 }
 .prog-description__label {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 @media (max-width: 720px) {
   .prog-description {
@@ -962,16 +987,16 @@
 }
 
 .prog-detail-tab {
-  padding: 10px 14px;
-  font-size: 12px;
+  padding: 11px 14px 10px;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
   border: none;
   background: transparent;
-  border-bottom: 2px solid transparent;
+  border-bottom: 2.5px solid transparent;
   color: var(--text-muted);
   margin-bottom: -1px;
-  transition: color 140ms;
+  transition: color 140ms, border-color 140ms;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -3062,11 +3087,11 @@ select.wi-bl-input {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin: 0;
   flex-shrink: 0;
 }
@@ -7164,64 +7189,110 @@ select.wid-input {
 }
 
 /* ── Approval History Log ──────────────────────────────────────────── */
+/* Proper vertical timeline: connector line lebih visible (panel-border-strong),
+   dot centered on line via absolute positioning, generous vertical breathing
+   per entry, action label paling prominent untuk scanning who-did-what. */
 .prog-approval-log {
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding-left: 12px;
-  border-left: 2px solid var(--panel-border);
+  padding-left: 14px;
+  border-left: 2px solid var(--panel-border-strong, var(--panel-border));
+  margin-left: 4px;
 }
 .prog-approval-log__entry {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 8px 0;
+  padding: 12px 0;
   position: relative;
 }
+.prog-approval-log__entry:first-child { padding-top: 4px; }
+.prog-approval-log__entry:last-child { padding-bottom: 4px; }
 .prog-approval-log__dot {
   position: absolute;
-  left: -17px;
-  top: 13px;
-  width: 8px;
-  height: 8px;
+  left: -20px;
+  top: 16px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--text-muted);
-  border: 2px solid var(--surface-1);
+  border: 2.5px solid var(--surface-1);
+  box-shadow: 0 0 0 1px var(--panel-border-strong, var(--panel-border));
   flex-shrink: 0;
 }
-.prog-approval-log__entry--positive .prog-approval-log__dot { background: var(--green); }
-.prog-approval-log__entry--danger   .prog-approval-log__dot { background: var(--red); }
-.prog-approval-log__entry--info     .prog-approval-log__dot { background: var(--blue); }
+.prog-approval-log__entry:first-child .prog-approval-log__dot { top: 8px; }
+.prog-approval-log__entry--positive .prog-approval-log__dot {
+  background: var(--green);
+  box-shadow: 0 0 0 1px var(--green-subtle, var(--green));
+}
+.prog-approval-log__entry--danger   .prog-approval-log__dot {
+  background: var(--red);
+  box-shadow: 0 0 0 1px var(--red-subtle, var(--red));
+}
+.prog-approval-log__entry--info     .prog-approval-log__dot {
+  background: var(--blue);
+  box-shadow: 0 0 0 1px var(--blue-subtle, var(--blue));
+}
 
 .prog-approval-log__body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
+  flex: 1;
+}
+.prog-approval-log__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .prog-approval-log__action {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text-strong);
+  line-height: 1.3;
 }
 .prog-approval-log__status {
-  font-size: 11px;
+  font-size: 10.5px;
+  font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
+  background: var(--surface-2);
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.prog-approval-log__entry--positive .prog-approval-log__status {
+  background: color-mix(in srgb, var(--green) 10%, transparent);
+  color: var(--green);
+}
+.prog-approval-log__entry--danger .prog-approval-log__status {
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+  color: var(--red);
+}
+.prog-approval-log__entry--info .prog-approval-log__status {
+  background: color-mix(in srgb, var(--blue) 10%, transparent);
+  color: var(--blue);
 }
 .prog-approval-log__meta {
   font-size: 11.5px;
   color: var(--text-muted);
 }
 .prog-approval-log__note {
-  margin: 4px 0 0;
-  font-size: 12px;
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
   color: var(--red);
-  background: color-mix(in srgb, var(--red) 8%, transparent);
-  border-left: 2px solid var(--red);
-  padding: 4px 8px;
-  border-radius: 0 4px 4px 0;
+  background: color-mix(in srgb, var(--red) 7%, transparent);
+  border-left: 3px solid var(--red);
+  padding: 8px 12px;
+  border-radius: 0 6px 6px 0;
 }
 
 /* ── Progress Form ─────────────────────────────── */

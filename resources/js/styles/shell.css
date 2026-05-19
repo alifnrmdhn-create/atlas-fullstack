@@ -825,23 +825,22 @@
  * Pure System: topbar shares canvas. Left holds context meta, right holds
  * utility icons. No breadcrumb, no full-width search. */
 
+/* Modern topbar meta: sans-serif, sentence case, lebih tenang.
+   Sebelumnya uppercase tracked mono — terasa enterprise lawas.
+   Sekarang Linear-like contextual strip. */
 .topbar__meta {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
+  font-family: var(--ds-font-sans, var(--font-sans));
+  font-size: 12px;
+  font-weight: 400;
   color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
   flex-shrink: 0;
 }
 
 .topbar__meta-date {
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.10em;
+  font-weight: 500;
   color: var(--text);
 }
 
@@ -850,8 +849,8 @@
 }
 
 .topbar__meta-period {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
 }
 
 /* Live SSE indicator — tiny pulsing dot. Green when connected, gray when offline */
@@ -860,12 +859,10 @@
   align-items: center;
   gap: 5px;
   padding: 0 4px 0 6px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-family: var(--ds-font-sans, var(--font-sans));
+  font-size: 11px;
+  font-weight: 500;
   color: var(--text-muted);
-  text-transform: uppercase;
   flex-shrink: 0;
   border-left: 1px solid var(--panel-border);
   margin-left: 2px;

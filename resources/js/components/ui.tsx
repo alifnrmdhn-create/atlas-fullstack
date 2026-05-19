@@ -596,22 +596,37 @@ export function EmptyState({
   )
 }
 
+/** Empty/loading state untuk section. Tone variants memberi context warna —
+ * 'success' (positif, ✓ tidak ada masalah), 'info' (netral), 'warning'
+ * (perhatian), 'default' (sparse, neutral). Icon accepts string emoji
+ * (legacy) atau ReactNode (SVG). CTA optional menambah tindak lanjut. */
 export function SectionState({
   title,
   text,
   compact = false,
   icon,
+  tone = 'default',
+  cta,
 }: {
   title: string
   text: string
   compact?: boolean
-  icon?: string
+  icon?: ReactNode
+  tone?: 'default' | 'success' | 'info' | 'warning'
+  cta?: { label: string; onClick: () => void } | { label: string; href: string }
 }) {
   return (
-    <div className={`section-state ${compact ? 'section-state--compact' : ''}`}>
+    <div className={`section-state section-state--${tone}${compact ? ' section-state--compact' : ''}`}>
       {icon && <span className="section-state__icon">{icon}</span>}
       <strong>{title}</strong>
       <p>{text}</p>
+      {cta && (
+        'href' in cta ? (
+          <a className="section-state__cta" href={cta.href}>{cta.label}</a>
+        ) : (
+          <button className="section-state__cta" onClick={cta.onClick} type="button">{cta.label}</button>
+        )
+      )}
     </div>
   )
 }

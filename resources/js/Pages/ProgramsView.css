@@ -98,6 +98,177 @@
   transform: scale(0.98);
 }
 
+/* ─── Portfolio stats strip ──────────────────────────────────
+ * Hero summary di antara title bar dan tabs. Pattern A flat —
+ * hairline top/bottom border, divider antar stat cell pakai
+ * border-left, tidak ada card background. Health bar memberi
+ * bobot visual proporsional (yang tidak bisa di-konyey angka). */
+
+.programs-v2 .programs-v2__hero-stats {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 4px 0 24px;
+  padding: 18px 0;
+  border-top: 1px solid var(--ds-border-subtle);
+  border-bottom: 1px solid var(--ds-border-subtle);
+  flex-wrap: wrap;
+}
+
+.programs-v2 .programs-v2__stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 28px;
+  min-width: 0;
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
+}
+.programs-v2 .programs-v2__stat + .programs-v2__stat {
+  border-left: 1px solid var(--ds-border-subtle);
+}
+.programs-v2 .programs-v2__stat:first-child { padding-left: 0; }
+.programs-v2 .programs-v2__stat:last-child { padding-right: 0; }
+
+.programs-v2 .programs-v2__stat--bar {
+  flex: 1 1 280px;
+  min-width: 240px;
+}
+.programs-v2 .programs-v2__stat--action {
+  cursor: pointer;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+.programs-v2 .programs-v2__stat--action:hover { opacity: 0.72; }
+.programs-v2 .programs-v2__stat--action:active { transform: scale(0.98); }
+.programs-v2 .programs-v2__stat--action .programs-v2__stat-num {
+  color: var(--ds-amber-600);
+}
+
+.programs-v2 .programs-v2__stat-num {
+  font-family: var(--ds-font-sans);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ds-text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.programs-v2 .programs-v2__stat-num-unit {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ds-text-tertiary);
+  margin-left: 2px;
+}
+.programs-v2 .programs-v2__stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ds-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+}
+.programs-v2 .programs-v2__stat-label--top {
+  margin-bottom: 4px;
+}
+.programs-v2 .programs-v2__stat-arrow {
+  margin-left: 4px;
+  color: var(--ds-text-tertiary);
+  font-weight: 500;
+}
+
+/* ─── Health distribution bar ─── */
+.programs-v2 .programs-v2__health-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--ds-surface-sunken);
+  width: 100%;
+}
+.programs-v2 .programs-v2__health-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0;
+  height: 100%;
+  min-width: 6px;
+}
+.programs-v2 .programs-v2__health-seg + .programs-v2__health-seg {
+  border-left: 1.5px solid var(--ds-surface-card);
+}
+.programs-v2 .programs-v2__health-seg--green { background: var(--ds-green-500); }
+.programs-v2 .programs-v2__health-seg--yellow { background: var(--ds-amber-500); }
+.programs-v2 .programs-v2__health-seg--red { background: var(--ds-red-500); }
+
+.programs-v2 .programs-v2__health-legend {
+  display: flex;
+  gap: 14px;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--ds-text-tertiary);
+  flex-wrap: wrap;
+}
+.programs-v2 .programs-v2__health-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.programs-v2 .programs-v2__health-legend-item strong {
+  color: var(--ds-text-primary);
+  font-weight: 600;
+  margin-left: 1px;
+}
+.programs-v2 .programs-v2__health-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.programs-v2 .programs-v2__health-dot--green { background: var(--ds-green-500); }
+.programs-v2 .programs-v2__health-dot--yellow { background: var(--ds-amber-500); }
+.programs-v2 .programs-v2__health-dot--red { background: var(--ds-red-500); }
+
+/* ─── Mini progress bar di stat cell ─── */
+.programs-v2 .programs-v2__progress-bar {
+  display: block;
+  height: 4px;
+  width: 80px;
+  background: var(--ds-surface-sunken);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.programs-v2 .programs-v2__progress-bar span {
+  display: block;
+  height: 100%;
+  background: var(--ds-brand-500);
+  transition: width 200ms ease;
+}
+
+/* ─── Responsive: stack on small screens ─── */
+@media (max-width: 720px) {
+  .programs-v2 .programs-v2__hero-stats {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .programs-v2 .programs-v2__stat {
+    padding: 0;
+    border: 0 !important;
+  }
+  .programs-v2 .programs-v2__stat + .programs-v2__stat {
+    border: 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--ds-border-subtle) !important;
+  }
+}
+
 /* ─── Tabs — editorial underline pattern ─────────────────── */
 
 .programs-v2 .programs-v2__tabs {
@@ -271,17 +442,20 @@
   flex-wrap: wrap;
 }
 
+/* Filter chip — Linear/Vercel-style square pill, no dot prefix.
+   Tone tint hanya muncul saat active; default state cleaner & lebih modern
+   dari pola pill+dot (Bootstrap 2015 vibe). */
 .programs-v2 .programs-filter-chip {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 28px;
+  gap: 6px;
+  height: 30px;
   padding: 0 12px;
   background: transparent;
-  border: 1px solid var(--ds-border-default);
-  border-radius: 99px;
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: 6px;
   font-family: var(--ds-font-sans);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--ds-text-secondary);
   cursor: pointer;
@@ -289,50 +463,46 @@
 }
 
 .programs-v2 .programs-filter-chip:hover {
-  border-color: var(--ds-border-strong, var(--ds-text-secondary));
+  border-color: var(--ds-border-default);
+  background: var(--ds-surface-hover);
   color: var(--ds-text-primary);
 }
 
+/* Dot prefix dihilangkan — tone sudah dikomunikasikan via active state.
+   Class tetap di-render di JSX untuk backwards compat, tapi visually hidden. */
 .programs-v2 .programs-filter-chip__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
+  display: none;
 }
 
-/* Color tone — applied to the dot indicator */
-.programs-v2 .programs-filter-chip--green .programs-filter-chip__dot { background: var(--ds-emerald-500, #10b981); }
-.programs-v2 .programs-filter-chip--amber .programs-filter-chip__dot { background: var(--ds-amber-500, #f59e0b); }
-.programs-v2 .programs-filter-chip--red   .programs-filter-chip__dot { background: var(--ds-red-500, #ef4444); }
-
-/* Active state — fill with tone, white text */
+/* Active state — tone tint background + tone border + bolder text.
+   Tidak pakai box-shadow left accent (over-design); cukup contrast bg/border. */
 .programs-v2 .programs-filter-chip--active {
-  color: var(--ds-text-primary);
   font-weight: 600;
   background: var(--ds-neutral-100);
   border-color: var(--ds-text-secondary);
+  color: var(--ds-text-primary);
 }
 
 .programs-v2 .programs-filter-chip--green.programs-filter-chip--active {
-  background: color-mix(in srgb, var(--ds-emerald-500, #10b981) 12%, transparent);
-  border-color: var(--ds-emerald-500, #10b981);
-  color: var(--ds-emerald-700, #047857);
+  background: color-mix(in srgb, var(--ds-green-500) 14%, transparent);
+  border-color: color-mix(in srgb, var(--ds-green-500) 70%, transparent);
+  color: var(--ds-green-600);
 }
 
 .programs-v2 .programs-filter-chip--amber.programs-filter-chip--active {
-  background: color-mix(in srgb, var(--ds-amber-500, #f59e0b) 14%, transparent);
-  border-color: var(--ds-amber-500, #f59e0b);
-  color: var(--ds-amber-700, #b45309);
+  background: color-mix(in srgb, var(--ds-amber-500) 16%, transparent);
+  border-color: color-mix(in srgb, var(--ds-amber-500) 70%, transparent);
+  color: var(--ds-amber-600);
 }
 
 .programs-v2 .programs-filter-chip--red.programs-filter-chip--active {
-  background: color-mix(in srgb, var(--ds-red-500, #ef4444) 12%, transparent);
-  border-color: var(--ds-red-500, #ef4444);
-  color: var(--ds-red-700, #b91c1c);
+  background: color-mix(in srgb, var(--ds-red-500) 14%, transparent);
+  border-color: color-mix(in srgb, var(--ds-red-500) 70%, transparent);
+  color: var(--ds-red-600);
 }
 
 .programs-v2 .programs-filter-chip--stale.programs-filter-chip--active {
-  background: var(--ds-neutral-200);
+  background: var(--ds-neutral-100);
   border-color: var(--ds-text-secondary);
   color: var(--ds-text-primary);
 }

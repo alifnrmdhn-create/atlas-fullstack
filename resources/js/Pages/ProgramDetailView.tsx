@@ -2538,6 +2538,15 @@ export function ProgramDetailView() {
 
               {(detail.workstreams ?? []).length === 0 ? (
                 <SectionState
+                  tone="info"
+                  icon={
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="3" y="3" width="7" height="7" rx="1" />
+                      <rect x="14" y="3" width="7" height="7" rx="1" />
+                      <rect x="3" y="14" width="7" height="7" rx="1" />
+                      <rect x="14" y="14" width="7" height="7" rx="1" />
+                    </svg>
+                  }
                   title="Belum ada workstream"
                   text="Pecah program menjadi workstream untuk mulai mendistribusikan task ke tim."
                 />
@@ -2973,13 +2982,26 @@ export function ProgramDetailView() {
                   .includes(detail.approvalStatus ?? '')
                 return inPlanning ? (
                   <SectionState
+                    tone="info"
+                    icon={
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 7v5l3 2" />
+                      </svg>
+                    }
                     title="Belum ada hambatan dilaporkan"
-                    text="Tab ini akan aktif penuh setelah program masuk fase Eksekusi. Tim dapat melaporkan blocker langsung dari task yang mereka kerjakan."
+                    text="Tab ini aktif penuh setelah program masuk fase Eksekusi. Tim melaporkan blocker dari task yang sedang dikerjakan."
                   />
                 ) : (
                   <SectionState
+                    tone="success"
+                    icon={
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M5 12l5 5L20 7" />
+                      </svg>
+                    }
                     title="Tidak ada hambatan aktif"
-                    text="Program berjalan tanpa blocker. Status akan ter-update otomatis saat tim melaporkan hambatan dari task."
+                    text="Program berjalan lancar tanpa blocker. Status auto-update saat tim melaporkan hambatan dari task."
                   />
                 )
               })() : (

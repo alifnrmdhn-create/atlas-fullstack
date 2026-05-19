@@ -1824,23 +1824,22 @@
    ════════════════════════════════════════════════════════════════════ */
 .prog-strategic {
   border-top: 1px solid var(--panel-border);
-  padding-top: 10px;
+  padding-top: 18px;
 }
 .prog-strategic__head {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  margin-bottom: 2px;
+  margin-bottom: 12px;
 }
-/* Sentence case + smaller weight. Heading sebenarnya berfungsi sebagai
-   group label property list — kalau terlalu kuat (uppercase tracking)
-   ia menarik perhatian melebihi nilainya. */
+/* Pattern A sub-heading — sentence case, semibold strong color untuk scanning.
+   Selaras dengan .wi-section__title supaya rhythm konsisten antar section. */
 .prog-strategic__title {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
-  color: var(--text-muted);
+  color: var(--text-strong);
   margin: 0;
 }
 .prog-strategic__status {
@@ -1878,46 +1877,29 @@
   font-style: italic;
 }
 
-/* ───────── Empty state polish ─────────
-   Section state base mungkin sparse — beri padding + soft bg + center
-   alignment supaya empty state terasa intentional, bukan halaman blank.
-   Dipakai di tab Hambatan / Workstream empty / dll. */
+/* ───────── Empty state polish — prog-detail-page scope ─────────
+   Tone-aware aura: ganti dashed border (terlihat "loading") dengan soft
+   tonal background sesuai variant. Icon circle + sizing diambil dari
+   base components.css (tonal variants di sana). Override di sini hanya
+   menambah "feel" yang lebih lapang untuk halaman detail program. */
 .prog-detail-page .section-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 36px 24px;
-  text-align: center;
-  border: 1px dashed var(--panel-border);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--surface-1) 50%, transparent);
+  padding: 40px 28px;
+  background: color-mix(in srgb, var(--surface-1) 40%, transparent);
+  border-radius: 12px;
+  border: 1px solid var(--panel-border-soft, var(--panel-border));
   margin: 12px 0;
 }
-.prog-detail-page .section-state__icon {
-  font-size: 24px;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--green) 10%, transparent);
+.prog-detail-page .section-state--success {
+  background: color-mix(in srgb, var(--green) 4%, transparent);
+  border-color: color-mix(in srgb, var(--green) 18%, var(--panel-border));
 }
-.prog-detail-page .section-state strong {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-strong);
-  letter-spacing: -0.005em;
+.prog-detail-page .section-state--info {
+  background: color-mix(in srgb, var(--blue, var(--indigo)) 4%, transparent);
+  border-color: color-mix(in srgb, var(--blue, var(--indigo)) 18%, var(--panel-border));
 }
-.prog-detail-page .section-state p {
-  margin: 0;
-  font-size: 12.5px;
-  color: var(--text-muted);
-  line-height: 1.5;
-  max-width: 360px;
+.prog-detail-page .section-state--warning {
+  background: color-mix(in srgb, var(--yellow) 4%, transparent);
+  border-color: color-mix(in srgb, var(--yellow) 18%, var(--panel-border));
 }
 .prog-strategic__row {
   display: grid;
