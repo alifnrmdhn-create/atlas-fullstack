@@ -79,6 +79,12 @@ const approvalBadge = (prog: { approvalStatus?: string | null; rejectionNote?: s
       return { label: 'Pend. Kasub', tone: 'blue' as const }
     case 'PENDING_KADIV':
       return { label: 'Pend. Kadiv', tone: 'blue' as const }
+    case 'ACTIVE':
+      // "Berjalan" badge konsisten dengan Board/Table tab yang pakai
+      // getProgramDisplayStatus helper. Memberi sinyal jelas "ini sudah lewat
+      // approval phase" — tanpa ini row ACTIVE tampil identik dengan PENDING
+      // (kedua-duanya cuma punya health pill).
+      return { label: 'Berjalan', tone: 'green' as const }
     default:
       return null
   }
@@ -110,6 +116,24 @@ export function ProgramsView() {
   const roleAccess = useRoleAccess()
   const isStrategic = role === 'BOD' || role === 'KADIV'
   const toast = useInlineToast()
+
+  // Pop stashed approval-success toast — di-set oleh ProgramDetailView saat
+  // KADIV final-approve sebelum redirect. Lihat submitApprove() di detail.
+  // Pakai sessionStorage karena toast state inline tidak survive navigasi page.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const raw = sessionStorage.getItem('atlas:program-approved')
+    if (!raw) return
+    sessionStorage.removeItem('atlas:program-approved')
+    try {
+      const payload = JSON.parse(raw) as { id: number; name: string; at: number }
+      // Stale guard: kalau set-nya >30 detik lalu, user mungkin navigated
+      // lewat jalan lain — skip supaya tidak muncul toast nyasar.
+      if (Date.now() - payload.at > 30_000) return
+      toast.show(`Program "${payload.name}" disetujui · PIC sudah diberi tahu`, 'success')
+    } catch { /* malformed payload — silent skip */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── Tab state ──────────────────────────────────────────────────────────
   const [tab, setTab] = useState<ProgramTab>('portfolio')
@@ -659,12 +683,9 @@ export function ProgramsView() {
       <header className="programs-v2__hero">
         <div className="programs-v2__hero-text">
           <h1 className="programs-v2__title">Programs</h1>
-          <p className="programs-v2__subtitle">
-            {programs.length} program · rata-rata {avgProgress}% progress
-            {riskPrograms > 0 && (
-              <span className="programs-v2__subtitle-warn"> · {riskPrograms} high risk</span>
-            )}
-          </p>
+          {programs.length === 0 && (
+            <p className="programs-v2__subtitle">Belum ada program</p>
+          )}
         </div>
         <div className="programs-v2__hero-actions">
           {roleAccess.isMonitoringOnly && (
@@ -698,6 +719,94 @@ export function ProgramsView() {
           )}
         </div>
       </header>
+
+      {/* ── Portfolio stats strip ──────────────────────────────────────────
+          Glance summary: total + health distribution (stacked bar) + avg
+          progress + count yang butuh aksi user. Tidak hanya angka mentah —
+          health bar memberi bobot visual proporsional yang langsung baca. */}
+      {programs.length > 0 && (
+        <div className="programs-v2__hero-stats">
+          <div className="programs-v2__stat">
+            <div className="programs-v2__stat-num">{programs.length}</div>
+            <div className="programs-v2__stat-label">Total Program</div>
+          </div>
+
+          <div className="programs-v2__stat programs-v2__stat--bar">
+            <div className="programs-v2__stat-label programs-v2__stat-label--top">Distribusi Health</div>
+            <div className="programs-v2__health-bar" role="img"
+              aria-label={`On Track ${healthMix.green}, At Risk ${healthMix.yellow}, Terlambat ${healthMix.red}`}>
+              {healthMix.green > 0 && (
+                <span className="programs-v2__health-seg programs-v2__health-seg--green"
+                  style={{ flex: healthMix.green }} title={`On Track: ${healthMix.green}`}>
+                  {healthMix.green}
+                </span>
+              )}
+              {healthMix.yellow > 0 && (
+                <span className="programs-v2__health-seg programs-v2__health-seg--yellow"
+                  style={{ flex: healthMix.yellow }} title={`At Risk: ${healthMix.yellow}`}>
+                  {healthMix.yellow}
+                </span>
+              )}
+              {healthMix.red > 0 && (
+                <span className="programs-v2__health-seg programs-v2__health-seg--red"
+                  style={{ flex: healthMix.red }} title={`Terlambat: ${healthMix.red}`}>
+                  {healthMix.red}
+                </span>
+              )}
+            </div>
+            <div className="programs-v2__health-legend">
+              <span className="programs-v2__health-legend-item">
+                <i className="programs-v2__health-dot programs-v2__health-dot--green" />
+                On Track <strong>{healthMix.green}</strong>
+              </span>
+              <span className="programs-v2__health-legend-item">
+                <i className="programs-v2__health-dot programs-v2__health-dot--yellow" />
+                At Risk <strong>{healthMix.yellow}</strong>
+              </span>
+              <span className="programs-v2__health-legend-item">
+                <i className="programs-v2__health-dot programs-v2__health-dot--red" />
+                Terlambat <strong>{healthMix.red}</strong>
+              </span>
+            </div>
+          </div>
+
+          <div className="programs-v2__stat">
+            <div className="programs-v2__stat-num">{avgProgress}<span className="programs-v2__stat-num-unit">%</span></div>
+            <div className="programs-v2__stat-label">Rata-rata Progress</div>
+            <div className="programs-v2__progress-bar">
+              <span style={{ width: `${Math.min(avgProgress, 100)}%` }} />
+            </div>
+          </div>
+
+          {(riskPrograms > 0 || needsActionPrograms.length > 0) && (
+            <button
+              type="button"
+              className="programs-v2__stat programs-v2__stat--action"
+              onClick={() => {
+                setTab('portfolio')
+                if (needsActionPrograms.length > 0) {
+                  setApprovalFilter('needs_action')
+                } else {
+                  router.visit('/programs?status=at_risk,terlambat', {
+                    preserveState: true, preserveScroll: true, replace: true,
+                  })
+                }
+              }}
+              title={needsActionPrograms.length > 0
+                ? 'Filter program yang menunggu aksi Anda'
+                : 'Filter program berisiko (At Risk + Terlambat)'}
+            >
+              <div className="programs-v2__stat-num">
+                {needsActionPrograms.length > 0 ? needsActionPrograms.length : riskPrograms}
+              </div>
+              <div className="programs-v2__stat-label">
+                {needsActionPrograms.length > 0 ? 'Butuh Aksi Anda' : 'Butuh Perhatian'}
+                <span className="programs-v2__stat-arrow"> →</span>
+              </div>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── Tabs ────────────────────────────────────────────────────────── */}
       <nav className="programs-v2__tabs" role="tablist" aria-label="Program views">

@@ -1084,11 +1084,24 @@ export function ProgramDetailView() {
 
   const submitApprove = async () => {
     setApprovalLoading(true); setApprovalError(null)
+    // Capture status SEBELUM API call — setelah approve, detail.approvalStatus
+    // berubah (PENDING_KADIV → ACTIVE), jadi check di sini supaya bisa beda-kan
+    // "approve final" (yang trigger toast) vs "approve escalation KASUB→KADIV".
+    const wasPendingKadiv = detail?.approvalStatus === 'PENDING_KADIV'
+    const progName = detail?.name ?? ''
     try {
       await api.post(`/programs/${numId}/approve`, {})
       setApprovalModal(null)
       setApprovedSuccess(true)
       await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
+      // Stash approval-success info supaya /programs bisa tampilkan toast saat
+      // user landing — green banner inline di detail page hilang setelah redirect,
+      // tanpa stash ini approver tidak ada feedback bahwa action-nya tercatat.
+      if (typeof window !== 'undefined' && wasPendingKadiv && numId) {
+        sessionStorage.setItem('atlas:program-approved', JSON.stringify({
+          id: numId, name: progName, at: Date.now(),
+        }))
+      }
       // Redirect ke /programs setelah 2.5 detik
       setTimeout(() => navigate('/programs'), 2500)
     } catch (e: unknown) {
@@ -1171,10 +1184,12 @@ export function ProgramDetailView() {
                 <div key={entry.id} className={`prog-approval-log__entry prog-approval-log__entry--${tone}`}>
                   <span className="prog-approval-log__dot" />
                   <div className="prog-approval-log__body">
-                    <span className="prog-approval-log__action">{label}</span>
-                    {entry.toStatus && (
-                      <span className="prog-approval-log__status">→ {entry.toStatus.replace(/_/g, ' ')}</span>
-                    )}
+                    <div className="prog-approval-log__head">
+                      <span className="prog-approval-log__action">{label}</span>
+                      {entry.toStatus && (
+                        <span className="prog-approval-log__status">{entry.toStatus.replace(/_/g, ' ')}</span>
+                      )}
+                    </div>
                     <span className="prog-approval-log__meta">
                       {entry.byUserName} · {date}
                     </span>
@@ -1234,70 +1249,86 @@ export function ProgramDetailView() {
           </>
         )}
         <div className="wi-detail-header__actions">
+          {/* Zone 1 — view switchers. Board & Charter sama-sama "buka view
+              alternatif", grouping membuat header tidak terlihat seperti
+              barisan tombol acak. */}
           {detail && (
-            <button
-              className="icon-btn wi-detail-header__board-btn"
-              onClick={() => navigate(`/execution?programId=${numId}`)}
-              type="button"
-            >
-              <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10">
-                <path d="M2 10 10 2M5 2h5v5" />
-              </svg>
-              Board
-            </button>
+            <div className="wi-detail-header__group wi-detail-header__group--views">
+              <button
+                className="icon-btn wi-detail-header__board-btn"
+                onClick={() => navigate(`/execution?programId=${numId}`)}
+                type="button"
+              >
+                <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10">
+                  <path d="M2 10 10 2M5 2h5v5" />
+                </svg>
+                Board
+              </button>
+              <button
+                className="icon-btn wi-detail-header__board-btn charter-link"
+                onClick={() => navigate(`/programs/${numId}/charter`)}
+                type="button"
+                title="Buka tampilan Charter (single-page, read-only)"
+              >
+                Lihat sebagai Charter
+                <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10">
+                  <path d="M3 6h6M6 3l3 3-3 3" />
+                </svg>
+              </button>
+            </div>
           )}
+          {/* Zone 2 — primary action (Edit) + approval actions (Tolak/Setujui/
+              Tarik kembali). Visual separator (hairline divider) di-render
+              otomatis via CSS sibling selector kalau zone 1 ada. */}
           {detail && (
-            <button
-              className="icon-btn wi-detail-header__board-btn charter-link"
-              onClick={() => navigate(`/programs/${numId}/charter`)}
-              type="button"
-              title="Buka tampilan Charter (single-page, read-only)"
-            >
-              Lihat sebagai Charter
-              <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10">
-                <path d="M3 6h6M6 3l3 3-3 3" />
-              </svg>
-            </button>
-          )}
-          {detail && roleAccess.canEditProgram(
-              isOwner,
-              detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote,
-            ) &&
-            !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') && (
-            <button className="btn btn--ghost wi-detail-header__btn" onClick={openEdit} type="button">
-              Edit
-            </button>
-          )}
-          {/* Ajukan/Mulai Eksekusi action moved to readiness checklist below — header stays clean */}
-          {detail && detail.approvalStatus === 'PENDING_KASUB' && roleAccess.canApproveAsKasub && (
-            <>
-              <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Tolak</button>
-              <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Setujui</button>
-            </>
-          )}
-          {detail && detail.approvalStatus === 'PENDING_KADIV' && roleAccess.canApproveAsKadiv && (
-            <>
-              <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Tolak</button>
-              <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Setujui</button>
-            </>
-          )}
-          {/* Tarik kembali pengajuan — hanya untuk PIC (submitter/owner) saat
-              status PENDING_*. Reviewer tidak butuh ini, mereka pakai Tolak.
-              Skip kalau user sendiri yang bertindak sebagai reviewer (KADIV
-              yang juga submitter — jarang tapi mungkin), karena tombol Setujui
-              di atas sudah jadi escape hatch yang lebih sehat. */}
-          {detail && ['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') &&
-            (detail.submittedById === currentUser?.id || detail.ownerId === currentUser?.id) &&
-            !(detail.approvalStatus === 'PENDING_KASUB' && roleAccess.canApproveAsKasub) &&
-            !(detail.approvalStatus === 'PENDING_KADIV' && roleAccess.canApproveAsKadiv) && (
-            <button
-              className="btn btn--ghost wi-detail-header__btn"
-              disabled={approvalLoading}
-              onClick={() => setApprovalModal('withdraw')}
-              type="button"
-            >
-              Tarik kembali
-            </button>
+            ((roleAccess.canEditProgram(
+                isOwner,
+                detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote,
+              ) && !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? ''))
+              || detail.approvalStatus === 'PENDING_KASUB'
+              || detail.approvalStatus === 'PENDING_KADIV')
+          ) && (
+            <div className="wi-detail-header__group wi-detail-header__group--actions">
+              {roleAccess.canEditProgram(
+                  isOwner,
+                  detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote,
+                ) &&
+                !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') && (
+                <button className="btn btn--ghost wi-detail-header__btn" onClick={openEdit} type="button">
+                  Edit
+                </button>
+              )}
+              {detail.approvalStatus === 'PENDING_KASUB' && roleAccess.canApproveAsKasub && (
+                <>
+                  <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Tolak</button>
+                  <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Setujui</button>
+                </>
+              )}
+              {detail.approvalStatus === 'PENDING_KADIV' && roleAccess.canApproveAsKadiv && (
+                <>
+                  <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Tolak</button>
+                  <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Setujui</button>
+                </>
+              )}
+              {/* Tarik kembali pengajuan — hanya untuk PIC (submitter/owner) saat
+                  status PENDING_*. Reviewer tidak butuh ini, mereka pakai Tolak.
+                  Skip kalau user sendiri yang bertindak sebagai reviewer (KADIV
+                  yang juga submitter — jarang tapi mungkin), karena tombol Setujui
+                  di atas sudah jadi escape hatch yang lebih sehat. */}
+              {['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') &&
+                (detail.submittedById === currentUser?.id || detail.ownerId === currentUser?.id) &&
+                !(detail.approvalStatus === 'PENDING_KASUB' && roleAccess.canApproveAsKasub) &&
+                !(detail.approvalStatus === 'PENDING_KADIV' && roleAccess.canApproveAsKadiv) && (
+                <button
+                  className="btn btn--ghost wi-detail-header__btn"
+                  disabled={approvalLoading}
+                  onClick={() => setApprovalModal('withdraw')}
+                  type="button"
+                >
+                  Tarik kembali
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>

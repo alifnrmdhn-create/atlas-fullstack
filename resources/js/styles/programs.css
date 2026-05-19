@@ -488,6 +488,11 @@
   color: var(--red);
   border-color: var(--red-subtle);
 }
+.program-row__approval-tag--green {
+  background: color-mix(in srgb, var(--green) 10%, transparent);
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 24%, transparent);
+}
 .program-row__progress {
   display: flex;
   flex-direction: column;
