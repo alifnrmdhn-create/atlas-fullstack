@@ -39,13 +39,22 @@ class AuthServiceProvider extends ServiceProvider
             RolePolicy::canCreateProgram($user->roleType)
         );
 
-        Gate::define('edit-program', fn (User $user, Program $program) =>
-            RolePolicy::canEditProgram(
+        Gate::define('edit-program', function (User $user, Program $program) {
+            // FE memperlakukan owner + submittedById + picPersons sebagai stakeholder
+            // (lihat ProgramDetailView.tsx isOwner). Gate ini harus mirror — kalau
+            // tidak, edit button muncul tapi Simpan → "This action is unauthorized".
+            // picPersonIds accessor return [] kalau coPics belum di-eager-load,
+            // jadi load relation di sini untuk memastikan check akurat.
+            $program->loadMissing('coPics');
+            $isStakeholder = $program->ownerId === $user->id
+                || $program->submittedById === $user->id
+                || in_array($user->id, $program->picPersonIds ?? [], true);
+            return RolePolicy::canEditProgram(
                 $user->roleType,
-                $program->ownerId === $user->id,
+                $isStakeholder,
                 $program->approvalStatus === 'DRAFT' && !empty($program->rejectionNote),
-            )
-        );
+            );
+        });
 
         Gate::define('delete-program', fn (User $user, Program $program) =>
             RolePolicy::canDeleteProgram($user->roleType, $program->ownerId === $user->id)

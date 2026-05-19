@@ -604,8 +604,8 @@ export function ProgramDetailView() {
     setStrategicError(null)
   }, [detail?.strategicObjective, detail?.pilarStrategis])
 
-  const saveStrategic = async () => {
-    if (!detail) return
+  const saveStrategic = async (): Promise<boolean> => {
+    if (!detail) return false
     setStrategicSaving(true); setStrategicError(null)
     try {
       await api.put(`/programs/${numId}`, {
@@ -613,8 +613,10 @@ export function ProgramDetailView() {
         pilarStrategis: strategicForm.pilarStrategis || null,
       })
       await loadDetail(true)
+      return true
     } catch (err: unknown) {
       setStrategicError(extractErrorMessage(err, 'Gagal menyimpan.'))
+      return false
     } finally {
       setStrategicSaving(false)
     }
@@ -1401,6 +1403,7 @@ export function ProgramDetailView() {
                 <div className="prog-hero__col">
                   <div className="prog-hero__label-row">
                     <span className="prog-hero__label">Strategic Objective</span>
+                    {strategicSaving && <span className="prog-hero__edit-status">Menyimpan…</span>}
                     {canEditStrategicHero && !strategicEditing && (
                       <button
                         type="button"
@@ -1415,15 +1418,89 @@ export function ProgramDetailView() {
                       </button>
                     )}
                   </div>
-                  {detail.strategicObjective ? (
-                    <div className="prog-hero__so" title={detail.strategicObjective}>
-                      {detail.strategicObjective}
+                  {strategicEditing ? (
+                    <div className="prog-hero__edit">
+                      <textarea
+                        className="prog-strategic__input prog-hero__edit-textarea"
+                        rows={2}
+                        maxLength={1000}
+                        value={strategicForm.strategicObjective}
+                        onChange={e => {
+                          setStrategicForm(f => ({ ...f, strategicObjective: e.target.value }))
+                          const ta = e.currentTarget
+                          ta.style.height = 'auto'
+                          ta.style.height = `${Math.min(ta.scrollHeight, 200)}px`
+                        }}
+                        ref={el => {
+                          if (el) {
+                            el.style.height = 'auto'
+                            el.style.height = `${Math.min(el.scrollHeight, 200)}px`
+                          }
+                        }}
+                        placeholder="Contoh: Efektivitas Pengawasan Pendanaan Pemerintah"
+                        disabled={strategicSaving}
+                        autoFocus
+                      />
+                      <select
+                        className="prog-strategic__input prog-hero__edit-select"
+                        value={strategicForm.pilarStrategis}
+                        onChange={e => setStrategicForm(f => ({ ...f, pilarStrategis: e.target.value }))}
+                        disabled={strategicSaving}
+                        aria-label="Pilar Strategis"
+                      >
+                        <option value="">— Pilih pilar —</option>
+                        <option value="COLLECTING_MORE">Collecting More</option>
+                        <option value="SPENDING_BETTER">Spending Better</option>
+                        <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
+                        <option value="ENABLER">Program Enabler</option>
+                      </select>
+                      {strategicError && (
+                        <div className="prog-hero__edit-error">{strategicError}</div>
+                      )}
+                      <div className="prog-hero__edit-actions">
+                        <button
+                          type="button"
+                          className="wi-btn wi-btn--primary wi-btn--sm"
+                          onClick={async () => {
+                            // hanya tutup kalau sukses — kalau error, biarkan form
+                            // tetap terbuka supaya user bisa baca pesan & retry.
+                            const ok = await saveStrategic()
+                            if (ok) setStrategicEditing(false)
+                          }}
+                          disabled={strategicSaving}
+                        >
+                          {strategicSaving ? 'Menyimpan…' : 'Simpan'}
+                        </button>
+                        <button
+                          type="button"
+                          className="wi-btn wi-btn--ghost wi-btn--sm"
+                          onClick={() => {
+                            setStrategicForm({
+                              strategicObjective: detail.strategicObjective ?? '',
+                              pilarStrategis: detail.pilarStrategis ?? '',
+                            })
+                            setStrategicError(null)
+                            setStrategicEditing(false)
+                          }}
+                          disabled={strategicSaving}
+                        >
+                          Batal
+                        </button>
+                      </div>
                     </div>
                   ) : (
-                    <div className="prog-hero__so prog-hero__so--empty">Belum diisi</div>
-                  )}
-                  {pillarLabel && (
-                    <span className="prog-hero__pillar">{pillarLabel}</span>
+                    <>
+                      {detail.strategicObjective ? (
+                        <div className="prog-hero__so" title={detail.strategicObjective}>
+                          {detail.strategicObjective}
+                        </div>
+                      ) : (
+                        <div className="prog-hero__so prog-hero__so--empty">Belum diisi</div>
+                      )}
+                      {pillarLabel && (
+                        <span className="prog-hero__pillar">{pillarLabel}</span>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -1676,123 +1753,10 @@ export function ProgramDetailView() {
                   </div>
                 )}
 
-                {/* ── Identitas Strategis: only renders when user is editing.
-                    Display values pindah ke Hero panel (Strategic Objective + Pilar).
-                    Body section sekarang khusus edit mode — trigger via "Edit"
-                    pencil icon di Hero panel kolom Strategic Objective. */}
-                {strategicEditing && (() => {
-                  const canEditStrategic = roleAccess.canEditProgram(
-                      isOwner,
-                      detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote,
-                    )
-                    && !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '')
-                  if (!canEditStrategic) return null
-                  const pilarLabel = detail.pilarStrategis
-                    ? detail.pilarStrategis.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-                    : null
-                  return (
-                    <div className="wi-section prog-strategic">
-                      <div className="prog-strategic__head">
-                        <h3 className="prog-strategic__title">Identitas Strategis</h3>
-                        {strategicSaving && <span className="prog-strategic__status">Menyimpan…</span>}
-                        {strategicError && <span className="prog-strategic__status prog-strategic__status--error">{strategicError}</span>}
-                        {canEditStrategic && !strategicEditing && (
-                          <button
-                            type="button"
-                            className="prog-strategic__edit-btn"
-                            onClick={() => setStrategicEditing(true)}
-                            aria-label="Edit identitas strategis"
-                          >
-                            <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="11" aria-hidden="true">
-                              <path d="M8 2l2 2-6 6L2 10l0-2z"/>
-                            </svg>
-                            Edit
-                          </button>
-                        )}
-                      </div>
-                      <div className="prog-strategic__row">
-                        <label className="prog-strategic__label">Pilar Strategis</label>
-                        {strategicEditing ? (
-                          <select
-                            className="wi-input prog-strategic__input"
-                            value={strategicForm.pilarStrategis}
-                            onChange={e => setStrategicForm(f => ({ ...f, pilarStrategis: e.target.value }))}
-                            disabled={strategicSaving}
-                          >
-                            <option value="">— Pilih pilar —</option>
-                            <option value="COLLECTING_MORE">Collecting More</option>
-                            <option value="SPENDING_BETTER">Spending Better</option>
-                            <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
-                            <option value="ENABLER">Program Enabler</option>
-                          </select>
-                        ) : (
-                          <span className={`prog-strategic__value${!pilarLabel ? ' prog-strategic__value--empty' : ''}`}>
-                            {pilarLabel ?? 'Belum diisi'}
-                          </span>
-                        )}
-                      </div>
-                      <div className="prog-strategic__row">
-                        <label className="prog-strategic__label">Strategic Objective</label>
-                        {strategicEditing ? (
-                          <textarea
-                            className="wi-input prog-strategic__input"
-                            rows={2}
-                            maxLength={1000}
-                            value={strategicForm.strategicObjective}
-                            onChange={e => {
-                              setStrategicForm(f => ({ ...f, strategicObjective: e.target.value }))
-                              const ta = e.currentTarget
-                              ta.style.height = 'auto'
-                              ta.style.height = `${Math.min(ta.scrollHeight, 240)}px`
-                            }}
-                            ref={(el) => {
-                              if (el && strategicEditing) {
-                                el.style.height = 'auto'
-                                el.style.height = `${Math.min(el.scrollHeight, 240)}px`
-                              }
-                            }}
-                            placeholder="Contoh: Efektivitas Pengawasan Pendanaan Pemerintah"
-                            disabled={strategicSaving}
-                          />
-                        ) : (
-                          <span className={`prog-strategic__value${!detail.strategicObjective ? ' prog-strategic__value--empty' : ''}`}>
-                            {detail.strategicObjective || 'Belum diisi'}
-                          </span>
-                        )}
-                      </div>
-                      {strategicEditing && (
-                        <div className="prog-strategic__actions">
-                          <button
-                            type="button"
-                            className="wi-btn wi-btn--primary wi-btn--sm"
-                            onClick={async () => {
-                              await saveStrategic()
-                              setStrategicEditing(false)
-                            }}
-                            disabled={strategicSaving}
-                          >
-                            {strategicSaving ? 'Menyimpan…' : 'Simpan'}
-                          </button>
-                          <button
-                            type="button"
-                            className="wi-btn wi-btn--ghost wi-btn--sm"
-                            onClick={() => {
-                              setStrategicForm({
-                                strategicObjective: detail.strategicObjective ?? '',
-                                pilarStrategis: detail.pilarStrategis ?? '',
-                              })
-                              setStrategicError(null)
-                              setStrategicEditing(false)
-                            }}
-                            disabled={strategicSaving}
-                          >
-                            Batal
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })()}
+                {/* Identitas Strategis (Strategic Objective + Pilar) sekarang
+                    inline di Hero panel — klik pencil icon di kolom Strategic
+                    Objective untuk edit. Section terpisah dihapus karena bikin
+                    user bingung (form lompat ke bawah saat klik edit). */}
 
                 <div className="wi-section">
 
