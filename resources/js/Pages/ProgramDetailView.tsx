@@ -14,6 +14,9 @@ import { sc as colors } from '../lib/statusColors'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import { EscalationButton } from '../components/Escalation'
 import { TraceStrip, type TraceNode } from '../components/TraceStrip'
+import { DraftStatusBadge } from '../components/DraftStatusBadge'
+import { DraftRestoreBanner } from '../components/DraftRestoreBanner'
+import { useAutoSave } from '../hooks/useAutoSave'
 import {
   Avatar,
   HealthPill,
@@ -273,6 +276,19 @@ export function ProgramDetailView() {
     dukunganDibutuhkan: '',
   })
   const [progressFormSaving, setProgressFormSaving] = useState(false)
+
+  // Sprint 6 — Autosave draft Progress Log. formKey unik per program. Subscribe
+  // ke 'program:changed' supaya kalau SSE picu reload detail, draft di-flush
+  // dulu (jangan sampai user kehilangan tulisan saat realtime update masuk).
+  const progressDraft = useAutoSave({
+    formKey: `program:${numId}:progressLog`,
+    state: progressForm,
+    enabled: showProgressForm && Number.isFinite(numId),
+    entityType: 'Program',
+    entityId: Number.isFinite(numId) ? numId : undefined,
+    flushOnSSEEvents: ['program:changed'],
+  })
+
   // Mode periode: 'week' default (DKMR PDF dominan minggu-ke-N), 'month' fallback
   // untuk program dengan reporting bulanan. Auto-sync ke progressForm.period saat
   // ganti mode (current week ↔ current month).
@@ -313,9 +329,16 @@ export function ProgramDetailView() {
     setProgressFormSaving(true)
     setWeeklyKpiErrors([])
     try {
+      // (0) Flush draft autosave dulu — defensif kalau ada save sedang in-flight,
+      //     pastikan server snapshot terkini sebelum kita commit.
+      await progressDraft.flush()
+
       // (1) Save progress log — narrative + PICA fields. Wajib sukses lebih
       //     dulu karena ini source of truth weekly update.
       const res = await api.post<{ data: ProgressLogEntry }>(`/programs/${numId}/progress-log`, progressForm)
+      // Progress log sudah di DB — buang draft. Idempotent, aman walaupun
+      // belum ada draft (mis. user submit langsung tanpa autosave kena debounce).
+      await progressDraft.discard()
       setProgressLog(prev => {
         const existing = prev.findIndex(e => e.period === res.data.period)
         if (existing >= 0) {
@@ -983,11 +1006,21 @@ export function ProgramDetailView() {
   }, showCreatePhase || cpClosing)
 
   const reloadIniDetail = useCallback(async (workstreamId: number) => {
+    // Mutasi phase/task di bawah workstream bisa flip program-level readiness
+    // flags (hasWorkstream/hasTask) yang gate banner checklist "Ajukan ke
+    // KADIV". Refresh program detail bareng workstream detail supaya ribbon
+    // sinkron tanpa user perlu hard refresh.
     try {
-      const res = await api.get<{ data: WorkstreamDetail }>(`/workstreams/${workstreamId}`)
-      setIniDetail(res.data)
+      const [iniRes, progRes] = await Promise.all([
+        api.get<{ data: WorkstreamDetail }>(`/workstreams/${workstreamId}`),
+        numId
+          ? api.get<{ data: ProgramDetail }>(`/programs/${numId}`)
+          : Promise.resolve(null),
+      ])
+      setIniDetail(iniRes.data)
+      if (progRes) setDetail(progRes.data)
     } catch { /* no-op */ }
-  }, [])
+  }, [numId])
 
   const submitCreatePhase = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -2013,16 +2046,35 @@ export function ProgramDetailView() {
                   <div className="wi-section">
                     <div className="wi-section__header">
                       <h3 className="wi-section__title">{PIcon.activity} Riwayat Progress</h3>
-                      <button
-                        className="wi-btn wi-btn--sm wi-btn--outline"
-                        onClick={() => setShowProgressForm(v => !v)}
-                      >
-                        {showProgressForm ? 'Tutup' : '+ Update Progress'}
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {showProgressForm && (
+                          <DraftStatusBadge
+                            status={progressDraft.status}
+                            lastSavedAt={progressDraft.lastSavedAt}
+                          />
+                        )}
+                        <button
+                          className="wi-btn wi-btn--sm wi-btn--outline"
+                          onClick={() => setShowProgressForm(v => !v)}
+                        >
+                          {showProgressForm ? 'Tutup' : '+ Update Progress'}
+                        </button>
+                      </div>
                     </div>
 
                     {showProgressForm && (
                       <div className="prog-progress-form">
+                        {progressDraft.hasDraft && progressDraft.status === 'restored' && progressDraft.lastSavedAt && (
+                          <DraftRestoreBanner
+                            savedAt={progressDraft.lastSavedAt}
+                            onRestore={() => {
+                              const p = progressDraft.restoredPayload as Partial<typeof progressForm> | null
+                              if (p) setProgressForm(f => ({ ...f, ...p }))
+                              progressDraft.acceptRestore()
+                            }}
+                            onDiscard={() => { void progressDraft.discard() }}
+                          />
+                        )}
                         <div className="prog-progress-form__row">
                           <label className="prog-progress-form__label">Periode</label>
                           <div className="prog-period-picker">

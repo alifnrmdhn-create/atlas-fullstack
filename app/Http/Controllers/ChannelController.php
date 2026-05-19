@@ -396,7 +396,7 @@ class ChannelController extends Controller
             );
         }
 
-        return $query->get()->map(function ($ch) use ($userId) {
+        return $query->get()->map(function ($ch) use ($userId, $isAdmin) {
             $membership = $ch->members->first();
             $lastMsg = ChannelMessage::query()
                 ->where('channelId', $ch->id)
@@ -434,6 +434,7 @@ class ChannelController extends Controller
                 'unreadCount' => $unreadCount,
                 'isMember' => $membership !== null,
                 'isDirectMessage' => $ch->type === 'PRIVATE' && preg_match('/^dm-\d+-\d+$/', $ch->name),
+                'canManageMembers' => $isAdmin || $ch->createdBy === $userId,
                 'lastMessage' => $lastMsg ? [
                     'id' => $lastMsg->id,
                     'content' => $lastMsg->content,
