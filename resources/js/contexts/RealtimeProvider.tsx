@@ -141,6 +141,10 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                     lastEventIdRef.current = res.lastEventId
                 }
                 setStatus('connected')
+                // Emit synthetic workspace:ready supaya consumer (mis. WorkspaceContext)
+                // bisa set initial lastSyncedAt timestamp. Dulu di-emit oleh SSE controller
+                // saat koneksi terbuka — sekarang FE yang sintesis setelah seed sukses.
+                processEvent(null, 'workspace:ready', { connectedAt: new Date().toISOString() }, null)
             } catch { /* offline / 401 — biarkan saja, status akan flip di tick pertama */ }
         }
 
