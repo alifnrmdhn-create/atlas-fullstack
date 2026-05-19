@@ -35,3 +35,10 @@ Schedule::command('atlas:compute-health')
     ->everyThirtyMinutes()
     ->withoutOverlapping()
     ->runInBackground();
+
+// Sprint 6 — Hapus form drafts yang lewat TTL (default 7 hari). Cukup harian
+// karena non-time-critical; jalan jam 03:00 saat traffic minim.
+Schedule::command('atlas:cleanup-form-drafts')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->runInBackground();

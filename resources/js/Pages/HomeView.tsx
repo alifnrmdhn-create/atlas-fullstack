@@ -875,7 +875,7 @@ export default function HomeView() {
                         </span>
                       </span>
                     </>
-                  ) : (
+                  ) : scorecard.totalItem > 0 ? (
                     <>
                       {/* Portfolio-level (DIRUT): avg across all direktorat. */}
                       <span className="hv__big" data-tone={scorecardTone(scorecard.avgItem)} ref={avgKpiRef}>
@@ -885,6 +885,16 @@ export default function HomeView() {
                         rata-rata achievement
                         <span className="hv__sub-meta">
                           {scorecard.totalItem} {scorecard.itemLabel} · periode {scorecard.periode}
+                        </span>
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="hv__big" data-tone="neutral">—</span>
+                      <span className="hv__sub">
+                        Belum ada data KPI
+                        <span className="hv__sub-meta">
+                          Scorecard akan muncul saat modul KPI aktif
                         </span>
                       </span>
                     </>

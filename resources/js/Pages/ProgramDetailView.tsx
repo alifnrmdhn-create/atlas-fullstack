@@ -663,6 +663,8 @@ export function ProgramDetailView() {
   const [epPicIds, setEpPicIds] = useState<number[]>([])
   const [epOwnerId, setEpOwnerId] = useState<number | null>(null)
   const [epPicQuery, setEpPicQuery] = useState('')
+  const [epOwnerEditing, setEpOwnerEditing] = useState(false)
+  const [epOwnerQuery, setEpOwnerQuery] = useState('')
   const [epSaving, setEpSaving] = useState(false)
   const [epError, setEpError] = useState<string | null>(null)
   const [userDirectory, setUserDirectory] = useState<Array<{ id: number; name: string; positionTitle?: string | null }>>([])
@@ -705,6 +707,8 @@ export function ProgramDetailView() {
     setEpPicIds(detail.picPersonIds ?? [])
     setEpOwnerId(detail.ownerId)
     setEpPicQuery('')
+    setEpOwnerEditing(false)
+    setEpOwnerQuery('')
     if (userDirectory.length === 0) {
       void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null }> }>('/users/directory')
         .then(r => setUserDirectory(r.data ?? []))
@@ -3562,22 +3566,103 @@ export function ProgramDetailView() {
                     <p className="wi-sidebar-value" style={{ color: 'var(--text-muted)', fontSize: 12 }}>Memuat daftar pengguna…</p>
                   ) : (
                     <>
-                      {roleAccess.canApproveAsKadiv && (
-                        <div className="form-field" style={{ marginBottom: 12 }}>
-                          <label>PIC Utama</label>
-                          <select
-                            className="form-input"
-                            onChange={e => setEpOwnerId(Number(e.target.value))}
-                            value={epOwnerId ?? detail?.ownerId ?? ''}
-                          >
-                            {userDirectory.map(u => (
-                              <option key={u.id} value={u.id}>
-                                {u.name}{u.positionTitle ? ` — ${u.positionTitle}` : ''}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+                      {(() => {
+                        const canEditOwner = !!detail && roleAccess.canEditProgram(
+                          isOwner,
+                          detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote,
+                        )
+                        if (!canEditOwner) return null
+                        const currentOwnerId = epOwnerId ?? detail?.ownerId ?? 0
+                        const currentOwner = userDirectory.find(u => u.id === currentOwnerId)
+                        const q = epOwnerQuery.trim().toLowerCase()
+                        const ownerCandidates = userDirectory.filter(u => u.id !== currentOwnerId)
+                        const ownerFiltered = (q
+                          ? ownerCandidates.filter(u =>
+                              u.name.toLowerCase().includes(q) ||
+                              (u.positionTitle ?? '').toLowerCase().includes(q)
+                            )
+                          : ownerCandidates
+                        ).slice(0, 6)
+                        const pickOwner = (id: number) => {
+                          setEpOwnerId(id)
+                          setEpOwnerEditing(false)
+                          setEpOwnerQuery('')
+                          setEpPicIds(prev => prev.filter(x => x !== id))
+                        }
+                        return (
+                          <div className="form-field" style={{ marginBottom: 14 }}>
+                            <label>PIC Utama</label>
+                            {!epOwnerEditing ? (
+                              <div className="prog-owner-current">
+                                <div className="prog-owner-current__info">
+                                  <span className="prog-owner-current__name">{currentOwner?.name ?? '—'}</span>
+                                  {currentOwner?.positionTitle && (
+                                    <span className="prog-owner-current__role">{currentOwner.positionTitle}</span>
+                                  )}
+                                </div>
+                                <button
+                                  className="btn btn--ghost btn--sm"
+                                  onClick={() => { setEpOwnerEditing(true); setEpOwnerQuery('') }}
+                                  type="button"
+                                >
+                                  Ganti
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="prog-pic-search">
+                                <div className="prog-pic-searchbox">
+                                  <svg className="prog-pic-searchbox__icon" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="14"><circle cx="6" cy="6" r="4.5"/><path d="m12.5 12.5-3-3"/></svg>
+                                  <input
+                                    autoFocus
+                                    className="prog-pic-searchbox__input"
+                                    onChange={e => setEpOwnerQuery(e.target.value)}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault()
+                                        if (ownerFiltered.length > 0) pickOwner(ownerFiltered[0].id)
+                                      } else if (e.key === 'Escape') {
+                                        e.preventDefault()
+                                        setEpOwnerEditing(false); setEpOwnerQuery('')
+                                      }
+                                    }}
+                                    placeholder="Cari PIC Utama baru…"
+                                    type="text"
+                                    value={epOwnerQuery}
+                                  />
+                                  <button
+                                    aria-label="Batal ganti PIC Utama"
+                                    className="prog-pic-searchbox__cancel"
+                                    onClick={() => { setEpOwnerEditing(false); setEpOwnerQuery('') }}
+                                    type="button"
+                                  >
+                                    <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
+                                  </button>
+                                </div>
+                                {ownerFiltered.length === 0 ? (
+                                  <p className="prog-pic-empty">Tidak ada nama yang cocok.</p>
+                                ) : (
+                                  <ul className="prog-pic-results">
+                                    {ownerFiltered.map(u => (
+                                      <li key={u.id}>
+                                        <button
+                                          className="prog-pic-result"
+                                          onClick={() => pickOwner(u.id)}
+                                          type="button"
+                                        >
+                                          <span className="prog-pic-result__name">{u.name}</span>
+                                          {u.positionTitle && (
+                                            <span className="prog-pic-result__role">{u.positionTitle}</span>
+                                          )}
+                                        </button>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
                       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--text-muted)' }}>Tim PIC (co-PIC)</label>
                       {(() => {
                         const ownerId = epOwnerId ?? detail?.ownerId ?? 0

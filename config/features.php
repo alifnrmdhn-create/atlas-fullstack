@@ -18,4 +18,9 @@ return [
     // Sprint 5 (forward) — placeholder
     'auto-health' => env('FEATURE_AUTO_HEALTH', 'disabled'),
     'kpi-forecast' => env('FEATURE_KPI_FORECAST', 'disabled'),
+
+    // Sprint 6 — Form autosave / draft persistence. Default enabled (infra,
+    // bukan workflow change). Set ke 'disabled' di .env untuk rollback cepat
+    // tanpa code revert kalau ada masalah produksi.
+    'autosave' => env('FEATURE_AUTOSAVE', 'enabled'),
 ];

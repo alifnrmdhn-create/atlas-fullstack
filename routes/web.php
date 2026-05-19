@@ -6,6 +6,7 @@ use App\Http\Controllers\BlockerController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\ChannelMessageController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\DraftController;
 use App\Http\Controllers\EscalationController;
 use App\Http\Controllers\ExecutionGridController;
 use App\Http\Controllers\PerformanceController;
@@ -382,6 +383,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/decline', [EscalationController::class, 'decline'])->name('decline');
         Route::post('/{id}/resolve', [EscalationController::class, 'resolve'])->name('resolve');
     });
+
+    // ── Form autosave / drafts (Sprint 6 — Mei 2026) ──────────────────────────
+    // formKey format konvensi: "{entityType}:{entityId}:{formName}",
+    // mis. "program:123:progressLog". Whitelist regex cegah path traversal.
+    Route::prefix('drafts')->name('drafts.')->group(function () {
+        Route::get('/{formKey}',    [DraftController::class, 'show'])->name('show');
+        Route::put('/{formKey}',    [DraftController::class, 'upsert'])->name('upsert');
+        Route::delete('/{formKey}', [DraftController::class, 'destroy'])->name('destroy');
+    })->where('formKey', '[A-Za-z0-9:_\-\.]+');
 
     // ── Risk Reports ──────────────────────────────────────────────────────────
     Route::prefix('risk-reports')->name('risk-reports.')->group(function () {

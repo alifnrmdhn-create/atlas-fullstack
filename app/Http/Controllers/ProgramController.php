@@ -258,15 +258,6 @@ class ProgramController extends Controller
             'dukunganDibutuhkan' => 'nullable|string|max:2000',
         ]);
 
-        // ownerId change is governance-sensitive — only KADIV or admin can reassign PIC Utama.
-        if (array_key_exists('ownerId', $data) && (int) $data['ownerId'] !== (int) $program->ownerId) {
-            $role = strtoupper($request->user()->roleType ?? '');
-            $isKadivOrAbove = $isAdmin || $role === 'KADIV';
-            if (!$isKadivOrAbove) {
-                unset($data['ownerId']);
-            }
-        }
-
         // Snapshot SEBELUM update — kalau program ACTIVE, deteksi perubahan
         // commitment field untuk audit log + notif KADIV (Opsi A governance).
         $wasActive = $program->approvalStatus === 'ACTIVE';

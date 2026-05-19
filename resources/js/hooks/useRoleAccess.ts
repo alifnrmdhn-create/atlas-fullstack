@@ -9,7 +9,8 @@ import { useWorkspace } from './useWorkspace'
  *   KADIV     → full write access within their division scope
  *   KASUBDIV  → full write within their subdivision scope
  *   ASISTEN   → primary program initiator, full write for their own programs
- *   OFFICER   → support/admin only: cannot create/delete programs, board is read-only
+ *   OFFICER   → PIC operasional: write-enabled untuk create/update, masih
+ *               scoped self-only di Execution board (myItemsLocked)
  *   ADMIN/SUPERADMIN → unrestricted
  */
 export function useRoleAccess() {
@@ -23,11 +24,11 @@ export function useRoleAccess() {
     role,
 
     // ── Program module ────────────────────────────────────────────────────
-    /** Can initiate a new program */
-    canCreateProgram: isAnyOf('SUPERADMIN', 'ADMIN', 'KADIV', 'KASUBDIV', 'ASISTEN'),
+    /** Can initiate a new program — semua role kecuali BOD */
+    canCreateProgram: role !== '' && !is('BOD'),
 
-    /** Can create an workstream within a program */
-    canCreateWorkstream: isAnyOf('SUPERADMIN', 'ADMIN', 'KADIV', 'KASUBDIV', 'ASISTEN'),
+    /** Can create a workstream within a program — sejajar dengan canCreateProgram */
+    canCreateWorkstream: role !== '' && !is('BOD'),
 
     /**
      * Can edit a program they own; KADIV can edit any in their division.

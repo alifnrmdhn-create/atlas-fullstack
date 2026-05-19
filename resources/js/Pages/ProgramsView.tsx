@@ -19,6 +19,7 @@ import { formatKpiValue, formatKpiValueParts, getKpiFillPercent } from '../lib/k
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { useRoleAccess } from '../hooks/useRoleAccess'
+import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import { ExecutionTab } from '../components/ExecutionTab'
 import { MonitoringMatrix } from '../components/MonitoringMatrix'
 import { useInlineToast } from '../components/InlineToast'
@@ -566,6 +567,30 @@ export function ProgramsView() {
   const createProgramTitleId = useId()
   const createProgramDescId = useId()
 
+  // Single entrypoint for "buka modal Program Baru" — dipakai oleh tombol di
+  // page header DAN listener TOPBAR_ACTION_EVENT (global "+" di topbar +
+  // command palette). Tanpa listener ini, klik "Program" di popover "+" jadi
+  // no-op karena /programs sengaja tidak terdaftar di TOPBAR_ACTIONS map
+  // (page mengelola CTA-nya sendiri).
+  const openCreateProgramModal = useCallback(() => {
+    if (!roleAccess.canCreateProgram) return
+    setShowCreateProgram(true)
+    if (cpUnits.length === 0) {
+      void api.get<{ data: Array<{ id: number; name: string; code: string }> }>('/organization/units')
+        .then(r => setCpUnits(r.data ?? []))
+        .catch((err) => console.error('[Atlas] Gagal memuat unit list:', err))
+    }
+  }, [roleAccess.canCreateProgram, cpUnits.length])
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ id: string; page: string }>).detail
+      if (detail?.id === 'program.new') openCreateProgramModal()
+    }
+    window.addEventListener(TOPBAR_ACTION_EVENT, handler)
+    return () => window.removeEventListener(TOPBAR_ACTION_EVENT, handler)
+  }, [openCreateProgramModal])
+
   const submitCpStep1 = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setCpStep(2)
@@ -764,14 +789,7 @@ export function ProgramsView() {
           {roleAccess.canCreateProgram && (
             <button
               className="programs-v2__cta"
-              onClick={() => {
-                setShowCreateProgram(true)
-                if (cpUnits.length === 0) {
-                  void api.get<{ data: Array<{ id: number; name: string; code: string }> }>('/organization/units')
-                    .then(r => setCpUnits(r.data ?? []))
-                    .catch((err) => console.error('[Atlas] Gagal memuat unit list:', err))
-                }
-              }}
+              onClick={openCreateProgramModal}
               type="button"
             >
               Program Baru

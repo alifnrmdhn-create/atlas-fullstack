@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import mermaid from 'mermaid'
 import './PlaybookView.css'
 import './SmallPagesViews.css'
@@ -21,6 +21,14 @@ function inl(s: string): string {
     .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
     .replace(/`([^`\n]+)`/g, '<code class="pb-ic">$1</code>')
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a class="pb-a" href="$2" target="_blank" rel="noopener">$1</a>')
+    // Replace status emoji circles with CSS-rendered dots so size & color
+    // stay crisp across OS/font (Apple vs Windows vs Linux emoji renderers
+    // size & shade these differently). Source markdown keeps the emoji for
+    // plain-text readability — only render output uses the span.
+    .replace(/🟢/g, '<span class="pb-dot pb-dot--green" aria-hidden="true"></span>')
+    .replace(/🟡/g, '<span class="pb-dot pb-dot--amber" aria-hidden="true"></span>')
+    .replace(/🔴/g, '<span class="pb-dot pb-dot--red" aria-hidden="true"></span>')
+    .replace(/🔵/g, '<span class="pb-dot pb-dot--blue" aria-hidden="true"></span>')
 }
 
 function slug(text: string) {
@@ -48,7 +56,33 @@ function statusClass(line: string): string {
 }
 
 type TocEntry = { id: string; label: string; num: number | null }
+type TocGroup = { label: string; items: TocEntry[] }
 type ParseResult = { html: string; toc: TocEntry[]; h1: string; mermaidSources: string[]; updatedAt: string | null }
+
+// Map section number → top-level group label.
+// Mirrors ATLAS sidebar's PDCA structure (Plan/Do/Check/Act + Komunikasi/Akun/Admin)
+// so playbook navigation matches the product navigation it documents.
+function pdcaGroup(num: number | null): string {
+  if (num === null) return 'Mulai di Sini'   // preamble: Referensi Jabatan, Glosarium, Alur Proses
+  if (num <= 2) return 'Mulai di Sini'        // 1. Auth, 2. Navigasi Sidebar
+  if (num <= 4) return 'Hari Ini'             // 3. Home, 4. Fokus
+  if (num <= 7) return 'Perencanaan'          // 5-7. Program, Charter, Roadmap
+  if (num <= 11) return 'Eksekusi'            // 8-11. Workboard, Penugasan, Grid, Blocker
+  if (num <= 16) return 'Performance'         // 12-16. Executive, Scorecard, KPI ×3
+  if (num <= 18) return 'Tindak Lanjut'       // 17. Rapat, 18. Eskalasi
+  if (num <= 21) return 'Komunikasi & Akun'   // 19. Channels, 20. Akun, 21. Search
+  return 'Lampiran'                            // 22. Admin, 23. Evaluasi
+}
+
+function groupToc(toc: TocEntry[]): TocGroup[] {
+  return toc.reduce<TocGroup[]>((acc, item) => {
+    const label = pdcaGroup(item.num)
+    const last = acc[acc.length - 1]
+    if (last && last.label === label) last.items.push(item)
+    else acc.push({ label, items: [item] })
+    return acc
+  }, [])
+}
 
 function parse(md: string): ParseResult {
   const lines = md.split('\n')
@@ -141,7 +175,12 @@ function parse(md: string): ParseResult {
         const clean = hm[2].replace(/[*`[\]#]/g, '').replace(/^\d+\.\s+/, '').trim()
         toc.push({ id, label: clean, num: numMatch ? parseInt(numMatch[1], 10) : null })
       }
-      out.push(`<h${lv} class="pb-h${lv}" id="${id}">${inl(hm[2])}</h${lv}>`)
+      // Add copy-link affordance to H2/H3 only — deeper headings are too dense
+      // to warrant per-heading anchors, and the topbar/TOC already cover H2.
+      const anchor = (lv === 2 || lv === 3)
+        ? `<button type="button" class="pb-anchor" data-anchor="${id}" aria-label="Salin tautan ke bagian ini" title="Salin tautan"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 7a2.5 2.5 0 0 0 3.5 0l1.5-1.5a2.5 2.5 0 0 0-3.5-3.5L5.5 3"/><path d="M7 5a2.5 2.5 0 0 0-3.5 0L2 6.5a2.5 2.5 0 0 0 3.5 3.5L6.5 9"/></svg></button>`
+        : ''
+      out.push(`<h${lv} class="pb-h${lv}" id="${id}">${inl(hm[2])}${anchor}</h${lv}>`)
       i++; continue
     }
 
@@ -292,7 +331,18 @@ export function PlaybookView() {
   const [error, setError] = useState<string | null>(null)
   const [activeId, setActiveId] = useState('')
   const [showTop, setShowTop] = useState(false)
+  const [query, setQuery] = useState('')
   const contentRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  const filteredGroups = useMemo<TocGroup[]>(() => {
+    const groups = groupToc(data?.toc ?? [])
+    const q = query.trim().toLowerCase()
+    if (!q) return groups
+    return groups
+      .map(g => ({ ...g, items: g.items.filter(it => it.label.toLowerCase().includes(q)) }))
+      .filter(g => g.items.length > 0)
+  }, [data, query])
 
   useEffect(() => {
     fetch('/docs/ATLAS_PLAYBOOK.md')
@@ -318,9 +368,46 @@ export function PlaybookView() {
     return () => obs.disconnect()
   }, [data])
 
+  // Keep active TOC item in view as user scrolls through long docs.
+  // `block: 'nearest'` is a no-op when the item is already visible — so this
+  // only fires when the active section moves outside the nav viewport.
+  useEffect(() => {
+    if (!activeId) return
+    const navEl = document.querySelector('.pb-nav')
+    const activeBtn = navEl?.querySelector<HTMLElement>('.pb-nav__item--active')
+    activeBtn?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [activeId])
+
   const scrollTo = useCallback((id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
+
+  // Anchor permalink: click on heading's "#" button copies the deep link to
+  // clipboard. Uses event delegation so we attach once and survive re-renders
+  // of the markdown body.
+  useEffect(() => {
+    if (!data || !contentRef.current) return
+    const el = contentRef.current
+    const onClick = (ev: Event) => {
+      const target = (ev.target as HTMLElement | null)?.closest<HTMLElement>('.pb-anchor')
+      if (!target) return
+      ev.preventDefault()
+      const id = target.dataset.anchor
+      if (!id) return
+      const url = `${window.location.origin}${window.location.pathname}#${id}`
+      // Clipboard API may reject on insecure context or denied permission —
+      // fall back silently rather than break the click.
+      void navigator.clipboard?.writeText(url).catch(() => { /* noop */ })
+      // Update URL hash without scrolling (scroll already happens on heading
+      // observe; here the user has clicked the anchor next to the heading
+      // they're already viewing).
+      history.replaceState(null, '', `#${id}`)
+      target.classList.add('pb-anchor--copied')
+      window.setTimeout(() => target.classList.remove('pb-anchor--copied'), 1400)
+    }
+    el.addEventListener('click', onClick)
+    return () => el.removeEventListener('click', onClick)
+  }, [data])
 
   // Show "Ke atas" only after scrolling past intro area (~200px)
   useEffect(() => {
@@ -357,45 +444,61 @@ export function PlaybookView() {
 
   return (
     <div className="ds playbook-v2 pb-workspace">
-      {/* ── Sticky page header bar (matches benchmark pages) ── */}
-      <header className="pb-topbar">
-        <div className="pb-topbar__left">
-          <h1 className="pb-topbar__title">{data.h1 || 'ATLAS Playbook'}</h1>
-          <p className="pb-topbar__sub">
-            <span>{data.toc.filter(t => t.num !== null).length} workflow</span>
-            {data.updatedAt && (
-              <>
-                <span className="pb-topbar__dot" aria-hidden="true" />
-                <span>Diperbarui {data.updatedAt}</span>
-              </>
-            )}
-          </p>
-        </div>
-      </header>
-
       {/* ── Two-column layout ── */}
       <div className="pb-layout">
         {/* TOC */}
-        <nav className="pb-nav" aria-label="Navigasi workflow">
-          <p className="pb-nav__heading">Workflow</p>
-          {data.toc.map((item, idx) => {
-            const prevIsRef = idx > 0 && data.toc[idx - 1].num === null
-            const showDivider = item.num !== null && prevIsRef
-            return (
-              <div key={item.id}>
-                {showDivider && <div className="pb-nav__divider" />}
-                <button
-                  type="button"
-                  className={`pb-nav__item${activeId === item.id ? ' pb-nav__item--active' : ''}`}
-                  onClick={() => scrollTo(item.id)}
-                  title={item.label}
-                >
-                  {item.num !== null && <span className="pb-nav__idx">{item.num}</span>}
-                  {item.label}
-                </button>
+        <nav className="pb-nav" aria-label="Daftar isi playbook">
+          <div className="pb-search">
+            <svg className="pb-search__icon" width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+              <circle cx="6" cy="6" r="4.25" />
+              <path d="m9.25 9.25 3 3" />
+            </svg>
+            <input
+              ref={searchRef}
+              type="search"
+              className="pb-search__input"
+              placeholder="Cari bagian…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') setQuery('') }}
+              aria-label="Cari bagian playbook"
+            />
+            {query && (
+              <button
+                type="button"
+                className="pb-search__clear"
+                onClick={() => { setQuery(''); searchRef.current?.focus() }}
+                aria-label="Bersihkan pencarian"
+                title="Bersihkan"
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                  <path d="m2 2 6 6M8 2l-6 6" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {filteredGroups.length === 0 ? (
+            <p className="pb-nav__empty">Tidak ada bagian yang cocok dengan "{query}".</p>
+          ) : (
+            filteredGroups.map((group) => (
+              <div key={group.label} className="pb-nav__group">
+                <p className="pb-nav__group-label">{group.label}</p>
+                {group.items.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`pb-nav__item${activeId === item.id ? ' pb-nav__item--active' : ''}`}
+                    onClick={() => scrollTo(item.id)}
+                    title={item.label}
+                  >
+                    {item.num !== null && <span className="pb-nav__idx">{item.num}</span>}
+                    {item.label}
+                  </button>
+                ))}
               </div>
-            )
-          })}
+            ))
+          )}
 
           <button
             type="button"
@@ -412,6 +515,18 @@ export function PlaybookView() {
 
         {/* Content */}
         <div className="pb-content" ref={contentRef}>
+          <header className="pb-page-header">
+            <h1 className="pb-page-header__title">{data.h1 || 'ATLAS Playbook'}</h1>
+            <p className="pb-page-header__meta">
+              <span>{data.toc.filter(t => t.num !== null).length} bagian</span>
+              {data.updatedAt && (
+                <>
+                  <span className="pb-page-header__dot" aria-hidden="true" />
+                  <span>Diperbarui {data.updatedAt}</span>
+                </>
+              )}
+            </p>
+          </header>
           <div className="pb-body">
             <PlaybookContent html={data.html} sources={data.mermaidSources} />
           </div>

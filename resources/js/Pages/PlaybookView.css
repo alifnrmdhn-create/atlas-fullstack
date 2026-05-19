@@ -7,62 +7,43 @@
   box-sizing: border-box;
 }
 
-/* ── Sticky page header bar (same pattern as Presence / Focus) ───────────── */
+/* ── Inline page header — scrolls with content ───────────────────────────── */
 
-.pb-topbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  padding: 11px 32px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--panel-border);
-  flex-shrink: 0;
-}
-
-.pb-topbar__left {
+.pb-page-header {
   display: flex;
   align-items: baseline;
   gap: 12px;
+  flex-wrap: wrap;
+  padding: 4px 0 18px;
+  margin: 0 0 18px;
+  border-bottom: 1px solid var(--panel-border);
 }
 
-.pb-topbar__title {
-  font-size: 14px;
+.pb-page-header__title {
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-strong, var(--text));
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
 }
 
-.pb-topbar__sub {
+.pb-page-header__meta {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 12.5px;
+  gap: 6px;
+  font-size: 12px;
   color: var(--text-muted);
   margin: 0;
 }
 
-.pb-topbar__dot {
+.pb-page-header__dot {
   width: 3px;
   height: 3px;
   border-radius: 50%;
   background: var(--text-muted);
   opacity: 0.4;
   flex-shrink: 0;
-}
-
-.pb-topbar__badge {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--green-ink);
-  background: var(--green-dim);
-  border: 1px solid var(--green-subtle);
-  border-radius: 4px;
-  padding: 2px 8px;
 }
 
 /* ── Two-column layout ───────────────────────────────────────────────────── */
@@ -79,23 +60,99 @@
 
 .pb-nav {
   position: sticky;
-  top: 44px; /* height of pb-topbar */
+  top: 0;
   padding: 20px 16px 40px 20px;
   border-right: 1px solid var(--panel-border);
-  max-height: calc(100vh - 44px);
+  max-height: 100vh;
   overflow-y: auto;
   scrollbar-width: none;
 }
 .pb-nav::-webkit-scrollbar { display: none; }
 
-.pb-nav__heading {
+/* Search box — filters TOC entries by label. Sticky at top of nav so it
+ * stays accessible while scrolling through long groups. */
+.pb-search {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 6px 8px 6px 10px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+}
+.pb-search:focus-within {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green-subtle);
+}
+.pb-search__icon {
+  color: var(--text-muted);
+  opacity: 0.65;
+  flex-shrink: 0;
+}
+.pb-search__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text);
+  padding: 0;
+}
+.pb-search__input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.55;
+}
+/* Remove native search clear button (we render our own) */
+.pb-search__input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.pb-search__clear {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 3px;
+  opacity: 0.65;
+  transition: opacity 0.12s, background 0.12s;
+}
+.pb-search__clear:hover {
+  opacity: 1;
+  background: var(--surface-overlay-soft);
+}
+
+.pb-nav__empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 8px 10px;
+  line-height: 1.5;
+  opacity: 0.7;
+}
+
+/* Group label — small caps eyebrow that separates PDCA clusters in TOC */
+.pb-nav__group + .pb-nav__group {
+  margin-top: 18px;
+}
+.pb-nav__group-label {
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin: 0 0 8px;
-  opacity: 0.65;
+  margin: 0 0 6px;
+  padding: 0 10px;
+  opacity: 0.5;
 }
 
 .pb-nav__item {
@@ -152,12 +209,6 @@
 .pb-nav__item--active .pb-nav__idx {
   color: var(--green-ink);
   opacity: 0.7;
-}
-
-.pb-nav__divider {
-  margin: 8px 10px;
-  border-top: 1px solid var(--panel-border);
-  opacity: 0.6;
 }
 
 .pb-nav__top {
@@ -291,34 +342,96 @@
   border-bottom: 0;
   color: var(--text-strong, var(--text));
   letter-spacing: -0.005em;
-  scroll-margin-top: 60px;
+  scroll-margin-top: 20px;
 }
 
+/* Subsection heading — clearly a child of H2, no competing accent.
+ * Slightly smaller + muted color steps the hierarchy down without adding
+ * a green accent bar that would conflate with intro callout treatment. */
 .pb-body .pb-h3 {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 11.5px;
+  display: block;
+  font-size: 12.5px;
   font-weight: 600;
-  margin: 16px 0 5px;
-  color: var(--text-strong, var(--text));
-  letter-spacing: 0;
-  scroll-margin-top: 60px;
-}
-.pb-body .pb-h3::before {
-  content: '';
-  display: inline-block;
-  width: 3px;
-  height: 12px;
-  background: var(--green);
-  border-radius: 2px;
-  flex-shrink: 0;
-  opacity: 0.65;
+  margin: 20px 0 6px;
+  color: var(--text);
+  letter-spacing: -0.003em;
+  scroll-margin-top: 20px;
 }
 
-/* Suppress accent bar on H3s that live inside the intro card (no H2 parent) */
-.pb-body .pb-intro .pb-h3::before {
-  display: none;
+/* Status dots — CSS-rendered to replace emoji 🟢🟡🔴🔵 in Glosarium
+ * Status Program table. Crisp + consistent size across OS, themable. */
+.pb-body .pb-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: 0.06em;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.05) inset;
+}
+.pb-body .pb-dot--green { background: #16a34a; }
+.pb-body .pb-dot--amber { background: #f59e0b; }
+.pb-body .pb-dot--red   { background: #dc2626; }
+.pb-body .pb-dot--blue  { background: #2563eb; }
+[data-theme="dark"] .pb-body .pb-dot {
+  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.08) inset;
+}
+
+/* Anchor permalink — hover-reveal "#" button next to each H2/H3.
+ * Click copies deep-link URL to clipboard and flashes "tersalin" badge.
+ * Hidden by default; surfaces on heading hover or button focus. */
+.pb-body .pb-anchor {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  vertical-align: middle;
+  border-radius: 4px;
+  transition: opacity 0.12s, color 0.12s, background 0.12s;
+}
+.pb-body .pb-h2:hover .pb-anchor,
+.pb-body .pb-h3:hover .pb-anchor,
+.pb-body .pb-anchor:focus-visible {
+  opacity: 0.55;
+}
+.pb-body .pb-anchor:hover {
+  opacity: 1;
+  color: var(--green-ink);
+  background: var(--green-dim);
+}
+.pb-body .pb-anchor--copied {
+  opacity: 1;
+  color: var(--green-ink);
+  background: var(--green-dim);
+}
+.pb-body .pb-anchor--copied::after {
+  content: 'Tersalin';
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--green-ink);
+  background: var(--green-dim);
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--green-subtle);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .pb-body .pb-h4 {
@@ -574,14 +687,10 @@
     linear-gradient(180deg, color-mix(in srgb, var(--surface-1) 68%, var(--panel)), var(--app-bg));
 }
 
-:root:not([data-theme="dark"]) .pb-topbar {
+:root:not([data-theme="dark"]) .pb-page-header {
   border-bottom-color: color-mix(in srgb, var(--panel-border) 72%, var(--green-subtle));
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--panel) 88%, var(--green-dim)), color-mix(in srgb, var(--panel) 94%, var(--surface-1)));
-  box-shadow: var(--panel-shadow-md);
 }
 
-:root:not([data-theme="dark"]) .pb-topbar__badge,
 :root:not([data-theme="dark"]) .pb-nav__idx,
 :root:not([data-theme="dark"]) .pb-body .pb-status {
   box-shadow: var(--shadow-soft);

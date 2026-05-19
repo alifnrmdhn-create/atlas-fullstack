@@ -61,6 +61,15 @@ class HandleInertiaRequests extends Middleware
             ],
             // Sprint 4 — feature flags resolved per user (DKM scoping etc.)
             'features' => FeatureFlagService::resolveAllForUser($user),
+            // Sprint 6 — threshold values yang dibaca FE (autosave debounce, dll).
+            // Hindari hardcoded angka di TS — semua tunable lewat .env.
+            'thresholds' => [
+                'autosave' => [
+                    'debounceMs'   => (int) config('atlas-thresholds.autosave.debounce_ms', 1500),
+                    'ttlDays'      => (int) config('atlas-thresholds.autosave.ttl_days', 7),
+                    'maxPayloadKb' => (int) config('atlas-thresholds.autosave.max_payload_kb', 256),
+                ],
+            ],
         ];
     }
 }

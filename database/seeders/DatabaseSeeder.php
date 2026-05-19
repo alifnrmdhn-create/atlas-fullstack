@@ -42,9 +42,10 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $this->call([
-            ScorecardSeeder::class,
-        ]);
+        // ScorecardSeeder dinonaktifkan: nilainya hardcoded (mirror PDF 15 Mei
+        // 2026), tampil sebagai KPI Achievement di Home tapi bukan data nyata.
+        // Re-enable hanya saat modul KPI sudah punya data real, atau jalankan
+        // manual via `php artisan db:seed --class=ScorecardSeeder` untuk demo.
     }
 
     private function updateOrgUnitHeadIds(): void

@@ -6114,6 +6114,23 @@ select.wid-input {
   flex: 1; border: 0; outline: none; background: transparent;
   padding: 8px 0; font-size: 13px; color: var(--text-body);
 }
+.prog-pic-searchbox__cancel {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 999px;
+  border: 0; padding: 0; background: transparent;
+  color: var(--text-muted); cursor: pointer; flex-shrink: 0;
+  transition: background 0.1s, color 0.1s;
+}
+.prog-pic-searchbox__cancel:hover { background: var(--surface-1); color: var(--text-body); }
+.prog-owner-current {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--panel-border); border-radius: 8px;
+  background: var(--panel-bg);
+}
+.prog-owner-current__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.prog-owner-current__name { font-size: 13px; font-weight: 500; color: var(--text-body); }
+.prog-owner-current__role { font-size: 11px; color: var(--text-muted); }
 .prog-pic-results {
   list-style: none; margin: 0; padding: 4px;
   border: 1px solid var(--panel-border); border-radius: 8px;

@@ -895,7 +895,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     roadmap:     { path: '/roadmap',   label: 'Roadmap',          caption: 'Visual program timeline',           icon: IconRoadmap    },
     programs:    { path: '/programs',  label: 'Programs',         caption: 'Portfolio orchestration',           icon: IconPrograms,    shortcut: 'G P', badge: () => programsCount },
     execution:   { path: '/execution', label: 'Execution',        caption: 'Kanban delivery board',             icon: IconExecution,   shortcut: 'G E', badge: () => tasksCount },
-    penugasan:   { path: '/penugasan', label: 'Penugasan',        caption: 'Tugas harian di luar Program',      icon: IconAssignments, shortcut: 'G A' },
+    penugasan:   { path: '/penugasan', label: 'Assignment',       caption: 'Tugas harian di luar Program',      icon: IconAssignments, shortcut: 'G A' },
     goals:       { path: '/goals',      label: 'Goals & KPI',   caption: 'Manage KPI organisasi & tracking capaian',  icon: IconGoals    },
     activity:    { path: '/activity',   label: 'Team Activity', caption: 'Leaderboard sesi & aktivitas harian tim',   icon: IconActivity },
     reports:       { path: '/reports',         label: 'Analytics',       caption: 'KPI, program health & leaderboard',  icon: IconReports       },

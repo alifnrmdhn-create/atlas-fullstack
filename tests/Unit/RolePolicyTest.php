@@ -47,9 +47,11 @@ class RolePolicyTest extends TestCase
         $this->assertTrue(RolePolicy::canCreateProgram('KADIV'));
     }
 
-    public function test_officer_cannot_create_program(): void
+    public function test_officer_can_create_program(): void
     {
-        $this->assertFalse(RolePolicy::canCreateProgram('OFFICER'));
+        // 2026-05-19: OFFICER dipromote ke write-enabled — PIC operasional
+        // perlu inisiasi program di lapangan.
+        $this->assertTrue(RolePolicy::canCreateProgram('OFFICER'));
     }
 
     public function test_bod_cannot_create_program(): void
@@ -64,9 +66,10 @@ class RolePolicyTest extends TestCase
         $this->assertTrue(RolePolicy::isReadOnly('BOD'));
     }
 
-    public function test_officer_is_read_only(): void
+    public function test_officer_is_not_read_only(): void
     {
-        $this->assertTrue(RolePolicy::isReadOnly('OFFICER'));
+        // 2026-05-19: OFFICER dipromote ke write-enabled.
+        $this->assertFalse(RolePolicy::isReadOnly('OFFICER'));
     }
 
     public function test_kadiv_is_not_read_only(): void

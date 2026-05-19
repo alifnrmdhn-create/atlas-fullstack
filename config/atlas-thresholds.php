@@ -98,6 +98,22 @@ return [
         'in_progress_per_user' => env('ATLAS_WIP_IN_PROGRESS', 5),
     ],
 
+    // ── Form autosave / draft persistence (Sprint 6 — Mei 2026) ──────────────
+    // Mencegah kehilangan data form saat halaman ke-refresh atau koneksi drop.
+    // FE debounce N ms sebelum PUT; BE simpan ke FormDraft table dengan TTL.
+    'autosave' => [
+        // Jeda dari ketikan terakhir sebelum FE PUT draft. Default 1500ms cukup
+        // imbang antara responsiveness vs jumlah request. Turun = lebih sering save
+        // (lebih aman, lebih ramai); naik = hemat tapi window data-loss melebar.
+        'debounce_ms'    => env('ATLAS_AUTOSAVE_DEBOUNCE_MS', 1500),
+        // Berapa hari draft dipertahankan sejak last edit. Cleanup harian via
+        // command atlas:cleanup-form-drafts.
+        'ttl_days'       => env('ATLAS_AUTOSAVE_TTL_DAYS',    7),
+        // Hard cap payload untuk satu draft. Lebih besar dari ini → BE respon 413,
+        // FE fallback ke sessionStorage-only (lihat useAutoSave hook).
+        'max_payload_kb' => env('ATLAS_AUTOSAVE_MAX_KB',      256),
+    ],
+
     // ── Strategic pillars (Charter View — Mei 2026) ───────────────────────────
     // Empat pilar strategis PTPN III. Source of truth untuk dropdown label di
     // frontend (di-share via Inertia) dan validasi `pilarStrategis` di

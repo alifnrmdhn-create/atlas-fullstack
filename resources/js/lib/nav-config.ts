@@ -35,7 +35,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Eksekusi',
     items: [
       { path: '/execution', label: 'Execution' },
-      { path: '/penugasan', label: 'Penugasan' },
+      { path: '/penugasan', label: 'Assignment' },
     ],
   },
   {

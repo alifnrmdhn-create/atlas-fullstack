@@ -42,9 +42,10 @@ class RolePolicy
 
     public static function canCreateProgram(?string $role): bool
     {
-        $r = self::norm($role);
-        // ASISTEN = primary initiator; KASUBDIV & KADIV juga boleh
-        return self::isAdminOrAbove($r) || in_array($r, ['kadiv', 'kasubdiv', 'asisten'], true);
+        // Semua role boleh inisiasi program kecuali BOD (Direksi monitoring).
+        // OFFICER ikut dimasukkan agar PIC operasional di luar struktur ASISTEN/
+        // KASUBDIV tidak terblok saat input program di lapangan.
+        return self::norm($role) !== 'bod';
     }
 
     /**
@@ -88,19 +89,15 @@ class RolePolicy
     }
 
     /**
-     * BOD & OFFICER read-only — BOD monitoring, OFFICER support.
+     * BOD satu-satunya role read-only (Direksi monitoring).
      *
-     * Catatan eksplisit role yang BUKAN read-only (write-enabled):
-     *   - ADMIN, SUPERADMIN: full access
-     *   - KADIV: approval + cross-divisi
-     *   - KASUBDIV: penanggung jawab divisi
-     *   - ASISTEN: PIC operasional, primary initiator program kerja
-     *     (lihat ATLAS_PDCA_IMPLEMENTATION_PLAN section "Sprint 0" — ASISTEN
-     *     mendaftarkan program & task harian). Sengaja TIDAK termasuk read-only.
+     * Semua role lain — ADMIN, SUPERADMIN, KADIV, KASUBDIV, ASISTEN, OFFICER —
+     * write-enabled. OFFICER sebelumnya read-only tapi PIC operasional di
+     * lapangan butuh akses inisiasi/update operasional, jadi dimasukkan ke
+     * write-enabled (per keputusan 2026-05-19).
      */
     public static function isReadOnly(?string $role): bool
     {
-        $r = self::norm($role);
-        return $r === 'bod' || $r === 'officer';
+        return self::norm($role) === 'bod';
     }
 }
