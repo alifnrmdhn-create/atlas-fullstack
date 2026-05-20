@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useId, useRef } from 'react'
-import { createPortal } from 'react-dom'
+import { createPortal, flushSync } from 'react-dom'
 import type { FormEvent } from 'react'
 import { usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
@@ -306,12 +306,13 @@ export function ProgramDetailView() {
     setProgressForm(f => {
       // Auto-expand kalau ada existing isi di salah satu field opsional —
       // user yang udah pernah ketik harus tetap bisa lihat tulisannya.
-      shouldExpandOptional = !!(
-        f.kendala.trim() ||
-        f.correctiveAction.trim() ||
-        f.nextStep.trim() ||
-        f.dukunganDibutuhkan.trim()
-      )
+      // Null-safe — defensif kalau ada field null dari draft restore lama.
+      const fKendala = (f.kendala ?? '').trim()
+      const fCorrective = (f.correctiveAction ?? '').trim()
+      const fNextStep = (f.nextStep ?? '').trim()
+      const fDukungan = (f.dukunganDibutuhkan ?? '').trim()
+      const fNarrative = (f.narrative ?? '').trim()
+      shouldExpandOptional = !!(fKendala || fCorrective || fNextStep || fDukungan)
       const meta = reflectionMeta
       if (!meta || meta.exempt) {
         return { ...f, period: meta?.weekIso || f.period }
@@ -320,15 +321,17 @@ export function ProgramDetailView() {
         return { ...f, period: meta.weekIso }
       }
       const pf = meta.prefill
+      const pfKendala = (pf.kendala ?? '').trim()
+      const pfNarrative = pf.narrative ?? ''
       // Kalau prefill mengisi kendala (dari blocker open), expand juga supaya
       // user langsung lihat konteks yang sistem siapkan.
-      if (pf.kendala.trim() && !f.kendala.trim()) shouldExpandOptional = true
+      if (pfKendala && !fKendala) shouldExpandOptional = true
       return {
         ...f,
         period: meta.weekIso,
         healthAtTime: f.healthAtTime || pf.healthAtTime,
-        narrative: f.narrative.trim() ? f.narrative : pf.narrative,
-        kendala: f.kendala.trim() ? f.kendala : pf.kendala,
+        narrative: fNarrative ? f.narrative : pfNarrative,
+        kendala: fKendala ? f.kendala : (pf.kendala ?? ''),
       }
     })
     setOptionalExpanded(shouldExpandOptional)
@@ -424,16 +427,23 @@ export function ProgramDetailView() {
   // Solusi: anggap dirty hanya kalau (a) narrative non-empty DAN (b) state
   // berbeda dengan prefill defaults persis.
   const isProgressFormDirty = useCallback((s: typeof progressForm) => {
-    if (s.narrative.trim().length === 0) return false
+    // Defensive null-safe — draft restore bisa inject null untuk field opsional
+    // dari server (sebelumnya pernah crash di .trim()).
+    const narrative = (s.narrative ?? '').trim()
+    const kendala = (s.kendala ?? '').trim()
+    const corrective = (s.correctiveAction ?? '').trim()
+    const nextStep = (s.nextStep ?? '').trim()
+    const dukungan = (s.dukunganDibutuhkan ?? '').trim()
+    if (narrative.length === 0) return false
     const pf = reflectionMeta?.prefill
     if (!pf) return true
     const sameAsPrefill =
-      s.narrative.trim() === pf.narrative.trim() &&
-      s.kendala.trim() === pf.kendala.trim() &&
+      narrative === (pf.narrative ?? '').trim() &&
+      kendala === (pf.kendala ?? '').trim() &&
       s.healthAtTime === pf.healthAtTime &&
-      s.correctiveAction.trim() === '' &&
-      s.nextStep.trim() === '' &&
-      s.dukunganDibutuhkan.trim() === ''
+      corrective === '' &&
+      nextStep === '' &&
+      dukungan === ''
     return !sameAsPrefill
   }, [reflectionMeta])
   const progressDraft = useAutoSave({
@@ -561,8 +571,11 @@ export function ProgramDetailView() {
 
       // Success affirmation — brief 'saved' state supaya user confidence
       // bahwa submit berhasil sebelum modal close. Pakem modal ATLAS.
-      setProgressFormStatus('saved')
-      await new Promise(resolve => window.setTimeout(resolve, 800))
+      // flushSync wajib di sini: tanpa itu, React batches setState dengan
+      // setTimeout continuation di bawah, render 'saved' tidak sempat paint
+      // sebelum modal close → user tidak lihat affirmation.
+      flushSync(() => setProgressFormStatus('saved'))
+      await new Promise(resolve => window.setTimeout(resolve, 900))
       setShowProgressForm(false)
       setProgressForm(f => ({ ...f, narrative: '', kendala: '', correctiveAction: '', nextStep: '', dukunganDibutuhkan: '' }))
       setWeeklyKpiActuals({})
@@ -1420,7 +1433,7 @@ export function ProgramDetailView() {
     return (
       <div className="wi-section">
         <div className="wi-section__header">
-          <h3 className="wi-section__title">{PIcon.activity} Riwayat Persetujuan</h3>
+          <h3 className="wi-section__title">Riwayat persetujuan</h3>
         </div>
         {approvalLogLoading && approvalLog.length === 0 ? (
           <div className="prog-approval-log-skeleton" aria-label="Memuat riwayat persetujuan">
@@ -1597,6 +1610,11 @@ export function ProgramDetailView() {
               )}
             </div>
           </div>
+          {/* Deskripsi sebagai subtitle hero — block tersendiri di bawah
+              prog-title-row supaya tidak inline dengan priority chip. */}
+          {detail.description && (
+            <p className="prog-hero__subtitle">{detail.description}</p>
+          )}
           {detail.approvalStatus === 'DRAFT' && detail.rejectionNote && (
             <p className="prog-approval-note">Catatan penolakan: {detail.rejectionNote}</p>
           )}
@@ -1910,12 +1928,12 @@ export function ProgramDetailView() {
             <div className="prog-activation-banner__body">
               <strong className="prog-activation-banner__title">Program baru aktif · siap dieksekusi</strong>
               <span className="prog-activation-banner__hint">
-                Buka Board untuk drag-drop task harian. Struktur masih bisa disempurnakan dari tab Struktur sambil tim mulai work.
+                Tarik task harian di Board, refleksi mingguan dari Ringkasan.
               </span>
             </div>
             <div className="prog-activation-banner__actions">
               <button
-                className="btn btn--primary prog-activation-banner__cta"
+                className="btn btn--ghost prog-activation-banner__cta"
                 onClick={() => navigate(`/execution?programId=${numId}`)}
                 type="button"
               >
@@ -1974,12 +1992,10 @@ export function ProgramDetailView() {
                     baru ditolak — konteks paling relevan saat itu (PIC perlu
                     lihat catatan reviewer / status submission tanpa scroll). */}
                 {pinApprovalLogTop && renderApprovalLogSection()}
-                {detail.description && (
-                  <div className="wi-section prog-description">
-                    <span className="prog-description__label">Deskripsi</span>
-                    <p className="wi-desc">{detail.description}</p>
-                  </div>
-                )}
+                {/* Section Deskripsi dihapus 2026-05-20 — deskripsi sekarang
+                    di subtitle hero (prog-title-row__subtitle). Tidak ada
+                    section terpisah supaya tab Ringkasan langsung ke metric
+                    yang actionable (KPI Health, Struktur, Refleksi). */}
 
                 {/* Identitas Strategis (Strategic Objective + Pilar) sekarang
                     inline di Hero panel — klik pencil icon di kolom Strategic
@@ -2008,22 +2024,19 @@ export function ProgramDetailView() {
                     : kpiRedCount >= 1 ? 'YELLOW'
                     : kpiYellowCount >= 1 ? 'YELLOW'
                     : 'GREEN'
-                  const kpiHealthLabel = kpiHealth === 'RED' ? 'Merah' : kpiHealth === 'YELLOW' ? 'Kuning' : 'Hijau'
+                  // Vocabulary firm ATLAS: on_track / at_risk / terlambat
+                  // (sama dengan health label di Charter & refleksi, BUKAN warna).
+                  const kpiHealthLabel = kpiHealth === 'RED' ? 'Terlambat' : kpiHealth === 'YELLOW' ? 'At Risk' : 'On Track'
                   return (
                     <div className="wi-section">
-                      <div className="detail-metrics detail-metrics--1">
-                        <div className="metric">
-                          <span className="metric__label">KPI Health</span>
-                          <span className={`metric__value metric__value--${kpiHealth.toLowerCase()}`}>
-                            <span className={`metric__dot metric__dot--${kpiHealth.toLowerCase()}`} />
-                            {kpiHealthLabel}
-                          </span>
-                        </div>
+                      <div className="wi-section__header">
+                        <h3 className="wi-section__title">KPI Internal</h3>
+                        <span className={`prog-section-status prog-section-status--${kpiHealth.toLowerCase()}`}>
+                          <span className={`prog-section-status__dot prog-section-status__dot--${kpiHealth.toLowerCase()}`} aria-hidden="true" />
+                          {kpiHealthLabel}
+                        </span>
                       </div>
-                      <div className="program-kpi-health">
-                        <div className="program-kpi-health__title">
-                          KPI Internal — Status per Indikator
-                        </div>
+                      <div className="program-kpi-health program-kpi-health--flat">
                         <div className="program-kpi-health__list">
                           {(detail.kpis ?? []).map(kpi => {
                             const hasActual = kpi.actualValue != null
@@ -2103,17 +2116,17 @@ export function ProgramDetailView() {
                   </div>
                 ) : (
                   <div className="wi-section prog-ws-preview">
-                    <div className="prog-ws-preview__head">
-                      <h3 className="prog-ws-preview__title">Workstream</h3>
-                      {(detail.workstreams ?? []).length > 3 && (
-                        <button
-                          type="button"
-                          className="prog-ws-preview__more"
-                          onClick={() => setActiveTab('workstream')}
-                        >
-                          Lihat semua {(detail.workstreams ?? []).length} →
-                        </button>
-                      )}
+                    <div className="wi-section__header">
+                      <h3 className="wi-section__title">Struktur</h3>
+                      <button
+                        type="button"
+                        className="prog-ws-preview__more"
+                        onClick={() => setActiveTab('workstream')}
+                      >
+                        {(detail.workstreams ?? []).length > 3
+                          ? `Lihat semua ${(detail.workstreams ?? []).length} →`
+                          : 'Detail →'}
+                      </button>
                     </div>
                     <ul className="prog-ws-preview__list">
                       {(detail.workstreams ?? []).slice(0, 3).map(ws => {
@@ -2203,13 +2216,13 @@ export function ProgramDetailView() {
                 {detail.approvalStatus === 'ACTIVE' && progressLog.length > 0 && (
                   <div className="wi-section">
                     <div className="wi-section__header">
-                      <h3 className="wi-section__title">{PIcon.activity} Riwayat Refleksi</h3>
+                      <h3 className="wi-section__title">Riwayat refleksi</h3>
                       <button
                         type="button"
                         className="btn btn--ghost"
                         onClick={openProgressForm}
                       >
-                        + Refleksi Mingguan
+                        + Refleksi mingguan
                       </button>
                     </div>
 
@@ -2388,41 +2401,12 @@ export function ProgramDetailView() {
 
               </div>
 
-              {/* Right: side rail — ProgressStatusPanel + UpdatePanel (Sprint 4)
-                  Pola Charter: side rail substantive (% Progress visual + latest
-                  update narrative), bukan list 6 plain-text facts yang dulu boros
-                  whitespace. */}
-              <aside className="prog-overview-v2__side">
-                {(() => {
-                  const pct = Math.max(0, Math.min(100, detail.progressPercent ?? 0))
-                  const health = normalizeHealthStatus(detail.healthStatus)
-                  const healthTone = health === 'GREEN' ? 'on-track' : health === 'YELLOW' ? 'at-risk' : 'off-track'
-                  const wsList = detail.workstreams ?? []
-                  const wsTotal = wsList.length
-                  const wsDone = wsList.filter(w => (w.progressPercent ?? 0) >= 100).length
-                  const disp = getProgramDisplayStatus(detail)
-                  return (
-                    <div className={`prog-status-panel prog-status-panel--${healthTone}`}>
-                      <div className="prog-status-panel__label">% Progress</div>
-                      <div className="prog-status-panel__big">{pct}%</div>
-                      <div className="prog-status-panel__bar" aria-hidden="true">
-                        <div className="prog-status-panel__bar-fill" style={{ width: `${Math.max(2, pct)}%` }} />
-                      </div>
-                      <div className="prog-status-panel__health-row">
-                        <span className={`prog-status-panel__dot prog-status-panel__dot--${healthTone}`} />
-                        <span className="prog-status-panel__health-label">{disp.label}</span>
-                      </div>
-                      {wsTotal > 0 && (
-                        <div className="prog-status-panel__breakdown">
-                          <span className="prog-status-panel__breakdown-num">{wsDone}</span>
-                          <span className="prog-status-panel__breakdown-sep">/</span>
-                          <span className="prog-status-panel__breakdown-total">{wsTotal}</span>
-                          <span>workstream selesai</span>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })()}
+              {/* Right: side rail — flat, hairline-divided.
+                  Refactor 2026-05-20: panel kanan sebelumnya pakai 2 bordered
+                  card. Sekarang flat sesuai Pattern A workspace. Urutan baru
+                  prioritas action: Refleksi (utama, current) → Status Program
+                  (passive metric, compact 1-liner). */}
+              <aside className="prog-overview-v2__side prog-overview-v2__side--flat">
 
                 {(() => {
                   const latest = progressLog[0]
@@ -2475,9 +2459,9 @@ export function ProgramDetailView() {
                     }
                   })()
                   return (
-                    <div className="prog-update-panel">
+                    <div className="prog-update-panel prog-update-panel--flat">
                       <div className="prog-update-panel__head">
-                        <span className="prog-update-panel__label">Refleksi Terakhir</span>
+                        <span className="prog-update-panel__label">Refleksi minggu ini</span>
                         {latest && (
                           <span className="prog-update-panel__period">{formatPeriod(latest.createdAt)}</span>
                         )}
@@ -2528,26 +2512,58 @@ export function ProgramDetailView() {
                   )
                 })()}
 
-                {(detail.progresTerkini || detail.dukunganDibutuhkan) && (
-                  <div className="prog-update-panel">
-                    {detail.progresTerkini && (
-                      <>
-                        <div className="prog-update-panel__head">
-                          <span className="prog-update-panel__label">Progres Terkini</span>
+                {/* PROGRES TERKINI + DUKUNGAN DIBUTUHKAN block dihapus 2026-05-20 —
+                    konten duplikat dengan panel REFLEKSI TERAKHIR di atas. */}
+
+                {/* STATUS PROGRAM — compact 1-2 liner. Passive metric (progress %,
+                    workstream count, hari ke target) di-demoted dari huge number
+                    panel jadi inline. Refleksi block di atas tetap primary. */}
+                {(() => {
+                  const pct = Math.max(0, Math.min(100, detail.progressPercent ?? 0))
+                  const wsList = detail.workstreams ?? []
+                  const wsTotal = wsList.length
+                  const wsDone = wsList.filter(w => (w.progressPercent ?? 0) >= 100).length
+                  const disp = getProgramDisplayStatus(detail)
+                  const health = normalizeHealthStatus(detail.healthStatus)
+                  const healthTone = health === 'GREEN' ? 'on-track' : health === 'YELLOW' ? 'at-risk' : 'off-track'
+                  const daysToTarget = detail.targetEndDate
+                    ? Math.max(0, Math.ceil((new Date(detail.targetEndDate).getTime() - Date.now()) / 86_400_000))
+                    : null
+                  return (
+                    <div className="prog-side-block">
+                      <div className="prog-side-block__label">Status Program</div>
+                      <div className="prog-side-block__lead">
+                        <span className={`prog-side-block__dot prog-side-block__dot--${healthTone}`} aria-hidden="true" />
+                        <span className="prog-side-block__lead-text">{disp.label}</span>
+                        {pct > 0 && (
+                          <>
+                            <span className="prog-side-block__sep" aria-hidden="true">·</span>
+                            <span className="prog-side-block__pct">{pct}% progress</span>
+                          </>
+                        )}
+                      </div>
+                      {pct > 0 && (
+                        <div className="prog-side-block__bar" aria-hidden="true">
+                          <div
+                            className={`prog-side-block__bar-fill prog-side-block__bar-fill--${healthTone}`}
+                            style={{ width: `${Math.max(2, pct)}%` }}
+                          />
                         </div>
-                        <p className="prog-update-panel__note">{detail.progresTerkini}</p>
-                      </>
-                    )}
-                    {detail.dukunganDibutuhkan && (
-                      <>
-                        <div className="prog-update-panel__head" style={{ marginTop: detail.progresTerkini ? 12 : 0 }}>
-                          <span className="prog-update-panel__label">Dukungan Dibutuhkan</span>
-                        </div>
-                        <p className="prog-update-panel__note">{detail.dukunganDibutuhkan}</p>
-                      </>
-                    )}
-                  </div>
-                )}
+                      )}
+                      <div className="prog-side-block__meta">
+                        {wsTotal > 0 && (
+                          <span>{wsDone}/{wsTotal} workstream selesai</span>
+                        )}
+                        {wsTotal > 0 && daysToTarget !== null && (
+                          <span className="prog-side-block__sep" aria-hidden="true">·</span>
+                        )}
+                        {daysToTarget !== null && (
+                          <span>{daysToTarget} hari ke target</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })()}
               </aside>
             </div>
           )}
@@ -4462,6 +4478,23 @@ export function ProgramDetailView() {
             </div>
           </div>
           <form onSubmit={e => { e.preventDefault(); void submitProgressLog() }}>
+            {/* Success overlay — affirmation prominent saat status === 'saved'.
+                Render di atas body supaya user pasti lihat sebelum modal close.
+                Auto-hide saat status balik ke 'idle' (saat close). */}
+            {progressFormStatus === 'saved' && (
+              <div className="modal-success-overlay" role="status" aria-live="polite">
+                <div className="modal-success-overlay__icon" aria-hidden="true">
+                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="24" cy="24" r="20" strokeOpacity="0.25" />
+                    <path d="M14 24l7 7 13-15" className="modal-success-overlay__check-path" />
+                  </svg>
+                </div>
+                <div className="modal-success-overlay__text">
+                  <strong>Refleksi tersimpan</strong>
+                  <span>Posisi minggu ini sudah tercatat.</span>
+                </div>
+              </div>
+            )}
             <div className="modal__body">
               {progressDraft.hasDraft && progressDraft.status === 'restored' && progressDraft.lastSavedAt && (
                 <DraftRestoreBanner
@@ -4469,7 +4502,22 @@ export function ProgramDetailView() {
                   onRestore={() => {
                     cancelDraftDiscard()
                     const p = progressDraft.restoredPayload as Partial<typeof progressForm> | null
-                    if (p) setProgressForm(f => ({ ...f, ...p }))
+                    if (p) {
+                      // Coerce null → string supaya .trim() di autosave isDirty &
+                      // openProgressForm tidak crash. Restored payload bisa berisi
+                      // null untuk field opsional (backend nullable, JSON
+                      // serialization preserve null).
+                      setProgressForm(f => ({
+                        ...f,
+                        period: typeof p.period === 'string' ? p.period : f.period,
+                        healthAtTime: p.healthAtTime ?? f.healthAtTime,
+                        narrative: p.narrative ?? '',
+                        kendala: p.kendala ?? '',
+                        correctiveAction: p.correctiveAction ?? '',
+                        nextStep: p.nextStep ?? '',
+                        dukunganDibutuhkan: p.dukunganDibutuhkan ?? '',
+                      }))
+                    }
                     progressDraft.acceptRestore()
                     setDraftDiscarded(false)
                   }}

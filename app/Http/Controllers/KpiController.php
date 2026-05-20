@@ -146,11 +146,24 @@ class KpiController extends Controller
             'statusNotes' => 'nullable|string|max:500',
         ]);
 
-        $value = KpiValue::create([
-            ...$data,
-            'kpiDefinitionId' => $id,
-            'measuredBy' => $request->user()->id,
-        ]);
+        // updateOrCreate (bukan create) supaya re-submit untuk minggu yang sama
+        // mengganti nilai, bukan crash dengan unique violation. Kasus: user
+        // submit refleksi minggu N dengan KPI 20, lalu revisi → resubmit dengan
+        // KPI 25. Tanpa upsert, INSERT kedua gagal karena unique constraint
+        // (kpiDefinitionId, measurementDate). Refleksi log itself pakai
+        // firstOrNew, jadi KPI value harus konsisten.
+        $value = KpiValue::updateOrCreate(
+            [
+                'kpiDefinitionId' => $id,
+                'measurementDate' => $data['measurementDate'],
+            ],
+            [
+                'actualValue' => $data['actualValue'],
+                'targetValue' => $data['targetValue'] ?? null,
+                'statusNotes' => $data['statusNotes'] ?? null,
+                'measuredBy'  => $request->user()->id,
+            ]
+        );
 
         // Update KPI actualValue + trigger health
         $kpi->update(['actualValue' => $data['actualValue'], 'lastMeasuredDate' => $data['measurementDate']]);

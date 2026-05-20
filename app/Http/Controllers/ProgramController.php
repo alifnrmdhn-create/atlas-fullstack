@@ -903,26 +903,35 @@ class ProgramController extends Controller
         $isLate = $this->weeklyDeadline->isLateSubmission($data['period']);
 
         $log = DB::transaction(function () use ($id, $data, $user, $isLate) {
-            // firstOrCreate mempertahankan createdById asli saat entry diupdate
-            $log = ProgramProgressLog::firstOrCreate(
-                ['programId' => $id, 'period' => $data['period']],
-                ['createdById' => $user->id, 'createdByName' => $user->name]
-            );
-            // wasRecentlyCreated = true hanya pada submit pertama. Edit susulan
-            // tidak boleh mengubah flag isLate — yang dinilai compliance adalah
-            // submit pertama, bukan revisi.
-            $fillData = [
+            // firstOrNew (bukan firstOrCreate) supaya bisa set semua field NOT NULL
+            // sebelum save pertama kali. firstOrCreate sebelumnya bug: insert hanya
+            // include createdBy* di create-attributes, sementara healthAtTime &
+            // narrative NOT NULL → constraint violation pada submit pertama.
+            $log = ProgramProgressLog::firstOrNew([
+                'programId' => $id,
+                'period'    => $data['period'],
+            ]);
+            $isNew = ! $log->exists;
+
+            $log->fill([
                 'healthAtTime'       => $data['healthAtTime'],
                 'narrative'          => $data['narrative'],
                 'kendala'            => $data['kendala'] ?? null,
                 'correctiveAction'   => $data['correctiveAction'] ?? null,
                 'nextStep'           => $data['nextStep'] ?? null,
                 'dukunganDibutuhkan' => $data['dukunganDibutuhkan'] ?? null,
-            ];
-            if ($log->wasRecentlyCreated) {
-                $fillData['isLate'] = $isLate;
+            ]);
+
+            // createdBy* dan isLate hanya di-set saat submit pertama. Edit susulan
+            // tidak mengubah identitas pembuat atau flag compliance — yang dinilai
+            // adalah submit-pertama, bukan revisi.
+            if ($isNew) {
+                $log->createdById   = $user->id;
+                $log->createdByName = $user->name;
+                $log->isLate        = $isLate;
             }
-            $log->fill($fillData)->save();
+
+            $log->save();
 
             // Backward-compat: sync ke field Program agar tampil di legacy views
             Program::where('id', $id)->update([

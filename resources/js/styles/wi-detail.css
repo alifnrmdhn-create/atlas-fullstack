@@ -292,9 +292,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--panel-border-soft, var(--panel-border));
+  /* No border-bottom — gap antar section (24-32px) yang differentiate.
+     Hairline divider di header sebelumnya bikin halaman jadi "ruled paper" —
+     too many horizontal lines, generic template feel. Typography (title vs
+     body) sudah cukup untuk visual hierarchy. */
+  margin-bottom: 10px;
 }
 /* Pattern A sub-heading — sentence case, bolder/darker untuk scanning rhythm.
    Sebelumnya 12px/500/muted terasa flat dengan body. Sekarang 13px/600/strong
@@ -1556,6 +1558,16 @@
   border-radius: var(--radius-md);
   background: var(--surface-1);
   border: 1px solid var(--panel-border);
+}
+/* Flat variant — dipakai di tab Ringkasan program detail.
+   Hilangkan border + background tinted supaya konsisten Pattern A workspace
+   (no card-in-card). Title juga dihilangkan karena sudah ada di wi-section__header. */
+.program-kpi-health--flat {
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
 }
 .program-kpi-health__title {
   font-size: 12px;
