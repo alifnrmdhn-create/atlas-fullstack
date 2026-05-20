@@ -407,7 +407,11 @@ export function ProgramDetailView() {
     nextStep: '',
     dukunganDibutuhkan: '',
   })
-  const [progressFormSaving, setProgressFormSaving] = useState(false)
+  // Status submit flow: idle → saving → saved (brief affirmation 800ms) → idle.
+  // Pakem modal ATLAS — user butuh konfirmasi visual bahwa submit sukses sebelum
+  // modal close (kalau langsung close, terasa abrupt & user ragu apa berhasil).
+  const [progressFormStatus, setProgressFormStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const progressFormSaving = progressFormStatus !== 'idle'
 
   // Sprint 6 — Autosave draft Progress Log. formKey unik per program. Subscribe
   // ke 'program:changed' supaya kalau SSE picu reload detail, draft di-flush
@@ -489,7 +493,7 @@ export function ProgramDetailView() {
 
   const submitProgressLog = async () => {
     if (!progressForm.narrative.trim()) return
-    setProgressFormSaving(true)
+    setProgressFormStatus('saving')
     setWeeklyKpiErrors([])
     try {
       // (0) Flush draft autosave dulu — defensif kalau ada save sedang in-flight,
@@ -555,6 +559,10 @@ export function ProgramDetailView() {
         await loadOverview('refresh')
       }
 
+      // Success affirmation — brief 'saved' state supaya user confidence
+      // bahwa submit berhasil sebelum modal close. Pakem modal ATLAS.
+      setProgressFormStatus('saved')
+      await new Promise(resolve => window.setTimeout(resolve, 800))
       setShowProgressForm(false)
       setProgressForm(f => ({ ...f, narrative: '', kendala: '', correctiveAction: '', nextStep: '', dukunganDibutuhkan: '' }))
       setWeeklyKpiActuals({})
@@ -562,7 +570,7 @@ export function ProgramDetailView() {
       // Refresh meta supaya badge state berubah (OPEN/DUE_SOON → submitted)
       void loadReflectionMeta()
     } finally {
-      setProgressFormSaving(false)
+      setProgressFormStatus('idle')
     }
   }
 
@@ -4652,10 +4660,27 @@ export function ProgramDetailView() {
               </button>
               <button
                 type="submit"
-                className="btn btn--primary"
+                className={`btn btn--primary submit-affirm submit-affirm--${progressFormStatus}`}
                 disabled={progressFormSaving || !progressForm.narrative.trim()}
               >
-                {progressFormSaving ? 'Menyimpan…' : 'Simpan Refleksi'}
+                {progressFormStatus === 'saved' ? (
+                  <>
+                    <svg
+                      className="submit-affirm__check"
+                      width="14" height="14" viewBox="0 0 14 14"
+                      fill="none" stroke="currentColor" strokeWidth="2.4"
+                      strokeLinecap="round" strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M2.5 7.5l3 3 6-7" />
+                    </svg>
+                    Tersimpan
+                  </>
+                ) : progressFormStatus === 'saving' ? (
+                  'Menyimpan…'
+                ) : (
+                  'Simpan Refleksi'
+                )}
               </button>
             </div>
           </form>

@@ -3107,13 +3107,25 @@
   flex-direction: column;
   box-shadow: var(--panel-shadow-xl);
   animation: slide-up 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* min-height: 0 supaya flex item-nya (body) bisa shrink dengan benar &
+     scroll bekerja di body, bukan di modal itself. Tanpa ini browser default
+     min-height: auto bisa bikin modal melebihi viewport. */
+  min-height: 0;
 }
+/* PAKEM MODAL ATLAS — header & footer "sticky-via-flex":
+   - flex-shrink: 0 → keep natural size, jangan ikut compress saat body panjang
+   - body flex: 1 + overflow-y: auto + min-height: 0 → scroll independent
+   Hasil: kicker/title/close di header dan submit button di footer selalu
+   visible meskipun body content scroll panjang. Universal untuk semua modal. */
 .modal__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--panel-border);
+  flex-shrink: 0;
+  background: var(--panel);
+  border-radius: 20px 20px 0 0;
 }
 .modal__title {
   font-size: 14px;
@@ -3137,7 +3149,23 @@
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Scroll shadow indicator — gradient fade muncul di top/bottom saat body
+     scroll, sebagai cue visual "ada content di luar viewport". Pakai
+     background-attachment: local supaya shadow follow scroll position. */
+  background:
+    /* Shadow top — muncul saat scroll dari atas */
+    linear-gradient(var(--panel) 30%, transparent),
+    /* Shadow bottom — muncul saat masih ada content di bawah */
+    linear-gradient(transparent, var(--panel) 70%) 0 100%,
+    /* Cover top (scroll cue) */
+    radial-gradient(farthest-side at 50% 0, color-mix(in srgb, var(--text-strong) 8%, transparent), transparent),
+    /* Cover bottom */
+    radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--text-strong) 8%, transparent), transparent) 0 100%;
+  background-repeat: no-repeat;
+  background-size: 100% 24px, 100% 24px, 100% 8px, 100% 8px;
+  background-attachment: local, local, scroll, scroll;
 }
 .modal__footer {
   display: flex;
@@ -3145,6 +3173,41 @@
   justify-content: flex-end;
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--panel-border);
+  flex-shrink: 0;
+  background: var(--panel);
+  border-radius: 0 0 20px 20px;
+}
+
+/* PAKEM MODAL ATLAS — submit success affirmation.
+   Button submit punya 3 state: idle (default), saving (loading text),
+   saved (brief checkmark 800ms sebelum modal close). Cue konfirmasi visual
+   supaya user tidak ragu apakah submit berhasil.
+   Universal — apply ke semua submit button modal dengan class .submit-affirm. */
+.submit-affirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+.submit-affirm--saved {
+  background: color-mix(in srgb, var(--green, #22c55e) 92%, #000) !important;
+  border-color: color-mix(in srgb, var(--green, #22c55e) 92%, #000) !important;
+  cursor: default;
+  animation: submit-affirm-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.submit-affirm__check {
+  display: inline-block;
+  animation: submit-affirm-check-draw 280ms cubic-bezier(0.4, 0, 0.2, 1) 80ms backwards;
+}
+@keyframes submit-affirm-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+@keyframes submit-affirm-check-draw {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
 }
 .modal-field {
   display: flex;
