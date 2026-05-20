@@ -2866,12 +2866,102 @@ select.prog-strategic__input {
 .reflection-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
 }
 .reflection-form__row {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/* Section grouping — pakem modal ATLAS:
+   - Section 1 (primary, always visible): Status & narasi inti
+   - Section 2 (opsional, collapsible): Detail tindak lanjut 4 field grid 2-kolom
+   Separator antar section pakai hairline border-top, bukan card-in-card. */
+.reflection-form__section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.reflection-form__section + .reflection-form__section {
+  padding-top: 18px;
+  border-top: 1px solid color-mix(in srgb, var(--panel-border) 60%, transparent);
+}
+.reflection-form__section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.reflection-form__section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.reflection-form__section-sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+/* Collapsible section toggle — looks like clickable header dengan icon ± */
+.reflection-form__section--collapsible .reflection-form__section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  border-radius: 6px;
+  transition: background-color 120ms ease;
+}
+.reflection-form__section--collapsible .reflection-form__section-toggle:hover {
+  background: color-mix(in srgb, var(--surface-1) 60%, transparent);
+}
+.reflection-form__section--collapsible .reflection-form__section-toggle .reflection-form__section-title {
+  font-size: 13px;
+}
+.reflection-form__section--collapsible .reflection-form__section-toggle .reflection-form__section-sub {
+  margin-left: auto;
+  text-align: right;
+}
+.reflection-form__section-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  background: color-mix(in srgb, var(--surface-1) 70%, transparent);
+  color: var(--text-muted);
+  border: 1px solid var(--panel-border);
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.reflection-form__section--collapsible[data-expanded="true"] .reflection-form__section-toggle-icon {
+  background: color-mix(in srgb, var(--green, #22c55e) 12%, transparent);
+  color: color-mix(in srgb, var(--green, #22c55e) 80%, #000);
+  border-color: color-mix(in srgb, var(--green, #22c55e) 30%, transparent);
+}
+.reflection-form__section-body {
+  margin-top: 4px;
+}
+
+/* Grid 2-kolom untuk pasangan field opsional. Pada viewport ≤640 (tablet
+   portrait floor), stack single-column supaya tidak crowded. */
+.reflection-form__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 16px;
+}
+@media (max-width: 640px) {
+  .reflection-form__grid {
+    grid-template-columns: 1fr;
+  }
 }
 .reflection-form__label {
   font-size: 12px;
@@ -2914,20 +3004,6 @@ select.prog-strategic__input {
   resize: vertical;
   min-height: 60px;
   line-height: 1.5;
-}
-.reflection-form__period {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.reflection-form__period .reflection-form__input {
-  flex: 0 1 200px;
-}
-.reflection-form__period-label {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-style: italic;
 }
 .reflection-form__kpis {
   display: flex;

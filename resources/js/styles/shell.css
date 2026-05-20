@@ -10,11 +10,23 @@
   overflow: hidden;
   transition: grid-template-columns 200ms cubic-bezier(0.4, 0, 0.2, 1);
   background: var(--shell-canvas);
-  animation: app-shell-enter 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: app-shell-enter 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
+/* HATI-HATI 2026-05-19: keyframe ini DULU pakai transform: scale(0.99) → scale(1).
+ * Dengan animation-fill-mode: both, `scale(1)` PERSISTS setelah animasi selesai —
+ * per spec CSS, transform non-`none` membuat .app-shell jadi containing block
+ * untuk position:fixed descendants. Modal-backdrop dengan inset:0 jadi ter-scope
+ * ke .app-shell (bukan viewport). Sidebar+topbar tidak ter-dim.
+ *
+ * Fix: pakai opacity-only entrance. Animation-fill-mode: backwards (bukan both)
+ * — `from` state diapply SEBELUM start (anti FOUC), tapi setelah end kembali ke
+ * base (tidak retain `to` state).
+ *
+ * Jangan re-introduce transform di sini tanpa juga update modal-backdrop ke
+ * pakai React Portal. */
 @keyframes app-shell-enter {
-  from { opacity: 0; transform: scale(0.99); }
-  to   { opacity: 1; transform: scale(1); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 .app-shell--collapsed {
   grid-template-columns: var(--sidebar-width-collapsed) 1fr;
@@ -2309,12 +2321,33 @@
 .draft-restore-banner--undo {
   border-color: color-mix(in srgb, #9b6b00 30%, var(--panel-border));
   background: color-mix(in srgb, #9b6b00 7%, var(--surface-2));
+  position: relative;
+  overflow: hidden;
 }
 .draft-restore-banner--undo .draft-restore-banner__btn--primary {
   background: #9b6b00;
   border-color: #9b6b00;
 }
 .draft-restore-banner--undo .draft-restore-banner__btn--primary:hover { background: #7a5400; }
+
+/* Progress bar countdown — bar mengecil dari kanan ke kiri seiring waktu
+   habis. Memberi visual cue jelas berapa detik tersisa, bukan cuma teks. */
+.draft-restore-banner__undo-track {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.draft-restore-banner__undo-fill {
+  height: 100%;
+  background: color-mix(in srgb, #9b6b00 18%, transparent);
+  transition: width 100ms linear;
+}
+.draft-restore-banner--undo > .draft-restore-banner__text,
+.draft-restore-banner--undo > .draft-restore-banner__actions {
+  position: relative;
+  z-index: 1;
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
  * ForecastBadge (Sprint 5)

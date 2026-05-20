@@ -2371,7 +2371,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9000;
+  z-index: 9600;
   animation: fade-in 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .modal-backdrop--closing {
@@ -3088,7 +3088,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9000;
+  z-index: 9600;
   padding: 1rem;
   animation: fade-backdrop var(--transition);
 }
@@ -9675,7 +9675,7 @@ a svg,
   position: fixed;
   inset: 0;
   background: color-mix(in srgb, var(--scrim) 60%, transparent);
-  z-index: 9000;
+  z-index: 9600;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11587,13 +11587,20 @@ a svg,
 :is(.modal-backdrop, .overlay-backdrop, .modal-overlay) {
   position: fixed;
   inset: 0;
-  z-index: 9000;
+  z-index: 9600;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* top pad = topbar height so modal centers in area below topbar (topbar z-index: 9500) */
+  /* Modal sekarang COVER topbar (z 9600 > topbar 9500). Padding tetap pakai
+   * topbar-height supaya modal center tidak ketabrak chrome topbar (visual
+   * comfort), tapi backdrop scrim + blur cover full viewport termasuk topbar. */
   padding: calc(var(--topbar-height, 52px) + 16px) clamp(16px, 3vw, 32px) clamp(16px, 3vw, 32px);
   background: color-mix(in srgb, var(--scrim) 60%, transparent);
+  /* Backdrop blur — polish UX. Pak request 2026-05-19: "blurred page ketika
+   * modal muncul". Subtle 6px supaya konten di belakang masih terbaca konteksnya
+   * tapi clearly out-of-focus. -webkit- prefix untuk Safari < 18. */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   animation: fade-backdrop 180ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 

@@ -52,10 +52,21 @@ code, pre, kbd { font-family: var(--font-mono); }
 }
 
 /* ─── Global micro-interactions ─────────────────────────────── */
-/* View entrance — panels fade-slide in when navigating */
+/* View entrance — panels fade in when navigating.
+ *
+ * PENTING 2026-05-19: keyframe ini SEBELUMNYA pakai transform: translateY.
+ * Dengan fill-mode `both` di selector `[class^="view-"]` di bawah, transform:
+ * translateY(0) PERSISTS setelah animasi selesai. Per CSS spec, transform
+ * non-`none` membuat element jadi containing block untuk position:fixed.
+ *
+ * Akibatnya semua modal di halaman (Tugas Baru, Buat Meeting, dst) ter-scope
+ * ke .view-* element (bukan viewport) → backdrop tidak cover sidebar+topbar.
+ *
+ * Fix: opacity-only animation. Slide effect dihapus — terlalu mahal harganya
+ * (modal isolation rusak). Modal sekarang correctly position:fixed ke viewport. */
 @keyframes view-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(6px); }

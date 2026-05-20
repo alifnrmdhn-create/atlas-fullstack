@@ -279,25 +279,117 @@ export function ProgramDetailView() {
   const [progressLogLoading, setProgressLogLoading] = useState(false)
   const [showProgressForm, setShowProgressForm] = useState(false)
   const [reflectionMeta, setReflectionMeta] = useState<ReflectionMeta | null>(null)
-  const progressSectionRef = useRef<HTMLDivElement | null>(null)
+  // Flag per-session: kalau user sudah klik "Buang draf", jangan re-apply prefill
+  // saat modal dibuka ulang. Tanpa flag ini, prefill bakal kembali, autosave
+  // save ulang, dan draft "muncul lagi" terus — cycle yang user keluhkan.
+  const [draftDiscarded, setDraftDiscarded] = useState(false)
+  // Section "Detail tindak lanjut" — opsional, collapsed default. Auto-expand
+  // kalau prefill mengisi kendala (dari blocker), atau user sudah pernah ketik
+  // di salah satu field opsional.
+  const [optionalExpanded, setOptionalExpanded] = useState(false)
+  // Discard undo timer di-LIFT ke parent (sebelumnya di DraftRestoreBanner).
+  // Banner unmount saat modal ditutup → useEffect cleanup → timer dibatalkan →
+  // onDiscard tidak pernah fire → draft tetap di server. Lift ke parent supaya
+  // timer survive close/open, dan saat unmount benar-benar commit discard.
+  const DRAFT_DISCARD_UNDO_MS = 5000
+  const [draftDiscardPending, setDraftDiscardPending] = useState(false)
+  const [draftDiscardRemainingMs, setDraftDiscardRemainingMs] = useState(0)
+  const draftDiscardTimerRef = useRef<number | null>(null)
+  const draftDiscardCommitRef = useRef<() => void>(() => {})
   const openProgressForm = useCallback(() => {
-    // Apply prefill saat form pertama dibuka — hanya untuk field kosong supaya
-    // tidak overwrite isi yang user sudah ketik / draft restore. Set period ke
-    // minggu berjalan (dari server, bukan client clock) supaya konsisten.
+    // Apply prefill saat form dibuka. Period selalu di-lock ke minggu berjalan
+    // dari server (reflectionMeta.weekIso) supaya konsisten timezone WIB —
+    // client clock bisa beda zona. Health/narrative/kendala hanya diisi kalau
+    // field kosong (jangan overwrite isi user / draft restore). Kalau user
+    // sudah explicit discard, skip prefill — form mulai bersih.
+    let shouldExpandOptional = false
     setProgressForm(f => {
+      // Auto-expand kalau ada existing isi di salah satu field opsional —
+      // user yang udah pernah ketik harus tetap bisa lihat tulisannya.
+      shouldExpandOptional = !!(
+        f.kendala.trim() ||
+        f.correctiveAction.trim() ||
+        f.nextStep.trim() ||
+        f.dukunganDibutuhkan.trim()
+      )
       const meta = reflectionMeta
-      if (!meta || meta.exempt || meta.hasSubmitted) return f
+      if (!meta || meta.exempt) {
+        return { ...f, period: meta?.weekIso || f.period }
+      }
+      if (meta.hasSubmitted || draftDiscarded) {
+        return { ...f, period: meta.weekIso }
+      }
       const pf = meta.prefill
+      // Kalau prefill mengisi kendala (dari blocker open), expand juga supaya
+      // user langsung lihat konteks yang sistem siapkan.
+      if (pf.kendala.trim() && !f.kendala.trim()) shouldExpandOptional = true
       return {
         ...f,
-        period: f.period || meta.weekIso,
+        period: meta.weekIso,
         healthAtTime: f.healthAtTime || pf.healthAtTime,
         narrative: f.narrative.trim() ? f.narrative : pf.narrative,
         kendala: f.kendala.trim() ? f.kendala : pf.kendala,
       }
     })
+    setOptionalExpanded(shouldExpandOptional)
     setShowProgressForm(true)
-  }, [reflectionMeta])
+  }, [reflectionMeta, draftDiscarded])
+
+  // Commit actual discard — dipanggil saat countdown habis ATAU saat modal
+  // ditutup mid-pending (preserve user intent). Ref dipakai supaya callback
+  // di setTimeout selalu hold latest closure tanpa re-create timer.
+  draftDiscardCommitRef.current = () => {
+    void progressDraft?.discard?.()
+    setProgressForm(f => ({
+      ...f,
+      healthAtTime: 'on_track',
+      narrative: '',
+      kendala: '',
+      correctiveAction: '',
+      nextStep: '',
+      dukunganDibutuhkan: '',
+    }))
+    setDraftDiscarded(true)
+    setDraftDiscardPending(false)
+    setDraftDiscardRemainingMs(0)
+    if (draftDiscardTimerRef.current) {
+      window.clearTimeout(draftDiscardTimerRef.current)
+      draftDiscardTimerRef.current = null
+    }
+  }
+
+  const startDraftDiscard = useCallback(() => {
+    if (draftDiscardPending) return
+    setDraftDiscardPending(true)
+    setDraftDiscardRemainingMs(DRAFT_DISCARD_UNDO_MS)
+    const startedAt = Date.now()
+    const tick = () => {
+      const elapsed = Date.now() - startedAt
+      const remain = Math.max(0, DRAFT_DISCARD_UNDO_MS - elapsed)
+      setDraftDiscardRemainingMs(remain)
+      if (remain === 0) {
+        draftDiscardCommitRef.current()
+      } else {
+        draftDiscardTimerRef.current = window.setTimeout(tick, 100)
+      }
+    }
+    draftDiscardTimerRef.current = window.setTimeout(tick, 100)
+  }, [draftDiscardPending])
+
+  const cancelDraftDiscard = useCallback(() => {
+    if (draftDiscardTimerRef.current) {
+      window.clearTimeout(draftDiscardTimerRef.current)
+      draftDiscardTimerRef.current = null
+    }
+    setDraftDiscardPending(false)
+    setDraftDiscardRemainingMs(0)
+  }, [])
+  // Cleanup pending timer saat component unmount (navigate away)
+  useEffect(() => () => {
+    if (draftDiscardTimerRef.current) {
+      draftDiscardCommitRef.current()
+    }
+  }, [])
   const [progressForm, setProgressForm] = useState<{
     period: string
     healthAtTime: ProgressLogEntry['healthAtTime']
@@ -320,6 +412,26 @@ export function ProgramDetailView() {
   // Sprint 6 — Autosave draft Progress Log. formKey unik per program. Subscribe
   // ke 'program:changed' supaya kalau SSE picu reload detail, draft di-flush
   // dulu (jangan sampai user kehilangan tulisan saat realtime update masuk).
+  //
+  // isDirty custom: prefill saran TIDAK boleh masuk autosave. Tanpa filter ini,
+  // begitu modal dibuka prefill di-apply → autosave langsung simpan → "draft"
+  // muncul saat reopen, padahal user belum mengetik apapun. User klik "Buang
+  // draf" → state masih prefill → autosave save ulang → cycle endless.
+  // Solusi: anggap dirty hanya kalau (a) narrative non-empty DAN (b) state
+  // berbeda dengan prefill defaults persis.
+  const isProgressFormDirty = useCallback((s: typeof progressForm) => {
+    if (s.narrative.trim().length === 0) return false
+    const pf = reflectionMeta?.prefill
+    if (!pf) return true
+    const sameAsPrefill =
+      s.narrative.trim() === pf.narrative.trim() &&
+      s.kendala.trim() === pf.kendala.trim() &&
+      s.healthAtTime === pf.healthAtTime &&
+      s.correctiveAction.trim() === '' &&
+      s.nextStep.trim() === '' &&
+      s.dukunganDibutuhkan.trim() === ''
+    return !sameAsPrefill
+  }, [reflectionMeta])
   const progressDraft = useAutoSave({
     formKey: `program:${numId}:progressLog`,
     state: progressForm,
@@ -327,6 +439,7 @@ export function ProgramDetailView() {
     entityType: 'Program',
     entityId: Number.isFinite(numId) ? numId : undefined,
     flushOnSSEEvents: ['program:changed'],
+    isDirty: isProgressFormDirty,
   })
 
   // Periode: weekly-only sejak 2026-05-19. Aplikasi wajib weekly basis dengan
@@ -445,6 +558,7 @@ export function ProgramDetailView() {
       setShowProgressForm(false)
       setProgressForm(f => ({ ...f, narrative: '', kendala: '', correctiveAction: '', nextStep: '', dukunganDibutuhkan: '' }))
       setWeeklyKpiActuals({})
+      setDraftDiscarded(false)
       // Refresh meta supaya badge state berubah (OPEN/DUE_SOON → submitted)
       void loadReflectionMeta()
     } finally {
@@ -748,7 +862,15 @@ export function ProgramDetailView() {
   const epClosing = closingOverlay === 'edit-program'
   // Modal Refleksi Mingguan — refactor dari inline form 2026-05-19. Focus task,
   // dedicated surface supaya tidak mendominasi tab Ringkasan.
-  const triggerProgressFormClose = useCallback(() => closeOverlay('reflection', () => setShowProgressForm(false)), [closeOverlay])
+  // Saat ditutup mid-pending-discard, commit langsung — user sudah klik "Buang
+  // draf" jadi tutup modal = konfirmasi intent. Tanpa ini, timer akan jalan
+  // di background sampai 5 detik, baru fire.
+  const triggerProgressFormClose = useCallback(() => {
+    if (draftDiscardTimerRef.current) {
+      draftDiscardCommitRef.current()
+    }
+    closeOverlay('reflection', () => setShowProgressForm(false))
+  }, [closeOverlay])
   const progressFormClosing = closingOverlay === 'reflection'
   const reflectionTitleId = useId()
   const reflectionDescId = useId()
@@ -1856,128 +1978,91 @@ export function ProgramDetailView() {
                     Objective untuk edit. Section terpisah dihapus karena bikin
                     user bingung (form lompat ke bawah saat klik edit). */}
 
-                <div className="wi-section">
-
-                  {(() => {
-                    // Compute KPI health from internal KPIs with actuals
-                    const kpisWithData = (detail.kpis ?? []).filter(k => k.actualValue != null)
-                    const kpiStatuses = kpisWithData.map(k => {
-                      const actual = k.actualValue!
-                      const target = k.targetValue ?? 0
-                      const critical = k.criticalThreshold ?? target * 0.8
-                      const warning  = k.warningThreshold  ?? target * 0.95
-                      if (actual <= critical) return 'RED'
-                      if (actual <= warning)  return 'YELLOW'
-                      return 'GREEN'
-                    })
-                    const kpiRedCount    = kpiStatuses.filter(s => s === 'RED').length
-                    const kpiYellowCount = kpiStatuses.filter(s => s === 'YELLOW').length
-                    const kpiHealth = kpisWithData.length === 0 ? null
-                      : kpiRedCount >= 2 ? 'RED'
-                      : kpiRedCount >= 1 ? 'YELLOW'
-                      : kpiYellowCount >= 1 ? 'YELLOW'
-                      : 'GREEN'
-                    const kpiHealthLabel = kpiHealth === 'RED' ? 'Merah' : kpiHealth === 'YELLOW' ? 'Kuning' : 'Hijau'
-
-                    // Schedule health — progress vs waktu terpakai
-                    const scheduleHealth = (() => {
-                      if (!detail.startDate || !detail.targetEndDate) return null
-                      const start = new Date(detail.startDate).getTime()
-                      const end   = new Date(detail.targetEndDate).getTime()
-                      const now   = Date.now()
-                      if (end <= start) return null
-                      const total   = end - start
-                      const elapsed = Math.min(Math.max(now - start, 0), total)
-                      const pctTime = Math.round(elapsed / total * 100)
-                      const gap     = detail.progressPercent - pctTime
-                      return { pctTime, gap }
-                    })()
-
-                    // Hanya tampilkan Alignment kalau ada data — '—' placeholder
-                    // memberi visual noise tanpa info. Sama untuk KPI Health (sudah
-                    // di-gate kpiHealth!==null). Workstream selalu tampil karena
-                    // structural info.
-                    const showAlignment = detail.strategicAlignment != null
-                    const cols = 1 + (showAlignment ? 1 : 0) + 1 + (kpiHealth !== null ? 1 : 0)
-                    const wsCount = (detail.workstreams ?? []).length
-                    // Sprint 4: Progress + Workstream + Alignment metrics dihapus —
-                    // semua info sudah tersedia di Hero panel atau side rail tanpa duplikasi.
-                    // KPI Health tetap ditampilkan inline kalau ada data — info penting
-                    // strategis yang tidak terwakili di hero/side rail.
-                    return (
-                      <>
-                        {kpiHealth !== null && (
-                          <div className="detail-metrics detail-metrics--1">
-                            <div className="metric">
-                              <span className="metric__label">KPI Health</span>
-                              <span className={`metric__value metric__value--${kpiHealth.toLowerCase()}`}>
-                                <span className={`metric__dot metric__dot--${kpiHealth.toLowerCase()}`} />
-                                {kpiHealthLabel}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                        {/* KPI monitoring panel — hanya tampil saat minimal 1 KPI
-                            sudah punya actualValue. Jika semua KPI masih "Belum ada
-                            data", panel ini cuma noise (header + 1 row kosong) yang
-                            tidak memberi info actionable. Setelah ada data baru
-                            tampilkan untuk monitoring status per indikator. */}
-                        {kpisWithData.length > 0 && (
-                          <div className="program-kpi-health">
-                            <div className="program-kpi-health__title">
-                              KPI Internal — Status per Indikator
-                            </div>
-                            <div className="program-kpi-health__list">
-                              {(detail.kpis ?? []).map(kpi => {
-                                const hasActual = kpi.actualValue != null
-                                const actual = kpi.actualValue ?? 0
-                                const target = kpi.targetValue ?? 0
-                                const critical = kpi.criticalThreshold ?? target * 0.8
-                                const warning  = kpi.warningThreshold  ?? target * 0.95
-                                const status = !hasActual ? null
-                                  : actual <= critical ? 'RED'
-                                  : actual <= warning  ? 'YELLOW'
-                                  : 'GREEN'
-                                const tone = status ? status.toLowerCase() : 'muted'
-                                const pct = getKpiFillPercent(actual, target)
-                                return (
-                                  <div key={kpi.id} className="program-kpi-health__row">
-                                    <span className={`program-kpi-health__dot program-kpi-health__dot--${tone}`} />
-                                    <span className="program-kpi-health__name">
-                                      {kpi.name}
+                {(() => {
+                  // Compute KPI health from internal KPIs with actuals.
+                  // Section wrapper baru di-render kalau ada KPI dengan actualValue —
+                  // tanpa data, semua inner block null dan wi-section kosong cuma
+                  // menyisakan padding/margin (whitespace gap besar di tab Ringkasan).
+                  const kpisWithData = (detail.kpis ?? []).filter(k => k.actualValue != null)
+                  if (kpisWithData.length === 0) return null
+                  const kpiStatuses = kpisWithData.map(k => {
+                    const actual = k.actualValue!
+                    const target = k.targetValue ?? 0
+                    const critical = k.criticalThreshold ?? target * 0.8
+                    const warning  = k.warningThreshold  ?? target * 0.95
+                    if (actual <= critical) return 'RED'
+                    if (actual <= warning)  return 'YELLOW'
+                    return 'GREEN'
+                  })
+                  const kpiRedCount    = kpiStatuses.filter(s => s === 'RED').length
+                  const kpiYellowCount = kpiStatuses.filter(s => s === 'YELLOW').length
+                  const kpiHealth: 'RED' | 'YELLOW' | 'GREEN' = kpiRedCount >= 2 ? 'RED'
+                    : kpiRedCount >= 1 ? 'YELLOW'
+                    : kpiYellowCount >= 1 ? 'YELLOW'
+                    : 'GREEN'
+                  const kpiHealthLabel = kpiHealth === 'RED' ? 'Merah' : kpiHealth === 'YELLOW' ? 'Kuning' : 'Hijau'
+                  return (
+                    <div className="wi-section">
+                      <div className="detail-metrics detail-metrics--1">
+                        <div className="metric">
+                          <span className="metric__label">KPI Health</span>
+                          <span className={`metric__value metric__value--${kpiHealth.toLowerCase()}`}>
+                            <span className={`metric__dot metric__dot--${kpiHealth.toLowerCase()}`} />
+                            {kpiHealthLabel}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="program-kpi-health">
+                        <div className="program-kpi-health__title">
+                          KPI Internal — Status per Indikator
+                        </div>
+                        <div className="program-kpi-health__list">
+                          {(detail.kpis ?? []).map(kpi => {
+                            const hasActual = kpi.actualValue != null
+                            const actual = kpi.actualValue ?? 0
+                            const target = kpi.targetValue ?? 0
+                            const critical = kpi.criticalThreshold ?? target * 0.8
+                            const warning  = kpi.warningThreshold  ?? target * 0.95
+                            const status = !hasActual ? null
+                              : actual <= critical ? 'RED'
+                              : actual <= warning  ? 'YELLOW'
+                              : 'GREEN'
+                            const tone = status ? status.toLowerCase() : 'muted'
+                            const pct = getKpiFillPercent(actual, target)
+                            return (
+                              <div key={kpi.id} className="program-kpi-health__row">
+                                <span className={`program-kpi-health__dot program-kpi-health__dot--${tone}`} />
+                                <span className="program-kpi-health__name">{kpi.name}</span>
+                                {hasActual ? (
+                                  <>
+                                    <div className="program-kpi-health__track">
+                                      <div className={`program-kpi-health__fill program-kpi-health__fill--${tone}`} style={{ width: `${pct}%` }} />
+                                    </div>
+                                    <span className={`program-kpi-health__pct program-kpi-health__pct--${tone}`}>
+                                      {pct}%
                                     </span>
-                                    {hasActual ? (
-                                      <>
-                                        <div className="program-kpi-health__track">
-                                          <div className={`program-kpi-health__fill program-kpi-health__fill--${tone}`} style={{ width: `${pct}%` }} />
-                                        </div>
-                                        <span className={`program-kpi-health__pct program-kpi-health__pct--${tone}`}>
-                                          {pct}%
-                                        </span>
-                                      </>
-                                    ) : (
-                                      <span className="program-kpi-health__empty">Belum ada data</span>
-                                    )}
-                                  </div>
-                                )
-                              })}
-                            </div>
-                            {kpiHealth === 'RED' && (
-                              <div className="program-kpi-health__notice program-kpi-health__notice--red">
-                                Perhatian: {kpiRedCount} indikator KPI di bawah ambang kritis — health program terpengaruh.
+                                  </>
+                                ) : (
+                                  <span className="program-kpi-health__empty">Belum ada data</span>
+                                )}
                               </div>
-                            )}
-                            {kpiHealth === 'YELLOW' && kpiRedCount === 0 && (
-                              <div className="program-kpi-health__notice program-kpi-health__notice--yellow">
-                                {kpiYellowCount} indikator KPI mendekati ambang warning.
-                              </div>
-                            )}
+                            )
+                          })}
+                        </div>
+                        {kpiHealth === 'RED' && (
+                          <div className="program-kpi-health__notice program-kpi-health__notice--red">
+                            Perhatian: {kpiRedCount} indikator KPI di bawah ambang kritis — health program terpengaruh.
                           </div>
                         )}
-                      </>
-                    )
-                  })()}
-                </div>
+                        {kpiHealth === 'YELLOW' && kpiRedCount === 0 && (
+                          <div className="program-kpi-health__notice program-kpi-health__notice--yellow">
+                            {kpiYellowCount} indikator KPI mendekati ambang warning.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* ── Workstream preview — ringkas, 3 row teratas dengan progress ──
                     Mengisi white space Ringkasan dengan substansi yang sudah ada.
@@ -2104,10 +2189,11 @@ export function ProgramDetailView() {
 
                 {/* ── Progress Log (Refleksi Mingguan) ──
                     Section ringan: header + tombol trigger modal + list entries.
-                    Form refleksi pindah ke modal supaya focus, tidak mendominasi
-                    halaman. Status deadline pindah ke panel kanan (compact pill). */}
-                {detail.approvalStatus === 'ACTIVE' && (
-                  <div className="wi-section" ref={progressSectionRef}>
+                    Saat empty, section di-hide entirely — panel kanan sudah punya
+                    empty state CTA prominent, section main column cuma duplicate
+                    trigger. Section muncul kembali setelah ada entry pertama. */}
+                {detail.approvalStatus === 'ACTIVE' && progressLog.length > 0 && (
+                  <div className="wi-section">
                     <div className="wi-section__header">
                       <h3 className="wi-section__title">{PIcon.activity} Riwayat Refleksi</h3>
                       <button
@@ -2119,25 +2205,7 @@ export function ProgramDetailView() {
                       </button>
                     </div>
 
-                    {progressLogLoading && progressLog.length === 0 ? (
-                      <div className="prog-approval-log-skeleton" aria-label="Memuat riwayat refleksi">
-                        <div className="prog-approval-log-skeleton__entry">
-                          <SkeletonBlock width="60%" height={14} />
-                          <SkeletonBlock width="42%" height={11} />
-                        </div>
-                        <div className="prog-approval-log-skeleton__entry">
-                          <SkeletonBlock width="50%" height={14} />
-                          <SkeletonBlock width="36%" height={11} />
-                        </div>
-                      </div>
-                    ) : progressLog.length === 0 ? (
-                      // CTA echo dihapus — tombol "+ Refleksi Mingguan" sudah di
-                      // header section ini, dan sidebar kanan punya empty state
-                      // dengan CTA jelas. Slim line cukup supaya section tidak
-                      // looks broken (header tanpa body).
-                      <p className="hd-muted" style={{ fontSize: 12, margin: '2px 0 0' }}>Belum ada refleksi.</p>
-                    ) : (
-                      <div className="prog-progress-log">
+                    <div className="prog-progress-log">
                         {progressLog.map(entry => {
                           const healthLabel: Record<string, string> = {
                             on_track: 'On Track', at_risk: 'At Risk', terlambat: 'Terlambat', overdue: 'Lewat Tenggat',
@@ -2202,8 +2270,7 @@ export function ProgramDetailView() {
                             </div>
                           )
                         })}
-                      </div>
-                    )}
+                    </div>
                   </div>
                 )}
 
@@ -4392,143 +4459,176 @@ export function ProgramDetailView() {
                 <DraftRestoreBanner
                   savedAt={progressDraft.lastSavedAt}
                   onRestore={() => {
+                    cancelDraftDiscard()
                     const p = progressDraft.restoredPayload as Partial<typeof progressForm> | null
                     if (p) setProgressForm(f => ({ ...f, ...p }))
                     progressDraft.acceptRestore()
+                    setDraftDiscarded(false)
                   }}
-                  onDiscard={() => { void progressDraft.discard() }}
+                  onStartDiscard={startDraftDiscard}
+                  onCancelDiscard={cancelDraftDiscard}
+                  discardPending={draftDiscardPending}
+                  discardRemainingMs={draftDiscardRemainingMs}
+                  discardTotalMs={DRAFT_DISCARD_UNDO_MS}
                 />
               )}
 
               <div className="reflection-form">
-                <div className="reflection-form__row">
-                  <label className="reflection-form__label" htmlFor="reflection-period">Periode</label>
-                  <div className="reflection-form__period">
-                    <input
-                      id="reflection-period"
-                      type="week"
-                      className="reflection-form__input"
-                      value={progressForm.period}
-                      onChange={e => setProgressForm(f => ({ ...f, period: e.target.value }))}
-                    />
-                    <span className="reflection-form__period-label">{periodToLabel(progressForm.period)}</span>
+                {/* Field Periode dihilangkan — per aturan bisnis aplikasi
+                    wajib weekly basis untuk minggu berjalan. Tidak ada use
+                    case user pilih minggu manual: late submission tetap untuk
+                    minggu yang sama, edit pakai entry existing via riwayat.
+                    Info minggu sudah jelas di kicker header modal. */}
+
+                {/* ── Section 1: Posisi Minggu Ini (primary, always visible) ── */}
+                <div className="reflection-form__section">
+                  <div className="reflection-form__section-head">
+                    <span className="reflection-form__section-title">Posisi Minggu Ini</span>
+                    <span className="reflection-form__section-sub">Status & narasi singkat</span>
                   </div>
-                </div>
 
-                <div className="reflection-form__row">
-                  <label className="reflection-form__label" htmlFor="reflection-health">Health</label>
-                  <select
-                    id="reflection-health"
-                    className="reflection-form__input"
-                    value={progressForm.healthAtTime}
-                    onChange={e => setProgressForm(f => ({ ...f, healthAtTime: e.target.value as ProgressLogEntry['healthAtTime'] }))}
-                  >
-                    <option value="on_track">On Track</option>
-                    <option value="at_risk">At Risk</option>
-                    <option value="terlambat">Terlambat</option>
-                    <option value="overdue">Lewat Tenggat</option>
-                  </select>
-                </div>
-
-                <div className="reflection-form__row">
-                  <label className="reflection-form__label" htmlFor="reflection-narrative">
-                    Progres terkini <span className="reflection-form__required">*</span>
-                  </label>
-                  <textarea
-                    id="reflection-narrative"
-                    className="reflection-form__input reflection-form__textarea"
-                    rows={3}
-                    value={progressForm.narrative}
-                    onChange={e => setProgressForm(f => ({ ...f, narrative: e.target.value }))}
-                    placeholder="Ceritakan posisi program minggu ini..."
-                    required
-                  />
-                </div>
-
-                {(detail.kpis ?? []).length > 0 && (
                   <div className="reflection-form__row">
-                    <label className="reflection-form__label">
-                      KPI aktual minggu ini
-                      <span className="reflection-form__hint">opsional · isi yang berubah saja</span>
-                    </label>
-                    <div className="reflection-form__kpis">
-                      {(detail.kpis ?? []).map(kpi => {
-                        const lastActual = kpi.actualValue != null
-                          ? formatKpiValue(kpi.actualValue, kpi.unitOfMeasure ?? '', kpi.dataType ?? undefined)
-                          : null
-                        const targetLabel = formatKpiValue(kpi.targetValue, kpi.unitOfMeasure ?? '', kpi.dataType ?? undefined)
-                        return (
-                          <div key={kpi.id} className="reflection-form__kpi-item">
-                            <div className="reflection-form__kpi-meta">
-                              <span className="reflection-form__kpi-name">{kpi.name}</span>
-                              <span className="reflection-form__kpi-sub">
-                                Target {targetLabel}
-                                {lastActual ? ` · terakhir ${lastActual}` : ' · belum ada actual'}
-                              </span>
-                            </div>
-                            <input
-                              className="reflection-form__input reflection-form__kpi-input"
-                              type="number"
-                              step="any"
-                              inputMode="decimal"
-                              value={weeklyKpiActuals[kpi.id] ?? ''}
-                              onChange={e => setWeeklyKpiActuals(s => ({ ...s, [kpi.id]: e.target.value }))}
-                              placeholder={lastActual ?? '—'}
-                              aria-label={`Aktual baru untuk ${kpi.name}`}
-                            />
-                          </div>
-                        )
-                      })}
-                    </div>
+                    <label className="reflection-form__label" htmlFor="reflection-health">Status Kesehatan</label>
+                    <select
+                      id="reflection-health"
+                      className="reflection-form__input"
+                      value={progressForm.healthAtTime}
+                      onChange={e => setProgressForm(f => ({ ...f, healthAtTime: e.target.value as ProgressLogEntry['healthAtTime'] }))}
+                    >
+                      <option value="on_track">On Track</option>
+                      <option value="at_risk">At Risk</option>
+                      <option value="terlambat">Terlambat</option>
+                      <option value="overdue">Lewat Tenggat</option>
+                    </select>
                   </div>
-                )}
 
-                <div className="reflection-form__row">
-                  <label className="reflection-form__label" htmlFor="reflection-kendala">Kendala</label>
-                  <textarea
-                    id="reflection-kendala"
-                    className="reflection-form__input reflection-form__textarea"
-                    rows={2}
-                    value={progressForm.kendala}
-                    onChange={e => setProgressForm(f => ({ ...f, kendala: e.target.value }))}
-                    placeholder="Hambatan yang dihadapi minggu ini (opsional)"
-                  />
+                  <div className="reflection-form__row">
+                    <label className="reflection-form__label" htmlFor="reflection-narrative">
+                      Progres Terkini <span className="reflection-form__required">*</span>
+                    </label>
+                    <textarea
+                      id="reflection-narrative"
+                      className="reflection-form__input reflection-form__textarea"
+                      rows={3}
+                      value={progressForm.narrative}
+                      onChange={e => setProgressForm(f => ({ ...f, narrative: e.target.value }))}
+                      placeholder="Contoh: Workshop framework BCMS selesai dengan 3 stakeholder. Draft dokumen 80% — review oleh Kadiv minggu depan."
+                      required
+                    />
+                  </div>
+
+                  {(detail.kpis ?? []).length > 0 && (
+                    <div className="reflection-form__row">
+                      <label className="reflection-form__label">
+                        KPI Aktual Minggu Ini
+                        <span className="reflection-form__hint">opsional · isi yang berubah saja</span>
+                      </label>
+                      <div className="reflection-form__kpis">
+                        {(detail.kpis ?? []).map(kpi => {
+                          const lastActual = kpi.actualValue != null
+                            ? formatKpiValue(kpi.actualValue, kpi.unitOfMeasure ?? '', kpi.dataType ?? undefined)
+                            : null
+                          const targetLabel = formatKpiValue(kpi.targetValue, kpi.unitOfMeasure ?? '', kpi.dataType ?? undefined)
+                          return (
+                            <div key={kpi.id} className="reflection-form__kpi-item">
+                              <div className="reflection-form__kpi-meta">
+                                <span className="reflection-form__kpi-name">{kpi.name}</span>
+                                <span className="reflection-form__kpi-sub">
+                                  Target {targetLabel}
+                                  {lastActual ? ` · terakhir ${lastActual}` : ' · belum ada actual'}
+                                </span>
+                              </div>
+                              <input
+                                className="reflection-form__input reflection-form__kpi-input"
+                                type="number"
+                                step="any"
+                                inputMode="decimal"
+                                value={weeklyKpiActuals[kpi.id] ?? ''}
+                                onChange={e => setWeeklyKpiActuals(s => ({ ...s, [kpi.id]: e.target.value }))}
+                                placeholder={lastActual ?? '—'}
+                                aria-label={`Aktual baru untuk ${kpi.name}`}
+                              />
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="reflection-form__row">
-                  <label className="reflection-form__label" htmlFor="reflection-corrective">Corrective action</label>
-                  <textarea
-                    id="reflection-corrective"
-                    className="reflection-form__input reflection-form__textarea"
-                    rows={2}
-                    value={progressForm.correctiveAction}
-                    onChange={e => setProgressForm(f => ({ ...f, correctiveAction: e.target.value }))}
-                    placeholder="Tindakan korektif untuk mengatasi kendala (opsional)"
-                  />
-                </div>
+                {/* ── Section 2: Detail Tindak Lanjut (opsional, collapsible) ──
+                    4 field opsional di-group jadi grid 2-kolom:
+                    Kendala | Tindakan Korektif (problem ↔ solusi)
+                    Langkah Berikutnya | Dukungan Dibutuhkan (plan ↔ ask)
+                    Default collapsed; auto-expand kalau ada prefill atau existing isi. */}
+                <div className="reflection-form__section reflection-form__section--collapsible" data-expanded={optionalExpanded}>
+                  <button
+                    type="button"
+                    className="reflection-form__section-toggle"
+                    onClick={() => setOptionalExpanded(v => !v)}
+                    aria-expanded={optionalExpanded}
+                    aria-controls="reflection-optional-body"
+                  >
+                    <span className="reflection-form__section-toggle-icon" aria-hidden="true">
+                      {optionalExpanded ? '−' : '+'}
+                    </span>
+                    <span className="reflection-form__section-title">Detail Tindak Lanjut</span>
+                    <span className="reflection-form__section-sub">Kendala, tindakan korektif, langkah berikutnya, dukungan</span>
+                  </button>
 
-                <div className="reflection-form__row">
-                  <label className="reflection-form__label" htmlFor="reflection-nextstep">Next step</label>
-                  <textarea
-                    id="reflection-nextstep"
-                    className="reflection-form__input reflection-form__textarea"
-                    rows={2}
-                    value={progressForm.nextStep}
-                    onChange={e => setProgressForm(f => ({ ...f, nextStep: e.target.value }))}
-                    placeholder="Langkah selanjutnya & target periode berikutnya (opsional)"
-                  />
-                </div>
+                  {optionalExpanded && (
+                    <div className="reflection-form__section-body" id="reflection-optional-body">
+                      <div className="reflection-form__grid">
+                        <div className="reflection-form__row">
+                          <label className="reflection-form__label" htmlFor="reflection-kendala">Kendala</label>
+                          <textarea
+                            id="reflection-kendala"
+                            className="reflection-form__input reflection-form__textarea"
+                            rows={2}
+                            value={progressForm.kendala}
+                            onChange={e => setProgressForm(f => ({ ...f, kendala: e.target.value }))}
+                            placeholder="Contoh: Tim risk kekurangan data baseline dari unit Sumut."
+                          />
+                        </div>
 
-                <div className="reflection-form__row">
-                  <label className="reflection-form__label" htmlFor="reflection-dukungan">Dukungan dibutuhkan</label>
-                  <textarea
-                    id="reflection-dukungan"
-                    className="reflection-form__input reflection-form__textarea"
-                    rows={2}
-                    value={progressForm.dukunganDibutuhkan}
-                    onChange={e => setProgressForm(f => ({ ...f, dukunganDibutuhkan: e.target.value }))}
-                    placeholder="Support yang diperlukan dari stakeholder (opsional)"
-                  />
+                        <div className="reflection-form__row">
+                          <label className="reflection-form__label" htmlFor="reflection-corrective">Tindakan Korektif</label>
+                          <textarea
+                            id="reflection-corrective"
+                            className="reflection-form__input reflection-form__textarea"
+                            rows={2}
+                            value={progressForm.correctiveAction}
+                            onChange={e => setProgressForm(f => ({ ...f, correctiveAction: e.target.value }))}
+                            placeholder="Contoh: Eskalasi ke GM Sumut hari Senin untuk percepat data."
+                          />
+                        </div>
+
+                        <div className="reflection-form__row">
+                          <label className="reflection-form__label" htmlFor="reflection-nextstep">Langkah Berikutnya</label>
+                          <textarea
+                            id="reflection-nextstep"
+                            className="reflection-form__input reflection-form__textarea"
+                            rows={2}
+                            value={progressForm.nextStep}
+                            onChange={e => setProgressForm(f => ({ ...f, nextStep: e.target.value }))}
+                            placeholder="Contoh: Finalisasi draft + presentasi ke Kadiv minggu depan."
+                          />
+                        </div>
+
+                        <div className="reflection-form__row">
+                          <label className="reflection-form__label" htmlFor="reflection-dukungan">Dukungan Dibutuhkan</label>
+                          <textarea
+                            id="reflection-dukungan"
+                            className="reflection-form__input reflection-form__textarea"
+                            rows={2}
+                            value={progressForm.dukunganDibutuhkan}
+                            onChange={e => setProgressForm(f => ({ ...f, dukunganDibutuhkan: e.target.value }))}
+                            placeholder="Contoh: Approval anggaran konsultan dari Direktur."
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {weeklyKpiErrors.length > 0 && (

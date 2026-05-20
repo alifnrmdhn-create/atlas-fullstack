@@ -6,20 +6,27 @@
  * "Buang draf". Banner dismiss tidak menghapus draft (user masih bisa restore
  * di interaksi berikutnya — draft tetap di server sampai TTL).
  *
- * Undo discard: tombol "Buang" tidak langsung hapus. Toast 5 detik muncul,
- * tombol "Urungkan" → batalkan delete. Setelah 5 detik habis, baru
- * benar-benar discard di BE.
+ * Undo discard: tombol "Buang" tidak langsung hapus. Countdown 5 detik muncul
+ * dengan progress bar; user bisa klik "Urungkan" untuk batal. Setelah 5 detik
+ * habis, baru benar-benar discard di BE.
+ *
+ * IMPORTANT (2026-05-19 fix): timer & pending state DI-LIFT ke parent. Versi
+ * sebelumnya menyimpan timer di component-local useEffect — kalau banner
+ * unmount (mis. user tutup modal mid-countdown), timer cancel, discard tidak
+ * pernah fire, draft tetap di server. Reopen → banner muncul lagi.
+ * Sekarang component pure presentational; parent yang track lifecycle.
  */
-
-import { useEffect, useRef, useState } from 'react'
 
 interface Props {
     savedAt: Date
     source?: 'server' | 'local'
     onRestore: () => void
-    onDiscard: () => void
+    onStartDiscard: () => void
+    onCancelDiscard: () => void
     onDismiss?: () => void
-    undoTimeoutMs?: number
+    discardPending: boolean
+    discardRemainingMs: number
+    discardTotalMs: number
 }
 
 function formatTime(d: Date): string {
@@ -36,41 +43,24 @@ export function DraftRestoreBanner({
     savedAt,
     source = 'server',
     onRestore,
-    onDiscard,
+    onStartDiscard,
+    onCancelDiscard,
     onDismiss,
-    undoTimeoutMs = 5000,
+    discardPending,
+    discardRemainingMs,
+    discardTotalMs,
 }: Props) {
-    const [discardPending, setDiscardPending] = useState(false)
-    const [remainingMs, setRemainingMs] = useState(undoTimeoutMs)
-    const timerRef = useRef<number | null>(null)
-
-    useEffect(() => {
-        if (!discardPending) return
-        const startedAt = Date.now()
-        const tick = () => {
-            const elapsed = Date.now() - startedAt
-            const remain = Math.max(0, undoTimeoutMs - elapsed)
-            setRemainingMs(remain)
-            if (remain === 0) {
-                onDiscard()
-                setDiscardPending(false)
-            } else {
-                timerRef.current = window.setTimeout(tick, 100)
-            }
-        }
-        timerRef.current = window.setTimeout(tick, 100)
-        return () => {
-            if (timerRef.current) {
-                window.clearTimeout(timerRef.current)
-                timerRef.current = null
-            }
-        }
-    }, [discardPending, undoTimeoutMs, onDiscard])
-
     if (discardPending) {
-        const seconds = Math.ceil(remainingMs / 1000)
+        const seconds = Math.ceil(discardRemainingMs / 1000)
+        const progressPct = Math.max(0, Math.min(100, (discardRemainingMs / discardTotalMs) * 100))
         return (
             <div className="draft-restore-banner draft-restore-banner--undo" role="alert">
+                <div className="draft-restore-banner__undo-track" aria-hidden="true">
+                    <div
+                        className="draft-restore-banner__undo-fill"
+                        style={{ width: `${progressPct}%` }}
+                    />
+                </div>
                 <span className="draft-restore-banner__text">
                     Draf akan dihapus dalam {seconds} detik…
                 </span>
@@ -78,7 +68,7 @@ export function DraftRestoreBanner({
                     <button
                         type="button"
                         className="draft-restore-banner__btn draft-restore-banner__btn--primary"
-                        onClick={() => setDiscardPending(false)}
+                        onClick={onCancelDiscard}
                     >
                         Urungkan
                     </button>
@@ -105,7 +95,7 @@ export function DraftRestoreBanner({
                 <button
                     type="button"
                     className="draft-restore-banner__btn draft-restore-banner__btn--ghost"
-                    onClick={() => setDiscardPending(true)}
+                    onClick={onStartDiscard}
                 >
                     Buang draf
                 </button>
