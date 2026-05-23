@@ -305,7 +305,11 @@ class OrganizationController extends Controller
             elseif ($actual <= $warning)  { $status = 'YELLOW'; $kpiYellow++; }
             else                          { $status = 'GREEN';  $kpiGreen++; }
 
-            $pilar = $kpi->program?->pilarStrategis ?? 'LAINNYA';
+            // pilarStrategis di-cast ke PilarStrategis enum di Program model.
+            // Unwrap ke ->value sebelum dipakai sebagai array key — PHP throw
+            // "Cannot access offset of type X in isset or empty" kalau enum
+            // dipakai langsung sebagai key.
+            $pilar = $kpi->program?->pilarStrategis?->value ?? 'LAINNYA';
             if (!isset($kpiByPilar[$pilar])) {
                 $kpiByPilar[$pilar] = ['pilar' => $pilar, 'red' => 0, 'yellow' => 0, 'green' => 0, 'total' => 0];
             }

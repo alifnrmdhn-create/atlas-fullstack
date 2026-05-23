@@ -188,7 +188,12 @@ class ProgramCharterService
 
     private function buildKpiBlock(Program $program): ?array
     {
-        if ($program->kelompok !== 'SCORECARD') {
+        // kelompok di-cast ke Kelompok enum di Program model. Comparison
+        // langsung enum !== 'SCORECARD' ALWAYS true (PHP strict type mismatch
+        // antara backed enum object vs string) → fungsi ini SEBELUMNYA selalu
+        // return null untuk SEMUA program. Silent bug — KPI block di Charter
+        // tidak pernah render. Fix: compare via ->value.
+        if ($program->kelompok?->value !== 'SCORECARD') {
             return null;
         }
         $kpi = KpiDefinition::query()
