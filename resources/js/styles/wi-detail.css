@@ -3213,12 +3213,14 @@ select.wi-bl-input {
 .wid-panel--flat:first-child {
   border-top: none;
 }
-/* Quieter section titles inside flat panels */
+/* Section titles in flat panels — Title Case, lebih readable.
+   ALL CAPS dengan letter-spacing tinggi sebelumnya terasa formal/database-y.
+   Title Case dengan weight 600 + size 13 = lebih natural & easy to scan. */
 .wid-panel--flat .wid-panel__title {
-  font-size: 9.5px;
-  opacity: 0.5;
+  font-size: 13px;
+  opacity: 0.85;
   font-weight: 600;
-  letter-spacing: 0.09em;
+  letter-spacing: 0;
 }
 .wid-panel--flat .wid-panel__icon {
   display: none;
@@ -3239,11 +3241,11 @@ select.wi-bl-input {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-strong);
   margin: 0;
   flex-shrink: 0;
 }
@@ -6376,6 +6378,21 @@ select.wid-input {
 .wid-ms-msg {
   font-size: 11.5px;
   color: var(--text-muted);
+}
+/* Saved indicator — subtle text dengan check icon, BUKAN button.
+   Saat task state tidak dirty, replace tombol disabled outline yang
+   sebelumnya terlihat clickable padahal tidak. */
+.wid-ms-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--green, #22c55e) 75%, var(--text-muted));
+  padding: 6px 0;
+  font-weight: 500;
+}
+.wid-ms-saved svg {
+  flex-shrink: 0;
 }
 .wid-metastrip .wid-slider {
   width: 100%;

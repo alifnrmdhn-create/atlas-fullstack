@@ -1397,14 +1397,18 @@
   color: var(--red);
 }
 
-/* "+ Tambah Task" — hover-only show, di bawah task list dalam phase group. */
+/* "+ Tambah Task" — always visible (2026-05-21 fix). Hover-only sebelumnya
+   bikin discoverability rendah — user yang baru tidak tahu cara tambah task
+   ke phase tanpa hover-eksplorasi. Action add harus selalu visible supaya
+   user paham "ini phase ini bisa di-tambah task". Visual weight tetap subtle
+   (small green text) supaya tidak dominan. */
 .prog-detail-page .wi-add-subtask-btn {
-  opacity: 0 !important;
-  transition: opacity 120ms ease !important;
+  opacity: 0.75;
+  transition: opacity 120ms ease;
 }
 .prog-detail-page .phase-group:hover .wi-add-subtask-btn,
 .prog-detail-page .phase-group:focus-within .wi-add-subtask-btn {
-  opacity: 1 !important;
+  opacity: 1;
 }
 
 /* "+ Tambah Phase" — light green block sengaja TIDAK hover-only. Itu CTA
@@ -3382,9 +3386,11 @@ select.prog-strategic__input {
   flex: 0 1 auto !important;
 }
 
-/* #2 Description workstream: kasih eyebrow + italic muted style. */
+/* #2 Description workstream: eyebrow "Deskripsi" + content muted style.
+   Italic dilepas (sebelumnya bikin content terlihat seperti placeholder) —
+   normal style + text-muted color cukup untuk indicate "deskripsi (catatan)". */
 .prog-detail-page .workstream-panel-info__item--desc {
-  font-style: italic !important;
+  font-style: normal !important;
   font-size: 12.5px !important;
   color: var(--text-muted) !important;
   display: inline-flex !important;
@@ -3477,3 +3483,84 @@ select.prog-strategic__input {
 .prog-detail-page .workstream-ren-hint__text {
   font-style: italic !important;
 }
+
+/* ──────────────────────────────────────────────────────────────────
+ * Realisasi vs Plan (Execution Achievement) — Ringkasan tab card
+ * Program-level rollup % achievement dari planned vs realized weeks.
+ * 2026-05-23
+ * ──────────────────────────────────────────────────────────────────*/
+.prog-achievement {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 4px 0;
+}
+.prog-achievement__primary {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+}
+.prog-achievement__pct {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.prog-achievement__caption {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.prog-achievement__caption-line {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+}
+.prog-achievement__caption-sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.prog-achievement__breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--panel-border) 60%, transparent);
+}
+.prog-achievement__ws {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 12.5px;
+}
+.prog-achievement__ws-name {
+  color: var(--text);
+  font-weight: 500;
+  min-width: 0;
+  flex: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.prog-achievement__ws-stat {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.prog-achievement__ws-pct {
+  font-weight: 700;
+}
+.prog-achievement__ws--green .prog-achievement__ws-pct { color: var(--green); }
+.prog-achievement__ws--yellow .prog-achievement__ws-pct { color: var(--yellow); }
+.prog-achievement__ws--red .prog-achievement__ws-pct { color: var(--red); }

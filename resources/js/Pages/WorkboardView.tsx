@@ -30,13 +30,59 @@ type WaitingItem = {
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { useRoleAccess } from '../hooks/useRoleAccess'
+import { TaskDetailModal } from '../components/TaskDetailModal'
 import './WorkboardView.css'
 
 type BoardMode = 'kanban' | 'list' | 'blockers'
 type TimeFilter = 'week' | 'overdue' | 'in-flight' | 'all'
 
-const STATUS_ORDER = ['BACKLOG', 'READY', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'COMPLETED']
+// Kolom Workboard — restructure 2026-05-21:
+// - BLOCKED dihilangkan dari kolom (jadi badge orthogonal, lihat card render)
+// - Vocabulary Indonesia (pakem ATLAS — Indonesia-kan semua label)
+// - Status code DB tetap (backward compat dengan data lama)
+const STATUS_ORDER = ['BACKLOG', 'READY', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED']
 const statusSlug = (status: string) => status.toLowerCase()
+
+// Mapping label Indonesia per status kolom.
+// "Backlog" → Belum Direncanakan (task masih draft, prasyarat belum lengkap)
+// "Ready" → Siap Dikerjakan (PIC + tanggal + plan sudah set)
+// "In Progress" → Sedang Berjalan (kerjaan jalan, actualStartDate set)
+// "In Review" → Menunggu Review (handed off ke reviewer)
+// "Completed" → Selesai (done, completion evidence tercatat)
+const STATUS_LABEL_ID: Record<string, string> = {
+  BACKLOG: 'Belum Direncanakan',
+  READY: 'Siap Dikerjakan',
+  IN_PROGRESS: 'Sedang Berjalan',
+  IN_REVIEW: 'Menunggu Review',
+  COMPLETED: 'Selesai',
+  BLOCKED: 'Terhambat', // tidak ada kolom, tapi tetap di-map untuk badge & data lama
+  ON_HOLD: 'Ditahan',
+  CANCELLED: 'Dibatalkan',
+}
+const statusLabelId = (status: string): string => STATUS_LABEL_ID[status] ?? status
+
+// Tooltip kriteria masuk per kolom (dipakai di kanban-col__header).
+const STATUS_CRITERIA_ID: Record<string, string> = {
+  BACKLOG: 'Task baru atau belum siap dikerjakan. Lengkapi PIC, tanggal, dan rencana untuk pindah ke "Siap Dikerjakan".',
+  READY: 'Task sudah punya PIC, tanggal mulai, dan target selesai. Siap mulai eksekusi.',
+  IN_PROGRESS: 'Task sedang aktif dikerjakan. Tanggal mulai sudah tercatat.',
+  IN_REVIEW: 'Task selesai dari sisi PIC, menunggu approval reviewer.',
+  COMPLETED: 'Task selesai, ada bukti completion (link / catatan).',
+}
+
+// Canonical forward order untuk detect transition direction.
+const STATUS_ORDER_MAP: Record<string, number> = {
+  BACKLOG: 0, READY: 1, IN_PROGRESS: 2, IN_REVIEW: 3, COMPLETED: 4,
+}
+type TransitionCategory = 'normal' | 'skip-forward' | 'backward' | 'lateral'
+function categorizeTransition(from: string, to: string): TransitionCategory {
+  const f = STATUS_ORDER_MAP[from]
+  const t = STATUS_ORDER_MAP[to]
+  if (f === undefined || t === undefined) return 'normal' // BLOCKED orthogonal
+  if (t < f) return 'backward'
+  if (t > f + 1) return 'skip-forward'
+  return 'normal'
+}
 
 // Time-based filter helpers (Daily PIC Workspace)
 function taskIsOverdue(t: Task): boolean {
@@ -98,7 +144,10 @@ function CardFace({
       <div className="work-card__footer">
         <span className="code-badge">{item.code}</span>
         {item.isBlocked ? (
-          <span className="work-card__blocked">BLOCKED</span>
+          <span
+            className="work-card__blocked"
+            title={item.blockedReason ?? 'Task terhambat — butuh intervensi'}
+          >⚠ Terhambat</span>
         ) : null}
         {item.status === 'COMPLETED' && item.targetCompletion && item.actualCompletion && (
           <span className={`work-card__ontime work-card__ontime--${new Date(item.actualCompletion) <= new Date(item.targetCompletion) ? 'ok' : 'late'}`}>
@@ -119,7 +168,7 @@ function DraggableCard({
 }: {
   item: Task
   isSelected: boolean
-  onClick: () => void
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
   normalizeHealthStatus: (h: string) => 'GREEN' | 'YELLOW' | 'RED'
   /** When false the card renders as non-interactive (BOD monitoring mode, OFFICER viewing others) */
   draggable?: boolean
@@ -269,14 +318,108 @@ export function WorkboardView() {
   const [activeItem, setActiveItem] = useState<Task | null>(null)
   const [overColId, setOverColId] = useState<string | null>(null)
 
-  // Daily PIC Workspace: prompt modal saat drag ke status yang butuh konteks
-  const PROMPT_STATUSES = ['BLOCKED', 'COMPLETED', 'IN_REVIEW'] as const
+  // Task detail modal state — card click open modal (kesan "card expand")
+  // alih-alih navigate full page. Origin rect dicapture untuk animation
+  // FLIP-like expand dari card position.
+  const [taskModalId, setTaskModalId] = useState<number | null>(null)
+  const [taskModalOriginRect, setTaskModalOriginRect] = useState<DOMRect | null>(null)
+
+  // Auto-open modal dari query param `?task={id}` saat mount. Dipakai untuk
+  // deep link — URL /execution/tasks/{id} redirect ke /execution?task={id},
+  // lalu Workboard auto-open modal supaya URL share tetap functional.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const taskParam = params.get('task')
+    if (taskParam) {
+      const id = parseInt(taskParam, 10)
+      if (!Number.isNaN(id)) {
+        // Tanpa originRect — animation start dari center (defensive fallback)
+        setTaskModalId(id)
+      }
+    }
+  }, [])
+
+  const openTaskModal = (taskId: number, e: React.MouseEvent | React.KeyboardEvent) => {
+    // Cari nearest card element supaya rect-nya akurat (target bisa anak elemen)
+    const target = e.currentTarget as HTMLElement
+    const card = target.closest('.work-card, .wi-row, [data-task-card]') as HTMLElement | null
+    const rect = card ? card.getBoundingClientRect() : target.getBoundingClientRect()
+    setTaskModalOriginRect(rect)
+    setTaskModalId(taskId)
+    // Sync URL — supaya deep link/back button work. pushState (bukan replaceState)
+    // supaya browser back menutup modal (lihat popstate handler di bawah).
+    const newUrl = `${window.location.pathname}?task=${taskId}`
+    window.history.pushState({ taskModalId: taskId }, '', newUrl)
+  }
+
+  const closeTaskModal = () => {
+    setTaskModalId(null)
+    setTaskModalOriginRect(null)
+    // Strip ?task= via replaceState — JANGAN pakai history.back() karena
+    // Inertia intercept popstate dan refetch /execution → board reload
+    // (visible flash). User klik X = local close, tidak boleh ada server roundtrip.
+    const params = new URLSearchParams(window.location.search)
+    params.delete('task')
+    const qs = params.toString()
+    const newUrl = window.location.pathname + (qs ? `?${qs}` : '')
+    window.history.replaceState(null, '', newUrl)
+  }
+
+  // Popstate handler — browser back button close modal kalau open
+  useEffect(() => {
+    const onPopState = () => {
+      const params = new URLSearchParams(window.location.search)
+      const taskParam = params.get('task')
+      if (taskParam) {
+        const id = parseInt(taskParam, 10)
+        if (!Number.isNaN(id)) {
+          setTaskModalId(id)
+          return
+        }
+      }
+      // No task param — close modal
+      setTaskModalId(null)
+      setTaskModalOriginRect(null)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
+  // Daily PIC Workspace: prompt modal saat drag ke status yang butuh konteks.
+  // Status restructure 2026-05-21:
+  // - BLOCKED tetap di list (tidak ada kolom tapi reachable via "Tandai Terhambat" button)
+  // - READY/IN_PROGRESS DI-ADD: prereq check sebelum transition
+  const PROMPT_STATUSES = ['BLOCKED', 'COMPLETED', 'IN_REVIEW', 'READY', 'IN_PROGRESS'] as const
   type PromptStatus = typeof PROMPT_STATUSES[number]
   const [pendingTransition, setPendingTransition] = useState<
-    { item: Task; targetStatus: PromptStatus } | null
+    {
+      item: Task
+      targetStatus: PromptStatus
+      missing?: string[]
+      category?: TransitionCategory // skip-forward/backward → behavior modal beda
+    } | null
   >(null)
   const [promptText, setPromptText] = useState('')
   const [promptError, setPromptError] = useState<string | null>(null)
+
+  // Prereq check per status. Return array of human-readable missing fields.
+  // Empty array = prereq lengkap, OK transition.
+  const checkPrereq = (task: Task, target: string): string[] => {
+    const missing: string[] = []
+    if (target === 'READY') {
+      // Siap Dikerjakan: butuh assignee + tanggal mulai + target selesai
+      if (!task.assignee?.id) missing.push('PIC belum ditetapkan')
+      if (!task.startDate) missing.push('Tanggal mulai belum diisi')
+      if (!task.targetCompletion) missing.push('Target selesai belum diisi')
+    }
+    if (target === 'IN_PROGRESS') {
+      // Sedang Berjalan: minimal harus punya assignee & target date
+      // (kalau dari Backlog langsung skip Ready, tetap enforce minimal)
+      if (!task.assignee?.id) missing.push('PIC belum ditetapkan')
+      if (!task.targetCompletion) missing.push('Target selesai belum diisi')
+    }
+    return missing
+  }
 
   const onDragStart = ({ active }: DragStartEvent) => {
     const item = allItems.find(i => i.id === active.id)
@@ -288,12 +431,27 @@ export function WorkboardView() {
   const onDragEnd = ({ over }: DragEndEvent) => {
     if (over && activeItem) {
       const target = String(over.id)
-      if ((PROMPT_STATUSES as readonly string[]).includes(target) && target !== activeItem.status) {
-        setPendingTransition({ item: activeItem, targetStatus: target as PromptStatus })
-        setPromptText('')
-        setPromptError(null)
-      } else {
-        void handleTaskDrop(target)
+      if (target !== activeItem.status) {
+        // Categorize transition — backward/skip-forward butuh special UI flow
+        const category = categorizeTransition(activeItem.status, target)
+        const needsPrompt = (PROMPT_STATUSES as readonly string[]).includes(target)
+          || category === 'backward'
+          || category === 'skip-forward'
+
+        if (needsPrompt) {
+          // Prereq check untuk target non-Backlog
+          const missing = checkPrereq(activeItem, target)
+          setPendingTransition({
+            item: activeItem,
+            targetStatus: target as PromptStatus,
+            missing: missing.length > 0 ? missing : undefined,
+            category,
+          })
+          setPromptText('')
+          setPromptError(null)
+        } else {
+          void handleTaskDrop(target)
+        }
       }
     } else if (!over) {
       setDragState({ itemId: null, overStatus: null })
@@ -309,7 +467,14 @@ export function WorkboardView() {
 
   const confirmPendingTransition = () => {
     if (!pendingTransition) return
-    const { targetStatus } = pendingTransition
+    const { targetStatus, missing, category } = pendingTransition
+    // Prereq missing — tidak bisa transition. User harus edit task dulu.
+    if (missing && missing.length > 0) return
+    // Backward transition: alasan WAJIB untuk audit log (sync dengan backend).
+    if (category === 'backward' && !promptText.trim()) {
+      setPromptError('Alasan kembalikan status wajib diisi untuk audit log.')
+      return
+    }
     if (targetStatus === 'BLOCKED' && !promptText.trim()) {
       setPromptError('Alasan blocker wajib diisi.')
       return
@@ -682,7 +847,16 @@ export function WorkboardView() {
               <div className="kanban-board">
                 {STATUS_ORDER.map((status) => {
                   const group = filteredGroups.find(g => g.status === status)
-                  const items = group?.items ?? []
+                  let items = group?.items ?? []
+                  // BLOCKED column dihilangkan — task dengan status=BLOCKED tetap
+                  // dirender (data lama), bucketed ke IN_PROGRESS dengan badge
+                  // orthogonal "Terhambat" (lihat work-card__blocked styling).
+                  if (status === 'IN_PROGRESS') {
+                    const blockedGroup = filteredGroups.find(g => g.status === 'BLOCKED')
+                    if (blockedGroup) {
+                      items = [...items, ...blockedGroup.items]
+                    }
+                  }
                   const isCollapsed = collapsedCols.has(status)
                   return (
                     <DroppableColumn
@@ -700,7 +874,14 @@ export function WorkboardView() {
                       >
                         <div className="kanban-col__label-row">
                           <span className="kanban-col__caret" aria-hidden="true">{isCollapsed ? '▸' : '▾'}</span>
-                          <span className="kanban-col__label">{formatStatusLabel(status)}</span>
+                          <span className="kanban-col__label">{statusLabelId(status)}</span>
+                          {/* Info icon dengan tooltip kriteria masuk kolom — bantu user paham
+                              kapan task harus pindah ke kolom ini. */}
+                          <span
+                            className="kanban-col__info"
+                            title={STATUS_CRITERIA_ID[status] ?? ''}
+                            aria-label={`Kriteria ${statusLabelId(status)}`}
+                          >ⓘ</span>
                         </div>
                         <span className="section-badge">{items.length}</span>
                       </button>
@@ -711,7 +892,7 @@ export function WorkboardView() {
                               key={item.id}
                               item={item}
                               isSelected={false}
-                              onClick={() => navigate(`/execution/tasks/${item.id}`)}
+                              onClick={(e) => openTaskModal(item.id, e)}
                               normalizeHealthStatus={normalizeHealthStatus}
                               draggable={
                                 roleAccess.canDragCards &&
@@ -754,7 +935,7 @@ export function WorkboardView() {
                   <button
                     className="wi-list-row"
                     key={item.id}
-                    onClick={() => navigate(`/execution/tasks/${item.id}`)}
+                    onClick={(e) => openTaskModal(item.id, e)}
                   >
                     <div className="wi-list-row__left">
                       <span className="code-badge">{item.code}</span>
@@ -822,7 +1003,7 @@ export function WorkboardView() {
                   <button
                     className="wi-list-row"
                     key={task.id}
-                    onClick={() => navigate(`/execution/tasks/${task.id}`)}
+                    onClick={(e) => openTaskModal(task.id, e)}
                   >
                     <div className="wi-list-row__left">
                       <span className="code-badge">{task.code}</span>
@@ -853,7 +1034,7 @@ export function WorkboardView() {
                 <button
                   className="wi-list-row"
                   key={item.id}
-                  onClick={() => navigate(`/execution/tasks/${item.id}`)}
+                  onClick={(e) => openTaskModal(item.id, e)}
                 >
                   <div className="wi-list-row__left">
                     <span className="code-badge">{item.code}</span>
@@ -1018,77 +1199,174 @@ export function WorkboardView() {
         </div>
       )}
 
-      {/* Daily PIC Workspace: prompt modal saat drag ke BLOCKED/COMPLETED/IN_REVIEW */}
-      {pendingTransition && (
-        <div className="modal-backdrop" onClick={cancelPendingTransition}>
-          <div className="modal modal--narrow wb-prompt-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-            <div className="modal__header">
-              <div className="modal-headcopy">
-                <span className="modal-kicker">{formatStatusLabel(pendingTransition.targetStatus)}</span>
-                <h3 className="modal__title">
-                  {pendingTransition.targetStatus === 'BLOCKED' && 'Tandai task sebagai Blocked'}
-                  {pendingTransition.targetStatus === 'COMPLETED' && 'Tandai task selesai'}
-                  {pendingTransition.targetStatus === 'IN_REVIEW' && 'Kirim task untuk review'}
-                </h3>
-                <p className="modal-subtitle">
-                  Task: <strong>{pendingTransition.item.code}</strong> — {pendingTransition.item.title}
-                </p>
+      {/* Daily PIC Workspace: prompt modal saat drag ke status sensitif.
+          Status yang trigger prompt: BLOCKED, COMPLETED, IN_REVIEW (existing)
+          + READY, IN_PROGRESS (baru — prereq check). */}
+      {pendingTransition && (() => {
+        const target = pendingTransition.targetStatus
+        const category = pendingTransition.category ?? 'normal'
+        const hasMissing = !!(pendingTransition.missing && pendingTransition.missing.length > 0)
+        const isBackward = category === 'backward'
+        const isSkipForward = category === 'skip-forward'
+
+        // Title: backward/skip-forward override target-specific title untuk
+        // memberi user context bahwa transition ini "tidak biasa".
+        const titleMap: Record<string, string> = {
+          BLOCKED: 'Tandai task Terhambat',
+          COMPLETED: 'Tandai task Selesai',
+          IN_REVIEW: 'Kirim task untuk review',
+          READY: 'Pindahkan ke Siap Dikerjakan',
+          IN_PROGRESS: 'Mulai kerjakan task',
+          BACKLOG: 'Kembalikan ke Belum Direncanakan',
+        }
+        const title = isBackward
+          ? `Kembalikan status ke ${statusLabelId(target)}`
+          : isSkipForward
+            ? `Lewati tahapan — langsung ke ${statusLabelId(target)}`
+            : (titleMap[target] ?? 'Pindahkan task')
+
+        const labelMap: Record<string, string> = {
+          BLOCKED: 'Alasan blocker (wajib)',
+          COMPLETED: 'Link bukti / catatan completion (opsional)',
+          IN_REVIEW: 'Catatan untuk reviewer (opsional)',
+          READY: 'Catatan (opsional)',
+          IN_PROGRESS: 'Catatan awal (opsional) · mis. komitmen jadwal',
+          BACKLOG: 'Catatan (opsional)',
+        }
+        const label = isBackward
+          ? 'Alasan kembalikan status (wajib)'
+          : isSkipForward
+            ? 'Alasan lewati tahapan (opsional, disarankan)'
+            : (labelMap[target] ?? 'Catatan (opsional)')
+
+        const placeholderMap: Record<string, string> = {
+          BLOCKED: 'Apa yang menghambat? Siapa yang ditunggu?',
+          COMPLETED: 'mis. https://drive.google.com/... atau referensi notula',
+          IN_REVIEW: 'mis. ringkasan perubahan yang perlu di-review',
+          READY: 'mis. catatan persiapan eksekusi',
+          IN_PROGRESS: 'mis. target selesai minggu ini',
+          BACKLOG: 'mis. ditangguhkan menunggu approval',
+        }
+        const placeholder = isBackward
+          ? 'mis. salah klasifikasi, butuh revisi scope, dst'
+          : isSkipForward
+            ? 'mis. task pre-existing dari notula, sudah dikerjakan sebelumnya'
+            : (placeholderMap[target] ?? '')
+
+        const hintMap: Record<string, string> = {
+          BLOCKED: 'Akan disimpan sebagai blockedReason + masuk Riwayat Status. Wajib agar atasan bisa intervensi.',
+          COMPLETED: 'Catatan masuk Riwayat Status. Boleh dilewati, tapi disarankan untuk audit trail.',
+          IN_REVIEW: 'Catatan masuk Riwayat Status. Boleh dilewati, tapi disarankan untuk audit trail.',
+          READY: 'Catatan masuk Riwayat Status.',
+          IN_PROGRESS: 'Catatan masuk Riwayat Status.',
+          BACKLOG: 'Catatan masuk Riwayat Status.',
+        }
+        const hint = isBackward
+          ? 'Mengembalikan status memerlukan alasan untuk audit log. Akan masuk Riwayat Status.'
+          : isSkipForward
+            ? `Anda melewati ${5 - (STATUS_ORDER_MAP[target] ?? 0) + (STATUS_ORDER_MAP[pendingTransition.item.status] ?? 0)} tahapan. Pastikan task ini memang tidak perlu melewati tahapan tersebut.`
+            : (hintMap[target] ?? 'Catatan masuk Riwayat Status.')
+        return (
+          <div className="modal-backdrop" onClick={cancelPendingTransition}>
+            <div className="modal modal--narrow wb-prompt-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+              <div className="modal__header">
+                <div className="modal-headcopy">
+                  <span className="modal-kicker">
+                    {isBackward ? '↩ Backward' : isSkipForward ? '⏭ Skip' : statusLabelId(target)}
+                  </span>
+                  <h3 className="modal__title">{title}</h3>
+                  <p className="modal-subtitle">
+                    Task: <strong>{pendingTransition.item.code}</strong> — {pendingTransition.item.title}
+                  </p>
+                </div>
+                <button
+                  aria-label="Tutup"
+                  className="modal__close"
+                  onClick={cancelPendingTransition}
+                  type="button"
+                >×</button>
               </div>
-              <button
-                aria-label="Tutup"
-                className="modal__close"
-                onClick={cancelPendingTransition}
-                type="button"
-              >×</button>
-            </div>
-            <div className="modal__body">
-              <label className="form-field">
-                <span className="form-field__label">
-                  {pendingTransition.targetStatus === 'BLOCKED' && 'Alasan blocker (wajib)'}
-                  {pendingTransition.targetStatus === 'COMPLETED' && 'Link bukti / catatan completion (opsional)'}
-                  {pendingTransition.targetStatus === 'IN_REVIEW' && 'Catatan untuk reviewer (opsional)'}
-                </span>
-                <textarea
-                  autoFocus
-                  className="form-field__input"
-                  rows={4}
-                  maxLength={2000}
-                  placeholder={
-                    pendingTransition.targetStatus === 'BLOCKED'
-                      ? 'Apa yang menghambat? Siapa yang ditunggu?'
-                      : pendingTransition.targetStatus === 'COMPLETED'
-                      ? 'mis. https://drive.google.com/... atau referensi notula'
-                      : 'mis. ringkasan perubahan yang perlu di-review'
-                  }
-                  value={promptText}
-                  onChange={e => { setPromptText(e.target.value); setPromptError(null) }}
-                  onKeyDown={e => { if (e.key === 'Escape') cancelPendingTransition() }}
-                />
-                {promptError && <span className="form-field__error">{promptError}</span>}
-              </label>
-              <p className="modal-hint">
-                {pendingTransition.targetStatus === 'BLOCKED'
-                  ? 'Akan disimpan sebagai blockedReason + masuk Riwayat Status. Wajib agar atasan bisa intervensi.'
-                  : 'Catatan akan masuk Riwayat Status task. Boleh dilewati, tapi disarankan untuk audit trail.'}
-              </p>
-            </div>
-            <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={cancelPendingTransition} type="button">
-                Batal
-              </button>
-              <button
-                className="profile-save-btn"
-                onClick={confirmPendingTransition}
-                disabled={pendingTransition.targetStatus === 'BLOCKED' && !promptText.trim()}
-                type="button"
-              >
-                Konfirmasi & Pindah
-              </button>
+              <div className="modal__body">
+                {hasMissing ? (
+                  // Prereq missing — block transition, tampilkan list field kurang.
+                  <div className="wb-prereq-missing">
+                    <p className="wb-prereq-missing__title">
+                      ⚠ Belum bisa dipindahkan — lengkapi prasyarat berikut:
+                    </p>
+                    <ul className="wb-prereq-missing__list">
+                      {pendingTransition.missing!.map((m, i) => (
+                        <li key={i}>{m}</li>
+                      ))}
+                    </ul>
+                    <p className="wb-prereq-missing__hint">
+                      Klik <strong>Edit Task</strong> untuk lengkapi field di atas, lalu coba pindahkan lagi.
+                    </p>
+                  </div>
+                ) : (
+                  <label className="form-field">
+                    <span className="form-field__label">{label}</span>
+                    <textarea
+                      autoFocus
+                      className="form-field__input"
+                      rows={4}
+                      maxLength={2000}
+                      placeholder={placeholder}
+                      value={promptText}
+                      onChange={e => { setPromptText(e.target.value); setPromptError(null) }}
+                      onKeyDown={e => { if (e.key === 'Escape') cancelPendingTransition() }}
+                    />
+                    {promptError && <span className="form-field__error">{promptError}</span>}
+                  </label>
+                )}
+                {!hasMissing && (
+                  <p className="modal-hint">{hint}</p>
+                )}
+              </div>
+              <div className="modal__footer">
+                <button className="btn btn--ghost" onClick={cancelPendingTransition} type="button">
+                  {hasMissing ? 'Tutup' : 'Batal'}
+                </button>
+                {hasMissing ? (
+                  <button
+                    className="profile-save-btn"
+                    onClick={() => {
+                      const taskId = pendingTransition.item.id
+                      cancelPendingTransition()
+                      navigate(`/execution/tasks/${taskId}`)
+                    }}
+                    type="button"
+                  >
+                    Edit Task →
+                  </button>
+                ) : (
+                  <button
+                    className="profile-save-btn"
+                    onClick={confirmPendingTransition}
+                    disabled={
+                      (target === 'BLOCKED' && !promptText.trim()) ||
+                      (isBackward && !promptText.trim())
+                    }
+                    type="button"
+                  >
+                    {isBackward ? 'Konfirmasi Kembalikan' : 'Konfirmasi & Pindah'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
+      {/* Task detail modal — single surface untuk detail task. Full page
+          /execution/tasks/{id} di-redirect server-side ke /execution?task={id}
+          dan auto-open modal (lihat useEffect parse query param). */}
+      {taskModalId !== null && (
+        <TaskDetailModal
+          taskId={taskModalId}
+          originRect={taskModalOriginRect}
+          onClose={closeTaskModal}
+        />
+      )}
     </div>
   )
 }

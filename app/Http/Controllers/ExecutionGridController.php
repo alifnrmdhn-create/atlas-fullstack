@@ -353,9 +353,24 @@ class ExecutionGridController extends Controller
             $actualDerived = $storedActual === null;
 
             if ($actualDerived) {
-                $actualWeeks = in_array($task->status, ['COMPLETED', 'IN_REVIEW'], true)
-                    ? ($task->plannedWeeks ?? [])
-                    : [];
+                $planned = collect($task->plannedWeeks ?? [])->sort()->values()->all();
+                $totalPlanned = count($planned);
+                $status = $task->status;
+                $pct = (int) ($task->percentComplete ?? 0);
+
+                if (in_array($status, ['COMPLETED', 'IN_REVIEW'], true)) {
+                    // Done atau menunggu review = anggap semua planned terealisasi
+                    $actualWeeks = $planned;
+                } elseif ($status === 'IN_PROGRESS' && $pct > 0 && $totalPlanned > 0) {
+                    // Partial progress → fill first N planned weeks proporsional ke %.
+                    // Minimum 1 week kalau pct > 0 (signal "sudah dimulai").
+                    $weeksToFill = (int) round(($pct / 100) * $totalPlanned);
+                    $weeksToFill = max(1, min($weeksToFill, $totalPlanned));
+                    $actualWeeks = array_slice($planned, 0, $weeksToFill);
+                } else {
+                    // BACKLOG / READY / BLOCKED / IN_PROGRESS dengan 0% → belum realisasi
+                    $actualWeeks = [];
+                }
             } else {
                 $actualWeeks = $storedActual ?? [];
             }

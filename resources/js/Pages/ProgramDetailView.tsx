@@ -13,7 +13,6 @@ import { useEscKey } from '../hooks/useEscKey'
 import { sc as colors } from '../lib/statusColors'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import { EscalationButton } from '../components/Escalation'
-import { TraceStrip, type TraceNode } from '../components/TraceStrip'
 import { DraftStatusBadge } from '../components/DraftStatusBadge'
 import { DraftRestoreBanner } from '../components/DraftRestoreBanner'
 import { useAutoSave } from '../hooks/useAutoSave'
@@ -273,6 +272,19 @@ export function ProgramDetailView() {
       narrative: string
       kendala: string
     }
+    existing: {
+      id: number
+      period: string
+      healthAtTime: ProgressLogEntry['healthAtTime']
+      narrative: string
+      kendala: string | null
+      correctiveAction: string | null
+      nextStep: string | null
+      dukunganDibutuhkan: string | null
+      isLate: boolean
+      createdByName: string | null
+      createdAt: string
+    } | null
     existingLogId: number | null
   }
   const [progressLog, setProgressLog] = useState<ProgressLogEntry[]>([])
@@ -297,27 +309,50 @@ export function ProgramDetailView() {
   const draftDiscardTimerRef = useRef<number | null>(null)
   const draftDiscardCommitRef = useRef<() => void>(() => {})
   const openProgressForm = useCallback(() => {
-    // Apply prefill saat form dibuka. Period selalu di-lock ke minggu berjalan
-    // dari server (reflectionMeta.weekIso) supaya konsisten timezone WIB —
-    // client clock bisa beda zona. Health/narrative/kendala hanya diisi kalau
-    // field kosong (jangan overwrite isi user / draft restore). Kalau user
-    // sudah explicit discard, skip prefill — form mulai bersih.
+    // Form open logic — 3 mode:
+    // 1. EDIT (hasSubmitted=true): populate dari existing log → user lihat
+    //    isi refleksi sebelumnya, bisa revisi. Sebelumnya bug: form kosong,
+    //    user pikir start fresh padahal updateOrCreate akan replace.
+    // 2. NEW with prefill (first submit, ada blocker): isi suggested defaults.
+    // 3. NEW empty (first submit + user sudah discard prefill).
+    // Period selalu lock ke meta.weekIso (server timezone WIB).
     let shouldExpandOptional = false
     setProgressForm(f => {
-      // Auto-expand kalau ada existing isi di salah satu field opsional —
-      // user yang udah pernah ketik harus tetap bisa lihat tulisannya.
-      // Null-safe — defensif kalau ada field null dari draft restore lama.
+      const meta = reflectionMeta
+      if (!meta || meta.exempt) {
+        return { ...f, period: meta?.weekIso || f.period }
+      }
+
+      // EDIT mode — load existing log content
+      if (meta.hasSubmitted && meta.existing) {
+        const ex = meta.existing
+        shouldExpandOptional = !!(
+          (ex.kendala ?? '').trim() ||
+          (ex.correctiveAction ?? '').trim() ||
+          (ex.nextStep ?? '').trim() ||
+          (ex.dukunganDibutuhkan ?? '').trim()
+        )
+        return {
+          ...f,
+          period: meta.weekIso,
+          healthAtTime: ex.healthAtTime,
+          narrative: ex.narrative,
+          kendala: ex.kendala ?? '',
+          correctiveAction: ex.correctiveAction ?? '',
+          nextStep: ex.nextStep ?? '',
+          dukunganDibutuhkan: ex.dukunganDibutuhkan ?? '',
+        }
+      }
+
+      // NEW mode — null-safe field check + auto-expand optional kalau ada isi
       const fKendala = (f.kendala ?? '').trim()
       const fCorrective = (f.correctiveAction ?? '').trim()
       const fNextStep = (f.nextStep ?? '').trim()
       const fDukungan = (f.dukunganDibutuhkan ?? '').trim()
       const fNarrative = (f.narrative ?? '').trim()
       shouldExpandOptional = !!(fKendala || fCorrective || fNextStep || fDukungan)
-      const meta = reflectionMeta
-      if (!meta || meta.exempt) {
-        return { ...f, period: meta?.weekIso || f.period }
-      }
-      if (meta.hasSubmitted || draftDiscarded) {
+
+      if (draftDiscarded) {
         return { ...f, period: meta.weekIso }
       }
       const pf = meta.prefill
@@ -498,6 +533,37 @@ export function ProgramDetailView() {
     } catch {
       // non-fatal — section masih bisa render tanpa meta, badge cuma tidak muncul
       setReflectionMeta(null)
+    }
+  }, [numId])
+
+  // Execution achievement — program-level rollup % from planned vs realized weeks
+  type ExecutionAchievement = {
+    programId: number
+    currentWeek: string
+    plannedTotal: number
+    actualTotal: number
+    plannedSoFar: number
+    actualSoFar: number
+    achievement: number | null
+    byWorkstream: Array<{
+      id: number
+      code: string
+      name: string
+      plannedTotal: number
+      actualTotal: number
+      plannedSoFar: number
+      actualSoFar: number
+      achievement: number | null
+    }>
+  }
+  const [executionAchievement, setExecutionAchievement] = useState<ExecutionAchievement | null>(null)
+  const loadExecutionAchievement = useCallback(async () => {
+    if (!Number.isFinite(numId)) return
+    try {
+      const res = await api.get<{ data: ExecutionAchievement }>(`/programs/${numId}/execution-achievement`)
+      setExecutionAchievement(res.data ?? null)
+    } catch {
+      setExecutionAchievement(null)
     }
   }, [numId])
 
@@ -771,15 +837,26 @@ export function ProgramDetailView() {
       void loadApprovalLog()
       void loadProgressLog()
       void loadReflectionMeta()
+      void loadExecutionAchievement()
     }
-  }, [activeTab, loadApprovalLog, loadProgressLog, loadReflectionMeta])
+  }, [activeTab, loadApprovalLog, loadProgressLog, loadReflectionMeta, loadExecutionAchievement])
 
   // ── Sprint 5 — Check→Act bridge: prefill ProgressLog dari meeting context ──
+  // Wait sampai detail loaded supaya bisa cek owner gate. Tanpa ini, bridge
+  // auto-open form untuk co-PIC yang nanti gagal di BE (storeProgressLog 403).
   useEffect(() => {
-    if (typeof window === 'undefined' || !numId) return
+    if (typeof window === 'undefined' || !numId || !detail || !currentUser) return
     const key = `atlas:progress-log-prefill.${numId}`
     const raw = sessionStorage.getItem(key)
     if (!raw) return
+    // Gate: hanya owner/admin yang boleh auto-open (sama dengan tombol manual).
+    const role = (currentUser.roleType ?? '').toUpperCase()
+    const eligible = detail.ownerId === currentUser.id || ['SUPERADMIN', 'ADMIN'].includes(role)
+    if (!eligible) {
+      // Consume sessionStorage tetap supaya tidak menumpuk di session berikutnya.
+      sessionStorage.removeItem(key)
+      return
+    }
     try {
       const ctx = JSON.parse(raw) as { narrative?: string; kendala?: string; meetingTitle?: string; meetingDate?: string }
       setProgressForm(f => ({
@@ -792,7 +869,7 @@ export function ProgramDetailView() {
     } catch {
       sessionStorage.removeItem(key)
     }
-  }, [numId])
+  }, [numId, detail, currentUser])
 
   // ── Identitas Strategis (Charter View Phase 1) ────────────────────────
   // Inline editable: pilarStrategis (5-value enum) + strategicObjective
@@ -1404,6 +1481,16 @@ export function ProgramDetailView() {
       (detail.picPersonIds ?? []).includes(currentUser.id)
     : false
 
+  // Refleksi mingguan: BE strict owner-only (ProgramController::storeProgressLog
+  // 2026-05-21). Co-PIC & submitter yang bukan owner TIDAK boleh submit —
+  // accountability statement harus dari satu suara. Admin tetap diizinkan
+  // sebagai escape hatch (data correction).
+  // Gate ini lebih sempit dari `isOwner` di atas (yang merangkul co-PIC).
+  const canWriteReflection = detail && currentUser
+    ? detail.ownerId === currentUser.id ||
+      ['SUPERADMIN', 'ADMIN'].includes((currentUser.roleType ?? '').toUpperCase())
+    : false
+
   const tabDefs: [DetailTab, string][] = [
     ['ringkasan',  'Ringkasan'],
     ['workstream', 'Struktur'],
@@ -1510,14 +1597,27 @@ export function ProgramDetailView() {
 
   return (
     <div className="ds program-detail-v2 prog-detail-page">
-      {/* ── Breadcrumb (slim) ──────────────────────────────────────────── */}
+      {/* ── Breadcrumb (slim) ──────────────────────────────────────────────
+          Back button explicit (← Programs) sebagai primary nav affordance —
+          consistent dengan pattern di TaskDetailView (← Execution Board).
+          Sebelumnya hanya TraceStrip text-only, user laporkan "tidak ada
+          tombol back" karena affordance visual lemah. Kode program tetap
+          tampil sebagai context chip. */}
       <div className="wi-detail-header wi-detail-header--slim">
-        <TraceStrip
-          nodes={[
-            { label: 'Programs', href: '/programs' },
-            ...(detail ? [{ code: detail.code } as TraceNode] : []),
-          ]}
-        />
+        <button className="wid-back" onClick={() => navigate('/programs')} type="button">
+          <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="14" aria-hidden="true">
+            <path d="M8 2 3 7l5 5" />
+          </svg>
+          Programs
+        </button>
+        {detail && (
+          <>
+            <span className="trace-strip__sep" aria-hidden="true">›</span>
+            <span className="trace-strip__node">
+              <span className="trace-strip__code">{detail.code}</span>
+            </span>
+          </>
+        )}
       </div>
 
       {/* ── Title row + lifecycle/approval actions ─────────────────────── */}
@@ -2002,6 +2102,72 @@ export function ProgramDetailView() {
                     Objective untuk edit. Section terpisah dihapus karena bikin
                     user bingung (form lompat ke bawah saat klik edit). */}
 
+                {/* ── Realisasi vs Plan (Execution Achievement) ────────────
+                    Program-level rollup % achievement dari planned vs realized
+                    weeks. Mirror dengan rollup row di Jadwal. */}
+                {executionAchievement && executionAchievement.plannedTotal > 0 && (() => {
+                  const ea = executionAchievement
+                  const pct = ea.achievement
+                  const tone: 'GREEN' | 'YELLOW' | 'RED' | 'NONE' = pct == null ? 'NONE'
+                    : pct >= 80 ? 'GREEN'
+                    : pct >= 50 ? 'YELLOW'
+                    : 'RED'
+                  const toneLabel = tone === 'GREEN' ? 'On Track'
+                    : tone === 'YELLOW' ? 'At Risk'
+                    : tone === 'RED' ? 'Terlambat'
+                    : '—'
+                  return (
+                    <div className="wi-section">
+                      <div className="wi-section__header">
+                        <h3 className="wi-section__title">Realisasi vs Plan</h3>
+                        {tone !== 'NONE' && (
+                          <span className={`prog-section-status prog-section-status--${tone.toLowerCase()}`}>
+                            <span className={`prog-section-status__dot prog-section-status__dot--${tone.toLowerCase()}`} aria-hidden="true" />
+                            {toneLabel}
+                          </span>
+                        )}
+                      </div>
+                      <div className="prog-achievement">
+                        <div className="prog-achievement__primary">
+                          <div className="prog-achievement__pct">
+                            {pct != null ? `${pct}%` : '—'}
+                          </div>
+                          <div className="prog-achievement__caption">
+                            <span className="prog-achievement__caption-line">
+                              Realisasi {ea.actualSoFar} / {ea.plannedSoFar} minggu yang seharusnya selesai
+                            </span>
+                            <span className="prog-achievement__caption-sub">
+                              Total plan program: {ea.plannedTotal} minggu · sudah realisasi {ea.actualTotal} minggu
+                            </span>
+                          </div>
+                        </div>
+                        {ea.byWorkstream.length > 1 && (
+                          <ul className="prog-achievement__breakdown">
+                            {ea.byWorkstream.map((ws) => {
+                              const wsPct = ws.achievement
+                              const wsTone = wsPct == null ? 'none'
+                                : wsPct >= 80 ? 'green'
+                                : wsPct >= 50 ? 'yellow'
+                                : 'red'
+                              return (
+                                <li key={ws.id} className={`prog-achievement__ws prog-achievement__ws--${wsTone}`}>
+                                  <span className="prog-achievement__ws-name">{ws.name}</span>
+                                  <span className="prog-achievement__ws-stat">
+                                    {ws.actualSoFar}/{ws.plannedSoFar} mg
+                                    {wsPct != null && (
+                                      <span className="prog-achievement__ws-pct"> · {wsPct}%</span>
+                                    )}
+                                  </span>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })()}
+
                 {(() => {
                   // Compute KPI health from internal KPIs with actuals.
                   // Section wrapper baru di-render kalau ada KPI dengan actualValue —
@@ -2217,13 +2383,18 @@ export function ProgramDetailView() {
                   <div className="wi-section">
                     <div className="wi-section__header">
                       <h3 className="wi-section__title">Riwayat refleksi</h3>
-                      <button
-                        type="button"
-                        className="btn btn--ghost"
-                        onClick={openProgressForm}
-                      >
-                        + Refleksi mingguan
-                      </button>
+                      {/* Tombol hanya untuk owner/admin — match BE strict
+                          owner-only restriction di storeProgressLog. Co-PIC
+                          lihat history tapi tidak bisa write. */}
+                      {canWriteReflection && (
+                        <button
+                          type="button"
+                          className="btn btn--ghost"
+                          onClick={openProgressForm}
+                        >
+                          + Refleksi mingguan
+                        </button>
+                      )}
                     </div>
 
                     <div className="prog-progress-log">
@@ -2409,7 +2580,15 @@ export function ProgramDetailView() {
               <aside className="prog-overview-v2__side prog-overview-v2__side--flat">
 
                 {(() => {
-                  const latest = progressLog[0]
+                  // Panel "Refleksi minggu ini" — pakai entry dari current week
+                  // period (bukan progressLog[0] yang sorted by createdAt).
+                  // Edit historical entry tidak akan muncul di slot ini.
+                  // Fallback: progressLog[0] kalau meta belum loaded atau tidak
+                  // ada current-week entry (rare race condition).
+                  const currentWeek = reflectionMeta?.weekIso
+                  const latest = currentWeek
+                    ? (progressLog.find(e => e.period === currentWeek) ?? null)
+                    : progressLog[0]
                   const formatPeriod = (iso: string) => {
                     try {
                       return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -2425,6 +2604,11 @@ export function ProgramDetailView() {
                       return { tone: 'exempt', icon: '⓵', text: 'Mulai minggu depan' }
                     }
                     if (m.hasSubmitted) {
+                      // Bedakan submitted on-time vs late — sebelumnya keduanya tampil
+                      // sama "Sudah masuk", info compliance hilang.
+                      if (m.existing?.isLate) {
+                        return { tone: 'late', icon: '⚠', text: 'Sudah masuk (telat)' }
+                      }
                       return { tone: 'submitted', icon: '✓', text: 'Sudah masuk minggu ini' }
                     }
                     const fmtShort = (iso: string | null) => {
@@ -2475,7 +2659,11 @@ export function ProgramDetailView() {
                       {latest?.narrative ? (
                         <>
                           <p className="prog-update-panel__note">{latest.narrative}</p>
-                          {isActive && !reflectionMeta?.exempt && (
+                          {/* Edit/+ Refleksi hanya untuk owner/admin. Co-PIC
+                              & submitter (yang bukan owner) lihat narrative
+                              terakhir tapi tidak bisa edit — match BE strict
+                              owner-only di storeProgressLog. */}
+                          {isActive && !reflectionMeta?.exempt && canWriteReflection && (
                             <button
                               type="button"
                               className="prog-update-panel__action"
@@ -2485,7 +2673,7 @@ export function ProgramDetailView() {
                             </button>
                           )}
                         </>
-                      ) : isActive && !reflectionMeta?.exempt ? (
+                      ) : isActive && !reflectionMeta?.exempt && canWriteReflection ? (
                         <div className="prog-update-panel__empty-state">
                           <p className="prog-update-panel__empty">Belum ada refleksi minggu ini.</p>
                           <button
@@ -2499,6 +2687,13 @@ export function ProgramDetailView() {
                             Catat posisi & kendala — muncul di Charter &amp; KPI Saya.
                           </span>
                         </div>
+                      ) : isActive && !reflectionMeta?.exempt ? (
+                        // Active program, deadline tidak exempt, tapi user BUKAN
+                        // owner/admin → tampil empty state read-only (no CTA).
+                        // Hindari "ghost button" yang nampak clickable padahal nanti 403.
+                        <p className="prog-update-panel__empty">
+                          Belum ada refleksi minggu ini dari PIC program.
+                        </p>
                       ) : isActive ? (
                         <p className="prog-update-panel__empty">
                           Refleksi pertama jatuh tempo minggu depan.
@@ -2535,21 +2730,19 @@ export function ProgramDetailView() {
                       <div className="prog-side-block__lead">
                         <span className={`prog-side-block__dot prog-side-block__dot--${healthTone}`} aria-hidden="true" />
                         <span className="prog-side-block__lead-text">{disp.label}</span>
-                        {pct > 0 && (
-                          <>
-                            <span className="prog-side-block__sep" aria-hidden="true">·</span>
-                            <span className="prog-side-block__pct">{pct}% progress</span>
-                          </>
-                        )}
+                        <span className="prog-side-block__sep" aria-hidden="true">·</span>
+                        <span className="prog-side-block__pct">{pct}% progress</span>
                       </div>
-                      {pct > 0 && (
-                        <div className="prog-side-block__bar" aria-hidden="true">
-                          <div
-                            className={`prog-side-block__bar-fill prog-side-block__bar-fill--${healthTone}`}
-                            style={{ width: `${Math.max(2, pct)}%` }}
-                          />
-                        </div>
-                      )}
+                      {/* Mini-bar selalu render — even at 0% supaya progres
+                          program tetap visible secara visual. Empty bar (0%)
+                          render sebagai track tanpa fill, masih informative
+                          ("program ada di 0%", bukan "tidak ada info"). */}
+                      <div className="prog-side-block__bar" aria-hidden="true">
+                        <div
+                          className={`prog-side-block__bar-fill prog-side-block__bar-fill--${healthTone}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
                       <div className="prog-side-block__meta">
                         {wsTotal > 0 && (
                           <span>{wsDone}/{wsTotal} workstream selesai</span>
@@ -2646,14 +2839,17 @@ export function ProgramDetailView() {
                               <span className="workstream-row__meta">
                                 <span className="code-badge workstream-row__code">{ini.code}</span>
                                 {/* Health status text — eksplisit dropdown setelah
-                                    HealthPill dihapus dari row. Stripe kiri tetap
-                                    tampil sebagai cue, text ini supaya tidak perlu
-                                    hover untuk tahu status. Hanya tampil saat non-green
-                                    (At Risk/Terlambat) — green tidak perlu disebut,
-                                    progress bar sudah menunjukkan health implisit. */}
+                                    HealthPill dihapus dari row. Logic:
+                                    - Belum ada progress (workstream baru) → tidak tampil. "At Risk"
+                                      premature saat user baru bikin — confusing.
+                                    - GREEN → tidak tampil (progress bar sudah signal).
+                                    - YELLOW/RED → tampil supaya user tahu butuh attention. */}
                                 {(() => {
                                   const h = normalizeHealthStatus(ini.healthStatus)
                                   if (h === 'GREEN') return null
+                                  // Tidak tampil status problematik kalau workstream belum ada progress
+                                  // sama sekali (0%). User baru bikin tidak perlu langsung dilabeli At Risk.
+                                  if ((ini.progressPercent ?? 0) === 0) return null
                                   const label = h === 'YELLOW' ? 'At Risk' : h === 'RED' ? 'Terlambat' : 'Lewat tenggat'
                                   return (
                                     <span className={`workstream-row__health workstream-row__health--${h.toLowerCase()}`}>{label}</span>
@@ -2978,13 +3174,12 @@ export function ProgramDetailView() {
 
                                       {(iniDetail.phases ?? []).some(p => p.tasks.length > 0) && (
                                         <div className="workstream-ren-hint">
-                                          <span className="workstream-ren-hint__text">Jadwal Plan tergenerate otomatis dari tanggal task.</span>
                                           <button
                                             className="workstream-ren-hint__link"
                                             onClick={() => setActiveTab('execution')}
                                             type="button"
                                           >
-                                            Lihat di Jadwal →
+                                            Lihat jadwal lengkap →
                                           </button>
                                         </div>
                                       )}
@@ -4449,9 +4644,14 @@ export function ProgramDetailView() {
           <div className="modal__header">
             <div className="modal-headcopy">
               <span className="modal-kicker">{detail.code} · {periodToLabel(progressForm.period)}</span>
-              <h3 className="modal__title" id={reflectionTitleId}>Refleksi Mingguan</h3>
+              <h3 className="modal__title" id={reflectionTitleId}>
+                {reflectionMeta?.hasSubmitted ? 'Edit Refleksi Mingguan' : 'Refleksi Mingguan'}
+              </h3>
               <p className="modal-subtitle" id={reflectionDescId}>
-                {reflectionMeta && !reflectionMeta.exempt && reflectionMeta.deadline ? (() => {
+                {reflectionMeta?.hasSubmitted && reflectionMeta.existing ? (
+                  // Edit mode subtitle — context kapan & oleh siapa submission asli
+                  `Mengubah refleksi ${reflectionMeta.existing.createdByName ?? 'PIC'} · ${new Date(reflectionMeta.existing.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}.`
+                ) : reflectionMeta && !reflectionMeta.exempt && reflectionMeta.deadline ? (() => {
                   const d = new Date(reflectionMeta.deadline)
                   const dateStr = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })
                   const timeStr = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })
@@ -4726,6 +4926,8 @@ export function ProgramDetailView() {
                   </>
                 ) : progressFormStatus === 'saving' ? (
                   'Menyimpan…'
+                ) : reflectionMeta?.hasSubmitted ? (
+                  'Simpan Perubahan'
                 ) : (
                   'Simpan Refleksi'
                 )}

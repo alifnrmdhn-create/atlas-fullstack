@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\KpiDefinition;
 use App\Models\KpiValue;
+use App\Models\KpiValueRevision;
 use App\Models\Program;
 use App\Services\ProgramHealthService;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class KpiController extends Controller
@@ -146,24 +148,50 @@ class KpiController extends Controller
             'statusNotes' => 'nullable|string|max:500',
         ]);
 
-        // updateOrCreate (bukan create) supaya re-submit untuk minggu yang sama
-        // mengganti nilai, bukan crash dengan unique violation. Kasus: user
-        // submit refleksi minggu N dengan KPI 20, lalu revisi → resubmit dengan
-        // KPI 25. Tanpa upsert, INSERT kedua gagal karena unique constraint
-        // (kpiDefinitionId, measurementDate). Refleksi log itself pakai
-        // firstOrNew, jadi KPI value harus konsisten.
-        $value = KpiValue::updateOrCreate(
-            [
-                'kpiDefinitionId' => $id,
-                'measurementDate' => $data['measurementDate'],
-            ],
-            [
-                'actualValue' => $data['actualValue'],
-                'targetValue' => $data['targetValue'] ?? null,
-                'statusNotes' => $data['statusNotes'] ?? null,
-                'measuredBy'  => $request->user()->id,
-            ]
-        );
+        // Read-existing + insert-revision + updateOrCreate dibungkus DB::transaction
+        // supaya atomic. Tanpa wrapper, race condition: dua user submit nilai
+        // KPI berbeda untuk (kpi, date) yang sama bersamaan → revision snapshot
+        // bisa save value yang sudah out-of-date, atau worse: revision tertulis
+        // tapi updateOrCreate fail → data inconsistent.
+        // lockForUpdate pada SELECT existing supaya transaksi lain wait sampai
+        // commit/rollback selesai. Lock release otomatis saat closure return.
+        $value = DB::transaction(function () use ($id, $data, $request) {
+            $existing = KpiValue::query()
+                ->where('kpiDefinitionId', $id)
+                ->where('measurementDate', $data['measurementDate'])
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing && (float) $existing->actualValue !== (float) $data['actualValue']) {
+                // Value berubah → snapshot lama ke history.
+                // Skip no-op updates yang cuma touch statusNotes/targetValue.
+                KpiValueRevision::create([
+                    'kpiValueId'          => $existing->id,
+                    'kpiDefinitionId'     => $id,
+                    'measurementDate'     => $existing->measurementDate,
+                    'previousActualValue' => $existing->actualValue,
+                    'previousTargetValue' => $existing->targetValue,
+                    'previousStatusNotes' => $existing->statusNotes,
+                    'previousMeasuredBy'  => $existing->measuredBy,
+                    'revisedBy'           => $request->user()->id,
+                ]);
+            }
+
+            // updateOrCreate (bukan create) supaya re-submit untuk minggu yang sama
+            // mengganti nilai, bukan crash dengan unique violation.
+            return KpiValue::updateOrCreate(
+                [
+                    'kpiDefinitionId' => $id,
+                    'measurementDate' => $data['measurementDate'],
+                ],
+                [
+                    'actualValue' => $data['actualValue'],
+                    'targetValue' => $data['targetValue'] ?? null,
+                    'statusNotes' => $data['statusNotes'] ?? null,
+                    'measuredBy'  => $request->user()->id,
+                ]
+            );
+        });
 
         // Update KPI actualValue + trigger health
         $kpi->update(['actualValue' => $data['actualValue'], 'lastMeasuredDate' => $data['measurementDate']]);

@@ -352,9 +352,12 @@ class WorkspaceEndpointSmokeTest extends TestCase
     {
         $this->actingAs($this->admin);
 
+        // 2026-05-21: /execution/tasks/{id} sekarang redirect ke
+        // /execution?task={id} (modal mode di Workboard). URL deep link tetap
+        // valid (share/bookmark), tapi visual surface single — modal expand
+        // dari card. Lihat routes/web.php + WorkboardView.tsx auto-open modal.
         $this->get('/execution/tasks/' . $this->task->id)
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('TaskDetailView'));
+            ->assertRedirect('/execution?task=' . $this->task->id);
 
         $this->get('/laporan-bulanan/' . $this->monthlyReport->id)
             ->assertOk()

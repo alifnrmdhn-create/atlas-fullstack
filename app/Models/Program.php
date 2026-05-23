@@ -57,6 +57,33 @@ class Program extends Model
         return $this->hasMany(Workstream::class, 'programId');
     }
 
+    /**
+     * Program progress accessor — single source of truth (2026-05-21 fix).
+     *
+     * Sebelumnya `Program.progressPercent` adalah column statis yang TIDAK
+     * PERNAH auto-recompute saat task/workstream berubah → angka stale
+     * (default 0), inconsistent dengan Charter % Achievement & workstream
+     * progressPercent yang real-time.
+     *
+     * Sekarang: accessor compute average dari workstreams.progressPercent
+     * (yang sudah auto-update by TaskService::recomputeWorkstreamProgress).
+     * Kalau relation belum loaded, fallback ke column value (yang juga
+     * di-keep updated by recomputeProgramProgress).
+     *
+     * Hasil: same source of truth lintas view (Charter, Program Detail,
+     * Workstream list).
+     */
+    public function getProgressPercentAttribute($value): int
+    {
+        if ($this->relationLoaded('workstreams') && $this->workstreams->isNotEmpty()) {
+            $active = $this->workstreams->whereNotIn('status', ['CANCELLED']);
+            if ($active->isNotEmpty()) {
+                return (int) round($active->avg('progressPercent') ?? 0);
+            }
+        }
+        return (int) ($value ?? 0);
+    }
+
     /** KPI definitions yang dimiliki program ini. */
     public function kpis(): HasMany
     {

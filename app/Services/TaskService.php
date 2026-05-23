@@ -13,14 +13,35 @@ use Illuminate\Support\Facades\DB;
 
 class TaskService
 {
-    /** Valid status transitions (port dari tasks.ts VALID_TRANSITIONS). */
+    /** Valid status transitions — hybrid permissive (2026-05-21 refactor).
+     *  Forward flow normal, skip allowed (dengan prereq), backward allowed
+     *  (dengan reason). Compliance + audit log handled by controller, bukan
+     *  hard-block di transition map. */
     private const TRANSITIONS = [
-        'BACKLOG'     => ['READY', 'IN_PROGRESS'],
-        'READY'       => ['IN_PROGRESS', 'BACKLOG'],
-        'IN_PROGRESS' => ['IN_REVIEW', 'BLOCKED', 'COMPLETED', 'READY'],
-        'IN_REVIEW'   => ['COMPLETED', 'IN_PROGRESS'],
-        'BLOCKED'     => ['IN_PROGRESS', 'COMPLETED'],
-        'COMPLETED'   => ['IN_PROGRESS'],
+        // BACKLOG: skip semua allowed (urgent task, pre-existing data, dll)
+        'BACKLOG'     => ['READY', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'BLOCKED'],
+        // READY: forward atau revert ke BACKLOG, skip ke COMPLETED juga allowed
+        'READY'       => ['IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'BACKLOG', 'BLOCKED'],
+        // IN_PROGRESS: forward / skip / revert
+        'IN_PROGRESS' => ['IN_REVIEW', 'COMPLETED', 'READY', 'BACKLOG', 'BLOCKED'],
+        // IN_REVIEW: forward atau revert (reject review)
+        'IN_REVIEW'   => ['COMPLETED', 'IN_PROGRESS', 'READY', 'BACKLOG'],
+        // BLOCKED legacy: tetap allowed transition (BLOCKED column hilang dari
+        // FE, tapi data lama bisa tetap di-update). Per refactor, isBlocked
+        // jadi flag orthogonal — transition BLOCKED→X umumnya clear blocker.
+        'BLOCKED'     => ['IN_PROGRESS', 'READY', 'COMPLETED', 'BACKLOG'],
+        // COMPLETED: reopen allowed ke status manapun (per user spec)
+        'COMPLETED'   => ['IN_PROGRESS', 'READY', 'BACKLOG', 'IN_REVIEW'],
+    ];
+
+    /** Canonical forward order untuk detect backward transition. BLOCKED
+     *  dikecualikan (orthogonal). Backward = target_order < current_order. */
+    private const STATUS_ORDER = [
+        'BACKLOG'     => 0,
+        'READY'       => 1,
+        'IN_PROGRESS' => 2,
+        'IN_REVIEW'   => 3,
+        'COMPLETED'   => 4,
     ];
 
     public function findOrFail(int $id): Task
@@ -132,6 +153,31 @@ class TaskService
             abort(400, "Tidak bisa pindah dari status {$task->status} ke {$newStatus}.");
         }
 
+        // Prereq check: non-Backlog status butuh PIC + targetCompletion minimum.
+        // READY butuh juga startDate. Audit-grade enforcement — FE check bisa
+        // di-bypass, jadi server jadi source of truth.
+        $missing = [];
+        if (in_array($newStatus, ['READY', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'], true)) {
+            if (! $task->assignedTo) $missing[] = 'PIC belum ditetapkan';
+            if (! $task->targetCompletion) $missing[] = 'Target selesai belum diisi';
+            if ($newStatus === 'READY' && ! $task->startDate) {
+                $missing[] = 'Tanggal mulai belum diisi';
+            }
+        }
+        if (! empty($missing)) {
+            abort(422, 'Belum bisa pindah status — lengkapi prasyarat: ' . implode(', ', $missing));
+        }
+
+        // Backward transition: target_order < current_order → wajib alasan
+        // (note) untuk audit trail. Tanpa ini, user bisa silent-revert tanpa
+        // jejak kenapa.
+        $fromOrder = self::STATUS_ORDER[$task->status] ?? null;
+        $toOrder = self::STATUS_ORDER[$newStatus] ?? null;
+        $isBackward = $fromOrder !== null && $toOrder !== null && $toOrder < $fromOrder;
+        if ($isBackward && (! $note || trim($note) === '')) {
+            abort(422, "Mengembalikan status dari {$task->status} ke {$newStatus} memerlukan alasan untuk audit log.");
+        }
+
         // Cek lifecycle phase
         $approvalStatus = $task->workstream?->program?->approvalStatus ?? 'DRAFT';
         if (in_array($approvalStatus, ['DRAFT', 'PENDING_KASUB', 'PENDING_KADIV'], true)) {
@@ -235,7 +281,10 @@ class TaskService
         ]);
     }
 
-    /** Recalculate workstream progress from average of task percentComplete. */
+    /** Recalculate workstream progress from average of task percentComplete.
+     *  Cascade: setelah workstream update, juga recompute parent program supaya
+     *  Program.progressPercent (column) tetap fresh — single source of truth
+     *  lintas Charter & Program Detail. */
     public function recomputeWorkstreamProgress(int $workstreamId): void
     {
         $avg = Task::query()
@@ -246,7 +295,29 @@ class TaskService
             Workstream::query()
                 ->where('id', $workstreamId)
                 ->update(['progressPercent' => (int) round((float) $avg)]);
+
+            // Cascade ke parent program
+            $programId = Workstream::query()->where('id', $workstreamId)->value('programId');
+            if ($programId) {
+                $this->recomputeProgramProgress($programId);
+            }
         }
+    }
+
+    /** Recalculate program progress from average of active workstreams.
+     *  Dipanggil saat task/workstream berubah supaya Program.progressPercent
+     *  column tetap fresh untuk queries (where progressPercent < 70, dst).
+     *  CANCELLED workstreams di-skip — tidak count untuk progress. */
+    public function recomputeProgramProgress(int $programId): void
+    {
+        $avg = Workstream::query()
+            ->where('programId', $programId)
+            ->whereNotIn('status', ['CANCELLED'])
+            ->avg('progressPercent');
+
+        \App\Models\Program::query()
+            ->where('id', $programId)
+            ->update(['progressPercent' => $avg !== null ? (int) round((float) $avg) : 0]);
     }
 
     /** Toggle subtask completion + recalculate task percentComplete. */

@@ -34,6 +34,27 @@ function deriveRealCellState(
   return 'on-time'
 }
 
+// Aggregate steps' planned/actual weeks for rollup row.
+// % achievement = actual-so-far / planned-so-far (capped at currentWeek).
+// Memberi mental model "dari yang seharusnya selesai sampai sekarang,
+// berapa yang terealisasi" — bukan "total dari seluruh plan termasuk masa depan".
+function aggregateSteps(steps: ExecutionStep[], currentWeek: string) {
+  let plannedTotal = 0
+  let actualTotal = 0
+  let plannedSoFar = 0
+  let actualSoFar = 0
+  for (const s of steps) {
+    plannedTotal += s.plannedWeeks.length
+    actualTotal += s.actualWeeks.length
+    plannedSoFar += s.plannedWeeks.filter((w) => w <= currentWeek).length
+    actualSoFar += s.actualWeeks.filter((w) => w <= currentWeek).length
+  }
+  const achievement = plannedSoFar > 0
+    ? Math.round((actualSoFar / plannedSoFar) * 100)
+    : null
+  return { plannedTotal, actualTotal, plannedSoFar, actualSoFar, achievement }
+}
+
 /**
  * Sticky-column tabel pakai split-frame layout (a la Notion/Airtable):
  * info pane di kiri (tidak scroll horizontal) + weeks pane di kanan
@@ -103,27 +124,32 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
 
   // Build flat list of rows in render order — supaya info pane dan weeks pane
   // bisa render rows dengan height yang sinkron. Setiap step menghasilkan
-  // dua row (Plan + Real); phase row 1 row.
+  // dua row (Plan + Real); phase row 1 row; summary row aggregate.
+  type AggSummary = ReturnType<typeof aggregateSteps>
   type RowDef =
     | { kind: 'header-1' }     // month spanning row
     | { kind: 'header-2' }     // week ordinal row
     | { kind: 'phase'; phase: ExecutionPhase }
     | { kind: 'step-plan'; phase?: ExecutionPhase; step: ExecutionStep; letter: string }
     | { kind: 'step-real'; step: ExecutionStep }
+    | { kind: 'phase-summary'; phase: ExecutionPhase; agg: AggSummary }
+    | { kind: 'workstream-summary'; agg: AggSummary }
 
   const rows: RowDef[] = [{ kind: 'header-1' }, { kind: 'header-2' }]
+  const allSteps: ExecutionStep[] = []
   phases.forEach((phase) => {
     rows.push({ kind: 'phase', phase })
     phase.steps.forEach((step) => {
       const letter = step.letterIndex ?? ''
       rows.push({ kind: 'step-plan', phase, step, letter })
       rows.push({ kind: 'step-real', step })
+      allSteps.push(step)
     })
+    if (phase.steps.length > 0) {
+      rows.push({ kind: 'phase-summary', phase, agg: aggregateSteps(phase.steps, currentWeek) })
+    }
   })
   if (unphasedSteps.length > 0) {
-    // Phase fallback untuk unphased steps — pakai object placeholder dengan
-    // shape ExecutionPhase minimal. Kalau ada step tanpa phase, kelompokkan
-    // di bawah "Lain-lain".
     const unphasedPhase: ExecutionPhase = {
       id: -1,
       code: 'UNPHASED',
@@ -144,7 +170,13 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
       const letter = step.letterIndex ?? String.fromCharCode(97 + idx)
       rows.push({ kind: 'step-plan', phase: unphasedPhase, step, letter })
       rows.push({ kind: 'step-real', step })
+      allSteps.push(step)
     })
+    rows.push({ kind: 'phase-summary', phase: unphasedPhase, agg: aggregateSteps(unphasedSteps, currentWeek) })
+  }
+  // Workstream-level footer summary (semua phase + unphased)
+  if (allSteps.length > 0) {
+    rows.push({ kind: 'workstream-summary', agg: aggregateSteps(allSteps, currentWeek) })
   }
 
   // Row class — applied to both info pane row + weeks pane row supaya
@@ -156,6 +188,8 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
       case 'phase':    return 'execution-grid__row execution-grid__row--phase'
       case 'step-plan': return 'execution-grid__row execution-grid__row--step-plan'
       case 'step-real': return 'execution-grid__row execution-grid__row--step-real'
+      case 'phase-summary': return 'execution-grid__row execution-grid__row--phase-summary'
+      case 'workstream-summary': return 'execution-grid__row execution-grid__row--workstream-summary'
     }
   }
 
@@ -254,6 +288,40 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                   </Fragment>
                 )
               }
+              if (row.kind === 'phase-summary' || row.kind === 'workstream-summary') {
+                const { agg } = row
+                const isWorkstream = row.kind === 'workstream-summary'
+                const label = isWorkstream
+                  ? `Total ${workstream?.name ?? 'Workstream'}`
+                  : `Subtotal Fase ${row.phase.order}`
+                const achievementColor = agg.achievement == null
+                  ? undefined
+                  : agg.achievement >= 80 ? 'var(--green)'
+                  : agg.achievement >= 50 ? 'var(--yellow)'
+                  : 'var(--red)'
+                return (
+                  <div
+                    key={`info-${idx}`}
+                    className={`${cls} execution-grid__info-summary${isWorkstream ? ' execution-grid__info-summary--workstream' : ''}`}
+                    style={{ gridColumn: '1 / -1' }}
+                  >
+                    <span className="execution-grid__summary-label">{label}</span>
+                    <span className="execution-grid__summary-stats">
+                      Plan {agg.plannedSoFar}/{agg.plannedTotal} mg
+                      <span className="execution-grid__summary-sep">·</span>
+                      Real {agg.actualSoFar}/{agg.plannedSoFar} mg
+                      {agg.achievement != null && (
+                        <>
+                          <span className="execution-grid__summary-sep">·</span>
+                          <span className="execution-grid__summary-pct" style={{ color: achievementColor }}>
+                            {agg.achievement}% pencapaian
+                          </span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                )
+              }
               // step-real
               const { step } = row
               const statusText = (
@@ -333,6 +401,30 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                     style={{ gridColumn: '1 / -1' }}
                   />
                 )
+              }
+              if (row.kind === 'phase-summary' || row.kind === 'workstream-summary') {
+                // Summary row di weeks pane — render aggregated bar visualizing
+                // plan span vs actual span. Cells: plan-weeks ditandai biru samar,
+                // actual-weeks ditimpa hijau samar.
+                const steps = row.kind === 'workstream-summary'
+                  ? phases.flatMap((p) => p.steps).concat(unphasedSteps)
+                  : row.phase.steps
+                const plannedSet = new Set<string>()
+                const actualSet = new Set<string>()
+                steps.forEach((s) => {
+                  s.plannedWeeks.forEach((w) => plannedSet.add(w))
+                  s.actualWeeks.forEach((w) => actualSet.add(w))
+                })
+                return weekRange.weeks.map((w) => {
+                  const isPlan = plannedSet.has(w)
+                  const isActual = actualSet.has(w)
+                  return (
+                    <div
+                      key={`sum-${idx}-${w}`}
+                      className={`${cls} execution-grid__cell execution-grid__cell--summary${isPlan ? ' execution-grid__cell--summary-plan' : ''}${isActual ? ' execution-grid__cell--summary-actual' : ''}`}
+                    />
+                  )
+                })
               }
               if (row.kind === 'step-plan') {
                 const { step } = row

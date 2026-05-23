@@ -1081,7 +1081,15 @@
   margin-top: 3px;
 }
 .workstream-row__code {
+  /* Hide by default — code chips (WS-317A2A70 dst) auto-generated dan tidak
+     relevan saat user input/scan. Reveal hanya on actual hover (bukan
+     focus-within) supaya tidak permanently visible saat row di-select. */
+  display: none;
+}
+.workstream-row:hover .workstream-row__code {
+  display: inline-flex;
   font-size: 9px;
+  opacity: 0.55;
 }
 .workstream-row__progress {
   display: flex;
@@ -1338,14 +1346,21 @@
   text-overflow: ellipsis;
 }
 .wi-row .code-badge {
+  /* Hidden by default di tab Struktur — code chip auto-generated, jarang
+     dibutuhkan saat user input/scan. Reveal hanya on actual hover (bukan
+     focus-within yang persistent saat task di-select). */
+  display: none;
   font-size: 9px;
   padding: 1px 5px;
   background: transparent;
   border-color: transparent;
-  opacity: 0.7;
+  opacity: 0.55;
   flex-shrink: 0;
 }
-.wi-row:hover .code-badge { opacity: 0.9; }
+.wi-row:hover .code-badge {
+  display: inline-flex;
+  opacity: 0.85;
+}
 .wi-row__blocker {
   width: 6px;
   height: 6px;
@@ -2241,7 +2256,13 @@
 }
 .phase-group {
   border-radius: var(--radius);
-  overflow: hidden;
+  /* Visual hierarchy: phase punya left border tegas sebagai "block indicator".
+     Tone green muted (bukan pure panel-border) — anchor visual ke ATLAS brand
+     warna + clearly readable di white workspace bg. User langsung tahu boundary
+     phase, dan task indent yang lebih dalam memperkuat parent-child. */
+  border-left: 3px solid color-mix(in srgb, var(--green) 28%, var(--panel-border));
+  margin-left: 4px;
+  padding-left: 12px;
 }
 .phase-group__header {
   display: flex;
@@ -2305,7 +2326,10 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 4px 0 2px 20px;
+  /* Indent diperkuat dari 20px → 28px supaya parent-child phase→task visual
+     lebih clear. Kombinasi dengan border-left di phase-group bikin hierarchy
+     mudah dibaca tanpa harus pakai tree-line connectors yang noisy. */
+  padding: 4px 0 2px 28px;
 }
 .phase-group__empty {
   font-size: 11px;
@@ -2314,14 +2338,22 @@
   margin: 0;
 }
 .wi-add-subtask-btn {
-  font-size: 11px;
-  padding: 3px 10px;
-  color: var(--text-muted);
-  border-color: transparent;
+  /* Level 3 action (add task within phase) — kecil & subtle tapi pakai green
+     accent supaya user senses ini "add positive action", konsisten dengan
+     .wi-add-phase-btn (level 2). Bedanya cuma size/weight, bukan color. */
+  font-size: 11.5px;
+  padding: 4px 10px;
+  color: color-mix(in srgb, var(--green) 75%, var(--text-muted));
+  border: 1px solid transparent;
   margin-top: 2px;
   align-self: flex-start;
+  font-weight: 500;
 }
-.wi-add-subtask-btn:hover { color: var(--text-body); border-color: var(--panel-border); }
+.wi-add-subtask-btn:hover {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 6%, transparent);
+  border-color: color-mix(in srgb, var(--green) 20%, transparent);
+}
 .wi-add-phase-btn {
   font-size: 12px;
   font-weight: 600;

@@ -198,9 +198,28 @@ function fireConfetti(originX: number, originY: number) {
   setTimeout(() => container.remove(), 1400)
 }
 
-export function TaskDetailView() {
+/**
+ * TaskDetailView — render full task detail. Bisa di-mount sebagai:
+ * - Full page (/execution/tasks/{id}): id dari page props (Inertia)
+ * - Modal/panel: id di-pass via prop `taskId`. Pakem 2026-05-21: card click
+ *   di Workboard buka modal alih-alih navigate ke /tasks/{id}.
+ *
+ * Props:
+ * - taskId: kalau di-set, override page props (mode modal/panel).
+ * - mode: 'page' default | 'modal' — affect layout (modal hides topbar back btn).
+ * - onClose: untuk modal mode, dipanggil saat close (esc / X / save complete).
+ */
+export interface TaskDetailViewProps {
+  taskId?: number
+  mode?: 'page' | 'modal'
+  onClose?: () => void
+}
+
+export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailViewProps = {}) {
   const page = usePage<{ task?: { id: number } }>()
-  const id = page.props.task?.id != null ? String(page.props.task.id) : undefined
+  const id = taskId != null
+    ? String(taskId)
+    : (page.props.task?.id != null ? String(page.props.task.id) : undefined)
   const navigate = useInertiaNavigate()
   const { currentUser, loadOverview, normalizeHealthStatus, appendComposerSnippet, setSelectedTaskId, taskDetail: contextTaskDetail, programs } = useWorkspace()
   const roleAccess = useRoleAccess()
@@ -218,6 +237,11 @@ export function TaskDetailView() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [celebrateIds, setCelebrateIds] = useState<Set<number>>(new Set())
+  // Track whether initial fresh fetch via loadDetail() has completed for the
+  // current id. Until then, ignore stale contextTaskDetail to prevent flashes
+  // of outdated data (e.g., after drag-status-change in workboard while modal
+  // is closed — context retains stale snapshot from prior session).
+  const initialFetchDoneRef = useRef(false)
 
   // ── Relative-time refresh ─────────────────────────────────────────
   // Force re-render every 60s so "2j", "3h", etc. stay fresh without reload.
@@ -346,6 +370,8 @@ export function TaskDetailView() {
   const [picUnitSearch, setPicUnitSearch] = useState('')
   const [picPersonSearch, setPicPersonSearch] = useState('')
   const [picSaving, setPicSaving] = useState(false)
+  const [showPicAdder, setShowPicAdder] = useState(false)
+  const [showUnitAdder, setShowUnitAdder] = useState(false)
 
   const loadOrgUnits = async () => {
     if (orgUnits.length > 0) return
@@ -419,6 +445,7 @@ export function TaskDetailView() {
     try {
       const res = await api.get<{ data: TaskDetail }>(`/tasks/${id}`)
       setDetail(res.data)
+      initialFetchDoneRef.current = true
       setLoadError(null)
     } catch (err) {
       if (!silent) {
@@ -430,7 +457,10 @@ export function TaskDetailView() {
     }
   }
 
-  useEffect(() => { void loadDetail() }, [id])
+  useEffect(() => {
+    initialFetchDoneRef.current = false
+    void loadDetail()
+  }, [id])
 
   useEffect(() => {
     if (!id) return
@@ -438,9 +468,23 @@ export function TaskDetailView() {
     return () => setSelectedTaskId(null)
   }, [id])
 
+  // Sync from context ONLY after initial fresh fetch completed. Before that,
+  // contextTaskDetail might be stale snapshot from a prior modal session
+  // (e.g., task was drag-edited in workboard while modal was closed —
+  // context not refreshed because selectedTaskId was null). This prevents
+  // showing stale data flash on modal open.
   useEffect(() => {
+    if (!initialFetchDoneRef.current) return
     if (contextTaskDetail?.id === Number(id)) setDetail(contextTaskDetail)
   }, [contextTaskDetail])
+
+  // Modal rail mode: info-footer always expanded, prefetch org + assign users
+  useEffect(() => {
+    if (mode === 'modal' && id) {
+      void loadOrgUnits()
+      void loadAssignUsers()
+    }
+  }, [mode, id])
 
   // ── Lifecycle phase (derived from parent program's approvalStatus) ──
   const programApproval = detail?.workstream?.program?.approvalStatus
@@ -907,6 +951,10 @@ export function TaskDetailView() {
 
   // ── Comments ──────────────────────────────────────────────────────
   const [commentValue, setCommentValue] = useState('')
+  // Composer toolbar (Edit/Preview toggle + Template dropdown) hidden by
+  // default — UX clutter saat user belum mulai menulis. Show saat textarea
+  // focused atau ada draft content.
+  const [commentFocused, setCommentFocused] = useState(false)
   const [composerMode, setComposerMode] = useState<'edit' | 'preview'>('edit')
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null)
   const [sending, setSending] = useState(false)
@@ -1075,42 +1123,32 @@ export function TaskDetailView() {
       actionLabel: 'Lihat blocker',
       onAction: scrollToBlockers,
     }
-  } else if (activeBlockers.length > 0) {
-    const first = activeBlockers[0]
-    alert = {
-      tone: 'warn', icon: Icon.blocker,
-      title: `${activeBlockers.length} blocker aktif`,
-      sub: `${first.code} · ${first.title}`,
-      actionLabel: 'Buka blocker',
-      onAction: scrollToBlockers,
-    }
-  } else if (isDueSoon) {
-    alert = {
-      tone: 'warn', icon: Icon.flame,
-      title: dueDays === 0 ? 'Jatuh tempo hari ini' : `${dueDays} hari lagi sampai tenggat`,
-      sub: dueDate ? dueDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : undefined,
-      actionLabel: !roleAccess.isMonitoringOnly ? 'Update progress' : undefined,
-      onAction: !roleAccess.isMonitoringOnly ? focusComposer : undefined,
-    }
   }
+  // isDueSoon callout dropped — info "Nh lagi" sudah di hero due chip.
+  // Pattern sama dengan activeBlockers (di-drop sebelumnya).
 
   const priority = (detail.priority ?? 'MEDIUM').toUpperCase()
   const priorityTone = SEV_TONE[priority as keyof typeof SEV_TONE] ?? SEV_TONE.MEDIUM
 
   return (
-    <div className="ds task-detail-v2 wid-page">
+    <div className={`ds task-detail-v2 wid-page${mode === 'modal' ? ' wid-page--modal' : ''}`}>
 
-      {/* ── Top action bar ────────────────────────────────────── */}
+      {/* ── Top action bar ──────────────────────────────────────
+          Hidden di modal mode — modal punya close button sendiri,
+          dan breadcrumb/back tidak masuk akal dalam modal context. */}
+      {mode === 'page' && (
       <div className="wid-topbar">
         <button className="wid-back" onClick={() => navigate('/execution')} type="button">
           {Icon.back} Execution Board
         </button>
         <span className="wid-topbar__sep" aria-hidden="true" />
+        {/* Trace strip dipersingkat — sebelumnya 4 segment (Programs > kode >
+            nama panjang > workstream), terlalu deep dan ambil banyak space.
+            Sekarang cuma kode program + workstream (paling actionable). */}
         <TraceStrip
           nodes={[
-            { label: 'Programs', href: '/programs' },
             ...(parentProgram
-              ? [{ code: parentProgram.code, label: parentProgram.name, href: `/programs/${parentProgram.id}` } as TraceNode]
+              ? [{ code: parentProgram.code, label: parentProgram.code, href: `/programs/${parentProgram.id}` } as TraceNode]
               : []),
             ...(detail.workstream ? [{ label: detail.workstream.name } as TraceNode] : []),
           ]}
@@ -1175,17 +1213,24 @@ export function TaskDetailView() {
           )}
         </div>
       </div>
+      )}
 
       {/* ── Hero ───────────────────────────────────────────────── */}
       <div className="wid-hero">
         <div className="wid-hero__meta">
           <span className="wid-chip wid-chip--code">{detail.code}</span>
-          <span className="wid-chip wid-chip--priority" style={{ background: priorityTone.bg, color: priorityTone.fg }}>
-            <span className="wid-chip__dot" style={{ background: priorityTone.dot }} />
-            {PRIORITY_LABELS[priority] ?? priority}
-          </span>
+          {/* Hide MEDIUM (default) — sesuai pakem ATLAS, priority chip cuma
+              ditampilkan untuk non-default (HIGH/CRITICAL/LOW). */}
+          {priority !== 'MEDIUM' && (
+            <span className="wid-chip wid-chip--priority" style={{ background: priorityTone.bg, color: priorityTone.fg }}>
+              <span className="wid-chip__dot" style={{ background: priorityTone.dot }} />
+              {PRIORITY_LABELS[priority] ?? priority}
+            </span>
+          )}
           <HealthPill status={health} />
-          {detail.isBlocked && <span className="wid-chip wid-chip--blocked">Blocked</span>}
+          {/* "Blocked" chip dihapus — sudah ada blocker callout di bawah
+              hero yang lebih informatif (BLK-XXX · alasan + button "Buka").
+              3 sinyal blocked sama = clutter. */}
         </div>
 
         {titleEditing ? (
@@ -1213,21 +1258,41 @@ export function TaskDetailView() {
         )}
 
         <div className="wid-hero__statline">
-          <div className="wid-hero__progress">
+          <div className={`wid-hero__progress${isDirty ? ' is-dirty' : ''}`}>
             <div className={`wid-hero__progress-track wid-hero__progress-track--${health.toLowerCase()}`}>
-              <div className={`wid-hero__progress-fill wid-hero__progress-fill--${health.toLowerCase()}`} style={{ width: `${detail.percentComplete}%` }} />
+              <div className={`wid-hero__progress-fill wid-hero__progress-fill--${health.toLowerCase()}`} style={{ width: `${editDraft.percentComplete}%` }} />
             </div>
-            <span className="wid-hero__progress-pct" key={detail.percentComplete}>{detail.percentComplete}%</span>
+            <span className="wid-hero__progress-pct" key={editDraft.percentComplete}>{editDraft.percentComplete}%</span>
           </div>
-          <span className={`wid-status-tag wid-status-tag--${detail.status.toLowerCase().replace(/_/g, '-')}`}>
-            <span className="wid-status-tag__dot" style={{ background: STATUS_DOT[detail.status] }} />
-            {STATUS_LABELS[detail.status] ?? detail.status}
-          </span>
+          {/* Status tag dihapus dari statline — sudah ada status dropdown di
+              form body bawah yang interactive. Pill di sini cuma read-only
+              duplicate. */}
           {detail.assignee ? (
-            <div className="wid-hero__assignee">
-              <Avatar name={detail.assignee.name} />
-              <span className="wid-hero__assignee-name">{detail.assignee.name}</span>
-            </div>
+            !roleAccess.isMonitoringOnly && mode === 'modal' ? (
+              <button
+                type="button"
+                className="wid-hero__assignee wid-hero__assignee--clickable"
+                onClick={() => { setShowAssigneeEdit(true); void loadAssignUsers() }}
+                title="Klik untuk ubah executor"
+              >
+                <Avatar name={detail.assignee.name} />
+                <span className="wid-hero__assignee-name">{detail.assignee.name}</span>
+              </button>
+            ) : (
+              <div className="wid-hero__assignee">
+                <Avatar name={detail.assignee.name} />
+                <span className="wid-hero__assignee-name">{detail.assignee.name}</span>
+              </div>
+            )
+          ) : !roleAccess.isMonitoringOnly && mode === 'modal' ? (
+            <button
+              type="button"
+              className="wid-hero__assignee wid-hero__assignee--empty wid-hero__assignee--clickable"
+              onClick={() => { setShowAssigneeEdit(true); void loadAssignUsers() }}
+            >
+              {Icon.user}
+              <span>Belum ditugaskan</span>
+            </button>
           ) : (
             <span className="wid-hero__assignee wid-hero__assignee--empty">
               {Icon.user}
@@ -1369,13 +1434,25 @@ export function TaskDetailView() {
             {actionStatus.message && (
               <span className="wid-ms-msg">✓ {actionStatus.message}</span>
             )}
-            <button
-              className={`wid-btn${isDirty ? ' wid-btn--primary' : ' wid-btn--outline'}`}
-              disabled={actionStatus.saving || !isDirty}
-              type="submit"
-            >
-              {actionStatus.saving ? '…' : isDirty ? 'Simpan' : 'Tersimpan'}
-            </button>
+            {/* Saved indicator non-button saat tidak dirty (sebelumnya outline
+                button disabled — terlihat clickable padahal tidak). Saat dirty
+                baru tampil button submit. */}
+            {isDirty ? (
+              <button
+                className="wid-btn wid-btn--primary"
+                disabled={actionStatus.saving}
+                type="submit"
+              >
+                {actionStatus.saving ? '…' : 'Simpan'}
+              </button>
+            ) : (
+              <span className="wid-ms-saved" aria-live="polite">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M2 6.5 5 9.5l5-7" />
+                </svg>
+                Tersimpan
+              </span>
+            )}
           </div>
         </form>
       ) : (
@@ -1417,9 +1494,8 @@ export function TaskDetailView() {
                   <span className="wid-panel__icon">{Icon.info}</span>
                   Deskripsi
                 </h3>
-                {detail.description && !descEditing && !roleAccess.isMonitoringOnly && (
-                  <button className="wid-panel__action" onClick={beginDescEdit} type="button">Edit</button>
-                )}
+                {/* "Edit" button dihapus — text di body already click-to-edit
+                    (.wid-desc.is-editable). Tombol di header = duplicate path. */}
               </div>
               <div className="wid-panel__body">
                 {descEditing ? (
@@ -1485,6 +1561,7 @@ export function TaskDetailView() {
                 </button>
               )}
             </div>
+            {(subtaskStats.total > 0 || showAddSubtask) && (
             <div className="wid-panel__body">
               {subtaskStats.total > 0 && (
                 <div className="wid-subtask-list">
@@ -1519,11 +1596,8 @@ export function TaskDetailView() {
                 </div>
               )}
 
-              {subtaskStats.total === 0 && !showAddSubtask && !roleAccess.isMonitoringOnly && (
-                <button className="wid-flat-add" onClick={() => setShowAddSubtask(true)} type="button">
-                  + Tambah subtask
-                </button>
-              )}
+              {/* Inline "+ Tambah subtask" empty-state link dihapus — duplicate
+                  dengan header "+ Tambah" button. User punya 1 entry point clear. */}
 
               {showAddSubtask && (
                 <form className="wid-subtask-add" onSubmit={(e) => void submitAddSubtask(e)}>
@@ -1550,6 +1624,7 @@ export function TaskDetailView() {
                 </form>
               )}
             </div>
+            )}
           </section>
 
           {/* Blockers — only render when there's something to show or user is adding */}
@@ -1716,7 +1791,7 @@ export function TaskDetailView() {
                 />
               )}
 
-              <form className="wid-composer" onSubmit={(e) => void submitComment(e)}>
+              <form className={`wid-composer${commentValue.trim().length > 0 ? ' is-dirty' : ''}`} onSubmit={(e) => void submitComment(e)}>
                 {currentUser && (
                   <div className="wid-composer__author"><Avatar name={currentUser.name} /></div>
                 )}
@@ -1726,41 +1801,45 @@ export function TaskDetailView() {
                       <span className="badge">Reply #{replyTargetId}</span>
                     </div>
                   )}
-                  <div className="wid-composer__header">
-                    <ComposerModeToggle mode={composerMode} onModeChange={setComposerMode} />
-                    <div className="wid-tpl">
-                      <button
-                        className={`wid-tpl__trigger${showTemplates ? ' is-open' : ''}`}
-                        onClick={() => setShowTemplates(v => !v)}
-                        type="button"
-                      >
-                        + Template
-                        <svg fill="none" height="8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 10 6" width="8"><path d="M1 1l4 4 4-4"/></svg>
-                      </button>
-                      {showTemplates && (
-                        <div className="wid-tpl__menu">
-                          {COMPOSER_TEMPLATES.map(t => (
-                            <button
-                              className="wid-tpl__item"
-                              key={t.label}
-                              onClick={() => {
-                                appendComposerSnippet(setCommentValue, t.value)
-                                setShowTemplates(false)
-                                setTimeout(() => composerRef.current?.focus(), 30)
-                              }}
-                              type="button"
-                            >
-                              {t.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                  {(commentFocused || commentValue.trim().length > 0) && (
+                    <div className="wid-composer__header">
+                      <ComposerModeToggle mode={composerMode} onModeChange={setComposerMode} />
+                      <div className="wid-tpl">
+                        <button
+                          className={`wid-tpl__trigger${showTemplates ? ' is-open' : ''}`}
+                          onClick={() => setShowTemplates(v => !v)}
+                          type="button"
+                        >
+                          + Template
+                          <svg fill="none" height="8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 10 6" width="8"><path d="M1 1l4 4 4-4"/></svg>
+                        </button>
+                        {showTemplates && (
+                          <div className="wid-tpl__menu">
+                            {COMPOSER_TEMPLATES.map(t => (
+                              <button
+                                className="wid-tpl__item"
+                                key={t.label}
+                                onClick={() => {
+                                  appendComposerSnippet(setCommentValue, t.value)
+                                  setShowTemplates(false)
+                                  setTimeout(() => composerRef.current?.focus(), 30)
+                                }}
+                                type="button"
+                              >
+                                {t.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   {composerMode === 'edit' ? (
                     <div className="wid-composer__textwrap">
                       <textarea
                         className="wid-composer__textarea"
+                        onFocus={() => setCommentFocused(true)}
+                        onBlur={() => setCommentFocused(false)}
                         onChange={e => {
                           const v = e.target.value
                           setCommentValue(v)
@@ -1882,41 +1961,46 @@ export function TaskDetailView() {
             </div>
           </section>
 
+        </div>{/* /.wid-main */}
 
+        {/* ── Rail — Konteks & Tim (sticky di modal mode) ── */}
+        <aside className="wid-rail">
           {/* ── Info footer — Tim, Ren, Konteks, Program ──── */}
-          <div className="wid-info-footer">
-            <button
-              className="wid-info-footer__toggle"
-              onClick={() => {
-                togglePanel('infoFooter')
-                if (collapsed.infoFooter) { loadOrgUnits(); void loadAssignUsers() }
-              }}
-              type="button"
-            >
-              <svg
-                className={`wid-info-footer__chevron${collapsed.infoFooter ? '' : ' is-open'}`}
-                fill="none"
-                height="10"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 10 6"
-                width="10"
+          <div className="wid-info-footer wid-info-footer--rail">
+            {mode !== 'modal' && (
+              <button
+                className="wid-info-footer__toggle"
+                onClick={() => {
+                  togglePanel('infoFooter')
+                  if (collapsed.infoFooter) { loadOrgUnits(); void loadAssignUsers() }
+                }}
+                type="button"
               >
-                <path d="M1 1l4 4 4-4"/>
-              </svg>
-              Konteks & Tim
-            </button>
+                <svg
+                  className={`wid-info-footer__chevron${collapsed.infoFooter ? '' : ' is-open'}`}
+                  fill="none"
+                  height="10"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 10 6"
+                  width="10"
+                >
+                  <path d="M1 1l4 4 4-4"/>
+                </svg>
+                Konteks & Tim
+              </button>
+            )}
 
-            {!collapsed.infoFooter && (
+            {(mode === 'modal' || !collapsed.infoFooter) && (
               <div className="wid-info-footer__body">
 
                 {/* Tim block */}
                 <div className="wid-info-footer__block">
                   <p className="wid-info-footer__block-title">Tim</p>
 
-                  <div className="wid-team-row">
+                  <div className={`wid-team-row wid-team-row--executor${showAssigneeEdit ? ' is-editing' : ''}`}>
                     <span className="wid-sp-label">Executor</span>
                     {showAssigneeEdit && !roleAccess.isMonitoringOnly ? (
                       <div className="wid-team-row__edit">
@@ -1978,12 +2062,25 @@ export function TaskDetailView() {
                             }
                             return null
                           })()}
+                          {!showPicAdder ? (
+                            <button
+                              type="button"
+                              className="wid-pic-adder-toggle"
+                              onClick={() => { setShowPicAdder(true); void loadAssignUsers() }}
+                              disabled={picSaving}
+                            >
+                              {(detail?.picPersonIds ?? []).length > 0 ? 'Ganti' : '+ Pilih'}
+                            </button>
+                          ) : (
                           <div className="wid-pic-adder">
                             <input
+                              autoFocus
                               className="wid-pic-search"
                               disabled={picSaving}
+                              onBlur={() => { if (picPersonSearch.length === 0) setShowPicAdder(false) }}
                               onChange={(e) => { setPicPersonSearch(e.target.value); void loadAssignUsers() }}
-                              placeholder={(detail?.picPersonIds ?? []).length > 0 ? 'Ganti…' : '+ Pilih…'}
+                              onKeyDown={(e) => { if (e.key === 'Escape') { setPicPersonSearch(''); setShowPicAdder(false) } }}
+                              placeholder={(detail?.picPersonIds ?? []).length > 0 ? 'Cari nama…' : 'Cari nama…'}
                               value={picPersonSearch}
                             />
                             {picPersonSearch.length > 0 && (() => {
@@ -2005,6 +2102,7 @@ export function TaskDetailView() {
                               ) : null
                             })()}
                           </div>
+                          )}
                         </div>
                       </div>
 
@@ -2024,12 +2122,25 @@ export function TaskDetailView() {
                               </span>
                             )
                           })}
+                          {!showUnitAdder ? (
+                            <button
+                              type="button"
+                              className="wid-pic-adder-toggle"
+                              onClick={() => { setShowUnitAdder(true); loadOrgUnits() }}
+                              disabled={picSaving}
+                            >
+                              + Tambah unit
+                            </button>
+                          ) : (
                           <div className="wid-pic-adder">
                             <input
+                              autoFocus
                               className="wid-pic-search"
                               disabled={picSaving}
+                              onBlur={() => { if (picUnitSearch.length === 0) setShowUnitAdder(false) }}
                               onChange={(e) => { setPicUnitSearch(e.target.value); loadOrgUnits() }}
-                              placeholder="+ Tambah unit…"
+                              onKeyDown={(e) => { if (e.key === 'Escape') { setPicUnitSearch(''); setShowUnitAdder(false) } }}
+                              placeholder="Cari kode/nama unit…"
                               value={picUnitSearch}
                             />
                             {picUnitSearch.length > 0 && (() => {
@@ -2052,6 +2163,7 @@ export function TaskDetailView() {
                               ) : null
                             })()}
                           </div>
+                          )}
                         </div>
                       </div>
                     </>
@@ -2220,7 +2332,7 @@ export function TaskDetailView() {
             )}
           </div>
 
-        </div>
+        </aside>{/* /.wid-rail */}
       </div>
 
       {/* ── Help overlay (press ? to toggle) ────────────────── */}

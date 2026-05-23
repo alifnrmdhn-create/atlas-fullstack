@@ -49,7 +49,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', fn () => redirect('/'));
     Route::get('/roadmap', fn () => Inertia::render('RoadmapView'))->name('roadmap');
     Route::get('/execution', fn () => Inertia::render('WorkboardView'))->name('execution');
-    Route::get('/execution/tasks/{id}', [TaskController::class, 'show'])->name('execution.tasks.show');
+    // Task detail URL → redirect ke Workboard dengan query param ?task={id}
+    // (2026-05-21). Workboard auto-open modal saat query terdeteksi. URL deep
+    // link tetap valid (share, bookmark) tapi visual surface single — modal.
+    Route::get('/execution/tasks/{id}', function ($id) {
+        return redirect("/execution?task={$id}");
+    })->name('execution.tasks.show');
     Route::get('/penugasan', fn () => Inertia::render('AssignmentsView'))->name('penugasan');
     Route::get('/fokus', fn () => Inertia::render('InboxView'))->name('fokus');
     Route::get('/goals', fn () => Inertia::render('GoalsView'))->name('goals');
@@ -153,6 +158,7 @@ Route::middleware('auth')->group(function () {
         // Sub-resources
         Route::get('/{id}/execution-grid',      [ExecutionGridController::class, 'executionGrid'])->name('execution-grid');
         Route::get('/{id}/execution-grid.xlsx', [ExecutionGridController::class, 'exportXlsx'])->name('execution-grid.xlsx');
+        Route::get('/{id}/execution-achievement', [ProgramController::class, 'executionAchievement'])->name('execution-achievement');
         Route::get('/{id}/health',        [ProgramController::class, 'health'])->name('health');
         Route::get('/{id}/workstreams',   [ProgramController::class, 'workstreams'])->name('workstreams');
         Route::get('/{id}/kpi-links',     [ProgramController::class, 'kpiLinks'])->name('kpi-links.index');

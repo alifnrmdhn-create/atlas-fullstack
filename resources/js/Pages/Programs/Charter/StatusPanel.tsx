@@ -16,27 +16,38 @@ const HEALTH_LABEL: Record<CharterHealth, string> = {
  * + activity completion breakdown. Pattern A: flat, hairline divider.
  * Achievement % juga divisualkan sebagai progress bar besar supaya
  * panel terlihat informatif (bukan hanya angka mati).
+ *
+ * Fallback (2026-05-21): kalau achievementPct null (belum ada planned weeks
+ * di periode current), tampilkan task completion % sebagai fallback. Sebelumnya
+ * "—" tidak informatif untuk user yang mau pantau progres.
  */
 export function StatusPanel({ status }: Props) {
-  const pct = status.achievementPct
   const tone = status.health.toLowerCase()
   const activityRatio = status.totalCount > 0 ? status.completedCount / status.totalCount : 0
+  const activityPct = Math.round(activityRatio * 100)
+  // Priority: achievement (planned vs realized weeks) → fallback ke task
+  // completion. Label berubah dinamis sesuai data source.
+  const hasAchievement = status.achievementPct !== null
+  const hasTasks = status.totalCount > 0
+  const displayPct = hasAchievement ? status.achievementPct! : (hasTasks ? activityPct : null)
+  const displayLabel = hasAchievement ? '% Achievement' : (hasTasks ? '% Aktivitas Selesai' : '% Progres')
   return (
     <div className="cs-status">
       <div className="cs-status__head">
-        <span className="cs-status__label">% Achievement</span>
+        <span className="cs-status__label">{displayLabel}</span>
       </div>
       <div className="cs-status__big">
-        {pct !== null ? `${pct}%` : '—'}
+        {displayPct !== null ? `${displayPct}%` : '—'}
       </div>
-      {pct !== null && (
-        <div className={`cs-status__bar cs-status__bar--${tone}`} role="presentation" aria-hidden="true">
-          <div
-            className="cs-status__bar-fill"
-            style={{ width: `${Math.max(2, Math.min(100, pct))}%` }}
-          />
-        </div>
-      )}
+      {/* Progress bar selalu render — even at 0% atau null. Empty bar
+          menunjukkan "ada progress untuk dipantau, posisi 0%" — bukan
+          "tidak ada info" (yang adalah pesan dari "—" tanpa bar). */}
+      <div className={`cs-status__bar cs-status__bar--${tone}`} role="presentation" aria-hidden="true">
+        <div
+          className="cs-status__bar-fill"
+          style={{ width: `${displayPct !== null ? Math.max(2, Math.min(100, displayPct)) : 0}%` }}
+        />
+      </div>
       <div className="cs-status__health-row">
         <span className={`cs-status__dot cs-status__dot--${tone}`} />
         <span className="cs-status__health-label">{HEALTH_LABEL[status.health]}</span>

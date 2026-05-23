@@ -124,6 +124,99 @@ class ProgramController extends Controller
         ]);
     }
 
+    /**
+     * Execution Achievement — program-level rollup % achievement dari
+     * planned vs realized weeks (auto-derive per task status + percentComplete,
+     * sama logic dengan ExecutionGridController::buildSteps).
+     *
+     * % achievement = actual-so-far / planned-so-far (capped at current week).
+     * Per workstream breakdown disertakan untuk drill-down.
+     */
+    public function executionAchievement(Request $request, int $id): JsonResponse
+    {
+        $this->programService->assertAccess($request->user(), $id);
+
+        $currentWeek = now()->format('o-\WW');
+
+        $workstreams = Workstream::query()
+            ->where('programId', $id)
+            ->orderBy('id')
+            ->get(['id', 'code', 'name']);
+
+        $totalPlanned = 0;
+        $totalActual = 0;
+        $totalPlannedSoFar = 0;
+        $totalActualSoFar = 0;
+        $byWorkstream = [];
+
+        foreach ($workstreams as $ws) {
+            $tasks = Task::query()
+                ->where('initiativeId', $ws->id)
+                ->get(['id', 'status', 'percentComplete', 'plannedWeeks', 'actualWeeks']);
+
+            $wsPlanned = 0; $wsActual = 0;
+            $wsPlannedSoFar = 0; $wsActualSoFar = 0;
+
+            foreach ($tasks as $task) {
+                $planned = collect($task->plannedWeeks ?? [])->sort()->values()->all();
+                $totalPlannedTask = count($planned);
+
+                // Mirror logic dari ExecutionGridController::buildSteps
+                $storedActual = $task->actualWeeks;
+                if ($storedActual === null) {
+                    $pct = (int) ($task->percentComplete ?? 0);
+                    if (in_array($task->status, ['COMPLETED', 'IN_REVIEW'], true)) {
+                        $actual = $planned;
+                    } elseif ($task->status === 'IN_PROGRESS' && $pct > 0 && $totalPlannedTask > 0) {
+                        $n = (int) round(($pct / 100) * $totalPlannedTask);
+                        $n = max(1, min($n, $totalPlannedTask));
+                        $actual = array_slice($planned, 0, $n);
+                    } else {
+                        $actual = [];
+                    }
+                } else {
+                    $actual = $storedActual ?? [];
+                }
+
+                $wsPlanned += $totalPlannedTask;
+                $wsActual += count($actual);
+                $wsPlannedSoFar += count(array_filter($planned, fn ($w) => $w <= $currentWeek));
+                $wsActualSoFar += count(array_filter($actual, fn ($w) => $w <= $currentWeek));
+            }
+
+            $byWorkstream[] = [
+                'id' => $ws->id,
+                'code' => $ws->code,
+                'name' => $ws->name,
+                'plannedTotal' => $wsPlanned,
+                'actualTotal' => $wsActual,
+                'plannedSoFar' => $wsPlannedSoFar,
+                'actualSoFar' => $wsActualSoFar,
+                'achievement' => $wsPlannedSoFar > 0
+                    ? (int) round(($wsActualSoFar / $wsPlannedSoFar) * 100)
+                    : null,
+            ];
+
+            $totalPlanned += $wsPlanned;
+            $totalActual += $wsActual;
+            $totalPlannedSoFar += $wsPlannedSoFar;
+            $totalActualSoFar += $wsActualSoFar;
+        }
+
+        return response()->json(['data' => [
+            'programId' => $id,
+            'currentWeek' => $currentWeek,
+            'plannedTotal' => $totalPlanned,
+            'actualTotal' => $totalActual,
+            'plannedSoFar' => $totalPlannedSoFar,
+            'actualSoFar' => $totalActualSoFar,
+            'achievement' => $totalPlannedSoFar > 0
+                ? (int) round(($totalActualSoFar / $totalPlannedSoFar) * 100)
+                : null,
+            'byWorkstream' => $byWorkstream,
+        ]]);
+    }
+
     public function health(Request $request, int $id)
     {
         $this->programService->assertAccess($request->user(), $id);
@@ -528,7 +621,18 @@ class ProgramController extends Controller
             if ($oldVal instanceof \Illuminate\Support\Carbon || $oldVal instanceof \Carbon\Carbon) {
                 $oldVal = $oldVal->toDateString();
             }
+            // Normalize BackedEnum → primitive value. Field kelompok & pilarStrategis
+            // di-cast ke enum (Kelompok, PilarStrategis), tanpa unwrap ini
+            // (string) $enum throw "could not be converted to string".
+            if ($oldVal instanceof \BackedEnum) {
+                $oldVal = $oldVal->value;
+            }
             $newVal = $newData[$field];
+            // Safety net: newVal dari validated request adalah string mentah,
+            // tapi jaga-jaga kalau path lain inject enum object langsung.
+            if ($newVal instanceof \BackedEnum) {
+                $newVal = $newVal->value;
+            }
             $oldStr = $oldVal === null ? '' : (string) $oldVal;
             $newStr = $newVal === null ? '' : (string) $newVal;
             if ($oldStr !== $newStr) {
@@ -884,7 +988,22 @@ class ProgramController extends Controller
 
     public function storeProgressLog(Request $request, int $id): JsonResponse
     {
-        $this->programService->assertAccess($request->user(), $id);
+        $program = Program::findOrFail($id);
+        $user = $request->user();
+
+        // Permission: hanya owner program (PIC utama) yang boleh write refleksi.
+        // assertAccess sebelumnya terlalu permisif (Officer/Kadiv juga bisa).
+        // Refleksi adalah accountability statement PIC — orang lain edit
+        // melanggar audit trail. SUPERADMIN/ADMIN tetap diizinkan sebagai
+        // escape hatch (data correction kasus exceptional).
+        $role = strtoupper($user->roleType ?? '');
+        $isAdmin = in_array($role, ['SUPERADMIN', 'ADMIN'], true);
+        $isOwner = $program->ownerId === $user->id;
+        if (! $isAdmin && ! $isOwner) {
+            return response()->json([
+                'message' => 'Hanya PIC program (owner) yang dapat menulis refleksi mingguan.',
+            ], 403);
+        }
 
         $data = $request->validate([
             // Weekly-only sejak 2026-05-19. Aplikasi wajib weekly basis dengan
@@ -899,7 +1018,16 @@ class ProgramController extends Controller
             'dukunganDibutuhkan' => 'nullable|string|max:2000',
         ]);
 
-        $user = $request->user();
+        // Reject future period. FE lock period ke current week, tapi backend
+        // harus enforce — POST manual atau attacker bisa kirim "2027-W52".
+        $currentWeek = $this->weeklyDeadline->currentWeekIso();
+        if (strcmp($data['period'], $currentWeek) > 0) {
+            return response()->json([
+                'message' => "Period {$data['period']} di masa depan. Hanya refleksi minggu berjalan atau sebelumnya yang diizinkan.",
+                'errors'  => ['period' => ['Period tidak boleh di masa depan.']],
+            ], 422);
+        }
+
         $isLate = $this->weeklyDeadline->isLateSubmission($data['period']);
 
         $log = DB::transaction(function () use ($id, $data, $user, $isLate) {
@@ -970,10 +1098,28 @@ class ProgramController extends Controller
         $summary = $this->weeklyDeadline->summary($weekIso, $hasSubmitted, $activatedAt);
         $prefill = $this->buildReflectionPrefill($program);
 
+        // Existing log content — FE pakai untuk populate form saat edit mode.
+        // Sebelumnya cuma return existingLogId, FE harus blind-start dari prefill
+        // → user kira start fresh padahal updateOrCreate akan replace.
+        $existing = $existingLog ? [
+            'id'                 => $existingLog->id,
+            'period'             => $existingLog->period,
+            'healthAtTime'       => $existingLog->healthAtTime,
+            'narrative'          => $existingLog->narrative,
+            'kendala'            => $existingLog->kendala,
+            'correctiveAction'   => $existingLog->correctiveAction,
+            'nextStep'           => $existingLog->nextStep,
+            'dukunganDibutuhkan' => $existingLog->dukunganDibutuhkan,
+            'isLate'             => (bool) $existingLog->isLate,
+            'createdByName'      => $existingLog->createdByName,
+            'createdAt'          => $existingLog->createdAt,
+        ] : null;
+
         return response()->json([
             'data' => array_merge($summary, [
-                'prefill' => $prefill,
-                'existingLogId' => $existingLog?->id,
+                'prefill'       => $prefill,
+                'existing'      => $existing,
+                'existingLogId' => $existingLog?->id, // backward-compat
             ]),
         ]);
     }
