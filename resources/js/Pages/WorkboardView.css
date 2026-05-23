@@ -291,9 +291,15 @@
   }
 }
 
+/* Kanban column — Tier 1 visual cleanup (2026-05-23):
+ * - border 1px solid → dihapus, kolom hanya dipisah oleh gap di .kanban-board
+ * - background sunken tetap (very subtle off-white) supaya kolom punya region
+ *   tanpa "card chrome"
+ * - Top color band (kanban-col__header::before 2px) tetap sebagai status cue
+ * Hasil: kanban berasa section, bukan kotak card berlapis. Pattern A. */
 .workboard-v2 .kanban-col {
   background: var(--ds-surface-sunken);
-  border: 1px solid var(--ds-border-subtle);
+  border: 0;
   border-radius: var(--ds-radius-lg);
   padding: 0;
   display: flex;
