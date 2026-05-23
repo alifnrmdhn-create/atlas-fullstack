@@ -238,7 +238,11 @@ export function ProfileView() {
 
   return (
     <div className="ds profile-v2 view-profile">
-      <div className="profile-v2__inner">
+      {/* `ds-stagger` di inner wrapper — content sections cascade fade-up.
+          Migrasi dari pv-section-enter ke utility shared (Phase 2 motion
+          standardization). Inner column stagger (pv-body__col > *) di-drop
+          — column children muncul bersamaan dengan parent column. */}
+      <div className="profile-v2__inner ds-stagger">
         <div className="view-toolbar">
           <h2 className="view-toolbar__title">Profil Saya</h2>
           <div className="view-toolbar__sep" />

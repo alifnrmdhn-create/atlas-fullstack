@@ -35,29 +35,12 @@
 }
 
 /* ─── Section stagger entrance ─────────────────────────────
- * Floating workspace panel enters via .app-shell animation (380ms).
- * Content inside cascades in after with 60ms staggered fade-up.
- * Respect prefers-reduced-motion. */
-@keyframes hv-section-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.hv__inner > * {
-  animation: hv-section-enter 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.hv__inner > *:nth-child(1) { animation-delay: 200ms; }
-.hv__inner > *:nth-child(2) { animation-delay: 260ms; }
-.hv__inner > *:nth-child(3) { animation-delay: 320ms; }
-.hv__inner > *:nth-child(4) { animation-delay: 380ms; }
-.hv__inner > *:nth-child(5) { animation-delay: 440ms; }
-.hv__inner > *:nth-child(6) { animation-delay: 500ms; }
-.hv__inner > *:nth-child(7) { animation-delay: 560ms; }
-
-@media (prefers-reduced-motion: reduce) {
-  .hv__inner > * { animation: none; }
-}
+ * Migrasi 2026-05-23: keyframe + delays di-handle oleh `.ds-stagger`
+ * utility di components.css. HomeView wrapper inner pakai class:
+ *   <div className="hv__inner ds-stagger">
+ * Single source of truth lintas halaman. animation-fill-mode: backwards
+ * di utility — transform tidak retain, modal-safe (lihat insiden 2026-05-19
+ * di reset.css:55). */
 
 /* ─── Top rail (date · time · live · meta actions) ────────── */
 

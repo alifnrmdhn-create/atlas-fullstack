@@ -648,7 +648,12 @@ export default function HomeView() {
     <>
       <Head title="Home" />
       <div className="ds home-v2">
-        <div className="hv__inner">
+        {/* `ds-stagger` di inner wrapper — content sections cascade fade-up.
+            Migrasi dari hv-section-enter ke utility shared (Phase 2 motion
+            standardization). Modal-safe via animation-fill-mode: backwards
+            di .ds-stagger. Loading/error render branches di atas tidak pakai
+            stagger karena skeleton tunggal sudah cukup informatif. */}
+        <div className="hv__inner ds-stagger">
 
           {/* Page rail removed — date/period/live now lives in the global
            * slim topbar. Salin tautan / Ekspor moved to the actions row
