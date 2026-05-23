@@ -543,7 +543,9 @@ export function PresenceView() {
 
   return (
     <div className="ds presence-v2 view-presence">
-      <div className="presence-v2__inner">
+      {/* `ds-stagger`: Phase 3 motion standardization. Modal sheet & confirm
+          di page ini semua portal-mounted (createPortal). Modal-safe. */}
+      <div className="presence-v2__inner ds-stagger">
       {/* ── Toolbar ── */}
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Team Presence</h2>

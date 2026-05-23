@@ -763,7 +763,9 @@ export function ProgramsView() {
 
   return (
     <div className="ds programs-v2 view-programs">
-      <div className="programs-v2__inner">
+      {/* `ds-stagger`: Phase 3 motion standardization. Modals di page ini
+          semua portal-mounted (createPortal ke document.body) — modal-safe. */}
+      <div className="programs-v2__inner ds-stagger">
       {/* ── Hero header ─────────────────────────────────────────────────── */}
       <header className="programs-v2__hero">
         <div className="programs-v2__hero-text">

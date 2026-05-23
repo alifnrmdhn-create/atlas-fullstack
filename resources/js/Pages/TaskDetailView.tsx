@@ -1028,7 +1028,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
   // ── Render ────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="ds task-detail-v2 wid-page">
+      <div className="ds task-detail-v2 wid-page view-task-detail ds-stagger">
         <div className="wid-topbar">
           <button className="wid-back" onClick={() => navigate('/execution')} type="button">
             {Icon.back} Execution Board
@@ -1073,7 +1073,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
 
   if (loadError || !detail) {
     return (
-      <div className="ds task-detail-v2 wid-page">
+      <div className="ds task-detail-v2 wid-page view-task-detail ds-stagger">
         <div className="wid-topbar">
           <button className="wid-back" onClick={() => navigate('/execution')} type="button">
             {Icon.back} Execution Board
@@ -1131,7 +1131,11 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
   const priorityTone = SEV_TONE[priority as keyof typeof SEV_TONE] ?? SEV_TONE.MEDIUM
 
   return (
-    <div className={`ds task-detail-v2 wid-page${mode === 'modal' ? ' wid-page--modal' : ''}`}>
+    <div className={`ds task-detail-v2 wid-page ds-stagger${mode === 'modal' ? ' wid-page--modal' : ' view-task-detail'}`}>
+      {/* Phase 3 motion standardization:
+          - `ds-stagger` (always): direct children cascade fade-up
+          - `view-task-detail` (page mode only): wrapper opacity fade via view-enter
+          Skip view-* in modal mode supaya tidak double-fade dengan modal entrance. */}
 
       {/* ── Top action bar ──────────────────────────────────────
           Hidden di modal mode — modal punya close button sendiri,

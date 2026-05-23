@@ -658,7 +658,10 @@ export function WorkboardView() {
 
   return (
     <div className="ds workboard-v2 view-workboard">
-      <div className="workboard-v2__inner">
+      {/* `ds-stagger`: Phase 3 motion standardization. Inline modals (Create WI,
+          wb-prompt-modal) di-render OUTSIDE workboard-v2__inner — sibling level —
+          jadi tidak ter-scope ke containing block animasi. Modal-safe. */}
+      <div className="workboard-v2__inner ds-stagger">
       {/* ── Identity row: title + subtitle + primary CTA ── */}
       <div className="wb-toolbar-identity">
         <div className="wb-toolbar-identity__title-block">

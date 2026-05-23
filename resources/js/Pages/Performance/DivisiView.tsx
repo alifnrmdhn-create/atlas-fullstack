@@ -108,8 +108,8 @@ function ComparisonView({ direktorat, divisiList, periode }: ComparisonProps) {
   return (
     <>
       <Head title={`KPI Divisi · ${direktorat.nama}`} />
-      <div className="ds perf">
-        <div className="perf__inner">
+      <div className="ds perf view-performance">
+        <div className="perf__inner ds-stagger">
           <header className="perf__header">
             <div className="perf__header-left">
               <button className="perf__back" onClick={() => navigate('/performance/scorecard')} type="button">
@@ -246,8 +246,8 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
   return (
     <>
       <Head title={`KPI Divisi — ${divisi.nama}`} />
-      <div className="ds perf">
-        <div className="perf__inner">
+      <div className="ds perf view-performance">
+        <div className="perf__inner ds-stagger">
           {/* ─── Header ──────────────────────────── */}
           <header className="perf__header">
             <div className="perf__header-left">

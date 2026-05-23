@@ -73,8 +73,8 @@ export default function ScorecardView() {
   return (
     <>
       <Head title="Scorecard" />
-      <div className="ds perf">
-        <div className="perf__inner">
+      <div className="ds perf view-performance">
+        <div className="perf__inner ds-stagger">
           {/* ─── Header ──────────────────────────── */}
           <header className="perf__header">
             <div className="perf__header-left">

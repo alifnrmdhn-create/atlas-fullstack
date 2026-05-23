@@ -1596,7 +1596,12 @@ export function ProgramDetailView() {
   )
 
   return (
-    <div className="ds program-detail-v2 prog-detail-page">
+    <div className="ds program-detail-v2 prog-detail-page view-program-detail ds-stagger">
+      {/* `view-program-detail` + `ds-stagger`: Phase 3 motion standardization.
+          Outer wrapper dapat view-enter (220ms opacity), direct children
+          cascade fade-up via .ds-stagger > * di components.css. Modals di
+          page ini semua portal-mounted (createPortal ke document.body), jadi
+          modal-backdrop tetap ter-anchor ke viewport (modal-safe). */}
       {/* ── Breadcrumb (slim) ──────────────────────────────────────────────
           Back button explicit (← Programs) sebagai primary nav affordance —
           consistent dengan pattern di TaskDetailView (← Execution Board).
