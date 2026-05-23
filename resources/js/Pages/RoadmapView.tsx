@@ -84,7 +84,8 @@ export function RoadmapView() {
 
   return (
     <div className="ds roadmap-v2 view-roadmap">
-      <div className="roadmap-v2__inner">
+      {/* `ds-stagger`: motion standardization (no inline modal). */}
+      <div className="roadmap-v2__inner ds-stagger">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Program Roadmap</h2>
         <div className="view-toolbar__sep" />

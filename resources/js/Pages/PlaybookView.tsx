@@ -425,7 +425,7 @@ export function PlaybookView() {
   }, [])
 
   if (error) return (
-    <div className="ds playbook-v2 pb-workspace">
+    <div className="ds playbook-v2 pb-workspace ds-stagger">
       <div className="pb-state">
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="7.5" cy="7.5" r="6"/><path d="M7.5 4.5v3.5M7.5 10v.5"/></svg>
         Gagal memuat playbook: {error}
@@ -434,7 +434,7 @@ export function PlaybookView() {
   )
 
   if (!data) return (
-    <div className="ds playbook-v2 pb-workspace">
+    <div className="ds playbook-v2 pb-workspace ds-stagger">
       <div className="pb-state">
         <span className="pb-state__spin" />
         Memuat playbook…
@@ -443,7 +443,7 @@ export function PlaybookView() {
   )
 
   return (
-    <div className="ds playbook-v2 pb-workspace">
+    <div className="ds playbook-v2 pb-workspace ds-stagger">
       {/* ── Two-column layout ── */}
       <div className="pb-layout">
         {/* TOC */}

@@ -100,7 +100,7 @@ export default function AdminPilotMetricsView() {
   const evalTotal = [dispositionCmp, hitRateCmp, activeUsersCmp].filter(c => c !== 'unknown').length
 
   return (
-    <div className="ds admin-v2 view-pilot-metrics">
+    <div className="ds admin-v2 view-pilot-metrics ds-stagger">
       <div className="perf-toolbar">
         <span className="perf-toolbar__title">Pilot DKM — Metrics Dashboard</span>
         <div className="perf-toolbar__sep" />

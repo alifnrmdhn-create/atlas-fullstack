@@ -72,7 +72,8 @@ export function SearchView() {
 
   return (
     <div className="ds search-v2 view-search">
-      <div className="search-v2__inner">
+      {/* `ds-stagger`: motion standardization (no inline modal). */}
+      <div className="search-v2__inner ds-stagger">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Search & Discovery</h2>
         <div className="view-toolbar__sep" />

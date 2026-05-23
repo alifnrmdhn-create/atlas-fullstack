@@ -1321,7 +1321,8 @@ export function InboxView() {
 
   return (
     <div className="ds fokus-v2 view-inbox">
-      <div className="fokus-v2__inner">
+      {/* `ds-stagger`: motion standardization (no inline modal). */}
+      <div className="fokus-v2__inner ds-stagger">
         <header className="fokus-v2__header">
           <div className="fokus-v2__header-left">
             <h1 className="fokus-v2__title">Fokus</h1>

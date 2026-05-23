@@ -114,7 +114,7 @@ export function AdminRolesView() {
   }
 
   return (
-    <div className="ds admin-v2 view-admin-roles">
+    <div className="ds admin-v2 view-admin-roles ds-stagger">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Roles &amp; Permissions</h2>
         <div className="view-toolbar__sep" />

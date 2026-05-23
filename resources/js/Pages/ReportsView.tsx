@@ -45,7 +45,9 @@ export function ReportsView() {
     : null
 
   return (
-    <div className="view-reports">
+    // Phase 6 motion: tambah ds + ds-stagger ke wrapper (view-reports → view-*
+    // sudah dapat view-enter). Halaman sekarang konsisten dengan pages lain.
+    <div className="ds reports-v2 view-reports ds-stagger">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Analytics</h2>
         <div className="view-toolbar__sep" />

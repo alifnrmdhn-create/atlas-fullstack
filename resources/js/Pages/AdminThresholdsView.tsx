@@ -173,7 +173,7 @@ export default function AdminThresholdsView() {
   }
 
   return (
-    <div className="ds admin-v2 view-thresholds">
+    <div className="ds admin-v2 view-thresholds ds-stagger">
       <div className="perf-toolbar">
         <span className="perf-toolbar__title">Threshold Settings</span>
         <div className="perf-toolbar__sep" />

@@ -1600,7 +1600,7 @@ export function ChannelsView({
   }, [streamMessages])
 
   return (
-    <div className="ds channels-v2 view-channels">
+    <div className="ds channels-v2 view-channels ds-stagger">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Channels</h2>
         <div className="view-toolbar__sep" />

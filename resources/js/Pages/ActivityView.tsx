@@ -336,7 +336,10 @@ export function ActivityView() {
   const rangeLabels: Record<RangeOption, string> = { '7d': '7 Hari', '30d': '30 Hari', '90d': '90 Hari' }
 
   return (
-    <div className="activity-view">
+    // Phase 6 motion consistency: tambah ds + view-* + ds-stagger ke wrapper
+    // utama. Sebelumnya .activity-view tanpa pattern standard → halaman muncul
+    // instant tanpa transisi. Sekarang dapat view-enter + cascade.
+    <div className="ds activity-v2 view-activity activity-view ds-stagger">
       {/* Controls */}
       <div className="activity-controls">
         <div className="activity-range-tabs">

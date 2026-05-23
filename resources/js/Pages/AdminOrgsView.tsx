@@ -238,7 +238,7 @@ export function AdminOrgsView() {
 
   if (!isAuthorized) {
     return (
-      <div className="ds admin-v2 view-admin-orgs">
+      <div className="ds admin-v2 view-admin-orgs ds-stagger">
         <div className="panel">
           <p className="text-muted text-sm admin-state-copy admin-state-copy--center">
             Akses ditolak. Halaman ini hanya untuk admin dan superadmin.
@@ -249,7 +249,7 @@ export function AdminOrgsView() {
   }
 
   return (
-    <div className="ds admin-v2 view-admin-orgs">
+    <div className="ds admin-v2 view-admin-orgs ds-stagger">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Perusahaan &amp; Entitas Organisasi</h2>
         <div className="view-toolbar__sep" />

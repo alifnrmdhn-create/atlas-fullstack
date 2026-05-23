@@ -12,7 +12,10 @@ export default function DesignSystemView() {
   return (
     <>
       <Head title="Design System" />
-      <div className="ds" style={pageStyle}>
+      {/* Phase 6 motion: tambah view-* + ds-stagger ke wrapper supaya
+          konsisten dengan halaman lain. DesignSystemView ini debug page
+          internal, motion tetap apply untuk uniformity. */}
+      <div className="ds view-design-system ds-stagger" style={pageStyle}>
         <header style={headerStyle}>
           <div>
             <h1 style={pageTitleStyle}>ATLAS Design System</h1>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useId } from 'react'
+import { createPortal } from 'react-dom'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
@@ -251,7 +252,7 @@ export function AdminPositionsView() {
 
   if (!isAuthorized) {
     return (
-      <div className="ds admin-v2 view-admin-positions">
+      <div className="ds admin-v2 view-admin-positions ds-stagger">
         <div className="panel">
           <p className="text-muted text-sm admin-state-copy admin-state-copy--center">
             Akses ditolak. Halaman ini hanya untuk admin dan superadmin.
@@ -262,7 +263,7 @@ export function AdminPositionsView() {
   }
 
   return (
-    <div className="ds admin-v2 view-admin-positions">
+    <div className="ds admin-v2 view-admin-positions ds-stagger">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Manajemen Jabatan</h2>
         <div className="view-toolbar__sep" />
@@ -422,7 +423,8 @@ export function AdminPositionsView() {
         const filteredUnits = form.directorateId
           ? units.filter(u => u.directorateId === Number(form.directorateId))
           : units
-        return (
+        // Portal-mounted untuk modal-safety di bawah ds-stagger parent wrapper.
+        return createPortal(
           <div className="modal-backdrop" onClick={closeModal}>
             <div aria-describedby={positionFormDescId} aria-labelledby={positionFormTitleId} aria-modal="true" className="modal modal--wide" ref={positionFormDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
               <div className="modal__header">
@@ -507,12 +509,13 @@ export function AdminPositionsView() {
                 </div>
               </form>
             </div>
-          </div>
+          </div>,
+          document.body,
         )
       })()}
 
-      {/* Assign Modal */}
-      {assignTarget && (
+      {/* Assign Modal — portal-mounted. */}
+      {assignTarget && createPortal(
         <div className="modal-backdrop" onClick={closeAssign}>
           <div aria-describedby={assignDialogDescId} aria-labelledby={assignDialogTitleId} aria-modal="true" className="modal" ref={assignDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -635,7 +638,8 @@ export function AdminPositionsView() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

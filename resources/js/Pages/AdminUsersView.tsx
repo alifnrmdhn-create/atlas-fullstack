@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useId } from 'react'
+import { createPortal } from 'react-dom'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
@@ -232,7 +233,7 @@ export function AdminUsersView() {
 
   if (!isAuthorized) {
     return (
-      <div className="ds admin-v2 view-admin-users">
+      <div className="ds admin-v2 view-admin-users ds-stagger">
         <div className="panel">
           <p className="text-muted text-sm admin-state-copy admin-state-copy--center">
             Akses ditolak. Halaman ini hanya untuk admin dan superadmin.
@@ -373,8 +374,8 @@ export function AdminUsersView() {
         )}
       </div>
 
-      {/* Buat Pengguna Modal */}
-      {showCreateUser && (
+      {/* Buat Pengguna Modal — portal-mounted ke document.body (modal-safe). */}
+      {showCreateUser && createPortal(
         <div className="modal-backdrop" onClick={closeCreateUser}>
           <div aria-describedby={createUserDescId} aria-labelledby={createUserTitleId} aria-modal="true" className="modal modal--wide" ref={createUserDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -482,11 +483,12 @@ export function AdminUsersView() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
-      {/* Mutasi Modal */}
-      {mutasiTarget && (
+      {/* Mutasi Modal — portal-mounted. */}
+      {mutasiTarget && createPortal(
         <div className="modal-backdrop" onClick={closeMutasi}>
           <div aria-describedby={mutasiDescId} aria-labelledby={mutasiTitleId} aria-modal="true" className="modal" ref={mutasiDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -611,7 +613,8 @@ export function AdminUsersView() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
