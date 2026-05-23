@@ -2767,11 +2767,12 @@ select.wi-bl-input {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  animation: wid-page-in 220ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-@keyframes wid-page-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  /* Animation legacy `wid-page-in` (220ms + translateY(4px)) di-hapus
+   * 2026-05-23 Phase 4 motion standardization. TaskDetailView wrapper
+   * sekarang dapat:
+   *   - view-enter (220ms opacity) via class `view-task-detail` di page mode
+   *   - children cascade via class `ds-stagger` di components.css
+   * Single source of truth, modal-safe (animation-fill-mode: backwards). */
 }
 
 /* ── Top action bar ────────────────────────────────────────────── */
