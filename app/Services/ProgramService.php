@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Auth\MembershipResolver;
 use App\Auth\ScopeResolver;
 use App\Models\Blocker;
+use App\Models\Channel;
 use App\Models\EntityPic;
 use App\Models\Program;
 use App\Models\Task;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Models\Workstream;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ProgramService
 {
@@ -313,14 +315,48 @@ class ProgramService
         $picPersonIds = array_key_exists('picPersonIds', $data) ? $data['picPersonIds'] : null;
         unset($data['picPersonIds']);
 
-        $program = Program::findOrFail($id);
-        $program->update($data);
+        return DB::transaction(function () use ($id, $data, $picPersonIds) {
+            $program = Program::findOrFail($id);
+            $oldChannelId = $program->linkedChannelId;
 
-        if ($picPersonIds !== null) {
-            $this->syncProgramPics($program, $picPersonIds ?? []);
-        }
+            $program->update($data);
 
-        return $program->fresh(['coPics']);
+            if ($picPersonIds !== null) {
+                $this->syncProgramPics($program, $picPersonIds ?? []);
+            }
+
+            // Bidirectional sync Program.linkedChannelId ↔ Channel.linkedProgramId.
+            // Tanpa sync ini, program yang user link dari ProgramDetailView tidak
+            // muncul di ChannelsView — FE baca Channel.linkedProgramId untuk
+            // context banner, dan MembershipResolver pakai field yang sama untuk
+            // auto-permission. Sebelumnya cuma 1 arah (Program FK ke Channel).
+            //
+            // Semantik: latest link wins. Kalau Program A pernah link ke
+            // Channel C lalu Program B re-link ke C, banner di C berubah jadi B
+            // (overwrite). Edge case rare — biasanya 1 channel dedicated 1 program.
+            if (array_key_exists('linkedChannelId', $data)) {
+                $newChannelId = $data['linkedChannelId'];
+
+                // Channel lama yang dilepas — clear linkedProgramId KALAU masih
+                // pointing ke program ini. Jangan overwrite kalau channel itu
+                // sudah di-reassign ke program lain (preserve niat terakhir).
+                if ($oldChannelId && (int) $oldChannelId !== (int) $newChannelId) {
+                    Channel::query()
+                        ->where('id', $oldChannelId)
+                        ->where('linkedProgramId', $program->id)
+                        ->update(['linkedProgramId' => null]);
+                }
+
+                // Channel baru — set linkedProgramId ke program ini (overwrite OK).
+                if ($newChannelId) {
+                    Channel::query()
+                        ->where('id', $newChannelId)
+                        ->update(['linkedProgramId' => $program->id]);
+                }
+            }
+
+            return $program->fresh(['coPics']);
+        });
     }
 
     public function archive(int $id, int $userId): void
