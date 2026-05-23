@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import './MonthlyReportDetailDIMR.css'
 import { api } from '../lib/api'
 import { useEscKey } from '../hooks/useEscKey'
@@ -986,7 +987,10 @@ function RatingModal({ report, onClose, onSaved }: {
     finally { setSaving(false) }
   }
 
-  return (
+  // Phase 5B: portal-mount semua 3 modal DIMR (RatingModal, KriEditModal,
+  // LossEventModal) ke document.body — modal-safe walaupun parent page
+  // eventually punya ds-stagger transform.
+  return createPortal(
     <div className="dimr-modal-backdrop" onClick={onClose}>
       <div className="dimr-modal" onClick={e => e.stopPropagation()}>
         <div className="dimr-modal__header">
@@ -1019,7 +1023,8 @@ function RatingModal({ report, onClose, onSaved }: {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -1129,7 +1134,8 @@ function KriEditModal({ report, onClose, onSaved }: {
     finally { setSaving(false) }
   }
 
-  return (
+  // Phase 5B: portal-mounted — lihat note di RatingModal.
+  return createPortal(
     <div className="dimr-modal-backdrop" onClick={onClose}>
       <div className="dimr-modal dimr-modal--wide" onClick={e => e.stopPropagation()}>
         <div className="dimr-modal__header">
@@ -1200,7 +1206,8 @@ function KriEditModal({ report, onClose, onSaved }: {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -1283,7 +1290,8 @@ function LossEventModal({ report, onClose, onSaved }: {
     finally { setSaving(false) }
   }
 
-  return (
+  // Phase 5B: portal-mounted — lihat note di RatingModal.
+  return createPortal(
     <div className="dimr-modal-backdrop" onClick={onClose}>
       <div className="dimr-modal dimr-modal--wide" onClick={e => e.stopPropagation()}>
         <div className="dimr-modal__header">
@@ -1354,6 +1362,7 @@ function LossEventModal({ report, onClose, onSaved }: {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

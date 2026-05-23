@@ -3267,7 +3267,10 @@ export function ChannelsView({
       </aside>
       )}
       {/* ── Quick switcher (Cmd+K) ──────────────────────────── */}
-      {showSwitcher && (
+      {/* Phase 5B: portal-mount semua 4 modal (switcher, browse, DM, create)
+          ke document.body. Sebelumnya inline → ter-scope ke .ds (yang akan
+          dapat ds-stagger transform). Sekarang modal escape ke viewport. */}
+      {showSwitcher && createPortal(
         <div className="modal-backdrop modal-backdrop--top" onClick={(e) => { if (e.target === e.currentTarget) setShowSwitcher(false) }}>
           <div aria-label="Pindah cepat" aria-modal="true" className="switcher" ref={switcherDialogRef} role="dialog" tabIndex={-1}>
             <div className="switcher__input-wrap">
@@ -3311,11 +3314,12 @@ export function ChannelsView({
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* ── Channel browser modal ───────────────────────────── */}
-      {showBrowse && (
+      {showBrowse && createPortal(
         <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setShowBrowse(false) }}>
           <div aria-describedby={browseDescId} aria-labelledby={browseTitleId} aria-modal="true" className="modal modal--wide" ref={browseDialogRef} role="dialog" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
@@ -3394,11 +3398,12 @@ export function ChannelsView({
               </section>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* ── New DM modal ────────────────────────────────────── */}
-      {showDmModal && (
+      {showDmModal && createPortal(
         <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setShowDmModal(false) }}>
           <div aria-describedby={directMessageDescId} aria-labelledby={directMessageTitleId} aria-modal="true" className="modal" ref={directMessageDialogRef} role="dialog" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
@@ -3463,11 +3468,12 @@ export function ChannelsView({
               </section>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* ── Create channel modal ────────────────────────────── */}
-      {showCreateModal && (
+      {showCreateModal && createPortal(
         <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setShowCreateModal(false) }}>
           <div aria-describedby={createChannelDescId} aria-labelledby={createChannelTitleId} aria-modal="true" className="modal" ref={createChannelDialogRef} role="dialog" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
@@ -3555,7 +3561,8 @@ export function ChannelsView({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </section>
 

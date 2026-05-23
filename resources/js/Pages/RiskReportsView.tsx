@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { usePage } from '@inertiajs/react'
 import { api } from '../lib/api'
 import { useWorkspace } from '../hooks/useWorkspace'
@@ -269,7 +270,10 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
   const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
   const YEARS  = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1]
 
-  return (
+  // Phase 5B: portal-mount ke document.body — modal-safe walaupun parent
+  // page punya transform animation. RiskReportsView main wrapper di future
+  // bisa dapat ds-stagger; modal tetap aman.
+  return createPortal(
     <div className="dimr-modal-backdrop" onClick={onClose}>
       <div className="dimr-modal" onClick={e => e.stopPropagation()}>
         <div className="dimr-modal__header">
@@ -306,6 +310,7 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

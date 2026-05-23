@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useId, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
@@ -1341,8 +1342,11 @@ export function MeetingDetailPanel({
 
       </div>
 
-      {/* ── Edit Meeting Modal ── */}
-      {showEdit && (
+      {/* ── Edit Meeting Modal ──
+          Phase 5B: portal-mount semua 5 modal MeetingDetailPanel ke document.body.
+          Subkomponen ini dipakai di ScheduleView yang sekarang punya ds-stagger
+          → modal-backdrop inline akan ter-scope salah. Portal escape ke viewport. */}
+      {showEdit && createPortal(
         <div className="modal-backdrop" onClick={() => setShowEdit(false)}>
           <div aria-describedby={editMeetingDescId} aria-labelledby={editMeetingTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--lg meeting-modal-surface" ref={editMeetingDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -1418,11 +1422,12 @@ export function MeetingDetailPanel({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
-      {/* ── Delete Decision Confirmation Modal ── */}
-      {confirmDeleteDecision !== null && (
+      {/* ── Delete Decision Confirmation Modal ── Phase 5B: portal-mounted. */}
+      {confirmDeleteDecision !== null && createPortal(
         <div className="modal-backdrop" onClick={() => setConfirmDeleteDecision(null)}>
           <div aria-describedby={deleteDecisionDescId} aria-labelledby={deleteDecisionTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--confirm meeting-modal-surface meeting-modal-surface--confirm" ref={deleteDecisionDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -1446,11 +1451,12 @@ export function MeetingDetailPanel({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
-      {/* ── Delete Action Item Confirmation Modal ── */}
-      {confirmDeleteActionItem !== null && (
+      {/* ── Delete Action Item Confirmation Modal ── Phase 5B: portal-mounted. */}
+      {confirmDeleteActionItem !== null && createPortal(
         <div className="modal-backdrop" onClick={() => setConfirmDeleteActionItem(null)}>
           <div aria-describedby={deleteActionItemDescId} aria-labelledby={deleteActionItemTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--confirm meeting-modal-surface meeting-modal-surface--confirm" ref={deleteActionItemDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -1474,11 +1480,12 @@ export function MeetingDetailPanel({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
-      {/* ── Push to Workboard Modal ── */}
-      {pushItem && (
+      {/* ── Push to Workboard Modal ── Phase 5B: portal-mounted. */}
+      {pushItem && createPortal(
         <div className="modal-backdrop" onClick={() => setPushItem(null)}>
           <div aria-describedby={pushTaskDescId} aria-labelledby={pushTaskTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--md meeting-modal-surface" ref={pushTaskDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -1538,11 +1545,12 @@ export function MeetingDetailPanel({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
-      {/* ── Postpone Modal ── */}
-      {showPostpone && (
+      {/* ── Postpone Modal ── Phase 5B: portal-mounted. */}
+      {showPostpone && createPortal(
         <div className="modal-backdrop" onClick={() => { setShowPostpone(false); setPostponeReason(''); setPostponeError(null) }}>
           <div aria-describedby={postponeMeetingDescId} aria-labelledby={postponeMeetingTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--md meeting-modal-surface" ref={postponeMeetingDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -1597,7 +1605,8 @@ export function MeetingDetailPanel({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
