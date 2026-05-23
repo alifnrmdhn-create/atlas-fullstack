@@ -236,6 +236,19 @@
   --transition-slow: 280ms cubic-bezier(0.4, 0, 0.2, 1);
   --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Page-load motion — dipakai oleh `.ds-stagger` utility di components.css.
+   * Single source of truth untuk seluruh cascade halaman. Sebelumnya tiap
+   * page punya keyframe + delay sendiri (HomeView: hv-section-enter,
+   * ProfileView: pv-section-enter, dst) → inkonsistensi 220ms vs 480ms.
+   * Target: ~440ms total untuk 5 child (sweet spot snappy + premium feel).
+   *
+   * --page-enter-duration  : per-child fade-up duration
+   * --page-enter-stagger   : jeda antar child (ritme cascade)
+   * --page-enter-translate : jarak rise saat masuk (vertical offset) */
+  --page-enter-duration: 280ms;
+  --page-enter-stagger: 40ms;
+  --page-enter-translate: 6px;
   --focus-ring-color: color-mix(in srgb, var(--indigo) 24%, transparent);
   --focus-ring-inset: 0 0 0 1px color-mix(in srgb, var(--panel) 88%, transparent);
   --focus-ring: var(--focus-ring-inset), 0 0 0 3px var(--focus-ring-color);

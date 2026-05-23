@@ -993,3 +993,57 @@
   background: var(--panel);
   border: 1px solid var(--panel-border);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Page-load cascade utility — `.ds-stagger`
+ *
+ * Pattern: bungkus inner page wrapper dengan `.ds-stagger`. Direct children
+ * akan fade-up dengan stagger 40ms. Total reveal ~440ms untuk 5 child,
+ * ~600ms untuk 8 child. Konsisten lintas halaman.
+ *
+ * Pakai:
+ *   <div className="ds view-foo">
+ *     <div className="page-foo__inner ds-stagger">
+ *       <section>...</section>  ← child 1, fade @ 40ms
+ *       <section>...</section>  ← child 2, fade @ 80ms
+ *       ...
+ *     </div>
+ *   </div>
+ *
+ * PENTING — modal safety:
+ * - Pakai animation-fill-mode: backwards (BUKAN both). Setelah animasi
+ *   selesai, transform tidak retain → element kembali ke base style (tidak
+ *   jadi containing block). Modal position:fixed yang dirender sebagai
+ *   descendant tetap ter-anchor ke viewport.
+ * - Insiden 2026-05-19 (dokumentasi di reset.css:55) membuktikan: pakai
+ *   `both` membuat translateY(0) persist → element jadi containing block
+ *   permanen → modal-backdrop ter-scope salah (cover element, bukan viewport).
+ *   JANGAN ubah fill-mode ke `both`.
+ *
+ * Selector strategi: `.ds-stagger > *` apply ke direct children, BUKAN ke
+ * `.ds-stagger` itself. Wrapper-nya tetap transparent untuk modal yang
+ * dirender sebagai sibling di luar `.ds-stagger`.
+ * ───────────────────────────────────────────────────────────────────────── */
+@keyframes ds-page-enter {
+  from { opacity: 0; transform: translateY(var(--page-enter-translate)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ds-stagger > * {
+  animation: ds-page-enter var(--page-enter-duration) var(--ease-enter) backwards;
+}
+.ds-stagger > *:nth-child(1) { animation-delay: 40ms; }
+.ds-stagger > *:nth-child(2) { animation-delay: 80ms; }
+.ds-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.ds-stagger > *:nth-child(4) { animation-delay: 160ms; }
+.ds-stagger > *:nth-child(5) { animation-delay: 200ms; }
+.ds-stagger > *:nth-child(6) { animation-delay: 240ms; }
+.ds-stagger > *:nth-child(7) { animation-delay: 280ms; }
+.ds-stagger > *:nth-child(8) { animation-delay: 320ms; }
+/* nth-child(n+9): tanpa delay → animation-delay: 0 (langsung).
+ * Cascade tetap terasa untuk 8 child pertama; sisanya appear bersama
+ * dengan child terakhir. Pages dengan >8 section sangat rare. */
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-stagger > * { animation: none; }
+}
