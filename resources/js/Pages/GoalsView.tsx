@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useId } from 'react'
+import { createPortal } from 'react-dom'
 import type { FormEvent } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useDialogFocus } from '../hooks/useDialogFocus'
@@ -303,7 +304,9 @@ export function GoalsView() {
 
   return (
     <div className="ds goals-v2 view-goals">
-      <div className="goals-v2__inner">
+      {/* `ds-stagger`: Phase 5 motion standardization. Aman karena modal
+          (Create KPI + Delete KPI) sudah di-portal-mount ke document.body. */}
+      <div className="goals-v2__inner ds-stagger">
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Goals & KPI</h2>
         <div className="view-toolbar__sep" />
@@ -411,8 +414,11 @@ export function GoalsView() {
         </aside>
       </div>
 
-      {/* ── Create / Edit KPI Modal ── */}
-      {showKpiModal && (
+      {/* ── Create / Edit KPI Modal ──
+          Phase 5B: portal-mounted ke document.body supaya modal escape dari
+          containing-block parent (goals-v2__inner yang sekarang dapat
+          .ds-stagger transform). Modal-backdrop tetap full viewport. */}
+      {showKpiModal && createPortal(
         <div className="modal-backdrop" onClick={() => !kpiSaving && setShowKpiModal(false)}>
           <div aria-describedby={kpiDialogDescId} aria-labelledby={kpiDialogTitleId} aria-modal="true" className="modal modal--wide" ref={kpiDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -587,11 +593,12 @@ export function GoalsView() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
-      {/* ── Delete KPI Confirmation ── */}
-      {confirmDeleteKpi && (
+      {/* ── Delete KPI Confirmation ── Phase 5B: portal-mounted, lihat di atas. */}
+      {confirmDeleteKpi && createPortal(
         <div className="modal-backdrop" onClick={() => !kpiDeleteSaving && setConfirmDeleteKpi(null)}>
           <div aria-describedby={deleteKpiDescId} aria-labelledby={deleteKpiTitleId} aria-modal="true" className="modal goals-delete-modal" ref={deleteKpiDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -634,7 +641,8 @@ export function GoalsView() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
       </div>
     </div>

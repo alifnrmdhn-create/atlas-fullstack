@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useId, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
@@ -864,7 +865,10 @@ export function ScheduleView() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="ds schedule-v2 view-schedule">
+    // `ds-stagger`: Phase 5 motion standardization. Tidak pakai inner wrapper
+    // tambahan — direct children (toolbar, content sections) cascade fade-up.
+    // Aman karena 5 modal sudah di-portal-mount ke document.body (Phase 5B).
+    <div className="ds schedule-v2 view-schedule ds-stagger">
 
       {/* Toolbar */}
       <div className="view-toolbar">
@@ -1775,8 +1779,11 @@ export function ScheduleView() {
       )}
 
 
-      {/* ── Cancel Meeting Confirmation ── */}
-      {(confirmCancel || closingOverlay === 'cancel') && (
+      {/* ── Cancel Meeting Confirmation ──
+          Phase 5B: portal-mount semua 5 modal ScheduleView ke document.body.
+          Sebelumnya inline → ter-scope ke wrapper saat .ds-stagger transform
+          aktif. Sekarang modal escape ke viewport, backdrop selalu full screen. */}
+      {(confirmCancel || closingOverlay === 'cancel') && createPortal(
         <div className={`modal-backdrop${closingOverlay === 'cancel' ? ' modal-backdrop--closing' : ''}`} onClick={() => !cancelSaving && closeOverlay('cancel', () => setConfirmCancel(null))}>
           <div aria-describedby={cancelMeetingDescId} aria-labelledby={cancelMeetingTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--sm" ref={cancelMeetingDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -1809,11 +1816,12 @@ export function ScheduleView() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
-      {/* ── Delete Focus Block Confirmation ── */}
-      {(confirmDeleteFocus !== null || closingOverlay === 'del-focus') && (
+      {/* ── Delete Focus Block Confirmation ── Phase 5B: portal-mounted. */}
+      {(confirmDeleteFocus !== null || closingOverlay === 'del-focus') && createPortal(
         <div className={`modal-backdrop${closingOverlay === 'del-focus' ? ' modal-backdrop--closing' : ''}`} onClick={() => { if (!deleteFocusSaving) closeOverlay('del-focus', () => { setConfirmDeleteFocus(null); setDeleteFocusError(null) }) }}>
           <div aria-describedby={deleteFocusDescId} aria-labelledby={deleteFocusTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--xs" ref={deleteFocusDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -1839,11 +1847,12 @@ export function ScheduleView() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
-      {/* ── RSVP Modal ── */}
-      {(showRsvpFor !== null || closingOverlay === 'rsvp') && (
+      {/* ── RSVP Modal ── Phase 5B: portal-mounted. */}
+      {(showRsvpFor !== null || closingOverlay === 'rsvp') && createPortal(
         <div className={`modal-backdrop${closingOverlay === 'rsvp' ? ' modal-backdrop--closing' : ''}`} onClick={() => closeOverlay('rsvp', () => setShowRsvpFor(null))}>
           <div aria-describedby={rsvpDescId} aria-labelledby={rsvpTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--md" ref={rsvpDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -1957,11 +1966,12 @@ export function ScheduleView() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
-      {/* ── Create Meeting Modal ── */}
-      {(showCreate || closingOverlay === 'create') && (
+      {/* ── Create Meeting Modal ── Phase 5B: portal-mounted. */}
+      {(showCreate || closingOverlay === 'create') && createPortal(
         <div className={`modal-backdrop${closingOverlay === 'create' ? ' modal-backdrop--closing' : ''}`} onClick={() => closeOverlay('create', () => setShowCreate(false))}>
           <div aria-describedby={createMeetingDescId} aria-labelledby={createMeetingTitleId} aria-modal="true" className="modal modal--wide schedule-modal" ref={createMeetingDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -2154,11 +2164,12 @@ export function ScheduleView() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
-      {/* ── Focus Block Modal ── */}
-      {(showFocusForm || closingOverlay === 'focus') && (
+      {/* ── Focus Block Modal ── Phase 5B: portal-mounted. */}
+      {(showFocusForm || closingOverlay === 'focus') && createPortal(
         <div className={`modal-backdrop${closingOverlay === 'focus' ? ' modal-backdrop--closing' : ''}`} onClick={() => closeOverlay('focus', () => setShowFocusForm(false))}>
           <div aria-describedby={focusDialogDescId} aria-labelledby={focusDialogTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--md" ref={focusDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
@@ -2216,7 +2227,8 @@ export function ScheduleView() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

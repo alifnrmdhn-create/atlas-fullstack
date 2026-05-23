@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api, extractErrorMessage } from '../lib/api'
 import { useEscKey } from '../hooks/useEscKey'
@@ -244,7 +245,9 @@ export function AssignmentsView() {
     <div className="ds assignments-v2 view-penugasan">
       <style>{PENUGASAN_CSS}</style>
 
-      <div className="assignments-v2__inner">
+      {/* `ds-stagger`: Phase 5 motion standardization. Modal subkomponen
+          (CreateModal) sudah di-portal-mount ke document.body (Phase 5B). */}
+      <div className="assignments-v2__inner ds-stagger">
       {/* ── Toolbar (mirror view-workboard) ── */}
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Assignment Board</h2>
@@ -1073,7 +1076,10 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
   }
 
   if (!rendered) return null
-  return (
+  // Phase 5B: portal-mount ke document.body. Subkomponen ini dipanggil dari
+  // main AssignmentsView yang sekarang punya ds-stagger. Tanpa portal, modal
+  // ter-scope ke wrapper saat transform aktif. Portal escape ke viewport.
+  return createPortal(
     <div className={`modal-backdrop${closing ? ' modal-backdrop--closing' : ''}`} onClick={onClose}>
       <form className={`modal${closing ? ' modal--closing' : ''}`} style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()} onSubmit={submit}>
         <div className="modal__header">
@@ -1136,7 +1142,8 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
           </button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

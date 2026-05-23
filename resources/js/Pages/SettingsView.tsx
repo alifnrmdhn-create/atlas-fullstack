@@ -361,7 +361,9 @@ export function SettingsView() {
 
   return (
     <div className="ds settings-v2 view-settings">
-      <div className="settings-v2__inner">
+      {/* `ds-stagger`: Phase 5 motion standardization. Page ini tidak punya
+          modal sama sekali, jadi cukup tambah class — modal-safe by default. */}
+      <div className="settings-v2__inner ds-stagger">
 
       {/* Page header */}
       <div className="view-toolbar">
