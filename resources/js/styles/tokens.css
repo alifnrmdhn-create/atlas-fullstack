@@ -237,6 +237,27 @@
   --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
 
+  /* Spacing ladder — Tier 2 visual cleanup (2026-05-24).
+   * Pakem dari HomeView reference, di-formalize jadi semantic tokens supaya
+   * konsisten lintas halaman. Sebelumnya spacing per page ad-hoc (16/20/28/32
+   * campur), terasa "tidak rapi" karena ritme visual tidak ada.
+   *
+   * --space-micro   : tight gap di dalam row (icon+text, chip-chip)
+   * --space-inline  : gap antar row dalam component (dropdown options, list items)
+   * --space-block   : padding di dalam content block (section body, card pad)
+   * --space-section : margin antar major sections (canonical breathing room)
+   * --space-page-x  : horizontal page padding (left/right)
+   * --space-page-top: vertical page padding (top)
+   * --space-page-bot: vertical page padding (bottom — lebih lega supaya footer
+   *                   tidak nempel browser edge) */
+  --space-micro: 8px;
+  --space-inline: 14px;
+  --space-block: 24px;
+  --space-section: 36px;
+  --space-page-x: 32px;
+  --space-page-top: 28px;
+  --space-page-bot: 48px;
+
   /* Page-load motion — dipakai oleh `.ds-stagger` utility di components.css.
    * Single source of truth untuk seluruh cascade halaman. Sebelumnya tiap
    * page punya keyframe + delay sendiri (HomeView: hv-section-enter,

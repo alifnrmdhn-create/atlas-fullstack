@@ -12,13 +12,10 @@
 }
 
 .programs-v2__inner {
-  /* Left-anchored content with reasonable max-width. Workspace panel handles
-   * full-width gutter; content stays anchored to left so reading flow starts
-   * predictably. Wide viewports get right-side breathing room, not centered
-   * dead space on both sides. */
+  /* Tier 2 spacing: pad ke tokens (sebelumnya 24/28/40 hardcoded). */
   max-width: 1400px;
   margin: 0;
-  padding: 24px 28px 40px;
+  padding: var(--space-page-top) var(--space-page-x) var(--space-page-bot);
   display: block;
 }
 
@@ -28,12 +25,14 @@
  * stats, primary CTA anchored right. No ornament, no chrome — content first.
  */
 
+/* Tier 2 spacing: padding bottom 16px → --space-inline (14px), reduce
+ * minor — hero ke stat band breathing room cukup tanpa terlalu lebar. */
 .programs-v2 .programs-v2__hero {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 0 0 16px;
+  gap: var(--space-block);
+  padding: 0 0 var(--space-inline);
   flex-wrap: wrap;
 }
 

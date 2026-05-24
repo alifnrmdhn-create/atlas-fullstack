@@ -12,9 +12,9 @@
   width: 100%;
 }
 
+/* Tier 2 spacing: pad ke tokens. Full-bleed: no max-width. */
 .fokus-v2__inner {
-  /* Full-bleed: no max-width. */
-  padding: 32px 32px 48px;
+  padding: var(--space-page-top) var(--space-page-x) var(--space-page-bot);
 }
 
 /* ─── Header ──────────────────────────────────────────────── */

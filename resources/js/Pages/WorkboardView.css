@@ -10,21 +10,25 @@
   width: 100%;
 }
 
+/* Tier 2 spacing: inner padding ke token (28/32/48 = HomeView reference). */
 .workboard-v2__inner {
   display: block;
-  padding: 24px 32px 48px;
+  padding: var(--space-page-top) var(--space-page-x) var(--space-page-bot);
   width: 100%;
   box-sizing: border-box;
 }
 
 /* ─── Toolbar — page header ──────────────────────────────── */
 
+/* Tier 2 spacing: gap toolbar → content dibesarkan dari 16px → --space-block (24px)
+ * + padding bottom 16px → --space-inline (14px). Total breathing room ~38px
+ * antara title block dan filter row, konsisten dengan rhythm HomeView. */
 .workboard-v2 .view-toolbar {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 0 16px;
-  margin-bottom: 16px;
+  padding: 0 0 var(--space-inline);
+  margin-bottom: var(--space-block);
   background: transparent;
   border: 0;
   border-bottom: 1px solid var(--ds-border-subtle);

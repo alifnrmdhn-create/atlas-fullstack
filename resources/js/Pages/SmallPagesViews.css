@@ -13,18 +13,19 @@
   width: 100%;
 }
 
+/* Tier 2 spacing: pad ke tokens (sebelumnya 32 top, jadi 28 = HomeView ref). */
 .search-v2__inner,
 .goals-v2__inner,
 .roadmap-v2__inner {
   display: block;
-  padding: 32px 32px 48px;
+  padding: var(--space-page-top) var(--space-page-x) var(--space-page-bot);
   width: 100%;
   box-sizing: border-box;
 }
 
 /* Playbook uses its own pb-workspace as outer; add inner padding via override */
 .playbook-v2.pb-workspace {
-  padding: 32px 32px 48px;
+  padding: var(--space-page-top) var(--space-page-x) var(--space-page-bot);
 }
 
 /* ─── Toolbar (shared across all four) ──────────────────── */

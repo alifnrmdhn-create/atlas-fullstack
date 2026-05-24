@@ -7,9 +7,10 @@
   width: 100%;
 }
 
+/* Tier 2 spacing: pad ke tokens (sebelumnya 32 top, jadi 28 = HomeView ref). */
 .settings-v2__inner {
   display: block;
-  padding: 32px 32px 48px;
+  padding: var(--space-page-top) var(--space-page-x) var(--space-page-bot);
   width: 100%;
   box-sizing: border-box;
 }

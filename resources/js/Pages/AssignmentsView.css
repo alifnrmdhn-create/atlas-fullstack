@@ -12,9 +12,10 @@
   height: auto !important;
 }
 
+/* Tier 2 spacing: pad ke tokens (alignment dengan HomeView/Workboard). */
 .assignments-v2__inner {
   display: block;
-  padding: 24px 32px 48px;
+  padding: var(--space-page-top) var(--space-page-x) var(--space-page-bot);
   width: 100%;
   box-sizing: border-box;
 }

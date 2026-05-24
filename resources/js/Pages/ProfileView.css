@@ -21,9 +21,10 @@
 /* Pakem ATLAS: halaman primer WAJIB full-width (CLAUDE.md guardrail #6).
    No max-width fixed + margin auto. Content fills workspace, breathing
    from padding only. */
+/* Tier 2 spacing: pad ke tokens (alignment dengan HomeView reference). */
 .profile-v2__inner {
   display: block;
-  padding: 28px 32px 56px;
+  padding: var(--space-page-top) var(--space-page-x) var(--space-page-bot);
   width: 100%;
   box-sizing: border-box;
 }

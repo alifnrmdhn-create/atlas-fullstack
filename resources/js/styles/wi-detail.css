@@ -283,8 +283,11 @@
   background: var(--panel);
 }
 
+/* Tier 2 spacing standardization: 16px → --space-block (24px).
+ * Sebelumnya gap antar section terlalu tight, content nampak "nempel".
+ * Sekarang mengikuti rhythm Pattern A — section punya breathing room jelas. */
 .wi-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-block);
 }
 .wi-section:last-child { margin-bottom: 0; }
 
@@ -3151,12 +3154,16 @@ select.wi-bl-input {
   font-weight: 500;
 }
 
-/* ── Body (now single-column — grid overridden at bottom of file) ── */
+/* ── Body (now single-column — grid overridden at bottom of file) ──
+ * Tier 2 spacing: padding 16/20/32 → tokens. Sebelumnya gap antar
+ * section dalam body terlalu tight (16px top, 20px sides). Sekarang
+ * pakai --space-block (24px) untuk top + horizontal supaya konsisten
+ * dengan section rhythm di luar wid-body. */
 .wid-body {
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 16px 20px 32px;
+  padding: var(--space-block) var(--space-block) var(--space-section);
   flex: 1;
   align-items: stretch;
 }
