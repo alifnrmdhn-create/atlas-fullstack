@@ -723,13 +723,18 @@
   margin-top: 2px;
 }
 .work-card__meta { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+/* OVERDUE / Terhambat badge — Tier 1 patch (2026-05-24):
+ * strip bg-dim fill, jadi outline tipis dengan tone text only. Konsisten
+ * dengan pakem badge global di components.css. Mix 35% (sedikit lebih
+ * visible dari pill biasa 28%) karena OVERDUE memang state critical. */
 .work-card__blocked {
   font-size: var(--type-caption);
-  font-weight: 700;
+  font-weight: 600;
   padding: 2px 5px;
   border-radius: 4px;
-  background: var(--red-dim);
+  background: transparent;
   color: var(--red);
+  border: 1px solid color-mix(in srgb, var(--red) 35%, var(--panel-border));
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
