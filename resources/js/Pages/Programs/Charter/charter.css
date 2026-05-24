@@ -77,12 +77,61 @@
 /* ── Header strip (metadata top row) ──────────────────────────────── */
 .cs-header {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1fr auto;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr;
   gap: 18px;
   padding: 16px 18px;
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 10px;
+}
+/* Title row di atas grid — span semua kolom. Berisi program code chip +
+   program name di kiri, health badge + Export PPTX di kanan. Hairline
+   bottom-border memisahkan dari metadata grid (no card-in-card). */
+.cs-header__title {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border) 60%, transparent);
+  min-width: 0;
+}
+.cs-header__title-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.cs-header__title-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.cs-header__code {
+  align-self: flex-start;
+  font-family: var(--font-mono, ui-monospace, 'SF Mono', monospace);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--surface-1);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--panel-border);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+/* Program name — main title. Pakai 22px (--type-title) override default
+   h1 32px dari reset.css karena tinggal di dalam card, bukan page hero. */
+.cs-header__name {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--text-strong);
+  margin: 0;
+  word-break: break-word;
 }
 /* Subtle hairline divider antar column — soft border-left dengan
    opacity supaya tidak teriak. Drop bordered so block style. */
@@ -91,7 +140,8 @@
   padding-left: 18px;
   border-left: 1px solid color-mix(in srgb, var(--panel-border) 60%, transparent);
 }
-.cs-header__col:first-child {
+.cs-header__col:first-child,
+.cs-header__col--so {
   padding-left: 0;
   border-left: 0;
 }
@@ -99,15 +149,7 @@
   border-right: 0;
   padding-right: 0;
 }
-.cs-header__col--actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  justify-content: center;
-  align-items: flex-end;
-  padding-left: 18px;
-}
-/* Mobile / narrow: stack columns vertically supaya tidak terjepit. */
+/* Mobile / narrow: stack title rows + columns vertically. */
 @media (max-width: 900px) {
   .cs-header {
     grid-template-columns: 1fr 1fr;
@@ -117,10 +159,13 @@
     border-left: 0;
     padding-left: 0;
   }
-  .cs-header__col--actions {
-    grid-column: 1 / -1;
+  .cs-header__title {
+    flex-direction: column;
     align-items: flex-start;
-    padding-left: 0;
+    gap: 10px;
+  }
+  .cs-header__name {
+    font-size: 19px;
   }
 }
 .cs-header__label {
@@ -250,7 +295,9 @@
 /* ── 2-col grid: timeline + side rail ─────────────────────────────── */
 .charter-grid {
   display: grid;
-  grid-template-columns: 1.55fr 1fr;
+  /* 1.85:1 split memberi cukup ruang ke timeline table (min-width 800px)
+     supaya 12 bulan tampil tanpa overflow di workspace ≥1300px. */
+  grid-template-columns: 1.85fr 1fr;
   gap: 14px;
   align-items: start;
 }
@@ -265,7 +312,10 @@
   flex-direction: column;
   gap: 10px;
 }
-@media (max-width: 1100px) {
+/* Stack di breakpoint baku --bp-lg (1280). Sebelumnya 1100 (non-standard).
+   Di laptop T1 1366 viewport: sidebar collapsed → workspace ~1300 → grid
+   stays (cukup ruang). Di bawah 1280 → stack supaya tidak ada overflow. */
+@media (max-width: 1280px) {
   .charter-grid {
     grid-template-columns: 1fr;
   }
@@ -737,7 +787,10 @@
 }
 .atl-table {
   width: 100%;
-  min-width: 880px;
+  /* Min-width 800px supaya 12 kolom bulanan + identitas fit di main grid
+     column saat workspace ≥1300px (lihat .charter-grid). Saat workspace
+     lebih sempit, .charter-grid stack vertikal jadi table dapat full width. */
+  min-width: 800px;
   border-collapse: collapse;
   font-size: 11.5px;
 }
@@ -786,13 +839,13 @@
 .atl-head--mon {
   text-align: center;
   font-variant-numeric: tabular-nums;
-  width: 38px;
+  width: 36px;
   padding: 8px 4px;
 }
-.atl-head--name { min-width: 160px; }
-.atl-head--workstream { min-width: 120px; }
-.atl-head--deliverable { min-width: 140px; }
-.atl-head--label { width: 48px; padding: 8px 6px; }
+.atl-head--name { min-width: 150px; }
+.atl-head--workstream { min-width: 95px; }
+.atl-head--deliverable { min-width: 100px; }
+.atl-head--label { width: 44px; padding: 8px 6px; }
 
 .atl-row {
   border-bottom: 1px solid var(--panel-border);

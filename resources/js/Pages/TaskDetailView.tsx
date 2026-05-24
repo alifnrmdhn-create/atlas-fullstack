@@ -18,6 +18,7 @@ import {
   InlineNotice,
   RichTextPreview,
 } from '../components/ui'
+import { UserPicker } from '../components/UserPicker'
 import type { TaskDetail } from '../types'
 import './TaskDetailView.css'
 
@@ -1672,10 +1673,18 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                   <input className="wid-input" disabled={blSaving} maxLength={120} minLength={3} onChange={e => setBlForm(f => ({ ...f, title: e.target.value }))} placeholder="Judul blocker *" required type="text" value={blForm.title} />
                   <textarea className="wid-input" disabled={blSaving} maxLength={400} onChange={e => setBlForm(f => ({ ...f, description: e.target.value }))} placeholder="Deskripsi (opsional)" rows={2} style={{ resize: 'vertical' }} value={blForm.description} />
                   <div className="wid-form__row wid-form__row--baseline">
-                    <select className="wid-input" disabled={blSaving} onChange={e => setBlForm(f => ({ ...f, assignedTo: e.target.value }))} style={{ flex: 1 }} value={blForm.assignedTo}>
-                      <option value="">— Assignee (opsional) —</option>
-                      {assignUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                    </select>
+                    <div style={{ flex: 1 }}>
+                      <UserPicker
+                        allowClear
+                        clearLabel="— Hapus assignee —"
+                        disabled={blSaving}
+                        inputClassName="wid-input"
+                        onChange={id => setBlForm(f => ({ ...f, assignedTo: id ? String(id) : '' }))}
+                        options={assignUsers}
+                        placeholder="Assignee (opsional)"
+                        value={blForm.assignedTo ? Number(blForm.assignedTo) : null}
+                      />
+                    </div>
                     {blError && <span className="wid-form__error" style={{ margin: 0 }}>{blError}</span>}
                     <button className="wid-btn wid-btn--primary" disabled={blSaving} type="submit">
                       {blSaving ? 'Menyimpan…' : 'Simpan'}
@@ -2008,18 +2017,17 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                     <span className="wid-sp-label">Executor</span>
                     {showAssigneeEdit && !roleAccess.isMonitoringOnly ? (
                       <div className="wid-team-row__edit">
-                        <select
-                          autoFocus
-                          className="wid-input"
+                        <UserPicker
+                          allowClear
+                          autoOpen
+                          clearLabel="— Hapus assignee —"
                           disabled={assignSaving}
-                          onChange={e => void handleAssign(e.target.value ? Number(e.target.value) : null)}
-                          value={detail.assignee?.id ?? ''}
-                        >
-                          <option value="">— Hapus assignee —</option>
-                          {assignUsers.map(u => (
-                            <option key={u.id} value={u.id}>{u.name}{u.positionTitle ? ` · ${u.positionTitle}` : ''}</option>
-                          ))}
-                        </select>
+                          inputClassName="wid-input"
+                          onChange={id => void handleAssign(id)}
+                          options={assignUsers}
+                          placeholder="Pilih executor…"
+                          value={detail.assignee?.id ?? null}
+                        />
                         <button className="wid-btn" onClick={() => setShowAssigneeEdit(false)} type="button">Batal</button>
                       </div>
                     ) : detail.assignee ? (

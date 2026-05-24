@@ -274,11 +274,11 @@
 }
 
 .assignments-v2 .kanban-col__label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: var(--ds-weight-semibold);
   color: var(--ds-text-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .assignments-v2 .section-badge {

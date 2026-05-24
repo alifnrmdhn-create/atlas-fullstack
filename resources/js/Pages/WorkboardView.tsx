@@ -21,6 +21,7 @@ import {
 } from '../components/ui'
 import type { Task } from '../types'
 import { api } from '../lib/api'
+import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 
 type WaitingItem = {
   kind:   'review'
@@ -105,8 +106,8 @@ function taskInFlight(t: Task): boolean {
   return t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW'
 }
 const TIME_FILTER_LABELS: Record<TimeFilter, string> = {
-  week: 'Aktif Minggu Ini',
-  overdue: 'Overdue',
+  week: 'Aktif Pekan Ini',
+  overdue: 'Lewat',
   'in-flight': 'Berjalan',
   all: 'Semua',
 }
@@ -627,6 +628,15 @@ export function WorkboardView() {
     } catch { /* non-critical — selects will be empty */ }
   }
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ id: string; page: string }>).detail
+      if (detail?.id === 'task.new') void openCreateWI()
+    }
+    window.addEventListener(TOPBAR_ACTION_EVENT, handler)
+    return () => window.removeEventListener(TOPBAR_ACTION_EVENT, handler)
+  }, [])
+
   const closeCreateWI = () => closeWIOverlay('create-wi', () => {
     setShowCreateWI(false)
     setWiError(null)
@@ -766,7 +776,7 @@ export function WorkboardView() {
               title="Task target sudah lewat & belum selesai"
             >
               <span className="wb-summary-stat__num">{overdueCount}</span>
-              <em>overdue</em>
+              <em>lewat</em>
             </button>
             <button
               type="button"
@@ -776,7 +786,7 @@ export function WorkboardView() {
               title="Task yang due hari ini"
             >
               <span className="wb-summary-stat__num">{dueTodayCount}</span>
-              <em>due hari ini</em>
+              <em>hari ini</em>
             </button>
             <button
               type="button"
@@ -786,21 +796,21 @@ export function WorkboardView() {
               title="Task yang due dalam 7 hari ke depan"
             >
               <span className="wb-summary-stat__num">{dueWeekCount}</span>
-              <em>due 7 hari</em>
+              <em>7 hari</em>
             </button>
             <span className="wb-summary-stat">
               <span className="wb-summary-stat__num">{inFlightCount}</span>
-              <em>in flight</em>
+              <em>berjalan</em>
             </span>
             {blockedCount > 0 && (
               <span className="wb-summary-stat wb-stats__blocked">
                 <span className="wb-summary-stat__num">{blockedCount}</span>
-                <em>blocked</em>
+                <em>terhambat</em>
               </span>
             )}
             <span className="wb-summary-stat">
               <span className="wb-summary-stat__num">{completedCount}</span>
-              <em>done</em>
+              <em>selesai</em>
             </span>
           </div>
         </div>

@@ -5,6 +5,8 @@ import { api, extractErrorMessage } from '../lib/api'
 import { useEscKey } from '../hooks/useEscKey'
 import { useAnimatedClose } from '../hooks/useAnimatedClose'
 import { Avatar } from '../components/ui'
+import { UserPicker } from '../components/UserPicker'
+import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import { DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import './AssignmentsView.css'
 
@@ -81,15 +83,18 @@ const STATUS_TO_SLUG: Record<Status, string> = {
   DIBATALKAN: 'blocked',
 }
 
+// Label kolom mengikuti vocabulary workflow Task (Workboard) supaya istilah seragam
+// lintas modul. Penugasan tidak punya tahap "Belum Direncanakan" (atasan sudah
+// menjabarkan tugas saat memberikan), jadi mulai dari "Siap Dikerjakan".
 const STATUS_COLUMNS: Array<{ status: Status; label: string; hint: string }> = [
-  { status: 'DITUGASKAN', label: 'Ditugaskan', hint: 'Menunggu PIC menerima' },
-  { status: 'DIKERJAKAN', label: 'Dikerjakan', hint: 'Sedang dikerjakan' },
-  { status: 'IN_REVIEW',  label: 'Review',     hint: 'Menunggu persetujuan' },
-  { status: 'SELESAI',    label: 'Selesai',    hint: 'Tuntas' },
+  { status: 'DITUGASKAN', label: 'Siap Dikerjakan', hint: 'Penugasan diterima, menunggu PIC mulai' },
+  { status: 'DIKERJAKAN', label: 'Sedang Berjalan', hint: 'Sedang dikerjakan' },
+  { status: 'IN_REVIEW',  label: 'Menunggu Review', hint: 'Menunggu persetujuan reviewer' },
+  { status: 'SELESAI',    label: 'Selesai',         hint: 'Tuntas' },
 ]
 
 const STATUS_LABEL: Record<Status, string> = {
-  DITUGASKAN: 'Ditugaskan', DIKERJAKAN: 'Dikerjakan', IN_REVIEW: 'Review',
+  DITUGASKAN: 'Siap Dikerjakan', DIKERJAKAN: 'Sedang Berjalan', IN_REVIEW: 'Menunggu Review',
   SELESAI: 'Selesai', REJECTED: 'Ditolak', DIBATALKAN: 'Dibatalkan',
 }
 const PRIORITY_LABEL: Record<Priority, string> = { CRITICAL: 'Mendesak', HIGH: 'Tinggi', MEDIUM: 'Sedang', LOW: 'Rendah' }
@@ -165,6 +170,15 @@ export function AssignmentsView() {
   useEffect(() => {
     api.get<{ data: DirectoryUser[] }>('/users/directory').then(({ data }) => setDirectory(data)).catch((err) => console.error('[Atlas] Silent failure in AssignmentsView.tsx:', err))
   }, [])
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ id: string; page: string }>).detail
+      if (detail?.id === 'assignment.new' && canAssign) setShowCreate(true)
+    }
+    window.addEventListener(TOPBAR_ACTION_EVENT, handler)
+    return () => window.removeEventListener(TOPBAR_ACTION_EVENT, handler)
+  }, [canAssign])
 
   useEffect(() => {
     if (!toast) return
@@ -447,7 +461,7 @@ function CardFace({ item, currentUserId, className }: { item: Assignment; curren
       )}
       <div className="work-card__footer">
         <span className="code-badge">{item.code}</span>
-        {isOverdue ? <span className="work-card__blocked">OVERDUE</span> : null}
+        {isOverdue ? <span className="work-card__blocked">Lewat</span> : null}
         {needsAck ? <span className="pg-card__flag" title="Menunggu Anda menerima">PERLU RESPON</span> : null}
         {item.needsClarification ? <span className="pg-card__flag pg-card__flag--clarify">KLARIFIKASI</span> : null}
         {item.revisionCount > 0 ? <span className="pg-card__flag pg-card__flag--revision" title={`Sudah ${item.revisionCount}× revisi`}>REV·{item.revisionCount}</span> : null}
@@ -1103,10 +1117,13 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
             <div className="pg-form__row">
               <label className="pg-form__field">
                 <span>PIC *</span>
-                <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value ? Number(e.target.value) : '')} required>
-                  <option value="">— Pilih PIC —</option>
-                  {options.map((u) => (<option key={u.id} value={u.id}>{u.name}{u.positionTitle ? ` · ${u.positionTitle}` : ''}</option>))}
-                </select>
+                <UserPicker
+                  inputClassName="pg-form__input"
+                  onChange={(id) => setAssigneeId(id ?? '')}
+                  options={options}
+                  placeholder="— Pilih PIC —"
+                  value={assigneeId === '' ? null : assigneeId}
+                />
               </label>
               <label className="pg-form__field">
                 <span>Tenggat <span style={{ color: 'var(--red)', fontWeight: 700 }}>*</span></span>

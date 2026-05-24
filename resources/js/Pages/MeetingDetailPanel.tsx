@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { PicaCompositePanel } from '../components/PicaCompositePanel'
+import { UserPicker } from '../components/UserPicker'
 import { formatRoleLabel } from '../lib/roleLabel'
 import type { Meeting, MeetingType, PresenceStatus } from '../types'
 
@@ -337,7 +338,6 @@ export function MeetingDetailPanel({
   // ── Action item form ──────────────────────────────────────────────────────
   const [showAIForm, setShowAIForm] = useState(false)
   const [aiForm, setAiForm] = useState({ title: '', assignedToId: '' as string | number, dueDate: '' })
-  const [aiSearch, setAiSearch] = useState('')
   const [aiUsers, setAiUsers] = useState<UserOption[]>([])
   const [allUsers, setAllUsers] = useState<UserOption[]>([])
   const [aiSaving, setAiSaving] = useState(false)
@@ -351,7 +351,6 @@ export function MeetingDetailPanel({
     setNewDecision('')
     setShowAIForm(false)
     setAiForm({ title: '', assignedToId: '', dueDate: '' })
-    setAiSearch('')
     setShowEdit(false)
     setEditError(null)
     setShowPostpone(false)
@@ -428,10 +427,8 @@ export function MeetingDetailPanel({
       .filter(a => a.rsvpStatus === 'HADIR' || a.attendeeRole === 'ORGANIZER')
       .map(a => ({ id: a.userId, name: a.user?.name ?? '', positionTitle: a.user?.positionTitle }))
       .filter(u => u.name)
-    if (!aiSearch.trim()) { setAiUsers(eligible.slice(0, 30)); return }
-    const q = aiSearch.toLowerCase()
-    setAiUsers(eligible.filter(u => u.name.toLowerCase().includes(q)).slice(0, 30))
-  }, [aiSearch, meeting.attendees])
+    setAiUsers(eligible)
+  }, [meeting.attendees])
 
   // ── Notes save ────────────────────────────────────────────────────────────
 
@@ -1293,31 +1290,19 @@ export function MeetingDetailPanel({
                   />
                   <div className="meeting-ai-form__grid">
                     <div className="meeting-ai-form__field">
-                      <input
-                        className="form-input meeting-ai-form__input"
-                        type="text"
+                      <UserPicker
+                        allowClear
+                        clearLabel="— Hapus assignee —"
+                        inputClassName="form-input meeting-ai-form__input"
+                        onChange={id => setAiForm(f => ({ ...f, assignedToId: id ?? '' }))}
+                        options={aiUsers.map(u => ({
+                          id: u.id,
+                          name: u.name,
+                          positionTitle: u.positionTitle ?? formatRoleLabel(u.roleType),
+                        }))}
                         placeholder="Assign ke…"
-                        value={aiSearch}
-                        onChange={e => setAiSearch(e.target.value)}
+                        value={typeof aiForm.assignedToId === 'number' ? aiForm.assignedToId : (aiForm.assignedToId ? Number(aiForm.assignedToId) : null)}
                       />
-                      {aiSearch.length > 0 && aiUsers.length > 0 && (
-                        <div className="user-picker-list meeting-ai-form__picker">
-                          {aiUsers.map(u => (
-                            <button
-                              key={u.id}
-                              className="user-picker-item"
-                              type="button"
-                              onClick={() => {
-                                setAiForm(f => ({ ...f, assignedToId: u.id }))
-                                setAiSearch(u.name)
-                              }}
-                            >
-                              <span className="text-sm text-strong">{u.name}</span>
-                              <span className="text-xs text-muted">{u.positionTitle ?? formatRoleLabel(u.roleType)}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
                     </div>
                     <input
                       className="form-input meeting-ai-form__input"
@@ -1329,7 +1314,7 @@ export function MeetingDetailPanel({
                   </div>
                   {aiError && <p className="text-sm schedule-feedback schedule-feedback--danger">{aiError}</p>}
                   <div className="meeting-ai-form__actions">
-                    <button className="btn btn--sm btn--ghost" onClick={() => { setShowAIForm(false); setAiError(null); setAiForm({ title: '', assignedToId: '', dueDate: '' }); setAiSearch('') }}>Batal</button>
+                    <button className="btn btn--sm btn--ghost" onClick={() => { setShowAIForm(false); setAiError(null); setAiForm({ title: '', assignedToId: '', dueDate: '' }) }}>Batal</button>
                     <button className="btn btn--sm btn--primary" onClick={addActionItem} disabled={aiSaving}>
                       {aiSaving ? '…' : 'Tambah'}
                     </button>

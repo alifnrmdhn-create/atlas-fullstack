@@ -27,6 +27,7 @@ import {
 } from '../components/ui'
 import type { ProgramDetail, ProgramKpiLink } from '../types'
 import { ExecutionTab } from '../components/ExecutionTab'
+import { UserPicker, UserPickerMulti } from '../components/UserPicker'
 import { TaskPlanningPanel } from './TaskPlanningPanel'
 import { getProgramDisplayStatus } from '../lib/programStatus'
 import './ProgramDetailView.css'
@@ -3948,85 +3949,15 @@ export function ProgramDetailView() {
                       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--text-muted)' }}>Tim PIC (co-PIC)</label>
                       {(() => {
                         const ownerId = epOwnerId ?? detail?.ownerId ?? 0
-                        const selected = epPicIds
-                          .filter(id => id !== ownerId)
-                          .map(id => userDirectory.find(u => u.id === id))
-                          .filter((u): u is { id: number; name: string; positionTitle?: string | null } => !!u)
-                        const q = epPicQuery.trim().toLowerCase()
-                        const candidates = userDirectory.filter(u =>
-                          u.id !== ownerId && !epPicIds.includes(u.id)
-                        )
-                        const filtered = (q
-                          ? candidates.filter(u =>
-                              u.name.toLowerCase().includes(q) ||
-                              (u.positionTitle ?? '').toLowerCase().includes(q)
-                            )
-                          : candidates
-                        ).slice(0, 6)
-                        const addPic = (id: number) => {
-                          setEpPicIds(prev => prev.includes(id) ? prev : [...prev, id])
-                          setEpPicQuery('')
-                        }
-                        const removePic = (id: number) =>
-                          setEpPicIds(prev => prev.filter(x => x !== id))
+                        const ownerInList = ownerId > 0 && epPicIds.includes(ownerId)
+                        const coPicIds = epPicIds.filter(id => id !== ownerId)
                         return (
-                          <div className="prog-pic-search">
-                            {selected.length > 0 && (
-                              <div className="prog-pic-chips">
-                                {selected.map(u => (
-                                  <span key={u.id} className="prog-pic-chip">
-                                    <span className="prog-pic-chip__name">{u.name}</span>
-                                    <button
-                                      aria-label={`Hapus ${u.name}`}
-                                      className="prog-pic-chip__remove"
-                                      onClick={() => removePic(u.id)}
-                                      type="button"
-                                    >
-                                      <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 10 10" width="10"><path d="m1 1 8 8M9 1 1 9" /></svg>
-                                    </button>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            <div className="prog-pic-searchbox">
-                              <svg className="prog-pic-searchbox__icon" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="14"><circle cx="6" cy="6" r="4.5"/><path d="m12.5 12.5-3-3"/></svg>
-                              <input
-                                className="prog-pic-searchbox__input"
-                                onChange={e => setEpPicQuery(e.target.value)}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault()
-                                    if (filtered.length > 0) addPic(filtered[0].id)
-                                  }
-                                }}
-                                placeholder="Cari nama atau jabatan…"
-                                type="text"
-                                value={epPicQuery}
-                              />
-                            </div>
-                            {filtered.length === 0 ? (
-                              <p className="prog-pic-empty">
-                                {q ? 'Tidak ada nama yang cocok.' : 'Semua pengguna sudah dipilih.'}
-                              </p>
-                            ) : (
-                              <ul className="prog-pic-results">
-                                {filtered.map(u => (
-                                  <li key={u.id}>
-                                    <button
-                                      className="prog-pic-result"
-                                      onClick={() => addPic(u.id)}
-                                      type="button"
-                                    >
-                                      <span className="prog-pic-result__name">{u.name}</span>
-                                      {u.positionTitle && (
-                                        <span className="prog-pic-result__role">{u.positionTitle}</span>
-                                      )}
-                                    </button>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
+                          <UserPickerMulti
+                            excludeIds={[ownerId]}
+                            onChange={ids => setEpPicIds(ownerInList ? [ownerId, ...ids] : ids)}
+                            options={userDirectory}
+                            value={coPicIds}
+                          />
                         )
                       })()}
                     </>
@@ -4090,21 +4021,13 @@ export function ProgramDetailView() {
                     Owner Workstream
                     <span className="form-field__hint"> · reviewer task yang masuk IN_REVIEW</span>
                   </label>
-                  <select
-                    className="form-input"
-                    value={ciOwnerId ?? currentUser?.id ?? ''}
-                    onChange={e => setCiOwnerId(Number(e.target.value))}
-                  >
-                    {userDirectory.length === 0 && currentUser && (
-                      <option value={currentUser.id}>{currentUser.name} (Anda)</option>
-                    )}
-                    {userDirectory.map(u => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}{u.id === currentUser?.id ? ' (Anda)' : ''}
-                        {u.positionTitle ? ` — ${u.positionTitle}` : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <UserPicker
+                    currentUserId={currentUser?.id}
+                    onChange={id => setCiOwnerId(id ?? currentUser?.id ?? null)}
+                    options={userDirectory.length > 0 ? userDirectory : (currentUser ? [{ id: currentUser.id, name: currentUser.name, positionTitle: null }] : [])}
+                    placeholder="Pilih owner workstream…"
+                    value={ciOwnerId ?? currentUser?.id ?? null}
+                  />
                 </div>
                 <div className="form-field">
                   <label>Penanggung Jawab</label>

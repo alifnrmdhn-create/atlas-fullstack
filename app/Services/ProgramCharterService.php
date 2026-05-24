@@ -332,7 +332,13 @@ class ProgramCharterService
         };
     }
 
-    /** "2026-W17" → "Minggu ke 17 April" (approx — picks the month of the ISO week midpoint). */
+    /**
+     * "2026-W17" → "Minggu ke-17 · April 2026". ISO week number + month
+     * context (midpoint week jatuh di bulan apa) + tahun.
+     *
+     * Sebelumnya "Minggu ke 17 April" — ambigu, terbaca sebagai "minggu
+     * ke-17 dari bulan April" (nonsense, April max 5 minggu).
+     */
     private function formatPeriodLabel(?string $period): ?string
     {
         if (!$period) return null;
@@ -341,7 +347,7 @@ class ProgramCharterService
             $week = (int) $m[2];
             $midpoint = (new \DateTime())->setISODate($year, $week, 4);
             $monthLabel = self::MONTH_LABELS[(int) $midpoint->format('n')] ?? $midpoint->format('M');
-            return "Minggu ke {$week} {$monthLabel}";
+            return "Minggu ke-{$week} · {$monthLabel} {$year}";
         }
         return $period;
     }

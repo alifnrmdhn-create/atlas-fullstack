@@ -23,6 +23,7 @@ import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import { ExecutionTab } from '../components/ExecutionTab'
 import { MonitoringMatrix } from '../components/MonitoringMatrix'
 import { useInlineToast } from '../components/InlineToast'
+import { UserPicker } from '../components/UserPicker'
 import './ProgramsView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -2292,21 +2293,17 @@ export function ProgramsView() {
                   <div className="form-field">
                     <label>PIC Utama</label>
                     {epDirLoading ? (
-                      <select className="form-input" disabled><option>Memuat…</option></select>
+                      <p className="form-hint text-muted">Memuat direktori pengguna…</p>
                     ) : epUserDirectory.length === 0 ? (
                       <p className="form-hint text-muted">Gagal memuat direktori pengguna.</p>
                     ) : (
-                      <select
-                        className="form-input"
-                        onChange={e => setEditProgram(p => p ? { ...p, ownerId: Number(e.target.value) } : p)}
-                        value={editProgram.ownerId ?? currentUser?.id ?? ''}
-                      >
-                        {epUserDirectory.map(u => (
-                          <option key={u.id} value={u.id}>
-                            {u.name}{u.positionTitle ? ` — ${u.positionTitle}` : ''}
-                          </option>
-                        ))}
-                      </select>
+                      <UserPicker
+                        currentUserId={currentUser?.id}
+                        onChange={id => setEditProgram(p => p ? { ...p, ownerId: id } : p)}
+                        options={epUserDirectory}
+                        placeholder="Pilih PIC Utama…"
+                        value={editProgram.ownerId ?? currentUser?.id ?? null}
+                      />
                     )}
                   </div>
 

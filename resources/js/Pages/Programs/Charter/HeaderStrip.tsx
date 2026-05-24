@@ -26,12 +26,36 @@ function formatYearMonth(ym: string): string {
 }
 
 /**
- * Top metadata strip — Strategic Objective, KPI, PIC, Period, Health badge,
- * Export PPTX button (placeholder in Phase 2; wired in Phase 3).
+ * Top metadata strip — Title row (code chip + program name + status/actions)
+ * di atas, kemudian grid 4-kolom: Strategic Objective, KPI, PIC, Period.
  */
 export function HeaderStrip({ program, status, kpi, actionSlot }: Props) {
   return (
     <header className="cs-header">
+      <div className="cs-header__title">
+        <div className="cs-header__title-left">
+          <span className="cs-header__code">{program.code}</span>
+          <h1 className="cs-header__name" title={program.name}>{program.name}</h1>
+        </div>
+        <div className="cs-header__title-right">
+          {/* Health badge — sentence case (CSS) + subtle bg only, no inline color
+              override yang clash dengan modern flat style. */}
+          <span className={`cs-health cs-health--${status.health.toLowerCase()}`}>
+            {HEALTH_LABEL[status.health]}
+          </span>
+          {actionSlot ?? (
+            <button
+              type="button"
+              className="charter-export-button cs-export"
+              disabled
+              title="Tersedia di Phase 3"
+            >
+              Export PPTX
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="cs-header__col cs-header__col--so">
         <div className="cs-header__label">Strategic Objective</div>
         <div className="cs-header__so" title={program.strategicObjective ?? undefined}>
@@ -68,24 +92,6 @@ export function HeaderStrip({ program, status, kpi, actionSlot }: Props) {
         <div className="cs-header__sub">
           {program.directorateName} · {program.divisionName}
         </div>
-      </div>
-
-      <div className="cs-header__col cs-header__col--actions">
-        {/* Health badge — sentence case (CSS) + subtle bg only, no inline color
-            override yang clash dengan modern flat style. */}
-        <span className={`cs-health cs-health--${status.health.toLowerCase()}`}>
-          {HEALTH_LABEL[status.health]}
-        </span>
-        {actionSlot ?? (
-          <button
-            type="button"
-            className="charter-export-button cs-export"
-            disabled
-            title="Tersedia di Phase 3"
-          >
-            Export PPTX
-          </button>
-        )}
       </div>
     </header>
   )

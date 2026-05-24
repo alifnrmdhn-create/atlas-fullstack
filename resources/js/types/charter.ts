@@ -67,7 +67,7 @@ export type CharterKpi = {
 } | null
 
 export type CharterProgressLog = {
-  asOfMonth: string | null // "Minggu ke X bulan Y"
+  asOfMonth: string | null // "Minggu ke-X · MonthName YYYY"
   updateNote: string | null
   problemIdentification: string | null
   correctiveAction: string | null

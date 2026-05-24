@@ -30,6 +30,43 @@ Klasifikasi kondisi pelaksanaan program pada periode pelaporan.
 | 🔴 **Terlambat (Delayed)** | Sudah melewati timeline atau target tidak tercapai pada periode pelaporan. *Contoh: deliverable utama belum keluar setelah deadline; perlu eskalasi & rencana pemulihan.* |
 | 🔵 **Completed** | Program telah selesai dan seluruh output telah deliver. Tidak ada aktivitas yang masih open. |
 
+### Status Pekerjaan (Task & Penugasan)
+
+**Vocabulary lifecycle untuk pekerjaan individual** — dipakai di Workboard (Task) dan Penugasan. Sama persis lintas modul; tidak boleh divergen. Bedakan dari **Status Program** di atas (program = level strategis, pekerjaan = level operator).
+
+| Istilah | Status internal | Kriteria masuk |
+|---------|-----------------|----------------|
+| **Belum Direncanakan** | `BACKLOG` | Task baru. Prasyarat (PIC, tanggal, plan) belum lengkap. *Hanya Task — Penugasan tidak punya tahap ini karena atasan sudah menjabarkan saat memberikan.* |
+| **Siap Dikerjakan** | `READY` / `DITUGASKAN` | Set-up lengkap (PIC + tanggal + rencana). Penugasan masuk di sini begitu diterima. |
+| **Sedang Berjalan** | `IN_PROGRESS` / `DIKERJAKAN` | Eksekusi jalan; `actualStartDate` tercatat. |
+| **Menunggu Review** | `IN_REVIEW` | Selesai dari sisi PIC, menunggu approval reviewer. |
+| **Selesai** | `COMPLETED` / `SELESAI` | Done, bukti completion (link / catatan) tercatat. |
+| **Ditahan** | `ON_HOLD` | Dijeda sementara oleh keputusan (mis. tunggu input pihak eksternal). Tidak muncul sebagai kolom — flagged di kartu. |
+| **Dibatalkan** | `CANCELLED` / `DIBATALKAN` | Task dibatalkan, tidak akan dikerjakan. Disembunyikan dari board secara default. |
+
+> 💡 **Hambatan bukan status terpisah** — task/penugasan tetap berada di kolom statusnya (mis. "Sedang Berjalan"), dengan flag `isBlocked` yang memunculkan badge **⚠ Terhambat** di kartu. Progress historis (start date, dll) tidak hilang.
+
+### Indikator Urgency (Badge & Counter)
+
+**Vocabulary temporal pressure** — dipakai di counter strip Workboard, badge kartu, dan filter chip. Bahasa Indonesia konsisten.
+
+| Istilah | Arti |
+|---------|------|
+| **Lewat** | Deadline sudah lewat & item belum selesai. Setara *overdue*. |
+| **Hari Ini** | Deadline jatuh tempo hari ini. |
+| **7 Hari** | Deadline jatuh tempo dalam 7 hari ke depan (termasuk hari ini). |
+| **Berjalan** | Sedang aktif dikerjakan (status IN_PROGRESS atau IN_REVIEW). |
+| **Terhambat** | Punya flag `isBlocked` aktif. |
+| **Selesai** | Status COMPLETED, sebagai counter "berapa yang sudah tuntas". |
+
+### Aturan Penyebutan (Cheatsheet)
+
+- Untuk **program**, pakai *On Track / At Risk / Terlambat / Completed* — vocabulary terkunci sejak Sprint 1.
+- Untuk **task & penugasan**, pakai *Belum Direncanakan / Siap Dikerjakan / Sedang Berjalan / Menunggu Review / Selesai* — Title Case, Bahasa.
+- Untuk **badge urgency**, pakai *Lewat / Hari Ini / 7 Hari / Berjalan / Terhambat / Selesai* — boleh CAPS pada badge kartu (mis. **LEWAT**), tetap Bahasa.
+- **Jangan campur** *Overdue* (English) dengan *Lewat* (Bahasa) di surface yang sama.
+- **Jangan pakai** "Ditugaskan" / "Dikerjakan" / "Review" — istilah lama yang sudah di-deprecate per 24 Mei 2026.
+
 ### Istilah Program & Atribut
 
 | Istilah | Penjelasan |
@@ -232,19 +269,19 @@ flowchart LR
     classDef decision fill:#fde68a,stroke:#b45309,color:#451a03,stroke-width:1.5px
 ```
 
-### 7. Alur Real-Time (SSE)
+### 7. Alur Real-Time (Polling)
 
-Setiap mutasi data dikirim ke semua client secara real-time via Server-Sent Events.
+Setiap mutasi data ditulis ke `BroadcastEvent` table; frontend polling `/realtime/poll` setiap 2 detik untuk fetch event baru. SSE sebelumnya di-drop (19 Mei 2026) karena di FrankenPHP setiap koneksi SSE menahan 1 thread PHP — tidak scalable di hosting shared.
 
 ```mermaid
 flowchart LR
     API[REST API\nPOST / PATCH / DELETE]:::api
-    EB[EventBus\nbroadcasts.x.changed]:::bus
-    SSE[SSE Stream\n/api/realtime]:::sse
-    FE[Frontend\ndebounce 600ms]:::fe
+    EB[BroadcastEvent\ntable write]:::bus
+    Poll[GET /realtime/poll\nevery 2s]:::sse
+    FE[Frontend\nexponential backoff]:::fe
     UI[UI Update\ntanpa reload]:::ui
 
-    API --> EB --> SSE --> FE --> UI
+    API --> EB --> Poll --> FE --> UI
 
     classDef api fill:#1e3a2f,stroke:#14532d,color:#ffffff
     classDef bus fill:#166534,stroke:#14532d,color:#ffffff
@@ -263,9 +300,9 @@ flowchart LR
     RT([Reply Thread]):::start --> R2[POST /messages/:id/replies]:::proc
     R1 --> DB[(Database)]:::p1
     R2 --> DB
-    DB --> Bus[EventBus\nbroadcasts.changed]:::p2
-    Bus --> SSE[SSE Broadcast]:::p3
-    SSE --> End([Client render pesan]):::done
+    DB --> Bus[BroadcastEvent\ntable write]:::p2
+    Bus --> Poll[Client polling\n/realtime/poll 2s]:::p3
+    Poll --> End([Client render pesan]):::done
 
     classDef start fill:#1e3a2f,stroke:#14532d,color:#ffffff
     classDef done  fill:#15803d,stroke:#166534,color:#ffffff
@@ -346,6 +383,14 @@ Seluruh pengguna mendarat di **Home** (`/`) — namun **konten Home berbeda per 
 **Status: ✅ Lengkap**
 
 > 🔧 *Catatan teknis: Grup "Pelaporan" (Laporan Bulanan, Laporan Risiko, Analytics) sengaja dihilangkan dari sidebar sejak 10 Mei 2026. Halaman tetap hidup di `/laporan-bulanan`, `/laporan-risiko`, dan `/reports` — diakses via deep-link notifikasi atau link kontekstual.*
+
+### Responsive — Sidebar Otomatis Collapse
+
+Sejak **19 Mei 2026**, sidebar **auto-collapse** di viewport ≤1024px (laptop kantor 1366×768, tablet, dst). Preference manual user tetap di `localStorage` — saat resize kembali ke layar besar, sidebar kembali sesuai preferensi terakhir. Topbar juga menyembunyikan period meta + tombol command-palette text di viewport sempit; tanggal lengkap di-hide di ≤768px.
+
+Halaman primer **Playbook** dan **Charter** sudah *fluid responsive* — TOC clamp `clamp(200px, 20vw, 280px)`, mermaid `max-width: 1200px`, dan layout stacked di mobile (≤768px). Charter activity table punya horizontal scroll wrapper dengan kolom Aktivitas sticky di kiri.
+
+> 💡 Lihat `docs/responsive-audit-2026-05.md` untuk audit lengkap + decisions locked per breakpoint tier (T1 1366, T2 1440-1536, T3 1920, T4 2K/4K).
 
 
 ## 3. Home — Ringkasan Eksekutif
@@ -454,11 +499,19 @@ Setelah Program ACTIVE, perubahan pada **commitment field** (target, deadline, K
 
 | Tab | Isi |
 |-----|-----|
-| **Ringkasan** | Metrik kunci, readiness checklist, banner status, link cepat |
+| **Ringkasan** | Metrik kunci, readiness checklist, banner status, link cepat, **rollup executionAchievement** (planned vs realized weeks lintas seluruh workstream) |
 | **Struktur** | Workstream → Phase → Task (hierarki kerja) |
-| **Jadwal** | Grid Ren/Real mingguan — perbandingan rencana vs realisasi per minggu |
+| **Jadwal** | Grid Ren/Real mingguan — perbandingan rencana vs realisasi per minggu, dengan **partial progress visualization** + summary row per phase/workstream |
 | **Hambatan** | Daftar Blocker aktif & terselesaikan di program ini |
-| **KPI APMS** | Hubungkan KPI APMS dan kelola KPI internal program |
+| **KPI APMS** | Hubungkan KPI APMS dan kelola KPI internal program (perubahan nilai → snapshot di audit table `KpiValueRevision`) |
+
+### Refleksi Mingguan (Progress Log)
+
+PIC dapat menulis **Refleksi mingguan / bulanan** lewat tab Ringkasan. Aturan:
+- Hanya **owner program** (atau ADMIN) yang bisa submit — tombol disembunyikan untuk peran lain (`canWriteReflection`).
+- **Periode future ditolak** di server boundary — tidak bisa "menulis duluan" untuk minggu yang belum jadi.
+- **Edit mode** — refleksi yang sudah disubmit bisa diedit (load nilai existing, tidak silent overwrite).
+- Picker periode terstruktur: **Mingguan** atau **Bulanan**.
 
 ### Cara Membuat Program Baru
 
@@ -602,32 +655,45 @@ Papan Kerja adalah tempat utama untuk mengelola dan memantau tugas harian. Terse
 2. Pilih tampilan **Board** atau **List** di bagian atas
 3. Filter berdasarkan **Program** atau **Workstream** sesuai kebutuhan
 
-### Kolom Status di Board
+### Kolom Status di Board (5-kolom)
 
-| Status | Arti |
-|--------|------|
-| BACKLOG | Tugas terdaftar, belum dimulai |
-| READY | Siap dikerjakan |
-| IN PROGRESS | Sedang dikerjakan |
-| IN REVIEW | Menunggu review/persetujuan |
-| COMPLETED | Selesai |
-| CANCELLED | Dibatalkan |
+| Status (internal) | Label UI (Indonesia) | Kriteria masuk |
+|-------------------|----------------------|----------------|
+| BACKLOG | **Belum Direncanakan** | Task baru, prasyarat (PIC + tanggal + rencana) belum lengkap |
+| READY | **Siap Dikerjakan** | PIC + tanggal mulai + target selesai sudah set |
+| IN_PROGRESS | **Sedang Berjalan** | `actualStartDate` tercatat, kerjaan jalan |
+| IN_REVIEW | **Menunggu Review** | Selesai dari sisi PIC, menunggu approval reviewer |
+| COMPLETED | **Selesai** | Done, bukti completion (link / catatan) tercatat |
+
+Status **CANCELLED** tetap ada di backend tapi tidak ditampilkan sebagai kolom Board — task cancelled disembunyikan secara default (filter mode "Termasuk dibatalkan" untuk show).
+
+> 💡 **BLOCKED bukan status terpisah.** Sejak 19 Mei 2026 BLOCKED jadi *orthogonal flag* (`isBlocked: true`) yang bisa di-attach ke status manapun — paling sering ke IN_PROGRESS. Kartu task blocked menampilkan badge **⚠ Terhambat** + tetap berada di kolom status aslinya, sehingga progress historis (`actualStartDate`, dst) tidak hilang. Hover badge untuk lihat `blockedReason`.
 
 ### Cara Memperbarui Status Tugas
 
-1. Klik kartu tugas yang ingin diperbarui
+1. Klik kartu tugas — modal detail terbuka dengan **animasi expand-from-card** dan URL deep-link `?task={id}` (bisa di-share langsung)
 2. Di panel detail, ubah status menggunakan dropdown **Status**
-3. Perubahan disimpan otomatis dan terlihat real-time oleh seluruh tim
+3. Perubahan disimpan otomatis dan terlihat real-time oleh seluruh tim (polling 2s)
+
+> 💡 **Backward transition** (mis. Sedang Berjalan → Siap Dikerjakan) **wajib disertai alasan** — tercatat di audit log task. Sistem mengkategorikan tiap transition sebagai `normal` (maju 1 step), `skip-forward` (loncat ke depan), `backward` (mundur), atau `lateral` (orthogonal — mis. toggle BLOCKED flag); backward & skip-forward yang trigger prompt alasan.
+
+### Badge "Tepat Waktu" / "Terlambat" di Kartu Selesai
+
+Saat task berstatus **Selesai**, kartu otomatis menampilkan badge perbandingan berdasarkan `actualCompletion` vs `targetCompletion`:
+- **✓ Tepat waktu** — selesai pada atau sebelum target deadline (hijau)
+- **⚠ Terlambat** — selesai setelah target deadline (oranye/merah)
+
+Indikator ini bersifat **historis** — tidak hilang setelah selesai. Berguna untuk evaluasi disiplin tim dan tracking commitment ledger.
 
 ### Di Panel Detail Tugas, Anda Bisa:
 
 - Mengubah status, persentase progres, dan assignee
 - Menambahkan **Subtask** sebagai checklist langkah-langkah
 - Menulis komentar atau diskusi
-- Melaporkan **blocker** (hambatan) jika ada
+- Melaporkan **blocker** (hambatan) jika ada — set flag `isBlocked` dengan alasan
 - Membuat **Eskalasi** (Clear the Path) bila perlu dukungan atasan
 
-> 💡 **WIP limit** — sistem mengingatkan jika beban IN_PROGRESS Anda melampaui batas wajar, agar tim tidak overload.
+> 💡 **WIP limit** — sistem mengingatkan jika beban "Sedang Berjalan" Anda melampaui batas wajar, agar tim tidak overload.
 
 **Status: ✅ Lengkap**
 
@@ -1138,7 +1204,19 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 | Admin Thresholds (SUPERADMIN) | ✅ | ✅ | — | ✅ |
 | PDCA Onboarding Tour | ✅ | ✅ | — | ✅ |
 | My Work (personal view) | ⚠️ | ✅ | ✅ | ⚠️ |
-| Realtime SSE | ✅ | ✅ | — | ✅ |
+| Realtime — Polling (`/realtime/poll` 2s cadence + exponential backoff) | ✅ | ✅ | — | ✅ |
+| Responsive — Sidebar auto-collapse ≤1024px, Playbook & Charter fluid | — | ✅ | — | ✅ |
+| Visual system — Pill/badge background strip + spacing ladder + primary CTA dedupe | — | ✅ | — | ✅ |
+| Motion — `.ds-stagger` page-enter utility across all pages | — | ✅ | — | ✅ |
+| Execution — TaskDetailModal expand animation + URL deep-link `?task={id}` | ✅ | ✅ | ✅ | ✅ |
+| Execution — Workboard 5-kolom (BLOCKED jadi orthogonal flag `isBlocked` + badge ⚠ Terhambat) | ✅ | ✅ | ✅ | ✅ |
+| Execution — Backward / skip-forward transition wajib alasan (audit log via `categorizeTransition`) | ✅ | ✅ | — | ✅ |
+| Execution — Badge perbandingan Tepat Waktu / Terlambat di kartu Selesai | — | ✅ | — | ✅ |
+| Vocabulary — Status Pekerjaan unified (Workboard + Penugasan pakai label sama) | — | ✅ | — | ✅ |
+| Vocabulary — Indikator urgency Bahasa konsisten (Lewat / Hari Ini / 7 Hari / Berjalan / Selesai) | — | ✅ | — | ✅ |
+| Programs — Ringkasan rollup panel (executionAchievement: planned vs realized weeks) | ✅ | ✅ | ✅ | ✅ |
+| Programs — Refleksi mingguan edit mode (owner-only, reject future-period) | ✅ | ✅ | — | ✅ |
+| KPI — Audit table `KpiValueRevision` + atomic write (`lockForUpdate`) | ✅ | — | — | ✅ |
 | Laporan Bulanan *(diakses via deep-link, tidak di sidebar)* | ✅ | ✅ | ✅ | ✅ |
 | Laporan Risiko *(diakses via deep-link, tidak di sidebar)* | ✅ | ✅ | ✅ | ✅ |
 
@@ -1149,7 +1227,7 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 - ❌ **APMS Live Sync** — fetch data real dari AGHRIS belum diimplementasi; KPI APMS masih menggunakan seed data. KPI internal berfungsi penuh termasuk monitoring health
 - ⚠️ **My Work endpoint** — implementasi minimal, sebagian besar fungsionalitas sudah diserap ke Fokus dan Papan Kerja
 
-**Status: ✅ Evaluasi Lengkap per 19 Mei 2026** (Sprint 0–5 MVP selesai 8 Mei 2026)
+**Status: ✅ Evaluasi Lengkap per 24 Mei 2026** (Sprint 0–5 MVP selesai 8 Mei 2026)
 
 
-*Panduan ini mencerminkan kondisi implementasi ATLAS per 19 Mei 2026. Perbarui dokumen setiap ada perubahan fitur signifikan.*
+*Panduan ini mencerminkan kondisi implementasi ATLAS per 24 Mei 2026. Perbarui dokumen setiap ada perubahan fitur signifikan.*

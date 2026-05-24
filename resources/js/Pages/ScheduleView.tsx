@@ -7,6 +7,8 @@ import type { Meeting, MeetingType, AttendeeRole, RsvpStatus } from '../types'
 import { MeetingDetailPanel } from './MeetingDetailPanel'
 import { useEscKey } from '../hooks/useEscKey'
 import { formatRoleLabel } from '../lib/roleLabel'
+import { UserPicker } from '../components/UserPicker'
+import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import './ScheduleView.css'
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -334,7 +336,6 @@ export function ScheduleView() {
   const rsvpTitleId = useId()
   const rsvpDescId = useId()
   const [rsvpStatus, setRsvpStatus] = useState<'HADIR' | 'TIDAK_HADIR' | 'DELEGASI'>('HADIR')
-  const [delegateSearch, setDelegateSearch] = useState('')
   const [delegateOptions, setDelegateOptions] = useState<UserOption[]>([])
   const [selectedDelegate, setSelectedDelegate] = useState<UserOption | null>(null)
   const [delegateNote, setDelegateNote] = useState('')
@@ -522,10 +523,8 @@ export function ScheduleView() {
     ])
     const eligible = allUsers.filter(u => attendeeUserIds.has(u.id) && !excludedIds.has(u.id))
 
-    if (!delegateSearch.trim() || !showRsvpFor) { setDelegateOptions(eligible.slice(0, 30)); return }
-    const q = delegateSearch.toLowerCase()
-    setDelegateOptions(eligible.filter(u => u.name.toLowerCase().includes(q)).slice(0, 30))
-  }, [delegateSearch, allUsers, showRsvpFor, meetings, currentUser?.id])
+    setDelegateOptions(eligible)
+  }, [allUsers, showRsvpFor, meetings, currentUser?.id])
 
   useEffect(() => {
     if (showRsvpFor && allUsers.length === 0) {
@@ -643,7 +642,6 @@ export function ScheduleView() {
     setShowRsvpFor(meeting.id)
     setRsvpStatus(myAttendee.rsvpStatus === 'TIDAK_HADIR' ? 'TIDAK_HADIR' : myAttendee.rsvpStatus === 'DELEGASI' ? 'DELEGASI' : 'HADIR')
     setSelectedDelegate(null)
-    setDelegateSearch('')
     setDelegateNote('')
     setRsvpError(null)
   }
@@ -722,14 +720,23 @@ export function ScheduleView() {
 
   // ── Create meeting ────────────────────────────────────────────────────────
 
-  const openCreate = (prefill?: { date?: string; startTime?: string; endTime?: string }) => {
+  const openCreate = useCallback((prefill?: { date?: string; startTime?: string; endTime?: string }) => {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date())
     setForm({ title: '', description: '', meetingType: 'RAPAT_TIM', date: prefill?.date ?? today, startTime: prefill?.startTime ?? '09:00', endTime: prefill?.endTime ?? '10:00', location: '', linkedProgramId: '' })
     setSelectedAttendees([])
     setAttendeeSearch('')
     setCreateError(null)
     setShowCreate(true)
-  }
+  }, [])
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ id: string; page: string }>).detail
+      if (detail?.id === 'meeting.new') openCreate()
+    }
+    window.addEventListener(TOPBAR_ACTION_EVENT, handler)
+    return () => window.removeEventListener(TOPBAR_ACTION_EVENT, handler)
+  }, [openCreate])
 
   const openCreateFromSuggestion = (s: SuggestionItem) => {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date())
@@ -1894,45 +1901,25 @@ export function ScheduleView() {
                   </div>
                   <div className="modal-field">
                     <label className="modal-label">Delegasikan ke</label>
-                    {!selectedDelegate ? (
-                      <>
-                        {allUsers.length === 0 ? (
-                          <p className="text-sm text-muted schedule-feedback schedule-feedback--muted">Memuat daftar user…</p>
-                        ) : (
-                          <>
-                            <input
-                              className="form-input"
-                              type="text"
-                              placeholder="Cari nama…"
-                              value={delegateSearch}
-                              onChange={e => setDelegateSearch(e.target.value)}
-                              autoFocus
-                            />
-                            {delegateOptions.length > 0 && (
-                              <div className="user-picker-list">
-                                {delegateOptions.map(u => (
-                                  <button
-                                    key={u.id}
-                                    className="user-picker-item"
-                                    type="button"
-                                    onClick={() => { setSelectedDelegate(u); setDelegateSearch('') }}
-                                  >
-                                    <span className="text-sm text-strong">{u.name}</span>
-                                    <span className="text-xs text-muted">{u.positionTitle ?? formatRoleLabel(u.roleType)}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </>
+                    {allUsers.length === 0 ? (
+                      <p className="text-sm text-muted schedule-feedback schedule-feedback--muted">Memuat daftar user…</p>
                     ) : (
-                      <div className="selected-user-chip">
-                        <span>↪ {selectedDelegate.name}</span>
-                        <button type="button" onClick={() => setSelectedDelegate(null)}>
-                          <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg>
-                        </button>
-                      </div>
+                      <UserPicker
+                        allowClear
+                        clearLabel="— Batalkan delegasi —"
+                        onChange={id => {
+                          if (id == null) { setSelectedDelegate(null); return }
+                          const u = delegateOptions.find(o => o.id === id) ?? null
+                          setSelectedDelegate(u)
+                        }}
+                        options={delegateOptions.map(u => ({
+                          id: u.id,
+                          name: u.name,
+                          positionTitle: u.positionTitle ?? formatRoleLabel(u.roleType),
+                        }))}
+                        placeholder="Pilih penerima delegasi…"
+                        value={selectedDelegate?.id ?? null}
+                      />
                     )}
                   </div>
 
