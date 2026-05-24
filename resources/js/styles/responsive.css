@@ -7226,17 +7226,19 @@ mark.presence-highlight {
   color: var(--red-ink) !important;
 }
 
+/* Tier 4: align dimensions dengan .programs-v2__cta (radius 8, font-weight 600).
+ * Previously radius 10 + weight 700 — inconsistent dengan primary CTA lain. */
 .profile-save-btn {
   height: 32px;
   flex-shrink: 0;
   padding: 0 16px;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--green);
   color: var(--text-inverse);
   cursor: pointer;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   transition:
     opacity var(--transition),
     transform var(--transition),

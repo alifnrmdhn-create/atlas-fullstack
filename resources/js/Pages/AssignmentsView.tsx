@@ -285,7 +285,11 @@ export function AssignmentsView() {
           </div>
           {canAssign && (
             <button className="toolbar-action-btn" onClick={() => setShowCreate(true)} type="button">
-              + Tugas Baru
+              {/* Label sync ke "Penugasan Baru" — match topbar action di
+                  topbar-config.ts (page /penugasan). Sebelumnya "Tugas Baru"
+                  bisa misleading dengan Task (Programs). Penugasan = ad-hoc
+                  task di luar Program, vocabulary distinct dari Task. */}
+              + Penugasan Baru
             </button>
           )}
         </div>

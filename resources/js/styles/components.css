@@ -356,12 +356,15 @@
   text-decoration: none;
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn--primary { background: var(--indigo); color: var(--text-inverse); border-color: var(--indigo); box-shadow: var(--panel-shadow); }
-.btn--primary:hover:not(:disabled) { background: var(--indigo-dark); border-color: var(--indigo-dark); box-shadow: var(--lift-shadow); transform: translateY(-1px); }
+/* Tier 4 button polish (2026-05-24): hapus panel-shadow + hover transform,
+ * jadi tone-on-tone flat. Pattern Linear/Notion — primary action tidak
+ * "melompat" saat hover. Bg shift sudah cukup signal interaktif. */
+.btn--primary { background: var(--indigo); color: var(--text-inverse); border-color: var(--indigo); }
+.btn--primary:hover:not(:disabled) { background: var(--indigo-dark); border-color: var(--indigo-dark); }
 .btn--ghost { background: none; color: var(--text); border-color: var(--panel-border); }
 .btn--ghost:hover:not(:disabled) { background: var(--app-bg); border-color: var(--panel-border-strong); }
-.btn--danger { background: var(--red); color: var(--text-inverse); border-color: var(--red); box-shadow: var(--panel-shadow); }
-.btn--danger:hover:not(:disabled) { box-shadow: var(--lift-shadow); transform: translateY(-1px); }
+.btn--danger { background: var(--red); color: var(--text-inverse); border-color: var(--red); }
+.btn--danger:hover:not(:disabled) { background: color-mix(in srgb, var(--red) 88%, #000); border-color: color-mix(in srgb, var(--red) 88%, #000); }
 .btn--sm { padding: 5px 12px; font-size: 12px; }
 .btn--full { width: 100%; justify-content: center; }
 .btn--icon { padding: 6px; border-radius: var(--radius-sm); }
@@ -371,7 +374,7 @@
 }
 .btn--primary:focus-visible,
 .btn--danger:focus-visible {
-  box-shadow: var(--panel-shadow), var(--focus-ring);
+  box-shadow: var(--focus-ring);
 }
 
 /* ─── Typography helpers ─────────────────────────────────────── */

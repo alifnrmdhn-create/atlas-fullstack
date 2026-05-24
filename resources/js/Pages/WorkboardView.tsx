@@ -677,7 +677,11 @@ export function WorkboardView() {
         <div className="wb-toolbar-identity__actions">
           {!roleAccess.isMonitoringOnly && roleAccess.canCreateWorkstream && (
             <button className="toolbar-action-btn" onClick={() => void openCreateWI()}>
-              + Tugas Baru
+              {/* Label sync ke "Task Baru" — match topbar action di topbar-config.ts:32
+                  ("'Task Baru'"). Sebelumnya "Tugas Baru" inconsistent dengan
+                  topbar label di page yang sama. Pakem ATLAS: konsisten label
+                  untuk action serupa antar permukaan. */}
+              + Task Baru
             </button>
           )}
           {boardStatus.message ? (
