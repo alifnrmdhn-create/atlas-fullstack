@@ -675,15 +675,9 @@ export function WorkboardView() {
           </span>
         </div>
         <div className="wb-toolbar-identity__actions">
-          {!roleAccess.isMonitoringOnly && roleAccess.canCreateWorkstream && (
-            <button className="toolbar-action-btn" onClick={() => void openCreateWI()}>
-              {/* Label sync ke "Task Baru" — match topbar action di topbar-config.ts:32
-                  ("'Task Baru'"). Sebelumnya "Tugas Baru" inconsistent dengan
-                  topbar label di page yang sama. Pakem ATLAS: konsisten label
-                  untuk action serupa antar permukaan. */}
-              + Task Baru
-            </button>
-          )}
+          {/* "+ Task Baru" content button dihapus 2026-05-24 — duplikat
+              dengan topbar action "+ Task Baru" (topbar-config.ts:32) yang
+              sudah accessible dari semua halaman. Single CTA per page. */}
           {boardStatus.message ? (
             <div className={`board-status-msg${boardStatus.message.includes('failed') ? ' board-status-msg--error' : ''}`}>
               {boardStatus.saving ? <span className="spinner" /> : null}

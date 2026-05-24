@@ -936,9 +936,10 @@ export function ScheduleView() {
           </svg>
           Blok Fokus
         </button>
-        <button className="toolbar-action-btn schedule-toolbar-action-btn schedule-toolbar-action-btn--primary" onClick={() => openCreate()}>
-          + Buat Meeting
-        </button>
+        {/* "+ Buat Meeting" content button dihapus 2026-05-24 — duplikat
+            dengan topbar action "+ Rapat Baru" (topbar-config.ts) yang sudah
+            accessible dari semua halaman. Empty state CTA "+ Buat Meeting Baru"
+            tetap (contextual, hanya muncul saat list kosong, useful onboarding). */}
       </div>
 
       {/* Decisions search bar */}

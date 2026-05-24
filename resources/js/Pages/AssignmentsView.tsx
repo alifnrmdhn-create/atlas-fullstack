@@ -283,15 +283,9 @@ export function AssignmentsView() {
             {stats.overdue > 0 && <span className="text-red">{stats.overdue} <em>overdue</em></span>}
             {stats.done > 0 && <span className="text-green">{stats.done} <em>done</em></span>}
           </div>
-          {canAssign && (
-            <button className="toolbar-action-btn" onClick={() => setShowCreate(true)} type="button">
-              {/* Label sync ke "Penugasan Baru" — match topbar action di
-                  topbar-config.ts (page /penugasan). Sebelumnya "Tugas Baru"
-                  bisa misleading dengan Task (Programs). Penugasan = ad-hoc
-                  task di luar Program, vocabulary distinct dari Task. */}
-              + Penugasan Baru
-            </button>
-          )}
+          {/* "+ Penugasan Baru" content button dihapus 2026-05-24 — duplikat
+              dengan topbar action "+ Penugasan Baru" (topbar-config.ts) yang
+              sudah accessible dari semua halaman. Single CTA per page. */}
         </div>
       </div>
 
