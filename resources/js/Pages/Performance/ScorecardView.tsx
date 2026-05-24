@@ -109,7 +109,15 @@ export default function ScorecardView() {
             </div>
           </header>
 
+          {direktoratGrid.length === 0 && (
+            <Card padding="lg" className="perf__section perf-empty">
+              <div className="perf-empty__title">Belum ada data scorecard</div>
+              <div>Skor direktorat dan divisi belum tersedia untuk periode {periodeLabel}.</div>
+            </Card>
+          )}
+
           {/* ─── Top 3 podium row ─────────────────── */}
+          {direktoratGrid.length > 0 && (
           <div className="perf__cols-2 perf__section">
             <Card padding="md">
               <div className="perf-card-head">
@@ -139,6 +147,7 @@ export default function ScorecardView() {
               </div>
             </Card>
           </div>
+          )}
 
           {/* ─── Tren skor KPI 6 bulan terakhir ────── */}
           {trend && trend.series.length > 0 && (
@@ -156,6 +165,7 @@ export default function ScorecardView() {
           )}
 
           {/* ─── Semua Direktorat grid ────────────── */}
+          {direktoratGrid.length > 0 && (
           <section className="perf__section">
             <div className="perf-section-head">
               <span className="perf__section-label">Semua Direktorat</span>
@@ -208,6 +218,7 @@ export default function ScorecardView() {
               })}
             </div>
           </section>
+          )}
 
           {/* Legend — replaces the orphan "Capaian maksimal 110%" footer */}
           <div className="perf-legend" role="note">

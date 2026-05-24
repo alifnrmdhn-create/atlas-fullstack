@@ -246,6 +246,12 @@ export default function IndividuDetailView() {
           {/* ─── KPI list ─────────────────────────── */}
           <section className="perf__section">
             <span className="perf__section-label">Rincian KPI</span>
+            {kpiItems.length === 0 ? (
+              <Card padding="md" className="perf-empty">
+                <div className="perf-empty__title">Belum ada KPI individu</div>
+                <div>KPI untuk karyawan ini belum terdaftar pada periode {periode}.</div>
+              </Card>
+            ) : (
             <div className="perf-kpi-list">
               {kpiItems.map(item => {
                 const pct = realisasiPercent(item.sasaran, item.realisasi, item.polaritas)
@@ -301,6 +307,7 @@ export default function IndividuDetailView() {
                 )
               })}
             </div>
+            )}
           </section>
 
           {/* ─── Commitment Ledger ──────────────── */}

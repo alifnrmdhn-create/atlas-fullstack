@@ -49,11 +49,18 @@ export default function IndividuView() {
               <span className="perf__section-label">Leaderboard KPI</span>
               <span className="perf-section-meta">Top 3 per level · medal styling untuk #1–#3</span>
             </div>
-            <LeaderboardSection
-              topPerformers={topPerformers}
-              onSelect={(nama) => navigate(`/performance/individu/${encodeURIComponent(nama)}`)}
-              periode={periode}
-            />
+            {Object.keys(topPerformers).length === 0 ? (
+              <Card padding="lg" className="perf-empty">
+                <div className="perf-empty__title">Belum ada data leaderboard</div>
+                <div>KPI individual belum tersedia. Gunakan navigasi divisi di bawah untuk membuka detail karyawan.</div>
+              </Card>
+            ) : (
+              <LeaderboardSection
+                topPerformers={topPerformers}
+                onSelect={(nama) => navigate(`/performance/individu/${encodeURIComponent(nama)}`)}
+                periode={periode}
+              />
+            )}
           </section>
 
           {/* ─── Org navigation ──────────────────── */}

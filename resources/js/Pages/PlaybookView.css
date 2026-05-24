@@ -613,10 +613,16 @@
 }
 /* First column shrinks to content width — eliminates over-wide narrow
  * columns when later columns hold longer prose. Uses width:1% trick which
- * the table layout algorithm interprets as "as narrow as content allows". */
+ * the table layout algorithm interprets as "as narrow as content allows".
+ * `white-space: nowrap` di TD penting: tanpa itu, term seperti "Belum
+ * Direncanakan" / "On Track" / "Terlambat (Delayed)" wrap ke 2 baris karena
+ * kolom auto-size mengikuti header pendek "Istilah" saja. Dengan nowrap, lebar
+ * kolom = term terpanjang, semua single-line. Container `.pb-table-wrap` punya
+ * `overflow-x: auto` sebagai jaring pengaman kalau total tabel terlalu lebar. */
 .pb-body .pb-table th:first-child,
 .pb-body .pb-table td:first-child {
   width: 1%;
+  white-space: nowrap;
   padding-right: 18px;
 }
 .pb-body .pb-table tbody tr:last-child td { border-bottom: none; }

@@ -114,6 +114,13 @@ export default function KolegialDetailView() {
             <InsightPanel insight={insight} />
           </section>
 
+          {kpiGroups.length === 0 ? (
+            <Card padding="lg" className="perf__section perf-empty">
+              <div className="perf-empty__title">Belum ada rincian KPI</div>
+              <div>KPI breakdown untuk {direktur.jabatan} belum terdaftar pada periode {periode}.</div>
+            </Card>
+          ) : (
+          <>
           {/* ─── Perspektif filter ───────────────── */}
           <div className="perf-filter-row">
             <button
@@ -212,6 +219,8 @@ export default function KolegialDetailView() {
               </div>
             </section>
           ))}
+          </>
+          )}
         </div>
       </div>
     </>

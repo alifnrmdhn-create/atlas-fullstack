@@ -50,6 +50,7 @@ export default function KolegialView() {
 
   const dirutTone = dirut ? scoreTone(dirut.nilai) : 'neutral'
   const dirutBar = dirut ? fillRatio(dirut.nilai) * 100 : 0
+  const isEmpty = !dirut && direktur.length === 0
 
   return (
     <>
@@ -70,6 +71,15 @@ export default function KolegialView() {
             </div>
           </header>
 
+          {isEmpty && (
+            <Card padding="lg" className="perf__section perf-empty">
+              <div className="perf-empty__title">Belum ada data KPI Kolegial</div>
+              <div>Skor direktorat belum tersedia untuk periode {periode}. Data akan muncul setelah modul KPI direksi terisi.</div>
+            </Card>
+          )}
+
+          {!isEmpty && (
+          <>
           {/* ─── Stat row ─────────────────────────── */}
           <Card padding="lg" className="perf__section">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
@@ -176,6 +186,8 @@ export default function KolegialView() {
               })}
             </div>
           </section>
+          </>
+          )}
         </div>
       </div>
     </>
