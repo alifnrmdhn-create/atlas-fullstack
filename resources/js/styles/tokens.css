@@ -510,13 +510,15 @@
 [data-theme="dark"] .wid-hero__due.is-overdue   { color: #FCA5A5; }
 [data-theme="dark"] .wid-hero__due.is-soon      { color: #FCD34D; }
 
-/* ── Channel health banners / pills ─────────────────────── */
-[data-theme="dark"] .channel-context-banner__health--green       { background: rgba(5,150,105,0.18); color: #6EE7B7; }
-[data-theme="dark"] .channel-context-banner__health--yellow      { background: rgba(217,119,6,0.18); color: #FCD34D; }
-[data-theme="dark"] .channel-context-banner__health--red         { background: rgba(220,38,38,0.18); color: #FCA5A5; }
-[data-theme="dark"] .channel-context-banner__health-pill--green  { background: rgba(5,150,105,0.18); color: #6EE7B7; }
-[data-theme="dark"] .channel-context-banner__health-pill--yellow { background: rgba(217,119,6,0.18); color: #FCD34D; }
-[data-theme="dark"] .channel-context-banner__health-pill--red    { background: rgba(220,38,38,0.18); color: #FCA5A5; }
+/* ── Channel health banners / pills ───────────────────────
+ * Tier 3 polish: dark mode bg fills dihapus, jadi outline + tone text
+ * (konsisten dengan light mode treatment di responsive.css). */
+[data-theme="dark"] .channel-context-banner__health--green       { background: transparent; color: #6EE7B7; border-color: color-mix(in srgb, #6EE7B7 30%, var(--panel-border)); }
+[data-theme="dark"] .channel-context-banner__health--yellow      { background: transparent; color: #FCD34D; border-color: color-mix(in srgb, #FCD34D 30%, var(--panel-border)); }
+[data-theme="dark"] .channel-context-banner__health--red         { background: transparent; color: #FCA5A5; border-color: color-mix(in srgb, #FCA5A5 30%, var(--panel-border)); }
+[data-theme="dark"] .channel-context-banner__health-pill--green  { background: transparent; color: #6EE7B7; border-color: color-mix(in srgb, #6EE7B7 30%, var(--panel-border)); }
+[data-theme="dark"] .channel-context-banner__health-pill--yellow { background: transparent; color: #FCD34D; border-color: color-mix(in srgb, #FCD34D 30%, var(--panel-border)); }
+[data-theme="dark"] .channel-context-banner__health-pill--red    { background: transparent; color: #FCA5A5; border-color: color-mix(in srgb, #FCA5A5 30%, var(--panel-border)); }
 
 /* ── Mention-dropdown WI status ─────────────────────────── */
 [data-theme="dark"] .mention-dropdown__wi-status--in_progress { background: rgba(217,119,6,0.18); color: #FCD34D; }

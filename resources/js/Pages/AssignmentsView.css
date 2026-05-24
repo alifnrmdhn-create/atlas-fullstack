@@ -303,19 +303,22 @@
   flex: 1;
 }
 
+/* Tier 3 empty state: dashed border dihapus, jadi muted italic centered text.
+ * Konsisten dengan WorkboardView treatment. */
 .assignments-v2 .kanban-col__empty,
 .assignments-v2 .kanban-col__empty--dashed {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 64px;
-  padding: 16px;
-  border: 1px dashed var(--ds-border-default);
-  border-radius: var(--ds-radius-md);
+  padding: 24px 16px;
+  border: 0;
   font-size: 11px;
   color: var(--ds-text-tertiary);
   background: transparent;
   text-align: center;
+  font-style: italic;
+  opacity: 0.7;
 }
 
 /* ─── Work card (assignments use .work-card too) ─────────── */

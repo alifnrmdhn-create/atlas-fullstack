@@ -295,12 +295,10 @@
   }
 }
 
-/* Kanban column — Tier 1 visual cleanup (2026-05-23):
- * - border 1px solid → dihapus, kolom hanya dipisah oleh gap di .kanban-board
- * - background sunken tetap (very subtle off-white) supaya kolom punya region
- *   tanpa "card chrome"
- * - Top color band (kanban-col__header::before 2px) tetap sebagai status cue
- * Hasil: kanban berasa section, bukan kotak card berlapis. Pattern A. */
+/* Kanban column — Tier 1+3 visual cleanup:
+ * - border 1px solid → 0 (Tier 1)
+ * - min-height 320 → 200 (Tier 3): kolom kosong tidak boros real estate.
+ *   Card pertama yang ditambahkan akan auto-extend kolom. */
 .workboard-v2 .kanban-col {
   background: var(--ds-surface-sunken);
   border: 0;
@@ -308,7 +306,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  min-height: 320px;
+  min-height: 200px;
   box-shadow: none;
 }
 
@@ -404,18 +402,24 @@
   flex: 1;
 }
 
+/* Tier 3 empty state — Pattern A polish (2026-05-24):
+ * Sebelumnya dashed box dengan border 1px dashed = terkesan "placeholder
+ * template", lazy. Sekarang minimal centered text only, no border, no box.
+ * Drop area tetap functional via parent column drop handler. Mata pengguna
+ * tidak ter-distract oleh "kotak kosong menunggu diisi" treatment. */
 .workboard-v2 .kanban-col__empty,
 .workboard-v2 .kanban-col__empty--dashed {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 64px;
-  padding: 16px;
-  border: 1px dashed var(--ds-border-default);
-  border-radius: var(--ds-radius-md);
+  padding: 24px 16px;
+  border: 0;
   font-size: 11px;
   color: var(--ds-text-tertiary);
   background: transparent;
+  font-style: italic;
+  opacity: 0.7;
 }
 
 .workboard-v2 .kanban-drop-slot {

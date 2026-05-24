@@ -1692,13 +1692,18 @@
   .message-card__actions { gap: 4px; }
 }
 
-/* ── Channel context banner (linked Program/Initiative) ─── */
+/* ── Channel context banner (linked Program/Initiative) ───
+ * Tier 3 polish (2026-05-24): gradient bg → border-left accent only.
+ * Sebelumnya banner punya bg gradient indigo penuh, kontras kuat dengan
+ * message area. Sekarang ke pattern A: accent indigo via 3px left border
+ * + transparent bg. Info di-convey via text + accent line, bukan via fill. */
 .channel-context-banner {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   padding: 14px 20px;
-  background: linear-gradient(90deg, var(--indigo-dim), transparent);
+  background: transparent;
+  border-left: 3px solid var(--indigo);
   border-bottom: 1px solid var(--panel-border);
   flex-shrink: 0;
 }
@@ -1706,17 +1711,18 @@
 .channel-context-banner--clickable {
   width: 100%;
   text-align: left;
-  border: none;
+  border-top: none;
+  border-right: none;
   cursor: pointer;
   position: relative;
   transition: background 180ms ease, box-shadow 180ms ease;
   -webkit-tap-highlight-color: transparent;
 }
 .channel-context-banner--clickable:hover {
-  background: linear-gradient(90deg, var(--indigo-subtle, rgba(99,102,241,0.10)), var(--surface-hover));
+  background: var(--surface-hover);
 }
 .channel-context-banner--clickable:active {
-  background: linear-gradient(90deg, var(--indigo-subtle, rgba(99,102,241,0.14)), var(--surface-active, rgba(0,0,0,0.04)));
+  background: var(--surface-active, rgba(0,0,0,0.04));
   transform: scale(0.995);
   transition: transform 80ms ease, background 80ms ease;
 }
@@ -1761,9 +1767,11 @@
   font-weight: 700;
   color: var(--text-strong);
 }
-.channel-context-banner__health--green { background: var(--green-dim); color: var(--green); }
-.channel-context-banner__health--yellow { background: var(--yellow-dim); color: var(--yellow); }
-.channel-context-banner__health--red { background: var(--red-dim); color: var(--red); }
+/* Tier 3 polish: health indicator pills → outline only (konsisten dengan
+ * .health-pill di components.css). Bg fill stripped, tone via text + border. */
+.channel-context-banner__health--green  { background: transparent; color: var(--green);  border: 1px solid color-mix(in srgb, var(--green) 28%, var(--panel-border)); }
+.channel-context-banner__health--yellow { background: transparent; color: var(--yellow); border: 1px solid color-mix(in srgb, var(--yellow) 28%, var(--panel-border)); }
+.channel-context-banner__health--red    { background: transparent; color: var(--red);    border: 1px solid color-mix(in srgb, var(--red) 28%, var(--panel-border)); }
 .channel-context-banner__metrics {
   display: flex;
   flex-wrap: wrap;
