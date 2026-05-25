@@ -370,15 +370,11 @@ Route::middleware('auth')->group(function () {
 
     // ── Performance (KPI) ────────────────────────────────────────────────────
     // Sementara di-restrict ke SUPERADMIN saja (2026-05-25). Re-enable untuk
-    // role lain: hapus middleware closure di bawah + restore gate di
-    // AppShell.tsx (isSuperAdmin) + restore section di lib/nav-config.ts.
-    Route::middleware(function (\Illuminate\Http\Request $request, \Closure $next) {
-        $role = strtoupper($request->user()?->roleType ?? '');
-        if ($role !== 'SUPERADMIN') {
-            abort(403, 'Modul Performance sementara hanya tersedia untuk SUPERADMIN.');
-        }
-        return $next($request);
-    })->prefix('performance')->name('performance.')->group(function () {
+    // role lain: hapus middleware EnsureSuperAdmin di bawah + restore gate
+    // sidebar di AppShell.tsx (isSuperAdmin) + restore section di
+    // lib/nav-config.ts. Hapus juga gate widget Performance di HomeView.tsx.
+    Route::middleware(\App\Http\Middleware\EnsureSuperAdmin::class)
+        ->prefix('performance')->name('performance.')->group(function () {
         Route::get('/kolegial',           [PerformanceController::class, 'kolegial'])->name('kolegial');
         Route::get('/kolegial/{slug}',    [PerformanceController::class, 'kolegialDetail'])->name('kolegial.detail');
         Route::get('/scorecard',          [PerformanceController::class, 'scorecard'])->name('scorecard');

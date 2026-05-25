@@ -917,8 +917,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
     home:        { path: '/',          label: 'Home',             caption: 'Ringkasan eksekutif program kerja', icon: IconHome,        shortcut: 'G H' },
     roadmap:     { path: '/roadmap',   label: 'Roadmap',          caption: 'Visual program timeline',           icon: IconRoadmap    },
     programs:    { path: '/programs',  label: 'Programs',         caption: 'Portfolio orchestration',           icon: IconPrograms,    shortcut: 'G P', badge: () => programsCount },
-    execution:   { path: '/execution', label: 'Execution',        caption: 'Kanban delivery board',             icon: IconExecution,   shortcut: 'G E', badge: () => tasksCount },
-    penugasan:   { path: '/penugasan', label: 'Assignment',       caption: 'Tugas harian di luar Program',      icon: IconAssignments, shortcut: 'G A' },
+    execution:   { path: '/execution', label: 'Workboard',        caption: 'Scheduled tasks from Programs',     icon: IconExecution,   shortcut: 'G E', badge: () => tasksCount },
+    penugasan:   { path: '/penugasan', label: 'Assignment',       caption: 'Ad-hoc tasks outside Programs',     icon: IconAssignments, shortcut: 'G A' },
     goals:       { path: '/goals',      label: 'Goals & KPI',   caption: 'Manage KPI organisasi & tracking capaian',  icon: IconGoals    },
     activity:    { path: '/activity',   label: 'Team Activity', caption: 'Leaderboard sesi & aktivitas harian tim',   icon: IconActivity },
     reports:       { path: '/reports',         label: 'Analytics',       caption: 'KPI, program health & leaderboard',  icon: IconReports       },
@@ -1023,7 +1023,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // Page name for breadcrumb
   const PAGE_NAMES: Record<string, string> = {
     '/': 'Home', '/programs': 'Programs',
-    '/goals': 'Goals & KPI', '/activity': 'Team Activity', '/execution': 'Execution', '/penugasan': 'Penugasan', '/reports': 'Analytics', '/laporan-bulanan': 'Monthly Reports', '/laporan-risiko': 'Risk Reports',
+    '/goals': 'Goals & KPI', '/activity': 'Team Activity', '/execution': 'Workboard', '/penugasan': 'Assignment', '/reports': 'Analytics', '/laporan-bulanan': 'Monthly Reports', '/laporan-risiko': 'Risk Reports',
     '/fokus': 'Focus', '/channels': 'Channels', '/jadwal': 'Rapat Koordinasi', '/search': 'Search',
     '/presence': 'Presence', '/profile': 'Profile', '/settings': 'Settings',
     '/executive': 'Executive Summary',
@@ -1380,7 +1380,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                   { id: 'task.new',       label: 'Task',       sub: 'di Workboard',          route: '/execution', icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2.5" width="10" height="11" rx="1.5"/><path d="m5.5 8 1.3 1.3L10 6.5"/></svg> },
                   { id: 'program.new',    label: 'Program',    sub: 'portfolio baru',        route: '/programs',  icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2.5" width="10" height="11" rx="1.6"/><path d="M6 2.5h4v2H6z"/><path d="M5.5 7h5M5.5 10h5"/></svg> },
                   { id: 'meeting.new',    label: 'Rapat',      sub: 'koordinasi',            route: '/jadwal',    icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M5 1.5v3M11 1.5v3M2 7h12"/></svg> },
-                  { id: 'assignment.new', label: 'Penugasan',  sub: 'di luar program',       route: '/penugasan', icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2.5" width="10" height="11" rx="1.5"/><path d="M6 2.5h4v2H6z"/><path d="M5.5 11.5h3"/></svg> },
+                  { id: 'assignment.new', label: 'Assignment', sub: 'di luar Program',       route: '/penugasan', icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2.5" width="10" height="11" rx="1.5"/><path d="M6 2.5h4v2H6z"/><path d="M5.5 11.5h3"/></svg> },
                 ] as const).map((item) => (
                   <button
                     key={item.id}

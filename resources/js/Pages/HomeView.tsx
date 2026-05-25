@@ -847,15 +847,19 @@ export default function HomeView() {
             )}
           </section>
 
-          {/* ─── Kesehatan Portofolio (KPI + Program 2-col) ─ */}
+          {/* ─── Kesehatan Portofolio (KPI + Program 2-col) ─
+            * Untuk non-SUPERADMIN kolom KPI Achievement di-hide (modul
+            * Performance restricted, 2026-05-25) — kolom Status Program
+            * jadi full-width via modifier .hv__portfolio-cols--single. */}
           <section className="hv__section hv__portfolio">
-            <div className="hv__portfolio-cols">
+            <div className={`hv__portfolio-cols${isSuperAdmin ? '' : ' hv__portfolio-cols--single'}`}>
 
               {/* KPI Achievement column — adapts per scope level:
                 * - portfolio (DIRUT): avg of 6 direktorat + top 3 ranked
                 * - directorate (Direktur fungsional): own direktorat as headline
                 *   + top 3 divisi within that direktorat ranked. Divisi rows
                 *   navigate to /performance/divisi/[kode] (per-divisi page). */}
+              {isSuperAdmin && (
               <div className="hv__portfolio-col">
                 <header className="hv__sec-head">
                   <h2 className="hv__sec-title">KPI Achievement</h2>
@@ -960,6 +964,7 @@ export default function HomeView() {
                   </div>
                 )}
               </div>
+              )}
 
               {/* Program Status column */}
               <div className="hv__portfolio-col">
@@ -1021,6 +1026,8 @@ export default function HomeView() {
           </section>
 
           {/* ─── Divisi dengan delay ──────────────── */}
+          {/* Hide untuk non-SUPERADMIN — semua link menuju /performance/divisi */}
+          {isSuperAdmin && (
           <section className="hv__section">
             <header className="hv__sec-head">
               <h2 className="hv__sec-title">Divisi dengan delay</h2>
@@ -1055,6 +1062,7 @@ export default function HomeView() {
               )}
             </div>
           </section>
+          )}
 
           {/* ─── Program ketat deadline (slide 18 PPT) ──────────── */}
           {topDeadlinePrograms.length > 0 && (
@@ -1212,8 +1220,9 @@ export default function HomeView() {
               Visible hanya untuk BOD/DIRUT/Admin (level=portfolio). Sumber
               data ScorecardSummaryService::direktoratGrid via homeSnapshot,
               sinkron dengan PDF reference (Mei 2026): 6 direktorat dengan
-              sub-divisi-nya. */}
-          {scorecard.grid && scorecard.grid.length > 0 && (
+              sub-divisi-nya. Per 2026-05-25: gate ke SUPERADMIN saja
+              karena card-nya navigate ke /performance/scorecard. */}
+          {isSuperAdmin && scorecard.grid && scorecard.grid.length > 0 && (
             <section className="hv__section">
               <header className="hv__sec-head">
                 <h2 className="hv__sec-title">Matrix Direktorat</h2>
@@ -1264,7 +1273,10 @@ export default function HomeView() {
             </section>
           )}
 
-          {/* ─── Status per Divisi (slide 17 PPT — rollup eksekutif) ─────── */}
+          {/* ─── Status per Divisi (slide 17 PPT — rollup eksekutif) ───────
+              Data = program rollup per divisi (bukan KPI). Tetap visible
+              untuk semua role. Click target: SUPERADMIN ke /performance/divisi,
+              non-SUPERADMIN ke /programs (modul Performance restricted). */}
           {byDivisi.length > 0 && (
             <section className="hv__section">
               <header className="hv__sec-head">
@@ -1293,7 +1305,9 @@ export default function HomeView() {
                         key={d.unit.code}
                         type="button"
                         className="hv__rollup-row"
-                        onClick={() => navigate(`/performance/divisi/${d.unit.code.toLowerCase()}`)}
+                        onClick={() => navigate(isSuperAdmin
+                          ? `/performance/divisi/${d.unit.code.toLowerCase()}`
+                          : '/programs')}
                         title={d.unit.name}
                       >
                         <span className="hv__rollup-divisi">

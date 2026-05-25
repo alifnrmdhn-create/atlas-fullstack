@@ -1001,6 +1001,12 @@
   align-items: start;
 }
 
+/* Single-column variant — dipakai saat kolom KPI Achievement di-hide
+ * (non-SUPERADMIN, modul Performance restricted 2026-05-25). */
+.hv__portfolio-cols.hv__portfolio-cols--single {
+  grid-template-columns: 1fr;
+}
+
 @media (max-width: 880px) {
   .hv__portfolio-cols {
     grid-template-columns: 1fr;
