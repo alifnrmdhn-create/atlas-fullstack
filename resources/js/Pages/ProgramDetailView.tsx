@@ -1057,7 +1057,7 @@ export function ProgramDetailView() {
   })
   const [ciSaving, setCiSaving] = useState(false)
   const [ciError, setCiError] = useState<string | null>(null)
-  // Owner workstream = reviewer task IN_REVIEW (lihat TaskController.waitingForMe).
+  // Owner workstream = penanggung jawab workstream.
   // Default ke current user, tapi visible + bisa override.
   const [ciOwnerId, setCiOwnerId] = useState<number | null>(null)
   const [ciPicIds, setCiPicIds] = useState<number[]>([])

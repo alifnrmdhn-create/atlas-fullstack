@@ -176,10 +176,6 @@ export interface WorkspaceContextValue {
   lastSyncedAt: string | null
   currentTimeTick: number
 
-  // Drag state (board)
-  dragState: { itemId: number | null; overStatus: string | null }
-  setDragState: Dispatch<SetStateAction<{ itemId: number | null; overStatus: string | null }>>
-
   // Presence draft
   presenceDraft: { status: PresenceStatus; statusEmoji: string; statusMessage: string }
   setPresenceDraft: Dispatch<SetStateAction<{ status: PresenceStatus; statusEmoji: string; statusMessage: string }>>
@@ -213,8 +209,6 @@ export interface WorkspaceContextValue {
   dismissNotification: (notificationId: number) => Promise<void>
   notifToasts: NotificationItem[]
   dismissToast: (id: number) => void
-  handleTaskDragStart: (taskId: number) => void
-  handleTaskDrop: (targetStatus: string, options?: { note?: string; blockedReason?: string }) => Promise<void>
   handleStatusUpdate: (e: FormEvent<HTMLFormElement>) => Promise<void>
   runSearch: (searchQuery: string, type?: string) => Promise<void>
   openProgramWorkspace: (programId: number) => void
@@ -396,8 +390,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [nextRefreshAt, setNextRefreshAt] = useState<number | null>(null)
   const [currentTimeTick, setCurrentTimeTick] = useState(Date.now())
 
-  // Board / drag
-  const [dragState, setDragState] = useState({ itemId: null as number | null, overStatus: null as string | null })
   // Board navigation intent — set by openTaskWorkspace, consumed once by WorkboardView
   const [boardOnOpen, setBoardOnOpen] = useState<{ forceShowAll: boolean; filterProgramId: number | null } | null>(null)
   const clearBoardOnOpen = () => setBoardOnOpen(null)
@@ -750,69 +742,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setOverviewStatus((cur) => ({ ...cur, message: 'Status berhasil diperbarui.' }))
     } catch {
       setOverviewStatus((cur) => ({ ...cur, message: 'Status gagal diperbarui.' }))
-    }
-  }
-
-  const moveTaskToGroup = (groups: WorkGroup[], taskId: number, targetStatus: string): WorkGroup[] => {
-    let movedItem: Task | null = null
-    const stripped = groups.map((g) => ({
-      ...g,
-      items: g.items.filter((item) => {
-        if (item.id === taskId) { movedItem = item; return false }
-        return true
-      }),
-    }))
-    if (!movedItem) return groups
-    const moved = movedItem as Task
-    return stripped.map((g) => {
-      if (g.status !== targetStatus) return { ...g, count: g.items.length }
-      const optimistic: Task = {
-        ...moved,
-        status: targetStatus,
-        percentComplete: targetStatus === 'COMPLETED' ? 100 : moved.percentComplete,
-        isBlocked: targetStatus === 'BLOCKED' ? true : moved.isBlocked,
-      }
-      return { ...g, items: [optimistic, ...g.items], count: g.items.length + 1 }
-    })
-  }
-
-  const handleTaskDragStart = (taskId: number) => {
-    setDragState({ itemId: taskId, overStatus: null })
-    setBoardStatus((cur) => ({ ...cur, message: null }))
-  }
-
-  const handleTaskDrop = async (targetStatus: string, options?: { note?: string; blockedReason?: string }) => {
-    if (!dragState.itemId) return
-    const dragged = workGroups.flatMap((g) => g.items).find((i) => i.id === dragState.itemId)
-    if (!dragged || dragged.status === targetStatus) {
-      setDragState({ itemId: null, overStatus: null }); return
-    }
-    // Auto-set progress to 100 when moved to Completed
-    const autoComplete = targetStatus === 'COMPLETED' && dragged.percentComplete < 100
-    const prevGroups = workGroups
-    setBoardStatus({ saving: true, message: `Moving ${dragged.code} to ${formatStatusLabel(targetStatus)}…` })
-    setWorkGroups((cur) => moveTaskToGroup(cur, dragState.itemId!, targetStatus))
-    setDragState({ itemId: null, overStatus: null })
-    try {
-      const body: Record<string, unknown> = { status: targetStatus }
-      if (autoComplete) body.percentComplete = 100
-      if (options?.note)          body.note = options.note
-      if (options?.blockedReason) body.blockedReason = options.blockedReason
-      await api.put(`/tasks/${dragged.id}/status`, body)
-      await Promise.all([
-        loadOverview('refresh'),
-        selectedTaskId === dragged.id ? loadTaskDetail(dragged.id) : Promise.resolve(),
-      ])
-      setBoardStatus({ saving: false, message: `${dragged.code} dipindah ke ${formatStatusLabel(targetStatus)}.` })
-    } catch (err) {
-      setWorkGroups(prevGroups)
-      const serverMessage = extractErrorMessage(err, '')
-      setBoardStatus({
-        saving: false,
-        message: serverMessage
-          ? `failed: ${serverMessage}`
-          : `failed: gagal memindah ${dragged.code}.`,
-      })
     }
   }
 
@@ -1474,14 +1403,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     channelStatus, setChannelStatus, programDetailStatus, setProgramDetailStatus,
     taskDetailStatus, setTaskDetailStatus, workstreamDetailStatus,
     overviewStatus, boardStatus, setBoardStatus, taskActionStatus, setTaskActionStatus,
-    lastSyncedAt, currentTimeTick, dragState, setDragState,
+    lastSyncedAt, currentTimeTick,
     presenceDraft, setPresenceDraft,
     searchResults, setSearchResults, searchTotal, setSearchTotal,
     query, setQuery, searching, searchError,
     selectedChannel, selectedProgram, totalUnreadChannels,
     liveStatusLabel, topbarSyncLabel, nextRefreshAt,
     loadOverview, refreshChannel, loadProgramDetail, loadWorkstreamDetail, loadTaskDetail,
-    handleReact, markNotificationRead, dismissNotification, handleTaskDragStart, handleTaskDrop,
+    handleReact, markNotificationRead, dismissNotification,
     handleStatusUpdate, runSearch,
     openProgramWorkspace, openWorkstreamWorkspace, openTaskWorkspace,
     boardOnOpen, clearBoardOnOpen,

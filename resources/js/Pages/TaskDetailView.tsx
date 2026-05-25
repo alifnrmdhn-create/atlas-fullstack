@@ -22,7 +22,6 @@ import { UserPicker } from '../components/UserPicker'
 import type { TaskDetail } from '../types'
 import './TaskDetailView.css'
 
-const STATUS_ORDER = ['BACKLOG', 'READY', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'COMPLETED']
 const STATUS_LABELS: Record<string, string> = {
   BACKLOG: 'Backlog', READY: 'Ready', IN_PROGRESS: 'In Progress',
   IN_REVIEW: 'In Review', BLOCKED: 'Blocked', COMPLETED: 'Completed',
@@ -497,30 +496,68 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
     if (detail) setEditDraft({ status: detail.status, percentComplete: detail.percentComplete })
   }, [detail?.id])
 
-  const isDirty = detail
-    ? editDraft.status !== detail.status || editDraft.percentComplete !== detail.percentComplete
-    : false
+  // Status tidak lagi diedit manual di sini (read-only, di-derive dari progress).
+  // Dirty = perubahan progres saja.
+  const isDirty = detail ? editDraft.percentComplete !== detail.percentComplete : false
 
   const [actionStatus, setActionStatus] = useState<{ saving: boolean; message: string | null }>({ saving: false, message: null })
+  const [regressNote, setRegressNote] = useState('')
 
-  const saveExecution = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!id) return
+  // Regresi = progres baru < tersimpan. Backend mewajibkan alasan kalau
+  // penurunan ini memundurkan status (audit log) — minta di FE juga.
+  const isRegressing = detail ? editDraft.percentComplete < detail.percentComplete : false
+
+  // Prasyarat mulai kerja: progres > 0 butuh PIC + target (sinkron dgn backend).
+  // Tanpa ini slider di-disable agar task tanpa PIC tak bisa didorong "Berjalan".
+  const canStart = !!detail?.assignee && !!detail?.targetCompletion
+  const startBlockReason = !detail?.assignee && !detail?.targetCompletion
+    ? 'Tetapkan PIC & target selesai dulu'
+    : !detail?.assignee ? 'Tetapkan PIC dulu sebelum memulai task'
+    : !detail?.targetCompletion ? 'Isi target selesai dulu sebelum memulai task'
+    : ''
+
+  const commitProgress = async () => {
+    if (!id || !detail) return
     if (actionStatus.saving) return // guard double-submit
+    if (editDraft.percentComplete === detail.percentComplete) return // tidak berubah
+    if (isRegressing && !regressNote.trim()) {
+      showToast('Isi alasan penurunan progres untuk audit log.', 'error')
+      return
+    }
     setActionStatus({ saving: true, message: null })
     try {
-      await Promise.all([
-        api.put(`/tasks/${id}/status`, { status: editDraft.status }),
-        api.put(`/tasks/${id}/progress`, { percentComplete: editDraft.percentComplete }),
-      ])
+      // Backend men-derive status dari nilai progres (0→READY/BACKLOG,
+      // 1-99→IN_PROGRESS, 100→COMPLETED). Tidak ada PUT /status manual di sini.
+      await api.put(`/tasks/${id}/progress`, {
+        percentComplete: editDraft.percentComplete,
+        ...(isRegressing ? { note: regressNote.trim() } : {}),
+      })
       await Promise.all([loadDetail(true), loadOverview('refresh')])
+      setRegressNote('')
       setActionStatus({ saving: false, message: 'Tersimpan.' })
       setTimeout(() => setActionStatus(s => ({ ...s, message: null })), 2500)
     } catch (err) {
       setActionStatus({ saving: false, message: null })
-      showToast(extractErr(err, 'Gagal menyimpan status & progress.'), 'error')
+      showToast(extractErr(err, 'Gagal menyimpan progres.'), 'error')
     }
   }
+
+  const saveExecution = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    void commitProgress()
+  }
+
+  // Auto-save saat slider dilepas — naik langsung simpan; turun (regresi) tunggu
+  // alasan diisi + tombol Simpan, supaya tidak menyimpan tanpa audit note.
+  const onSliderCommit = () => {
+    if (!detail || editDraft.percentComplete === detail.percentComplete) return
+    if (isRegressing) return
+    void commitProgress()
+  }
+
+  // Catatan: Execution TIDAK punya jalur review/approval (beda dengan
+  // Assignments yang punya approvalChain). Task selesai murni dari progres
+  // 100%. Tidak ada tombol "Serahkan untuk Review" / approve di sini.
 
   // ── Assignee ──────────────────────────────────────────────────────
   const [assignUsers, setAssignUsers] = useState<DirectoryUser[]>([])
@@ -1393,17 +1430,13 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
         <form className="wid-metastrip" onSubmit={(e) => void saveExecution(e)}>
           <div className="wid-ms-field">
             <span className="wid-ms-label">Status</span>
-            <select
-              className="wid-ms-select"
-              onChange={e => setEditDraft(d => ({
-                ...d,
-                status: e.target.value,
-                ...(e.target.value === 'COMPLETED' ? { percentComplete: 100 } : {}),
-              }))}
-              value={editDraft.status}
-            >
-              {STATUS_ORDER.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-            </select>
+            {/* Status read-only — di-derive dari progress (slider) + tombol review +
+                section Blockers. Tidak ada dropdown manual supaya tidak ada dua
+                cara set status yang membingungkan. */}
+            <span className={`wid-status-tag wid-status-tag--${detail.status.toLowerCase().replace(/_/g, '-')}`}>
+              <span className="wid-status-tag__dot" style={{ background: STATUS_DOT[detail.status] }} />
+              {STATUS_LABELS[detail.status] ?? detail.status}
+            </span>
           </div>
           <span className="wid-ms-sep" aria-hidden="true" />
           <div className="wid-ms-field wid-ms-field--progress">
@@ -1413,14 +1446,16 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
               max={100}
               min={0}
               onChange={e => {
-                const pct = Number(e.target.value)
-                setEditDraft(d => ({
-                  ...d,
-                  percentComplete: pct,
-                  ...(pct === 100 && !['BLOCKED', 'IN_REVIEW', 'COMPLETED'].includes(d.status)
-                    ? { status: 'COMPLETED' } : {}),
-                }))
+                // Progres = penggerak utama. Status di-derive backend saat simpan
+                // (0→READY/BACKLOG, 1-99→IN_PROGRESS, 100→COMPLETED). Tidak lagi
+                // mengubah editDraft.status di FE supaya tidak bentrok dengan derive.
+                setEditDraft(d => ({ ...d, percentComplete: Number(e.target.value) }))
               }}
+              onMouseUp={onSliderCommit}
+              onTouchEnd={onSliderCommit}
+              onKeyUp={onSliderCommit}
+              disabled={!canStart}
+              title={!canStart ? startBlockReason : undefined}
               step={1}
               style={{
                 '--wid-slider-pct': `${editDraft.percentComplete}%`,
@@ -1435,6 +1470,22 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
             />
             <span className="wid-ms-pct" key={editDraft.percentComplete}>{editDraft.percentComplete}%</span>
           </div>
+          {!canStart && (
+            <span className="wid-ms-hint" role="note">⚠ {startBlockReason}.</span>
+          )}
+          {isRegressing && (
+            <div className="wid-ms-field wid-ms-regress">
+              <span className="wid-ms-label">Alasan turun</span>
+              <input
+                className="wid-ms-select"
+                type="text"
+                placeholder="mis. revisi scope, salah input"
+                value={regressNote}
+                onChange={e => setRegressNote(e.target.value)}
+                maxLength={2000}
+              />
+            </div>
+          )}
           <div className="wid-ms-actions">
             {actionStatus.message && (
               <span className="wid-ms-msg">✓ {actionStatus.message}</span>

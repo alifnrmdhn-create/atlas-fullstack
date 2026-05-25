@@ -72,6 +72,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', fn () => Inertia::render('SettingsView'))->name('settings');
     Route::post('/auth/change-password', [WorkspaceController::class, 'changePassword'])->name('auth.change-password');
     Route::get('/playbook', fn () => Inertia::render('PlaybookView'))->name('playbook');
+    // Pusat Bantuan — friendly task-oriented entry point untuk operator/onboarding.
+    // Playbook tetap eksis sebagai dokumen rinci yang dilink dari sini.
+    Route::get('/panduan', fn () => Inertia::render('PanduanView'))->name('panduan');
     Route::get('/executive', [\App\Http\Controllers\ExecutiveSummaryController::class, 'show'])->name('executive');
     // Serve curated markdown docs (single source = base_path('docs/')). Whitelist-gated
     // to prevent leaking internal planning/architecture files. Add filename to $allowed
@@ -176,7 +179,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/',              [TaskController::class, 'index'])->name('index');
         Route::post('/',             [TaskController::class, 'store'])->name('store');
         // Static routes (no {id}) must precede /{id} routes — Laravel matches top-down.
-        Route::get('/waiting-for-me', [TaskController::class, 'waitingForMe'])->name('waiting-for-me');
         Route::get('/{id}',          [TaskController::class, 'show'])->name('show');
         Route::patch('/{id}',        [TaskController::class, 'update'])->name('update');
         Route::delete('/{id}',       [TaskController::class, 'destroy'])->name('destroy');
@@ -367,7 +369,16 @@ Route::middleware('auth')->group(function () {
     });
 
     // ── Performance (KPI) ────────────────────────────────────────────────────
-    Route::prefix('performance')->name('performance.')->group(function () {
+    // Sementara di-restrict ke SUPERADMIN saja (2026-05-25). Re-enable untuk
+    // role lain: hapus middleware closure di bawah + restore gate di
+    // AppShell.tsx (isSuperAdmin) + restore section di lib/nav-config.ts.
+    Route::middleware(function (\Illuminate\Http\Request $request, \Closure $next) {
+        $role = strtoupper($request->user()?->roleType ?? '');
+        if ($role !== 'SUPERADMIN') {
+            abort(403, 'Modul Performance sementara hanya tersedia untuk SUPERADMIN.');
+        }
+        return $next($request);
+    })->prefix('performance')->name('performance.')->group(function () {
         Route::get('/kolegial',           [PerformanceController::class, 'kolegial'])->name('kolegial');
         Route::get('/kolegial/{slug}',    [PerformanceController::class, 'kolegialDetail'])->name('kolegial.detail');
         Route::get('/scorecard',          [PerformanceController::class, 'scorecard'])->name('scorecard');

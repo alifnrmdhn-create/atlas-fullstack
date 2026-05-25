@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api, extractErrorMessage } from '../lib/api'
@@ -7,7 +7,6 @@ import { useAnimatedClose } from '../hooks/useAnimatedClose'
 import { Avatar } from '../components/ui'
 import { UserPicker } from '../components/UserPicker'
 import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
-import { DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import './AssignmentsView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -99,18 +98,6 @@ const STATUS_LABEL: Record<Status, string> = {
 }
 const PRIORITY_LABEL: Record<Priority, string> = { CRITICAL: 'Mendesak', HIGH: 'Tinggi', MEDIUM: 'Sedang', LOW: 'Rendah' }
 const PRIORITY_ORDER: Priority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
-
-/// Aturan drag-drop antar kolom.
-/// Role 'reviewer' = reviewer giliran saat ini (dihitung dari approvalChain+currentReviewerIdx).
-/// Drag yang perlu catatan (RETURN/REJECT) sengaja TIDAK di-wire di sini — harus lewat tombol.
-const DRAG_RULES: Record<string, { action: Action; by: 'assignee' | 'assigner' | 'reviewer' }> = {
-  'DITUGASKAN→DIKERJAKAN': { action: 'ACKNOWLEDGE', by: 'assignee' },
-  'DIKERJAKAN→IN_REVIEW':  { action: 'SUBMIT',      by: 'assignee' },
-  'IN_REVIEW→SELESAI':     { action: 'APPROVE',     by: 'reviewer' }, // backend advance otomatis; final approve = SELESAI
-  'SELESAI→DIKERJAKAN':    { action: 'REOPEN',      by: 'assigner' },
-  'REJECTED→DIKERJAKAN':   { action: 'REOPEN',      by: 'assigner' },
-  'DIBATALKAN→DIKERJAKAN': { action: 'REOPEN',      by: 'assigner' },
-}
 
 function formatDueDate(iso: string | null): { label: string; tone: 'overdue' | 'soon' | 'normal' | 'none' } {
   if (!iso) return { label: 'Tanpa tenggat', tone: 'none' }
@@ -219,41 +206,6 @@ export function AssignmentsView() {
     const next = new Set(prev); if (next.has(s)) next.delete(s); else next.add(s); return next
   })
 
-  // Drag handler
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
-  async function handleDragEnd(e: DragEndEvent) {
-    const overRaw = e.over?.id ? String(e.over.id) : null
-    if (!overRaw) return
-    const id = Number(String(e.active.id).replace('asg-', ''))
-    const toStatus = overRaw.replace('col-', '') as Status
-    const item = items.find((r) => r.id === id)
-    if (!item || item.status === toStatus) return
-    const rule = DRAG_RULES[`${item.status}→${toStatus}`]
-    if (!rule) { setToast(`Tidak bisa pindah ${STATUS_LABEL[item.status]} → ${STATUS_LABEL[toStatus]}.`); return }
-    const me = currentUser?.id ?? 0
-    const isAdmin = ['ADMIN', 'SUPERADMIN'].includes(role)
-    let requiredPerson: number | null = null
-    let requiredLabel = ''
-    if (rule.by === 'assignee') { requiredPerson = item.assigneeId; requiredLabel = 'PIC' }
-    else if (rule.by === 'assigner') { requiredPerson = item.assignerId; requiredLabel = 'pemberi tugas' }
-    else if (rule.by === 'reviewer') {
-      const chain = item.approvalChain ?? []
-      const idx = item.currentReviewerIdx ?? -1
-      const reviewer = idx >= 0 && idx < chain.length ? chain[idx] : null
-      requiredPerson = reviewer?.userId ?? null
-      requiredLabel = reviewer ? `reviewer saat ini (${firstName(reviewer.name)})` : 'reviewer'
-    }
-    if (!isAdmin && (requiredPerson === null || requiredPerson !== me)) {
-      setToast(`Hanya ${requiredLabel} yang boleh melakukan aksi ini.`); return
-    }
-    setItems((prev) => prev.map((r) => r.id === id ? { ...r, status: toStatus } : r))
-    try {
-      await api.post(`/assignments/${id}/transition`, { action: rule.action })
-    } catch (err) {
-      setToast(extractErrorMessage(err))
-      setItems((prev) => prev.map((r) => r.id === id ? { ...r, status: item.status } : r))
-    }
-  }
 
   return (
     <div className="ds assignments-v2 view-penugasan">
@@ -313,45 +265,43 @@ export function AssignmentsView() {
           ) : items.length === 0 ? (
             <EmptyState canAssign={canAssign} onCreate={() => setShowCreate(true)} />
           ) : boardMode === 'board' ? (
-            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-              <div className="kanban-board">
-                {STATUS_COLUMNS.map((col) => {
-                  const colItems = items.filter((r) => r.status === col.status)
-                  colItems.sort((a, b) => {
-                    const aDue = a.dueDate ? new Date(a.dueDate).getTime() : Infinity
-                    const bDue = b.dueDate ? new Date(b.dueDate).getTime() : Infinity
-                    if (aDue !== bDue) return aDue - bDue
-                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                  })
-                  const isCollapsed = collapsedCols.has(col.status)
-                  return (
-                    <DroppableColumn key={col.status} status={col.status} className={`kanban-col${isCollapsed ? ' kanban-col--collapsed' : ''}`}>
-                      <button
-                        type="button"
-                        className={`kanban-col__header kanban-col__header--toggle kanban-col__header--${STATUS_TO_SLUG[col.status]}`}
-                        onClick={() => toggleCollapsedCol(col.status)}
-                        aria-expanded={!isCollapsed}
-                      >
-                        <div className="kanban-col__label-row">
-                          <span className="kanban-col__caret" aria-hidden="true">{isCollapsed ? '▸' : '▾'}</span>
-                          <span className="kanban-col__label">{col.label}</span>
-                        </div>
-                        <span className="section-badge">{counts[col.status]}</span>
-                      </button>
-                      {!isCollapsed && (
-                        <div className="kanban-col__body">
-                          {colItems.length === 0 ? (
-                            <div className="kanban-col__empty kanban-col__empty--dashed">{col.hint}</div>
-                          ) : colItems.map((item) => (
-                            <DraggableCard key={item.id} item={item} onClick={() => setSelectedId(item.id)} currentUserId={currentUser?.id ?? 0} />
-                          ))}
-                        </div>
-                      )}
-                    </DroppableColumn>
-                  )
-                })}
-              </div>
-            </DndContext>
+            <div className="kanban-board">
+              {STATUS_COLUMNS.map((col) => {
+                const colItems = items.filter((r) => r.status === col.status)
+                colItems.sort((a, b) => {
+                  const aDue = a.dueDate ? new Date(a.dueDate).getTime() : Infinity
+                  const bDue = b.dueDate ? new Date(b.dueDate).getTime() : Infinity
+                  if (aDue !== bDue) return aDue - bDue
+                  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                })
+                const isCollapsed = collapsedCols.has(col.status)
+                return (
+                  <div key={col.status} className={`kanban-col${isCollapsed ? ' kanban-col--collapsed' : ''}`}>
+                    <button
+                      type="button"
+                      className={`kanban-col__header kanban-col__header--toggle kanban-col__header--${STATUS_TO_SLUG[col.status]}`}
+                      onClick={() => toggleCollapsedCol(col.status)}
+                      aria-expanded={!isCollapsed}
+                    >
+                      <div className="kanban-col__label-row">
+                        <span className="kanban-col__caret" aria-hidden="true">{isCollapsed ? '▸' : '▾'}</span>
+                        <span className="kanban-col__label">{col.label}</span>
+                      </div>
+                      <span className="section-badge">{counts[col.status]}</span>
+                    </button>
+                    {!isCollapsed && (
+                      <div className="kanban-col__body">
+                        {colItems.length === 0 ? (
+                          <div className="kanban-col__empty kanban-col__empty--dashed">{col.hint}</div>
+                        ) : colItems.map((item) => (
+                          <AssignmentCard key={item.id} item={item} onClick={() => setSelectedId(item.id)} currentUserId={currentUser?.id ?? 0} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           ) : (
             <ListView items={items} onSelect={setSelectedId} />
           )}
@@ -391,29 +341,15 @@ export function AssignmentsView() {
 
 export default AssignmentsView
 
-// ── Droppable column ──────────────────────────────────────────────────────
-function DroppableColumn({ status, children, className }: { status: Status; children: ReactNode; className?: string }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `col-${status}` })
-  return (
-    <div ref={setNodeRef} className={`${className ?? ''}${isOver ? ' kanban-col--drop-target' : ''}`}>
-      {children}
-    </div>
-  )
-}
-
-// ── Draggable card (mirror WorkboardView pattern) ─────────────────────────
-function DraggableCard({ item, onClick, currentUserId }: { item: Assignment; onClick: () => void; currentUserId: number }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `asg-${item.id}` })
+// ── Clickable card (no drag — aksi via panel detail) ──────────────────────
+function AssignmentCard({ item, onClick, currentUserId }: { item: Assignment; onClick: () => void; currentUserId: number }) {
   return (
     <button
       type="button"
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       onClick={onClick}
-      className={`work-card-shell work-card-shell--draggable${isDragging ? ' work-card-shell--dragging' : ''}`}
+      className="work-card-shell work-card-shell--clickable"
     >
-      <CardFace item={item} currentUserId={currentUserId} className={isDragging ? 'work-card--drag-ghost' : ''} />
+      <CardFace item={item} currentUserId={currentUserId} />
     </button>
   )
 }
@@ -434,6 +370,11 @@ function CardFace({ item, currentUserId, className }: { item: Assignment; curren
       <div className="work-card__head">
         <span className={`work-card__dot work-card__dot--${item.priority.toLowerCase()}`} />
         <h4 className="work-card__title">{item.title}</h4>
+      </div>
+      {/* Label tipe — bedakan dari card Task di Execution Board (selalu tampil) */}
+      <div className="work-card__type">
+        <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="M6 1.2 10.5 3.6v4.8L6 10.8 1.5 8.4V3.6z"/></svg>
+        Penugasan
       </div>
       <div className="work-card__context">
         {item.relatedProgram ? (

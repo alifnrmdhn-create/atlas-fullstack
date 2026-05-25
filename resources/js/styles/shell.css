@@ -1212,7 +1212,8 @@
   height: 18px;
 }
 
-.topbar__notif-btn {
+.topbar__notif-btn,
+.topbar__help-btn {
   position: relative;
   width: 32px;
   height: 32px;
@@ -1224,9 +1225,11 @@
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
+  text-decoration: none;
   transition: background 160ms cubic-bezier(0.4, 0, 0.2, 1), color 160ms cubic-bezier(0.4, 0, 0.2, 1), border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-.topbar__notif-btn:hover {
+.topbar__notif-btn:hover,
+.topbar__help-btn:hover {
   background: var(--surface-1);
   border-color: color-mix(in srgb, var(--ptpn-green) 22%, var(--panel-border-strong));
   color: var(--text-strong);

@@ -227,39 +227,171 @@ class TaskService
         return $task->fresh();
     }
 
-    /** Update percentComplete + auto-transition to COMPLETED if 100%. */
-    public function updateProgress(int $id, int $percent, int $userId): Task
+    /**
+     * Update percentComplete + auto-derive status berbasis progress.
+     *
+     * Refactor 2026-05-25 (hapus drag): progress jadi penggerak utama posisi
+     * kartu. Slider menggerakkan BACKLOG/READY ↔ IN_PROGRESS ↔ COMPLETED.
+     * Execution TIDAK punya jalur review/approval (beda dgn Assignments), jadi
+     * tidak ada serah-terima IN_REVIEW. BLOCKED sticky (di-clear via Blockers).
+     *
+     * @param ?string $note Wajib saat regresi (progress turun → status mundur),
+     *                      untuk audit log. Untuk maju otomatis, note di-generate.
+     */
+    public function updateProgress(int $id, int $percent, int $userId, ?string $note = null): Task
     {
-        $task = Task::findOrFail($id);
-        $data = ['percentComplete' => $percent];
-        $fromStatus = $task->status;
-        $autoTransition = false;
+        $task = Task::query()
+            ->with(['workstream.program:id,approvalStatus'])
+            ->findOrFail($id);
 
-        if ($percent === 100 && $task->status !== 'COMPLETED') {
-            $allowed = self::TRANSITIONS[$task->status] ?? [];
-            if (in_array('COMPLETED', $allowed, true)) {
-                $data['status'] = 'COMPLETED';
-                if (!$task->actualCompletion) {
-                    $data['actualCompletion'] = now();
-                }
-                $autoTransition = true;
+        $fromStatus = $task->status;
+
+        // Prasyarat mulai kerja: progres > 0 (memulai task) butuh PIC + target —
+        // konsisten dgn rule transitionStatus ("non-Backlog wajib PIC + target").
+        // Tanpa ini, slider bisa mendorong task tanpa PIC ke IN_PROGRESS/COMPLETED.
+        if ($percent > 0) {
+            $missing = [];
+            if (! $task->assignedTo) $missing[] = 'PIC';
+            if (! $task->targetCompletion) $missing[] = 'target selesai';
+            if (! empty($missing)) {
+                abort(422, 'Tetapkan ' . implode(' & ', $missing) . ' dulu sebelum memulai task (progres > 0%).');
             }
         }
 
-        DB::transaction(function () use ($task, $data, $autoTransition, $fromStatus, $userId) {
+        $data = ['percentComplete' => $percent];
+
+        $newStatus = $this->deriveStatusFromProgress($task, $percent);
+
+        if ($newStatus !== null && $newStatus !== $fromStatus) {
+            // Backward (mundur di STATUS_ORDER) wajib alasan — sinkron dengan
+            // logic di transitionStatus. Tanpa ini user bisa silent-revert.
+            $fromOrder = self::STATUS_ORDER[$fromStatus] ?? null;
+            $toOrder = self::STATUS_ORDER[$newStatus] ?? null;
+            $isBackward = $fromOrder !== null && $toOrder !== null && $toOrder < $fromOrder;
+            if ($isBackward && ($note === null || trim($note) === '')) {
+                abort(422, "Menurunkan progres yang mengembalikan status dari {$fromStatus} ke {$newStatus} memerlukan alasan untuk audit log.");
+            }
+
+            // WIP limit saat masuk IN_PROGRESS (mirror transitionStatus).
+            if ($newStatus === 'IN_PROGRESS' && $task->assignedTo) {
+                $limit = (int) config('atlas-thresholds.wip.in_progress_per_user', 5);
+                $current = Task::query()
+                    ->where('assignedTo', $task->assignedTo)
+                    ->where('status', 'IN_PROGRESS')
+                    ->where('id', '!=', $task->id)
+                    ->count();
+                if ($current >= $limit) {
+                    abort(409, "WIP limit tercapai: assignee sudah punya {$current} task IN_PROGRESS (limit {$limit}). Selesaikan task lain dulu sebelum mengisi progres yang baru.");
+                }
+            }
+
+            $data['status'] = $newStatus;
+            if ($newStatus === 'COMPLETED' && !$task->actualCompletion) {
+                $data['actualCompletion'] = now();
+            } elseif ($newStatus !== 'COMPLETED' && $fromStatus === 'COMPLETED') {
+                $data['actualCompletion'] = null;
+            }
+        }
+
+        $statusChanged = isset($data['status']);
+        DB::transaction(function () use ($task, $data, $statusChanged, $fromStatus, $userId, $note) {
             $task->update($data);
-            if ($autoTransition) {
+            if ($statusChanged) {
                 $this->writeStatusLog(
                     $task->id,
                     $fromStatus,
-                    'COMPLETED',
+                    $data['status'],
                     $userId,
-                    'Auto-complete saat progres mencapai 100%.',
+                    ($note !== null && trim($note) !== '')
+                        ? $note
+                        : $this->autoProgressNote($fromStatus, $data['status']),
                 );
             }
         });
 
         return $task->fresh();
+    }
+
+    /**
+     * Selaraskan status task dengan percentComplete-nya (progress-driven).
+     * Dipakai untuk rekonsiliasi data lama (era drag, saat status & progress
+     * masih independen) via command tasks:reconcile-status. Sticky IN_REVIEW &
+     * BLOCKED dilewati. Return status baru jika berubah, null jika tidak.
+     */
+    public function reconcileStatusFromProgress(Task $task, int $actorId): ?string
+    {
+        $task->loadMissing('workstream.program:id,approvalStatus');
+        $target = $this->deriveStatusFromProgress($task, (int) $task->percentComplete);
+        if ($target === null || $target === $task->status) {
+            return null;
+        }
+
+        $from = $task->status;
+        $update = ['status' => $target];
+        if ($target === 'COMPLETED' && ! $task->actualCompletion) {
+            $update['actualCompletion'] = now();
+        } elseif ($target !== 'COMPLETED' && $from === 'COMPLETED') {
+            $update['actualCompletion'] = null;
+        }
+
+        DB::transaction(function () use ($task, $update, $from, $target, $actorId) {
+            $task->update($update);
+            $this->writeStatusLog($task->id, $from, $target, $actorId, 'Selaraskan status dengan progres (refactor 2026-05-25).');
+        });
+
+        return $target;
+    }
+
+    /**
+     * Derive status target dari nilai progress. Return null = jangan ubah status.
+     * Hanya status "progress-driven" (BACKLOG/READY/IN_PROGRESS/COMPLETED) yang
+     * di-derive; IN_REVIEW & BLOCKED dibiarkan (sticky).
+     */
+    private function deriveStatusFromProgress(Task $task, int $percent): ?string
+    {
+        $status = $task->status;
+
+        // BLOCKED sticky — di-clear lewat section Blockers (isBlocked flag),
+        // bukan slider. IN_REVIEW TIDAK sticky: Execution tak punya jalur review
+        // (beda dgn Assignments), jadi status legacy IN_REVIEW ikut dinormalisasi
+        // oleh progres (mis. 100→COMPLETED, 1-99→IN_PROGRESS).
+        if ($status === 'BLOCKED') {
+            return null;
+        }
+
+        // Prasyarat READY: PIC + target selesai + tanggal mulai.
+        $hasPrereq = $task->assignedTo && $task->targetCompletion && $task->startDate;
+
+        if ($percent >= 100) {
+            $target = 'COMPLETED';
+        } elseif ($percent <= 0) {
+            $target = $hasPrereq ? 'READY' : 'BACKLOG';
+        } else {
+            $target = 'IN_PROGRESS';
+        }
+
+        // Clamp fase perencanaan: hanya BACKLOG/READY yang boleh.
+        $approvalStatus = $task->workstream?->program?->approvalStatus ?? 'DRAFT';
+        if (in_array($approvalStatus, ['DRAFT', 'PENDING_KASUB', 'PENDING_KADIV'], true)
+            && !in_array($target, ['BACKLOG', 'READY'], true)) {
+            $target = $hasPrereq ? 'READY' : 'BACKLOG';
+        }
+
+        // Defensive: hormati whitelist transition (mis. dari COMPLETED reopen).
+        $allowed = self::TRANSITIONS[$status] ?? [];
+        if ($target !== $status && !in_array($target, $allowed, true)) {
+            return null;
+        }
+
+        return $target;
+    }
+
+    /** Catatan default untuk status log saat status berubah otomatis dari progres. */
+    private function autoProgressNote(string $from, string $to): string
+    {
+        if ($to === 'COMPLETED') return 'Auto-complete saat progres mencapai 100%.';
+        if ($to === 'IN_PROGRESS') return 'Auto-mulai saat progres mulai diisi.';
+        return "Status disesuaikan otomatis dari progres ({$from} → {$to}).";
     }
 
     /** Append-only audit entry untuk transisi status. Dipanggil dalam transaksi. */

@@ -38,15 +38,12 @@ export const NAV_SECTIONS: NavSection[] = [
       { path: '/penugasan', label: 'Assignment' },
     ],
   },
-  {
-    label: 'Performance',
-    items: [
-      { path: '/performance/scorecard', label: 'Scorecard' },
-      { path: '/performance/kolegial', label: 'KPI Direktorat' },
-      { path: '/performance/divisi', label: 'KPI Divisi' },
-      { path: '/performance/me', label: 'KPI Saya' },
-    ],
-  },
+  // NOTE: grup "Performance" dihilangkan dari Command Palette + breadcrumb
+  // dropdown per permintaan user 2026-05-25 (akses dibatasi ke SUPERADMIN
+  // via gate di AppShell.tsx + middleware di routes/web.php). Halaman tetap
+  // hidup via direct URL untuk SUPERADMIN. Re-enable: restore section di sini
+  // + hapus gate `isSuperAdmin` di AppShell.tsx navGroups + hapus middleware
+  // closure di routes/web.php Performance group.
   // NOTE: grup "Pelaporan" dihilangkan dari Command Palette + breadcrumb
   // dropdown per permintaan user 2026-05-10. Sinkron dengan sidebar
   // (lihat AppShell.tsx navGroups). Halaman tetap hidup via direct URL,

@@ -62,15 +62,6 @@ export function useRoleAccess() {
     canApproveAsKadiv: isAnyOf('KADIV', 'SUPERADMIN', 'ADMIN'),
 
     // ── Execution board ───────────────────────────────────────────────────
-    /** Can drag cards on the Execution board (BOD = monitoring only) */
-    canDragCards: !is('BOD'),
-
-    /**
-     * Can drag cards that belong to other users.
-     * OFFICER can only move their own cards; others can move their team's cards.
-     */
-    canDragOthersCards: isAnyOf('SUPERADMIN', 'ADMIN', 'KADIV', 'KASUBDIV', 'ASISTEN'),
-
     /** myItemsOnly filter is forced on and cannot be toggled */
     myItemsLocked: is('OFFICER'),
 

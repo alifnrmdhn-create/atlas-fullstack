@@ -504,6 +504,10 @@
 .kanban-col__header--in_review { border-left-color: var(--purple); }
 .kanban-col__header--blocked { border-left-color: var(--red); }
 .kanban-col__header--completed { border-left-color: var(--green); }
+/* Lane variants — 3-lane restructure 2026-05-25 (Belum Mulai / Berjalan / Selesai) */
+.kanban-col__header--todo { border-left-color: var(--text-muted); }
+.kanban-col__header--doing { border-left-color: var(--yellow); }
+.kanban-col__header--done { border-left-color: var(--green); }
 /* TSX uses kanban-col__label-row + kanban-col__status-dot + kanban-col__label */
 .kanban-col__label-row {
   display: flex;
@@ -590,6 +594,7 @@
 .work-card-shell--draggable { cursor: grab; }
 .work-card-shell--dragging { cursor: grabbing; }
 .work-card-shell--readonly { cursor: default; }
+.work-card-shell--clickable { cursor: pointer; }
 .work-card-shell:focus-visible {
   outline: none;
 }
@@ -737,6 +742,25 @@
   border: 1px solid color-mix(in srgb, var(--red) 35%, var(--panel-border));
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+/* Badge status underlying dalam lane (READY / IN_REVIEW) — pola mirip
+ * work-card__blocked. BLOCKED & COMPLETED punya badge sendiri. */
+.work-card__status-badge {
+  font-size: var(--type-caption);
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.work-card__status-badge--ready {
+  color: var(--blue);
+  border: 1px solid color-mix(in srgb, var(--blue) 35%, var(--panel-border));
+}
+.work-card__status-badge--in_review {
+  color: var(--purple);
+  border: 1px solid color-mix(in srgb, var(--purple) 35%, var(--panel-border));
 }
 .work-card__footer-meta {
   margin-left: auto;

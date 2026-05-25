@@ -4500,6 +4500,15 @@ select.wid-input {
   --wid-slider-track-bg: var(--wi-subtle-bg-strong);
   --wid-slider-fill-bg: var(--indigo);
 }
+.wid-slider:disabled { cursor: not-allowed; opacity: 0.5; }
+/* Hint saat task belum bisa dimulai (PIC/target belum diisi) */
+.wid-ms-hint {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  color: var(--wi-danger-fg, var(--red));
+  white-space: nowrap;
+}
 /* Webkit */
 .wid-slider::-webkit-slider-runnable-track {
   height: 6px;

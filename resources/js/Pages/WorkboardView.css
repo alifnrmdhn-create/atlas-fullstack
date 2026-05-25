@@ -358,6 +358,10 @@
 .workboard-v2 .kanban-col__header--in_review::before   { background: #A855F7; }
 .workboard-v2 .kanban-col__header--blocked::before     { background: var(--ds-red-500); }
 .workboard-v2 .kanban-col__header--completed::before   { background: var(--ds-green-500); }
+/* Lane variants — 3-lane restructure 2026-05-25 */
+.workboard-v2 .kanban-col__header--todo::before        { background: var(--ds-neutral-300); }
+.workboard-v2 .kanban-col__header--doing::before       { background: var(--ds-amber-500); }
+.workboard-v2 .kanban-col__header--done::before        { background: var(--ds-green-500); }
 
 .workboard-v2 .kanban-col__label-row {
   display: inline-flex;

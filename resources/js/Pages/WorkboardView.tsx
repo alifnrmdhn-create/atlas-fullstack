@@ -1,18 +1,6 @@
 import { useState, useEffect, useId, useRef } from 'react'
-import type { FormEvent, ReactNode } from 'react'
+import type { FormEvent } from 'react'
 import { usePage } from '@inertiajs/react'
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  pointerWithin,
-  useSensor,
-  useSensors,
-  useDraggable,
-  useDroppable,
-} from '@dnd-kit/core'
-import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core'
-import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import {
@@ -22,12 +10,6 @@ import {
 import type { Task } from '../types'
 import { api } from '../lib/api'
 import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
-
-type WaitingItem = {
-  kind:   'review'
-  reason: string
-  task:   Task
-}
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { useRoleAccess } from '../hooks/useRoleAccess'
@@ -37,52 +19,42 @@ import './WorkboardView.css'
 type BoardMode = 'kanban' | 'list' | 'blockers'
 type TimeFilter = 'week' | 'overdue' | 'in-flight' | 'all'
 
-// Kolom Workboard — restructure 2026-05-21:
-// - BLOCKED dihilangkan dari kolom (jadi badge orthogonal, lihat card render)
-// - Vocabulary Indonesia (pakem ATLAS — Indonesia-kan semua label)
-// - Status code DB tetap (backward compat dengan data lama)
-const STATUS_ORDER = ['BACKLOG', 'READY', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED']
+// Lane Workboard — restructure 2026-05-25 (hapus drag, posisi mengikuti progress):
+// - 3 lane visual: Belum Mulai / Berjalan / Selesai
+// - Status DB BACKLOG/READY/IN_PROGRESS/COMPLETED dipertahankan — load-bearing
+//   untuk metrik, ExecutionGrid, validasi fase perencanaan. IN_REVIEW = status
+//   legacy (Execution tak punya review), dinormalisasi oleh progres.
+//   Status underlying ditampilkan sebagai badge dalam lane (READY → "Siap").
+// - Perpindahan lane di-derive dari progress (lihat TaskService::updateProgress).
+type Lane = { key: string; label: string; statuses: string[]; hint: string }
+const LANES: Lane[] = [
+  {
+    key: 'todo',
+    label: 'Belum Mulai',
+    statuses: ['BACKLOG', 'READY'],
+    hint: 'Task belum dikerjakan. Isi progres di rincian kartu untuk memulai.',
+  },
+  {
+    key: 'doing',
+    label: 'Berjalan',
+    statuses: ['IN_PROGRESS', 'IN_REVIEW', 'BLOCKED'],
+    hint: 'Task sedang aktif dikerjakan atau terhambat.',
+  },
+  {
+    key: 'done',
+    label: 'Selesai',
+    statuses: ['COMPLETED'],
+    hint: 'Task tuntas (progres 100% atau disetujui reviewer).',
+  },
+]
 const statusSlug = (status: string) => status.toLowerCase()
 
-// Mapping label Indonesia per status kolom.
-// "Backlog" → Belum Direncanakan (task masih draft, prasyarat belum lengkap)
-// "Ready" → Siap Dikerjakan (PIC + tanggal + plan sudah set)
-// "In Progress" → Sedang Berjalan (kerjaan jalan, actualStartDate set)
-// "In Review" → Menunggu Review (handed off ke reviewer)
-// "Completed" → Selesai (done, completion evidence tercatat)
-const STATUS_LABEL_ID: Record<string, string> = {
-  BACKLOG: 'Belum Direncanakan',
-  READY: 'Siap Dikerjakan',
-  IN_PROGRESS: 'Sedang Berjalan',
-  IN_REVIEW: 'Menunggu Review',
-  COMPLETED: 'Selesai',
-  BLOCKED: 'Terhambat', // tidak ada kolom, tapi tetap di-map untuk badge & data lama
-  ON_HOLD: 'Ditahan',
-  CANCELLED: 'Dibatalkan',
-}
-const statusLabelId = (status: string): string => STATUS_LABEL_ID[status] ?? status
-
-// Tooltip kriteria masuk per kolom (dipakai di kanban-col__header).
-const STATUS_CRITERIA_ID: Record<string, string> = {
-  BACKLOG: 'Task baru atau belum siap dikerjakan. Lengkapi PIC, tanggal, dan rencana untuk pindah ke "Siap Dikerjakan".',
-  READY: 'Task sudah punya PIC, tanggal mulai, dan target selesai. Siap mulai eksekusi.',
-  IN_PROGRESS: 'Task sedang aktif dikerjakan. Tanggal mulai sudah tercatat.',
-  IN_REVIEW: 'Task selesai dari sisi PIC, menunggu approval reviewer.',
-  COMPLETED: 'Task selesai, ada bukti completion (link / catatan).',
-}
-
-// Canonical forward order untuk detect transition direction.
-const STATUS_ORDER_MAP: Record<string, number> = {
-  BACKLOG: 0, READY: 1, IN_PROGRESS: 2, IN_REVIEW: 3, COMPLETED: 4,
-}
-type TransitionCategory = 'normal' | 'skip-forward' | 'backward' | 'lateral'
-function categorizeTransition(from: string, to: string): TransitionCategory {
-  const f = STATUS_ORDER_MAP[from]
-  const t = STATUS_ORDER_MAP[to]
-  if (f === undefined || t === undefined) return 'normal' // BLOCKED orthogonal
-  if (t < f) return 'backward'
-  if (t > f + 1) return 'skip-forward'
-  return 'normal'
+// Badge status underlying dalam lane. BLOCKED & COMPLETED sudah punya badge
+// sendiri di CardFace (Terhambat / Tepat waktu), jadi di-skip di sini.
+// Catatan: Execution TIDAK punya review/approval (beda dgn Assignments), jadi
+// tidak ada badge "Menunggu Review". IN_REVIEW = status legacy yang dinormalisasi.
+const STATUS_BADGE_ID: Record<string, string> = {
+  READY: 'Siap',
 }
 
 // Time-based filter helpers (Daily PIC Workspace)
@@ -149,6 +121,10 @@ function CardFace({
             className="work-card__blocked"
             title={item.blockedReason ?? 'Task terhambat — butuh intervensi'}
           >⚠ Terhambat</span>
+        ) : STATUS_BADGE_ID[item.status] ? (
+          <span className={`work-card__status-badge work-card__status-badge--${statusSlug(item.status)}`}>
+            {STATUS_BADGE_ID[item.status]}
+          </span>
         ) : null}
         {item.status === 'COMPLETED' && item.targetCompletion && item.actualCompletion && (
           <span className={`work-card__ontime work-card__ontime--${new Date(item.actualCompletion) <= new Date(item.targetCompletion) ? 'ok' : 'late'}`}>
@@ -163,70 +139,30 @@ function CardFace({
   )
 }
 
-/** Draggable card in the board columns — registers with DnD context. */
-function DraggableCard({
-  item, isSelected, onClick, normalizeHealthStatus, draggable = true,
+/** Clickable board card (no drag) — buka rincian kartu untuk ubah progress/status. */
+function BoardCard({
+  item, onClick, normalizeHealthStatus,
 }: {
   item: Task
-  isSelected: boolean
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
   normalizeHealthStatus: (h: string) => 'GREEN' | 'YELLOW' | 'RED'
-  /** When false the card renders as non-interactive (BOD monitoring mode, OFFICER viewing others) */
-  draggable?: boolean
 }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: item.id, disabled: !draggable })
   return (
     <button
       type="button"
-      ref={setNodeRef}
-      {...(draggable ? listeners : {})}
-      {...(draggable ? attributes : {})}
       onClick={onClick}
-      className={`work-card-shell${draggable ? ' work-card-shell--draggable' : ' work-card-shell--readonly'}${isDragging ? ' work-card-shell--dragging' : ''}`}
+      className="work-card-shell work-card-shell--clickable"
     >
-      <CardFace
-        item={item}
-        normalizeHealthStatus={normalizeHealthStatus}
-        className={[
-          isSelected && !isDragging ? 'work-card--active' : '',
-          isDragging ? 'work-card--drag-ghost' : '',
-          !draggable ? 'work-card--readonly' : '',
-        ].filter(Boolean).join(' ')}
-      />
+      <CardFace item={item} normalizeHealthStatus={normalizeHealthStatus} />
     </button>
   )
-}
-
-function DroppableColumn({
-  status, isOver, children, className,
-}: {
-  status: string
-  isOver: boolean
-  children: ReactNode
-  className?: string
-}) {
-  const { setNodeRef } = useDroppable({ id: status })
-  return (
-    <div
-      ref={setNodeRef}
-      className={[className, isOver ? 'kanban-col--drop-target' : ''].filter(Boolean).join(' ')}
-    >
-      {children}
-    </div>
-  )
-}
-const DROP_ANIMATION = {
-  duration: 260,
-  easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)', // spring overshoot → settle
 }
 
 export function WorkboardView() {
   const {
     workGroups, blockers, programs,
     boardStatus,
-    setDragState,
     loadOverview,
-    handleTaskDragStart, handleTaskDrop,
     normalizeHealthStatus, formatStatusLabel,
     boardOnOpen, clearBoardOnOpen,
     currentUser,
@@ -260,15 +196,6 @@ export function WorkboardView() {
   // Daily PIC Workspace: smart time filter (default 'week' = active work this week)
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('week')
 
-  // Daily PIC Workspace: tasks menunggu aksi user (review queue)
-  const [waitingItems, setWaitingItems] = useState<WaitingItem[]>([])
-  useEffect(() => {
-    if (!currentUser?.id) return
-    api.get<{ data: WaitingItem[] }>('/tasks/waiting-for-me')
-      .then(r => setWaitingItems(r.data ?? []))
-      .catch(() => { /* non-fatal */ })
-  }, [currentUser?.id, workGroups])
-
   // OFFICER: locked to myItemsOnly regardless of toggle
   const effectiveMyItemsOnly = roleAccess.myItemsLocked ? true : myItemsOnly
   const setEffectiveMyItemsOnly = (v: boolean) => {
@@ -276,12 +203,12 @@ export function WorkboardView() {
   }
   const [boardFilterProgramId, setBoardFilterProgramId] = useState<number | null>(null)
   const [boardFilterWorkstreamId, setBoardFilterWorkstreamId] = useState<number | null>(null)
-  // Collapse backlog by default — reduces demo clutter; user can expand on click.
-  const [collapsedCols, setCollapsedCols] = useState<Set<string>>(() => new Set(['BACKLOG']))
-  const toggleCollapsedCol = (status: string) => {
+  // Lane collapse state (keyed by lane.key). Default semua lane terbuka.
+  const [collapsedCols, setCollapsedCols] = useState<Set<string>>(() => new Set())
+  const toggleCollapsedCol = (laneKey: string) => {
     setCollapsedCols((prev) => {
       const next = new Set(prev)
-      if (next.has(status)) next.delete(status); else next.add(status)
+      if (next.has(laneKey)) next.delete(laneKey); else next.add(laneKey)
       return next
     })
   }
@@ -311,13 +238,6 @@ export function WorkboardView() {
       return () => clearTimeout(t)
     }
   }, [boardStatus.message])
-
-  // DnD-kit state
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
-  )
-  const [activeItem, setActiveItem] = useState<Task | null>(null)
-  const [overColId, setOverColId] = useState<string | null>(null)
 
   // Task detail modal state — card click open modal (kesan "card expand")
   // alih-alih navigate full page. Origin rect dicapture untuk animation
@@ -385,122 +305,6 @@ export function WorkboardView() {
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
-
-  // Daily PIC Workspace: prompt modal saat drag ke status yang butuh konteks.
-  // Status restructure 2026-05-21:
-  // - BLOCKED tetap di list (tidak ada kolom tapi reachable via "Tandai Terhambat" button)
-  // - READY/IN_PROGRESS DI-ADD: prereq check sebelum transition
-  const PROMPT_STATUSES = ['BLOCKED', 'COMPLETED', 'IN_REVIEW', 'READY', 'IN_PROGRESS'] as const
-  type PromptStatus = typeof PROMPT_STATUSES[number]
-  const [pendingTransition, setPendingTransition] = useState<
-    {
-      item: Task
-      targetStatus: PromptStatus
-      missing?: string[]
-      category?: TransitionCategory // skip-forward/backward → behavior modal beda
-    } | null
-  >(null)
-  const [promptText, setPromptText] = useState('')
-  const [promptError, setPromptError] = useState<string | null>(null)
-
-  // Prereq check per status. Return array of human-readable missing fields.
-  // Empty array = prereq lengkap, OK transition.
-  const checkPrereq = (task: Task, target: string): string[] => {
-    const missing: string[] = []
-    if (target === 'READY') {
-      // Siap Dikerjakan: butuh assignee + tanggal mulai + target selesai
-      if (!task.assignee?.id) missing.push('PIC belum ditetapkan')
-      if (!task.startDate) missing.push('Tanggal mulai belum diisi')
-      if (!task.targetCompletion) missing.push('Target selesai belum diisi')
-    }
-    if (target === 'IN_PROGRESS') {
-      // Sedang Berjalan: minimal harus punya assignee & target date
-      // (kalau dari Backlog langsung skip Ready, tetap enforce minimal)
-      if (!task.assignee?.id) missing.push('PIC belum ditetapkan')
-      if (!task.targetCompletion) missing.push('Target selesai belum diisi')
-    }
-    return missing
-  }
-
-  const onDragStart = ({ active }: DragStartEvent) => {
-    const item = allItems.find(i => i.id === active.id)
-    if (item) { setActiveItem(item); handleTaskDragStart(item.id) }
-  }
-  const onDragOver = ({ over }: DragOverEvent) => {
-    setOverColId(over ? String(over.id) : null)
-  }
-  const onDragEnd = ({ over }: DragEndEvent) => {
-    if (over && activeItem) {
-      const target = String(over.id)
-      if (target !== activeItem.status) {
-        // Categorize transition — backward/skip-forward butuh special UI flow
-        const category = categorizeTransition(activeItem.status, target)
-        const needsPrompt = (PROMPT_STATUSES as readonly string[]).includes(target)
-          || category === 'backward'
-          || category === 'skip-forward'
-
-        if (needsPrompt) {
-          // Prereq check untuk target non-Backlog
-          const missing = checkPrereq(activeItem, target)
-          setPendingTransition({
-            item: activeItem,
-            targetStatus: target as PromptStatus,
-            missing: missing.length > 0 ? missing : undefined,
-            category,
-          })
-          setPromptText('')
-          setPromptError(null)
-        } else {
-          void handleTaskDrop(target)
-        }
-      }
-    } else if (!over) {
-      setDragState({ itemId: null, overStatus: null })
-    }
-    setActiveItem(null)
-    setOverColId(null)
-  }
-  const onDragCancel = () => {
-    setDragState({ itemId: null, overStatus: null })
-    setActiveItem(null)
-    setOverColId(null)
-  }
-
-  const confirmPendingTransition = () => {
-    if (!pendingTransition) return
-    const { targetStatus, missing, category } = pendingTransition
-    // Prereq missing — tidak bisa transition. User harus edit task dulu.
-    if (missing && missing.length > 0) return
-    // Backward transition: alasan WAJIB untuk audit log (sync dengan backend).
-    if (category === 'backward' && !promptText.trim()) {
-      setPromptError('Alasan kembalikan status wajib diisi untuk audit log.')
-      return
-    }
-    if (targetStatus === 'BLOCKED' && !promptText.trim()) {
-      setPromptError('Alasan blocker wajib diisi.')
-      return
-    }
-    const options =
-      targetStatus === 'BLOCKED'
-        ? { blockedReason: promptText.trim(), note: promptText.trim() }
-        : promptText.trim()
-        ? { note: promptText.trim() }
-        : undefined
-    void handleTaskDrop(targetStatus, options)
-    setPendingTransition(null)
-    setPromptText('')
-    setPromptError(null)
-  }
-  const cancelPendingTransition = () => {
-    setPendingTransition(null)
-    setPromptText('')
-    setPromptError(null)
-    setDragState({ itemId: null, overStatus: null })
-  }
-  useEscKey(() => {
-    if (promptText !== '' && !window.confirm('Buang catatan yang sudah diketik?')) return
-    cancelPendingTransition()
-  }, pendingTransition !== null)
 
   const byProgram = (items: typeof workGroups[0]['items']) =>
     boardFilterProgramId
@@ -847,92 +651,56 @@ export function WorkboardView() {
             />
           ) : null}
           {boardMode === 'kanban' && allItems.length > 0 && (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={pointerWithin}
-              onDragStart={onDragStart}
-              onDragOver={onDragOver}
-              onDragEnd={onDragEnd}
-              onDragCancel={onDragCancel}
-            >
-              <div className="kanban-board">
-                {STATUS_ORDER.map((status) => {
-                  const group = filteredGroups.find(g => g.status === status)
-                  let items = group?.items ?? []
-                  // BLOCKED column dihilangkan — task dengan status=BLOCKED tetap
-                  // dirender (data lama), bucketed ke IN_PROGRESS dengan badge
-                  // orthogonal "Terhambat" (lihat work-card__blocked styling).
-                  if (status === 'IN_PROGRESS') {
-                    const blockedGroup = filteredGroups.find(g => g.status === 'BLOCKED')
-                    if (blockedGroup) {
-                      items = [...items, ...blockedGroup.items]
-                    }
-                  }
-                  const isCollapsed = collapsedCols.has(status)
-                  return (
-                    <DroppableColumn
-                      key={status}
-                      status={status}
-                      isOver={overColId === status}
-                      className={`kanban-col${isCollapsed ? ' kanban-col--collapsed' : ''}`}
+            <div className="kanban-board kanban-board--lanes">
+              {LANES.map((lane) => {
+                // Bucket item per lane berdasarkan status underlying. Urutan
+                // status di lane.statuses menentukan urutan tampil dalam lane.
+                const items = lane.statuses.flatMap(
+                  s => filteredGroups.find(g => g.status === s)?.items ?? []
+                )
+                const isCollapsed = collapsedCols.has(lane.key)
+                return (
+                  <div
+                    key={lane.key}
+                    className={`kanban-col${isCollapsed ? ' kanban-col--collapsed' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      className={`kanban-col__header kanban-col__header--toggle kanban-col__header--${lane.key}`}
+                      onClick={() => toggleCollapsedCol(lane.key)}
+                      aria-expanded={!isCollapsed}
+                      title={isCollapsed ? 'Buka lane' : 'Tutup lane'}
                     >
-                      <button
-                        type="button"
-                        className={`kanban-col__header kanban-col__header--toggle kanban-col__header--${statusSlug(status)}`}
-                        onClick={() => toggleCollapsedCol(status)}
-                        aria-expanded={!isCollapsed}
-                        title={isCollapsed ? 'Expand column' : 'Collapse column'}
-                      >
-                        <div className="kanban-col__label-row">
-                          <span className="kanban-col__caret" aria-hidden="true">{isCollapsed ? '▸' : '▾'}</span>
-                          <span className="kanban-col__label">{statusLabelId(status)}</span>
-                          {/* Info icon dengan tooltip kriteria masuk kolom — bantu user paham
-                              kapan task harus pindah ke kolom ini. */}
-                          <span
-                            className="kanban-col__info"
-                            title={STATUS_CRITERIA_ID[status] ?? ''}
-                            aria-label={`Kriteria ${statusLabelId(status)}`}
-                          >ⓘ</span>
-                        </div>
-                        <span className="section-badge">{items.length}</span>
-                      </button>
-                      {!isCollapsed && (
-                        <div className="kanban-col__body">
-                          {items.map((item) => (
-                            <DraggableCard
-                              key={item.id}
-                              item={item}
-                              isSelected={false}
-                              onClick={(e) => openTaskModal(item.id, e)}
-                              normalizeHealthStatus={normalizeHealthStatus}
-                              draggable={
-                                roleAccess.canDragCards &&
-                                (roleAccess.canDragOthersCards || item.assignee?.id === currentUser?.id)
-                              }
-                            />
-                          ))}
-                          {/* Drop slot: visible landing zone while hovering this column */}
-                          {overColId === status && activeItem?.status !== status ? (
-                            <div key="drop-slot" className="kanban-drop-slot" />
-                          ) : items.length === 0 ? (
-                            <div className="kanban-col__empty kanban-col__empty--dashed">Drop items here</div>
-                          ) : null}
-                        </div>
-                      )}
-                    </DroppableColumn>
-                  )
-                })}
-              </div>
-              <DragOverlay dropAnimation={DROP_ANIMATION} modifiers={[snapCenterToCursor]}>
-                {activeItem ? (
-                  <CardFace
-                    item={activeItem}
-                    normalizeHealthStatus={normalizeHealthStatus}
-                    className="work-card--drag-overlay"
-                  />
-                ) : null}
-              </DragOverlay>
-            </DndContext>
+                      <div className="kanban-col__label-row">
+                        <span className="kanban-col__caret" aria-hidden="true">{isCollapsed ? '▸' : '▾'}</span>
+                        <span className="kanban-col__label">{lane.label}</span>
+                        <span
+                          className="kanban-col__info"
+                          title={lane.hint}
+                          aria-label={`Tentang lane ${lane.label}`}
+                        >ⓘ</span>
+                      </div>
+                      <span className="section-badge">{items.length}</span>
+                    </button>
+                    {!isCollapsed && (
+                      <div className="kanban-col__body">
+                        {items.map((item) => (
+                          <BoardCard
+                            key={item.id}
+                            item={item}
+                            onClick={(e) => openTaskModal(item.id, e)}
+                            normalizeHealthStatus={normalizeHealthStatus}
+                          />
+                        ))}
+                        {items.length === 0 && (
+                          <div className="kanban-col__empty kanban-col__empty--dashed">{lane.hint}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           )}
 
           {boardMode === 'list' && (
@@ -999,38 +767,6 @@ export function WorkboardView() {
               ) : (
                 <SectionState icon="✅" title="No blockers" text="No blockers recorded at this time." />
               )}
-            </div>
-          )}
-
-          {/* Menunggu aksi saya (Daily PIC Workspace) */}
-          {waitingItems.length > 0 && (
-            <div className="panel waiting-panel">
-              <div className="panel__header">
-                <h3 className="panel__title">Menunggu Aksi Anda</h3>
-                <span className="badge">{waitingItems.length}</span>
-              </div>
-              <div className="wi-list">
-                {waitingItems.map(({ task, reason }) => (
-                  <button
-                    className="wi-list-row"
-                    key={task.id}
-                    onClick={(e) => openTaskModal(task.id, e)}
-                  >
-                    <div className="wi-list-row__left">
-                      <span className="code-badge">{task.code}</span>
-                      <div>
-                        <strong>{task.title}</strong>
-                        <span className="text-muted text-sm">
-                          {task.assignee?.name ? `${task.assignee.name} · ` : ''}{reason}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="wi-list-row__right">
-                      <span className="severity-badge severity-badge--medium">REVIEW</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
             </div>
           )}
 
@@ -1209,164 +945,6 @@ export function WorkboardView() {
           </div>
         </div>
       )}
-
-      {/* Daily PIC Workspace: prompt modal saat drag ke status sensitif.
-          Status yang trigger prompt: BLOCKED, COMPLETED, IN_REVIEW (existing)
-          + READY, IN_PROGRESS (baru — prereq check). */}
-      {pendingTransition && (() => {
-        const target = pendingTransition.targetStatus
-        const category = pendingTransition.category ?? 'normal'
-        const hasMissing = !!(pendingTransition.missing && pendingTransition.missing.length > 0)
-        const isBackward = category === 'backward'
-        const isSkipForward = category === 'skip-forward'
-
-        // Title: backward/skip-forward override target-specific title untuk
-        // memberi user context bahwa transition ini "tidak biasa".
-        const titleMap: Record<string, string> = {
-          BLOCKED: 'Tandai task Terhambat',
-          COMPLETED: 'Tandai task Selesai',
-          IN_REVIEW: 'Kirim task untuk review',
-          READY: 'Pindahkan ke Siap Dikerjakan',
-          IN_PROGRESS: 'Mulai kerjakan task',
-          BACKLOG: 'Kembalikan ke Belum Direncanakan',
-        }
-        const title = isBackward
-          ? `Kembalikan status ke ${statusLabelId(target)}`
-          : isSkipForward
-            ? `Lewati tahapan — langsung ke ${statusLabelId(target)}`
-            : (titleMap[target] ?? 'Pindahkan task')
-
-        const labelMap: Record<string, string> = {
-          BLOCKED: 'Alasan blocker (wajib)',
-          COMPLETED: 'Link bukti / catatan completion (opsional)',
-          IN_REVIEW: 'Catatan untuk reviewer (opsional)',
-          READY: 'Catatan (opsional)',
-          IN_PROGRESS: 'Catatan awal (opsional) · mis. komitmen jadwal',
-          BACKLOG: 'Catatan (opsional)',
-        }
-        const label = isBackward
-          ? 'Alasan kembalikan status (wajib)'
-          : isSkipForward
-            ? 'Alasan lewati tahapan (opsional, disarankan)'
-            : (labelMap[target] ?? 'Catatan (opsional)')
-
-        const placeholderMap: Record<string, string> = {
-          BLOCKED: 'Apa yang menghambat? Siapa yang ditunggu?',
-          COMPLETED: 'mis. https://drive.google.com/... atau referensi notula',
-          IN_REVIEW: 'mis. ringkasan perubahan yang perlu di-review',
-          READY: 'mis. catatan persiapan eksekusi',
-          IN_PROGRESS: 'mis. target selesai minggu ini',
-          BACKLOG: 'mis. ditangguhkan menunggu approval',
-        }
-        const placeholder = isBackward
-          ? 'mis. salah klasifikasi, butuh revisi scope, dst'
-          : isSkipForward
-            ? 'mis. task pre-existing dari notula, sudah dikerjakan sebelumnya'
-            : (placeholderMap[target] ?? '')
-
-        const hintMap: Record<string, string> = {
-          BLOCKED: 'Akan disimpan sebagai blockedReason + masuk Riwayat Status. Wajib agar atasan bisa intervensi.',
-          COMPLETED: 'Catatan masuk Riwayat Status. Boleh dilewati, tapi disarankan untuk audit trail.',
-          IN_REVIEW: 'Catatan masuk Riwayat Status. Boleh dilewati, tapi disarankan untuk audit trail.',
-          READY: 'Catatan masuk Riwayat Status.',
-          IN_PROGRESS: 'Catatan masuk Riwayat Status.',
-          BACKLOG: 'Catatan masuk Riwayat Status.',
-        }
-        const hint = isBackward
-          ? 'Mengembalikan status memerlukan alasan untuk audit log. Akan masuk Riwayat Status.'
-          : isSkipForward
-            ? `Anda melewati ${5 - (STATUS_ORDER_MAP[target] ?? 0) + (STATUS_ORDER_MAP[pendingTransition.item.status] ?? 0)} tahapan. Pastikan task ini memang tidak perlu melewati tahapan tersebut.`
-            : (hintMap[target] ?? 'Catatan masuk Riwayat Status.')
-        return (
-          <div className="modal-backdrop" onClick={cancelPendingTransition}>
-            <div className="modal modal--narrow wb-prompt-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-              <div className="modal__header">
-                <div className="modal-headcopy">
-                  <span className="modal-kicker">
-                    {isBackward ? '↩ Backward' : isSkipForward ? '⏭ Skip' : statusLabelId(target)}
-                  </span>
-                  <h3 className="modal__title">{title}</h3>
-                  <p className="modal-subtitle">
-                    Task: <strong>{pendingTransition.item.code}</strong> — {pendingTransition.item.title}
-                  </p>
-                </div>
-                <button
-                  aria-label="Tutup"
-                  className="modal__close"
-                  onClick={cancelPendingTransition}
-                  type="button"
-                >×</button>
-              </div>
-              <div className="modal__body">
-                {hasMissing ? (
-                  // Prereq missing — block transition, tampilkan list field kurang.
-                  <div className="wb-prereq-missing">
-                    <p className="wb-prereq-missing__title">
-                      ⚠ Belum bisa dipindahkan — lengkapi prasyarat berikut:
-                    </p>
-                    <ul className="wb-prereq-missing__list">
-                      {pendingTransition.missing!.map((m, i) => (
-                        <li key={i}>{m}</li>
-                      ))}
-                    </ul>
-                    <p className="wb-prereq-missing__hint">
-                      Klik <strong>Edit Task</strong> untuk lengkapi field di atas, lalu coba pindahkan lagi.
-                    </p>
-                  </div>
-                ) : (
-                  <label className="form-field">
-                    <span className="form-field__label">{label}</span>
-                    <textarea
-                      autoFocus
-                      className="form-field__input"
-                      rows={4}
-                      maxLength={2000}
-                      placeholder={placeholder}
-                      value={promptText}
-                      onChange={e => { setPromptText(e.target.value); setPromptError(null) }}
-                      onKeyDown={e => { if (e.key === 'Escape') cancelPendingTransition() }}
-                    />
-                    {promptError && <span className="form-field__error">{promptError}</span>}
-                  </label>
-                )}
-                {!hasMissing && (
-                  <p className="modal-hint">{hint}</p>
-                )}
-              </div>
-              <div className="modal__footer">
-                <button className="btn btn--ghost" onClick={cancelPendingTransition} type="button">
-                  {hasMissing ? 'Tutup' : 'Batal'}
-                </button>
-                {hasMissing ? (
-                  <button
-                    className="profile-save-btn"
-                    onClick={() => {
-                      const taskId = pendingTransition.item.id
-                      cancelPendingTransition()
-                      navigate(`/execution/tasks/${taskId}`)
-                    }}
-                    type="button"
-                  >
-                    Edit Task →
-                  </button>
-                ) : (
-                  <button
-                    className="profile-save-btn"
-                    onClick={confirmPendingTransition}
-                    disabled={
-                      (target === 'BLOCKED' && !promptText.trim()) ||
-                      (isBackward && !promptText.trim())
-                    }
-                    type="button"
-                  >
-                    {isBackward ? 'Konfirmasi Kembalikan' : 'Konfirmasi & Pindah'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )
-      })()}
 
       {/* Task detail modal — single surface untuk detail task. Full page
           /execution/tasks/{id} di-redirect server-side ke /execution?task={id}

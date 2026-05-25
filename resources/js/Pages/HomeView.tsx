@@ -395,6 +395,10 @@ export default function HomeView() {
   const navigate = useInertiaNavigate()
   const { props } = usePage<{ scorecardSnapshot: ScorecardSnapshot }>()
   const scorecard = props.scorecardSnapshot
+  // Modul Performance sementara hanya untuk SUPERADMIN (2026-05-25). Widget
+  // Scorecard, Matrix Direktorat, rollup divisi, dan priority "belowTarget"
+  // di-hide buat role lain supaya tidak ada link yang berakhir di 403.
+  const isSuperAdmin = (currentUser?.roleType ?? '').toUpperCase() === 'SUPERADMIN'
 
   // Inline confirmation badge — set of program IDs yang baru saja
   // di-escalate (replace tombol Eskalasi dengan "✓ Tereskalasi" selama
@@ -549,7 +553,9 @@ export default function HomeView() {
       ctaLabel: 'Buka Programs',
     })
   }
-  if (scorecard.belowTarget.length > 0) {
+  // Priority "belowTarget" link ke /performance/* — di-skip untuk non-SUPERADMIN
+  // selama modul Performance di-hide (2026-05-25).
+  if (isSuperAdmin && scorecard.belowTarget.length > 0) {
     const first = scorecard.belowTarget[0]
     const otherBelow = scorecard.belowTarget
       .slice(1, 4)
@@ -811,11 +817,13 @@ export default function HomeView() {
                 )}
               </div>
             ) : (
-              /* Empty state — celebratory card. All clear, all green. */
+              /* Empty state — celebratory card. All clear, all green.
+               * Link tujuan: SUPERADMIN ke scorecard, non-SUPERADMIN ke
+               * portfolio (modul Performance di-restrict 2026-05-25). */
               <button
                 type="button"
                 className="hv__pri-celebration"
-                onClick={() => navigate('/performance/scorecard')}
+                onClick={() => navigate(isSuperAdmin ? '/performance/scorecard' : '/programs')}
               >
                 <span className="hv__pri-celebration-rail" aria-hidden />
                 <div className="hv__pri-celebration-content">
@@ -832,7 +840,7 @@ export default function HomeView() {
                     </span>
                   </div>
                   <span className="hv__pri-celebration-link" aria-hidden>
-                    Lihat scorecard <span>→</span>
+                    {isSuperAdmin ? 'Lihat scorecard' : 'Lihat portfolio'} <span>→</span>
                   </span>
                 </div>
               </button>

@@ -263,6 +263,7 @@ function prefetchRoute(path: string) {
     '/laporan-bulanan': () => import('../Pages/MonthlyReportsView'),
     '/laporan-risiko': () => import('../Pages/RiskReportsView'),
     '/playbook': () => import('../Pages/PlaybookView'),
+    '/panduan': () => import('../Pages/PanduanView'),
     '/executive': () => import('../Pages/ExecutiveSummaryView'),
     '/presence': () => import('../Pages/PresenceView'),
     '/profile': () => import('../Pages/ProfileView'),
@@ -570,6 +571,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const { status: realtimeStatus } = useRealtime()
   const isAdmin = ADMIN_ROLES.has(currentUser?.roleType?.toLowerCase() ?? '')
   const role = currentUser?.roleType?.toUpperCase() ?? ''
+  // Modul Performance sementara di-hide dari semua role kecuali SUPERADMIN
+  // (2026-05-25). Re-enable: hapus gate `isSuperAdmin` di insertion
+  // grpPerformance* di navGroups + restore section di lib/nav-config.ts.
+  const isSuperAdmin = role === 'SUPERADMIN'
   const shellRef = useRef<HTMLDivElement>(null)
   const [sidebarCollapsedView, setSidebarCollapsedView] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
@@ -976,35 +981,40 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const navGroups: { label: string; items: NavItem[] }[] = (() => {
     if (role === 'BOD') {
       return [
-        grpPerencanaan, grpEksekusi, grpPerformanceBod,
+        grpPerencanaan, grpEksekusi,
+        ...(isSuperAdmin ? [grpPerformanceBod] : []),
         grpTindakLanjut, grpKomunikasi, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
       ]
     }
     if (role === 'KADIV') {
       return [
-        grpPerencanaan, grpEksekusi, grpPerformanceFull,
+        grpPerencanaan, grpEksekusi,
+        ...(isSuperAdmin ? [grpPerformanceFull] : []),
         grpTindakLanjut, grpKomunikasi, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
       ]
     }
     if (role === 'KASUBDIV') {
       return [
-        grpPerencanaan, grpEksekusi, grpPerformanceMid,
+        grpPerencanaan, grpEksekusi,
+        ...(isSuperAdmin ? [grpPerformanceMid] : []),
         grpTindakLanjut, grpKomunikasi, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
       ]
     }
     if (role === 'OFFICER' || role === 'ASISTEN') {
       return [
-        grpPerencanaan, grpEksekusiReadOnly, grpPerformanceMin,
+        grpPerencanaan, grpEksekusiReadOnly,
+        ...(isSuperAdmin ? [grpPerformanceMin] : []),
         grpTindakLanjut, grpKomunikasi, grpAkun,
         ...(isAdmin ? [grpAdmin] : []),
       ]
     }
     // Default: full nav (SUPERADMIN, ADMIN, unknown role)
     return [
-      grpPerencanaan, grpEksekusi, grpPerformanceFull,
+      grpPerencanaan, grpEksekusi,
+      ...(isSuperAdmin ? [grpPerformanceFull] : []),
       grpTindakLanjut, grpKomunikasi, grpAkun,
       ...(isAdmin ? [grpAdmin] : []),
     ]
@@ -1423,6 +1433,21 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
           {/* Right cluster */}
           <div className="topbar__right">
+            {/* Pusat Bantuan — friendly task-oriented help entry */}
+            <Link
+              href="/panduan"
+              className="topbar__help-btn"
+              aria-label="Pusat Bantuan"
+              title="Pusat Bantuan & Panduan"
+              onMouseEnter={() => prefetchRoute('/panduan')}
+              onFocus={() => prefetchRoute('/panduan')}
+            >
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="10" cy="10" r="7.5" />
+                <path d="M8 7.5c0-1.1.9-2 2-2s2 .9 2 2c0 .8-.5 1.4-1.2 1.7-.5.2-.8.6-.8 1.1V11" />
+                <circle cx="10" cy="13.8" r="0.7" fill="currentColor" stroke="none" />
+              </svg>
+            </Link>
             {/* Notification bell */}
             <div className="topbar__notif-menu" ref={notifDropRef}>
               <button
