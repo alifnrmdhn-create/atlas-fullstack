@@ -216,9 +216,9 @@ export function AssignmentsView() {
       <div className="assignments-v2__inner ds-stagger">
       {/* ── Toolbar (mirror view-workboard) ── */}
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Assignment Board</h2>
+        <h2 className="view-toolbar__title">Assignment</h2>
         <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Kelola tugas ad-hoc harian di luar Program</span>
+        <span className="view-toolbar__subtitle">Tugas ad-hoc dari atasan — di luar struktur Program</span>
 
         <div className="view-toggle" style={{ marginLeft: 14 }}>
           {(['board', 'list'] as const).map((m) => (
@@ -371,7 +371,7 @@ function CardFace({ item, currentUserId, className }: { item: Assignment; curren
         <span className={`work-card__dot work-card__dot--${item.priority.toLowerCase()}`} />
         <h4 className="work-card__title">{item.title}</h4>
       </div>
-      {/* Label tipe — bedakan dari card Task di Execution Board (selalu tampil) */}
+      {/* Label tipe — bedakan dari card Task di Workboard (selalu tampil) */}
       <div className="work-card__type">
         <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="M6 1.2 10.5 3.6v4.8L6 10.8 1.5 8.4V3.6z"/></svg>
         Penugasan

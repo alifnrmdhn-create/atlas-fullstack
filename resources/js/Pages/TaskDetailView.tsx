@@ -1069,7 +1069,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       <div className="ds task-detail-v2 wid-page view-task-detail ds-stagger">
         <div className="wid-topbar">
           <button className="wid-back" onClick={() => navigate('/execution')} type="button">
-            {Icon.back} Execution Board
+            {Icon.back} Workboard
           </button>
         </div>
         {/* Shape-aware skeleton matching real layout */}
@@ -1114,7 +1114,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       <div className="ds task-detail-v2 wid-page view-task-detail ds-stagger">
         <div className="wid-topbar">
           <button className="wid-back" onClick={() => navigate('/execution')} type="button">
-            {Icon.back} Execution Board
+            {Icon.back} Workboard
           </button>
         </div>
         <div style={{ padding: '32px', maxWidth: 560 }}>
@@ -1181,7 +1181,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       {mode === 'page' && (
       <div className="wid-topbar">
         <button className="wid-back" onClick={() => navigate('/execution')} type="button">
-          {Icon.back} Execution Board
+          {Icon.back} Workboard
         </button>
         <span className="wid-topbar__sep" aria-hidden="true" />
         {/* Trace strip dipersingkat — sebelumnya 4 segment (Programs > kode >

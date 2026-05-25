@@ -1605,7 +1605,7 @@ export function ProgramDetailView() {
           modal-backdrop tetap ter-anchor ke viewport (modal-safe). */}
       {/* ── Breadcrumb (slim) ──────────────────────────────────────────────
           Back button explicit (← Programs) sebagai primary nav affordance —
-          consistent dengan pattern di TaskDetailView (← Execution Board).
+          consistent dengan pattern di TaskDetailView (← Workboard).
           Sebelumnya hanya TraceStrip text-only, user laporkan "tidak ada
           tombol back" karena affordance visual lemah. Kode program tetap
           tampil sebagai context chip. */}

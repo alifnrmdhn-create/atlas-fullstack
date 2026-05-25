@@ -386,7 +386,7 @@
   flex: 1 1 auto;
 }
 
-/* Label tipe "Penugasan" — pembeda halus dari card Task di Execution Board.
+/* Label tipe "Penugasan" — pembeda halus dari card Task di Workboard.
    Muted + uppercase, tanpa warna mencolok (pakem no-gimmick). */
 .assignments-v2 .work-card__type {
   display: inline-flex;

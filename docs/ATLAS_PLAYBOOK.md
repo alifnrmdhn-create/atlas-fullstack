@@ -89,7 +89,7 @@ Klasifikasi kondisi pelaksanaan program pada periode pelaporan.
 | **PDCA** | Siklus *Plan-Do-Check-Act* — kerangka kerja yang melandasi struktur sidebar ATLAS: Perencanaan → Eksekusi → Performance → Tindak Lanjut. |
 | **Workstream** | Jalur kerja dalam satu Program — mengelompokkan Phase dan Task berdasarkan bidang atau tim. *Contoh: Audit Divisi Keuangan.* |
 | **Phase** | Tahapan utama dalam sebuah Workstream. Mengelompokkan Task yang saling berkaitan. Tampil sebagai container bernomor di tab Struktur. *Contoh: Pengumpulan Dokumen.* |
-| **Task** | Satu unit pekerjaan konkret di dalam sebuah Phase — memiliki status, assignee, prioritas, dan batas waktu. Muncul di **Papan Kerja (Execution)**. *Contoh: Kumpulkan laporan arus kas Q1.* |
+| **Task** | Satu unit pekerjaan konkret di dalam sebuah Phase — memiliki status, assignee, prioritas, dan batas waktu. Muncul di **Workboard**. *Contoh: Kumpulkan laporan arus kas Q1.* |
 | **Subtask** | Checklist langkah-langkah di dalam sebuah Task. Tidak berdiri sendiri dan tidak muncul di Papan Kerja. *Contoh: Email ke treasury minta data Januari.* |
 | **KPI** | *Key Performance Indicator* — indikator kinerja terukur yang dipantau secara berkala. |
 | **KPI Charter / Charter** | Tampilan satu halaman read-only Program — mirror format KPI Charter dengan tabel aktivitas bulanan, progress KPI, problem identification & corrective action, next step. |
@@ -360,7 +360,7 @@ Seluruh pengguna mendarat di **Home** (`/`) — namun **konten Home berbeda per 
 | Grup | Item | Fase PDCA |
 |------|------|-----------|
 | **Perencanaan** | Programs | Plan |
-| **Eksekusi** | Execution (Papan Kerja), Penugasan | Do |
+| **Eksekusi** | Workboard, Assignment | Do |
 | **Performance** | Executive Summary, Scorecard, KPI Direktorat, KPI Divisi, KPI Saya, KPI Individu | Check |
 | **Tindak Lanjut** | Rapat Koordinasi | Act |
 | **Komunikasi** | Channels | — |
@@ -469,7 +469,7 @@ Program adalah unit kerja strategis utama di ATLAS. Di dalamnya terdapat Workstr
 | **Program** | Audit Internal 2026 | Menu Programs |
 | **Workstream** | ↳ Audit Divisi Keuangan | Tab Struktur di detail Program |
 | **Phase** | &nbsp;&nbsp;↳ Pengumpulan Dokumen | Tab Struktur — container bernomor |
-| **Task** | &nbsp;&nbsp;&nbsp;&nbsp;↳ Kumpulkan laporan arus kas Q1 | Tab Struktur + **Papan Kerja (Execution)** |
+| **Task** | &nbsp;&nbsp;&nbsp;&nbsp;↳ Kumpulkan laporan arus kas Q1 | Tab Struktur + **Workboard** |
 | **Subtask** | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳ Email ke treasury minta data Januari | Detail Task saja — tidak muncul di Papan Kerja |
 
 > 💡 **Perbedaan kunci:** Task adalah unit terkecil yang *bisa dikerjakan dan dilacak* di Papan Kerja. Phase adalah wadah pengelompokan Task dalam satu Workstream. Subtask adalah checklist langkah kecil di dalam Task.
@@ -545,7 +545,7 @@ PIC dapat menulis **Refleksi mingguan / bulanan** lewat tab Ringkasan. Aturan:
 4. Klik **Buat Task** — task muncul di Papan Kerja assignee
 
 **Dari Papan Kerja (untuk task baru cepat):**
-1. Buka menu **Execution**
+1. Buka menu **Workboard**
 2. Klik **+ Tugas Baru**
 3. Pilih Workstream tujuan, isi detail, klik **Simpan**
 
@@ -651,7 +651,7 @@ Papan Kerja adalah tempat utama untuk mengelola dan memantau tugas harian. Terse
 
 ### Cara Menggunakan Papan Kerja
 
-1. Klik **Execution** di sidebar (atau tekan **G E**)
+1. Klik **Workboard** di sidebar (atau tekan **G E**)
 2. Pilih tampilan **Board** atau **List** di bagian atas
 3. Filter berdasarkan **Program** atau **Workstream** sesuai kebutuhan
 

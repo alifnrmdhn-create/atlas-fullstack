@@ -479,13 +479,13 @@ export function WorkboardView() {
       {/* ── Identity row: title + subtitle + primary CTA ── */}
       <div className="wb-toolbar-identity">
         <div className="wb-toolbar-identity__title-block">
-          <h2 className="view-toolbar__title">Execution Board</h2>
+          <h2 className="view-toolbar__title">Workboard</h2>
           <span className="view-toolbar__subtitle">
             {roleAccess.isMonitoringOnly
-              ? 'Pantau status eksekusi semua task dan blocker di direktorat Anda.'
+              ? 'Pantau task terjadwal & blocker di seluruh Program direktorat Anda.'
               : roleAccess.isOfficer
-              ? 'Kelola dan selesaikan task yang ditugaskan kepada Anda.'
-              : 'Kelola workstream, task, dan blocker tim secara real-time.'}
+              ? 'Task terjadwal dari Program yang ditugaskan kepada Anda.'
+              : 'Task terjadwal dari Program — workstream, task, dan blocker tim real-time.'}
           </span>
         </div>
         <div className="wb-toolbar-identity__actions">

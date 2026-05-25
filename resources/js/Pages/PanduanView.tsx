@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
+import PanduanKonsepHierarki from './PanduanKonsepHierarki'
 import './PanduanView.css'
 
 // ── Content data ──────────────────────────────────────────────────────────────
@@ -91,7 +92,7 @@ const TOPIK: Topik[] = [
       { judul: 'Buka detail Program',          deskripsi: 'Klik program dari list → tab Struktur.' },
       { judul: 'Tambah Workstream',            deskripsi: 'Klik "+ Workstream Baru". Isi nama, kode, tanggal, PIC.' },
       { judul: 'Tambah Phase di Workstream',   deskripsi: 'Klik Workstream → "+ Tambah Phase". Beri nama (mis. "Pengumpulan Dokumen", "Analisis", "Penyusunan Laporan").' },
-      { judul: 'Tambah Task di Phase',         deskripsi: 'Klik "+ Tambah Task" di bawah Phase. Isi judul, prioritas, assignee, target selesai.', tip: 'Task baru muncul di Papan Kerja (Execution) assignee.' },
+      { judul: 'Tambah Task di Phase',         deskripsi: 'Klik "+ Tambah Task" di bawah Phase. Isi judul, prioritas, assignee, target selesai.', tip: 'Task baru muncul di Workboard assignee.' },
     ],
     tips: [
       'Hierarki: Program → Workstream → Phase → Task → Subtask. Subtask adalah checklist langkah kecil di dalam Task, tidak muncul di Papan Kerja.',
@@ -108,7 +109,7 @@ const TOPIK: Topik[] = [
     bacaMenit: 2,
     apa:       'Papan Kerja punya 5 kolom: Belum Direncanakan → Siap Dikerjakan → Sedang Berjalan → Menunggu Review → Selesai. Geser kartu task antar kolom saat status berubah.',
     langkah: [
-      { judul: 'Buka Papan Kerja',             deskripsi: 'Sidebar → grup Eksekusi → Execution. Atau shortcut G E.' },
+      { judul: 'Buka Workboard',               deskripsi: 'Sidebar → grup Eksekusi → Workboard. Atau shortcut G E.' },
       { judul: 'Filter task Anda',             deskripsi: 'Klik tab "My Tasks" untuk lihat task milik Anda saja.' },
       { judul: 'Klik kartu task',              deskripsi: 'Modal detail terbuka. Ubah status (dropdown) atau drag kartu antar kolom.' },
       { judul: 'Submit review saat selesai',   deskripsi: 'Geser ke "Menunggu Review", upload bukti / link / catatan. Reviewer dapat notifikasi.', tip: 'Backward transition (mis. Sedang Berjalan → Siap Dikerjakan) wajib disertai alasan.' },
@@ -149,7 +150,7 @@ const TOPIK: Topik[] = [
     bacaMenit: 2,
     apa:       'Penugasan adalah tugas ad-hoc dari atasan ke bawahan, di luar struktur Program. Biasanya disertai bukti penyelesaian (file/link/catatan).',
     langkah: [
-      { judul: 'Buka halaman Penugasan',       deskripsi: 'Sidebar → grup Eksekusi → Penugasan. Atau shortcut G A.' },
+      { judul: 'Buka halaman Assignment',      deskripsi: 'Sidebar → grup Eksekusi → Assignment. Atau shortcut G A.' },
       { judul: 'Klik "+ Penugasan Baru"',      deskripsi: 'Tombol di pojok kanan atas.' },
       { judul: 'Pilih penerima dari direktori', deskripsi: 'Sistem menampilkan preview rantai approval kalau penerima perlu disetujui dulu.' },
       { judul: 'Isi detail + kirim',           deskripsi: 'Judul, deskripsi, prioritas, target selesai, jenis bukti yang diharapkan. Klik Kirim — penerima langsung dapat notifikasi.', tip: 'Kalau penerima beda direktorat, ATLAS akan minta justifikasi (cross-direktorat policy).' },
@@ -169,7 +170,7 @@ const TOPIK: Topik[] = [
     bacaMenit: 2,
     apa:       'Setelah dapat penugasan, Anda mulai kerjakan dan upload bukti penyelesaian. Pemberi tugas akan menyetujui (approve) atau mengembalikan (return) untuk revisi.',
     langkah: [
-      { judul: 'Buka kartu penugasan Anda',    deskripsi: 'Penugasan → filter "Diberikan ke saya". Kartu di kolom Siap Dikerjakan.' },
+      { judul: 'Buka kartu penugasan Anda',    deskripsi: 'Assignment → filter "Diberikan ke saya". Kartu di kolom Siap Dikerjakan.' },
       { judul: 'Geser ke Sedang Berjalan',     deskripsi: 'Drag kartu ke kolom kedua saat mulai mengerjakan.' },
       { judul: 'Upload bukti penyelesaian',    deskripsi: 'Klik kartu → upload file / paste link / tulis catatan, sesuai yang diminta atasan.' },
       { judul: 'Geser ke Menunggu Review',     deskripsi: 'Pemberi tugas dapat notifikasi.', tip: 'Sebagai reviewer: klik kartu Menunggu Review → Setujui (pindah ke Selesai) atau Kembalikan (kembali ke Sedang Berjalan dengan alasan).' },
@@ -199,13 +200,13 @@ function quickCardsForRole(role: string): QuickCard[] {
   ]
   if (role === 'KASUBDIV') return [
     { label: 'Programs',          sub: 'Kelola program divisi Anda',       href: '/programs' },
-    { label: 'Papan Kerja',       sub: 'Track task tim',                   href: '/execution' },
+    { label: 'Workboard',         sub: 'Track task tim',                   href: '/execution' },
     { label: 'KPI Divisi',        sub: 'Capaian divisi Anda',              href: '/performance/divisi' },
   ]
   // OFFICER, ASISTEN, default
   return [
-    { label: 'Papan Kerja',       sub: 'Tugas harian Anda',                href: '/execution' },
-    { label: 'Penugasan',         sub: 'Tugas ad-hoc dari atasan',         href: '/penugasan' },
+    { label: 'Workboard',         sub: 'Tugas harian Anda',                href: '/execution' },
+    { label: 'Assignment',        sub: 'Tugas ad-hoc dari atasan',         href: '/penugasan' },
     { label: 'KPI Saya',          sub: 'Capaian KPI personal',             href: '/performance/me' },
   ]
 }
@@ -251,7 +252,7 @@ const FAQ: Array<{ q: string; a: string; link?: { anchor: string; label: string 
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-type View = 'index' | 'topik'
+type View = 'index' | 'topik' | 'konsep'
 
 export default function PanduanView() {
   const { currentUser } = useWorkspace()
@@ -294,6 +295,16 @@ export default function PanduanView() {
   }
 
   const activeTopik = active ? TOPIK.find(t => t.slug === active) : null
+
+  const openKonsep = () => {
+    setView('konsep')
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }
+
+  // ── Konsep Hierarki detail view ────────────────────────────────────────────
+  if (view === 'konsep') {
+    return <PanduanKonsepHierarki onBack={backToIndex} />
+  }
 
   // ── Topik detail view ──────────────────────────────────────────────────────
   if (view === 'topik' && activeTopik) {
@@ -408,6 +419,19 @@ export default function PanduanView() {
             <button type="button" onClick={() => setQuery('')} className="panduan__search-clear" aria-label="Bersihkan pencarian">×</button>
           )}
         </div>
+
+        {/* Foundational concept banner — Program/Workstream/Phase/Task explainer */}
+        <button type="button" className="panduan__concept-banner" onClick={openKonsep}>
+          <span className="panduan__concept-banner-icon" aria-hidden="true">📚</span>
+          <span className="panduan__concept-banner-body">
+            <span className="panduan__concept-banner-title">Pertama kali pakai ATLAS?</span>
+            <span className="panduan__concept-banner-sub">
+              Pelajari bedanya <strong>Program</strong>, <strong>Workstream</strong>,
+              <strong> Phase</strong>, dan <strong>Task</strong> — dengan contoh lengkap.
+            </span>
+          </span>
+          <span className="panduan__concept-banner-arrow" aria-hidden="true">→</span>
+        </button>
 
         {/* Topik task-oriented */}
         <section className="panduan__topiks">

@@ -1,0 +1,584 @@
+/* PanduanKonsepHierarki — visual hierarchy + per-level explanation styles.
+ * Pattern A: flat surface, hairlines, no nested card chrome.
+ * Selector prefix `phx-` = "panduan hierarki/hierarchy explainer".
+ */
+
+.phx-page {
+  /* override max-width sedikit lebih lebar dari PanduanView index, karena
+   * konten hierarki butuh space untuk indentasi nested */
+  max-width: 1180px;
+}
+
+/* ── Hero ──────────────────────────────────────────────────────── */
+
+.phx-hero {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--surface-overlay);
+}
+
+.phx-hero-icon {
+  font-size: 38px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.phx-hero-title {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text-strong, var(--text));
+}
+
+.phx-hero-trail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.phx-trail-item {
+  font-weight: 600;
+  color: var(--text);
+  padding: 2px 8px;
+  background: var(--surface-overlay-faint);
+  border-radius: 4px;
+}
+
+.phx-trail-item--muted {
+  opacity: 0.6;
+  font-weight: 500;
+}
+
+.phx-hero-sub {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* ── Sections ──────────────────────────────────────────────────── */
+
+.phx-section {
+  margin-bottom: 36px;
+}
+
+.phx-sec-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--text-strong, var(--text));
+}
+
+.phx-sec-sub {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* ── Tree (nested hierarchy boxes) ─────────────────────────────── */
+
+.phx-tree {
+  margin: 0 0 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.phx-node {
+  padding: 14px 16px;
+  border-left: 3px solid;
+  position: relative;
+}
+
+/* Program — top level, ATLAS green accent + faint background */
+.phx-node--program {
+  border-color: #166534;
+  background: color-mix(in srgb, #166534 4%, transparent);
+  border-radius: 6px;
+}
+
+/* Workstream — indent + blue accent */
+.phx-node--workstream {
+  border-color: #2563eb;
+  margin-left: 18px;
+  margin-top: 12px;
+  background: color-mix(in srgb, #2563eb 3%, transparent);
+  border-radius: 4px;
+}
+
+/* Phase — deeper indent + amber accent */
+.phx-node--phase {
+  border-color: #b45309;
+  margin-left: 18px;
+  margin-top: 10px;
+  background: color-mix(in srgb, #b45309 3%, transparent);
+  border-radius: 4px;
+  padding: 12px 14px;
+}
+
+.phx-node-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.phx-node-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.phx-node-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.phx-node-title {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-strong, var(--text));
+}
+
+.phx-node--phase .phx-node-title {
+  font-size: 13px;
+}
+
+.phx-node-meta {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.phx-node-collapsed {
+  margin: 6px 0 0 32px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.phx-node-collapsed span {
+  opacity: 0.7;
+}
+
+/* Task list di dalam Phase — bare flat list with bullet */
+.phx-task-list {
+  list-style: none;
+  margin: 10px 0 0 32px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.phx-task-list li {
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.phx-task-icon {
+  display: inline-block;
+  margin-right: 6px;
+  color: #16a34a;
+  font-size: 8px;
+  vertical-align: middle;
+}
+
+.phx-task-list em {
+  font-style: normal;
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
+/* Callout box after tree */
+
+.phx-callout {
+  padding: 12px 14px;
+  margin-top: 14px;
+  background: var(--surface-overlay-faint);
+  border-left: 3px solid var(--text-muted);
+  border-radius: 0 6px 6px 0;
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.phx-callout strong {
+  color: var(--text-strong, var(--text));
+}
+
+/* ── Comparison table ──────────────────────────────────────────── */
+
+.phx-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+}
+
+.phx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.phx-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--panel-border);
+  background: var(--surface-overlay-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.phx-table td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--surface-overlay);
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.phx-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.phx-table tbody tr:hover td {
+  background: var(--surface-overlay-soft);
+}
+
+.phx-table td:first-child {
+  white-space: nowrap;
+}
+
+.phx-table strong {
+  color: var(--text-strong, var(--text));
+  font-weight: 600;
+}
+
+/* ── Per-level explanation cards ───────────────────────────────── */
+
+.phx-level {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--surface-overlay);
+}
+
+.phx-level:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.phx-level-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.phx-level-num {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--app-bg);
+  background: var(--text-strong, var(--text));
+  border-radius: 50%;
+}
+
+.phx-level-num--mini {
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  background: var(--text-muted);
+}
+
+.phx-level-title {
+  margin: 4px 0 2px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-strong, var(--text));
+}
+
+.phx-level-tagline {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.phx-level-body {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.phx-level-body strong {
+  color: var(--text-strong, var(--text));
+}
+
+.phx-level-body em {
+  font-style: italic;
+}
+
+/* Inline example box */
+
+.phx-example {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  margin: 10px 0;
+  background: var(--surface-overlay-faint);
+  border-radius: 6px;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.phx-example-label {
+  font-weight: 700;
+  color: var(--green);
+  flex-shrink: 0;
+}
+
+.phx-example-body {
+  color: var(--text);
+}
+
+.phx-example-body strong {
+  color: var(--text-strong, var(--text));
+  font-weight: 600;
+}
+
+.phx-inline-list {
+  list-style: decimal inside;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.phx-inline-list li {
+  margin-bottom: 4px;
+  font-size: 12.5px;
+}
+
+.phx-inline-list li em {
+  color: var(--text-muted);
+  font-style: normal;
+  font-size: 11.5px;
+}
+
+.phx-inline-list--simple {
+  list-style: none;
+}
+
+.phx-inline-list--simple li {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11.5px;
+}
+
+/* "Aturan praktis" — emphasized rule of thumb */
+
+.phx-level-rule {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--green) 6%, transparent);
+  border-left: 3px solid var(--green);
+  border-radius: 0 5px 5px 0;
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.phx-level-rule strong {
+  color: var(--green-ink, var(--green));
+}
+
+/* Mini level (Subtask) — smaller spacing */
+
+.phx-level--mini .phx-level-title {
+  font-size: 13.5px;
+}
+
+.phx-level--mini .phx-level-body {
+  font-size: 12.5px;
+}
+
+/* ── FAQ ───────────────────────────────────────────────────────── */
+
+.phx-faq {
+  border-bottom: 1px solid var(--surface-overlay);
+}
+
+.phx-faq summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  padding: 12px 4px 12px 24px;
+  position: relative;
+  list-style: none;
+  outline: none;
+}
+
+.phx-faq summary::-webkit-details-marker { display: none; }
+
+.phx-faq summary::before {
+  content: '▸';
+  position: absolute;
+  left: 6px;
+  top: 12px;
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.phx-faq[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.phx-faq summary:hover {
+  color: var(--text-strong, var(--text));
+}
+
+.phx-faq-body {
+  padding: 0 4px 14px 24px;
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.phx-faq-body p {
+  margin: 0 0 10px;
+}
+
+.phx-faq-body p:last-child {
+  margin-bottom: 0;
+}
+
+.phx-faq-body strong {
+  color: var(--text-strong, var(--text));
+}
+
+.phx-faq-tip {
+  padding: 8px 10px;
+  background: var(--surface-overlay-faint);
+  border-radius: 5px;
+  color: var(--text-muted);
+}
+
+.phx-faq-list {
+  margin: 6px 0 0;
+  padding-left: 22px;
+}
+
+.phx-faq-list li {
+  margin-bottom: 4px;
+}
+
+/* ── Recap section ─────────────────────────────────────────────── */
+
+.phx-recap {
+  padding: 18px 20px;
+  background: var(--surface-overlay-faint);
+  border-radius: 8px;
+}
+
+.phx-recap-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.phx-recap-list li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.phx-recap-list li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--green);
+  font-weight: bold;
+}
+
+.phx-recap-list strong {
+  color: var(--text-strong, var(--text));
+}
+
+.phx-recap-note {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--app-bg);
+  border-radius: 5px;
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.phx-recap-note strong {
+  color: var(--green-ink, var(--green));
+}
+
+/* ── Playbook link footer ─────────────────────────────────────── */
+
+.phx-playbook-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface-overlay-faint);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.phx-playbook-link strong {
+  color: var(--text-strong, var(--text));
+}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .phx-node--workstream { margin-left: 12px; }
+  .phx-node--phase { margin-left: 12px; }
+  .phx-task-list { margin-left: 18px; }
+  .phx-node-collapsed { margin-left: 18px; }
+
+  .phx-hero { flex-direction: column; gap: 10px; }
+  .phx-hero-icon { font-size: 32px; }
+
+  .phx-example { flex-direction: column; gap: 4px; }
+}
