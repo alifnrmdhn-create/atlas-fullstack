@@ -153,8 +153,7 @@
 /* ─── Action buttons ────────────────────────────────────── */
 
 .admin-v2 .toolbar-action-btn,
-.admin-v2 .admin-create-btn,
-.admin-v2 button.btn-primary {
+.admin-v2 .admin-create-btn {
   height: 32px;
   padding: 0 14px;
   background: var(--ds-brand-600);
