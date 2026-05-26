@@ -24,6 +24,7 @@ import { ExecutionTab } from '../components/ExecutionTab'
 import { MonitoringMatrix } from '../components/MonitoringMatrix'
 import { useInlineToast } from '../components/InlineToast'
 import { UserPicker } from '../components/UserPicker'
+import { PageHeader } from '../design-system'
 import './ProgramsView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -767,39 +768,37 @@ export function ProgramsView() {
       {/* `ds-stagger`: Phase 3 motion standardization. Modals di page ini
           semua portal-mounted (createPortal ke document.body) — modal-safe. */}
       <div className="programs-v2__inner ds-stagger">
-      {/* ── Hero header ─────────────────────────────────────────────────── */}
-      <header className="programs-v2__hero">
-        <div className="programs-v2__hero-text">
-          <h1 className="programs-v2__title">Programs</h1>
-          {programs.length === 0 && (
-            <p className="programs-v2__subtitle">Belum ada program</p>
-          )}
-        </div>
-        <div className="programs-v2__hero-actions">
-          {roleAccess.isMonitoringOnly && (
-            <span className="role-monitoring-badge">Monitoring</span>
-          )}
-          {programs.length > 0 && (
-            <button
-              className="programs-v2__cta programs-v2__cta--secondary"
-              onClick={() => setShowBatchExport(true)}
-              type="button"
-              title="Export Charter PPTX untuk beberapa program sekaligus (rapat MRC / direksi)"
-            >
-              Export Charter PPTX
-            </button>
-          )}
-          {roleAccess.canCreateProgram && (
-            <button
-              className="programs-v2__cta"
-              onClick={openCreateProgramModal}
-              type="button"
-            >
-              Program Baru
-            </button>
-          )}
-        </div>
-      </header>
+      {/* ── Page header (design-system PageHeader) ─────────────────────────── */}
+      <PageHeader
+        title="Programs"
+        subtitle={programs.length === 0 ? 'Belum ada program' : 'Portofolio program kerja & kesehatannya'}
+        actions={
+          <>
+            {roleAccess.isMonitoringOnly && (
+              <span className="role-monitoring-badge">Monitoring</span>
+            )}
+            {programs.length > 0 && (
+              <button
+                className="programs-v2__cta programs-v2__cta--secondary"
+                onClick={() => setShowBatchExport(true)}
+                type="button"
+                title="Export Charter PPTX untuk beberapa program sekaligus (rapat MRC / direksi)"
+              >
+                Export Charter PPTX
+              </button>
+            )}
+            {roleAccess.canCreateProgram && (
+              <button
+                className="programs-v2__cta"
+                onClick={openCreateProgramModal}
+                type="button"
+              >
+                Program Baru
+              </button>
+            )}
+          </>
+        }
+      />
 
       {/* ── Portfolio stats strip ──────────────────────────────────────────
           Glance summary dengan donut chart sebagai visualisasi utama health

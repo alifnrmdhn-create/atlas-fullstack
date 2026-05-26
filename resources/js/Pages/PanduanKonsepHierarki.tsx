@@ -465,15 +465,15 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
           </details>
 
           <details className="phx-faq">
-            <summary>Apakah Penugasan termasuk dalam hierarki ini?</summary>
+            <summary>Apakah Assignment termasuk dalam hierarki ini?</summary>
             <div className="phx-faq-body">
               <p>
-                <strong>Tidak.</strong> Penugasan adalah <em>track terpisah</em> di luar
-                Program. Penugasan = tugas ad-hoc dari atasan ke bawahan yang tidak
-                terkait struktur Program. Penugasan punya lifecycle status sendiri
+                <strong>Tidak.</strong> Assignment adalah <em>track terpisah</em> di luar
+                Program. Assignment = tugas ad-hoc dari atasan ke bawahan yang tidak
+                terkait struktur Program. Assignment punya lifecycle status sendiri
                 (Siap Dikerjakan → Sedang Berjalan → Menunggu Review → Selesai), board
-                sendiri di menu Penugasan, dan tidak mempengaruhi Health Program.
-                Penugasan masuk ke <strong>Commitment Ledger</strong> personal (hit-rate
+                sendiri di menu Assignment, dan tidak mempengaruhi Health Program.
+                Assignment masuk ke <strong>Commitment Ledger</strong> personal (hit-rate
                 komitmen) tapi tidak ke metrik Program.
               </p>
             </div>

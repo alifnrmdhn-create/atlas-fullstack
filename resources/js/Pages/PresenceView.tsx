@@ -7,6 +7,7 @@ import { PresenceRow, SectionState, Avatar, resolveEmoji, formatRelativeTime, ef
 import { api } from '../lib/api'
 import type { PresenceStatus, PresenceUser } from '../types'
 import { ActivityView } from './ActivityView'
+import { PageHeader } from '../design-system'
 import './PresenceView.css'
 
 type PresenceTab = 'kehadiran' | 'aktivitas'
@@ -563,17 +564,16 @@ export function PresenceView() {
       {/* `ds-stagger`: Phase 3 motion standardization. Modal sheet & confirm
           di page ini semua portal-mounted (createPortal). Modal-safe. */}
       <div className="presence-v2__inner ds-stagger">
-      {/* ── Toolbar ── */}
-      <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Team Presence</h2>
-        <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">
-          {activeTab === 'kehadiran'
+      {/* ── Page header (design-system PageHeader) ── */}
+      <PageHeader
+        title="Presence"
+        subtitle={
+          activeTab === 'kehadiran'
             ? 'Status kehadiran dan aktivitas tim secara real-time.'
-            : 'Durasi aktif pengguna berdasarkan waktu penggunaan nyata.'}
-        </span>
-        {activeTab === 'kehadiran' && (
-          <div className="view-toolbar__right">
+            : 'Durasi aktif pengguna berdasarkan waktu penggunaan nyata.'
+        }
+        actions={
+          activeTab === 'kehadiran' ? (
             <div className="view-toolbar__stats presence-toolbar-stats">
               <span className="presence-toolbar-stat presence-toolbar-stat--online">{online} <em>online</em></span>
               <span className="presence-sep">·</span>
@@ -583,9 +583,9 @@ export function PresenceView() {
               <span className="presence-sep">·</span>
               <span className="presence-toolbar-stat presence-toolbar-stat--offline">{offline} <em>offline</em></span>
             </div>
-          </div>
-        )}
-      </div>
+          ) : null
+        }
+      />
 
       {/* ── Tab nav ── */}
       <div className="presence-tab-nav">

@@ -1,6 +1,6 @@
 import { useState, useEffect, useId, useRef } from 'react'
 import type { FormEvent } from 'react'
-import { usePage } from '@inertiajs/react'
+import { usePage, Link } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import {
@@ -14,6 +14,7 @@ import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import { TaskDetailModal } from '../components/TaskDetailModal'
+import { PageHeader } from '../design-system'
 import './WorkboardView.css'
 
 type BoardMode = 'kanban' | 'list' | 'blockers'
@@ -476,30 +477,27 @@ export function WorkboardView() {
           wb-prompt-modal) di-render OUTSIDE workboard-v2__inner — sibling level —
           jadi tidak ter-scope ke containing block animasi. Modal-safe. */}
       <div className="workboard-v2__inner ds-stagger">
-      {/* ── Identity row: title + subtitle + primary CTA ── */}
-      <div className="wb-toolbar-identity">
-        <div className="wb-toolbar-identity__title-block">
-          <h2 className="view-toolbar__title">Workboard</h2>
-          <span className="view-toolbar__subtitle">
-            {roleAccess.isMonitoringOnly
-              ? 'Pantau task terjadwal & blocker di seluruh Program direktorat Anda.'
-              : roleAccess.isOfficer
-              ? 'Task terjadwal dari Program yang ditugaskan kepada Anda.'
-              : 'Task terjadwal dari Program — workstream, task, dan blocker tim real-time.'}
-          </span>
-        </div>
-        <div className="wb-toolbar-identity__actions">
-          {/* "+ Task Baru" content button dihapus 2026-05-24 — duplikat
-              dengan topbar action "+ Task Baru" (topbar-config.ts:32) yang
-              sudah accessible dari semua halaman. Single CTA per page. */}
-          {boardStatus.message ? (
+      {/* ── Page header (design-system PageHeader — standardisasi 2026-05-26) ──
+          "+ Task Baru" content button dihapus 2026-05-24 — duplikat dgn topbar
+          action (topbar-config.ts:32). Single CTA per page. */}
+      <PageHeader
+        title="Workboard"
+        subtitle={
+          roleAccess.isMonitoringOnly
+            ? 'Pantau task & blocker Program di seluruh direktorat Anda.'
+            : roleAccess.isOfficer
+            ? 'Task dari Program yang ditugaskan kepada Anda.'
+            : 'Task dari Program kerja — bagian dari rencana yang disetujui.'
+        }
+        actions={
+          boardStatus.message ? (
             <div className={`board-status-msg${boardStatus.message.includes('failed') ? ' board-status-msg--error' : ''}`}>
               {boardStatus.saving ? <span className="spinner" /> : null}
               {boardStatus.message}
             </div>
-          ) : null}
-        </div>
-      </div>
+          ) : null
+        }
+      />
 
       {/* ── Filters + state row: toggles + selects + stats ── */}
       <div className="view-toolbar wb-toolbar-filters">
@@ -814,9 +812,12 @@ export function WorkboardView() {
             <div className="modal__header">
               <div className="modal-headcopy">
                 <span className="modal-kicker">Eksekusi</span>
-                <h3 className="modal__title" id={createTaskTitleId}>Tugas Baru</h3>
+                <h3 className="modal__title" id={createTaskTitleId}>Task Baru</h3>
                 <p className="modal-subtitle" id={createTaskDescId}>
                   Buat item kerja baru dengan konteks workstream, prioritas, dan pemilik yang jelas agar eksekusi langsung rapi.
+                </p>
+                <p className="modal-cross-hint">
+                  Bukan bagian dari Program? Buat sebagai <Link href="/penugasan">Assignment →</Link>
                 </p>
               </div>
               <button

@@ -1002,7 +1002,7 @@ export function MonthlyReportDetailView() {
     return (
       <div className="mrd-state">
         <span className="mrd-state__icon">📋</span>
-        <span className="mrd-state__copy">Laporan risiko DIMR untuk periode ini belum dibuat.</span>
+        <span className="mrd-state__copy">Risk report DIMR untuk periode ini belum dibuat.</span>
         <button className="mrd-back-btn" onClick={() => navigate('/laporan-bulanan')}>← Kembali</button>
       </div>
     )

@@ -671,7 +671,7 @@
 }
 .program-row__kebab-menu {
   /* position/top/right/z-index diatur via inline style saat dirender portal */
-  z-index: 9001;
+  z-index: var(--z-modal);
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 8px;
@@ -687,7 +687,7 @@
 .kebab-close-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 9000;
+  z-index: var(--z-modal-backdrop);
   background: transparent;
   cursor: default;
 }

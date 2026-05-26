@@ -43,7 +43,7 @@ export function RiskReportDetailView() {
       <div className="view-risk-report-detail">
         <div className="schedule-empty">
           <div className="schedule-empty__icon">⚠️</div>
-          <p className="schedule-empty__title">Laporan tidak ditemukan</p>
+          <p className="schedule-empty__title">Report tidak ditemukan</p>
           <p className="schedule-empty__sub">{error ?? 'Laporan risiko tidak tersedia.'}</p>
           <button className="btn btn--ghost schedule-empty__action" onClick={() => navigate('/laporan-risiko')}>
             Kembali ke daftar

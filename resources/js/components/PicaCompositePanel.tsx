@@ -142,7 +142,7 @@ export function PicaCompositePanel({
   // Section header tetap visible meskipun collapsed (dari CollapsibleSection primitive)
   return (
     <CollapsibleSection
-      title="PICA — Bahan Diskusi Rapat"
+      title="PICA — Bahan Diskusi Meeting"
       count={data ? data.openBlockers.length + data.continuity.unresolvedItems.length : undefined}
       summary={summary}
       defaultOpen={isRelevant}

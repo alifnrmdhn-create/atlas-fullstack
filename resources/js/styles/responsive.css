@@ -8153,8 +8153,6 @@ mark.presence-highlight {
   margin-top: 4px;
 }
 
-.settings-btn--compact { font-size: 12px; }
-
 .settings-appearance-select {
   font-size: 12px;
   flex-shrink: 0;
@@ -8163,52 +8161,9 @@ mark.presence-highlight {
 .settings-appearance-select--theme { width: 170px; }
 .settings-appearance-select--font { width: 140px; }
 
-/* ── Styled buttons used across settings ──────────────────────────────── */
-.btn-primary,
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-  cursor: pointer;
-  transition:
-    background var(--transition),
-    border-color var(--transition),
-    color var(--transition),
-    box-shadow var(--transition),
-    transform var(--transition);
-}
-.btn-primary {
-  background: var(--green);
-  color: var(--text-inverse);
-  border: 1px solid transparent;
-  box-shadow: 0 1px 0 rgba(15, 20, 40, 0.04);
-}
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: var(--panel-shadow-md);
-}
-.btn-primary:disabled {
-  background: var(--surface-1);
-  color: var(--text-muted);
-  box-shadow: inset 0 0 0 1px var(--panel-border);
-  cursor: default;
-}
-.btn-secondary {
-  background: var(--panel);
-  color: var(--text-strong);
-  border: 1px solid var(--panel-border);
-}
-.btn-secondary:hover:not(:disabled) {
-  background: var(--surface-1);
-  border-color: color-mix(in srgb, var(--panel-border) 72%, var(--text-muted));
-}
+/* Legacy .btn-primary / .btn-secondary (single-hyphen, scoped ke SettingsView)
+ * dihapus 2026-05-26 — dialek tombol ketiga. SettingsView dimigrasi ke
+ * kanonik .btn .btn--primary / .btn--ghost (lihat components.css). */
 
 /* ── Styled native <select> used by Appearance etc ───────────────────── */
 .settings-appearance-select,
@@ -11981,6 +11936,20 @@ a svg,
   line-height: 1.6;
   color: var(--text-muted);
 }
+
+/* Cross-hint Workboard <-> Assignment — ajarkan batasan "bagian dari Program?"
+   di titik keputusan (saat membuat). 2026-05-26. */
+.modal-cross-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.modal-cross-hint a {
+  color: var(--indigo);
+  font-weight: 500;
+  text-decoration: none;
+}
+.modal-cross-hint a:hover { text-decoration: underline; }
 
 :is(.modal__body, .modal-body) {
   padding: 16px 20px 18px;

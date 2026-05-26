@@ -44,6 +44,16 @@
   border-bottom: 1px solid var(--ds-border-subtle);
 }
 
+/* Inset variant — untuk halaman full-height flex TANPA padded __inner wrapper
+ * (mis. Channels, Coordination/Schedule). Tanpa ini, header nempel ke tepi
+ * sedangkan body punya gutter → judul tak sejajar konten. Gutter 24px =
+ * --ds-space-6, selaras toolbar/body kedua halaman itu. */
+.ds-page-header--inset {
+  padding-top: var(--ds-space-5);
+  padding-left: var(--ds-space-6);
+  padding-right: var(--ds-space-6);
+}
+
 .ds-page-header__row {
   display: flex;
   align-items: center;

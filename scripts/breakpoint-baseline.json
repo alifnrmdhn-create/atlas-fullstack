@@ -1,0 +1,30 @@
+{
+  "_comment": "Utang breakpoint liar yang di-grandfather. Turunkan angka ini saat migrasi. Regenerate: node scripts/audit-breakpoints.mjs --update-baseline",
+  "_allowed": [
+    640,
+    768,
+    1024,
+    1280,
+    1536,
+    1920
+  ],
+  "counts": {
+    "480": 1,
+    "600": 4,
+    "620": 1,
+    "700": 2,
+    "720": 12,
+    "760": 4,
+    "800": 1,
+    "860": 1,
+    "880": 1,
+    "900": 10,
+    "960": 2,
+    "1000": 1,
+    "1080": 3,
+    "1100": 6,
+    "1180": 2,
+    "1240": 1,
+    "1320": 2
+  }
+}

@@ -266,14 +266,14 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
 
           <div className="settings-password-actions">
             <button
-              className="btn-primary settings-btn--compact"
+              className="btn btn--primary"
               disabled={saving || !current || !next || !confirm}
               type="submit"
             >
               {saving ? 'Menyimpan…' : 'Simpan Kata Sandi'}
             </button>
             <button
-              className="btn-secondary settings-btn--compact"
+              className="btn btn--ghost"
               onClick={onLogout}
               type="button"
             >
@@ -437,7 +437,7 @@ export function SettingsView() {
                     <p className="section-subtitle">Atur preferensi notifikasi dan alerts per kategori.</p>
                   </div>
                   <button
-                    className="btn-secondary settings-btn--compact"
+                    className="btn btn--ghost"
                     disabled={!hasCustomPrefs}
                     onClick={resetDefaults}
                     type="button"

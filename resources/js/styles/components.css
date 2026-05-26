@@ -23,10 +23,23 @@
  *     `var(--content-max-width-default)` 1680px + `margin: 0 auto` di
  *     wrapper INNER (bukan .page-shell itself). Lihat audit Mei 2026 §5.
  *
- * Halaman baru: pakai class `.page-shell` + `.page-shell__inner`
- * di bawah ini. Halaman lama yang sudah punya class scoped sendiri
- * (mis. `.fokus-v2__inner`, `.perf__inner`, `.programs-v2__inner`,
- * `.hv__inner`, `.admin-v2`) sudah comply — pertahankan polanya.
+ * ─── ARAH KANONIK: design-system/ primitives (keputusan 2026-05-26, jalur A) ───
+ * Halaman/komponen BARU: pakai `<PageShell>` + `<PageHeader>` dari
+ * `resources/js/design-system/` (token `--ds-*`). JANGAN buat scaffold
+ * legacy baru. File `.page-shell` di bawah + pola `.ds {name}-v2` adalah
+ * LEGACY (dimigrasi oportunistik saat halaman di-touch).
+ *
+ * ── Pola LEGACY (masih hidup di ~28 halaman, migrasi bertahap) ──
+ *   <div class="ds {name}-v2 view-{name} ds-stagger">   ← root scoped
+ *     <div class="view-toolbar"> … judul + actions … </div>
+ *     <div class="{name}-v2__inner ds-stagger"> … konten … </div>
+ *   </div>
+ *   - `.view-toolbar` = header bersama legacy; jangan reinvent header baru.
+ *   - `{name}-v2__inner` = wrapper konten (padding full-bleed). Banyak yang
+ *     masih px + `!important` (cth `.programs-v2__inner`); itu utang, bukan teladan.
+ *   `.page-shell`/`.page-shell__inner`/`.page-shell__cap` di bawah = primitif
+ *   generik legacy (dipakai ExecutiveSummary dkk). Saat menyentuh halaman
+ *   legacy, pertimbangkan pindah ke design-system `<PageShell>`.
  *
  * Breakpoint values: AMBIL DARI `--bp-*` di tokens.css. Jangan
  * karang sendiri (sebelumnya 20 nilai berbeda tersebar di codebase).
