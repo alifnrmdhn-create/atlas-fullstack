@@ -50,9 +50,9 @@
   border-radius: 999px;
   background: var(--surface-2);
 }
-.pica-continuity__rate--green  { color: #1f7a3f; background: color-mix(in srgb, #1f7a3f 12%, transparent); }
-.pica-continuity__rate--yellow { color: #9b6b00; background: color-mix(in srgb, #9b6b00 12%, transparent); }
-.pica-continuity__rate--red    { color: #c5302d; background: color-mix(in srgb, #c5302d 12%, transparent); }
+.pica-continuity__rate--green  { color: var(--green-ink); background: color-mix(in srgb, var(--green-ink) 12%, transparent); }
+.pica-continuity__rate--yellow { color: var(--yellow-ink); background: color-mix(in srgb, var(--yellow-ink) 12%, transparent); }
+.pica-continuity__rate--red    { color: var(--red-ink); background: color-mix(in srgb, var(--red-ink) 12%, transparent); }
 .pica-continuity__rate--muted  { color: var(--text-muted); }
 .pica-continuity__list {
   list-style: none;
@@ -191,8 +191,8 @@
 }
 .pica-cell__conflict {
   font-size: 11px;
-  color: #c5302d;
-  background: color-mix(in srgb, #c5302d 8%, transparent);
+  color: var(--red-ink);
+  background: color-mix(in srgb, var(--red-ink) 8%, transparent);
   padding: 4px 6px;
   border-radius: 3px;
 }

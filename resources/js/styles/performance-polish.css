@@ -15,16 +15,16 @@
   border-width: 1px !important;
 }
 .perf .forecast-badge--green {
-  background: color-mix(in srgb, #1f7a3f 8%, transparent) !important;
-  border-color: color-mix(in srgb, #1f7a3f 22%, transparent) !important;
+  background: color-mix(in srgb, var(--green-ink) 8%, transparent) !important;
+  border-color: color-mix(in srgb, var(--green-ink) 22%, transparent) !important;
 }
 .perf .forecast-badge--yellow {
-  background: color-mix(in srgb, #9b6b00 8%, transparent) !important;
-  border-color: color-mix(in srgb, #9b6b00 22%, transparent) !important;
+  background: color-mix(in srgb, var(--yellow-ink) 8%, transparent) !important;
+  border-color: color-mix(in srgb, var(--yellow-ink) 22%, transparent) !important;
 }
 .perf .forecast-badge--red {
-  background: color-mix(in srgb, #c5302d 8%, transparent) !important;
-  border-color: color-mix(in srgb, #c5302d 22%, transparent) !important;
+  background: color-mix(in srgb, var(--red-ink) 8%, transparent) !important;
+  border-color: color-mix(in srgb, var(--red-ink) 22%, transparent) !important;
 }
 .perf .forecast-badge--muted {
   background: var(--surface-2) !important;

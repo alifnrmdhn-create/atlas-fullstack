@@ -73,7 +73,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  z-index: 100;
+  z-index: var(--z-sidebar);
   height: 100%;
   border-radius: var(--shell-card-radius);
   border: 1px solid var(--sidebar-border-strong);
@@ -303,7 +303,7 @@
     0 20px 40px rgba(0,0,0,0.36),
     0 4px 10px rgba(0,0,0,0.18),
     inset 0 1px 0 rgba(255,255,255,0.06);
-  z-index: 199;
+  z-index: var(--z-popover);
   overflow: hidden;
   animation: fade-in 140ms var(--ease-enter);
 }
@@ -575,7 +575,7 @@
 /* Tooltip (collapsed) — dark theme styling matching sidebar surface */
 .sidebar__tooltip {
   position: fixed;
-  z-index: 300;
+  z-index: var(--z-tooltip);
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -864,7 +864,7 @@
   gap: 14px;
   padding: 0 20px;
   /* 9500 > backdrop (9000) so topbar stays above any modal overlay within workspace */
-  z-index: 9500;
+  z-index: var(--z-topbar);
   flex-shrink: 0;
 }
 
@@ -1133,7 +1133,7 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--panel-shadow-xl);
   min-width: 244px;
-  z-index: 199;
+  z-index: var(--z-popover);
   overflow: hidden;
   animation: fade-in 140ms var(--ease-enter);
 }
@@ -1302,7 +1302,7 @@
   box-shadow: var(--panel-shadow-xl);
   width: 320px;
   max-height: 480px;
-  z-index: 199;
+  z-index: var(--z-popover);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1678,7 +1678,7 @@
 .topbar__user-name { display: none; }
 
 /* Dropdown */
-.topbar__menu-backdrop { position: fixed; inset: 0; z-index: 198; }
+.topbar__menu-backdrop { position: fixed; inset: 0; z-index: var(--z-popover-backdrop); }
 .topbar__menu-popover {
   position: absolute;
   right: 0;
@@ -1688,7 +1688,7 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--panel-shadow-xl);
   min-width: 232px;
-  z-index: 199;
+  z-index: var(--z-popover);
   overflow: hidden;
   animation: fade-in 140ms var(--ease-enter);
 }
@@ -1902,7 +1902,7 @@
   position: fixed;
   bottom: 20px;
   right: 20px;
-  z-index: 9999;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -2110,9 +2110,9 @@
   border-radius: 50%;
   background: currentColor;
 }
-.data-source-badge--dummy { color: #9b6b00; border-color: color-mix(in srgb, #9b6b00 35%, var(--panel-border)); }
-.data-source-badge--partial { color: #1a6dbc; }
-.data-source-badge--live { color: #1f7a3f; }
+.data-source-badge--dummy { color: var(--yellow-ink); border-color: color-mix(in srgb, var(--yellow-ink) 35%, var(--panel-border)); }
+.data-source-badge--partial { color: var(--blue-ink); }
+.data-source-badge--live { color: var(--green-ink); }
 
 /* ─────────────────────────────────────────────────────────────────────────
  * SidePanel (Sprint 4 — primitive)
@@ -2205,10 +2205,10 @@
   border-radius: 50%;
   background: currentColor;
 }
-.aging-indicator--green  { color: #1f7a3f; border-color: color-mix(in srgb, #1f7a3f 22%, var(--panel-border)); }
-.aging-indicator--yellow { color: #9b6b00; border-color: color-mix(in srgb, #9b6b00 22%, var(--panel-border)); }
-.aging-indicator--orange { color: #d97706; border-color: color-mix(in srgb, #d97706 28%, var(--panel-border)); background: color-mix(in srgb, #d97706 6%, var(--surface-2)); }
-.aging-indicator--red    { color: #c5302d; border-color: color-mix(in srgb, #c5302d 35%, var(--panel-border)); background: color-mix(in srgb, #c5302d 8%, var(--surface-2)); }
+.aging-indicator--green  { color: var(--green-ink); border-color: color-mix(in srgb, var(--green-ink) 22%, var(--panel-border)); }
+.aging-indicator--yellow { color: var(--yellow-ink); border-color: color-mix(in srgb, var(--yellow-ink) 22%, var(--panel-border)); }
+.aging-indicator--orange { color: var(--yellow); border-color: color-mix(in srgb, var(--yellow) 28%, var(--panel-border)); background: color-mix(in srgb, var(--yellow) 6%, var(--surface-2)); }
+.aging-indicator--red    { color: var(--red-ink); border-color: color-mix(in srgb, var(--red-ink) 35%, var(--panel-border)); background: color-mix(in srgb, var(--red-ink) 8%, var(--surface-2)); }
 
 /* ─────────────────────────────────────────────────────────────────────────
  * DraftStatusBadge (Sprint 6 — autosave indicator)
@@ -2238,10 +2238,10 @@
 }
 .draft-status-badge__label { white-space: nowrap; }
 .draft-status-badge--muted  { color: var(--color-text-muted, #6b7280); }
-.draft-status-badge--green  { color: #1f7a3f; border-color: color-mix(in srgb, #1f7a3f 22%, var(--panel-border)); }
+.draft-status-badge--green  { color: var(--green-ink); border-color: color-mix(in srgb, var(--green-ink) 22%, var(--panel-border)); }
 .draft-status-badge--blue   { color: #2563eb; border-color: color-mix(in srgb, #2563eb 22%, var(--panel-border)); background: color-mix(in srgb, #2563eb 5%, var(--surface-2)); }
-.draft-status-badge--yellow { color: #9b6b00; border-color: color-mix(in srgb, #9b6b00 22%, var(--panel-border)); background: color-mix(in srgb, #9b6b00 6%, var(--surface-2)); }
-.draft-status-badge--red    { color: #c5302d; border-color: color-mix(in srgb, #c5302d 30%, var(--panel-border)); background: color-mix(in srgb, #c5302d 6%, var(--surface-2)); }
+.draft-status-badge--yellow { color: var(--yellow-ink); border-color: color-mix(in srgb, var(--yellow-ink) 22%, var(--panel-border)); background: color-mix(in srgb, var(--yellow-ink) 6%, var(--surface-2)); }
+.draft-status-badge--red    { color: var(--red-ink); border-color: color-mix(in srgb, var(--red-ink) 30%, var(--panel-border)); background: color-mix(in srgb, var(--red-ink) 6%, var(--surface-2)); }
 .draft-status-badge--blue .draft-status-badge__dot {
   animation: draft-status-pulse 1.2s ease-in-out infinite;
 }
@@ -2322,14 +2322,14 @@
   background: color-mix(in srgb, var(--color-text-muted) 8%, transparent);
 }
 .draft-restore-banner--undo {
-  border-color: color-mix(in srgb, #9b6b00 30%, var(--panel-border));
-  background: color-mix(in srgb, #9b6b00 7%, var(--surface-2));
+  border-color: color-mix(in srgb, var(--yellow-ink) 30%, var(--panel-border));
+  background: color-mix(in srgb, var(--yellow-ink) 7%, var(--surface-2));
   position: relative;
   overflow: hidden;
 }
 .draft-restore-banner--undo .draft-restore-banner__btn--primary {
-  background: #9b6b00;
-  border-color: #9b6b00;
+  background: var(--yellow-ink);
+  border-color: var(--yellow-ink);
 }
 .draft-restore-banner--undo .draft-restore-banner__btn--primary:hover { background: #7a5400; }
 
@@ -2343,7 +2343,7 @@
 }
 .draft-restore-banner__undo-fill {
   height: 100%;
-  background: color-mix(in srgb, #9b6b00 18%, transparent);
+  background: color-mix(in srgb, var(--yellow-ink) 18%, transparent);
   transition: width 100ms linear;
 }
 .draft-restore-banner--undo > .draft-restore-banner__text,
@@ -2368,7 +2368,7 @@
   cursor: help;
 }
 .forecast-badge__icon { font-size: 11px; }
-.forecast-badge--green  { color: #1f7a3f; border-color: color-mix(in srgb, #1f7a3f 30%, var(--panel-border)); }
-.forecast-badge--yellow { color: #9b6b00; border-color: color-mix(in srgb, #9b6b00 30%, var(--panel-border)); }
-.forecast-badge--red    { color: #c5302d; border-color: color-mix(in srgb, #c5302d 35%, var(--panel-border)); }
+.forecast-badge--green  { color: var(--green-ink); border-color: color-mix(in srgb, var(--green-ink) 30%, var(--panel-border)); }
+.forecast-badge--yellow { color: var(--yellow-ink); border-color: color-mix(in srgb, var(--yellow-ink) 30%, var(--panel-border)); }
+.forecast-badge--red    { color: var(--red-ink); border-color: color-mix(in srgb, var(--red-ink) 35%, var(--panel-border)); }
 .forecast-badge--muted  { color: var(--text-muted); }

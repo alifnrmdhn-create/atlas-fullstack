@@ -237,6 +237,23 @@
   --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
 
+  /* Z-index ladder (2026-05-26). Sebelumnya z-index liar tersebar −1..99999
+   * tanpa skala. NILAI di sini = layering de-facto yang sudah ada, supaya
+   * migrasi drop-in (nol perubahan urutan). HANYA untuk elemen fixed/portaled
+   * lintas-stacking-context (chrome global). Stacking LOKAL di dalam komponen
+   * (1, 2, 10, 60/61 dst) TIDAK pakai token — biarkan apa adanya.
+   * Urutan: sidebar < popover < tooltip < palette < modal < topbar < floating < toast */
+  --z-sidebar: 100;          /* sidebar rail */
+  --z-popover-backdrop: 198; /* scrim di bawah popover menu (klik-luar) */
+  --z-popover: 199;          /* user/quick/notif/menu popover (portaled) */
+  --z-tooltip: 300;          /* tooltip sidebar collapsed */
+  --z-palette: 2000;         /* command palette (⌘K) */
+  --z-modal-backdrop: 9000;  /* scrim modal */
+  --z-modal: 9001;           /* dialog/modal content */
+  --z-topbar: 9500;          /* app topbar (floats di atas modal) */
+  --z-floating: 9600;        /* dropdown/popover di atas topbar */
+  --z-toast: 9999;           /* notif toast stack — paling atas */
+
   /* Spacing ladder — Tier 2 visual cleanup (2026-05-24).
    * Pakem dari HomeView reference, di-formalize jadi semantic tokens supaya
    * konsisten lintas halaman. Sebelumnya spacing per page ad-hoc (16/20/28/32

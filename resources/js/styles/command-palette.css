@@ -6,7 +6,7 @@
 .cmdk-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: var(--z-palette);
   background: var(--scrim);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
