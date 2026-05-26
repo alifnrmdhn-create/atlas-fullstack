@@ -8,6 +8,7 @@ import { extractErrorMessage } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { formatRoleLabel } from '../lib/roleLabel'
 import { useInlineToast } from '../components/InlineToast'
+import { PageHeader } from '../design-system'
 import './ChannelsView.css'
 import {
   Avatar,
@@ -1601,19 +1602,19 @@ export function ChannelsView({
 
   return (
     <div className="ds channels-v2 view-channels ds-stagger">
-      <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Channels</h2>
-        <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Komunikasi tim, diskusi, dan pembaruan proyek.</span>
-        <div className="view-toolbar__right">
+      <PageHeader
+        className="ds-page-header--inset"
+        title="Channels"
+        subtitle="Komunikasi tim, diskusi, dan pembaruan proyek."
+        actions={
           <div className="view-toolbar__stats">
             <span>{channels.length} <em>channels</em></span>
             {unreadTotal > 0 && (
               <span className="text-red">{unreadTotal} <em>unread</em></span>
             )}
           </div>
-        </div>
-      </div>
+        }
+      />
     <section className="channels-layout channels-layout--polished" style={{ flex: 1, minHeight: 0 }}>
       {/* ── Channel sidebar (compact, Slack-style) ──────────── */}
       <aside className="panel channel-panel">

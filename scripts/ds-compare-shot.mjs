@@ -55,7 +55,12 @@ try {
     await navigate(page, `${baseUrl}${shot.path}`)
     await page.send('Runtime.evaluate', { expression: `document.documentElement.setAttribute('data-theme', '${theme}')` })
     await waitFor(page, () => document.body && document.body.innerText.trim().length > 50, 10000, shot.path).catch(() => {})
-    await sleep(900) // biar animasi entrance + data render settle
+    await sleep(700)
+    if (process.env.DISPATCH) {
+      await page.send('Runtime.evaluate', { expression: `window.dispatchEvent(new CustomEvent('atlas:topbar-action', { detail: { id: ${JSON.stringify(process.env.DISPATCH)}, page: location.pathname } }))` })
+      await sleep(500)
+    }
+    await sleep(400) // biar animasi entrance + data render settle
     const { cssContentSize } = await page.send('Page.getLayoutMetrics')
     const height = Math.min(Math.ceil(cssContentSize.height), 4000)
     const result = await page.send('Page.captureScreenshot', {

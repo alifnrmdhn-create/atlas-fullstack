@@ -9,6 +9,7 @@ import { useEscKey } from '../hooks/useEscKey'
 import { formatRoleLabel } from '../lib/roleLabel'
 import { UserPicker } from '../components/UserPicker'
 import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
+import { PageHeader } from '../design-system'
 import './ScheduleView.css'
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -877,11 +878,11 @@ export function ScheduleView() {
     // Aman karena 5 modal sudah di-portal-mount ke document.body (Phase 5B).
     <div className="ds schedule-v2 view-schedule ds-stagger">
 
-      {/* Toolbar */}
-      <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Jadwal Meeting</h2>
-        <div className="view-toolbar__sep" />
+      {/* Page header (design-system PageHeader) — "Coordination" selaras sidebar */}
+      <PageHeader className="ds-page-header--inset" title="Coordination" subtitle="Rapat koordinasi & cadence tim" />
 
+      {/* Controls row: stats + filter + view toggle + Blok Fokus */}
+      <div className="view-toolbar">
         {/* Mini stats */}
         <div className="schedule-toolbar-stats">
           {thisWeekCount > 0 && (
