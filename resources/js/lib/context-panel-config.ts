@@ -33,8 +33,8 @@ export type ContextPanelDef = {
 export const CONTEXT_PANELS: Record<string, ContextPanelDef> = {
   '/performance/scorecard': { title: 'Insight Scorecard', Component: ScorecardInsightPanel },
   '/reports': { title: 'Insight Analytics', Component: ReportsAnalyticsPanel },
-  '/laporan-bulanan': { title: 'Filter Laporan', Component: MonthlyReportsFilterPanel },
-  '/laporan-risiko': { title: 'Filter Laporan Risiko', Component: RiskReportsFilterPanel },
+  '/laporan-bulanan': { title: 'Filter Report', Component: MonthlyReportsFilterPanel },
+  '/laporan-risiko': { title: 'Filter Risk Report', Component: RiskReportsFilterPanel },
 }
 
 /** Routes that suppress the panel even when the prefix would match (e.g.,

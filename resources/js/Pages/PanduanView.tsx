@@ -178,18 +178,18 @@ const TOPIK: Topik[] = [
     ringkas:   'Beri tugas ad-hoc ke bawahan, di luar struktur Program',
     audience:  ['BOD', 'KADIV', 'KASUBDIV', 'ADMIN'],
     bacaMenit: 2,
-    apa:       'Penugasan adalah tugas ad-hoc dari atasan ke bawahan, di luar struktur Program. Biasanya disertai bukti penyelesaian (file/link/catatan).',
+    apa:       'Assignment adalah tugas ad-hoc dari atasan ke bawahan, di luar struktur Program. Biasanya disertai bukti penyelesaian (file/link/catatan).',
     langkah: [
       { judul: 'Buka halaman Assignment',      deskripsi: 'Sidebar → grup Eksekusi → Assignment. Atau shortcut G A.' },
-      { judul: 'Klik "+ Penugasan Baru"',      deskripsi: 'Tombol di pojok kanan atas.' },
+      { judul: 'Klik "+ Assignment Baru"',     deskripsi: 'Tombol di pojok kanan atas.' },
       { judul: 'Pilih penerima dari direktori', deskripsi: 'Sistem menampilkan preview rantai approval kalau penerima perlu disetujui dulu.' },
       { judul: 'Isi detail + kirim',           deskripsi: 'Judul, deskripsi, prioritas, target selesai, jenis bukti yang diharapkan. Klik Kirim — penerima langsung dapat notifikasi.', tip: 'Kalau penerima beda direktorat, ATLAS akan minta justifikasi (cross-direktorat policy).' },
     ],
     tips: [
-      'Penugasan tidak terhitung dalam KPI program, tapi masuk ke Commitment Ledger penerima (hit-rate komitmen).',
+      'Assignment tidak terhitung dalam KPI program, tapi masuk ke Commitment Ledger penerima (hit-rate komitmen).',
       'Status: Siap Dikerjakan → Sedang Berjalan → Menunggu Review → Selesai. Sama dengan Task workboard.',
     ],
-    playbook: { anchor: '9-eksekusi--penugasan-ad-hoc-task', label: '§9 Penugasan' },
+    playbook: { anchor: '9-eksekusi--penugasan-ad-hoc-task', label: '§9 Assignment' },
   },
   {
     slug:      'kerjakan-review-penugasan',
@@ -209,7 +209,7 @@ const TOPIK: Topik[] = [
       'Filter berguna: Mine / Given to me / Team / Awaiting review — pakai sesuai role Anda saat itu.',
       'Bukti yang diminta tertulis di field "Jenis bukti" — wajib disertakan supaya bisa submit ke review.',
     ],
-    playbook: { anchor: '9-eksekusi--penugasan-ad-hoc-task', label: '§9 Penugasan' },
+    playbook: { anchor: '9-eksekusi--penugasan-ad-hoc-task', label: '§9 Assignment' },
   },
 ]
 
@@ -265,9 +265,9 @@ const FAQ: Array<{ q: string; a: string; link?: { anchor: string; label: string 
     link: { anchor: '11-eksekusi--blocker-hambatan-kerja', label: '§11 Blocker' },
   },
   {
-    q: 'Kapan saya harus pakai Task vs Penugasan?',
-    a: 'Task = pekerjaan yang sudah tercantum di Program/Workstream/Phase — direncanakan. Penugasan = tugas ad-hoc dari atasan, di luar Program — biasanya situasional. Kalau pekerjaan punya output deliverable jelas dan terjadwal, Task. Kalau permintaan cepat tanpa struktur, Penugasan.',
-    link: { anchor: '9-eksekusi--penugasan-ad-hoc-task', label: '§9 Penugasan' },
+    q: 'Kapan saya harus pakai Task vs Assignment?',
+    a: 'Task = pekerjaan yang sudah tercantum di Program/Workstream/Phase — direncanakan. Assignment = tugas ad-hoc dari atasan, di luar Program — biasanya situasional. Kalau pekerjaan punya output deliverable jelas dan terjadwal, Task. Kalau permintaan cepat tanpa struktur, Assignment.',
+    link: { anchor: '9-eksekusi--penugasan-ad-hoc-task', label: '§9 Assignment' },
   },
   {
     q: 'Bagaimana cara export Charter program ke PPTX?',

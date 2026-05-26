@@ -161,7 +161,7 @@ export function MonthlyReportsView() {
 
       {/* ── Toolbar ── */}
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Laporan Bulanan</h2>
+        <h2 className="view-toolbar__title">Monthly Reports</h2>
         <div className="view-toolbar__sep" />
         <span className="view-toolbar__subtitle">Output bulanan divisi — upload, review, approval berjenjang</span>
         <div className="mr-toolbar-controls">
@@ -171,7 +171,7 @@ export function MonthlyReportsView() {
           </select>
           {canCreate && (
             <button className="btn btn--primary btn--sm" onClick={() => setModal('create')}>
-              + Buat Laporan
+              + Buat Report
             </button>
           )}
         </div>
@@ -183,7 +183,7 @@ export function MonthlyReportsView() {
           <div className="mr-strip__icon-wrap neutral"><span className="mr-strip__icon">📋</span></div>
           <div className="mr-strip__content">
             <span className="mr-strip__val">{total}</span>
-            <span className="mr-strip__lbl">Total Laporan</span>
+            <span className="mr-strip__lbl">Total Report</span>
           </div>
           {total > 0 && <div className="mr-strip__progress"><div className="mr-strip__progress-fill neutral" style={{ width: '100%' }} /></div>}
         </div>
@@ -240,7 +240,7 @@ export function MonthlyReportsView() {
               <span>Tidak ada laporan untuk tahun {year}</span>
               {canCreate && (
                 <button className="mr-btn primary" onClick={() => setModal('create')}>
-                  + Buat Laporan Pertama
+                  + Buat Report Pertama
                 </button>
               )}
             </div>
@@ -338,7 +338,7 @@ export function MonthlyReportsView() {
       {/* ── Modal: Create ── */}
       {modal === 'create' && (
         <Modal
-          title="Buat Laporan Baru"
+          title="Buat Report Baru"
           subtitle="Pilih periode laporan yang akan dibuka sebagai draft, lalu lanjutkan pengisian indikatornya."
           onClose={() => setModal(null)}
           footer={(

@@ -180,7 +180,7 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
             fontSize: 11, color: 'var(--ds-text-tertiary)',
             marginTop: 12, lineHeight: 1.5,
           }}>
-            Sumber: Tasks + Action Items + Penugasan dengan dueDate dalam window. Hit = selesai sebelum due.
+            Sumber: Tasks + Action Items + Assignment dengan dueDate dalam window. Hit = selesai sebelum due.
           </div>
         </Card>
         )

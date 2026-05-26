@@ -106,7 +106,7 @@ export const TOURS: Record<TourId, TourStep[]> = {
     {
       id: 'ledger-intro',
       title: 'Komitmen Saya',
-      text: 'Track consistency Anda dari 3 sumber: Tasks, Action Items rapat, dan Penugasan. Hit rate ≥80% selama X minggu = streak.',
+      text: 'Track consistency Anda dari 3 sumber: Tasks, Action Items meeting, dan Assignment. Hit rate ≥80% selama X minggu = streak.',
       attachTo: { element: '[data-tour="commitment-ledger"]', on: 'top' },
     },
     {

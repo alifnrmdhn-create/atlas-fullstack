@@ -9,6 +9,7 @@ import { getProgramDisplayStatus } from '../lib/programStatus'
 import { useFeatureFlag } from '../hooks/useFeatureFlag'
 import { useOnboardingTour } from '../hooks/useOnboardingTour'
 import { EscalationTriagePanel, type EscalationRequest as EscalationRequestType } from '../components/Escalation'
+import { PageHeader } from '../design-system'
 import './FokusView.css'
 
 // Sprint 2 — Komitmen Hari Ini section
@@ -49,7 +50,7 @@ function CommitmentTodaySection() {
   const kindLabel: Record<CommitmentItem['kind'], string> = {
     task: 'Task',
     action_item: 'Action Item',
-    assignment: 'Penugasan',
+    assignment: 'Assignment',
   }
 
   return (
@@ -312,9 +313,9 @@ const NOTIF_TYPE_LABEL: Record<string, string> = {
   BLOCKER_CREATED: 'Blocker', STATUS_CHANGE: 'Update', COMMENT: 'Komentar',
   ASSIGNED: 'Ditugaskan', TASK_ASSIGNED: 'Ditugaskan', SYSTEM: 'Sistem',
   PROGRAM_NEEDS_APPROVAL: 'Approval', PROGRAM_APPROVED: 'Program',
-  PROGRAM_REJECTED: 'Program', REPORT_AWAITING_REVIEW: 'Laporan',
-  REPORT_AWAITING_APPROVAL: 'Laporan', REPORT_APPROVED: 'Laporan',
-  REPORT_REJECTED: 'Laporan', REPORT_NEEDS_REVISION: 'Laporan',
+  PROGRAM_REJECTED: 'Program', REPORT_AWAITING_REVIEW: 'Report',
+  REPORT_AWAITING_APPROVAL: 'Report', REPORT_APPROVED: 'Report',
+  REPORT_REJECTED: 'Report', REPORT_NEEDS_REVISION: 'Report',
   DEADLINE_APPROACHING: 'Deadline', DM_RECEIVED: 'DM',
 }
 
@@ -1323,16 +1324,15 @@ export function InboxView() {
     <div className="ds fokus-v2 view-inbox">
       {/* `ds-stagger`: motion standardization (no inline modal). */}
       <div className="fokus-v2__inner ds-stagger">
-        <header className="fokus-v2__header">
-          <div className="fokus-v2__header-left">
-            <h1 className="fokus-v2__title">Fokus</h1>
-            <span className="fokus-v2__subtitle">
-              {todayLabel()}
-              {todayCompletedCount > 0 && ` · ${todayCompletedCount} selesai hari ini`}
-            </span>
-          </div>
-          <div className="fokus-v2__header-actions">
-            {(mentions.length > 0 || otherUnread.length > 0) && (
+        <PageHeader
+          title="Focus"
+          subtitle={
+            todayCompletedCount > 0
+              ? `Komitmen & notifikasi prioritas hari ini · ${todayCompletedCount} selesai`
+              : 'Komitmen & notifikasi prioritas hari ini'
+          }
+          actions={
+            (mentions.length > 0 || otherUnread.length > 0) ? (
               <button
                 type="button"
                 className="fokus-v2__mark-all"
@@ -1341,9 +1341,9 @@ export function InboxView() {
               >
                 {markingAll ? 'Marking…' : 'Tandai semua dibaca'}
               </button>
-            )}
-          </div>
-        </header>
+            ) : null
+          }
+        />
 
       <div className="fokus-page">
 

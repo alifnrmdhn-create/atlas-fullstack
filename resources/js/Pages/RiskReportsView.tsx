@@ -115,7 +115,7 @@ export function RiskReportsView() {
           ))}
         </div>
         <button className="view-toggle-btn" style={{ marginLeft: 'auto' }} onClick={() => setShowCreate(true)}>
-          + Buat Laporan
+          + Buat Report
         </button>
       </div>
 
@@ -135,8 +135,8 @@ export function RiskReportsView() {
         {!loading && !error && reports.length === 0 && (
           <div className="schedule-empty">
             <div className="schedule-empty__icon">🛡</div>
-            <p className="schedule-empty__title">Belum ada laporan risiko</p>
-            <p className="schedule-empty__sub">Laporan risiko DIMR untuk tahun {yearFilter} belum tersedia.</p>
+            <p className="schedule-empty__title">Belum ada risk report</p>
+            <p className="schedule-empty__sub">Risk report DIMR untuk tahun {yearFilter} belum tersedia.</p>
           </div>
         )}
 
@@ -277,7 +277,7 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
     <div className="dimr-modal-backdrop" onClick={onClose}>
       <div className="dimr-modal" onClick={e => e.stopPropagation()}>
         <div className="dimr-modal__header">
-          <span className="dimr-modal__title">Buat Laporan Risiko Baru</span>
+          <span className="dimr-modal__title">Buat Risk Report Baru</span>
           <button className="dimr-modal__close" onClick={onClose}>✕</button>
         </div>
         <div className="dimr-modal__body">
@@ -306,7 +306,7 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
         <div className="dimr-modal__footer">
           <button className="mrd-btn" onClick={onClose} disabled={saving}>Batal</button>
           <button className="mrd-btn primary" onClick={save} disabled={saving}>
-            {saving ? 'Membuat…' : 'Buat Laporan'}
+            {saving ? 'Membuat…' : 'Buat Report'}
           </button>
         </div>
       </div>

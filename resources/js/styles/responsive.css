@@ -11937,6 +11937,20 @@ a svg,
   color: var(--text-muted);
 }
 
+/* Cross-hint Workboard <-> Assignment — ajarkan batasan "bagian dari Program?"
+   di titik keputusan (saat membuat). 2026-05-26. */
+.modal-cross-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.modal-cross-hint a {
+  color: var(--indigo);
+  font-weight: 500;
+  text-decoration: none;
+}
+.modal-cross-hint a:hover { text-decoration: underline; }
+
 :is(.modal__body, .modal-body) {
   padding: 16px 20px 18px;
   overflow-y: auto;

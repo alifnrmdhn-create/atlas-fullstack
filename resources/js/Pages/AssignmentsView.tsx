@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
+import { Link } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api, extractErrorMessage } from '../lib/api'
 import { useEscKey } from '../hooks/useEscKey'
@@ -7,6 +8,7 @@ import { useAnimatedClose } from '../hooks/useAnimatedClose'
 import { Avatar } from '../components/ui'
 import { UserPicker } from '../components/UserPicker'
 import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
+import { PageHeader } from '../design-system'
 import './AssignmentsView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -86,7 +88,7 @@ const STATUS_TO_SLUG: Record<Status, string> = {
 // lintas modul. Penugasan tidak punya tahap "Belum Direncanakan" (atasan sudah
 // menjabarkan tugas saat memberikan), jadi mulai dari "Siap Dikerjakan".
 const STATUS_COLUMNS: Array<{ status: Status; label: string; hint: string }> = [
-  { status: 'DITUGASKAN', label: 'Siap Dikerjakan', hint: 'Penugasan diterima, menunggu PIC mulai' },
+  { status: 'DITUGASKAN', label: 'Siap Dikerjakan', hint: 'Assignment diterima, menunggu PIC mulai' },
   { status: 'DIKERJAKAN', label: 'Sedang Berjalan', hint: 'Sedang dikerjakan' },
   { status: 'IN_REVIEW',  label: 'Menunggu Review', hint: 'Menunggu persetujuan reviewer' },
   { status: 'SELESAI',    label: 'Selesai',         hint: 'Tuntas' },
@@ -214,13 +216,12 @@ export function AssignmentsView() {
       {/* `ds-stagger`: Phase 5 motion standardization. Modal subkomponen
           (CreateModal) sudah di-portal-mount ke document.body (Phase 5B). */}
       <div className="assignments-v2__inner ds-stagger">
-      {/* ── Toolbar (mirror view-workboard) ── */}
-      <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Assignment</h2>
-        <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Tugas ad-hoc dari atasan — di luar struktur Program</span>
+      {/* ── Page header (design-system PageHeader) ── */}
+      <PageHeader title="Assignment" subtitle="Assignment ad-hoc di luar Program — permintaan singkat, tanpa workstream." />
 
-        <div className="view-toggle" style={{ marginLeft: 14 }}>
+      {/* ── Controls row: mode + scope toggles + stats ── */}
+      <div className="view-toolbar">
+        <div className="view-toggle" style={{ marginLeft: 0 }}>
           {(['board', 'list'] as const).map((m) => (
             <button key={m} className={`view-toggle-btn${boardMode === m ? ' active' : ''}`} onClick={() => setBoardMode(m)}>
               {m === 'board' ? '⬜ Board' : '≡ List'}
@@ -374,7 +375,7 @@ function CardFace({ item, currentUserId, className }: { item: Assignment; curren
       {/* Label tipe — bedakan dari card Task di Workboard (selalu tampil) */}
       <div className="work-card__type">
         <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="M6 1.2 10.5 3.6v4.8L6 10.8 1.5 8.4V3.6z"/></svg>
-        Penugasan
+        Assignment
       </div>
       <div className="work-card__context">
         {item.relatedProgram ? (
@@ -421,7 +422,7 @@ function ListView({ items, onSelect }: { items: Assignment[]; onSelect: (id: num
   return (
     <div className="panel">
       <div className="panel__header">
-        <h3 className="panel__title">Semua Penugasan</h3>
+        <h3 className="panel__title">Semua Assignment</h3>
         <span className="badge">{items.length}</span>
       </div>
       <div className="wi-list">
@@ -458,8 +459,8 @@ function EmptyState({ canAssign, onCreate }: { canAssign: boolean; onCreate: () 
           <path d="m23 26 1.5 1.5L28 24" stroke="var(--green)" strokeWidth="1.6"/>
         </svg>
       </div>
-      <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-strong)', margin: '0 0 6px' }}>Belum ada penugasan</h3>
-      <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 auto 18px', maxWidth: 340, lineHeight: 1.5 }}>Tugas harian yang bukan bagian dari Program akan muncul di sini.</p>
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-strong)', margin: '0 0 6px' }}>Belum ada assignment</h3>
+      <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 auto 18px', maxWidth: 340, lineHeight: 1.5 }}>Assignment yang bukan bagian dari Program akan muncul di sini.</p>
       {canAssign && <button className="toolbar-action-btn" onClick={onCreate} type="button">+ Buat tugas pertama</button>}
     </div>
   )
@@ -571,7 +572,7 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
       {!loading && items.length === 0 && canUpload && needsEvidence && (
         <div className="alert alert--warn" style={{ marginBottom: 10 }}>
           <strong>Evidence wajib</strong>
-          <p>Tugas ini mewajibkan minimal 1 lampiran (file / link / catatan) sebelum bisa di-submit.</p>
+          <p>Assignment ini mewajibkan minimal 1 lampiran (file / link / catatan) sebelum bisa di-submit.</p>
         </div>
       )}
 
@@ -763,7 +764,7 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
           {/* Banner: tugas ditolak */}
           {a.status === 'REJECTED' && a.rejectionReason && (
             <div className="alert alert--error">
-              <strong>Tugas ditolak</strong>
+              <strong>Assignment ditolak</strong>
               <p>{a.rejectionReason}</p>
             </div>
           )}
@@ -820,7 +821,7 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
           {isSelfAssign && (
             <div className="alert alert--muted" style={{ marginTop: 14 }}>
               <strong>Self-assign</strong>
-              <p>Tugas ini ditugaskan ke diri sendiri — tidak melewati approval berjenjang.</p>
+              <p>Assignment ini ditugaskan ke diri sendiri — tidak melewati approval berjenjang.</p>
             </div>
           )}
 
@@ -1037,9 +1038,12 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
       <form className={`modal${closing ? ' modal--closing' : ''}`} style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()} onSubmit={submit}>
         <div className="modal__header">
           <div className="modal-headcopy">
-            <span className="modal-kicker">Penugasan</span>
-            <h3 className="modal__title">Tugas Baru</h3>
-            <p className="modal-subtitle">Tugas ad-hoc di luar Program. PIC akan dinotifikasi.</p>
+            <span className="modal-kicker">Assignment</span>
+            <h3 className="modal__title">Assignment Baru</h3>
+            <p className="modal-subtitle">Assignment ad-hoc di luar Program. PIC akan dinotifikasi.</p>
+            <p className="modal-cross-hint">
+              Bagian dari Program kerja? Buat sebagai <Link href="/execution">Task di Workboard →</Link>
+            </p>
           </div>
           <button className="modal__close" onClick={onClose} type="button">
             <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
