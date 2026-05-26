@@ -32,8 +32,9 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { path: '/execution', label: 'Workboard' },
       { path: '/penugasan', label: 'Assignment' },
-      { path: '/jadwal', label: 'Rapat Koordinasi' },
+      { path: '/jadwal', label: 'Coordination' },
       { path: '/channels', label: 'Channels' },
+      { path: '/presence', label: 'Presence' },
       { path: '/search', label: 'Search' },
     ],
   },
@@ -48,21 +49,19 @@ export const NAV_SECTIONS: NavSection[] = [
   // dropdown per permintaan user 2026-05-10. Sinkron dengan sidebar
   // (lihat AppShell.tsx navGroups). Halaman tetap hidup via direct URL,
   // notif deep-link, dan link di /reports analytics panel.
+  // Label "Portfolio" (bukan "Portfolio & Performance") untuk non-SUPERADMIN —
+  // Performance items SUPERADMIN-only & dihilangkan dari palette/breadcrumb.
+  // AppShell render label dinamis: "Portfolio & Performance" hanya saat
+  // SUPERADMIN (item Performance hadir).
   {
-    label: 'Portfolio & Performance',
+    label: 'Portfolio',
     items: [
       { path: '/programs', label: 'Programs' },
     ],
   },
-  {
-    label: 'Account',
-    items: [
-      { path: '/presence', label: 'Presence' },
-      { path: '/profile', label: 'Profile' },
-      // Settings dihapus 2026-05-26 — eksklusif via user popover di sidebar
-      // footer (lihat AppShell.tsx). Eliminasi duplikat entry point.
-    ],
-  },
+  // Account section dihapus 2026-05-26: Presence dipindah ke My Work
+  // (status operasional, bukan akun); Profile & Settings eksklusif via user
+  // popover di sidebar footer (lihat AppShell.tsx). Eliminasi grup 1-item.
 ]
 
 /** Collapse nested routes (e.g., /programs/42, /execution/tasks/5) to the

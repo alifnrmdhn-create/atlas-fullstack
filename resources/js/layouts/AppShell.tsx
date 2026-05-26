@@ -933,8 +933,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const tasksCount = myWork?.tasks?.length ?? 0
 
   // ── Nav items palette ──────────────────────────────────────────────────────
-  // Sidebar di-organize secara intent-based (post 2026-05-25):
-  //   Today (pinned: Home + Focus) → My Work → Portfolio & Performance → Account → Admin
+  // Sidebar di-organize secara intent-based (post 2026-05-25, revisi 2026-05-26):
+  //   Today (pinned: Home + Focus) → My Work → Portfolio[& Performance] → Admin
+  //   (grup Account dihapus — Presence ke My Work, Profile/Settings ke popover)
   // PDCA tetap framework sistem di docs/playbook, tapi navigasi user-facing
   // dioptimasi untuk fast lookup (group by intent, bukan by abstract phase).
   // Single source of truth: lib/nav-config.ts. Labels & order mirror that file.
@@ -953,7 +954,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     perfDivisi:    { path: '/performance/divisi',    label: 'KPI Divisi',      caption: 'Capaian KPI level divisi',             icon: IconKpiKolegial  },
     perfSaya:      { path: '/performance/me',        label: 'KPI Saya',        caption: 'KPI individual saya',                  icon: IconKpiIndividu  },
     perfIndividu:  { path: '/performance/individu',  label: 'Leaderboard',     caption: 'Top performer per BOD level',          icon: IconKpiIndividu  },
-    schedule:    { path: '/jadwal',    label: 'Rapat Koordinasi', caption: 'Rapat koordinasi & cadence tim',    icon: IconSchedule,    shortcut: 'G R' },
+    schedule:    { path: '/jadwal',    label: 'Coordination',     caption: 'Rapat koordinasi & cadence tim',    icon: IconSchedule,    shortcut: 'G R' },
     channels:    { path: '/channels',  label: 'Channels',         caption: 'Team collaboration',                icon: IconChannels,    shortcut: 'G C', badge: () => totalUnreadChannels, badgeUrgent: true },
     presence:    { path: '/presence',  label: 'Presence',         caption: 'Live team availability',            icon: IconPresence   },
     profile:     { path: '/profile',   label: 'Profile',          caption: 'Account & position hierarchy',      icon: IconProfile    },
@@ -961,21 +962,23 @@ export function AppShell({ children }: { children?: ReactNode }) {
   } satisfies Record<string, NavItem>
 
   // ── Sidebar groups — intent-based (post 2026-05-25) ──────────────────────
-  // Order: My Work (daily action) → Portfolio & Performance (manage + monitor)
-  // → Account → Admin. PDCA framework masih hidup di docs/playbook; sidebar
-  // dioptimasi untuk fast nav (group by intent, bukan by phase).
+  // Order: My Work (daily action) → Portfolio[& Performance] (manage + monitor)
+  // → Admin. PDCA framework masih hidup di docs/playbook; sidebar dioptimasi
+  // untuk fast nav (group by intent, bukan by phase).
   //
   // My Work = aktivitas harian: task terjadwal (Workboard), tugas ad-hoc
-  // (Assignment), jadwal rapat, messaging.
+  // (Assignment), jadwal rapat, messaging, status kehadiran (Presence).
   //
   // Portfolio & Performance = Programs (kelola portfolio) + KPI dashboards
   // (SUPERADMIN-only sejak 2026-05-25 — sebelumnya role-based: BOD tanpa KPI
   // Saya, KASUBDIV hanya KPI Divisi+Saya, OFFICER/ASISTEN hanya KPI Saya).
-  const grpMyWork  = { label: 'My Work', items: [NI.execution, NI.penugasan, NI.schedule, NI.channels] }
-  // Settings dipindah eksklusif ke user popover (sidebar footer) per
-  // keputusan 2026-05-26 — eliminasi duplikat entry point. Settings = personal
-  // preference, sepasang natural dengan Mode gelap toggle di popover.
-  const grpAccount = { label: 'Account', items: [NI.presence, NI.profile] }
+  // Presence ditarik ke My Work (keputusan 2026-05-26): Presence = status
+  // kehadiran/ketersediaan tim → operasional, bukan "akun". Sebelumnya salah
+  // kategori di grup Account bersama Profile.
+  const grpMyWork  = { label: 'My Work', items: [NI.execution, NI.penugasan, NI.schedule, NI.channels, NI.presence] }
+  // Settings & Profile eksklusif di user popover (sidebar footer) per keputusan
+  // 2026-05-26 — eliminasi grup Account 1-item + duplikat entry point. Keduanya
+  // personal/identity, sepasang natural dengan Mode gelap toggle di popover.
 
   // Performance items SUPERADMIN-only (kebijakan 2026-05-25). Non-SUPERADMIN
   // hanya lihat Programs di group ini. Re-enable role-based KPI visibility:
@@ -983,7 +986,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const portfolioItems: NavItem[] = isSuperAdmin
     ? [NI.programs, NI.executive, NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfIndividu, NI.perfSaya]
     : [NI.programs]
-  const grpPortfolio = { label: 'Portfolio & Performance', items: portfolioItems }
+  // Label jujur ke isi: hanya menjanjikan "Performance" saat item Performance
+  // benar-benar hadir (SUPERADMIN). Non-SUPERADMIN cukup "Portfolio".
+  const grpPortfolio = { label: isSuperAdmin ? 'Portfolio & Performance' : 'Portfolio', items: portfolioItems }
   const grpAdmin = {
     label: 'Admin',
     items: [
@@ -1009,7 +1014,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const navGroups: { label: string; items: NavItem[] }[] = [
     grpMyWork,
     grpPortfolio,
-    grpAccount,
     ...(isAdmin ? [grpAdmin] : []),
   ]
 
@@ -1017,7 +1021,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const PAGE_NAMES: Record<string, string> = {
     '/': 'Home', '/programs': 'Programs',
     '/goals': 'Goals & KPI', '/activity': 'Team Activity', '/execution': 'Workboard', '/penugasan': 'Assignment', '/reports': 'Analytics', '/laporan-bulanan': 'Monthly Reports', '/laporan-risiko': 'Risk Reports',
-    '/fokus': 'Focus', '/channels': 'Channels', '/jadwal': 'Rapat Koordinasi', '/search': 'Search',
+    '/fokus': 'Focus', '/channels': 'Channels', '/jadwal': 'Coordination', '/search': 'Search',
     '/presence': 'Presence', '/profile': 'Profile', '/settings': 'Settings',
     '/executive': 'Executive Summary',
     '/admin/users': 'Users', '/admin/positions': 'Positions',
@@ -1110,7 +1114,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
               {
                 'My Work':                 'do',
                 'Portfolio & Performance': 'check',
-                'Account':                 'utility',
+                'Portfolio':               'check',
               } as Record<string, string>
             )[group.label] ?? ''
             return (
@@ -1233,6 +1237,19 @@ export function AppShell({ children }: { children?: ReactNode }) {
                     <path d="M5 4h4M5 7h4M5 10h2" />
                   </svg>
                   Playbook
+                </Link>
+                <Link
+                  className="sidebar__user-popover-item"
+                  href="/profile"
+                  onClick={closeUserMenu}
+                  onFocus={() => prefetchRoute('/profile')}
+                  onMouseEnter={() => prefetchRoute('/profile')}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="7" cy="4.5" r="2.5" />
+                    <path d="M2.5 12a4.5 4.5 0 0 1 9 0" />
+                  </svg>
+                  Profile
                 </Link>
                 <Link
                   className="sidebar__user-popover-item"
