@@ -27,8 +27,29 @@ export const NAV_SECTIONS: NavSection[] = [
       { path: '/fokus', label: 'Focus' },
     ],
   },
+  // Portfolio diangkat ke atas My Work (2026-05-26): Programs = objek inti
+  // produk (jangkar strategis), dulu terkubur di dasar sebagai grup 1-item.
+  // Label "Portfolio" (bukan "Portfolio & Performance") untuk non-SUPERADMIN —
+  // Performance items SUPERADMIN-only & dihilangkan dari palette/breadcrumb.
+  // AppShell render label dinamis: "Portfolio & Performance" hanya saat
+  // SUPERADMIN (item Performance hadir).
+  // NOTE: Performance items (Scorecard, KPI Direktorat, dll) dihilangkan dari
+  // Command Palette + breadcrumb dropdown per permintaan user 2026-05-25
+  // (akses dibatasi ke SUPERADMIN via gate di AppShell.tsx + middleware di
+  // routes/web.php). Re-enable: tambah item di section ini + hapus gate
+  // `isSuperAdmin` di AppShell.tsx portfolioItems + middleware closure.
   {
-    label: 'My Work',
+    label: 'Portfolio',
+    items: [
+      { path: '/programs', label: 'Programs' },
+    ],
+  },
+  // NOTE: grup "Pelaporan" dihilangkan dari Command Palette + breadcrumb
+  // dropdown per permintaan user 2026-05-10. Sinkron dengan sidebar
+  // (lihat AppShell.tsx navGroups). Halaman tetap hidup via direct URL,
+  // notif deep-link, dan link di /reports analytics panel.
+  {
+    label: 'Work',
     items: [
       { path: '/execution', label: 'Workboard' },
       { path: '/penugasan', label: 'Assignment' },
@@ -36,27 +57,6 @@ export const NAV_SECTIONS: NavSection[] = [
       { path: '/channels', label: 'Channels' },
       { path: '/presence', label: 'Presence' },
       { path: '/search', label: 'Search' },
-    ],
-  },
-  // NOTE: Performance items (Scorecard, KPI Direktorat, dll) dihilangkan dari
-  // Command Palette + breadcrumb dropdown per permintaan user 2026-05-25
-  // (akses dibatasi ke SUPERADMIN via gate di AppShell.tsx + middleware di
-  // routes/web.php). Halaman tetap hidup via direct URL untuk SUPERADMIN.
-  // Re-enable: tambah item di section "Portfolio & Performance" + hapus gate
-  // `isSuperAdmin` di AppShell.tsx portfolioItems + hapus middleware closure
-  // di routes/web.php Performance group.
-  // NOTE: grup "Pelaporan" dihilangkan dari Command Palette + breadcrumb
-  // dropdown per permintaan user 2026-05-10. Sinkron dengan sidebar
-  // (lihat AppShell.tsx navGroups). Halaman tetap hidup via direct URL,
-  // notif deep-link, dan link di /reports analytics panel.
-  // Label "Portfolio" (bukan "Portfolio & Performance") untuk non-SUPERADMIN —
-  // Performance items SUPERADMIN-only & dihilangkan dari palette/breadcrumb.
-  // AppShell render label dinamis: "Portfolio & Performance" hanya saat
-  // SUPERADMIN (item Performance hadir).
-  {
-    label: 'Portfolio',
-    items: [
-      { path: '/programs', label: 'Programs' },
     ],
   },
   // Account section dihapus 2026-05-26: Presence dipindah ke My Work

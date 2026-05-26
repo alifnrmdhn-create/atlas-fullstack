@@ -371,8 +371,8 @@ const NOTIF_FALLBACK_CONTEXT: Record<string, { roleImpact: string; impact: strin
   // Meeting flow
   MEETING_INVITED:       { roleImpact: 'Anda diundang ke rapat',         impact: 'Konfirmasi RSVP supaya organizer tahu kehadiran' },
   MEETING_UPDATED:       { roleImpact: 'Jadwal rapat berubah',           impact: 'Cek waktu baru dan adjust kalender Anda' },
-  MEETING_CANCELLED:     { roleImpact: 'Rapat dibatalkan organizer',     impact: 'Slot waktu Anda terbuka kembali' },
-  MEETING_POSTPONED:     { roleImpact: 'Rapat ditunda sementara',        impact: 'Tunggu jadwal baru dari organizer' },
+  MEETING_CANCELLED:     { roleImpact: 'Meeting dibatalkan organizer',   impact: 'Slot waktu Anda terbuka kembali' },
+  MEETING_POSTPONED:     { roleImpact: 'Meeting ditunda sementara',      impact: 'Tunggu jadwal baru dari organizer' },
   ACTION_ITEM_ASSIGNED:  { roleImpact: 'Anda PIC action item rapat',     impact: 'Tindak lanjut dengan deadline yang ditetapkan' },
 }
 
@@ -762,15 +762,15 @@ export function AppShell({ children }: { children?: ReactNode }) {
     PROGRAM_NEEDS_APPROVAL: 'Approval', PROGRAM_APPROVED: 'Program',
     PROGRAM_REJECTED: 'Program', PROGRAM_WITHDRAWN: 'Program',
     PROGRAM_COMMITMENT_CHANGED: 'Commitment',
-    REPORT_AWAITING_REVIEW: 'Laporan',
-    REPORT_AWAITING_APPROVAL: 'Laporan', REPORT_APPROVED: 'Laporan',
-    REPORT_REJECTED: 'Laporan', REPORT_NEEDS_REVISION: 'Laporan',
+    REPORT_AWAITING_REVIEW: 'Report',
+    REPORT_AWAITING_APPROVAL: 'Report', REPORT_APPROVED: 'Report',
+    REPORT_REJECTED: 'Report', REPORT_NEEDS_REVISION: 'Report',
     DEADLINE_APPROACHING: 'Deadline', DM_RECEIVED: 'DM',
     CLEAR_PATH_REQUESTED: 'Clear the Path', CLEAR_PATH_COMMITTED: 'Clear the Path',
     CLEAR_PATH_CLEARED: 'Clear the Path', CARRYOVER_THRESHOLD: 'Carryover',
     PROGRAM_TASKS_ASSIGNED: 'Pipeline',
-    MEETING_INVITED: 'Rapat', MEETING_UPDATED: 'Rapat',
-    MEETING_CANCELLED: 'Rapat', MEETING_POSTPONED: 'Rapat',
+    MEETING_INVITED: 'Meeting', MEETING_UPDATED: 'Meeting',
+    MEETING_CANCELLED: 'Meeting', MEETING_POSTPONED: 'Meeting',
     ACTION_ITEM_ASSIGNED: 'Action Item',
   }
 
@@ -962,9 +962,11 @@ export function AppShell({ children }: { children?: ReactNode }) {
   } satisfies Record<string, NavItem>
 
   // ── Sidebar groups — intent-based (post 2026-05-25) ──────────────────────
-  // Order: My Work (daily action) → Portfolio[& Performance] (manage + monitor)
-  // → Admin. PDCA framework masih hidup di docs/playbook; sidebar dioptimasi
-  // untuk fast nav (group by intent, bukan by phase).
+  // Order (revisi 2026-05-26): Portfolio[& Performance] (jangkar strategis) →
+  // My Work (eksekusi harian) → Admin. Programs diangkat ke atas karena ia
+  // objek inti produk (PDCA Plan sebelum Do) + Home memfunnel ke sana; dulu
+  // terkubur di dasar sebagai grup 1-item. PDCA framework masih hidup di
+  // docs/playbook; sidebar dioptimasi untuk fast nav (group by intent).
   //
   // My Work = aktivitas harian: task terjadwal (Workboard), tugas ad-hoc
   // (Assignment), jadwal rapat, messaging, status kehadiran (Presence).
@@ -975,7 +977,11 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // Presence ditarik ke My Work (keputusan 2026-05-26): Presence = status
   // kehadiran/ketersediaan tim → operasional, bukan "akun". Sebelumnya salah
   // kategori di grup Account bersama Profile.
-  const grpMyWork  = { label: 'My Work', items: [NI.execution, NI.penugasan, NI.schedule, NI.channels, NI.presence] }
+  // Label 'Work' (bukan 'My Work') 2026-05-26: isi grup juga mencakup kolaborasi
+  // tim (Channels/Presence/Coordination), bukan murni tugas personal — 'Work'
+  // lebih pas & tetap intent-based. 'Workspace' dihindari (tabrakan dgn .workspace
+  // container + route /workspace/overview + tab Settings Workspace).
+  const grpMyWork  = { label: 'Work', items: [NI.execution, NI.penugasan, NI.schedule, NI.channels, NI.presence] }
   // Settings & Profile eksklusif di user popover (sidebar footer) per keputusan
   // 2026-05-26 — eliminasi grup Account 1-item + duplikat entry point. Keduanya
   // personal/identity, sepasang natural dengan Mode gelap toggle di popover.
@@ -1012,8 +1018,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // Halaman /laporan-bulanan & /laporan-risiko tetap hidup: accessible via
   // direct URL, notif deep-link, dan link di Analytics/Home focus card.
   const navGroups: { label: string; items: NavItem[] }[] = [
-    grpMyWork,
     grpPortfolio,
+    grpMyWork,
     ...(isAdmin ? [grpAdmin] : []),
   ]
 
@@ -1112,7 +1118,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
           {navGroups.filter((group) => group.items.length > 0).map((group) => {
             const pdcaTone = (
               {
-                'My Work':                 'do',
+                'Work':                    'do',
                 'Portfolio & Performance': 'check',
                 'Portfolio':               'check',
               } as Record<string, string>
@@ -1409,7 +1415,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                 {([
                   { id: 'task.new',       label: 'Task',       sub: 'di Workboard',          route: '/execution', icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2.5" width="10" height="11" rx="1.5"/><path d="m5.5 8 1.3 1.3L10 6.5"/></svg> },
                   { id: 'program.new',    label: 'Program',    sub: 'portfolio baru',        route: '/programs',  icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2.5" width="10" height="11" rx="1.6"/><path d="M6 2.5h4v2H6z"/><path d="M5.5 7h5M5.5 10h5"/></svg> },
-                  { id: 'meeting.new',    label: 'Rapat',      sub: 'koordinasi',            route: '/jadwal',    icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M5 1.5v3M11 1.5v3M2 7h12"/></svg> },
+                  { id: 'meeting.new',    label: 'Meeting',    sub: 'koordinasi',            route: '/jadwal',    icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M5 1.5v3M11 1.5v3M2 7h12"/></svg> },
                   { id: 'assignment.new', label: 'Assignment', sub: 'di luar Program',       route: '/penugasan', icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2.5" width="10" height="11" rx="1.5"/><path d="M6 2.5h4v2H6z"/><path d="M5.5 11.5h3"/></svg> },
                 ] as const).map((item) => (
                   <button
