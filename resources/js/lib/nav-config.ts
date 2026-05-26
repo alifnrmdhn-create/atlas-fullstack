@@ -17,8 +17,8 @@ export type NavSection = {
   items: NavItem[]
 }
 
-/** Sections mirror the sidebar's PDCA grouping. Order matters — used as
- *  display order in palette and breadcrumb dropdown. */
+/** Sections mirror the sidebar's intent-based grouping (post 2026-05-25).
+ *  Order matters — used as display order in palette and breadcrumb dropdown. */
 export const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Today',
@@ -28,43 +28,39 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: 'Perencanaan',
-    items: [{ path: '/programs', label: 'Programs' }],
-  },
-  {
-    label: 'Eksekusi',
+    label: 'My Work',
     items: [
       { path: '/execution', label: 'Workboard' },
       { path: '/penugasan', label: 'Assignment' },
+      { path: '/jadwal', label: 'Rapat Koordinasi' },
+      { path: '/channels', label: 'Channels' },
+      { path: '/search', label: 'Search' },
     ],
   },
-  // NOTE: grup "Performance" dihilangkan dari Command Palette + breadcrumb
-  // dropdown per permintaan user 2026-05-25 (akses dibatasi ke SUPERADMIN
-  // via gate di AppShell.tsx + middleware di routes/web.php). Halaman tetap
-  // hidup via direct URL untuk SUPERADMIN. Re-enable: restore section di sini
-  // + hapus gate `isSuperAdmin` di AppShell.tsx navGroups + hapus middleware
-  // closure di routes/web.php Performance group.
+  // NOTE: Performance items (Scorecard, KPI Direktorat, dll) dihilangkan dari
+  // Command Palette + breadcrumb dropdown per permintaan user 2026-05-25
+  // (akses dibatasi ke SUPERADMIN via gate di AppShell.tsx + middleware di
+  // routes/web.php). Halaman tetap hidup via direct URL untuk SUPERADMIN.
+  // Re-enable: tambah item di section "Portfolio & Performance" + hapus gate
+  // `isSuperAdmin` di AppShell.tsx portfolioItems + hapus middleware closure
+  // di routes/web.php Performance group.
   // NOTE: grup "Pelaporan" dihilangkan dari Command Palette + breadcrumb
   // dropdown per permintaan user 2026-05-10. Sinkron dengan sidebar
   // (lihat AppShell.tsx navGroups). Halaman tetap hidup via direct URL,
   // notif deep-link, dan link di /reports analytics panel.
   {
-    label: 'Tindak Lanjut',
-    items: [{ path: '/jadwal', label: 'Rapat Koordinasi' }],
-  },
-  {
-    label: 'Komunikasi',
+    label: 'Portfolio & Performance',
     items: [
-      { path: '/channels', label: 'Channels' },
-      { path: '/search', label: 'Search' },
+      { path: '/programs', label: 'Programs' },
     ],
   },
   {
-    label: 'Akun',
+    label: 'Account',
     items: [
       { path: '/presence', label: 'Presence' },
       { path: '/profile', label: 'Profile' },
-      { path: '/settings', label: 'Settings' },
+      // Settings dihapus 2026-05-26 — eksklusif via user popover di sidebar
+      // footer (lihat AppShell.tsx). Eliminasi duplikat entry point.
     ],
   },
 ]

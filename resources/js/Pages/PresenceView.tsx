@@ -129,12 +129,16 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
 
 // ── Hover profile card ───────────────────────────────────────
 function HoverCard({
-  presence, onDm, onClose,
+  presence, onDm, onClose, onCancelClose,
   anchorRect,
 }: {
   presence: PresenceUser
   onDm: (userId: number) => void
   onClose: () => void
+  /** Dipanggil saat cursor masuk popup — cancel pending close timer
+   *  yang di-schedule oleh onMouseLeave dari trigger row. Tanpa ini,
+   *  popup hilang mid-traversal karena 200ms timer terus jalan. */
+  onCancelClose: () => void
   anchorRect: DOMRect
 }) {
   const [copied, setCopied] = useState(false)
@@ -166,6 +170,7 @@ function HoverCard({
     <div
       className="presence-hover-card"
       style={{ position: 'fixed', top, left, width: cardWidth, zIndex: 9999 }}
+      onMouseEnter={onCancelClose}
       onMouseLeave={onClose}
     >
       <div className="presence-hover-card__header">
@@ -324,7 +329,7 @@ function Toast({ msg, isError, onDone }: { msg: string; isError?: boolean; onDon
 
 // ── Main view ────────────────────────────────────────────────
 export function PresenceView() {
-  const { presence, currentUser, presenceDraft, setPresenceDraft, setPresence, setSelectedChannelId } = useWorkspace()
+  const { presence, currentUser, presenceDraft, setPresenceDraft, setPresence, setSelectedChannelId, setSelectedThreadId, loadOverview } = useWorkspace()
   const navigate  = useInertiaNavigate()
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -517,11 +522,23 @@ export function PresenceView() {
     clearTimeout(hoverTimer.current)
     hoverTimer.current = setTimeout(() => setHovered(null), 200)
   }
+  // Cursor masuk popup → batalkan close timer supaya popup tetap aktif.
+  // Popup tetap mounted sampai onMouseLeave-nya sendiri schedule ulang close.
+  const handleCancelHoverEnd = () => {
+    clearTimeout(hoverTimer.current)
+  }
   // ── DM ────────────────────────────────────────────────────
+  // Mirror pattern dari ChannelsViewWrapper.handleOpenDM. Wajib loadOverview
+  // dulu supaya channels list di workspace context ter-refresh dengan DM yang
+  // mungkin baru dibuat — tanpa ini, setSelectedChannelId menunjuk ke ID yang
+  // belum ada di channels list, jadi ChannelsView mount tapi tidak bisa render
+  // channel yang dipilih (hanya navigate tanpa buka chat).
   const handleOpenDm = async (userId: number) => {
     try {
       const result = await api.post<{ data: { id: number } }>('/dm/open', { userId })
+      await loadOverview('refresh')
       setSelectedChannelId(result.data.id)
+      setSelectedThreadId(null)
       navigate('/channels')
     } catch { /* non-fatal */ }
   }
@@ -912,6 +929,7 @@ export function PresenceView() {
           anchorRect={hovered.rect}
           onDm={handleOpenDm}
           onClose={handleHoverEnd}
+          onCancelClose={handleCancelHoverEnd}
         />
       )}
 

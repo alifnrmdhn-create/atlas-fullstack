@@ -24,7 +24,7 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
 
   return (
     <div className="panduan">
-      <div className="panduan__inner phx-page">
+      <div className="panduan__inner phx-page ds-stagger" key="panduan-konsep">
         <button type="button" className="panduan__back" onClick={onBack}>
           ← Kembali ke Pusat Bantuan
         </button>

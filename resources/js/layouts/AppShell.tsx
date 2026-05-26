@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useId, useRef, useState, startTransition } from 'react'
+import { createPortal } from 'react-dom'
 import type { ReactNode } from 'react'
 import { Link, usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
@@ -148,10 +149,18 @@ function IconGoals() {
   )
 }
 function IconSettings() {
+  // Sliders icon — 3 horizontal tracks dengan handle bulat di posisi berbeda.
+  // Sebelumnya pakai sun-rays glyph (lingkaran kecil + 8 rays) yang sering
+  // disalahartikan sebagai "light mode toggle". Sliders = universal "settings
+  // / preferences" idiom yang clean di 16×16.
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="8" cy="8" r="2.5" />
-      <path d="M8 1.5v1.7M8 12.8v1.7M1.5 8h1.7M12.8 8h1.7M3.2 3.2l1.2 1.2M11.6 11.6l1.2 1.2M3.2 12.8l1.2-1.2M11.6 4.4l1.2-1.2" />
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.5 4.5h7M12 4.5h1.5" />
+      <circle cx="10.5" cy="4.5" r="1.5" />
+      <path d="M2.5 8h3M8 8h5.5" />
+      <circle cx="6.5" cy="8" r="1.5" />
+      <path d="M2.5 11.5h8M13 11.5h.5" />
+      <circle cx="11.5" cy="11.5" r="1.5" />
     </svg>
   )
 }
@@ -615,6 +624,21 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const [quickCreateOpen, setQuickCreateOpen] = useState(false)
   const [stickyTitleVisible, setStickyTitleVisible] = useState(false)
   const quickCreateRef = useRef<HTMLDivElement>(null)
+
+  // User menu (sidebar footer) — popover di-portal ke body karena `.sidebar`
+  // punya `overflow: hidden` yang meng-clip popover saat collapsed
+  // (popover positioned ke kanan sidebar dengan `left: calc(100% + 8px)`).
+  // Tanpa portal, popover dan backdrop tidak terlihat → click avatar terasa
+  // tidak respond. Rect dihitung saat menu open untuk positioning fixed.
+  const userCardRef = useRef<HTMLButtonElement>(null)
+  const [userCardRect, setUserCardRect] = useState<DOMRect | null>(null)
+  useEffect(() => {
+    if (userMenuSurface === 'sidebar' && userCardRef.current) {
+      setUserCardRect(userCardRef.current.getBoundingClientRect())
+    } else if (userMenuSurface !== 'sidebar') {
+      setUserCardRect(null)
+    }
+  }, [userMenuSurface])
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -909,9 +933,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const tasksCount = myWork?.tasks?.length ?? 0
 
   // ── Nav items palette ──────────────────────────────────────────────────────
-  // Sidebar mengikuti siklus PDCA per CLAUDE.md:
-  //   Today → Perencanaan (Plan) → Eksekusi (Do) → Performance (Check) →
-  //   Pelaporan (Check) → Tindak Lanjut (Act) → Komunikasi → Akun → Admin
+  // Sidebar di-organize secara intent-based (post 2026-05-25):
+  //   Today (pinned: Home + Focus) → My Work → Portfolio & Performance → Account → Admin
+  // PDCA tetap framework sistem di docs/playbook, tapi navigasi user-facing
+  // dioptimasi untuk fast lookup (group by intent, bukan by abstract phase).
   // Single source of truth: lib/nav-config.ts. Labels & order mirror that file.
   const NI = {
     home:        { path: '/',          label: 'Home',             caption: 'Ringkasan eksekutif program kerja', icon: IconHome,        shortcut: 'G H' },
@@ -935,24 +960,30 @@ export function AppShell({ children }: { children?: ReactNode }) {
     settings:    { path: '/settings',  label: 'Settings',         caption: 'Workspace preferences',             icon: IconSettings   },
   } satisfies Record<string, NavItem>
 
-  // ── Sidebar groups — PDCA-aligned per CLAUDE.md ──────────────────────────
-  // Order: Perencanaan (Plan) → Eksekusi (Do) → Performance (Check)
-  // → Tindak Lanjut (Act) → Komunikasi → Akun → Admin.
-  // KPI items sit flat under "Performance" (no nested sub-label "kpi" anymore).
-  const grpPerencanaan        = { label: 'Perencanaan', items: [NI.programs] }
-  const grpEksekusi           = { label: 'Eksekusi',    items: [NI.execution, NI.penugasan] }
-  const grpEksekusiReadOnly   = { label: 'Eksekusi',    items: [NI.execution, NI.penugasan] }
-  // Performance hierarchy: Scorecard → KPI Direktorat → KPI Divisi → KPI Saya.
-  // BOD: tanpa "KPI Saya" — Direksi tidak punya KPI personal, scope-nya = direktorat.
-  // KADIV: full set (KPI Saya = personal Kadiv sebagai individu).
-  // KASUBDIV: hanya KPI Divisi & KPI Saya. OFFICER/ASISTEN: hanya KPI Saya.
-  const grpPerformanceBod     = { label: 'Performance', items: [NI.executive, NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfIndividu] }
-  const grpPerformanceFull    = { label: 'Performance', items: [NI.executive, NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfIndividu, NI.perfSaya] }
-  const grpPerformanceMid     = { label: 'Performance', items: [NI.perfDivisi, NI.perfSaya] }
-  const grpPerformanceMin     = { label: 'Performance', items: [NI.perfSaya] }
-  const grpTindakLanjut       = { label: 'Tindak Lanjut', items: [NI.schedule] }
-  const grpKomunikasi         = { label: 'Komunikasi', items: [NI.channels] }
-  const grpAkun               = { label: 'Akun',       items: [NI.presence, NI.profile, NI.settings] }
+  // ── Sidebar groups — intent-based (post 2026-05-25) ──────────────────────
+  // Order: My Work (daily action) → Portfolio & Performance (manage + monitor)
+  // → Account → Admin. PDCA framework masih hidup di docs/playbook; sidebar
+  // dioptimasi untuk fast nav (group by intent, bukan by phase).
+  //
+  // My Work = aktivitas harian: task terjadwal (Workboard), tugas ad-hoc
+  // (Assignment), jadwal rapat, messaging.
+  //
+  // Portfolio & Performance = Programs (kelola portfolio) + KPI dashboards
+  // (SUPERADMIN-only sejak 2026-05-25 — sebelumnya role-based: BOD tanpa KPI
+  // Saya, KASUBDIV hanya KPI Divisi+Saya, OFFICER/ASISTEN hanya KPI Saya).
+  const grpMyWork  = { label: 'My Work', items: [NI.execution, NI.penugasan, NI.schedule, NI.channels] }
+  // Settings dipindah eksklusif ke user popover (sidebar footer) per
+  // keputusan 2026-05-26 — eliminasi duplikat entry point. Settings = personal
+  // preference, sepasang natural dengan Mode gelap toggle di popover.
+  const grpAccount = { label: 'Account', items: [NI.presence, NI.profile] }
+
+  // Performance items SUPERADMIN-only (kebijakan 2026-05-25). Non-SUPERADMIN
+  // hanya lihat Programs di group ini. Re-enable role-based KPI visibility:
+  // hapus gate `isSuperAdmin` di bawah + restore role variants.
+  const portfolioItems: NavItem[] = isSuperAdmin
+    ? [NI.programs, NI.executive, NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfIndividu, NI.perfSaya]
+    : [NI.programs]
+  const grpPortfolio = { label: 'Portfolio & Performance', items: portfolioItems }
   const grpAdmin = {
     label: 'Admin',
     items: [
@@ -967,58 +998,20 @@ export function AppShell({ children }: { children?: ReactNode }) {
     ],
   }
 
-  // ── Role-aware nav groups (PDCA flow) ──────────────────────────────────────
-  // BOD               → Plan, Do, Performance BOD (no KPI Saya), Act, Komunikasi, Akun
-  // KADIV             → Plan, Do, Performance lengkap, Act, Komunikasi, Akun
-  // KASUBDIV          → Plan, Do, Performance mid (KPI Divisi + KPI Saya), Act, Komunikasi, Akun
-  // OFFICER/ASISTEN   → Do prioritas, KPI Saya, Act, Komunikasi, Akun
-  // Default (Admin)   → full nav
+  // ── Sidebar composition (intent-based, role-aware via portfolioItems) ──────
+  // 3 group: My Work → Portfolio & Performance → Account. Programs always
+  // hadir di Portfolio; Performance items role-gated di portfolioItems above.
+  //
   // NOTE: grup "Pelaporan" dihilangkan dari semua surface navigasi utama
   // (sidebar + Command Palette + breadcrumb) per permintaan user 2026-05-10.
   // Halaman /laporan-bulanan & /laporan-risiko tetap hidup: accessible via
   // direct URL, notif deep-link, dan link di Analytics/Home focus card.
-  // Re-enable: tambah grup di blok ini + restore section di lib/nav-config.ts.
-  const navGroups: { label: string; items: NavItem[] }[] = (() => {
-    if (role === 'BOD') {
-      return [
-        grpPerencanaan, grpEksekusi,
-        ...(isSuperAdmin ? [grpPerformanceBod] : []),
-        grpTindakLanjut, grpKomunikasi, grpAkun,
-        ...(isAdmin ? [grpAdmin] : []),
-      ]
-    }
-    if (role === 'KADIV') {
-      return [
-        grpPerencanaan, grpEksekusi,
-        ...(isSuperAdmin ? [grpPerformanceFull] : []),
-        grpTindakLanjut, grpKomunikasi, grpAkun,
-        ...(isAdmin ? [grpAdmin] : []),
-      ]
-    }
-    if (role === 'KASUBDIV') {
-      return [
-        grpPerencanaan, grpEksekusi,
-        ...(isSuperAdmin ? [grpPerformanceMid] : []),
-        grpTindakLanjut, grpKomunikasi, grpAkun,
-        ...(isAdmin ? [grpAdmin] : []),
-      ]
-    }
-    if (role === 'OFFICER' || role === 'ASISTEN') {
-      return [
-        grpPerencanaan, grpEksekusiReadOnly,
-        ...(isSuperAdmin ? [grpPerformanceMin] : []),
-        grpTindakLanjut, grpKomunikasi, grpAkun,
-        ...(isAdmin ? [grpAdmin] : []),
-      ]
-    }
-    // Default: full nav (SUPERADMIN, ADMIN, unknown role)
-    return [
-      grpPerencanaan, grpEksekusi,
-      ...(isSuperAdmin ? [grpPerformanceFull] : []),
-      grpTindakLanjut, grpKomunikasi, grpAkun,
-      ...(isAdmin ? [grpAdmin] : []),
-    ]
-  })()
+  const navGroups: { label: string; items: NavItem[] }[] = [
+    grpMyWork,
+    grpPortfolio,
+    grpAccount,
+    ...(isAdmin ? [grpAdmin] : []),
+  ]
 
   // Page name for breadcrumb
   const PAGE_NAMES: Record<string, string> = {
@@ -1115,12 +1108,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
           {navGroups.filter((group) => group.items.length > 0).map((group) => {
             const pdcaTone = (
               {
-                'Perencanaan':   'plan',
-                'Eksekusi':      'do',
-                'Performance':   'check',
-                'Tindak Lanjut': 'act',
-                'Komunikasi':    'utility',
-                'Akun':          'utility',
+                'My Work':                 'do',
+                'Portfolio & Performance': 'check',
+                'Account':                 'utility',
               } as Record<string, string>
             )[group.label] ?? ''
             return (
@@ -1159,8 +1149,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
         </nav>
 
         <div className="sidebar__footer">
-          {/* User mini-card — clicking opens menu (anchored above) */}
+          {/* User mini-card — clicking opens menu (popover di-portal ke body
+              karena .sidebar overflow:hidden meng-clip popover saat collapsed) */}
           <button
+            ref={userCardRef}
             className="sidebar__user-card"
             onClick={() => toggleUserMenu('sidebar')}
             aria-expanded={userMenuSurface === 'sidebar'}
@@ -1184,10 +1176,26 @@ export function AppShell({ children }: { children?: ReactNode }) {
             </svg>
           </button>
 
-          {userMenuSurface === 'sidebar' ? (
+          {userMenuSurface === 'sidebar' && userCardRect ? createPortal(
             <>
               <div className="topbar__menu-backdrop" onClick={closeUserMenu} />
-              <div className="sidebar__user-popover" role="menu">
+              <div
+                className="sidebar__user-popover"
+                role="menu"
+                style={sidebarCollapsedView ? {
+                  position: 'fixed',
+                  left: userCardRect.right + 8,
+                  bottom: window.innerHeight - userCardRect.bottom,
+                  right: 'auto',
+                  width: 220,
+                } : {
+                  position: 'fixed',
+                  left: userCardRect.left,
+                  bottom: window.innerHeight - userCardRect.top + 6,
+                  right: 'auto',
+                  width: userCardRect.width,
+                }}
+              >
                 <div className="sidebar__user-popover-identity">
                   <div className="sidebar__user-popover-avatar">{userInitials || 'AU'}</div>
                   <div>
@@ -1234,8 +1242,12 @@ export function AppShell({ children }: { children?: ReactNode }) {
                   onMouseEnter={() => prefetchRoute('/settings')}
                 >
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="8" cy="8" r="2.5" />
-                    <path d="M8 1.5v1.7M8 12.8v1.7M1.5 8h1.7M12.8 8h1.7M3.2 3.2l1.2 1.2M11.6 11.6l1.2 1.2M3.2 12.8l1.2-1.2M11.6 4.4l1.2-1.2" />
+                    <path d="M2.5 4.5h7M12 4.5h1.5" />
+                    <circle cx="10.5" cy="4.5" r="1.5" />
+                    <path d="M2.5 8h3M8 8h5.5" />
+                    <circle cx="6.5" cy="8" r="1.5" />
+                    <path d="M2.5 11.5h8M13 11.5h.5" />
+                    <circle cx="11.5" cy="11.5" r="1.5" />
                   </svg>
                   Settings
                 </Link>
@@ -1264,7 +1276,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
                   Sign out
                 </button>
               </div>
-            </>
+            </>,
+            document.body
           ) : null}
 
         </div>

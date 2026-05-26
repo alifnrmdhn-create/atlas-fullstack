@@ -18,11 +18,11 @@ Sistem dirancang sebagai siklus PDCA, bukan katalog modul:
 | Fase | Modul utama |
 |---|---|
 | **Plan** | Programs (+ApprovalLog), Workstream → Initiative → Task, KpiDefinition |
-| **Do** | Execution (Workboard), Assignment |
+| **Do** | Workboard, Assignment |
 | **Check** | Performance (Scorecard, Kolegial, Divisi, Individu), MonthlyReport, RiskReport, ProgressLog, Home |
 | **Act** | Meeting (RAPAT_KOORDINASI), MeetingActionItem, Blocker, EscalationRequest (Clear the Path) |
 
-**Sidebar** mengikuti urutan PDCA: Today → Perencanaan → Eksekusi → Performance → Pelaporan → Tindak Lanjut → Komunikasi → Akun.
+**Sidebar** (post 2026-05-25) di-organize intent-based, bukan PDCA: Today (pinned: Home + Focus) → **My Work** (Workboard, Assignment, Rapat Koordinasi, Channels) → **Portfolio & Performance** (Programs + KPI dashboards role-gated) → **Account** (Presence, Profile, Settings) → Admin. PDCA tetap framework sistem (dipakai di docs/playbook untuk klasifikasi modul), tapi navigasi user-facing dioptimasi untuk fast lookup — group label = intent user, bukan abstract phase. Lihat `resources/js/layouts/AppShell.tsx` dan `resources/js/lib/nav-config.ts` untuk implementasi.
 
 ## Modul Inti yang Tidak Boleh Disentuh
 

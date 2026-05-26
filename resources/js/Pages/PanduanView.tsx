@@ -1,9 +1,39 @@
 import { useMemo, useState } from 'react'
+import type { CSSProperties, ReactElement } from 'react'
 import { Link } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import PanduanKonsepHierarki from './PanduanKonsepHierarki'
 import './PanduanView.css'
+
+// ── Quick card icons — match destination semantics ──────────────────────────
+function QuickCardIcon({ href }: { href: string }): ReactElement {
+  const s = { width: 18, height: 18, viewBox: '0 0 18 18', fill: 'none',
+    stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const }
+  if (href === '/executive')              return <svg {...s}><path d="M3 14V8M7 14V5M11 14v-7M15 14V3"/></svg>
+  if (href === '/performance/scorecard')  return <svg {...s}><path d="M9 2 10.6 5.5l3.8.4-2.8 2.5L12.5 12 9 9.9 5.5 12l.9-3.6L3.6 5.9l3.8-.4z"/></svg>
+  if (href === '/performance/kolegial')   return <svg {...s}><circle cx="9" cy="9" r="6"/><path d="M9 9V5M9 9l3 2"/></svg>
+  if (href === '/performance/divisi')     return <svg {...s}><rect x="2" y="11" width="3" height="5"/><rect x="7.5" y="7" width="3" height="9"/><rect x="13" y="3" width="3" height="13"/></svg>
+  if (href === '/performance/me')         return <svg {...s}><circle cx="9" cy="6.5" r="2.8"/><path d="M3.5 15.5c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5"/></svg>
+  if (href === '/programs')               return <svg {...s}><rect x="3.5" y="3" width="11" height="12" rx="1.5"/><path d="M7 3h4v2H7z"/><path d="M6 8h6M6 11h4"/></svg>
+  if (href === '/roadmap')                return <svg {...s}><path d="M2 5h14M2 9h10M2 13h7"/></svg>
+  if (href === '/execution')              return <svg {...s}><rect x="2.5" y="3" width="3.5" height="12" rx="1"/><rect x="7.5" y="3" width="3.5" height="9" rx="1"/><rect x="12.5" y="3" width="3.5" height="6" rx="1"/></svg>
+  if (href === '/penugasan')              return <svg {...s}><rect x="3" y="2.5" width="11" height="12" rx="1.5"/><path d="M6 2.5h5v2H6z"/><path d="M6 9h5M6 12h3"/></svg>
+  return <svg {...s}><circle cx="9" cy="9" r="6"/></svg>
+}
+
+// Category color accent per topic — gives quick visual grouping in card grid.
+// plan/setup → blue, structure → green, exec → amber, blocker → red,
+// penugasan → indigo. Matches semantic palette dari Status Program.
+function topikCategory(slug: string): string {
+  if (slug === 'buat-program' || slug === 'setujui-program')          return 'plan'
+  if (slug === 'tambah-workstream-task')                              return 'structure'
+  if (slug === 'update-progress')                                     return 'exec'
+  if (slug === 'lapor-blocker-eskalasi')                              return 'block'
+  if (slug === 'buat-penugasan' || slug === 'kerjakan-review-penugasan') return 'assign'
+  return 'plan'
+}
 
 // ── Content data ──────────────────────────────────────────────────────────────
 //
@@ -310,7 +340,7 @@ export default function PanduanView() {
   if (view === 'topik' && activeTopik) {
     return (
       <div className="panduan">
-        <div className="panduan__inner">
+        <div className="panduan__inner ds-stagger" key={`topik-${activeTopik.slug}`}>
           <button type="button" className="panduan__back" onClick={backToIndex}>
             ← Kembali ke Pusat Bantuan
           </button>
@@ -381,9 +411,10 @@ export default function PanduanView() {
   // ── Index view ────────────────────────────────────────────────────────────
   return (
     <div className="panduan">
-      <div className="panduan__inner">
+      <div className="panduan__inner ds-stagger" key="panduan-index">
         {/* Hero */}
         <header className="panduan__hero">
+          <span className="panduan__hero-eyebrow">Pusat Bantuan</span>
           <div className="panduan__hero-greet">
             <span className="panduan__hero-wave" aria-hidden="true">👋</span>
             <h1 className="panduan__hero-title">Halo, {greetName}</h1>
@@ -392,10 +423,16 @@ export default function PanduanView() {
             Sebagai <strong>{role}</strong>, yang paling sering Anda akses:
           </p>
           <div className="panduan__hero-cards">
-            {quickCards.map(c => (
-              <Link key={c.href} href={c.href} className="panduan__hero-card">
-                <span className="panduan__hero-card-label">{c.label}</span>
-                <span className="panduan__hero-card-sub">{c.sub}</span>
+            {quickCards.map((c, idx) => (
+              <Link key={c.href} href={c.href} className="panduan__hero-card" style={{ '--hero-card-idx': idx } as CSSProperties}>
+                <span className="panduan__hero-card-icon" aria-hidden="true">
+                  <QuickCardIcon href={c.href} />
+                </span>
+                <span className="panduan__hero-card-body">
+                  <span className="panduan__hero-card-label">{c.label}</span>
+                  <span className="panduan__hero-card-sub">{c.sub}</span>
+                </span>
+                <span className="panduan__hero-card-arrow" aria-hidden="true">→</span>
               </Link>
             ))}
           </div>
@@ -411,13 +448,14 @@ export default function PanduanView() {
             type="search"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Cari topik bantuan…"
+            placeholder="Cari topik bantuan, mis. 'eskalasi' atau 'kpi'…"
             className="panduan__search"
             aria-label="Cari topik bantuan"
           />
-          {query && (
-            <button type="button" onClick={() => setQuery('')} className="panduan__search-clear" aria-label="Bersihkan pencarian">×</button>
-          )}
+          {query
+            ? <button type="button" onClick={() => setQuery('')} className="panduan__search-clear" aria-label="Bersihkan pencarian">×</button>
+            : <kbd className="panduan__search-kbd" aria-hidden="true">{filteredTopik.length + filteredFaq.length} item</kbd>
+          }
         </div>
 
         {/* Foundational concept banner — Program/Workstream/Phase/Task explainer */}
@@ -435,7 +473,10 @@ export default function PanduanView() {
 
         {/* Topik task-oriented */}
         <section className="panduan__topiks">
-          <h2 className="panduan__sec-title">Apa yang ingin Anda lakukan?</h2>
+          <h2 className="panduan__sec-title">
+            Apa yang ingin Anda lakukan?
+            <span className="panduan__sec-count">{filteredTopik.length}</span>
+          </h2>
           {filteredTopik.length === 0 ? (
             <p className="panduan__empty">Tidak ada topik yang cocok untuk "{query}".</p>
           ) : (
@@ -444,14 +485,14 @@ export default function PanduanView() {
                 <button
                   key={t.slug}
                   type="button"
-                  className="panduan__topik-card"
+                  className={`panduan__topik-card panduan__topik-card--${topikCategory(t.slug)}`}
                   onClick={() => openTopik(t.slug)}
                 >
                   <span className="panduan__topik-card-icon" aria-hidden="true">{t.icon}</span>
                   <div className="panduan__topik-card-body">
                     <h3 className="panduan__topik-card-judul">{t.judul}</h3>
                     <p className="panduan__topik-card-ringkas">{t.ringkas}</p>
-                    <span className="panduan__topik-card-meta">{t.bacaMenit} menit baca</span>
+                    <span className="panduan__topik-card-meta">⏱ {t.bacaMenit} menit baca</span>
                   </div>
                   <span className="panduan__topik-card-arrow" aria-hidden="true">→</span>
                 </button>
@@ -462,7 +503,10 @@ export default function PanduanView() {
 
         {/* FAQ */}
         <section className="panduan__faq">
-          <h2 className="panduan__sec-title">Pertanyaan tersering</h2>
+          <h2 className="panduan__sec-title">
+            Pertanyaan tersering
+            <span className="panduan__sec-count">{filteredFaq.length}</span>
+          </h2>
           {filteredFaq.length === 0 ? (
             <p className="panduan__empty">Tidak ada pertanyaan yang cocok untuk "{query}".</p>
           ) : (
