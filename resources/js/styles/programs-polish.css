@@ -15,7 +15,7 @@
   padding: 22px 24px 40px !important;
 }
 
-@media (min-width: 1600px) {
+@media (min-width: 1536px) {
   .programs-v2 .programs-v2__inner {
     padding: 24px 32px 48px !important;
   }
