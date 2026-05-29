@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PilarStrategis;
 use App\Models\Directorate;
 use App\Models\OrganizationalUnit;
 use App\Models\Position;
@@ -94,6 +95,37 @@ class StrategicFieldsTest extends TestCase
             'INNOVATIVE_FINANCING',
             'ENABLER',
         ], array_keys($pillars));
+    }
+
+    public function test_pillars_apply_only_to_configured_directorate(): void
+    {
+        // Pilar di-scope per direktorat: hanya direktorat di pillar_directorates
+        // (default DIR-KMR) yang memakai pilar. Direktorat lain → opsi kosong,
+        // FE menyembunyikan dropdown supaya tidak diisi asal saat expand.
+        config(['atlas-thresholds.pillar_directorates' => ['DIR-KMR']]);
+
+        $this->assertTrue(PilarStrategis::appliesToDirectorate('DIR-KMR'));
+        // Case-insensitive — kode di-normalize ke uppercase.
+        $this->assertTrue(PilarStrategis::appliesToDirectorate('dir-kmr'));
+
+        $this->assertFalse(PilarStrategis::appliesToDirectorate('DBS'));
+        $this->assertFalse(PilarStrategis::appliesToDirectorate(null));
+        $this->assertFalse(PilarStrategis::appliesToDirectorate(''));
+    }
+
+    public function test_options_for_directorate_returns_pillars_only_when_scoped(): void
+    {
+        config(['atlas-thresholds.pillar_directorates' => ['DIR-KMR']]);
+
+        // Direktorat ber-pilar → dapat full map dari config('pillars').
+        $this->assertSame(
+            config('atlas-thresholds.pillars'),
+            PilarStrategis::optionsForDirectorate('DIR-KMR'),
+        );
+
+        // Direktorat lain → kosong (dropdown disembunyikan di FE).
+        $this->assertSame([], PilarStrategis::optionsForDirectorate('DSU'));
+        $this->assertSame([], PilarStrategis::optionsForDirectorate(null));
     }
 
     public function test_can_set_new_pillar_collecting_more(): void
