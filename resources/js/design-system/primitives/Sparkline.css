@@ -1,0 +1,5 @@
+.ds-sparkline {
+  display: block;
+  flex-shrink: 0;
+  max-width: 100%;
+}

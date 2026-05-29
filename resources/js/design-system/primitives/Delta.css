@@ -1,0 +1,11 @@
+.ds-delta {
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--ds-tracking-tight);
+  white-space: nowrap;
+}
+
+.ds-delta--up   { color: var(--ds-green-600); }
+.ds-delta--down { color: var(--ds-red-600); }
+.ds-delta--flat { color: var(--ds-text-tertiary); }

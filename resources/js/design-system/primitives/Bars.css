@@ -1,0 +1,87 @@
+.ds-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  width: 100%;
+}
+
+.ds-bars__plot {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ds-space-2);
+}
+
+.ds-bars__col {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--ds-space-1);
+}
+
+.ds-bars__val {
+  font-size: var(--ds-text-11);
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-text-secondary);
+  line-height: 1;
+}
+
+.ds-bars__bar {
+  width: 64%;
+  max-width: 44px;
+  border-radius: var(--ds-radius-sm) var(--ds-radius-sm) 0 0;
+  transition: height 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ds-bars__bar--green   { background: var(--ds-green-600); }
+.ds-bars__bar--amber   { background: var(--ds-amber-600); }
+.ds-bars__bar--red     { background: var(--ds-red-600); }
+.ds-bars__bar--neutral { background: var(--ds-border-strong); }
+.ds-bars__bar--empty {
+  height: 2px !important;
+  background: var(--ds-border-subtle);
+  width: 64%;
+  max-width: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-bars__bar { transition: none; }
+}
+
+/* Dashed target reference line spanning the plot. */
+.ds-bars__target {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--ds-border-strong);
+  pointer-events: none;
+}
+.ds-bars__target-label {
+  position: absolute;
+  right: 0;
+  top: -7px;
+  padding: 0 var(--ds-space-1);
+  background: var(--ds-surface-card);
+  font-size: var(--ds-text-11);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-text-tertiary);
+}
+
+.ds-bars__labels {
+  display: flex;
+  gap: var(--ds-space-2);
+}
+.ds-bars__label {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -1,0 +1,38 @@
+.ds-meter {
+  position: relative;
+  width: 100%;
+  min-width: 32px;
+}
+
+.ds-meter__track {
+  position: absolute;
+  inset: 0;
+  background: var(--ds-surface-sunken);
+  border-radius: var(--ds-radius-pill);
+}
+
+.ds-meter__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: var(--ds-radius-pill);
+}
+
+.ds-meter__fill--green   { background: var(--ds-green-600); }
+.ds-meter__fill--amber   { background: var(--ds-amber-600); }
+.ds-meter__fill--red     { background: var(--ds-red-600); }
+.ds-meter__fill--neutral { background: var(--ds-text-tertiary); }
+
+/* Target marker — a thin tick that overshoots the track slightly, per the
+ * bullet-graph convention. */
+.ds-meter__target {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--ds-text-primary);
+  opacity: 0.5;
+  transform: translateX(-1px);
+}

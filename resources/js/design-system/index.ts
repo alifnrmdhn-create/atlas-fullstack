@@ -23,3 +23,18 @@ export type { ListRowProps } from './primitives/ListRow'
 
 export { PageShell, PageHeader } from './primitives/PageShell'
 export type { PageShellProps, PageHeaderProps } from './primitives/PageShell'
+
+export { Sparkline } from './primitives/Sparkline'
+export type { SparklineProps } from './primitives/Sparkline'
+
+export { Meter } from './primitives/Meter'
+export type { MeterProps } from './primitives/Meter'
+
+export { Delta } from './primitives/Delta'
+export type { DeltaProps } from './primitives/Delta'
+
+export { Donut } from './primitives/Donut'
+export type { DonutProps, DonutSegment } from './primitives/Donut'
+
+export { Bars } from './primitives/Bars'
+export type { BarsProps, Bar } from './primitives/Bars'

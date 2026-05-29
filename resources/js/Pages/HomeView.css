@@ -1,1581 +1,751 @@
-/* HomeView — flush typography-first layout.
+/* HomeView — Executive Cockpit (2026-05-29 redesign)
  *
- * Design philosophy: restraint. No decorative card wrappers, no gradient mesh,
- * no glass effects. Single white surface. Sections separated by hairlines and
- * generous vertical rhythm. Numbers and typography do all the work.
+ * Replaces the prose-heavy v2 dashboard. Design language: calm & clean
+ * (Stripe/Linear restraint) on the design-system primitives + `--ds-*` tokens.
+ * Reads in one glance: command strip of BAN tiles → balanced KPI (lagging) ⟷
+ * Program (leading) panels → exception-only "Perlu aksi" → drill-down tables.
  *
- * Reference: Linear / Vercel / Stripe Dashboard — premium via precision, not
- * via chrome.
+ * Color is a SIGNAL, not decoration — numbers stay neutral; the verdict word,
+ * status dots, meters, and deltas carry green/amber/red. Dark mode + responsive
+ * come free via `--ds-*` tokens (no per-theme overrides needed here).
  *
- * Class naming: `hv__` prefix (hv = home v2) keeps Home styles self-contained
- * and avoids leaking into the rest of the app. Old `home-v2__*` selectors are
- * intentionally removed to prevent stale rules from bleeding through. */
+ * Class prefix `hv__` keeps Home styles self-contained. Card/Panel chrome
+ * (surface, border, radius, padding) is provided by <Card>; these rules only
+ * add internal layout + tone. */
 
-/* ─── Surface ─────────────────────────────────────────────── */
+/* ─── Surface + page wrapper ──────────────────────────────── */
 
-/* Pure System: home shares the canvas. Workspace has the same `--app-bg`
- * globally now, so no special override needed here. */
 .home-v2 {
   flex: 1 0 auto;
-  background: var(--app-bg);
   width: 100%;
+  background: var(--ds-surface-page);
 }
 
-.hv__inner {
+.hv {
   width: 100%;
-  padding: 28px 32px 48px;
-}
-
-@media (min-width: 1600px) {
-  .hv__inner { padding: 32px 48px 56px; }
-}
-
-@media (max-width: 980px) {
-  .hv__inner { padding: 20px 18px 40px; }
-}
-
-/* ─── Section stagger entrance ─────────────────────────────
- * Migrasi 2026-05-23: keyframe + delays di-handle oleh `.ds-stagger`
- * utility di components.css. HomeView wrapper inner pakai class:
- *   <div className="hv__inner ds-stagger">
- * Single source of truth lintas halaman. animation-fill-mode: backwards
- * di utility — transform tidak retain, modal-safe (lihat insiden 2026-05-19
- * di reset.css:55). */
-
-/* ─── Top rail (date · time · live · meta actions) ────────── */
-
-.hv__rail {
+  padding: var(--ds-space-6) var(--ds-space-8) var(--ds-space-10);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--ds-space-6);
+  font-family: var(--ds-font-sans);
+  color: var(--ds-text-primary);
 }
 
-.hv__rail-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
+@media (max-width: 1024px) {
+  .hv { padding: var(--ds-space-5) var(--ds-space-5) var(--ds-space-8); gap: var(--ds-space-5); }
+}
+@media (max-width: 640px) {
+  .hv { padding: var(--ds-space-4) var(--ds-space-4) var(--ds-space-8); }
 }
 
-.hv__rail-eyebrow {
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.10em;
-  color: var(--text);
-}
+/* ─── Greeting (one line — no narrative) ──────────────────── */
 
-.hv__rail-sep {
-  color: var(--panel-border);
-}
-
-.hv__rail-live {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin-left: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.10em;
-  color: var(--indigo);
-}
-
-.hv__rail-live-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--indigo);
-  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.16);
-  animation: hv-pulse 2.4s ease-in-out infinite;
-}
-
-@keyframes hv-pulse {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.16); }
-  50%      { box-shadow: 0 0 0 5px rgba(22, 163, 74, 0.04); }
-}
-
-.hv__rail-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.hv__rail-btn {
-  padding: 5px 10px;
-  border: 0;
-  background: transparent;
-  font-family: inherit;
-  font-size: 12px;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: 6px;
-  transition: background-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
-              color 140ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hv__rail-btn:hover {
-  background: var(--surface-overlay-soft);
-  color: var(--text-strong);
-}
-
-.hv__rail-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.35);
-}
-
-/* ─── Display greeting + narrative ───────────────────────── */
-
-/* Greeting block wraps the H1 and the narrative <p>. Margin bottom
- * lives on the wrapper, not the H1, so spacing remains stable across
- * narrative-present vs narrative-absent renders (and the stagger
- * fade-in still treats greeting+narrative as one cascading element). */
-.hv__greeting-block {
-  margin-bottom: 32px;
-}
-
-@media (max-width: 980px) {
-  .hv__greeting-block { margin-bottom: 24px; }
-}
+.hv__head { display: flex; align-items: baseline; }
 
 .hv__greeting {
   margin: 0;
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.024em;
-  line-height: 1.12;
-  color: var(--text-strong);
+  font-size: var(--ds-text-20);
+  font-weight: var(--ds-weight-regular);
+  letter-spacing: var(--ds-tracking-tight);
+  color: var(--ds-text-secondary);
 }
-
-/* Name = brand-green solid color. One restrained accent moment that marks
- * the page as ATLAS / PTPN brand without resorting to gradient or chrome. */
 .hv__greeting-name {
-  color: var(--indigo);
+  color: var(--ds-text-primary);
+  font-weight: var(--ds-weight-semibold);
 }
 
-@media (max-width: 980px) {
-  .hv__greeting { font-size: 22px; }
-}
+/* ─── Shared status dot ───────────────────────────────────── */
 
-/* Narrative summary — 1-2 sentence line under the greeting that makes
- * the data tangible. Restrained typography (15px regular weight) so it
- * reads as supporting prose, not a UI label. Tone-colored numbers within
- * carry the urgency without overwhelming the line. */
-.hv__narrative {
-  margin: 10px 0 0;
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1.55;
-  color: var(--text);
-  letter-spacing: -0.005em;
-  max-width: 78ch;
-}
-
-.hv__narrative strong {
-  color: var(--text-strong);
-  font-weight: 600;
-}
-
-.hv__narrative-num {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-
-.hv__narrative-num[data-tone="red"]   { color: var(--red); }
-.hv__narrative-num[data-tone="amber"] { color: var(--yellow); }
-.hv__narrative-num[data-tone="green"] { color: var(--indigo); }
-
-@media (max-width: 980px) {
-  .hv__narrative { font-size: 14px; margin-top: 8px; }
-}
-
-/* ─── Universal eyebrow + dot system ──────────────────────── */
-
-/* Eyebrow — sentence case Geist sans (was uppercase mono — fintech AI
- * dashboard cliche). Reads as data label, not chrome. */
-.hv__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0;
-  color: var(--text-muted);
-}
-
-.hv__eyebrow-dot {
-  width: 6px;
-  height: 6px;
+.hv__dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: var(--text-muted);
+  background: var(--ds-border-strong);
 }
+.hv__dot[data-tone="green"]   { background: var(--ds-green-600); }
+.hv__dot[data-tone="amber"]   { background: var(--ds-amber-600); }
+.hv__dot[data-tone="red"]     { background: var(--ds-red-600); }
+.hv__dot[data-tone="neutral"] { background: var(--ds-border-strong); }
 
-[data-tone="green"]   > .hv__eyebrow > .hv__eyebrow-dot,
-.hv__eyebrow-dot[data-tone="green"]   { background: var(--indigo); box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.10); }
+/* ─── Command strip — BAN tiles ───────────────────────────── */
 
-[data-tone="amber"]   > .hv__eyebrow > .hv__eyebrow-dot,
-.hv__eyebrow-dot[data-tone="amber"]   { background: var(--yellow); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12); }
-
-[data-tone="red"]     > .hv__eyebrow > .hv__eyebrow-dot,
-.hv__eyebrow-dot[data-tone="red"]     { background: var(--red); box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.10); }
-
-[data-tone="indigo"]  > .hv__eyebrow > .hv__eyebrow-dot,
-.hv__eyebrow-dot[data-tone="indigo"]  { background: var(--purple); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12); }
-
-[data-tone="neutral"] > .hv__eyebrow > .hv__eyebrow-dot,
-.hv__eyebrow-dot[data-tone="neutral"] { background: var(--panel-border); }
-
-/* Generic dot used elsewhere (eyebrow context handled above). */
-.hv__stat[data-tone="green"]   .hv__eyebrow-dot { background: var(--indigo); box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.10); }
-.hv__stat[data-tone="amber"]   .hv__eyebrow-dot { background: var(--yellow); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12); }
-.hv__stat[data-tone="indigo"]  .hv__eyebrow-dot { background: var(--purple); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12); }
-.hv__stat[data-tone="neutral"] .hv__eyebrow-dot { background: var(--panel-border); }
-
-/* ─── Stats row — flush typography, vertical separators ───── */
-
-.hv__stats {
+.hv__strip {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-  margin-bottom: 36px;
+  grid-template-columns: repeat(auto-fit, minmax(196px, 1fr));
+  gap: var(--ds-space-4);
 }
 
-@media (max-width: 720px) {
-  .hv__stats { grid-template-columns: 1fr; gap: 18px; margin-bottom: 28px; }
-}
-
-.hv__stat {
+/* Tile chrome comes from <Card>; we add the internal column layout + tone. */
+.hv__tile {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 24px 0 0;
-  position: relative;
+  gap: var(--ds-space-2);
+  min-width: 0;
 }
 
-.hv__stat + .hv__stat {
-  padding-left: 24px;
-  border-left: 1px solid var(--panel-border-soft);
-}
-
-@media (max-width: 720px) {
-  .hv__stat,
-  .hv__stat + .hv__stat {
-    padding: 0;
-    border-left: 0;
-  }
-}
-
-/* ─── Big number — used by stats AND headline numbers ────── */
-
-.hv__big {
-  font-size: 30px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.025em;
-  color: var(--text-strong);
-  font-variant-numeric: tabular-nums;
+.hv__tile-label {
   display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
+}
+
+.hv__tile-value-row {
+  display: flex;
   align-items: baseline;
+  gap: var(--ds-space-2);
+  flex-wrap: wrap;
 }
 
-@media (max-width: 980px) {
-  .hv__big { font-size: 26px; }
+.hv__tile-value {
+  font-size: var(--ds-text-28);
+  font-weight: var(--ds-weight-semibold);
+  line-height: var(--ds-leading-tight);
+  letter-spacing: var(--ds-tracking-tight);
+  color: var(--ds-text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
-.hv__big[data-tone="green"]   { color: var(--indigo); }
-.hv__big[data-tone="amber"]   { color: var(--yellow); }
-.hv__big[data-tone="red"]     { color: var(--red); }
-.hv__big[data-tone="neutral"] { color: var(--text-strong); }
-
-/* Real-time flash — applied via JS classList toggle when value changes
- * post-mount. Soft indigo bg fill behind digits + ring expanding outward.
- * Total 1500ms; most prominent at 15%, mostly faded by 60%. */
-@keyframes hv-flash {
-  0% {
-    background-color: transparent;
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--indigo) 0%, transparent);
-  }
-  15% {
-    background-color: color-mix(in srgb, var(--indigo) 14%, transparent);
-    box-shadow: 0 0 0 5px color-mix(in srgb, var(--indigo) 16%, transparent);
-  }
-  60% {
-    background-color: color-mix(in srgb, var(--indigo) 6%, transparent);
-    box-shadow: 0 0 0 9px color-mix(in srgb, var(--indigo) 4%, transparent);
-  }
-  100% {
-    background-color: transparent;
-    box-shadow: 0 0 0 14px color-mix(in srgb, var(--indigo) 0%, transparent);
-  }
+.hv__tile-unit {
+  font-size: var(--ds-text-16);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-text-tertiary);
+  margin-left: 2px;
 }
 
-.hv__big.hv-flashing {
-  animation: hv-flash 1500ms cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 6px;
+.hv__tile-caption {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+  line-height: var(--ds-leading-snug);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hv__big.hv-flashing { animation: none; }
+/* Verdict tile shows a word (not a BAN) — slightly smaller. */
+.hv__tile--verdict .hv__tile-value { font-size: var(--ds-text-20); }
+
+/* Status glyph (✓ aman / ⚠ hati-hati / ✕ bahaya) — tone via currentColor. */
+.hv__tile-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-text-tertiary);
+}
+.hv__tile-glyph[data-tone="green"] { color: var(--ds-green-600); }
+.hv__tile-glyph[data-tone="amber"] { color: var(--ds-amber-600); }
+.hv__tile-glyph[data-tone="red"]   { color: var(--ds-red-600); }
+
+/* RAG full tint — the tile background carries the status colour (Pak Iswahyudi:
+ * aman hijau, hati-hati kuning, bahaya merah). color-mix keeps it subtle and
+ * theme-aware; value + glyph take the full tone for contrast. Attribute
+ * selectors out-rank <Card>'s base surface/border. */
+.hv__tile[data-tone="green"] {
+  background: color-mix(in srgb, var(--ds-green-600) 8%, var(--ds-surface-card));
+  border-color: color-mix(in srgb, var(--ds-green-600) 24%, var(--ds-border-subtle));
+}
+.hv__tile[data-tone="amber"] {
+  background: color-mix(in srgb, var(--ds-amber-600) 9%, var(--ds-surface-card));
+  border-color: color-mix(in srgb, var(--ds-amber-600) 26%, var(--ds-border-subtle));
+}
+.hv__tile[data-tone="red"] {
+  background: color-mix(in srgb, var(--ds-red-600) 8%, var(--ds-surface-card));
+  border-color: color-mix(in srgb, var(--ds-red-600) 26%, var(--ds-border-subtle));
+}
+.hv__tile[data-tone="green"] .hv__tile-value { color: var(--ds-green-600); }
+.hv__tile[data-tone="amber"] .hv__tile-value { color: var(--ds-amber-600); }
+.hv__tile[data-tone="red"]   .hv__tile-value { color: var(--ds-red-600); }
+.hv__tile[data-tone="neutral"] .hv__tile-value { color: var(--ds-text-primary); }
+
+/* ─── Balanced panels — KPI (lagging) ⟷ Program (leading) ─── */
+
+.hv__balance {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ds-space-5);
+  align-items: start;
+}
+.hv__balance--single { grid-template-columns: 1fr; }
+
+@media (max-width: 1024px) {
+  .hv__balance { grid-template-columns: 1fr; gap: var(--ds-space-4); }
 }
 
-.hv__big-denom {
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--text-muted);
-  margin-left: 1px;
-  letter-spacing: -0.01em;
-}
-
-.hv__big-unit {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text-muted);
-  margin-left: 3px;
-  letter-spacing: -0.01em;
-}
-
-.hv__sub {
+.hv__panel {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  font-size: 12px;
-  color: var(--text);
-  line-height: 1.35;
-  font-variant-numeric: tabular-nums;
+  gap: var(--ds-space-3);
+  min-width: 0;
 }
 
-.hv__sub-meta {
-  font-size: 11px;
-  color: var(--text-muted);
-}
+/* Tone accent on the panel's left edge — RAG signal without flooding the whole
+ * panel (keeps charts + text readable). Attribute selector out-ranks <Card>. */
+.hv__panel[data-tone] { border-left-width: 3px; }
+.hv__panel[data-tone="green"]   { border-left-color: var(--ds-green-600); }
+.hv__panel[data-tone="amber"]   { border-left-color: var(--ds-amber-600); }
+.hv__panel[data-tone="red"]     { border-left-color: var(--ds-red-600); }
+.hv__panel[data-tone="neutral"] { border-left-color: var(--ds-border-default); }
 
-/* ─── Stat visual elements — give each number visual context ─ */
-
-/* Discrete dots: one per item, filled when "on" — used for n/total stats */
-.hv__stat-dots {
+.hv__panel-head {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 2px;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
 }
 
-.hv__stat-dots > span {
-  width: 14px;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--surface-1);
-  transition: background 220ms cubic-bezier(0.4, 0, 0.2, 1);
+.hv__panel-eyebrow {
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-secondary);
+  letter-spacing: var(--ds-tracking-wide);
+  text-transform: uppercase;
 }
 
-.hv__stat-dots > span.is-on {
-  background: var(--indigo);
+.hv__panel-head-right {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-3);
 }
 
-/* Inline breakdown text — was pill chips, now plain text with separator
- * dots between items. Tone via color only. Reads as "metadata line"
- * (Linear/Stripe pattern) instead of "decorated tag pills". */
-.hv__stat-chips {
+.hv__panel-headline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+}
+
+.hv__panel-metric {
   display: flex;
   align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0;
-  margin-top: 2px;
-  font-size: 11.5px;
-  font-weight: 500;
+  gap: var(--ds-space-3);
+  min-width: 0;
+}
+
+.hv__panel-big {
+  font-size: var(--ds-text-40);
+  font-weight: var(--ds-weight-semibold);
+  line-height: var(--ds-leading-tight);
+  letter-spacing: var(--ds-tracking-tight);
+  color: var(--ds-text-primary);
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
+}
+.hv__panel-big[data-tone="green"] { color: var(--ds-green-600); }
+.hv__panel-big[data-tone="amber"] { color: var(--ds-amber-600); }
+.hv__panel-big[data-tone="red"]   { color: var(--ds-red-600); }
+
+.hv__panel-unit {
+  font-size: var(--ds-text-20);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-text-tertiary);
+  margin-left: 2px;
 }
 
-.hv__stat-chips > span {
-  display: inline;
-  padding: 0;
-  background: transparent;
-  white-space: nowrap;
+.hv__panel-sub {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
-.hv__stat-chips > span + span::before {
-  content: ' · ';
-  color: var(--panel-border);
-  margin: 0 5px;
-  font-weight: 400;
-}
+/* ─── KPI bullet-graph list (lagging) ─────────────────────── */
 
-.hv__stat-chips > span[data-tone="red"]   { color: var(--red); }
-.hv__stat-chips > span[data-tone="amber"] { color: var(--yellow); }
+.hv__kpi-list { display: flex; flex-direction: column; }
 
-/* Status composition track: proportional segments showing portfolio health */
-.hv__stat-track {
-  display: flex;
+.hv__kpi-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 1.3fr) 2fr auto;
   align-items: center;
-  height: 5px;
-  border-radius: 3px;
-  background: var(--surface-1);
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-2);
+  margin: 0 calc(-1 * var(--ds-space-2));
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--ds-radius-md);
+  transition: background-color 120ms ease;
+}
+.hv__kpi-row + .hv__kpi-row { border-top: 1px solid var(--ds-border-subtle); border-radius: 0; }
+.hv__kpi-row:hover { background: var(--ds-surface-hover); }
+.hv__kpi-row:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ds-green-600) 35%, transparent);
+}
+
+.hv__kpi-name {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-primary);
+  white-space: nowrap;
   overflow: hidden;
-  margin-top: 2px;
-  gap: 2px;
+  text-overflow: ellipsis;
 }
 
-.hv__stat-track > span {
-  height: 100%;
-  border-radius: 1.5px;
-  min-width: 6px;
-  transform-origin: left center;
-  animation: hv-track-grow 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+.hv__kpi-val {
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--ds-tracking-tight);
+  text-align: right;
+  min-width: 52px;
+}
+.hv__kpi-val[data-tone="green"] { color: var(--ds-green-600); }
+.hv__kpi-val[data-tone="amber"] { color: var(--ds-amber-600); }
+.hv__kpi-val[data-tone="red"]   { color: var(--ds-red-600); }
+
+/* ─── Program status bars (leading) ───────────────────────── */
+
+.hv__status-list { display: flex; flex-direction: column; }
+
+.hv__status-row {
+  display: grid;
+  grid-template-columns: 132px 1fr auto;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-2);
+  margin: 0 calc(-1 * var(--ds-space-2));
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--ds-radius-md);
+  transition: background-color 120ms ease;
+}
+.hv__status-row:hover { background: var(--ds-surface-hover); }
+.hv__status-row:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ds-green-600) 35%, transparent);
 }
 
-.hv__stat-track > span:nth-child(1) { animation-delay: 380ms; }
-.hv__stat-track > span:nth-child(2) { animation-delay: 460ms; }
-.hv__stat-track > span:nth-child(3) { animation-delay: 540ms; }
-.hv__stat-track > span:nth-child(4) { animation-delay: 620ms; }
-
-@keyframes hv-track-grow {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
+.hv__status-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-secondary);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hv__stat-track > span {
-    animation: none;
-    transform: scaleX(1);
-  }
+.hv__status-val {
+  font-size: var(--ds-text-14);
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-text-primary);
+  text-align: right;
+  min-width: 24px;
 }
 
-.hv__stat-track > span[data-tone="green"]   { background: var(--indigo); }
-.hv__stat-track > span[data-tone="amber"]   { background: var(--yellow); }
-.hv__stat-track > span[data-tone="red"]     { background: var(--red); }
-.hv__stat-track > span[data-tone="neutral"] { background: var(--panel-border); }
-
-/* ─── Section system (hairline divider + header) ──────────── */
+/* ─── Section system (shared: exceptions + drill-down) ────── */
 
 .hv__section {
-  position: relative;
-  padding-top: 22px;
-  padding-bottom: 0;
-  margin-bottom: 32px;
-  border-top: 1px solid var(--surface-overlay);
-}
-
-/* First section after stats has no top border (stats already provide rhythm) */
-.hv__stats + .hv__section {
-  border-top: 0;
-  padding-top: 0;
-}
-
-@media (max-width: 980px) {
-  .hv__section { padding-top: 18px; margin-bottom: 24px; }
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
 }
 
 .hv__sec-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: var(--ds-space-4);
 }
 
-/* Section titles — sentence case Geist sans, not uppercase mono. The mono
- * uppercase eyebrow pattern read as fintech-AI-template. Sentence case
- * regular weight is Linear/Notion convention — feels like prose, not chrome. */
 .hv__sec-title {
   margin: 0;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  color: var(--text-strong);
+  font-size: var(--ds-text-14);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-primary);
+  letter-spacing: var(--ds-tracking-tight);
 }
 
 .hv__sec-meta {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--text-muted);
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
 
-.hv__sec-link {
+/* Text link with arrow — shared by section + panel headers. */
+.hv__sec-link,
+.hv__panel-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  margin: -4px -8px;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-1) var(--ds-space-2);
+  margin: calc(-1 * var(--ds-space-1)) calc(-1 * var(--ds-space-2));
   border: 0;
   background: transparent;
   font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
   cursor: pointer;
-  border-radius: 6px;
-  transition: background-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
-              color 140ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--ds-radius-sm);
+  white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease;
 }
-
-.hv__sec-link:hover {
-  background: var(--surface-overlay-soft);
-  color: var(--text-strong);
-}
-
-.hv__sec-link:focus-visible {
+.hv__sec-link:hover,
+.hv__panel-link:hover { background: var(--ds-surface-hover); color: var(--ds-text-primary); }
+.hv__sec-link:focus-visible,
+.hv__panel-link:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.35);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-green-600) 35%, transparent);
 }
 
-/* ─── Priorities — Hero + Secondaries pattern ─────────────────
- * One dominant "hero" card (most severe priority) takes the left column
- * (1.4fr), with the remaining priorities stacked as slim rows in the right
- * column (1fr). Visual hierarchy makes "the one thing to do today"
- * unmistakable while keeping other actions one click away.
- *
- * On narrow viewports (<980px) the grid collapses to single column.
- * `data-count="1"` collapses the grid when there's only one priority
- * (avoid orphan-column whitespace). */
+/* ─── Perlu aksi — exceptions only ────────────────────────── */
 
-.hv__pri-grid {
-  display: grid;
-  grid-template-columns: 1.65fr 1fr;
-  gap: 24px;
-  align-items: stretch;
-}
-
-.hv__pri-grid[data-count="1"] {
-  grid-template-columns: 1fr;
-}
-
-@media (max-width: 980px) {
-  .hv__pri-grid { grid-template-columns: 1fr; }
-}
-
-/* ─── Hero card ────────────────────────────────────────────── */
-
-/* Hero — typography block, NO card chrome. Border + radius read as
- * templated AI card. Hero now lives as pure content within the section,
- * structurally separated only by asymmetric grid + whitespace. Tone via
- * icon color. Hover = subtle bg tint on the whole click area. */
-.hv__pri-hero {
-  position: relative;
-  display: flex;
-  align-items: stretch;
-  padding: 0;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-  transition: background-color 140ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hv__pri-hero:hover {
-  background-color: var(--surface-overlay-faint);
-}
-
-.hv__pri-hero:focus-visible {
-  outline: none;
-  background-color: var(--surface-overlay-soft);
-  box-shadow: inset 2px 0 0 rgba(22, 163, 74, 0.5);
-}
-
-/* Rail span removed from layout (display: none). Vertical decorative bars
- * read as templated AI-card pattern. Tone moved to card border-left. */
-.hv__pri-hero-rail {
-  display: none;
-}
-
-/* Tone via card border-left only — structural, not decorative. */
-/* Border-left tone removed — hero has no card chrome at all now.
- * Tone signal lives entirely in the icon color + CTA text color. */
-
-.hv__pri-hero-content {
-  flex: 1;
+.hv__exc-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 22px 24px;
-  min-width: 0;
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  overflow: hidden;
 }
 
-.hv__pri-hero-head {
+.hv__exc-row {
   display: grid;
-  grid-template-columns: 32px 1fr;
-  gap: 14px;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border: 0;
+  border-top: 1px solid var(--ds-border-subtle);
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.hv__exc-row:first-child { border-top: 0; }
+.hv__exc-row:hover { background: var(--ds-surface-hover); }
+.hv__exc-row:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ds-green-600) 35%, transparent);
+}
+
+.hv__exc-label {
+  font-size: var(--ds-text-14);
+  color: var(--ds-text-secondary);
+  min-width: 0;
+}
+.hv__exc-label strong { color: var(--ds-text-primary); font-weight: var(--ds-weight-semibold); }
+
+.hv__exc-meta {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hv__exc-arrow { color: var(--ds-text-tertiary); font-size: var(--ds-text-13); }
+
+.hv__all-clear {
+  margin: 0;
+  padding: var(--ds-space-4);
+  font-size: var(--ds-text-14);
+  color: var(--ds-text-tertiary);
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+}
+
+/* ─── Analisis — chart cards (batang + lingkaran) ─────────── */
+
+.hv__analisis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--ds-space-4);
   align-items: start;
 }
 
-/* Icon — naked stroke glyph (no tinted container). The rose/yellow "pill"
- * container was the dominant AI-slop pattern; replacing with bare colored
- * icon brings the card more in line with Linear/Stripe — typographic tone
- * via icon color, not via decorative chrome. */
-.hv__pri-hero-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 2px;
-  width: 28px;
-  height: 28px;
-  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.hv__pri-hero-icon > svg {
-  width: 28px;
-  height: 28px;
-}
-
-.hv__pri-hero[data-tone="red"]   .hv__pri-hero-icon { color: var(--red); }
-.hv__pri-hero[data-tone="amber"] .hv__pri-hero-icon { color: var(--yellow); }
-
-.hv__pri-hero:hover .hv__pri-hero-icon {
-  transform: scale(1.06);
-}
-
-.hv__pri-hero-text {
+.hv__chart-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-4) var(--ds-space-5);
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
   min-width: 0;
 }
 
-.hv__pri-hero-primary {
-  font-size: 16.5px;
-  font-weight: 600;
-  color: var(--text-strong);
-  line-height: 1.35;
-  letter-spacing: -0.012em;
+.hv__chart-title {
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-secondary);
 }
 
-.hv__pri-hero-secondary {
-  font-size: 12.5px;
-  color: var(--text-muted);
-  line-height: 1.4;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Context list — top related items shown inside the hero card. Compact
- * 3-col grid: code, name, meta. Hairline divider top + between rows. */
-.hv__pri-hero-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border-top: 1px solid var(--panel-border-soft);
-  padding-top: 12px;
-  margin-top: 4px;
-}
-
-.hv__pri-hero-list-row {
-  display: grid;
-  grid-template-columns: 80px 1fr auto;
-  align-items: center;
-  gap: 14px;
-  padding: 7px 0;
-  font-size: 12.5px;
-}
-
-.hv__pri-hero-list-row + .hv__pri-hero-list-row {
-  border-top: 1px solid var(--surface-overlay-soft);
-}
-
-.hv__pri-hero-list-code {
-  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hv__pri-hero-list-name {
-  font-size: 12.5px;
-  color: var(--text-strong);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hv__pri-hero-list-meta {
-  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-
-/* CTA — plain text link with arrow. No pill bg — that read as templated.
- * Just inline text in tone color, arrow translates on hover. */
-.hv__pri-hero-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  align-self: flex-end;
-  margin-top: auto;
-  padding: 0;
-  background: transparent;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-  letter-spacing: -0.005em;
-  transition: color 140ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hv__pri-hero-cta-arrow {
-  transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hv__pri-hero[data-tone="red"]   .hv__pri-hero-cta { color: var(--red); }
-.hv__pri-hero[data-tone="amber"] .hv__pri-hero-cta { color: var(--yellow); }
-
-.hv__pri-hero:hover .hv__pri-hero-cta-arrow {
-  transform: translateX(3px);
-}
-
-/* ─── Secondary rows — Linear-style list (no card chrome) ─────
- * Stripped down from bordered cards to plain list rows. Tone signal
- * lives entirely in icon color. Hover = subtle bg highlight only.
- * Rows separated by hairline border-bottom, not wrapped in card. */
-
-.hv__pri-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border-top: 1px solid var(--surface-overlay-soft);
-}
-
-.hv__pri-row {
-  position: relative;
-  display: grid;
-  grid-template-columns: 20px 1fr 14px;
-  gap: 14px;
-  align-items: center;
-  padding: 14px 4px;
-  border: 0;
-  border-bottom: 1px solid var(--surface-overlay-soft);
-  border-radius: 0;
-  background: transparent;
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-  flex: 1;
-  min-height: 56px;
-  max-height: 96px;
-  transition: background-color 140ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hv__pri-grid[data-count="2"] .hv__pri-list { align-self: start; }
-.hv__pri-grid[data-count="2"] .hv__pri-row { flex: 0 0 auto; }
-
-.hv__pri-row:hover {
-  background-color: var(--surface-overlay-faint);
-}
-
-.hv__pri-row:focus-visible {
-  outline: none;
-  background-color: var(--surface-overlay-soft);
-  box-shadow: inset 2px 0 0 rgba(22, 163, 74, 0.5);
-}
-
-/* Rail removed — was decorative bar AND structural border-left. List
- * pattern doesn't need either; tone via icon color only. */
-.hv__pri-row-rail {
-  display: none;
-}
-
-/* Naked stroke icon — no tinted container, no border-left tone. */
-.hv__pri-row-icon {
-  width: 18px;
-  height: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hv__pri-row-icon > svg {
-  width: 18px;
-  height: 18px;
-}
-
-.hv__pri-row[data-tone="red"]   .hv__pri-row-icon { color: var(--red); }
-.hv__pri-row[data-tone="amber"] .hv__pri-row-icon { color: var(--yellow); }
-
-.hv__pri-row:hover .hv__pri-row-icon {
-  transform: scale(1.04);
-}
-
-.hv__pri-row-body {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.hv__pri-row-primary {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text-strong);
-  line-height: 1.3;
-  letter-spacing: -0.005em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hv__pri-row-secondary {
-  font-size: 11.5px;
-  color: var(--text-muted);
-  line-height: 1.3;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hv__pri-row-arrow {
-  font-size: 13px;
-  color: var(--text-muted);
-  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1),
-              color 160ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hv__pri-row:hover .hv__pri-row-arrow {
-  transform: translateX(3px);
-  color: var(--text-strong);
-}
-
-@media (max-width: 980px) {
-  .hv__pri-hero { min-height: 0; }
-  .hv__pri-row { min-height: 0; }
-}
-
-/* ─── Celebration empty state ────────────────────────────────
- * Rendered when there are no urgent priorities — all green. Visually
- * lighter than the hero card (no looming shadow, calm green tint) but
- * still interactive: clicks through to scorecard for context. */
-
-.hv__pri-celebration {
-  position: relative;
-  display: flex;
-  align-items: stretch;
-  padding: 0;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--indigo) 18%, var(--panel-border));
-  background: linear-gradient(135deg,
-    color-mix(in srgb, var(--indigo) 6%, var(--panel)) 0%,
-    color-mix(in srgb, var(--indigo) 2%, var(--panel)) 60%,
-    var(--panel) 100%);
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-  width: 100%;
-  overflow: hidden;
-  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 200ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.hv__pri-celebration:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 8px 20px color-mix(in srgb, var(--indigo) 8%, transparent),
-    0 2px 4px var(--surface-overlay-soft);
-  border-color: color-mix(in srgb, var(--indigo) 28%, var(--panel-border));
-}
-
-.hv__pri-celebration:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.35);
-}
-
-.hv__pri-celebration-rail {
-  width: 4px;
-  flex-shrink: 0;
-  align-self: stretch;
-  background: var(--indigo);
-}
-
-.hv__pri-celebration-content {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 48px 1fr auto;
-  gap: 18px;
-  align-items: center;
-  padding: 22px 24px;
-  min-width: 0;
-}
-
-.hv__pri-celebration-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: color-mix(in srgb, var(--indigo) 12%, transparent);
-  color: var(--indigo);
-  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.hv__pri-celebration-icon > svg {
-  width: 22px;
-  height: 22px;
-}
-
-.hv__pri-celebration:hover .hv__pri-celebration-icon {
-  transform: scale(1.06);
-}
-
-.hv__pri-celebration-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.hv__pri-celebration-primary {
-  font-size: 15.5px;
-  font-weight: 600;
-  color: var(--text-strong);
-  line-height: 1.35;
-  letter-spacing: -0.012em;
-}
-
-.hv__pri-celebration-secondary {
-  font-size: 12.5px;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-
-.hv__pri-celebration-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--indigo);
-  letter-spacing: -0.005em;
-  flex-shrink: 0;
-}
-
-.hv__pri-celebration-link > span {
-  transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hv__pri-celebration:hover .hv__pri-celebration-link > span {
-  transform: translateX(3px);
-}
-
-@media (max-width: 720px) {
-  .hv__pri-celebration-content {
-    grid-template-columns: 40px 1fr;
-    gap: 14px;
-    padding: 18px 18px;
-  }
-  .hv__pri-celebration-link {
-    grid-column: 1 / -1;
-    margin-top: 6px;
-  }
-}
-
-/* ─── KPI Achievement / Program Aktif grid ────────────────── */
-
-/* Portfolio row: KPI Achievement + Program Status side-by-side. Each
- * column stacks vertically inside (headline → list → trend). On narrow
- * widths (<880px) the two cols collapse to single column stack. */
-.hv__portfolio-cols {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 36px;
-  align-items: start;
-}
-
-/* Single-column variant — dipakai saat kolom KPI Achievement di-hide
- * (non-SUPERADMIN, modul Performance restricted 2026-05-25). */
-.hv__portfolio-cols.hv__portfolio-cols--single {
-  grid-template-columns: 1fr;
-}
-
-@media (max-width: 880px) {
-  .hv__portfolio-cols {
-    grid-template-columns: 1fr;
-    gap: 28px;
-  }
-}
-
-.hv__portfolio-col {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-}
-
-/* Section header inside portfolio col uses the col's gap, not its own
- * margin-bottom — prevents double-spacing between header and content. */
-.hv__portfolio-col .hv__sec-head { margin-bottom: 0; }
-
-/* Slightly more compact big number in portfolio column (col is narrower
- * than full-width section, so 36px would feel oversized). */
-.hv__portfolio-col .hv__big { font-size: 32px; }
-.hv__portfolio-col .hv__big-unit { font-size: 14px; }
-
-.hv__col-headline {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: -2px;
-}
-
-/* Legacy aliases (kept in case any markup still references) */
-.hv__kpi-grid,
-.hv__prog-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.hv__kpi-headline {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* ─── Rank list (Top 3 direktorat) ────────────────────────── */
-
-.hv__rank-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.hv__rank {
-  display: grid;
-  grid-template-columns: 22px 1fr auto;
-  align-items: center;
-  gap: 12px;
-  padding: 7px 10px;
-  margin: 0 -10px;
-  border: 0;
-  background: transparent;
-  font-family: inherit;
-  font-size: 13px;
-  color: var(--text-strong);
-  cursor: pointer;
-  text-align: left;
-  border-radius: 6px;
-  transition: background-color 140ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hv__rank + .hv__rank {
-  border-top: 1px solid var(--surface-overlay-soft);
-}
-
-.hv__rank:hover {
-  background: var(--surface-overlay-faint);
-}
-
-.hv__rank:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px rgba(22, 163, 74, 0.35);
-}
-
-/* Plain numbered list — circular colored badges read as templated.
- * Just the number itself, mono tabular for column alignment. */
-.hv__rank-num {
-  width: 20px;
-  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-muted);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.hv__rank-num[data-rank="1"] {
-  color: var(--indigo);
-  font-weight: 700;
-}
-
-.hv__rank-name {
-  font-size: 13px;
-  color: var(--text-strong);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hv__rank-value {
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-
-.hv__rank-value[data-tone="green"] { color: var(--indigo); }
-.hv__rank-value[data-tone="amber"] { color: var(--yellow); }
-.hv__rank-value[data-tone="red"]   { color: var(--red); }
-
-/* ─── Below-target alert (inline, no card) ────────────────── */
-
-.hv__alert {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--surface-overlay);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.hv__alert-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0;
-  color: var(--red);
-}
-
-.hv__alert-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 10px;
-  margin: 0 -10px;
-  border: 0;
-  background: transparent;
-  font-family: inherit;
-  cursor: pointer;
-  text-align: left;
-  border-radius: 6px;
-  transition: background-color 140ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hv__alert-row:hover {
-  background: rgba(220, 38, 38, 0.04);
-}
-
-.hv__alert-row:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px rgba(220, 38, 38, 0.35);
-}
-
-.hv__alert-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-strong);
-}
-
-.hv__alert-value {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--red);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-
-/* ─── Status breakdown (Program section) ──────────────────── */
-
-.hv__breakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.hv__break-row {
-  display: grid;
-  grid-template-columns: 12px 124px 1fr auto;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 10px;
-  margin: 0 -10px;
-  border: 0;
-  background: transparent;
-  font-family: inherit;
-  font-size: 13px;
-  cursor: pointer;
-  text-align: left;
-  border-radius: 6px;
-  transition: background-color 140ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hv__break-row:hover {
-  background: var(--surface-overlay-faint);
-}
-
-.hv__break-row:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px rgba(22, 163, 74, 0.35);
-}
-
-.hv__break-row .hv__eyebrow-dot {
-  justify-self: center;
-}
-
-.hv__break-label {
-  font-size: 13px;
-  color: var(--text);
-}
-
-.hv__break-row[data-emphasis="true"] .hv__break-label {
-  color: var(--text-strong);
-  font-weight: 500;
-}
-
-.hv__break-bar {
-  height: 4px;
-  background: var(--surface-overlay);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.hv__break-bar-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 480ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hv__break-bar-fill[data-tone="green"]   { background: var(--indigo); }
-.hv__break-bar-fill[data-tone="amber"]   { background: var(--yellow); }
-.hv__break-bar-fill[data-tone="red"]     { background: var(--red); }
-.hv__break-bar-fill[data-tone="neutral"] { background: var(--panel-border); }
-
-.hv__break-value {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text-strong);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-
-.hv__break-row[data-emphasis="true"] .hv__break-value {
-  color: var(--red);
-}
-
-/* ─── Trend block ─────────────────────────────────────────── */
-
-.hv__trend {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--surface-overlay);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.hv__trend-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-/* Sparkline stretches to col width via SVG preserveAspectRatio="none". */
-.hv__trend > svg {
-  width: 100%;
-  height: 56px;
-}
-
-/* Sparkline entrance — line draws left-to-right with normalized pathLength=1
- * (set on polyline element) so the entire 1600ms duration is spent actually
- * drawing rather than animating an offset that's already off-screen.
- * Easing: gentle ease-out so the "pen" decelerates as it reaches the right
- * edge — feels like a deliberate drawing motion, not an instant reveal.
- * Area polygon fades in AFTER the line finishes so user reads line first,
- * then context (the soft fill below). */
-.hv__trend > svg polyline {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: hv-sparkline-draw 1600ms cubic-bezier(0.4, 0, 0.25, 1) 700ms forwards;
-}
-
-.hv__trend > svg polygon {
-  opacity: 0;
-  animation: hv-sparkline-area 700ms cubic-bezier(0.4, 0, 0.2, 1) 2100ms forwards;
-}
-
-@keyframes hv-sparkline-draw {
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes hv-sparkline-area {
-  to { opacity: 1; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hv__trend > svg polyline {
-    animation: none;
-    stroke-dashoffset: 0;
-  }
-  .hv__trend > svg polygon {
-    animation: none;
-    opacity: 1;
-  }
-}
-
-.hv__trend-edges {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: 0.04em;
-  font-variant-numeric: tabular-nums;
-}
-
-.hv__trend-edges > span:nth-child(2) {
-  font-weight: 500;
-  color: var(--text-muted);
-  opacity: 0.7;
-}
-
-.hv__trend-delta {
-  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 13px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-}
-
-.hv__trend-delta[data-tone="green"] { color: var(--indigo); }
-.hv__trend-delta[data-tone="red"]   { color: var(--red); }
-
-/* ─── Divisi row (chips) ──────────────────────────────────── */
-
-.hv__divisi-row {
+.hv__donut-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--ds-space-5);
   flex-wrap: wrap;
 }
+
+.hv__legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  flex: 1 1 130px;
+  min-width: 130px;
+}
+
+.hv__legend-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--ds-space-2);
+  font-size: var(--ds-text-13);
+}
+
+.hv__legend-label {
+  color: var(--ds-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hv__legend-val {
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-text-primary);
+}
+
+/* ═══════════════ Below the fold — drill-down detail ═══════════════ */
+
+/* ─── Divisi dengan delay (chips) ─────────────────────────── */
+
+.hv__divisi-row { display: flex; align-items: center; gap: var(--ds-space-2); flex-wrap: wrap; }
 
 .hv__divisi-chip {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(220, 38, 38, 0.30);
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-1) var(--ds-space-3);
+  border-radius: var(--ds-radius-pill);
+  border: 1px solid color-mix(in srgb, var(--ds-red-600) 30%, transparent);
   background: transparent;
   font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--red);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-red-600);
   cursor: pointer;
-  transition: background-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 140ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
-
 .hv__divisi-chip:hover {
-  background: rgba(220, 38, 38, 0.06);
-  border-color: rgba(220, 38, 38, 0.50);
+  background: color-mix(in srgb, var(--ds-red-600) 6%, transparent);
+  border-color: color-mix(in srgb, var(--ds-red-600) 50%, transparent);
 }
-
-.hv__divisi-chip:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.35);
-}
-
 .hv__divisi-code {
   font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: var(--ds-text-11);
+  font-weight: var(--ds-weight-semibold);
 }
-
 .hv__divisi-count {
   font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: var(--ds-text-11);
+  font-weight: var(--ds-weight-semibold);
   font-variant-numeric: tabular-nums;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: rgba(220, 38, 38, 0.10);
+  padding: 0 var(--ds-space-1);
+  border-radius: var(--ds-radius-pill);
+  background: color-mix(in srgb, var(--ds-red-600) 10%, transparent);
 }
+.hv__divisi-empty { font-size: var(--ds-text-13); color: var(--ds-text-tertiary); }
 
-.hv__divisi-empty {
-  font-size: 13px;
-  color: var(--text-muted);
+/* ─── Program ketat deadline (table) ──────────────────────── */
+
+.hv__deadline-table {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--ds-border-subtle);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  overflow: hidden;
 }
+.hv__deadline-row {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1.5fr) 80px 100px 110px minmax(160px, 1.4fr) minmax(140px, 1.2fr);
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  align-items: center;
+  background: var(--ds-surface-card);
+  text-align: left;
+  border: none;
+  cursor: pointer;
+  font-size: var(--ds-text-13);
+  font-family: inherit;
+}
+.hv__deadline-row:hover { background: var(--ds-surface-hover); }
+.hv__deadline-row-wrap {
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--ds-border-subtle);
+}
+.hv__deadline-table > .hv__deadline-row-wrap:first-of-type { border-top: 0; }
+.hv__deadline-row-wrap > .hv__deadline-row { flex: 1 1 auto; min-width: 0; }
+.hv__deadline-row-wrap > .hv__row-action {
+  display: flex;
+  align-items: center;
+  padding-right: var(--ds-space-3);
+  padding-left: var(--ds-space-1);
+  background: var(--ds-surface-card);
+}
+.hv__deadline-row--head {
+  background: var(--ds-surface-sunken);
+  font-weight: var(--ds-weight-medium);
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-tertiary);
+  cursor: default;
+}
+.hv__deadline-row--head:hover { background: var(--ds-surface-sunken); }
+.hv__deadline-program { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hv__deadline-code {
+  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-tertiary);
+}
+.hv__deadline-name {
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hv__deadline-divisi {
+  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-secondary);
+}
+.hv__deadline-date { color: var(--ds-text-secondary); }
+.hv__deadline-countdown {
+  font-weight: var(--ds-weight-semibold);
+  text-align: center;
+  padding: 2px var(--ds-space-2);
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface-sunken);
+  color: var(--ds-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.hv__deadline-countdown[data-urgency="critical"] { background: color-mix(in srgb, var(--ds-red-600) 12%, transparent); color: var(--ds-red-600); }
+.hv__deadline-countdown[data-urgency="urgent"]   { background: color-mix(in srgb, var(--ds-amber-600) 14%, transparent); color: var(--ds-amber-600); }
+.hv__deadline-countdown[data-urgency="soon"]     { background: color-mix(in srgb, var(--ds-green-600) 10%, transparent); color: var(--ds-green-600); }
+.hv__deadline-progress,
+.hv__deadline-support {
+  color: var(--ds-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hv__deadline-empty { color: var(--ds-text-tertiary); font-style: normal; }
 
 /* ─── Program butuh perhatian (list) ──────────────────────── */
 
-.hv__list {
-  display: flex;
-  flex-direction: column;
-}
-
+.hv__list { display: flex; flex-direction: column; }
 .hv__list-row {
   display: grid;
   grid-template-columns: 100px 1fr 130px 90px 44px 100px;
   align-items: center;
-  gap: 14px;
-  padding: 9px 10px;
-  margin: 0 -10px;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-2) var(--ds-space-2);
+  margin: 0 calc(-1 * var(--ds-space-2));
   border: 0;
   background: transparent;
   font-family: inherit;
   cursor: pointer;
   text-align: left;
-  border-radius: 6px;
-  transition: background-color 140ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--ds-radius-md);
+  transition: background-color 120ms ease;
 }
-
-.hv__list-row + .hv__list-row {
-  border-top: 1px solid var(--surface-overlay-soft);
-  border-radius: 0;
-}
-
-.hv__list-row:first-child { border-top-left-radius: 6px; border-top-right-radius: 6px; }
-.hv__list-row:last-child { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
-
-.hv__list-row:hover {
-  background: var(--surface-overlay-faint);
-}
-
-.hv__list-row:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px rgba(22, 163, 74, 0.35);
-}
-
-/* ── Row wrap (program info button + inline action button) ──
-   Wraps the row button + escalation button so they sit side-by-side.
-   The row button keeps full-width clickable behavior; action button
-   is rendered after with its own click target. */
-.hv__list-row-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.hv__list-row-wrap > .hv__list-row {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.hv__list-row-wrap + .hv__list-row-wrap {
-  border-top: 1px solid var(--surface-overlay-soft);
-}
-.hv__row-action {
-  flex-shrink: 0;
-  padding: 0 4px;
-}
+.hv__list-row:hover { background: var(--ds-surface-hover); }
+.hv__list-row-wrap { display: flex; align-items: center; gap: var(--ds-space-2); }
+.hv__list-row-wrap > .hv__list-row { flex: 1 1 auto; min-width: 0; }
+.hv__list-row-wrap + .hv__list-row-wrap { border-top: 1px solid var(--ds-border-subtle); }
+.hv__row-action { flex-shrink: 0; padding: 0 var(--ds-space-1); }
 .hv__row-escalated {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--green);
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--green) 12%, transparent);
+  gap: var(--ds-space-1);
+  font-size: var(--ds-text-11);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-green-600);
+  padding: var(--ds-space-1) var(--ds-space-3);
+  border-radius: var(--ds-radius-pill);
+  background: color-mix(in srgb, var(--ds-green-600) 12%, transparent);
   white-space: nowrap;
-  animation: hv-escalated-fadein 200ms ease-out;
 }
-@keyframes hv-escalated-fadein {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
 .hv__list-code {
   font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .hv__list-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-strong);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  letter-spacing: -0.005em;
 }
-
 .hv__list-divisi {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
   font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  letter-spacing: 0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .hv__list-bar {
   display: block;
   width: 100%;
-  height: 3px;
-  background: var(--surface-overlay);
-  border-radius: 2px;
+  height: 4px;
+  background: var(--ds-surface-sunken);
+  border-radius: var(--ds-radius-pill);
   overflow: hidden;
 }
-
-.hv__list-bar-fill {
-  display: block;
-  height: 100%;
-  border-radius: 2px;
-}
-
-.hv__list-bar-fill[data-tone="green"]   { background: var(--indigo); }
-.hv__list-bar-fill[data-tone="amber"]   { background: var(--yellow); }
-.hv__list-bar-fill[data-tone="red"]     { background: var(--red); }
-.hv__list-bar-fill[data-tone="neutral"] { background: var(--panel-border); }
-
+.hv__list-bar-fill { display: block; height: 100%; border-radius: var(--ds-radius-pill); }
+.hv__list-bar-fill[data-tone="green"]   { background: var(--ds-green-600); }
+.hv__list-bar-fill[data-tone="amber"]   { background: var(--ds-amber-600); }
+.hv__list-bar-fill[data-tone="red"]     { background: var(--ds-red-600); }
+.hv__list-bar-fill[data-tone="neutral"] { background: var(--ds-border-strong); }
 .hv__list-pct {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-strong);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-primary);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
   text-align: right;
 }
-
 .hv__list-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--text);
+  gap: var(--ds-space-2);
+  font-size: var(--ds-text-11);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
   white-space: nowrap;
 }
-
 .hv__list-foot {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--surface-overlay-soft);
+  margin-top: var(--ds-space-2);
+  padding-top: var(--ds-space-2);
+  border-top: 1px solid var(--ds-border-subtle);
   display: flex;
   justify-content: flex-start;
 }
 
-/* Responsive: collapse list to a 2-line stack on narrow viewports */
-@media (max-width: 980px) {
+@media (max-width: 1024px) {
   .hv__list-row {
     grid-template-columns: 110px 1fr 70px;
     grid-template-areas:
       "code   name    pct"
       "divisi status  status";
-    gap: 6px 12px;
+    gap: var(--ds-space-1) var(--ds-space-3);
   }
   .hv__list-code   { grid-area: code; }
   .hv__list-name   { grid-area: name; }
@@ -1585,381 +755,141 @@
   .hv__list-bar    { display: none; }
 }
 
-/* ════════════════════════════════════════════════════════════════
- * DARK MODE OVERRIDES
- * ════════════════════════════════════════════════════════════════
- * Light-mode mixes (5% red on white) translate to ~invisible on
- * pitch-black canvas. Bump tone mixes, strengthen borders, and add
- * subtle inset highlights to match the sidebar's premium dark feel. */
+/* ─── Matrix Direktorat (cross-direktorat grid) ───────────── */
 
-/* Hero — no card chrome to override in dark mode now. Background-color
- * inherited via theme tokens, hover state already uses --surface-overlay-* */
-
-/* CTA pill — non-hover needs more presence on dark canvas */
-/* CTA + secondary rows in dark mode — no override needed since both
- * are now plain text/list with theme-aware tokens. Hover bg uses
- * --surface-overlay-faint which adapts per theme. */
-
-/* Celebration card — stronger green tint for visibility on dark */
-[data-theme="dark"] .hv__pri-celebration {
-  background: linear-gradient(135deg,
-    color-mix(in srgb, var(--indigo) 16%, var(--panel)) 0%,
-    color-mix(in srgb, var(--indigo) 6%, var(--panel)) 50%,
-    var(--panel) 100%);
-  border-color: color-mix(in srgb, var(--indigo) 28%, rgba(255,255,255,0.08));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
-}
-
-[data-theme="dark"] .hv__pri-celebration:hover {
-  box-shadow:
-    0 8px 20px color-mix(in srgb, var(--indigo) 14%, rgba(0,0,0,0.4)),
-    0 2px 4px rgba(0,0,0,0.25),
-    inset 0 1px 0 rgba(255,255,255,0.05);
-}
-
-/* Real-time flash for dark mode — mix stronger because thin white overlays
- * register weakly on near-black bg. @keyframes can't be nested in selectors,
- * so we define a separate animation and swap it via theme attribute. */
-@keyframes hv-flash-dark {
-  0% {
-    background-color: transparent;
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--indigo) 0%, transparent);
-  }
-  15% {
-    background-color: color-mix(in srgb, var(--indigo) 22%, transparent);
-    box-shadow: 0 0 0 5px color-mix(in srgb, var(--indigo) 24%, transparent);
-  }
-  60% {
-    background-color: color-mix(in srgb, var(--indigo) 10%, transparent);
-    box-shadow: 0 0 0 9px color-mix(in srgb, var(--indigo) 6%, transparent);
-  }
-  100% {
-    background-color: transparent;
-    box-shadow: 0 0 0 14px color-mix(in srgb, var(--indigo) 0%, transparent);
-  }
-}
-
-[data-theme="dark"] .hv__big.hv-flashing {
-  animation-name: hv-flash-dark;
-}
-
-/* ── Program Ketat Deadline (slide 18 PPT DKMR) ─────────────────────────── */
-.hv__deadline-table {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  background: var(--panel-border, #e5e7eb);
-  border: 1px solid var(--panel-border, #e5e7eb);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.hv__deadline-row {
-  display: grid;
-  grid-template-columns:
-    minmax(180px, 1.5fr)   /* Program */
-    80px                   /* Divisi */
-    100px                  /* Deadline */
-    110px                  /* Hari tersisa */
-    minmax(160px, 1.4fr)   /* Progres */
-    minmax(140px, 1.2fr);  /* Dukungan */
-  gap: 12px;
-  padding: 10px 14px;
-  align-items: center;
-  background: var(--panel, #fff);
-  text-align: left;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-}
-.hv__deadline-row:hover {
-  background: var(--surface-2, #f9fafb);
-}
-/* Wrap for inline escalation button — mirrors .hv__list-row-wrap.
-   Row button keeps grid layout, action sits to its right. */
-.hv__deadline-row-wrap {
-  display: flex;
-  align-items: stretch;
-  border-top: 1px solid var(--panel-border, #e5e7eb);
-}
-.hv__deadline-table > .hv__deadline-row-wrap:first-of-type {
-  border-top: 0;
-}
-.hv__deadline-row-wrap > .hv__deadline-row {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.hv__deadline-row-wrap > .hv__row-action {
-  display: flex;
-  align-items: center;
-  padding-right: 12px;
-  padding-left: 4px;
-  background: var(--panel, #fff);
-}
-/* Table head sentence case — konsisten dengan typography refresh app-wide. */
-.hv__deadline-row--head {
-  background: var(--surface-1, #f3f4f6);
-  font-weight: 500;
-  font-size: 11.5px;
-  color: var(--text-muted, #6b7280);
-  text-transform: none;
-  letter-spacing: 0;
-  cursor: default;
-}
-.hv__deadline-row--head:hover {
-  background: var(--surface-1, #f3f4f6);
-}
-.hv__deadline-program {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.hv__deadline-code {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-muted);
-}
-.hv__deadline-name {
-  font-weight: 500;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.hv__deadline-divisi {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-secondary, #6b7280);
-}
-.hv__deadline-date {
-  color: var(--text-secondary);
-}
-.hv__deadline-countdown {
-  font-weight: 600;
-  text-align: center;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: var(--surface-2);
-  color: var(--text-secondary);
-}
-.hv__deadline-countdown[data-urgency="critical"] {
-  background: rgba(220, 38, 38, 0.12);
-  color: #dc2626;
-}
-.hv__deadline-countdown[data-urgency="urgent"] {
-  background: rgba(217, 119, 6, 0.12);
-  color: #d97706;
-}
-.hv__deadline-countdown[data-urgency="soon"] {
-  background: rgba(37, 99, 235, 0.10);
-  color: #2563eb;
-}
-.hv__deadline-progress,
-.hv__deadline-support {
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.hv__deadline-empty {
-  color: var(--text-muted);
-  font-style: normal;
-}
-
-/* ── Status per Divisi (slide 17 PPT DKMR) ──────────────────────────────── */
-.hv__rollup-table {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  background: var(--panel-border, #e5e7eb);
-  border: 1px solid var(--panel-border, #e5e7eb);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.hv__rollup-row {
-  display: grid;
-  grid-template-columns:
-    minmax(220px, 2fr)  /* Divisi */
-    repeat(5, 80px)     /* On Track / At Risk / Terlambat / Selesai / Total */
-    100px;              /* % On Track */
-  gap: 12px;
-  padding: 10px 14px;
-  align-items: center;
-  background: var(--panel, #fff);
-  text-align: left;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-}
-.hv__rollup-row:hover { background: var(--surface-2, #f9fafb); }
-.hv__rollup-row--head {
-  background: var(--surface-1, #f3f4f6);
-  font-weight: 500;
-  font-size: 11.5px;
-  color: var(--text-muted, #6b7280);
-  text-transform: none;
-  letter-spacing: 0;
-  cursor: default;
-}
-.hv__rollup-row--head:hover { background: var(--surface-1, #f3f4f6); }
-.hv__rollup-divisi { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.hv__rollup-code {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-muted);
-}
-.hv__rollup-name {
-  font-weight: 500;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.hv__rollup-num {
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
-}
-.hv__rollup-num[data-tone="green"]   { color: #059669; font-weight: 600; }
-.hv__rollup-num[data-tone="amber"]   { color: #d97706; font-weight: 600; }
-.hv__rollup-num[data-tone="red"]     { color: #dc2626; font-weight: 600; }
-.hv__rollup-num[data-tone="neutral"] { color: var(--text-muted); }
-.hv__rollup-total {
-  color: var(--text-primary);
-  font-weight: 700;
-}
-.hv__rollup-pct {
-  text-align: center;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: var(--surface-2);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.hv__rollup-pct[data-tone="green"] { background: rgba(5, 150, 105, 0.14); color: #059669; }
-.hv__rollup-pct[data-tone="amber"] { background: rgba(217, 119, 6, 0.14); color: #d97706; }
-.hv__rollup-pct[data-tone="red"]   { background: rgba(220, 38, 38, 0.14); color: #dc2626; }
-
-/* ════════════════════════════════════════════════════════════════════
-   Matrix Direktorat (Isu #9) — cross-direktorat scorecard grid
-   ────────────────────────────────────────────────────────────────────
-   BOD-only section. 2-col responsive grid card, tone-aware left border
-   (data-tone="green|amber|red") per pattern data-* attribute selectors
-   dari sesi Pattern A roll-out. Click card → navigate ke
-   /performance/scorecard untuk drill-down.
-   ════════════════════════════════════════════════════════════════════ */
 .hv__direktorat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 12px;
+  gap: var(--ds-space-3);
 }
 .hv__direktorat-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 14px 16px;
-  background: var(--panel);
-  border: 1px solid var(--panel-border);
-  border-left: 3px solid var(--panel-border);
-  border-radius: 8px;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-left: 3px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-lg);
   text-align: left;
   cursor: pointer;
   font-family: inherit;
-  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+  transition: background-color 120ms ease, box-shadow 120ms ease;
 }
-.hv__direktorat-card:hover {
-  background: var(--surface-1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-.hv__direktorat-card[data-tone="green"] { border-left-color: var(--green, #059669); }
-.hv__direktorat-card[data-tone="amber"] { border-left-color: var(--yellow, #d97706); }
-.hv__direktorat-card[data-tone="red"]   { border-left-color: var(--red, #dc2626); }
-
-.hv__direktorat-card__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-.hv__direktorat-card__title {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-/* Code badge — drop text-transform (data sudah uppercase native), tighter
-   letter-spacing. Code displayed as-is dari sumber data. */
+.hv__direktorat-card:hover { background: var(--ds-surface-hover); }
+.hv__direktorat-card[data-tone="green"] { border-left-color: var(--ds-green-600); }
+.hv__direktorat-card[data-tone="amber"] { border-left-color: var(--ds-amber-600); }
+.hv__direktorat-card[data-tone="red"]   { border-left-color: var(--ds-red-600); }
+.hv__direktorat-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--ds-space-2); }
+.hv__direktorat-card__title { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
 .hv__direktorat-card__code {
   font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 10.5px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--text-muted);
-  text-transform: none;
+  font-size: var(--ds-text-11);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-tertiary);
 }
 .hv__direktorat-card__name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-strong);
-  line-height: 1.3;
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .hv__direktorat-card__nilai {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: var(--ds-text-20);
+  font-weight: var(--ds-weight-semibold);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
-.hv__direktorat-card__nilai[data-tone="green"] { color: var(--green, #059669); }
-.hv__direktorat-card__nilai[data-tone="amber"] { color: var(--yellow, #d97706); }
-.hv__direktorat-card__nilai[data-tone="red"]   { color: var(--red, #dc2626); }
-
+.hv__direktorat-card__nilai[data-tone="green"] { color: var(--ds-green-600); }
+.hv__direktorat-card__nilai[data-tone="amber"] { color: var(--ds-amber-600); }
+.hv__direktorat-card__nilai[data-tone="red"]   { color: var(--ds-red-600); }
 .hv__direktorat-card__divisi {
   list-style: none;
-  margin: 4px 0 0;
-  padding: 8px 0 0;
-  border-top: 1px solid var(--panel-border);
+  margin: var(--ds-space-1) 0 0;
+  padding: var(--ds-space-2) 0 0;
+  border-top: 1px solid var(--ds-border-subtle);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ds-space-1);
 }
-.hv__direktorat-card__divisi-row {
-  display: grid;
-  grid-template-columns: 56px 1fr auto;
-  align-items: center;
-  gap: 8px;
-  font-size: 11.5px;
-}
+.hv__direktorat-card__divisi-row { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: var(--ds-space-2); font-size: var(--ds-text-11); }
 .hv__direktorat-card__divisi-code {
   font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
-  text-transform: none;
+  font-size: var(--ds-text-11);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-tertiary);
 }
-.hv__direktorat-card__divisi-name {
-  color: var(--text-strong);
+.hv__direktorat-card__divisi-name { color: var(--ds-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.hv__direktorat-card__divisi-nilai { font-variant-numeric: tabular-nums; font-weight: var(--ds-weight-semibold); color: var(--ds-text-tertiary); }
+.hv__direktorat-card__divisi-nilai[data-tone="green"] { color: var(--ds-green-600); }
+.hv__direktorat-card__divisi-nilai[data-tone="amber"] { color: var(--ds-amber-600); }
+.hv__direktorat-card__divisi-nilai[data-tone="red"]   { color: var(--ds-red-600); }
+
+@media (max-width: 640px) {
+  .hv__direktorat-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Status per divisi (rollup table) ────────────────────── */
+
+.hv__rollup-table {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--ds-border-subtle);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+  overflow: hidden;
+}
+.hv__rollup-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(5, 80px) 100px;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  align-items: center;
+  background: var(--ds-surface-card);
+  text-align: left;
+  border: none;
+  cursor: pointer;
+  font-size: var(--ds-text-13);
+  font-family: inherit;
+}
+.hv__rollup-row:hover { background: var(--ds-surface-hover); }
+.hv__rollup-row--head {
+  background: var(--ds-surface-sunken);
+  font-weight: var(--ds-weight-medium);
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-tertiary);
+  cursor: default;
+}
+.hv__rollup-row--head:hover { background: var(--ds-surface-sunken); }
+.hv__rollup-divisi { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hv__rollup-code {
+  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-tertiary);
+}
+.hv__rollup-name {
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-primary);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
 }
-.hv__direktorat-card__divisi-nilai {
+.hv__rollup-num { text-align: center; font-variant-numeric: tabular-nums; color: var(--ds-text-secondary); }
+.hv__rollup-num[data-tone="green"]   { color: var(--ds-green-600); font-weight: var(--ds-weight-semibold); }
+.hv__rollup-num[data-tone="amber"]   { color: var(--ds-amber-600); font-weight: var(--ds-weight-semibold); }
+.hv__rollup-num[data-tone="red"]     { color: var(--ds-red-600); font-weight: var(--ds-weight-semibold); }
+.hv__rollup-num[data-tone="neutral"] { color: var(--ds-text-tertiary); }
+.hv__rollup-total { color: var(--ds-text-primary); font-weight: var(--ds-weight-semibold); }
+.hv__rollup-pct {
+  text-align: center;
+  padding: 2px var(--ds-space-2);
+  border-radius: var(--ds-radius-sm);
+  font-weight: var(--ds-weight-semibold);
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  color: var(--text-muted);
-  font-size: 11px;
 }
-.hv__direktorat-card__divisi-nilai[data-tone="green"] { color: var(--green, #059669); }
-.hv__direktorat-card__divisi-nilai[data-tone="amber"] { color: var(--yellow, #d97706); }
-.hv__direktorat-card__divisi-nilai[data-tone="red"]   { color: var(--red, #dc2626); }
-
-@media (max-width: 720px) {
-  .hv__direktorat-grid {
-    grid-template-columns: 1fr;
-  }
-}
+.hv__rollup-pct[data-tone="green"] { background: color-mix(in srgb, var(--ds-green-600) 14%, transparent); color: var(--ds-green-600); }
+.hv__rollup-pct[data-tone="amber"] { background: color-mix(in srgb, var(--ds-amber-600) 14%, transparent); color: var(--ds-amber-600); }
+.hv__rollup-pct[data-tone="red"]   { background: color-mix(in srgb, var(--ds-red-600) 14%, transparent); color: var(--ds-red-600); }
