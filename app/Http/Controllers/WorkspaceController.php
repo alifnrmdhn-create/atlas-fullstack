@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Auth\OrgScope;
+use App\Auth\ScopeResolver;
 use App\Models\Assignment;
 use App\Models\Blocker;
 use App\Models\Channel;
@@ -13,6 +14,7 @@ use App\Models\Meeting;
 use App\Models\MeetingActionItem;
 use App\Models\Notification;
 use App\Models\Position;
+use App\Models\PositionHistory;
 use App\Models\Program;
 use App\Models\Task;
 use App\Models\User;
@@ -34,7 +36,10 @@ use Inertia\Response;
 
 class WorkspaceController extends Controller
 {
-    public function __construct(private ProgramHealthService $healthService) {}
+    public function __construct(
+        private ProgramHealthService $healthService,
+        private ScopeResolver $scopeResolver,
+    ) {}
 
     public function page(string $component): Response
     {
@@ -619,9 +624,21 @@ class WorkspaceController extends Controller
             'unitId' => $position?->divisionId,
             'directorateId' => $position?->directorateId,
             'positionTitle' => $position?->name,
+            // Position = sumber kebenaran roleType; form roleType dipakai bila tanpa jabatan.
+            'roleType' => $position?->roleType ?? $data['roleType'],
             'isActive' => true,
             'passwordHash' => Hash::make('Password123!'),
         ]);
+
+        if ($position) {
+            PositionHistory::create([
+                'userId' => $user->id,
+                'positionId' => $position->id,
+                'startDate' => now(),
+                'mutationType' => 'initial_assignment',
+                'createdBy' => $request->user()?->id,
+            ]);
+        }
 
         return response()->json(['data' => $user->load(['unit', 'directorate', 'position'])], 201);
     }
@@ -638,13 +655,44 @@ class WorkspaceController extends Controller
 
         $user = User::findOrFail($id);
         $update = collect($data)->only(['isActive', 'positionId'])->all();
+
+        $positionChanged = array_key_exists('positionId', $data)
+            && $data['positionId']
+            && (int) $data['positionId'] !== (int) $user->positionId;
+
         if (array_key_exists('positionId', $data) && $data['positionId']) {
             $position = Position::query()->find($data['positionId']);
             $update['unitId'] = $position?->divisionId;
             $update['directorateId'] = $position?->directorateId;
             $update['positionTitle'] = $position?->name;
+            // Sinkronkan hak akses (roleType) dari jabatan — sebelumnya terlewat,
+            // sehingga mutasi jabatan tidak mengubah role (mis. Kasubdiv tetap Asisten).
+            $update['roleType'] = $position?->roleType ?? $user->roleType;
         }
+
         $user->update($update);
+
+        // Jejak mutasi jabatan (SK, alasan) + refresh scope cache supaya role baru
+        // langsung berlaku tanpa menunggu TTL 30 detik.
+        if ($positionChanged) {
+            $now = now();
+            PositionHistory::query()
+                ->where('userId', $user->id)
+                ->whereNull('endDate')
+                ->update(['endDate' => $now]);
+
+            PositionHistory::create([
+                'userId' => $user->id,
+                'positionId' => (int) $data['positionId'],
+                'startDate' => $now,
+                'mutationType' => $data['mutationType'] ?? 'mutation',
+                'mutationReason' => $data['mutationReason'] ?? null,
+                'skNumber' => $data['skNumber'] ?? null,
+                'createdBy' => $request->user()?->id,
+            ]);
+
+            $this->scopeResolver->invalidate($user->id);
+        }
 
         return response()->json(['data' => $user->fresh()->load(['unit', 'directorate', 'position'])]);
     }
