@@ -11,7 +11,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Rencana Kebutuhan biaya Groundbreaking (Seremoni & Demo Plot) akan dibiayai dengan dana OPEX (PTPN 1 Reimbursement ke Holding)",
-    "dukungan": "Audiensi kepada Senior Leader Danantara terkait alternatif pendanaan yang dapat digunakan termasuk payung hukum sepanjang Penugasan belum diberikan kepada Grup PTPN"
+    "dukungan": "Audiensi kepada Senior Leader Danantara terkait alternatif pendanaan yang dapat digunakan termasuk payung hukum sepanjang Penugasan belum diberikan kepada Grup PTPN",
+    "pic": "Dimas Aryo Wibisono",
+    "picId": 153,
+    "mitra": [
+      "Raja Agustino M. Sembiring",
+      "Audi Muhammad Rafie"
+    ],
+    "mitraIds": [
+      151,
+      152
+    ]
   },
   {
     "div": "DKSA",
@@ -25,7 +35,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Produksi Buku RKAP 2026 final rilis KPPS",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Dimas Aryo Wibisono",
+    "picId": 153,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -39,7 +53,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Laporan Evaluasi Monitoring G&A Excellence telah dilaporkan",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Dimas Aryo Wibisono",
+    "picId": 153,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -53,7 +71,15 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Proses closing SAP Holding",
-    "dukungan": "Closing SAP Holding selambatnya tanggal 7 Mei 2026"
+    "dukungan": "Closing SAP Holding selambatnya tanggal 7 Mei 2026",
+    "pic": "Dimas Aryo Wibisono",
+    "picId": 153,
+    "mitra": [
+      "Arief Harwanto"
+    ],
+    "mitraIds": [
+      170
+    ]
   },
   {
     "div": "DKSA",
@@ -67,7 +93,17 @@
     "overdue": false,
     "status": "At Risk",
     "progresTerkini": "Penyusunan Portal RKAPP telah selesai dilakukan",
-    "dukungan": "Surat Penugasan Hilirisasi, Surat arahan Pemegang Saham, Audiensi dengan Deputi Peningkatan Nilai BP BUMN (Bpk Endra Gunawan)"
+    "dukungan": "Surat Penugasan Hilirisasi, Surat arahan Pemegang Saham, Audiensi dengan Deputi Peningkatan Nilai BP BUMN (Bpk Endra Gunawan)",
+    "pic": "Dimas Aryo Wibisono",
+    "picId": 153,
+    "mitra": [
+      "Deny Ariyanto Prabowo",
+      "Raja Agustino M. Sembiring"
+    ],
+    "mitraIds": [
+      165,
+      151
+    ]
   },
   {
     "div": "DKSA",
@@ -81,7 +117,15 @@
     "overdue": true,
     "status": "On Track",
     "progresTerkini": "Pelaksanaan uji aplikasi dengan Tim Kecil pada tanggal 25 Mei 2026 full day di ruang Kompeten Lt 11 Agro Plaza",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Dimas Aryo Wibisono",
+    "picId": 153,
+    "mitra": [
+      "Alif Nugraha Ramadhan"
+    ],
+    "mitraIds": [
+      182
+    ]
   },
   {
     "div": "DKSA",
@@ -95,7 +139,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Penyusunan laporan reviu sinusa khususnya pada database",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Deny Ariyanto Prabowo",
+    "picId": 165,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -109,7 +157,11 @@
     "overdue": false,
     "status": "Delayed",
     "progresTerkini": "Belum ada tindaklanjut dari PTPN IV dikarenakan PTPN IV sedang pembenahan case WePC internal khususnya pada level region",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Deny Ariyanto Prabowo",
+    "picId": 165,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -123,7 +175,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Telah dilakukan proses tender oleh Divisi Pengadaan",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Deny Ariyanto Prabowo",
+    "picId": 165,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -137,7 +193,11 @@
     "overdue": true,
     "status": "On Track",
     "progresTerkini": "Saat ini hasil penyesuaian tim teknis sedan dilakukan input oleh Fungsi Perencanaan di apps growmate",
-    "dukungan": "Percepatan dari fungsi teknis terkait dengan proses approval hasil penyesuaian anggaran"
+    "dukungan": "Percepatan dari fungsi teknis terkait dengan proses approval hasil penyesuaian anggaran",
+    "pic": "Deny Ariyanto Prabowo",
+    "picId": 165,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -151,7 +211,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Telah selesai dan telah memperoleh persetujuan (approval) seluruh Direksi",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Deny Ariyanto Prabowo",
+    "picId": 165,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -165,7 +229,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Telah dilaksanakan regouping dengan DKSR dan saat ini progress penyusunan SK Tim",
-    "dukungan": "Percepatan reviu SKPTS oleh DHKM"
+    "dukungan": "Percepatan reviu SKPTS oleh DHKM",
+    "pic": "Deny Ariyanto Prabowo",
+    "picId": 165,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -179,7 +247,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Saat ini telah dimasukkan flow proses pada Tata Kelola Investasi dalam Peraturan Direksi yang sedang disusun oleh DSMK dan IABF",
-    "dukungan": "Penyusunan suplemen pendukung bersama Komite Investasi, Divisi Teknis terkait Holding"
+    "dukungan": "Penyusunan suplemen pendukung bersama Komite Investasi, Divisi Teknis terkait Holding",
+    "pic": "Dimas Aryo Wibisono",
+    "picId": 153,
+    "mitra": [
+      "Deny Ariyanto Prabowo",
+      "Raja Agustino M. Sembiring"
+    ],
+    "mitraIds": [
+      165,
+      151
+    ]
   },
   {
     "div": "DKSA",
@@ -193,7 +271,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Pembayaran bunga periode April 2026 telah dilakukan pada tanggal 29 April 2026 sesuai Surat No. DKM/X/436/2026 tanggal 29 April 2026",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -207,7 +289,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Telah disampaikan laporan monitoring periode TW I 2026 kepada Direktur Keuangan & Manajemen Risiko",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -221,7 +307,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "masih dalam kajian oleh Tim DHKM",
-    "dukungan": "Keputusan Direksi"
+    "dukungan": "Keputusan Direksi",
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -235,7 +325,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Laporan Penggunaan IP PEN telah disampaikan kepada LPEI sesuai Surat No. DKSA/X/401/2026 tanggal 20 April 2026",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -249,7 +343,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Telah dipersiapkan materi paparan dan proyeksi keuangan PTPN Grup dalam rangka pemberian penjaminan kepada PT SGN, diantaranya berisi rasio keuangan IP PEN tidak dilanggar dan kemampuan cash deficiency support PTPN III kepada PT SGN. Agenda pertemuan dengan Direktur KND pada hari Kamis tanggal 30 April 2026, di reschedule. Akan diagendakan pertemuan dengan Dir KND kembali pada Jumat/8 Mei 2026 (TBC ke DJKN). Sehubungan agenda Dir KND terkait IMF, pertemuan baru dapat dilakukan antara 20/21 Mei 2026, sementara menunggu jadwal tersebut, DKSA telah berkoordinasi dengan LPEI terkait analisa dan proyeksi, selanjutnya akan dilakukan diskusi bersama tim kerja LPEI dan DJKN.",
-    "dukungan": "Penjadwalan agenda: 1. Dirkeu & MR 2. Kadiv DKSA 3. Kadiv DSMK"
+    "dukungan": "Penjadwalan agenda: 1. Dirkeu & MR 2. Kadiv DKSA 3. Kadiv DSMK",
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -263,7 +361,11 @@
     "overdue": true,
     "status": "Delayed",
     "progresTerkini": "Telah dilakukan verifikasi dokumen pendukung pembayaran dan dalam proses penyusunan Keputusan Direksi Diluar Rapat Direksi. Telah dilakukan konfirmasi kepada tim PTPN I terkait hasil verifikasi, dan kepada tim PTPN IV untuk menyegerakan informasi penggunaan biaya pada KSO yang dibutuhkan sebagai underlying rekonsiliasi penggunaan biaya. Akan dilakukan follow up pada W2 Mei 2026",
-    "dukungan": "Persetujuan atas Keputusan Direksi Diluar Rapat Direksi"
+    "dukungan": "Persetujuan atas Keputusan Direksi Diluar Rapat Direksi",
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -277,7 +379,11 @@
     "overdue": true,
     "status": "Delayed",
     "progresTerkini": "Reviu kembali oleh Divisi Hukum atas Draft SE Dividen. Akan dijadwalkan pembahasan bersama DHKM pada tanggal 4/5/2026. Pertemuan dengan DHKM direschedule, akan di follow up pada W2 Mei 2026",
-    "dukungan": "Persetujuan Direksi atas SE Dividen"
+    "dukungan": "Persetujuan Direksi atas SE Dividen",
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -291,7 +397,11 @@
     "overdue": true,
     "status": "Delayed",
     "progresTerkini": "Draft Perubahan Peraturan Direksi terkait Tata Kelola IP PEN telah direviu Divisi Hukum. Dalam proses penyesuaian Draft Perubahan. Sedang dalam proses re-chek ulang, dan akan disampaikan kepada DIreksi pada kesempatan pertama.",
-    "dukungan": "Persetujuan Direksi atas Perubahan Peraturan Direksi terkait Tata Kelola IP PEN"
+    "dukungan": "Persetujuan Direksi atas Perubahan Peraturan Direksi terkait Tata Kelola IP PEN",
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -305,7 +415,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Telah dilakukan site visit oleh Piesta/Konsultan Pengawas ke Unit Kerja PTPN I/Penerima Dana IP PEN. Dalam proses verifikasi dokumen pembayaran dan penyusunan laporan oleh Piesta/Konsultan Pengawas",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -319,7 +433,11 @@
     "overdue": true,
     "status": "On Track",
     "progresTerkini": "kompilasi laporan shl dan/atau icl dari anper untuk sebagai laporan shl dan/atau icl PTPN grup",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -333,7 +451,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Pembentukan format laporan monitoring. Collecting laporan Anak Perusahaan.",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -347,7 +469,11 @@
     "overdue": true,
     "status": "On Track",
     "progresTerkini": "Melakukan perhitungan kewajiban SHL Anper",
-    "dukungan": "persetujuan direktur keuangan dan manajemen risiko"
+    "dukungan": "persetujuan direktur keuangan dan manajemen risiko",
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -361,7 +487,11 @@
     "overdue": false,
     "status": "At Risk",
     "progresTerkini": "Telah disampaikan Surat ke PTPN I terkait terkait pemenuhan seluruh kewajiban sinking fund yang tertunda pada periode TW II dan permintaan proyeksi cashflow bulanan PTPN I guna monitoring pemenuhan sinking fund. Penundaan sinking fund TW I 2026 adalah penundaan kedua.",
-    "dukungan": "Penyampaian arahan dan reminder kepada PTPN I untuk pemenuhan kewajiban Sinking Fund pada pelaksanaan MRC PTPN I."
+    "dukungan": "Penyampaian arahan dan reminder kepada PTPN I untuk pemenuhan kewajiban Sinking Fund pada pelaksanaan MRC PTPN I.",
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -375,7 +505,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Proses diskusi dan negosiasi termsheet dg perbankan.",
-    "dukungan": "Dukungan dalam negosiasi dengan kreditur dan Persetujuan KPSS (PTPN III) atas tambahan fasilitas pinjaman PTPN I & penjaminan aset"
+    "dukungan": "Dukungan dalam negosiasi dengan kreditur dan Persetujuan KPSS (PTPN III) atas tambahan fasilitas pinjaman PTPN I & penjaminan aset",
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -389,7 +523,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Diskusi dan pengawalan proses usulan fasilitas pinjaman baru, serta monitoring cashflow PTPN I",
-    "dukungan": "komitmen PTPN I untuk melakukan pelunasan MTN jatuh tempo baik baik dengan fasilitas pinjaman baru atau menggunakan cashflow perusahaan apabila fasilitas pinjaman baru belum dapat dipergunakan"
+    "dukungan": "komitmen PTPN I untuk melakukan pelunasan MTN jatuh tempo baik baik dengan fasilitas pinjaman baru atau menggunakan cashflow perusahaan apabila fasilitas pinjaman baru belum dapat dipergunakan",
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -403,7 +541,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Diskusi dengan kreditur atas usulan waiver dan atau perpanjangan jangka waktu pengikatan agunan",
-    "dukungan": "Dukungan Direksi untuk penyelesaian pengajuan keringanan biaya PNBP"
+    "dukungan": "Dukungan Direksi untuk penyelesaian pengajuan keringanan biaya PNBP",
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -417,7 +559,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Persetujuan perpanjangan AP telah disampaikan",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -431,7 +577,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Persetujuan tidak mengenakan biaya breakcost telah disampaikan",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -445,7 +595,11 @@
     "overdue": false,
     "status": "Completed",
     "progresTerkini": "Fasilitas MAA SGN Telah lunas pada 27 April 2026",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -459,7 +613,11 @@
     "overdue": false,
     "status": "Completed",
     "progresTerkini": "Drowdown pencairan untuk pendanaan akusisi saham PT PG RNI telah dilakukan ke rekening PT SGN, dan PT SGN telah melakukan pembayaran Akuisisi kepada PT RNI",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -473,7 +631,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Proses pemenuhan syarat pencairan fasilitas pinjaman",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -487,7 +649,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "PT SGN berproses untuk mengajukan persetujuan pinjaman dan penjaminan sesuai dengan AD yang berlaku",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -501,7 +667,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Diskusi dengan kreditur atas usulan waiver dan atau perpanjangan jangka waktu pengikatan agunan",
-    "dukungan": "Dukungan Direksi untuk penyelesaian pengajuan keringanan biaya PNBP"
+    "dukungan": "Dukungan Direksi untuk penyelesaian pengajuan keringanan biaya PNBP",
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -515,7 +685,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Komite Rating telah dilaksanakan, PEFINDO telah menyampaikan hasil rating dan membutuhkan persetujuan hasil Rating dan publikasi rating",
-    "dukungan": "Dukungan Direktur untuk penandatanganan surat persetujuan rating dan publikasi"
+    "dukungan": "Dukungan Direktur untuk penandatanganan surat persetujuan rating dan publikasi",
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -529,7 +703,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Diskusi dan negosiasi dengan kreditur kreditur mengajukan persetujuan kepada komite kredit masing-masing",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [
+      "Arief Harwanto",
+      "Aris Agung Purnomo"
+    ],
+    "mitraIds": [
+      170,
+      178
+    ]
   },
   {
     "div": "DKSA",
@@ -543,7 +727,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Diskusi dengan kreditur atas usulan waiver dan atau perpanjangan jangka waktu pengikatan agunan",
-    "dukungan": "Dukungan Direksi untuk penyelesaian pengajuan keringanan biaya PNBP"
+    "dukungan": "Dukungan Direksi untuk penyelesaian pengajuan keringanan biaya PNBP",
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -557,7 +745,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Setoran modal sudah dilakukan pada tanggal 24/4/2026 sebesar Rp1,45T",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -571,7 +763,11 @@
     "overdue": false,
     "status": "Completed",
     "progresTerkini": "Penyaluran uang muka terakhir dilakukan pada tanggal 24 April 2026, total uang muka pembelian Rp850 miliar atau ekuivalen 85.000 ton GKP",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -585,7 +781,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Laporan sudah diterima oleh Bank Indonesia",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -599,7 +799,11 @@
     "overdue": false,
     "status": "Completed",
     "progresTerkini": "Droping dana untuk bulan April sudah dilakukan sesuai permintaan dan kebutuhan Holding dan PISMK",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -613,7 +817,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Monitoring & kompilasi progress update dari masing-masing stream Tim Penyehatan PT SGN. Rapat Ketua & Sekretaris OC realisasi pada rabu/29 Apr 2026, agenda pembahasan: Rekomendasi atas tanggapan SGN atas usulan SO dari Tim Penyehatan.",
-    "dukungan": "Persetujuan Ketua OC (Dirkeu & MR) atas draft memo."
+    "dukungan": "Persetujuan Ketua OC (Dirkeu & MR) atas draft memo.",
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -627,7 +835,11 @@
     "overdue": true,
     "status": "Delayed",
     "progresTerkini": "Pembahasan dan kesepakatan beberapa tindak lanjut inisiatif program Tim Penyehatan PT SGN. Rapat OC ditunda karena ada agenda Direksi yang bersamaan, TBD apakah memungkinkan di kamis/7 Mei 2026.",
-    "dukungan": "Penjadwalan progres OC Tim Penyehatan PT SGN pada hari Kamis/ 7 Mei 2026 (TBC to Dirkeu & MR)"
+    "dukungan": "Penjadwalan progres OC Tim Penyehatan PT SGN pada hari Kamis/ 7 Mei 2026 (TBC to Dirkeu & MR)",
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -641,7 +853,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Monitoring saldo secara harian",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Audi Muhammad Rafie",
+    "picId": 152,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -655,7 +871,11 @@
     "overdue": true,
     "status": "On Track",
     "progresTerkini": "- Monitoring dan kompilasi progress update dari masing-masing stream Tim Penyehatan PT SGN Holding.",
-    "dukungan": "Penjadwalan progres OC Tim Penyehatan PT SGN pada 13 Mei 2026 (TBC to Dirkeu & MR)"
+    "dukungan": "Penjadwalan progres OC Tim Penyehatan PT SGN pada 13 Mei 2026 (TBC to Dirkeu & MR)",
+    "pic": "Raja Agustino M. Sembiring",
+    "picId": 151,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DKSA",
@@ -669,7 +889,15 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Menyampaikan Memorandum kepada seluruh Divisi Holding : Persiapan Penyusunan RKAP 2027 (Usulan Portal RKAP)",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Dimas Aryo Wibisono",
+    "picId": 153,
+    "mitra": [
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -683,7 +911,15 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Sudah dilakukan sosialisasi dashboard ke subholding, Subholding sudah bisa mengakses dan input beberapa masa/bulan kontribusi pajak di dashboard Proses Penyempurnaan Dashboard atas masukan dan saran dari Subholding",
-    "dukungan": "Dukungan dari subholding untuk dapat memberikan data perpajakan yang Valid"
+    "dukungan": "Dukungan dari subholding untuk dapat memberikan data perpajakan yang Valid",
+    "pic": "Jonri Sitorus",
+    "picId": 168,
+    "mitra": [
+      "Arief Harwanto"
+    ],
+    "mitraIds": [
+      170
+    ]
   },
   {
     "div": "DAPN",
@@ -697,7 +933,15 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Telah disusun database untuk laporan kontribusi pajak dan sengketa pajak bulanan serta historis penyetoran dan pelaporan pajak",
-    "dukungan": "Dukungan data historis pajak dari subholding secara lengkap dan tepat waktu"
+    "dukungan": "Dukungan data historis pajak dari subholding secara lengkap dan tepat waktu",
+    "pic": "Jonri Sitorus",
+    "picId": 168,
+    "mitra": [
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -711,7 +955,15 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Telah disusun database untuk laporan kontribusi pajak dan sengketa pajak bulanan serta historis penyetoran dan pelaporan pajak",
-    "dukungan": "Koordinasi dan penyediaan data dari seluruh unit Aneper"
+    "dukungan": "Koordinasi dan penyediaan data dari seluruh unit Aneper",
+    "pic": "Jonri Sitorus",
+    "picId": 168,
+    "mitra": [
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -725,7 +977,15 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Telah disusun laporan LM Pajak Bulanan untuk PTPN Group",
-    "dukungan": "Dukungan dan masukan atas laporan LM Pajak dari manajemen"
+    "dukungan": "Dukungan dan masukan atas laporan LM Pajak dari manajemen",
+    "pic": "Jonri Sitorus",
+    "picId": 168,
+    "mitra": [
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -739,7 +999,15 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Dilakukannya monitoring kepatuhan SPT Masa seluruh entitas",
-    "dukungan": "Komitmen subholding dalam penyampaian SPT tepat waktu"
+    "dukungan": "Komitmen subholding dalam penyampaian SPT tepat waktu",
+    "pic": "Jonri Sitorus",
+    "picId": 168,
+    "mitra": [
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -753,7 +1021,15 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Sudah dilakukan Sidang Banding ke 2 PPh Badan tahun 2020 pada 28 April 2026 Sidang selanjutnya akan dilaksanakan pada tanggal tanggal 26 Mei 2026",
-    "dukungan": "Dukungan manajemen dalam pengambilan keputusan atas hasil banding"
+    "dukungan": "Dukungan manajemen dalam pengambilan keputusan atas hasil banding",
+    "pic": "Jonri Sitorus",
+    "picId": 168,
+    "mitra": [
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -767,7 +1043,15 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Sudah dilakukan sidang Banding ke 4 PPh Pasal 26 tahun 2020 pada 28 April 2026 Sidang selanjutnya akan dilaksanakan pada tanggal  26 Mei 2026",
-    "dukungan": "Dukungan manajemen dalam pengambilan keputusan atas hasil banding"
+    "dukungan": "Dukungan manajemen dalam pengambilan keputusan atas hasil banding",
+    "pic": "Jonri Sitorus",
+    "picId": 168,
+    "mitra": [
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -781,7 +1065,15 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Sudah dilakukan sidang Banding ke 4 PPN November 2022 pada 29 April 2026 Sidang selanjutnya akan dilaksanakan pada tanggal 20 Mei 2026",
-    "dukungan": "Dukungan manajemen dalam pengambilan keputusan atas hasil banding"
+    "dukungan": "Dukungan manajemen dalam pengambilan keputusan atas hasil banding",
+    "pic": "Jonri Sitorus",
+    "picId": 168,
+    "mitra": [
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -795,7 +1087,15 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Sudah dilakukan sosialisasi dan pendampingan kepada para tenant pada tanggal 6-8 Mei 2026 Sudah dilakukan pengumpulan bukti setor dan bukti potong PPh 4 ayat 2",
-    "dukungan": "Melakukan monitoring atas Surat Penegasan yang akan dikeluarkan oleh pihak DJP untuk para tenant"
+    "dukungan": "Melakukan monitoring atas Surat Penegasan yang akan dikeluarkan oleh pihak DJP untuk para tenant",
+    "pic": "Jonri Sitorus",
+    "picId": 168,
+    "mitra": [
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -809,7 +1109,15 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Sudah dibuat Laporan Pertanggungjawaban dan Realisasi Biaya Operasional Kantor Holding Bulan April 2026 & Permohonan Persetujuan Biaya Operasional Bulan Mei 2026 sesuai memo nomor: DAPN/DKM/eM-221/V/2026 tanggal 05 Mei 2026. Sudah dilakukan transaksi pembayaran kepada pihak Internal dan Eksternal untuk permintaan pembayaran minggu I-III Mei 2026 secara tepat waktu dan sesuai ketentuan SOP. Sudah dilakukan monitoring kebutuhan dana kerja seluruh Divisi untuk Minggu I-III Mei 2026 berdasarkan Daftar Permintaan Uang Kerja (DPUK) dengan membuat memo permintaan dana kerja ke DKSA dan untuk memenuhi kembali kebutuhan dana kerja untuk Minggu IV bulan Mei 2026, dengan membuat memo kebutuhan Dana Operasional Holding sesuai memo nomor:DAPN/DKSA/eM-261/V/2026 tanggal 20 Mei 2026; dan telah didropping dana tersebut dari DKSA pada tanggal 21 Mei 2026.",
-    "dukungan": "Akses data transaksi dan dukungan dari fungsi keuangan dan Divisi terkait melalui implementasi aplikasi Sistem Permintaan Penerimaan dan Pembayaran (Superman)."
+    "dukungan": "Akses data transaksi dan dukungan dari fungsi keuangan dan Divisi terkait melalui implementasi aplikasi Sistem Permintaan Penerimaan dan Pembayaran (Superman).",
+    "pic": "Jonri Sitorus",
+    "picId": 168,
+    "mitra": [
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -823,7 +1131,17 @@
     "overdue": false,
     "status": "Completed",
     "progresTerkini": "Pedoman Kebijakan Akuntansi & Perpajakan telah selesai & siap untuk di edarkan ke seluruh Anper",
-    "dukungan": "Tone the top (setiap entitas harus mempedomani kebjikan tersebut, & memberikan update apabila terdapat perubahan kebijakan bisnis & PSAK)"
+    "dukungan": "Tone the top (setiap entitas harus mempedomani kebjikan tersebut, & memberikan update apabila terdapat perubahan kebijakan bisnis & PSAK)",
+    "pic": "Jonri Sitorus",
+    "picId": 168,
+    "mitra": [
+      "Aris Agung Purnomo",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      178,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -837,7 +1155,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Masing - masing Sub Tim telah membuat Fokus Tim Kerja, Program Kerja & Analisa Awal & Rencana Benchmarking",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Arief Harwanto",
+    "picId": 170,
+    "mitra": [
+      "Aris Agung Purnomo",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      178,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -851,7 +1179,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Melakukan Komunikasi & Diskusi dengan Divisi Terkait",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Arief Harwanto",
+    "picId": 170,
+    "mitra": [
+      "Aris Agung Purnomo",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      178,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -865,7 +1203,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Diskusi dengan Divisi TI & vendor menentukan KAK & Output yang diingkan, Update kepada Anper bahwa akan dilakukan penyempurnaan atas aplikasi pembayaran online",
-    "dukungan": "Persetujuan Biaya penyempurnaan Aplikasi Pembayaran Online Tone The Top bahwa Pembayaran harus dilakukan secara online untuk mengurangi polusi kertas di kantro"
+    "dukungan": "Persetujuan Biaya penyempurnaan Aplikasi Pembayaran Online Tone The Top bahwa Pembayaran harus dilakukan secara online untuk mengurangi polusi kertas di kantro",
+    "pic": "Jonri Sitorus",
+    "picId": 168,
+    "mitra": [
+      "Arief Harwanto",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      170,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -879,7 +1227,15 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Finalisasi LAI",
-    "dukungan": "Komunikasi ke Partner untuk percepatan penyelesaian LAI"
+    "dukungan": "Komunikasi ke Partner untuk percepatan penyelesaian LAI",
+    "pic": "Aris Agung Purnomo",
+    "picId": 178,
+    "mitra": [
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -893,7 +1249,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Masih dalam proses penyusunan oleh KAP",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Arief Harwanto",
+    "picId": 170,
+    "mitra": [
+      "Aris Agung Purnomo",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      178,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -907,7 +1273,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Masih dalam proses perencanaan",
-    "dukungan": "Keputusan RUPS sudah mencantumkan KAP yang akan di gunakan untuk Audit Tahun berikutnya Persetujuan Anggaran yang akan digunakan"
+    "dukungan": "Keputusan RUPS sudah mencantumkan KAP yang akan di gunakan untuk Audit Tahun berikutnya Persetujuan Anggaran yang akan digunakan",
+    "pic": "Arief Harwanto",
+    "picId": 170,
+    "mitra": [
+      "Aris Agung Purnomo",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      178,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -921,7 +1297,15 @@
     "overdue": true,
     "status": "On Track",
     "progresTerkini": "Untuk periode sd Bulan April masih dalam proses penandatangan komisaris",
-    "dukungan": "Percepatan Penandatangan di Komisaris"
+    "dukungan": "Percepatan Penandatangan di Komisaris",
+    "pic": "Aris Agung Purnomo",
+    "picId": 178,
+    "mitra": [
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -935,7 +1319,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Menunggu Pelaksanaan Rekonsiliasi Semester I",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Arief Harwanto",
+    "picId": 170,
+    "mitra": [
+      "Aris Agung Purnomo",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      178,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -949,7 +1343,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Dokumen telah dimintakan tanda tangan di Komisaris Dokumen telah di upload kedalam Portal Pemegang Saham (PT DAM dan BP BUMN)",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Arief Harwanto",
+    "picId": 170,
+    "mitra": [
+      "Aris Agung Purnomo",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      178,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -963,7 +1367,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Menunggu Hasil Audit LK Tahun 2025",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Arief Harwanto",
+    "picId": 170,
+    "mitra": [
+      "Aris Agung Purnomo",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      178,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -977,7 +1391,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Monitoring Harian dan Bulanan Transaksi Pengkinian Kelengkapan dokumen transaksi",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Arief Harwanto",
+    "picId": 170,
+    "mitra": [
+      "Aris Agung Purnomo",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      178,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -991,7 +1415,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Menunggu time line Pengadaan KAP",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Aris Agung Purnomo",
+    "picId": 178,
+    "mitra": [
+      "Aris Agung Purnomo",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      178,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -1005,7 +1439,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Diskusi dengan Penyedia Jasa Persiapan KAK Persiapan Dokumen Pengadaan",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Arief Harwanto",
+    "picId": 170,
+    "mitra": [
+      "Aris Agung Purnomo",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      178,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -1019,7 +1463,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Pembicaraan/Diskusi dengan penyedia jasa",
-    "dukungan": "Persetujuan Anggaran yang akan digunakan"
+    "dukungan": "Persetujuan Anggaran yang akan digunakan",
+    "pic": "Aris Agung Purnomo",
+    "picId": 178,
+    "mitra": [
+      "Arief Harwanto",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      170,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -1033,7 +1487,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Proses penentuan Topik terkini",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Arief Harwanto",
+    "picId": 170,
+    "mitra": [
+      "Aris Agung Purnomo",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      178,
+      165
+    ]
   },
   {
     "div": "DAPN",
@@ -1047,7 +1511,17 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Proses penentuan Topik terkini untuk mendukung dan meningkatkan kemampuan serta kapabilitas PIC Perpajakan",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Jonri Sitorus",
+    "picId": 168,
+    "mitra": [
+      "Arief Harwanto",
+      "Deny Ariyanto Prabowo"
+    ],
+    "mitraIds": [
+      170,
+      165
+    ]
   },
   {
     "div": "DIMR",
@@ -1061,7 +1535,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Telah dilakukan pengembangan internal Aplikasi ERIN 2.0 mulai 31 Maret 2026. Go Live Aplikasi ERIN 2.0 ditargetkan W4 Juni 2026. Penyediaan AI Tool telah dilakukan oleh DTDI, dan telah disampaikan pada 7 Mei 2026. Percepatan penyelesaian modul alokasi limit risiko dan RCSA segera diselesaikan dengan target W4 Mei 2026.",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Alif Nugraha Ramadhan",
+    "picId": 182,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1075,7 +1553,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Telah disampaikan memorandum ke DHKM dan DKSR, Memorandum nomor DIMR/KOL/eM-43/II/2026 Perihal Tindak Lanjut Hasil Rapat Koordinasi Penanganan Pencurian TBS Kelapa Sawit.",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Alif Nugraha Ramadhan",
+    "picId": 182,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1089,7 +1571,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Kegiatan penyusunan Course Design Program PTPN Group telah dimulai dengan persiapan awal bersama konsultan di W3 Mei 2026 (ongoing), rencana FGD tingkat Holding atas materi yang disusun oleh konsultan dilakukan pada W4 Juni 2026. FGD bersama Subholding (finalisasi materi ajar) direncanakan dilaksanakan pada pertengahan Juli 2026, untuk selanjutnya dilaksanakan TOT kepada fungsi manajemen risiko Holding & Subholding di bulan Agustus 2026.",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Alif Nugraha Ramadhan",
+    "picId": 182,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1103,7 +1589,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Pelaksanaan stress test atas dinamika geopolitik timur tengah telah diselesaikan dan dilaporkan kepada Direksi melalui memo nomor: DIMR/KOL/eM-95/III/2026. Dokumen Kebijakan dan Pedoman telah diajukan permohonan pengesahannya kepada Direksi melalui memo nomor: DIMR/DIR/MO/23/2026 tanggal 18 Mei 2026. SOP BCMS telah disusun dan sedang dalam proses peninjauan Kasubdiv. Persiapan review dan pembaruan dokumen CP direncanakan dimulai pada W1 Juni 2026.",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Alif Nugraha Ramadhan",
+    "picId": 182,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1117,7 +1607,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Tabletop exercise telah dilaksanakan pada tanggal 8 Januari 2026, dengan notula rapat nomor DIMR/KOL/eM-11/I/2026.",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Alif Nugraha Ramadhan",
+    "picId": 182,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1131,7 +1625,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Telah dilaksanakan pembahasan stress testing dengan PT DAM secara hybrid tanggal 27 Maret 2026. Laporan hasil stress testing final telah disampaikan kepada PT DAM pada 31 Maret 2026.",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Alif Nugraha Ramadhan",
+    "picId": 182,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1145,7 +1643,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Laporan Manajemen Risiko telah disampaikan Ke DAPN",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Aan Fadlianto",
+    "picId": 183,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1160,7 +1662,11 @@
     "status": "Completed",
     "progresTerkini": "Laporan Manajemen Risiko proses drafting",
     "dukungan": "Data/Dokumen dari Divisi terkait sesuai Memo Nomor : DIMR/KOL/eM-134/V/2026 hal permintaan data Penyusunan Laporan Monitoring Profil Risiko Korporat s.d. April 2026",
-    "nameInherited": true
+    "nameInherited": true,
+    "pic": "Aan Fadlianto",
+    "picId": 183,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1174,7 +1680,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Laporan Manajemen Risiko telah disampaikan Ke DAPN",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Aan Fadlianto",
+    "picId": 183,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1188,7 +1698,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Laporan Manajemen Risiko proses drafting",
-    "dukungan": "Data/Dokumen dari Divisi terkait sesuai Memo Nomor : DIMR/KOL/eM-134/V/2026 hal permintaan data Penyusunan Laporan Monitoring Profil Risiko Korporat s.d. April 2026"
+    "dukungan": "Data/Dokumen dari Divisi terkait sesuai Memo Nomor : DIMR/KOL/eM-134/V/2026 hal permintaan data Penyusunan Laporan Monitoring Profil Risiko Korporat s.d. April 2026",
+    "pic": "Aan Fadlianto",
+    "picId": 183,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1202,7 +1716,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Sesuai Program kerja Survei budaya risiko dilaksanakan Bulan Desember 2026 Penyusunan kuesioner survei budaya Risiko",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Aan Fadlianto",
+    "picId": 183,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1216,7 +1734,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Reviu Kajian risiko telah disampaikan ke DKSA",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Aan Fadlianto",
+    "picId": 183,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1230,7 +1752,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Hasil reviu telah disampaikan ke DKSR",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Aan Fadlianto",
+    "picId": 183,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1244,7 +1770,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Hasil reviu telah disampaikan ke DSMK",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Aan Fadlianto",
+    "picId": 183,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1258,7 +1788,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Hasil reviu telah disampaikan ke DPPN, DATN, DKSA",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Aan Fadlianto",
+    "picId": 183,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1272,7 +1806,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Hasil reviu telah selesai",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Aan Fadlianto",
+    "picId": 183,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1286,7 +1824,11 @@
     "overdue": true,
     "status": "Completed",
     "progresTerkini": "Hasil reviu telah disampaikan ke DKSR",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Aan Fadlianto",
+    "picId": 183,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1300,7 +1842,11 @@
     "overdue": false,
     "status": "At Risk",
     "progresTerkini": "Proses Reviu oleh KPPU dan BPKP",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Jimmy A. Tarigan",
+    "picId": 209,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1314,7 +1860,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "finalisasi untuk pengadaan",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Jimmy A. Tarigan",
+    "picId": 209,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1328,7 +1878,11 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "- Bersurat kepada BPKP sebagai asesor RMI melalui SPI - Laporan Tindak Lanjut AoI RMI TW I sudah disusun - Entry meeting penilaian RMI direncanakan tanggal 5 Juni 2026",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Aan Fadlianto",
+    "picId": 183,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1342,7 +1896,11 @@
     "overdue": true,
     "status": "On Track",
     "progresTerkini": "Telah dilakukan tahap perancangan, implementasi dan evaluasi. Saat ini dalam progres finalisasi TOE dan remediasi. Deloitte dalam proses penyusunan laporan final ICOFR, pedoman dan SOP.",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Aan Fadlianto",
+    "picId": 183,
+    "mitra": [],
+    "mitraIds": []
   },
   {
     "div": "DIMR",
@@ -1356,6 +1914,10 @@
     "overdue": false,
     "status": "On Track",
     "progresTerkini": "Pedoman penyusunan RKAP bidang MR sedang dalam proses. Penyusunan Strategi risiko RKAP 2027 sedang dalam proses.",
-    "dukungan": null
+    "dukungan": null,
+    "pic": "Alif Nugraha Ramadhan",
+    "picId": 182,
+    "mitra": [],
+    "mitraIds": []
   }
 ]

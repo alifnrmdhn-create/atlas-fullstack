@@ -19,7 +19,8 @@ use Illuminate\Support\Facades\DB;
  *   docs/2026_MEI_Monitoring Program Kerja DKMR 220626.pdf
  * Tabel "Monitoring Program Kerja Strategis DKMR" per divisi (hlm 52-72)
  * ditranskripsi verbatim ke database/seeders/data/programs_dkmr_2026.json.
- * Tidak ada data dari sumber lain.
+ * PIC asli & Mitra Suksesor (co-PIC) di-enrich dari sheet "Sd 22 Mei" file
+ * docs/Monitoring Program Kerja DKMR 220626.xlsx (sumber digital yang sama).
  *
  * Granularitas: tiap baris bernomor di PDF = 1 Program + 1 Workstream + 1 Task
  * (milestone/output baris tsb). Total 48 DKSA + 27 DAPN + 22 DIMR = 97.
@@ -49,8 +50,10 @@ class ProgramSeeder extends Seeder
             throw new \RuntimeException("Gagal parse {$path}: " . json_last_error_msg());
         }
 
-        // Reset idempotent — cascade menyapu seluruh sub-tree program.
+        // Reset idempotent — cascade menyapu seluruh sub-tree program; entity_pics
+        // (co-PIC) polimorfik tanpa FK ke Program, jadi dibersihkan manual.
         DB::table('Program')->delete();
+        DB::table('entity_pics')->where('entityType', 'Program')->delete();
 
         // PDF tidak mencantumkan tanggal mulai; pakai awal tahun program RKAP 2026.
         $start = Carbon::create(2026, 1, 1)->startOfDay();
@@ -63,6 +66,14 @@ class ProgramSeeder extends Seeder
             $seq = str_pad((string) $r['no'], 3, '0', STR_PAD_LEFT);
             $suffix = "DKMR-{$div}-{$seq}";
 
+            // Owner = PIC asli dari Excel (kolom L); fallback kepala divisi bila tak ter-resolve.
+            $ownerId = $r['picId'] ?? $cfg['ownerId'];
+            // Mitra Suksesor → co-PIC; buang null & yang sama dengan owner.
+            $coPicIds = array_values(array_unique(array_filter(
+                $r['mitraIds'] ?? [],
+                fn ($id) => $id && $id !== $ownerId,
+            )));
+
             [$pStatus, $health, $taskStatus, $pct] = $this->mapStatus($r['status']);
             $target = $this->parseDeadline($r['deadline']) ?? $start->copy()->endOfYear();
 
@@ -70,7 +81,7 @@ class ProgramSeeder extends Seeder
                 'code'               => "PRG-{$suffix}",
                 'name'               => $r['name'],
                 'description'        => $this->blankToNull($r['output'] ?? null),
-                'ownerId'            => $cfg['ownerId'],
+                'ownerId'            => $ownerId,
                 'ownerUnitId'        => $cfg['unitId'],
                 'status'             => $pStatus,
                 'healthStatus'       => $health,
@@ -93,7 +104,7 @@ class ProgramSeeder extends Seeder
                 'programId'        => $program->id,
                 'name'             => $r['name'],
                 'description'      => $this->blankToNull($r['output'] ?? null),
-                'ownerId'          => $cfg['ownerId'],
+                'ownerId'          => $ownerId,
                 'ownerUnitId'      => $cfg['unitId'],
                 'status'           => $taskStatus,
                 'priority'         => 'MEDIUM',
@@ -111,8 +122,8 @@ class ProgramSeeder extends Seeder
                 'initiativeId'     => $workstream->id,
                 'title'            => $this->blankToNull($r['output'] ?? null) ?? $r['name'],
                 'description'      => $this->blankToNull($r['progresTerkini'] ?? null),
-                'assignedTo'       => $cfg['ownerId'],
-                'createdBy'        => $cfg['ownerId'],
+                'assignedTo'       => $ownerId,
+                'createdBy'        => $ownerId,
                 'createdByUnitId'  => $cfg['unitId'],
                 'status'           => $taskStatus,
                 'priority'         => 'MEDIUM',
@@ -123,10 +134,23 @@ class ProgramSeeder extends Seeder
                 'updatedAt'        => $now,
             ])->save();
 
+            // PIC + Mitra Suksesor → entity_pics (PIC = isPrimary).
+            $picRows = [[
+                'entityType' => 'Program', 'entityId' => $program->id,
+                'userId' => $ownerId, 'isPrimary' => true, 'createdAt' => $now,
+            ]];
+            foreach ($coPicIds as $cid) {
+                $picRows[] = [
+                    'entityType' => 'Program', 'entityId' => $program->id,
+                    'userId' => $cid, 'isPrimary' => false, 'createdAt' => $now,
+                ];
+            }
+            DB::table('entity_pics')->insert($picRows);
+
             $count++;
         }
 
-        $this->command?->info("Seeded {$count} program DKMR (+ workstream + task) dari PDF Monitoring 22 Mei 2026.");
+        $this->command?->info("Seeded {$count} program DKMR (+ workstream + task + PIC/co-PIC) dari Monitoring 22 Mei 2026.");
     }
 
     private function mapPilar(string $pilar): PilarStrategis
