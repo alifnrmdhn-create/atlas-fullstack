@@ -1042,6 +1042,8 @@ export function ProgramsView() {
                         const deadlineInfo = days !== null ? formatDaysLabel(days) : null
                         const approvalInfo = approvalBadge(prog)
                         const healthTone = sc === 'on-track' ? 'green' : sc === 'at-risk' ? 'yellow' : 'red'
+                        const progStatus = (prog as { status?: string }).status
+                        const isCompleted = progStatus === 'COMPLETED'
                         const isOwner = (prog as { ownerId?: number }).ownerId === currentUser?.id
                         const showActions = roleAccess.canEditProgram(isOwner) || roleAccess.canArchiveProgram(isOwner)
                         return (
@@ -1060,7 +1062,7 @@ export function ProgramsView() {
                                   <strong>{prog.name}</strong>
                                   <div className="program-row__meta">
                                     <span className="program-row__meta-primary">{workstreamSummaryLabel(prog.workstreamCount)}</span>
-                                    {deadlineInfo && (
+                                    {deadlineInfo && !isCompleted && (
                                       <span className={`program-deadline program-deadline--${deadlineInfo.tone}`}>
                                         {deadlineInfo.label}
                                       </span>
@@ -1079,8 +1081,8 @@ export function ProgramsView() {
                                 </div>
                               </div>
                               <div className="program-row__state">
-                                <span className={`program-row__status-pill program-row__status-pill--${healthTone}`}>
-                                  {healthLabel}
+                                <span className={`program-row__status-pill program-row__status-pill--${isCompleted ? 'green' : healthTone}`}>
+                                  {isCompleted ? 'Selesai' : healthLabel}
                                 </span>
                               </div>
                               <div className="program-row__progress">
@@ -1094,7 +1096,7 @@ export function ProgramsView() {
                                     </span>
                                   </div>
                                 ) : (
-                                  <span className="program-row__progress-empty">Belum dimulai</span>
+                                  <span className="program-row__progress-empty">{progStatus === 'PLANNING' ? 'Belum dimulai' : 'Berjalan'}</span>
                                 )}
                               </div>
                               <div className="program-row__owner-block">
