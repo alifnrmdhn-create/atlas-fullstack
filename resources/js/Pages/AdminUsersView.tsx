@@ -27,6 +27,7 @@ type UserRecord = {
 type PositionOption = {
   id: number
   title: string
+  roleType?: string
   code?: string
   levelCode?: string
   level?: number
@@ -432,11 +433,18 @@ export function AdminUsersView() {
                   </div>
                   <div className="modal-field">
                     <label className="modal-label">Role <span className="admin-required">*</span></label>
-                    <select className="form-input" value={cuForm.roleType} onChange={e => setCuForm(f => ({ ...f, roleType: e.target.value }))}>
-                      {['BOD','KADIV','KASUBDIV','ASISTEN','OFFICER','ADMIN'].map(r => (
-                        <option key={r} value={r}>{formatRoleLabel(r)}</option>
-                      ))}
-                    </select>
+                    {cuSelectedPos ? (
+                      <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span className={`badge ${ROLE_BADGE[cuForm.roleType] ?? ''}`}>{formatRoleLabel(cuForm.roleType)}</span>
+                        <span className="text-xs text-muted">mengikuti jabatan terpilih</span>
+                      </div>
+                    ) : (
+                      <select className="form-input" value={cuForm.roleType} onChange={e => setCuForm(f => ({ ...f, roleType: e.target.value }))}>
+                        {['BOD','KADIV','KASUBDIV','ASISTEN','OFFICER','ADMIN'].map(r => (
+                          <option key={r} value={r}>{formatRoleLabel(r)}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                   <div className="modal-field">
                     <label className="modal-label">Jabatan (opsional)</label>
@@ -451,7 +459,7 @@ export function AdminUsersView() {
                       <div className="user-picker-list">
                         {cuPosOptions.map(p => (
                           <button key={p.id} className="user-picker-item" type="button"
-                            onClick={() => { setCuSelectedPos(p); setCuPosSearch('') }}>
+                            onClick={() => { setCuSelectedPos(p); setCuPosSearch(''); if (p.roleType) setCuForm(f => ({ ...f, roleType: p.roleType as string })) }}>
                             <div className="admin-picker-title">
                               {p.code && <span className="code-badge admin-code-badge--micro">{p.code}</span>}
                               <span className="text-sm text-strong">{p.title}</span>
@@ -464,7 +472,7 @@ export function AdminUsersView() {
                     {cuSelectedPos && (
                       <div className="selected-user-chip">
                         <span>✓ {cuSelectedPos.code ? `[${cuSelectedPos.code}] ` : ''}{cuSelectedPos.title}</span>
-                        <button type="button" onClick={() => { setCuSelectedPos(null); setCuPosSearch('') }}>
+                        <button type="button" onClick={() => { setCuSelectedPos(null); setCuPosSearch(''); setCuForm(f => ({ ...f, roleType: 'ASISTEN' })) }}>
                           <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg>
                         </button>
                       </div>
