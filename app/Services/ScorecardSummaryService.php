@@ -125,18 +125,26 @@ class ScorecardSummaryService
      * @return array{
      *   level: string,
      *   periode: string,
+     *   periodeLabel: string,
      *   itemLabel: string,
      *   avgItem: float,
+     *   avgDelta: ?float,
      *   totalItem: int,
      *   topItems: array<int, array{rank: int, nama: string, kode: string, nilai: float}>,
      *   belowTarget: array<int, array{nama: string, kode: string, nilai: float}>,
      *   ownItem: ?array{kode: string, nama: string, nilai: float},
+     *   kpiTrend: array<int, array{label: string, avg: ?float}>,
      *   grid?: array<int, array{kode: string, nama: string, nilai: float, divisi: array<int, array{kode: string, nama: string, nilai: float}>}>,
      * }
      */
     public function homeSnapshot(?User $user = null, ?string $periode = null): array
     {
-        $periode = $periode ?? now()->format('Y-m');
+        // Scorecard data lands monthly and lags the calendar, so the current
+        // month is usually still empty. Resolve to the latest period that
+        // actually HAS data in the viewer's scope — otherwise Home shows a blank
+        // KPI panel even when recent data exists (Home is make-or-break: a blank
+        // panel reads as broken, not "no data yet").
+        $periode = $periode ?? $this->latestPeriodeWithData($user) ?? now()->format('Y-m');
         $level = $this->resolveLevel($user);
 
         // Resolve "ownItem" — user's own direktorat, when applicable
@@ -173,20 +181,109 @@ class ScorecardSummaryService
             array_filter($items, fn ($d) => $d['nilai'] < 80.0)
         ));
 
+        // KPI trend (last 6 months, averaged across the scoped items) + the
+        // delta vs the previous period that has data. Powers the lagging-side
+        // sparkline and the Delta indicator on Home. Reuses the same table+scope
+        // as `items` so the last point matches `avgItem`.
+        $series   = $this->kpiAvgSeries($user, $periode, 6);
+        $kpiTrend = array_map(fn ($s) => ['label' => $s['label'], 'avg' => $s['avg']], $series);
+        $nonNull  = array_values(array_filter($series, fn ($s) => $s['avg'] !== null));
+        $avgDelta = count($nonNull) >= 2
+            ? round($nonNull[count($nonNull) - 1]['avg'] - $nonNull[count($nonNull) - 2]['avg'], 2)
+            : null;
+
         $payload = [
-            'level'       => $level,
-            'periode'     => $periode,
-            'itemLabel'   => $itemLabel,
-            'avgItem'     => $avgItem,
-            'totalItem'   => count($items),
-            'topItems'    => $topItems,
-            'belowTarget' => $belowTarget,
-            'ownItem'     => $ownItem,
+            'level'        => $level,
+            'periode'      => $periode,
+            'periodeLabel' => Carbon::createFromFormat('Y-m', $periode)->isoFormat('MMMM YYYY'),
+            'itemLabel'    => $itemLabel,
+            'avgItem'      => $avgItem,
+            'avgDelta'     => $avgDelta,
+            'totalItem'    => count($items),
+            'topItems'     => $topItems,
+            'belowTarget'  => $belowTarget,
+            'ownItem'      => $ownItem,
+            'kpiTrend'     => $kpiTrend,
         ];
         if ($grid !== null) {
             $payload['grid'] = $grid;
         }
         return $payload;
+    }
+
+    /**
+     * Latest periode (YYYY-MM, ≤ current month) that has scorecard data in the
+     * viewer's scope. Mirrors the table `homeSnapshot` reads `items` from:
+     * DivisiScorecard at directorate level, DirektoratScorecard otherwise.
+     * Returns null when the scope has no data at all (caller falls back to now).
+     */
+    private function latestPeriodeWithData(?User $user): ?string
+    {
+        $now = now()->format('Y-m');
+        $query = DirektoratScorecard::query();
+
+        if ($this->resolveLevel($user) !== 'portfolio' && $user?->directorateId) {
+            // directorate/unit: anchor on the viewer's own directorate (its score
+            // is the KPI headline) so the resolved period always has the hero number.
+            $query->where('directorateId', $user->directorateId);
+        } else {
+            $ids = $this->resolveScopedDirectorateIds($user);
+            if ($ids !== null) {
+                $query->whereIn('directorateId', $ids);
+            }
+        }
+
+        // 'YYYY-MM' sorts lexicographically == chronologically.
+        return $query->where('periode', '<=', $now)->max('periode');
+    }
+
+    /**
+     * Average KPI nilai per month for the last $months periods, using the same
+     * table + scope as `homeSnapshot` items. Missing months yield avg=null so
+     * the frontend can gap-skip. Anchored at $endPeriode (the resolved period).
+     *
+     * @return array<int, array{key: string, label: string, avg: ?float}>
+     */
+    private function kpiAvgSeries(?User $user, string $endPeriode, int $months = 6): array
+    {
+        $months = max(2, min(12, $months));
+        $end = Carbon::createFromFormat('Y-m', $endPeriode)->startOfMonth();
+
+        $labels = [];
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $p = $end->copy()->subMonthsNoOverflow($i);
+            $labels[$p->format('Y-m')] = $p->isoFormat('MMM');
+        }
+        $keys = array_keys($labels);
+
+        if ($this->resolveLevel($user) !== 'portfolio' && $user?->directorateId) {
+            // directorate/unit: trend the viewer's OWN directorate series so the
+            // sparkline + delta match the ownItem headline (not the divisi average).
+            $rows = DirektoratScorecard::query()
+                ->where('directorateId', $user->directorateId)
+                ->whereIn('periode', $keys)
+                ->get(['periode', 'nilai']);
+        } else {
+            $query = DirektoratScorecard::query()->whereIn('periode', $keys);
+            $ids = $this->resolveScopedDirectorateIds($user);
+            if ($ids !== null) {
+                $query->whereIn('directorateId', $ids);
+            }
+            $rows = $query->get(['periode', 'nilai']);
+        }
+
+        $byPeriode = $rows->groupBy('periode');
+
+        $out = [];
+        foreach ($labels as $key => $label) {
+            $grp = $byPeriode->get($key);
+            $out[] = [
+                'key'   => $key,
+                'label' => $label,
+                'avg'   => ($grp && $grp->count() > 0) ? round((float) $grp->avg('nilai'), 2) : null,
+            ];
+        }
+        return $out;
     }
 
     /**

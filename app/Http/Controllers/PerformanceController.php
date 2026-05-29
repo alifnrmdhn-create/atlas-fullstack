@@ -3,15 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Auth\OrgScope;
+use App\Models\Directorate;
+use App\Models\OrganizationalUnit;
 use App\Services\KpiInsightService;
 use App\Services\ScorecardSummaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PerformanceController extends Controller
 {
+    private const DIR_KMR_ID = 5;
+
     public function __construct(
         private readonly ScorecardSummaryService $scorecard,
         private readonly KpiInsightService $insight,
@@ -34,10 +39,11 @@ class PerformanceController extends Controller
         $user = $request->user();
         $scope = $user ? OrgScope::forUser($user) : null;
 
-        // BOD-fungsional → scope mereka cuma 1 direktorat sendiri, jadi landing
-        // overview tidak masuk akal (single card kosong). Langsung redirect ke
-        // detail KPI direktorat mereka (19 KPI breakdown per perspektif).
-        if ($scope && strtoupper($user->roleType ?? '') === 'BOD' && !$scope->isExecutive && $user->directorateId) {
+        // Non-executive members (BOD-fungsional + KADIV/OFFICER) hanya punya 1
+        // direktorat, jadi landing overview tidak berguna (single card). Langsung
+        // ke detail KPI direktorat mereka (breakdown per perspektif). Gate sudah
+        // membatasi akses ke direktorat ber-data (DIR-KMR), jadi detail pasti ada.
+        if ($scope && !$scope->isExecutive && $user && $user->directorateId) {
             $directorate = $user->directorate;
             if ($directorate) {
                 $codeAlias = ['DIR-KMR' => 'DKM'];
@@ -120,9 +126,9 @@ class PerformanceController extends Controller
     {
         $direkturMap = collect($this->direkturList)->keyBy('slug');
         $direktur = $direkturMap[$slug] ?? $this->direkturList['DIRUT'];
-        $periode = $request->query('periode', '2026-03');
+        $periode = $request->query('periode') ?? $this->defaultPeriode();
 
-        $kpiGroups = $this->getDummyKolegialKpi($direktur['kode']);
+        $kpiGroups = $this->getDirekturKpiGroups($direktur['kode'], $periode);
 
         // Flatten kpi groups for insight derive (treat 'target' as 'sasaran').
         $flatItems = collect($kpiGroups)
@@ -140,7 +146,7 @@ class PerformanceController extends Controller
     // ── Scorecard Direktorat & Divisi ─────────────────────────────────────
     public function scorecard(Request $request): Response
     {
-        $periode = $request->query('periode') ?? now()->format('Y-m');
+        $periode = $request->query('periode') ?? $this->defaultPeriode();
         $user = $request->user();
 
         $direktoratGrid = $this->scorecard->direktoratGrid($user, $periode);
@@ -188,7 +194,7 @@ class PerformanceController extends Controller
      */
     public function divisi(Request $request, ?string $kode = null): Response|RedirectResponse
     {
-        $periode = $request->query('periode', '2026-03');
+        $periode = $request->query('periode') ?? $this->defaultPeriode();
         $user = $request->user();
         $scope = $user ? OrgScope::forUser($user) : null;
 
@@ -202,12 +208,25 @@ class PerformanceController extends Controller
 
         // Single divisi mode (existing)
         $resolvedKode = $kode ?? $this->resolveUserDivisi($user);
+        // Data scoping: a unit-level user is locked to their own division; a
+        // directorate-level user may view any division within their directorate.
+        // SUPERADMIN / executive (portfolio) are unrestricted.
+        if ($scope && ! $scope->isExecutive) {
+            if ($scope->level === 'unit') {
+                $resolvedKode = $this->resolveUserDivisi($user);
+            } elseif ($scope->level === 'directorate') {
+                $unit = $this->unitForKode($resolvedKode);
+                if (! $unit || ! in_array((int) $unit->id, $scope->unitIds, true)) {
+                    $resolvedKode = $this->resolveUserDivisi($user);
+                }
+            }
+        }
         $divisiInfo = $this->lookupDivisi($resolvedKode);
         $direktorat = $divisiInfo['direktorat'];
         $divisi     = $divisiInfo['divisi'];
         $peers      = $divisiInfo['peers'];
 
-        $kpiItems       = $this->getDummyDivisiKpi($divisi['kode']);
+        $kpiItems       = $this->getDivisiKpi($resolvedKode, $periode);
         $topPerformers  = $this->getDummyDivisiTopPerformers($divisi['kode']);
         $mode = 'single';
         $insight = $this->insight->deriveFromKpiItems($kpiItems);
@@ -219,15 +238,14 @@ class PerformanceController extends Controller
 
     /**
      * Comparison view: 3-up grid divisi di direktorat user (BOD-fungsional).
-     * Pull divisi list dari getDirektoratGrid() dummy, top KPIs per divisi
-     * dari getDummyDivisiKpi(). Akan switch ke ScorecardSummaryService di Sprint 6.
+     * Divisi list dari getDirektoratGrid() (rollup riil), top KPIs per divisi
+     * dari getDivisiKpi() (kpi_divisi_* riil).
      */
     private function divisiComparison(\App\Models\User $user, string $periode): Response
     {
-        // DB Directorate.code → grid kode alias (sama dengan kolegial() codeAlias)
-        $codeAlias = ['DIR-KMR' => 'DKM'];
+        // Grid now uses the real Directorate.code (DIR-KMR), so match directly.
         $directorate = $user->directorate;
-        $dirCode = $directorate ? ($codeAlias[$directorate->code] ?? $directorate->code) : null;
+        $dirCode = $directorate?->code;
 
         $gridDir = null;
         if ($dirCode) {
@@ -250,7 +268,7 @@ class PerformanceController extends Controller
 
         $divisiList = [];
         foreach ($gridDir['divisi'] as $idx => $div) {
-            $kpiItems = $this->getDummyDivisiKpi($div['kode']);
+            $kpiItems = $this->getDivisiKpi($div['kode'], $periode);
             // Top 5 KPI by bobot — yang paling berkontribusi ke skor divisi
             usort($kpiItems, fn ($a, $b) => ($b['bobot'] ?? 0) <=> ($a['bobot'] ?? 0));
             $keyKpis = array_map(fn ($k) => [
@@ -302,8 +320,8 @@ class PerformanceController extends Controller
     private function resolveUserDivisi(?\App\Models\User $user): string
     {
         if (!$user || !$user->unitId) return 'DKSA';
-        $unit = \App\Models\OrganizationalUnit::find($user->unitId);
-        return $unit?->code ?? 'DKSA';
+        $unit = OrganizationalUnit::find($user->unitId);
+        return str_replace('-HLD', '', $unit?->code ?? 'DKSA');
     }
 
     /** Lookup divisi info + peer divisi di direktorat yang sama. */
@@ -338,26 +356,180 @@ class PerformanceController extends Controller
         ];
     }
 
-    /**
-     * DULU: hardcoded mock grid (102.92, 99.13, 65.58, dst.) yang ikut diseed
-     * ke DirektoratScorecard. Sekarang kosong — divisi/comparison view jatuh
-     * ke empty state. Saat data KPI riil tersedia, replace dengan query ke
-     * ScorecardSummaryService::direktoratGrid() atau KpiDefinition/KpiValue.
-     */
-    private function getDirektoratGrid(): array
+    /** Latest periode (YYYY-MM) that has rollup data; falls back to current month. */
+    private function defaultPeriode(): string
     {
-        return [];
+        return DB::table('DirektoratScorecard')->max('periode')
+            ?? DB::table('DivisiScorecard')->max('periode')
+            ?? now()->format('Y-m');
+    }
+
+    /** Resolve a (possibly bare) division code to its OrganizationalUnit. */
+    private function unitForKode(string $kode): ?OrganizationalUnit
+    {
+        $kode = strtoupper(trim($kode));
+        return OrganizationalUnit::where('directorateId', self::DIR_KMR_ID)
+            ->where(fn ($q) => $q->where('code', $kode)->orWhere('code', $kode . '-HLD'))
+            ->first();
     }
 
     /**
-     * DULU: KPI items per divisi (DKSA 16-KPI, DAPN 18-KPI, DIMR 14-KPI dari
-     * PDF DKMR 15 Mei 2026 + generic 5-item template untuk lain). Sekarang
-     * kosong — divisi view tampil empty state. Replace saat KpiDefinition/
-     * KpiValue terisi.
+     * Real directorate→divisi grid from the scorecard rollup tables (replaces
+     * the former hardcoded mock). Only directorates with data for the period
+     * appear; today that is DIR-KMR. Divisi codes are bare (DKSA, not DKSA-HLD)
+     * for clean display + routing.
      */
-    private function getDummyDivisiKpi(string $kode): array
+    private function getDirektoratGrid(): array
     {
-        return [];
+        $periode = $this->defaultPeriode();
+        $grid = [];
+        foreach (DB::table('DirektoratScorecard')->where('periode', $periode)->get() as $row) {
+            $dir = Directorate::find($row->directorateId);
+            $divisi = DB::table('DivisiScorecard as d')
+                ->join('OrganizationalUnit as u', 'u.id', '=', 'd.unitId')
+                ->where('d.directorateId', $row->directorateId)
+                ->where('d.periode', $periode)
+                ->orderByDesc('d.nilai')
+                ->get(['u.code', 'u.name', 'd.nilai']);
+            $grid[] = [
+                'kode' => $dir->code ?? (string) $row->directorateId,
+                'nama' => $dir->name ?? '—',
+                'nilai' => (float) $row->nilai,
+                'divisi' => $divisi->map(fn ($x) => [
+                    'kode' => str_replace('-HLD', '', $x->code),
+                    'nama' => $x->name,
+                    'nilai' => (float) $x->nilai,
+                ])->all(),
+            ];
+        }
+        return $grid;
+    }
+
+    /**
+     * Per-KPI line items for a division, shaped for DivisiView. bobot is emitted
+     * as a percentage (6, not 0.06) and skor as the bobot-weighted contribution
+     * (bobot × Nilai) so the view's skor/bobot×100 recovers the achievement %.
+     * A blank realisasi renders "—" with skor 0 (not measured this period).
+     */
+    private function getDivisiKpi(string $kode, ?string $periode = null): array
+    {
+        $periode = $periode ?? $this->defaultPeriode();
+        $unit = $this->unitForKode($kode);
+        if (! $unit) return [];
+        [$y, $m] = array_map('intval', explode('-', $periode));
+        $periodId = DB::table('performance_periods')->where('tahun', $y)->where('bulan', $m)->value('id');
+
+        $rows = DB::table('kpi_divisi_items as i')
+            ->leftJoin('kpi_divisi_values as v', function ($j) use ($periodId) {
+                $j->on('v.kpi_divisi_item_id', '=', 'i.id')->where('v.period_id', '=', $periodId);
+            })
+            ->where('i.unit_id', $unit->id)
+            ->where('i.tahun', $y)
+            ->orderBy('i.urutan')
+            ->get(['i.urutan', 'i.kode', 'i.nama', 'i.perspektif', 'i.satuan', 'i.polaritas',
+                'i.bobot', 'i.strategic_objective', 'v.target', 'v.realisasi', 'v.skor']);
+
+        return $rows->map(fn ($r) => [
+            'no' => (int) $r->urutan,
+            'kode' => $r->kode,
+            'nama' => $r->nama,
+            'perspektif' => $this->normPerspektif($r->perspektif),
+            'bobot' => round((float) $r->bobot * 100, 2),
+            'satuan' => $r->satuan ?: '',
+            'polaritas' => $r->polaritas === 'minimize' ? 'minimize' : 'maximize',
+            'sasaran' => $this->fmtNum($r->target),
+            'realisasi' => $r->realisasi === null ? '—' : $this->fmtNum($r->realisasi),
+            'skor' => $r->skor === null ? 0.0 : round((float) $r->bobot * (float) $r->skor, 4),
+            'definisi' => $r->strategic_objective,
+        ])->all();
+    }
+
+    /** Plain, parseable number string (no thousand separators) for FE display. */
+    private function fmtNum($v): string
+    {
+        if ($v === null) return '—';
+        return rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.');
+    }
+
+    /**
+     * Canonicalize BSC perspektif labels — the source files are inconsistent
+     * (DIMR writes "IBP", DKSA "Internal Business Process") which would otherwise
+     * split into separate groups with wrong order/color in the FE.
+     */
+    private function normPerspektif(?string $p): string
+    {
+        return match (strtolower(trim((string) $p))) {
+            'financial', 'finansial' => 'Financial',
+            'customer' => 'Customer',
+            'ibp', 'internal business process' => 'Internal Business Process',
+            'l&g', 'lng', 'learning & growth', 'learning and growth' => 'L&G',
+            default => trim((string) $p) ?: 'Lainnya',
+        };
+    }
+
+    /**
+     * Directorate-level KPI grouped by BSC perspektif for KolegialDetailView.
+     * Reads kpi_direktur_* (the directorate scorecard line items). Director code
+     * (e.g. DKM) maps to the real Directorate.code (DIR-KMR). bobot → percentage,
+     * skor → bobot-weighted contribution (Σ skor = nilai direktorat); pct per group.
+     */
+    private function getDirekturKpiGroups(string $directorCode, ?string $periode = null): array
+    {
+        $periode = $periode ?? $this->defaultPeriode();
+        $dirCode = ['DKM' => 'DIR-KMR'][strtoupper($directorCode)] ?? strtoupper($directorCode);
+        [$y, $m] = array_map('intval', explode('-', $periode));
+        $periodId = DB::table('performance_periods')->where('tahun', $y)->where('bulan', $m)->value('id');
+
+        $rows = DB::table('kpi_direktur_items as i')
+            ->leftJoin('kpi_direktur_values as v', function ($j) use ($periodId) {
+                $j->on('v.kpi_direktur_item_id', '=', 'i.id')->where('v.period_id', '=', $periodId);
+            })
+            ->where('i.directorate_code', $dirCode)
+            ->orderBy('i.id')
+            ->get(['i.kode', 'i.nama', 'i.perspektif', 'i.satuan', 'i.polaritas', 'i.bobot', 'v.target', 'v.realisasi', 'v.skor']);
+        if ($rows->isEmpty()) return [];
+
+        $keyOf = fn ($p) => match ($p) {
+            'Financial' => 'financial',
+            'Customer' => 'customer',
+            'Internal Business Process' => 'ibp',
+            'L&G' => 'lng',
+            default => 'lainnya',
+        };
+        $order = ['financial', 'customer', 'ibp', 'lng', 'lainnya'];
+
+        $groups = [];
+        foreach ($rows as $r) {
+            $perspektif = $this->normPerspektif($r->perspektif);
+            $key = $keyOf($perspektif);
+            $groups[$key] ??= ['perspektif' => $perspektif, 'perspektif_key' => $key, 'items' => []];
+            $groups[$key]['items'][] = [
+                'kode' => $r->kode,
+                'nama' => $r->nama,
+                'satuan' => $r->satuan ?: '',
+                'polaritas' => $r->polaritas === 'minimize' ? 'minimize' : 'maximize',
+                'bobot' => round((float) $r->bobot * 100, 2),
+                'target' => $r->target !== null ? (float) $r->target : 0,
+                'realisasi' => $r->realisasi !== null ? (float) $r->realisasi : 0,
+                'skor' => $r->skor !== null ? round((float) $r->bobot * (float) $r->skor, 4) : 0,
+            ];
+        }
+
+        $result = array_map(function ($g) {
+            $bobot = array_sum(array_column($g['items'], 'bobot'));
+            $skor = array_sum(array_column($g['items'], 'skor'));
+            $pct = $bobot > 0 ? $skor * 100 / $bobot : 0;
+            return [
+                'perspektif' => $g['perspektif'],
+                'perspektif_key' => $g['perspektif_key'],
+                'color' => $pct >= 100 ? 'green' : ($pct >= 80 ? 'yellow' : 'red'),
+                'pct' => round($pct, 2),
+                'items' => $g['items'],
+            ];
+        }, $groups);
+
+        usort($result, fn ($a, $b) => array_search($a['perspektif_key'], $order, true) <=> array_search($b['perspektif_key'], $order, true));
+        return array_values($result);
     }
 
     /**
@@ -562,16 +734,6 @@ class PerformanceController extends Controller
         $kpiItems = [];
 
         return Inertia::render('Performance/IndividuDetailView', compact('karyawan', 'kpiItems', 'periode'));
-    }
-
-    /**
-     * DULU: hardcoded KPI groups per direktur (Kolegial BOD template + 19-KPI
-     * DKMR detail dari PDF 15 Mei 2026). Sekarang kosong — kolegial detail
-     * view tampil empty state. Replace saat KpiDefinition + KpiValue terisi.
-     */
-    private function getDummyKolegialKpi(string $kode): array
-    {
-        return [];
     }
 
 }

@@ -12,6 +12,7 @@ import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { sc as colors } from '../lib/statusColors'
 import { useRoleAccess } from '../hooks/useRoleAccess'
+import { useStrategicPillars } from '../hooks/useStrategicPillars'
 import { EscalationButton } from '../components/Escalation'
 import { DraftStatusBadge } from '../components/DraftStatusBadge'
 import { DraftRestoreBanner } from '../components/DraftRestoreBanner'
@@ -171,6 +172,11 @@ export function ProgramDetailView() {
     loadOverview, channels,
   } = useWorkspace()
   const roleAccess = useRoleAccess()
+  // Pilar strategis di-scope per direktorat (config pillar_directorates). Map
+  // kosong → sembunyikan dropdown edit pilar. Badge tampilan tetap di-render
+  // apa adanya jika program sudah punya nilai pilar (lihat hero panel).
+  const pillarOptions = useStrategicPillars()
+  const showPillarField = Object.keys(pillarOptions).length > 0
   const dark = useDarkMode()
   const C = colors(dark)
   const SEV_COLOR: Record<string, { bg: string; fg: string }> = {
@@ -1793,19 +1799,20 @@ export function ProgramDetailView() {
                         disabled={strategicSaving}
                         autoFocus
                       />
-                      <select
-                        className="prog-strategic__input prog-hero__edit-select"
-                        value={strategicForm.pilarStrategis}
-                        onChange={e => setStrategicForm(f => ({ ...f, pilarStrategis: e.target.value }))}
-                        disabled={strategicSaving}
-                        aria-label="Pilar Strategis"
-                      >
-                        <option value="">— Pilih pilar —</option>
-                        <option value="COLLECTING_MORE">Collecting More</option>
-                        <option value="SPENDING_BETTER">Spending Better</option>
-                        <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
-                        <option value="ENABLER">Program Enabler</option>
-                      </select>
+                      {showPillarField && (
+                        <select
+                          className="prog-strategic__input prog-hero__edit-select"
+                          value={strategicForm.pilarStrategis}
+                          onChange={e => setStrategicForm(f => ({ ...f, pilarStrategis: e.target.value }))}
+                          disabled={strategicSaving}
+                          aria-label="Pilar Strategis"
+                        >
+                          <option value="">— Pilih pilar —</option>
+                          {Object.entries(pillarOptions).map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                        </select>
+                      )}
                       {strategicError && (
                         <div className="prog-hero__edit-error">{strategicError}</div>
                       )}

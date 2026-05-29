@@ -2,6 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\PilarStrategis;
+use App\Models\Directorate;
+use App\Models\User;
 use App\Services\FeatureFlagService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -53,6 +56,8 @@ class HandleInertiaRequests extends Middleware
                     'directorateId' => $user->directorateId,
                     'managerUserId' => $user->managerUserId,
                     'toursCompleted' => $user->toursCompleted ?? [],
+                    // Sidebar gate for the Performance module (role-scoped 2026-05-29).
+                    'canAccessPerformance' => EnsurePerformanceAccess::allows($user),
                 ] : null,
             ],
             'flash' => [
@@ -61,6 +66,10 @@ class HandleInertiaRequests extends Middleware
             ],
             // Sprint 4 — feature flags resolved per user (DKM scoping etc.)
             'features' => FeatureFlagService::resolveAllForUser($user),
+            // Pilar strategis yang berlaku untuk direktorat user (value => label).
+            // Kosong = direktorat tidak memakai pilar → FE menyembunyikan dropdown
+            // "Pilar Strategis" di form Program. Lihat config pillar_directorates.
+            'strategicPillars' => $this->resolveStrategicPillars($user),
             // Sprint 6 — threshold values yang dibaca FE (autosave debounce, dll).
             // Hindari hardcoded angka di TS — semua tunable lewat .env.
             'thresholds' => [
@@ -71,5 +80,25 @@ class HandleInertiaRequests extends Middleware
                 ],
             ],
         ];
+    }
+
+    /**
+     * Resolve opsi pilar strategis untuk direktorat user. Basis = direktorat
+     * user (sejalan dengan pola DKM-scoping FeatureFlagService); program baru
+     * default dimiliki unit user, jadi direktorat user = direktorat program.
+     * Kosong jika user tak punya direktorat atau direktoratnya tidak memakai
+     * pilar (lihat config('atlas-thresholds.pillar_directorates')).
+     *
+     * @return array<string, string>
+     */
+    private function resolveStrategicPillars(?User $user): array
+    {
+        if (! $user || ! $user->directorateId) {
+            return [];
+        }
+
+        $code = Directorate::find($user->directorateId)?->code;
+
+        return PilarStrategis::optionsForDirectorate($code);
     }
 }

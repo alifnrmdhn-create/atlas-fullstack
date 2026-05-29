@@ -369,11 +369,11 @@ Route::middleware('auth')->group(function () {
     });
 
     // ── Performance (KPI) ────────────────────────────────────────────────────
-    // Sementara di-restrict ke SUPERADMIN saja (2026-05-25). Re-enable untuk
-    // role lain: hapus middleware EnsureSuperAdmin di bawah + restore gate
-    // sidebar di AppShell.tsx (isSuperAdmin) + restore section di
-    // lib/nav-config.ts. Hapus juga gate widget Performance di HomeView.tsx.
-    Route::middleware(\App\Http\Middleware\EnsureSuperAdmin::class)
+    // Role-scoped sejak 2026-05-29 (sebelumnya SUPERADMIN-only): EnsurePerformanceAccess
+    // mengizinkan SUPERADMIN + anggota direktorat yang punya data scorecard (kini
+    // DIR-KMR). Data scoping per-divisi dilakukan di PerformanceController (OrgScope).
+    // Sidebar visibility = auth.user.canAccessPerformance (HandleInertiaRequests).
+    Route::middleware(\App\Http\Middleware\EnsurePerformanceAccess::class)
         ->prefix('performance')->name('performance.')->group(function () {
         Route::get('/kolegial',           [PerformanceController::class, 'kolegial'])->name('kolegial');
         Route::get('/kolegial/{slug}',    [PerformanceController::class, 'kolegialDetail'])->name('kolegial.detail');

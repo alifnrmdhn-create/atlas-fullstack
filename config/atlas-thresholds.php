@@ -163,4 +163,17 @@ return [
         'INNOVATIVE_FINANCING' => 'Innovative Financing',
         'ENABLER'              => 'Program Enabler',
     ],
+
+    // ── Direktorat yang memakai pilar strategis ───────────────────────────────
+    // Pilar di atas spesifik transformasi keuangan PTPN III — hanya relevan untuk
+    // Direktorat Keuangan & Manajemen Risiko (kode `DIR-KMR`). Untuk direktorat
+    // lain pilar tidak bermakna, jadi dropdown "Pilar Strategis" di form Program
+    // DISEMBUNYIKAN supaya tidak diisi asal saat aplikasi di-expand ke direktorat
+    // lain. Lihat PilarStrategis::optionsForDirectorate() + HandleInertiaRequests
+    // share `strategicPillars`. Saat direktorat lain mengadopsi pilar, tambahkan
+    // kode-nya di sini (comma-separated via env, mis. "DIR-KMR,DBS").
+    'pillar_directorates' => array_values(array_filter(array_map(
+        fn ($code) => strtoupper(trim($code)),
+        explode(',', (string) env('ATLAS_PILLAR_DIRECTORATES', 'DIR-KMR'))
+    ))),
 ];

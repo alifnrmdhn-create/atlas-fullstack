@@ -47,6 +47,11 @@ const PERSPEKTIF_COLORS: Record<string, string> = {
   teknologi:      '#06B6D4',
   investasi:      'var(--ds-amber-500)',
   talenta:        '#A855F7',
+  // Balanced Scorecard perspektif (KPI direktorat/divisi, mis. DIR-KMR)
+  financial:      'var(--ds-green-500)',
+  customer:       '#6366F1',
+  ibp:            '#06B6D4',
+  lng:            'var(--ds-amber-500)',
 }
 
 export default function KolegialDetailView() {

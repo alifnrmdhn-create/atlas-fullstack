@@ -7,6 +7,7 @@ import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
+import { useAuth } from '../hooks/useAuth'
 import { useRealtime } from '../hooks/useRealtime'
 import { applyThemePreference, getThemeSnapshot } from '../lib/theme'
 import type { ResolvedTheme } from '../lib/theme'
@@ -580,10 +581,11 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const { status: realtimeStatus } = useRealtime()
   const isAdmin = ADMIN_ROLES.has(currentUser?.roleType?.toLowerCase() ?? '')
   const role = currentUser?.roleType?.toUpperCase() ?? ''
-  // Modul Performance sementara di-hide dari semua role kecuali SUPERADMIN
-  // (2026-05-25). Re-enable: hapus gate `isSuperAdmin` di insertion
-  // grpPerformance* di navGroups + restore section di lib/nav-config.ts.
   const isSuperAdmin = role === 'SUPERADMIN'
+  // Performance role-scoped (2026-05-29): SUPERADMIN sees the full grid;
+  // members of a directorate with KPI data (DIR-KMR today) get a scoped set.
+  // Flag resolved BE-side (EnsurePerformanceAccess::allows) + shared in auth.user.
+  const canAccessPerformance = useAuth()?.canAccessPerformance ?? false
   const shellRef = useRef<HTMLDivElement>(null)
   const [sidebarCollapsedView, setSidebarCollapsedView] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
@@ -986,15 +988,22 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // 2026-05-26 — eliminasi grup Account 1-item + duplikat entry point. Keduanya
   // personal/identity, sepasang natural dengan Mode gelap toggle di popover.
 
-  // Performance items SUPERADMIN-only (kebijakan 2026-05-25). Non-SUPERADMIN
-  // hanya lihat Programs di group ini. Re-enable role-based KPI visibility:
-  // hapus gate `isSuperAdmin` di bawah + restore role variants.
+  // Performance items role-scoped (2026-05-29). SUPERADMIN: full portfolio grid.
+  // DIR-KMR members (canAccessPerformance): Scorecard (overview direktorat) →
+  // KPI Direktorat (19 KPI per perspektif; /performance/kolegial me-redirect
+  // non-eksekutif ke detail direktoratnya) → KPI Divisi (detail divisinya;
+  // controller mengunci unit-level user ke divisinya sendiri). Leaderboard/
+  // executive tetap SUPERADMIN-only. Lain-lain hanya Programs.
   const portfolioItems: NavItem[] = isSuperAdmin
     ? [NI.programs, NI.executive, NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfIndividu, NI.perfSaya]
-    : [NI.programs]
-  // Label jujur ke isi: hanya menjanjikan "Performance" saat item Performance
-  // benar-benar hadir (SUPERADMIN). Non-SUPERADMIN cukup "Portfolio".
-  const grpPortfolio = { label: isSuperAdmin ? 'Portfolio & Performance' : 'Portfolio', items: portfolioItems }
+    : canAccessPerformance
+      ? [NI.programs, NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi]
+      : [NI.programs]
+  // Label jujur ke isi: "Performance" hanya saat item Performance benar hadir.
+  const grpPortfolio = {
+    label: isSuperAdmin || canAccessPerformance ? 'Portfolio & Performance' : 'Portfolio',
+    items: portfolioItems,
+  }
   const grpAdmin = {
     label: 'Admin',
     items: [

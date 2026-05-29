@@ -19,6 +19,7 @@ import { formatKpiValue, formatKpiValueParts, getKpiFillPercent } from '../lib/k
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { useRoleAccess } from '../hooks/useRoleAccess'
+import { useStrategicPillars } from '../hooks/useStrategicPillars'
 import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import { ExecutionTab } from '../components/ExecutionTab'
 import { MonitoringMatrix } from '../components/MonitoringMatrix'
@@ -179,6 +180,11 @@ export function ProgramsView() {
   const roleAccess = useRoleAccess()
   const isStrategic = role === 'BOD' || role === 'KADIV'
   const toast = useInlineToast()
+  // Pilar strategis di-scope per direktorat (config pillar_directorates). Map
+  // kosong → direktorat user tak memakai pilar → sembunyikan dropdown supaya
+  // tidak diisi asal saat aplikasi di-expand ke direktorat lain.
+  const pillarOptions = useStrategicPillars()
+  const showPillarField = Object.keys(pillarOptions).length > 0
 
   // Pop stashed approval-success toast — di-set oleh ProgramDetailView saat
   // KADIV final-approve sebelum redirect. Lihat submitApprove() di detail.
@@ -1914,20 +1920,21 @@ export function ProgramsView() {
                           <option value="NON_SCORECARD">Non Scorecard</option>
                         </select>
                       </div>
-                      <div className="form-field">
-                        <label>Pilar Strategis</label>
-                        <select
-                          className="form-input"
-                          onChange={e => setCpForm(f => ({ ...f, pilarStrategis: e.target.value }))}
-                          value={cpForm.pilarStrategis}
-                        >
-                          <option value="">— Pilih pilar —</option>
-                          <option value="COLLECTING_MORE">Collecting More</option>
-                          <option value="SPENDING_BETTER">Spending Better</option>
-                          <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
-                          <option value="ENABLER">Program Enabler</option>
-                        </select>
-                      </div>
+                      {showPillarField && (
+                        <div className="form-field">
+                          <label>Pilar Strategis</label>
+                          <select
+                            className="form-input"
+                            onChange={e => setCpForm(f => ({ ...f, pilarStrategis: e.target.value }))}
+                            value={cpForm.pilarStrategis}
+                          >
+                            <option value="">— Pilih pilar —</option>
+                            {Object.entries(pillarOptions).map(([value, label]) => (
+                              <option key={value} value={value}>{label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                   <div className="form-field">
@@ -2321,20 +2328,21 @@ export function ProgramsView() {
                         <option value="NON_SCORECARD">Non Scorecard</option>
                       </select>
                     </div>
-                    <div className="form-field">
-                      <label>Pilar Strategis</label>
-                      <select
-                        className="form-input"
-                        onChange={e => setEditProgram(p => p ? { ...p, pilarStrategis: e.target.value } : p)}
-                        value={editProgram.pilarStrategis}
-                      >
-                        <option value="">— Pilih pilar —</option>
-                        <option value="COLLECTING_MORE">Collecting More</option>
-                        <option value="SPENDING_BETTER">Spending Better</option>
-                        <option value="INNOVATIVE_FINANCING">Innovative Financing</option>
-                        <option value="ENABLER">Program Enabler</option>
-                      </select>
-                    </div>
+                    {showPillarField && (
+                      <div className="form-field">
+                        <label>Pilar Strategis</label>
+                        <select
+                          className="form-input"
+                          onChange={e => setEditProgram(p => p ? { ...p, pilarStrategis: e.target.value } : p)}
+                          value={editProgram.pilarStrategis}
+                        >
+                          <option value="">— Pilih pilar —</option>
+                          {Object.entries(pillarOptions).map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   <div className="form-field">

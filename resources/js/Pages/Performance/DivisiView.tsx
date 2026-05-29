@@ -18,6 +18,7 @@ type KpiItem = {
   realisasi: string
   skor: number
   definisi: string | null
+  perspektif: string
 }
 
 type Divisi = {
@@ -89,6 +90,41 @@ type ComparisonProps = {
 }
 
 type PageProps = SingleProps | ComparisonProps
+
+// Balanced Scorecard quadrant order + accent colors (distinct from the kolegial
+// taxonomy in KolegialDetailView). KPI divisi dikelompokkan ke 4 perspektif ini.
+const PERSPEKTIF_ORDER = ['Financial', 'Customer', 'Internal Business Process', 'L&G']
+const PERSPEKTIF_COLOR: Record<string, string> = {
+  Financial: 'var(--ds-green-500)',
+  Customer: '#6366F1',
+  'Internal Business Process': '#06B6D4',
+  'L&G': 'var(--ds-amber-500)',
+}
+
+type KpiGroup = { perspektif: string; items: KpiItem[]; bobot: number; pct: number }
+
+/** Group KPI items into the 4 BSC perspectives, ordered, with weighted subtotal.
+ *  pct = Σskor·100/Σbobot — skor sudah bobot-weighted (bobot_fraction × Nilai),
+ *  jadi ini = rata-rata Nilai tertimbang dalam perspektif. */
+function groupByPerspektif(items: KpiItem[]): KpiGroup[] {
+  const map = new Map<string, KpiItem[]>()
+  for (const it of items) {
+    const key = it.perspektif?.trim() || 'Lainnya'
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(it)
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => {
+      const ia = PERSPEKTIF_ORDER.indexOf(a)
+      const ib = PERSPEKTIF_ORDER.indexOf(b)
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib)
+    })
+    .map(([perspektif, groupItems]) => {
+      const bobot = groupItems.reduce((s, i) => s + i.bobot, 0)
+      const skor = groupItems.reduce((s, i) => s + i.skor, 0)
+      return { perspektif, items: groupItems, bobot, pct: bobot > 0 ? (skor * 100) / bobot : 0 }
+    })
+}
 
 export default function DivisiView() {
   const props = usePage<PageProps>().props
@@ -313,57 +349,78 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                 <div>Tidak ada KPI terdaftar untuk divisi ini di periode {periode}.</div>
               </Card>
             ) : (
-              <div className="perf-kpi-list">
-                {kpiItems.map(item => {
-                  const pct = realisasiPercent(item.sasaran, item.realisasi, item.polaritas)
-                  const skorPct = item.bobot > 0 ? (item.skor / item.bobot) * 100 : 0
-                  const itemTone = scoreTone(skorPct)
-                  const barWidth = Math.min(pct, 100)
-                  const forecast = computeForecastFromStrings({
-                    periode, sasaran: item.sasaran, realisasi: item.realisasi, polaritas: item.polaritas,
-                  })
+              groupByPerspektif(kpiItems).map(group => (
+                <div key={group.perspektif} className="perf-kpi-group" style={{ marginBottom: 22 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <span style={{
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: PERSPEKTIF_COLOR[group.perspektif] ?? 'var(--ds-text-tertiary)',
+                    }} />
+                    <span className="perf__section-label" style={{ margin: 0 }}>{group.perspektif}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ds-text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
+                      Bobot {group.bobot.toFixed(0)}%
+                    </span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, fontVariantNumeric: 'tabular-nums',
+                      color: `var(--ds-${scoreTone(group.pct)}-600)`, marginLeft: 'auto',
+                    }}>
+                      {group.pct.toFixed(1)}
+                    </span>
+                  </div>
 
-                  return (
-                    <article key={item.kode} className="perf-kpi">
-                      <span className="perf-kpi__num">{item.no}</span>
-                      <div className="perf-kpi__main">
-                        <h3 className="perf-kpi__title">{item.nama}</h3>
-                        <div className="perf-kpi__meta">
-                          <Pill variant="mono">{item.kode}</Pill>
-                          <span className={`perf-kpi__meta-chip perf-kpi__meta-chip--${item.polaritas === 'maximize' ? 'max' : 'min'}`}>
-                            {item.polaritas === 'maximize' ? '↑ Maximize' : '↓ Minimize'}
-                          </span>
-                          <span className="perf-kpi__meta-chip">{item.satuan}</span>
-                          {forecast && <ForecastBadge value={forecast.value} status={forecast.status} />}
-                        </div>
-                        <div className="perf-kpi__realisasi">
-                          <div className="perf-kpi__realisasi-block">
-                            <span className="perf-kpi__realisasi-label">Sasaran</span>
-                            <span className="perf-kpi__realisasi-value">{item.sasaran}</span>
+                  <div className="perf-kpi-list">
+                    {group.items.map(item => {
+                      const pct = realisasiPercent(item.sasaran, item.realisasi, item.polaritas)
+                      const skorPct = item.bobot > 0 ? (item.skor / item.bobot) * 100 : 0
+                      const itemTone = scoreTone(skorPct)
+                      const barWidth = Math.min(pct, 100)
+                      const forecast = computeForecastFromStrings({
+                        periode, sasaran: item.sasaran, realisasi: item.realisasi, polaritas: item.polaritas,
+                      })
+
+                      return (
+                        <article key={item.kode} className="perf-kpi">
+                          <span className="perf-kpi__num">{item.no}</span>
+                          <div className="perf-kpi__main">
+                            <h3 className="perf-kpi__title">{item.nama}</h3>
+                            <div className="perf-kpi__meta">
+                              <Pill variant="mono">{item.kode}</Pill>
+                              <span className={`perf-kpi__meta-chip perf-kpi__meta-chip--${item.polaritas === 'maximize' ? 'max' : 'min'}`}>
+                                {item.polaritas === 'maximize' ? '↑ Maximize' : '↓ Minimize'}
+                              </span>
+                              <span className="perf-kpi__meta-chip">{item.satuan}</span>
+                              {forecast && <ForecastBadge value={forecast.value} status={forecast.status} />}
+                            </div>
+                            <div className="perf-kpi__realisasi">
+                              <div className="perf-kpi__realisasi-block">
+                                <span className="perf-kpi__realisasi-label">Sasaran</span>
+                                <span className="perf-kpi__realisasi-value">{item.sasaran}</span>
+                              </div>
+                              <span className="perf-kpi__realisasi-arrow">→</span>
+                              <div className="perf-kpi__realisasi-block">
+                                <span className="perf-kpi__realisasi-label">Realisasi</span>
+                                <span className="perf-kpi__realisasi-value" data-tone={itemTone}>{item.realisasi}</span>
+                              </div>
+                            </div>
+                            <div className="perf-kpi__bar">
+                              <div className="perf-kpi__bar-fill" data-tone={itemTone} style={{ width: `${barWidth}%` }} />
+                            </div>
+                            {item.definisi && (
+                              <p className="perf-kpi__definisi">{item.definisi}</p>
+                            )}
                           </div>
-                          <span className="perf-kpi__realisasi-arrow">→</span>
-                          <div className="perf-kpi__realisasi-block">
-                            <span className="perf-kpi__realisasi-label">Realisasi</span>
-                            <span className="perf-kpi__realisasi-value" data-tone={itemTone}>{item.realisasi}</span>
+                          <div className="perf-kpi__right">
+                            <span className="perf-kpi__skor" style={{ color: `var(--ds-${itemTone}-600)` }}>
+                              {item.skor.toFixed(2)}
+                            </span>
+                            <span className="perf-kpi__bobot">Bobot {item.bobot}%</span>
                           </div>
-                        </div>
-                        <div className="perf-kpi__bar">
-                          <div className="perf-kpi__bar-fill" data-tone={itemTone} style={{ width: `${barWidth}%` }} />
-                        </div>
-                        {item.definisi && (
-                          <p className="perf-kpi__definisi">{item.definisi}</p>
-                        )}
-                      </div>
-                      <div className="perf-kpi__right">
-                        <span className="perf-kpi__skor" style={{ color: `var(--ds-${itemTone}-600)` }}>
-                          {item.skor.toFixed(2)}
-                        </span>
-                        <span className="perf-kpi__bobot">Bobot {item.bobot}%</span>
-                      </div>
-                    </article>
-                  )
-                })}
-              </div>
+                        </article>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))
             )}
           </section>
 
