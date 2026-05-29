@@ -406,4 +406,43 @@ class WorkspaceEndpointSmokeTest extends TestCase
             'positionId' => $this->position->id,
         ])->assertCreated()->assertJsonStructure(['data' => ['id', 'name', 'email']]);
     }
+
+    public function test_mutation_syncs_roletype_from_position_and_records_history(): void
+    {
+        $this->actingAs($this->admin);
+
+        $kasubdivPos = Position::create([
+            'code' => 'POS-KASUBDIV',
+            'name' => 'Kepala Sub Divisi Uji',
+            'levelCode' => 'BOD-2',
+            'roleType' => 'KASUBDIV',
+            'directorateId' => $this->position->directorateId,
+            'divisionId' => $this->position->divisionId,
+            'isActive' => true,
+        ]);
+
+        // teammate awalnya ASISTEN tanpa jabatan
+        $this->assertSame('ASISTEN', $this->teammate->roleType);
+
+        $this->patchJson("/users/{$this->teammate->id}", [
+            'positionId' => $kasubdivPos->id,
+            'mutationType' => 'mutation',
+            'mutationReason' => 'Promosi uji',
+            'skNumber' => 'SK-UJI-001',
+        ])->assertOk();
+
+        $this->teammate->refresh();
+        // roleType ikut jabatan (akar bug yang diperbaiki) + jabatan tersinkron
+        $this->assertSame('KASUBDIV', $this->teammate->roleType);
+        $this->assertSame($kasubdivPos->id, $this->teammate->positionId);
+        $this->assertSame('Kepala Sub Divisi Uji', $this->teammate->positionTitle);
+
+        // jejak SK mutasi tercatat di position_history
+        $this->assertDatabaseHas('position_history', [
+            'userId' => $this->teammate->id,
+            'positionId' => $kasubdivPos->id,
+            'skNumber' => 'SK-UJI-001',
+            'mutationType' => 'mutation',
+        ]);
+    }
 }

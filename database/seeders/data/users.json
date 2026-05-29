@@ -633,11 +633,11 @@
         "unitId": 15,
         "userId": "aris.agung.purnomo",
         "isActive": true,
-        "roleType": "ASISTEN",
+        "roleType": "KASUBDIV",
         "avatarUrl": "AP",
         "createdAt": "2026-04-11T00:00:00",
         "updatedAt": "2026-04-28T01:17:46",
-        "positionId": 193,
+        "positionId": 184,
         "preferences": {
             "theme": "light",
             "digest": false
@@ -645,7 +645,7 @@
         "passwordHash": "$2y$12$YSGimwdQNMIBMRqSO0sHTukiBFkwkrn5O9y2g7bbWq0NfJNpnNIpO",
         "directorateId": 5,
         "managerUserId": 170,
-        "positionTitle": "Asisten Analisa dan Laporan Manajemen",
+        "positionTitle": "Kepala Sub Divisi Konsolidasi dan Laporan Keuangan",
         "availableRoles": null,
         "toursCompleted": null
     },
@@ -1026,6 +1026,28 @@
         "directorateId": 5,
         "managerUserId": 182,
         "positionTitle": "Officer Data Support",
+        "availableRoles": null,
+        "toursCompleted": null
+    },
+    {
+        "id": 209,
+        "nik": "3000906",
+        "name": "Jimmy Ardiantha Tarigan",
+        "email": "jimmy.ardhianta@ptpn.id",
+        "phone": null,
+        "unitId": 16,
+        "userId": null,
+        "isActive": true,
+        "roleType": "KASUBDIV",
+        "avatarUrl": null,
+        "createdAt": "2026-05-29T06:34:03",
+        "updatedAt": "2026-05-29T06:34:34",
+        "positionId": 200,
+        "preferences": null,
+        "passwordHash": "$2y$12$H1Sih.q8vomkm6JTqEOUbesJvUHZfnU/XNrf6FFrMHSfsdAiFDMcW",
+        "directorateId": 5,
+        "managerUserId": 181,
+        "positionTitle": null,
         "availableRoles": null,
         "toursCompleted": null
     }
