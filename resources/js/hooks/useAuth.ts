@@ -11,6 +11,8 @@ export type AuthUser = {
     unit?: { id: number; code: string; name: string } | null
     directorateId?: number | null
     managerUserId?: number | null
+    /** Sidebar/route gate for the Performance module (role-scoped). */
+    canAccessPerformance?: boolean
 }
 
 type PageProps = {
