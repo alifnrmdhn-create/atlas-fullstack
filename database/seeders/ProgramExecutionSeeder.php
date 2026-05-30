@@ -109,8 +109,8 @@ class ProgramExecutionSeeder extends Seeder
 
                 foreach (($ph['tasks'] ?? []) as $ti => $t) {
                     $months = $t['plannedMonths'] ?? [];
-                    $weeks = $this->monthsToWeeks($months);
-                    $phaseWeeks = array_merge($phaseWeeks, $weeks);
+                    $weekNums = $this->monthsToWeekNums($months);
+                    $phaseWeeks = array_merge($phaseWeeks, $weekNums);
                     [$startDate, $dueDate] = $this->monthsToDates($months, $year);
                     $st = $t['status'] ?? 'TODO';
                     $phaseStatuses[] = $st;
@@ -129,7 +129,7 @@ class ProgramExecutionSeeder extends Seeder
                         'percentComplete' => (int) ($t['percentComplete'] ?? 0),
                         'startDate' => $startDate,
                         'targetCompletion' => $dueDate ?? $fallbackTarget,
-                        'plannedWeeks' => json_encode($weeks),
+                        'plannedWeeks' => json_encode($this->isoWeeks($weekNums, $year)),
                         'actualWeeks' => null, // auto-derive dari percentComplete di ProgramController
                         'createdAt' => $now,
                         'updatedAt' => $now,
@@ -172,8 +172,8 @@ class ProgramExecutionSeeder extends Seeder
         $this->command->info('Catatan: jalankan `php artisan atlas:compute-health` agar health re-derive dari task baru.');
     }
 
-    /** Union minggu ISO dari daftar bulan, terurut. */
-    private function monthsToWeeks(array $months): array
+    /** Union nomor minggu (int) dari daftar bulan, terurut — utk Phase.startWeek/endWeek. */
+    private function monthsToWeekNums(array $months): array
     {
         $weeks = [];
         foreach ($months as $m) {
@@ -184,6 +184,17 @@ class ProgramExecutionSeeder extends Seeder
         $out = array_keys($weeks);
         sort($out);
         return array_values($out);
+    }
+
+    /**
+     * Konversi nomor minggu -> string ISO `YYYY-Www` (zero-pad 2 digit).
+     * WAJIB cocok dengan format yang dibaca ExecutionGrid (lib/execution-grid.ts:
+     * `${year}-W${String(weekNo).padStart(2,'0')}`); kalau integer, grid tak match
+     * -> Plan kosong. @return list<string>
+     */
+    private function isoWeeks(array $weekNums, int $year): array
+    {
+        return array_map(fn ($w) => sprintf('%04d-W%02d', $year, $w), $weekNums);
     }
 
     /** [startDate, dueDate] dari rentang bulan: awal bulan paling awal -> akhir bulan paling akhir. */
