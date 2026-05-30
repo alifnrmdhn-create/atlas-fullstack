@@ -473,11 +473,22 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
           </div>
 
           {todayLeftInWeeks !== null && (
-            <div
-              className="execution-grid__today-line"
-              style={{ left: todayLeftInWeeks }}
-              title={`Hari ini — ${currentWeek}`}
-            />
+            <>
+              {/* Pita kolom "hari ini" — overlay setinggi grid supaya kolom selalu
+                  tersorot walau ada bar Plan/Real (sel--today hanya isi sel kosong). */}
+              <div
+                className="execution-grid__today-col"
+                style={{ left: todayLeftInWeeks - WEEK_COL_WIDTH / 2, width: WEEK_COL_WIDTH }}
+                aria-hidden="true"
+              />
+              <div
+                className="execution-grid__today-line"
+                style={{ left: todayLeftInWeeks }}
+                title={`Hari ini — ${currentWeek}`}
+              >
+                <span className="execution-grid__today-flag">Hari ini</span>
+              </div>
+            </>
           )}
         </div>
       </div>
