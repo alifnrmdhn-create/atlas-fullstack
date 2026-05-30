@@ -6,7 +6,7 @@
         "name": "Identifikasi Kebutuhan Pendanaan",
         "tasks": [
           {
-            "title": "Petakan kebutuhan biaya Groundbreaking (Seremoni & Demo Plot)",
+            "title": "Pemetaan kebutuhan biaya Groundbreaking (Seremoni & Demo Plot)",
             "status": "IN_PROGRESS",
             "percentComplete": 50,
             "plannedMonths": [
@@ -17,7 +17,7 @@
             "note": "Rencana kebutuhan biaya Groundbreaking telah dipetakan, rencana dibiayai dana OPEX (PTPN 1 reimbursement ke Holding)"
           },
           {
-            "title": "Rumuskan skema reimbursement OPEX PTPN 1 ke Holding",
+            "title": "Perumusan skema reimbursement OPEX PTPN 1 ke Holding",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -47,7 +47,7 @@
         "name": "Penerbitan Arahan Danantara",
         "tasks": [
           {
-            "title": "Susun & terbitkan Surat Arahan Danantara",
+            "title": "Penyusunan & penerbitan Surat Arahan Danantara",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -111,7 +111,7 @@
         "name": "Pengumpulan & Verifikasi Data",
         "tasks": [
           {
-            "title": "Kumpulkan data pelaksanaan G&A Excellence periode Maret",
+            "title": "Pengumpulan data pelaksanaan G&A Excellence periode Maret",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -125,7 +125,7 @@
         "name": "Penyusunan & Pelaporan",
         "tasks": [
           {
-            "title": "Susun Laporan Monitoring & Evaluasi G&A Excellence periode Maret",
+            "title": "Penyusunan Laporan Monitoring & Evaluasi G&A Excellence periode Maret",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -135,7 +135,7 @@
             "note": "Laporan evaluasi monitoring G&A Excellence telah dilaporkan"
           },
           {
-            "title": "Sampaikan Laporan Monitoring G&A Excellence periode Maret",
+            "title": "Penyampaian Laporan Monitoring G&A Excellence periode Maret",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -154,7 +154,7 @@
         "name": "Closing SAP & Pengumpulan Data",
         "tasks": [
           {
-            "title": "Selesaikan proses closing SAP Holding",
+            "title": "Penyelesaian proses closing SAP Holding",
             "status": "IN_PROGRESS",
             "percentComplete": 50,
             "plannedMonths": [
@@ -164,7 +164,7 @@
             "note": "Saat ini proses closing SAP Holding sedang berjalan (target selambatnya 7 Mei 2026)"
           },
           {
-            "title": "Tarik & verifikasi data beban administrasi Holding pasca-closing",
+            "title": "Penarikan & verifikasi data beban administrasi Holding pasca-closing",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -178,7 +178,7 @@
         "name": "Penyusunan & Pelaporan",
         "tasks": [
           {
-            "title": "Susun Laporan Evaluasi & Monitoring Beban Administrasi Holding",
+            "title": "Penyusunan Laporan Evaluasi & Monitoring Beban Administrasi Holding",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -238,7 +238,7 @@
         "name": "Penyusunan & Konsolidasi RKAPP",
         "tasks": [
           {
-            "title": "Susun RKAPP 2026 Konsolidasi",
+            "title": "Penyusunan RKAPP 2026 Konsolidasi",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -258,7 +258,7 @@
         "name": "Pengembangan Aplikasi",
         "tasks": [
           {
-            "title": "Bangun Dashboard Apps monitoring Leading Indicator Direktorat KMR (Project ATLAS)",
+            "title": "Pembangunan Dashboard Apps monitoring Leading Indicator Direktorat KMR (Project ATLAS)",
             "status": "IN_PROGRESS",
             "percentComplete": 70,
             "plannedMonths": [
@@ -272,7 +272,7 @@
         ]
       },
       {
-        "name": "Uji Coba & Penyempurnaan",
+        "name": "Pengujian Coba & Penyempurnaan",
         "tasks": [
           {
             "title": "Pelaksanaan uji aplikasi dengan Tim Kecil (25 Mei 2026)",
@@ -333,7 +333,7 @@
         "name": "Penyusunan Laporan Kajian",
         "tasks": [
           {
-            "title": "Susun laporan reviu SINUSA (fokus database)",
+            "title": "Penyusunan laporan reviu SINUSA (fokus database)",
             "status": "IN_PROGRESS",
             "percentComplete": 50,
             "plannedMonths": [
@@ -379,7 +379,7 @@
         "name": "Pemetaan Teknis Integrasi",
         "tasks": [
           {
-            "title": "Petakan kebutuhan & arsitektur integrasi data SINUSA-WEPC",
+            "title": "Pemetaan kebutuhan & arsitektur integrasi data SINUSA-WEPC",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -391,10 +391,10 @@
         ]
       },
       {
-        "name": "Pengembangan & Uji Integrasi",
+        "name": "Pengembangan & Pengujian Integrasi",
         "tasks": [
           {
-            "title": "Bangun & uji integrasi antara SINUSA dengan WEPC",
+            "title": "Pembangunan & pengujian integrasi antara SINUSA dengan WEPC",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -413,7 +413,7 @@
         "name": "Perhitungan & Penyusunan Formula HPS",
         "tasks": [
           {
-            "title": "Hitung HPS BBM PTPN Grup kebutuhan Tahun 2026 dengan formula baru",
+            "title": "Perhitungan HPS BBM PTPN Grup kebutuhan Tahun 2026 dengan formula baru",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -428,7 +428,7 @@
         "name": "Penetapan & Tender",
         "tasks": [
           {
-            "title": "Tetapkan HPS dan formula perhitungan baru BBM",
+            "title": "Penetapan HPS dan formula perhitungan baru BBM",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -456,7 +456,7 @@
         "name": "Penyesuaian Tim Teknis",
         "tasks": [
           {
-            "title": "Lakukan penyesuaian perhitungan HPS Pupuk oleh tim teknis",
+            "title": "Pelaksanaan penyesuaian perhitungan HPS Pupuk oleh tim teknis",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -495,7 +495,7 @@
         "name": "Penetapan HPS",
         "tasks": [
           {
-            "title": "Tetapkan HPS Pupuk kebutuhan SM II Tahun 2026",
+            "title": "Penetapan HPS Pupuk kebutuhan SM II Tahun 2026",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -514,7 +514,7 @@
         "name": "Penyusunan Draft Formula",
         "tasks": [
           {
-            "title": "Susun draft Keputusan Direksi formula perhitungan BBM Solar",
+            "title": "Penyusunan draft Keputusan Direksi formula perhitungan BBM Solar",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -539,7 +539,7 @@
             "note": "Telah selesai dan memperoleh persetujuan (approval) seluruh Direksi"
           },
           {
-            "title": "Terbitkan Sirkuler Keputusan Direksi formula BBM Solar",
+            "title": "Penerbitan Sirkuler Keputusan Direksi formula BBM Solar",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -558,7 +558,7 @@
         "name": "Regrouping & Pembentukan Tim",
         "tasks": [
           {
-            "title": "Laksanakan regrouping standarisasi formula ongkos angkut dengan DKSR",
+            "title": "Pelaksanaan regrouping standarisasi formula ongkos angkut dengan DKSR",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -569,7 +569,7 @@
             "note": "Telah dilaksanakan regrouping dengan DKSR"
           },
           {
-            "title": "Susun SK Tim standarisasi formula ongkos angkut pupuk",
+            "title": "Penyusunan SK Tim standarisasi formula ongkos angkut pupuk",
             "status": "IN_PROGRESS",
             "percentComplete": 50,
             "plannedMonths": [
@@ -593,7 +593,7 @@
             "note": "Memerlukan percepatan reviu SKPTS oleh DHKM"
           },
           {
-            "title": "Rumuskan & tetapkan Formula Standar ongkos angkut pupuk PTPN Grup",
+            "title": "Perumusan & penetapan Formula Standar ongkos angkut pupuk PTPN Grup",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -612,7 +612,7 @@
         "name": "Perumusan Flow Proses",
         "tasks": [
           {
-            "title": "Masukkan flow proses Tata Kelola Investasi ke draft Peraturan Direksi (DSMK & IABF)",
+            "title": "Pencantuman flow proses Tata Kelola Investasi ke draft Peraturan Direksi (DSMK & IABF)",
             "status": "IN_PROGRESS",
             "percentComplete": 50,
             "plannedMonths": [
@@ -629,7 +629,7 @@
         "name": "Penyusunan Suplemen Pendukung",
         "tasks": [
           {
-            "title": "Susun suplemen pendukung bersama Komite Investasi & Divisi Teknis Holding",
+            "title": "Penyusunan suplemen pendukung bersama Komite Investasi & Divisi Teknis Holding",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -644,7 +644,7 @@
         "name": "Finalisasi & Penetapan Kebijakan",
         "tasks": [
           {
-            "title": "Finalisasi & tetapkan Kebijakan Tata Kelola Investasi",
+            "title": "Finalisasi & penetapan Kebijakan Tata Kelola Investasi",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -663,7 +663,7 @@
         "name": "Penyiapan & Verifikasi Pembayaran",
         "tasks": [
           {
-            "title": "Hitung & verifikasi nilai bunga IP PEN periode April 2026",
+            "title": "Perhitungan & verifikasi nilai bunga IP PEN periode April 2026",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -686,7 +686,7 @@
             "note": "Pembayaran bunga periode April 2026 telah dilakukan pada 29 April 2026"
           },
           {
-            "title": "Terbitkan Surat Pembayaran Bunga IP PEN beserta bukti transfer",
+            "title": "Penerbitan Surat Pembayaran Bunga IP PEN beserta bukti transfer",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -721,7 +721,7 @@
         "name": "Penyusunan & Penyampaian Laporan",
         "tasks": [
           {
-            "title": "Susun Laporan Sinking Fund periode TW I 2026",
+            "title": "Penyusunan Laporan Sinking Fund periode TW I 2026",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -730,7 +730,7 @@
             "note": "Laporan monitoring TW I 2026 telah disusun (program COMPLETED)"
           },
           {
-            "title": "Sampaikan Laporan Sinking Fund ke Direktur Keuangan & Manajemen Risiko",
+            "title": "Penyampaian Laporan Sinking Fund ke Direktur Keuangan & Manajemen Risiko",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -768,7 +768,7 @@
         "name": "Persetujuan Direksi",
         "tasks": [
           {
-            "title": "Ajukan & peroleh Keputusan Direksi atas penundaan pembayaran pokok",
+            "title": "Pengajuan & perolehan Keputusan Direksi atas penundaan pembayaran pokok",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -784,7 +784,7 @@
         "name": "Pembaharuan Perjanjian",
         "tasks": [
           {
-            "title": "Susun & tandatangani pembaharuan perjanjian SHL PT KPBN",
+            "title": "Penyusunan & penandatanganan pembaharuan perjanjian SHL PT KPBN",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -816,7 +816,7 @@
             "note": "Laporan penggunaan IP PEN tuntas disusun"
           },
           {
-            "title": "Susun Laporan Penggunaan IP PEN",
+            "title": "Penyusunan Laporan Penggunaan IP PEN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -831,7 +831,7 @@
         "name": "Penyampaian ke LPEI",
         "tasks": [
           {
-            "title": "Sampaikan Laporan Penggunaan IP PEN kepada LPEI",
+            "title": "Penyampaian Laporan Penggunaan IP PEN kepada LPEI",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -850,7 +850,7 @@
         "name": "Penyiapan Materi & Proyeksi",
         "tasks": [
           {
-            "title": "Susun materi paparan & proyeksi keuangan PTPN Grup untuk penjaminan PT SGN",
+            "title": "Penyusunan materi paparan & proyeksi keuangan PTPN Grup untuk penjaminan PT SGN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -876,7 +876,7 @@
         "name": "Pertemuan & Pembahasan dengan Kemenkeu/DJKN",
         "tasks": [
           {
-            "title": "Jadwalkan & laksanakan pertemuan dengan Direktur KND/DJKN",
+            "title": "Penjadwalan & pelaksanaan pertemuan dengan Direktur KND/DJKN",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -900,7 +900,7 @@
         "name": "Perolehan Dukungan",
         "tasks": [
           {
-            "title": "Peroleh Dukungan Kementerian Keuangan/Pemberi Investasi",
+            "title": "Perolehan Dukungan Kementerian Keuangan/Pemberi Investasi",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -945,7 +945,7 @@
         "name": "Penyusunan Keputusan Direksi",
         "tasks": [
           {
-            "title": "Susun Keputusan Direksi Diluar Rapat Direksi",
+            "title": "Penyusunan Keputusan Direksi Diluar Rapat Direksi",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -960,7 +960,7 @@
         "name": "Persetujuan & Penetapan",
         "tasks": [
           {
-            "title": "Terbitkan Surat Persetujuan optimalisasi penyerapan Dana IP PEN",
+            "title": "Penerbitan Surat Persetujuan optimalisasi penyerapan Dana IP PEN",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1006,7 +1006,7 @@
         "name": "Persetujuan & Penetapan",
         "tasks": [
           {
-            "title": "Peroleh persetujuan Direksi & tetapkan Surat Edaran Dividen",
+            "title": "Perolehan persetujuan Direksi & penetapan Surat Edaran Dividen",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1051,7 +1051,7 @@
         "name": "Persetujuan & Penetapan",
         "tasks": [
           {
-            "title": "Sampaikan ke Direksi & tetapkan Perubahan Peraturan Direksi Tata Kelola Pinjaman IP PEN",
+            "title": "Penyampaian ke Direksi & penetapan Perubahan Peraturan Direksi Tata Kelola Pinjaman IP PEN",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1070,7 +1070,7 @@
         "name": "Site Visit & Pengumpulan Data",
         "tasks": [
           {
-            "title": "Lakukan site visit ke Unit Kerja PTPN I/Penerima Dana IP PEN",
+            "title": "Pelaksanaan site visit ke Unit Kerja PTPN I/Penerima Dana IP PEN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1097,7 +1097,7 @@
             "note": "Dalam proses verifikasi dokumen pembayaran"
           },
           {
-            "title": "Terbitkan Laporan Monitoring IP PEN oleh Piesta/Konsultan Pengawas",
+            "title": "Penerbitan Laporan Monitoring IP PEN oleh Piesta/Konsultan Pengawas",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -1134,7 +1134,7 @@
         "name": "Penyusunan Laporan Grup",
         "tasks": [
           {
-            "title": "Susun Laporan Monitoring SHL & ICL PTPN Grup TW 1 2026",
+            "title": "Penyusunan Laporan Monitoring SHL & ICL PTPN Grup TW 1 2026",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -1153,7 +1153,7 @@
         "name": "Penyiapan Format & Pengumpulan Data",
         "tasks": [
           {
-            "title": "Bentuk format laporan monitoring",
+            "title": "Pembentukan format laporan monitoring",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1179,7 +1179,7 @@
         "name": "Penyusunan Laporan Monitoring",
         "tasks": [
           {
-            "title": "Susun Laporan Monitoring Implementasi Kebijakan Keuangan Strategi TW 1 2026",
+            "title": "Penyusunan Laporan Monitoring Implementasi Kebijakan Keuangan Strategi TW 1 2026",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1198,7 +1198,7 @@
         "name": "Perhitungan Kewajiban SHL",
         "tasks": [
           {
-            "title": "Hitung kewajiban SHL Anper periode Mei 2026",
+            "title": "Perhitungan kewajiban SHL Anper periode Mei 2026",
             "status": "IN_PROGRESS",
             "percentComplete": 50,
             "plannedMonths": [
@@ -1208,7 +1208,7 @@
             "note": "Melakukan perhitungan kewajiban SHL Anper"
           },
           {
-            "title": "Susun informasi suku bunga SHL periode Mei 2026",
+            "title": "Penyusunan informasi suku bunga SHL periode Mei 2026",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -1222,7 +1222,7 @@
         "name": "Persetujuan & Penerbitan Tagihan",
         "tasks": [
           {
-            "title": "Peroleh persetujuan Direktur Keuangan & MR dan terbitkan Surat Tagihan",
+            "title": "Perolehan persetujuan Direktur Keuangan & MR dan penerbitan Surat Tagihan",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1241,7 +1241,7 @@
         "name": "Penyampaian Surat & Permintaan Proyeksi",
         "tasks": [
           {
-            "title": "Sampaikan Surat ke PTPN I terkait pemenuhan kewajiban sinking fund tertunda",
+            "title": "Penyampaian Surat ke PTPN I terkait pemenuhan kewajiban sinking fund tertunda",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1253,7 +1253,7 @@
             "note": "Telah disampaikan Surat ke PTPN I terkait pemenuhan kewajiban sinking fund tertunda TW II"
           },
           {
-            "title": "Minta proyeksi cashflow bulanan PTPN I untuk monitoring",
+            "title": "Permintaan proyeksi cashflow bulanan PTPN I untuk monitoring",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -1268,7 +1268,7 @@
         "name": "Monitoring & Pelaporan Pemenuhan",
         "tasks": [
           {
-            "title": "Monitor pemenuhan sinking fund & susun Laporan Sinking Fund TW II 2026",
+            "title": "Pemantauan pemenuhan sinking fund & penyusunan Laporan Sinking Fund TW II 2026",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -1306,7 +1306,7 @@
         "name": "Persetujuan KPSS",
         "tasks": [
           {
-            "title": "Peroleh persetujuan KPSS (PTPN III) atas tambahan fasilitas & penjaminan aset",
+            "title": "Perolehan persetujuan KPSS (PTPN III) atas tambahan fasilitas & penjaminan aset",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1321,7 +1321,7 @@
         "name": "Penandatanganan Perjanjian Kredit",
         "tasks": [
           {
-            "title": "Tandatangani Perjanjian Kredit Fasilitas Pinjaman Baru PTPN I",
+            "title": "Penandatanganan Perjanjian Kredit Fasilitas Pinjaman Baru PTPN I",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1340,7 +1340,7 @@
         "name": "Pengawalan Fasilitas Pinjaman & Cashflow",
         "tasks": [
           {
-            "title": "Diskusi & kawal proses usulan fasilitas pinjaman baru PTPN I",
+            "title": "Diskusi & pengawalan proses usulan fasilitas pinjaman baru PTPN I",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -1353,7 +1353,7 @@
             "note": "Diskusi dan pengawalan proses usulan fasilitas pinjaman baru"
           },
           {
-            "title": "Monitor cashflow PTPN I untuk kesiapan pelunasan",
+            "title": "Pemantauan cashflow PTPN I untuk kesiapan pelunasan",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -1368,7 +1368,7 @@
         "name": "Pelunasan MTN Jatuh Tempo",
         "tasks": [
           {
-            "title": "Lunasi MTN PTPN X 2018 jatuh tempo & peroleh bukti pelunasan",
+            "title": "Pelunasan MTN PTPN X 2018 jatuh tempo & perolehan bukti pelunasan",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1405,7 +1405,7 @@
         "name": "Pengikatan Agunan & Kelengkapan",
         "tasks": [
           {
-            "title": "Proses perpanjangan pengikatan aset agunan & susun check list kelengkapan",
+            "title": "Proses perpanjangan pengikatan aset agunan & penyusunan check list kelengkapan",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1425,7 +1425,7 @@
         "name": "Pengajuan Perpanjangan AP",
         "tasks": [
           {
-            "title": "Ajukan perpanjangan Availability Period pencairan Fasilitas Tranche II PT SGN",
+            "title": "Pengajuan perpanjangan Availability Period pencairan Fasilitas Tranche II PT SGN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1441,7 +1441,7 @@
         "name": "Persetujuan Agen Fasilitas",
         "tasks": [
           {
-            "title": "Peroleh Surat Persetujuan Agen Fasilitas Pinjaman Baru",
+            "title": "Perolehan Surat Persetujuan Agen Fasilitas Pinjaman Baru",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1460,7 +1460,7 @@
         "name": "Pengajuan Permohonan Waiver",
         "tasks": [
           {
-            "title": "Ajukan permohonan waiver biaya breakcost fasilitas MAA SGN",
+            "title": "Pengajuan permohonan waiver biaya breakcost fasilitas MAA SGN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1476,7 +1476,7 @@
         "name": "Persetujuan Agen Fasilitas",
         "tasks": [
           {
-            "title": "Peroleh Surat Persetujuan Agen Fasilitas Pinjaman MAA SGN",
+            "title": "Perolehan Surat Persetujuan Agen Fasilitas Pinjaman MAA SGN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1495,7 +1495,7 @@
         "name": "Persiapan & Pengawalan Pelunasan",
         "tasks": [
           {
-            "title": "Kawal proses penyelesaian Fasilitas Pinjaman PT SGN jatuh tempo",
+            "title": "Pengawalan proses penyelesaian Fasilitas Pinjaman PT SGN jatuh tempo",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1512,7 +1512,7 @@
         "name": "Pelunasan & Surat Keterangan Lunas",
         "tasks": [
           {
-            "title": "Lunasi fasilitas & peroleh Surat Keterangan Lunas dari Agen Fasilitas MAA",
+            "title": "Pelunasan fasilitas & perolehan Surat Keterangan Lunas dari Agen Fasilitas MAA",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1531,7 +1531,7 @@
         "name": "Persiapan & Pemenuhan Syarat Pencairan",
         "tasks": [
           {
-            "title": "Penuhi syarat dan dokumen pencairan tranche II fasilitas debt Repro PT SGN",
+            "title": "Pemenuhan syarat dan dokumen pencairan tranche II fasilitas debt Repro PT SGN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1547,7 +1547,7 @@
         "name": "Pencairan & Eksekusi Akuisisi",
         "tasks": [
           {
-            "title": "Lakukan drawdown pencairan tranche II ke rekening PT SGN",
+            "title": "Pelaksanaan drawdown pencairan tranche II ke rekening PT SGN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1557,7 +1557,7 @@
             "note": "Drawdown pencairan untuk pendanaan akuisisi telah dilakukan ke rekening PT SGN"
           },
           {
-            "title": "Pastikan pembayaran akuisisi saham PT PG RNI dan kumpulkan bukti drawdown pencairan tranche II",
+            "title": "Pemastian pembayaran akuisisi saham PT PG RNI dan pengumpulan bukti drawdown pencairan tranche II",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1578,7 +1578,7 @@
         "name": "Persiapan & Pemenuhan Syarat Pencairan",
         "tasks": [
           {
-            "title": "Lengkapi dokumen dan penuhi syarat pencairan (conditions precedent) fasilitas pinjaman tambahan",
+            "title": "Pelengkapan dokumen dan pemenuhan syarat pencairan (conditions precedent) fasilitas pinjaman tambahan",
             "status": "IN_PROGRESS",
             "percentComplete": 35,
             "plannedMonths": [
@@ -1597,7 +1597,7 @@
         "name": "Persetujuan & Penarikan Fasilitas",
         "tasks": [
           {
-            "title": "Ajukan permohonan penarikan fasilitas dan peroleh persetujuan kreditur",
+            "title": "Pengajuan permohonan penarikan fasilitas dan perolehan persetujuan kreditur",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1609,7 +1609,7 @@
             "note": "Tahap penarikan belum dimulai, masih pemenuhan syarat pencairan"
           },
           {
-            "title": "Lakukan pencairan fasilitas pinjaman tambahan capex dan operasional PT SGN",
+            "title": "Pelaksanaan pencairan fasilitas pinjaman tambahan capex dan operasional PT SGN",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1630,7 +1630,7 @@
         "name": "Pengajuan & Persetujuan Internal PT SGN",
         "tasks": [
           {
-            "title": "Ajukan permohonan persetujuan pinjaman dan penjaminan sesuai Anggaran Dasar PT SGN",
+            "title": "Pengajuan permohonan persetujuan pinjaman dan penjaminan sesuai Anggaran Dasar PT SGN",
             "status": "IN_PROGRESS",
             "percentComplete": 45,
             "plannedMonths": [
@@ -1647,7 +1647,7 @@
         "name": "Negosiasi & Penandatanganan Perjanjian",
         "tasks": [
           {
-            "title": "Negosiasikan term sheet kredit modal kerja bilateral dengan bank",
+            "title": "Negosiasi term sheet kredit modal kerja bilateral dengan bank",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -1657,7 +1657,7 @@
             "note": "Tahap lanjutan setelah persetujuan internal yang sedang diproses"
           },
           {
-            "title": "Tandatangani Perjanjian Kredit Modal Kerja Bilateral PT SGN",
+            "title": "Penandatanganan Perjanjian Kredit Modal Kerja Bilateral PT SGN",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1676,7 +1676,7 @@
         "name": "Negosiasi Waiver & Perpanjangan dengan Kreditur",
         "tasks": [
           {
-            "title": "Diskusikan usulan waiver dan/atau perpanjangan jangka waktu pengikatan agunan dengan kreditur",
+            "title": "Diskusi usulan waiver dan/atau perpanjangan jangka waktu pengikatan agunan dengan kreditur",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -1694,7 +1694,7 @@
         "name": "Proses Pengikatan Aset Agunan",
         "tasks": [
           {
-            "title": "Selesaikan pengajuan keringanan biaya PNBP dan proses pengikatan aset agunan",
+            "title": "Penyelesaian pengajuan keringanan biaya PNBP dan proses pengikatan aset agunan",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -1706,7 +1706,7 @@
             "note": "Memerlukan dukungan Direksi untuk penyelesaian pengajuan keringanan biaya PNBP"
           },
           {
-            "title": "Monitor dan lengkapi check list kelengkapan pengikatan aset agunan",
+            "title": "Pemantauan dan pelengkapan check list kelengkapan pengikatan aset agunan",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -1727,7 +1727,7 @@
         "name": "Pelaksanaan Pemeringkatan oleh PEFINDO",
         "tasks": [
           {
-            "title": "Sampaikan data dan laksanakan Komite Rating bersama PEFINDO",
+            "title": "Penyampaian data dan pelaksanaan Komite Rating bersama PEFINDO",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1743,7 +1743,7 @@
         "name": "Persetujuan & Publikasi Rating",
         "tasks": [
           {
-            "title": "Peroleh persetujuan hasil rating melalui penandatanganan surat oleh Direktur",
+            "title": "Perolehan persetujuan hasil rating melalui penandatanganan surat oleh Direktur",
             "status": "IN_PROGRESS",
             "percentComplete": 55,
             "plannedMonths": [
@@ -1753,7 +1753,7 @@
             "note": "Hasil rating membutuhkan persetujuan; perlu dukungan Direktur penandatanganan surat persetujuan"
           },
           {
-            "title": "Publikasikan hasil corporate rating dan tingkat kesehatan PTPN III",
+            "title": "Publikasi hasil corporate rating dan tingkat kesehatan PTPN III",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -1773,7 +1773,7 @@
         "name": "Negosiasi dengan Kreditur",
         "tasks": [
           {
-            "title": "Diskusikan dan negosiasikan usulan perpanjangan availability period dengan para kreditur",
+            "title": "Diskusi dan negosiasi usulan perpanjangan availability period dengan para kreditur",
             "status": "IN_PROGRESS",
             "percentComplete": 45,
             "plannedMonths": [
@@ -1790,7 +1790,7 @@
         "name": "Persetujuan Komite Kredit & Penerbitan Surat",
         "tasks": [
           {
-            "title": "Ajukan persetujuan ke komite kredit masing-masing kreditur",
+            "title": "Pengajuan persetujuan ke komite kredit masing-masing kreditur",
             "status": "IN_PROGRESS",
             "percentComplete": 35,
             "plannedMonths": [
@@ -1800,7 +1800,7 @@
             "note": "Kreditur mengajukan persetujuan kepada komite kredit masing-masing"
           },
           {
-            "title": "Peroleh Surat Persetujuan dari Agen Fasilitas PTPN IV",
+            "title": "Perolehan Surat Persetujuan dari Agen Fasilitas PTPN IV",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1819,7 +1819,7 @@
         "name": "Negosiasi Waiver & Perpanjangan dengan Kreditur",
         "tasks": [
           {
-            "title": "Diskusikan usulan waiver dan/atau perpanjangan jangka waktu pengikatan agunan dengan kreditur",
+            "title": "Diskusi usulan waiver dan/atau perpanjangan jangka waktu pengikatan agunan dengan kreditur",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -1836,7 +1836,7 @@
         "name": "Pengajuan & Kelengkapan Pengikatan Agunan",
         "tasks": [
           {
-            "title": "Selesaikan pengajuan keringanan biaya PNBP untuk pengikatan agunan PTPN IV",
+            "title": "Penyelesaian pengajuan keringanan biaya PNBP untuk pengikatan agunan PTPN IV",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -1846,7 +1846,7 @@
             "note": "Memerlukan dukungan Direksi untuk penyelesaian pengajuan keringanan biaya PNBP"
           },
           {
-            "title": "Lengkapi dan monitor check list kelengkapan pengikatan aset agunan",
+            "title": "Pelengkapan dan pemantauan check list kelengkapan pengikatan aset agunan",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -1865,7 +1865,7 @@
         "name": "Persiapan & Persetujuan Injeksi Modal",
         "tasks": [
           {
-            "title": "Siapkan dokumen dan peroleh persetujuan injeksi modal PT SGN",
+            "title": "Penyiapan dokumen dan perolehan persetujuan injeksi modal PT SGN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1881,7 +1881,7 @@
         "name": "Eksekusi Setoran Modal",
         "tasks": [
           {
-            "title": "Lakukan setoran modal dan kumpulkan bukti transfer modal PT SGN",
+            "title": "Pelaksanaan setoran modal dan pengumpulan bukti transfer modal PT SGN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1916,7 +1916,7 @@
         "name": "Penyaluran Uang Muka",
         "tasks": [
           {
-            "title": "Salurkan uang muka pembelian gula dan kumpulkan bukti transfer",
+            "title": "Penyaluran uang muka pembelian gula dan pengumpulan bukti transfer",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1937,7 +1937,7 @@
         "name": "Penyusunan Laporan LLD",
         "tasks": [
           {
-            "title": "Kompilasi data transaksi devisa dan susun Laporan LLD Bulanan",
+            "title": "Kompilasi data transaksi devisa dan penyusunan Laporan LLD Bulanan",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1954,7 +1954,7 @@
         "name": "Penyampaian ke Bank Indonesia",
         "tasks": [
           {
-            "title": "Sampaikan Laporan LLD Bulanan kepada Bank Indonesia",
+            "title": "Penyampaian Laporan LLD Bulanan kepada Bank Indonesia",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1973,7 +1973,7 @@
         "name": "Verifikasi Kebutuhan & Memo Droping",
         "tasks": [
           {
-            "title": "Verifikasi permintaan dan kebutuhan dana Holding dan PISMK serta susun memo droping dana",
+            "title": "Verifikasi permintaan dan kebutuhan dana Holding dan PISMK serta penyusunan memo droping dana",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -1990,7 +1990,7 @@
         "name": "Penyaluran Modal Kerja",
         "tasks": [
           {
-            "title": "Salurkan droping dana dan kumpulkan bukti transfer droping dana",
+            "title": "Penyaluran droping dana dan pengumpulan bukti transfer droping dana",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2010,7 +2010,7 @@
         "name": "Monitoring & Kompilasi Progress Tim Penyehatan",
         "tasks": [
           {
-            "title": "Monitor dan kompilasi progress update dari masing-masing stream Tim Penyehatan PT SGN",
+            "title": "Pemantauan dan kompilasi progress update dari masing-masing stream Tim Penyehatan PT SGN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2027,7 +2027,7 @@
         "name": "Rapat OC & Pelaporan ke DKM",
         "tasks": [
           {
-            "title": "Selenggarakan Rapat Ketua & Sekretaris OC membahas rekomendasi tanggapan SGN atas usulan SO",
+            "title": "Penyelenggaraan Rapat Ketua & Sekretaris OC untuk pembahasan rekomendasi tanggapan SGN atas usulan SO",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2036,7 +2036,7 @@
             "note": "Rapat Ketua & Sekretaris OC realisasi Rabu 29 Apr 2026 dengan persetujuan Ketua OC atas draft memo"
           },
           {
-            "title": "Sampaikan progress update Tim Penyehatan kepada DKM",
+            "title": "Penyampaian progress update Tim Penyehatan kepada DKM",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2055,7 +2055,7 @@
         "name": "Pembahasan & Kesepakatan Tindak Lanjut",
         "tasks": [
           {
-            "title": "Bahas dan sepakati beberapa tindak lanjut inisiatif program Tim Penyehatan PT SGN",
+            "title": "Pembahasan dan kesepakatan beberapa tindak lanjut inisiatif program Tim Penyehatan PT SGN",
             "status": "IN_PROGRESS",
             "percentComplete": 50,
             "plannedMonths": [
@@ -2072,7 +2072,7 @@
         "name": "Penyelenggaraan Rapat OC",
         "tasks": [
           {
-            "title": "Jadwalkan ulang dan selenggarakan Rapat OC Tim Penyehatan PT SGN",
+            "title": "Penjadwalan ulang dan penyelenggaraan Rapat OC Tim Penyehatan PT SGN",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -2092,7 +2092,7 @@
         "name": "Monitoring Saldo & Tagihan KSO",
         "tasks": [
           {
-            "title": "Monitor saldo secara harian dan pantau tagihan kompensasi KSO PTPN Grup",
+            "title": "Pemantauan saldo secara harian dan pemantauan tagihan kompensasi KSO PTPN Grup",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2109,7 +2109,7 @@
         "name": "Penyusunan Laporan Monitoring",
         "tasks": [
           {
-            "title": "Susun Laporan monitoring saldo & tagihan kompensasi KSO",
+            "title": "Penyusunan Laporan monitoring saldo & tagihan kompensasi KSO",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2128,7 +2128,7 @@
         "name": "Monitoring & Kompilasi Progress Tim Penyehatan",
         "tasks": [
           {
-            "title": "Monitor dan kompilasi progress update W5 April dari masing-masing stream Tim Penyehatan PT SGN Holding",
+            "title": "Pemantauan dan kompilasi progress update W5 April dari masing-masing stream Tim Penyehatan PT SGN Holding",
             "status": "IN_PROGRESS",
             "percentComplete": 55,
             "plannedMonths": [
@@ -2143,7 +2143,7 @@
         "name": "Penjadwalan Rapat OC & Pelaporan ke DKM",
         "tasks": [
           {
-            "title": "Jadwalkan Rapat OC Tim Penyehatan PT SGN dan sampaikan progress update W5 April kepada DKM",
+            "title": "Penjadwalan Rapat OC Tim Penyehatan PT SGN dan penyampaian progress update W5 April kepada DKM",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -2162,7 +2162,7 @@
         "name": "Persiapan & Sosialisasi Penyusunan RKAP",
         "tasks": [
           {
-            "title": "Sampaikan Memorandum Persiapan Penyusunan RKAP 2027 (usulan Portal RKAP) kepada seluruh Divisi Holding",
+            "title": "Penyampaian Memorandum Persiapan Penyusunan RKAP 2027 (usulan Portal RKAP) kepada seluruh Divisi Holding",
             "status": "IN_PROGRESS",
             "percentComplete": 25,
             "plannedMonths": [
@@ -2179,7 +2179,7 @@
         "name": "Pengumpulan Usulan & Konsolidasi Data",
         "tasks": [
           {
-            "title": "Kumpulkan usulan program dan anggaran dari Divisi Holding serta konsolidasikan data RKAP 2027",
+            "title": "Pengumpulan usulan program dan anggaran dari Divisi Holding serta konsolidasi data RKAP 2027",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -2196,7 +2196,7 @@
         "name": "Penyusunan Draft Buku RKAP",
         "tasks": [
           {
-            "title": "Susun dan finalisasi Buku RKAP 2027 Draft 1",
+            "title": "Penyusunan dan finalisasi Buku RKAP 2027 Draft 1",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -2216,7 +2216,7 @@
         "name": "Pengembangan & Integrasi Dashboard",
         "tasks": [
           {
-            "title": "Bangun dashboard monitoring perpajakan terintegrasi holding-subholding",
+            "title": "Pembangunan dashboard monitoring perpajakan terintegrasi holding-subholding",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2277,7 +2277,7 @@
         "name": "Pembangunan Database Pajak",
         "tasks": [
           {
-            "title": "Susun database kontribusi pajak, sengketa pajak, dan historis penyetoran/pelaporan",
+            "title": "Penyusunan database kontribusi pajak, sengketa pajak, dan historis penyetoran/pelaporan",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2314,7 +2314,7 @@
         "name": "Penyusunan & Penyampaian Laporan Bulanan",
         "tasks": [
           {
-            "title": "Susun & sampaikan Laporan Kontribusi Pajak dan Sengketa Pajak Bulanan",
+            "title": "Penyusunan & penyampaian Laporan Kontribusi Pajak dan Sengketa Pajak Bulanan",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -2338,7 +2338,7 @@
         "name": "Pembangunan Database Pajak Anper",
         "tasks": [
           {
-            "title": "Susun database kontribusi pajak, sengketa pajak, dan historis penyetoran/pelaporan Anper",
+            "title": "Penyusunan database kontribusi pajak, sengketa pajak, dan historis penyetoran/pelaporan Anper",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2375,7 +2375,7 @@
         "name": "Penyusunan & Penyampaian Laporan Bulanan",
         "tasks": [
           {
-            "title": "Susun & sampaikan Laporan Kontribusi Pajak dan Sengketa Pajak Bulanan Anper",
+            "title": "Penyusunan & penyampaian Laporan Kontribusi Pajak dan Sengketa Pajak Bulanan Anper",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -2399,7 +2399,7 @@
         "name": "Penyusunan Strategi & Perencanaan Pajak",
         "tasks": [
           {
-            "title": "Susun strategi & perencanaan pajak PTPN Group",
+            "title": "Penyusunan strategi & perencanaan pajak PTPN Group",
             "status": "IN_PROGRESS",
             "percentComplete": 50,
             "plannedMonths": [
@@ -2416,7 +2416,7 @@
         "name": "Penyusunan & Penyampaian Laporan LM Pajak Bulanan",
         "tasks": [
           {
-            "title": "Susun Laporan LM Pajak Bulanan PTPN Group",
+            "title": "Penyusunan Laporan LM Pajak Bulanan PTPN Group",
             "status": "IN_PROGRESS",
             "percentComplete": 50,
             "plannedMonths": [
@@ -2432,7 +2432,7 @@
             "note": "Telah disusun laporan LM Pajak Bulanan untuk PTPN Group"
           },
           {
-            "title": "Sampaikan Laporan LM Pajak Bulanan ke manajemen untuk masukan & keputusan",
+            "title": "Penyampaian Laporan LM Pajak Bulanan ke manajemen untuk masukan & keputusan",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -2479,7 +2479,7 @@
         "name": "Penyusunan & Penyampaian Laporan Bulanan",
         "tasks": [
           {
-            "title": "Susun & sampaikan Laporan Kontribusi Pajak dan Sengketa Pajak Bulanan",
+            "title": "Penyusunan & penyampaian Laporan Kontribusi Pajak dan Sengketa Pajak Bulanan",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -2519,7 +2519,7 @@
         "name": "Pelaksanaan Sidang Banding",
         "tasks": [
           {
-            "title": "Hadiri & ikuti rangkaian sidang banding PPh Badan tahun 2020 di Pengadilan Pajak",
+            "title": "Kehadiran & keikutsertaan dalam rangkaian sidang banding PPh Badan tahun 2020 di Pengadilan Pajak",
             "status": "IN_PROGRESS",
             "percentComplete": 55,
             "plannedMonths": [
@@ -2536,7 +2536,7 @@
         "name": "Putusan & Pelaporan",
         "tasks": [
           {
-            "title": "Susun Laporan Putusan Banding Pajak PPh Badan tahun 2020",
+            "title": "Penyusunan Laporan Putusan Banding Pajak PPh Badan tahun 2020",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -2574,7 +2574,7 @@
         "name": "Pelaksanaan Sidang Banding",
         "tasks": [
           {
-            "title": "Hadiri & ikuti rangkaian sidang banding PPh Pasal 26 tahun 2020 di Pengadilan Pajak",
+            "title": "Kehadiran & keikutsertaan dalam rangkaian sidang banding PPh Pasal 26 tahun 2020 di Pengadilan Pajak",
             "status": "IN_PROGRESS",
             "percentComplete": 65,
             "plannedMonths": [
@@ -2593,7 +2593,7 @@
         "name": "Putusan & Pelaporan",
         "tasks": [
           {
-            "title": "Susun Laporan Putusan Banding Pajak PPh Pasal 26 tahun 2020",
+            "title": "Penyusunan Laporan Putusan Banding Pajak PPh Pasal 26 tahun 2020",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -2631,7 +2631,7 @@
         "name": "Pelaksanaan Sidang Banding",
         "tasks": [
           {
-            "title": "Hadiri & ikuti rangkaian sidang banding PPN November 2022 di Pengadilan Pajak",
+            "title": "Kehadiran & keikutsertaan dalam rangkaian sidang banding PPN November 2022 di Pengadilan Pajak",
             "status": "IN_PROGRESS",
             "percentComplete": 65,
             "plannedMonths": [
@@ -2650,7 +2650,7 @@
         "name": "Putusan & Pelaporan",
         "tasks": [
           {
-            "title": "Susun Laporan Putusan Banding Pajak PPN November 2022",
+            "title": "Penyusunan Laporan Putusan Banding Pajak PPN November 2022",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -2688,7 +2688,7 @@
         "name": "Pengumpulan Dokumen & Pengajuan",
         "tasks": [
           {
-            "title": "Kumpulkan bukti setor & bukti potong PPh 4 ayat (2) dari tenant",
+            "title": "Pengumpulan bukti setor & bukti potong PPh 4 ayat (2) dari tenant",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2697,7 +2697,7 @@
             "note": "Sudah dilakukan pengumpulan bukti setor dan bukti potong PPh 4 ayat 2"
           },
           {
-            "title": "Ajukan permohonan pengembalian/restitusi PPh 4 ayat (2) ke DJP",
+            "title": "Pengajuan permohonan pengembalian/restitusi PPh 4 ayat (2) ke DJP",
             "status": "IN_PROGRESS",
             "percentComplete": 35,
             "plannedMonths": [
@@ -2779,7 +2779,7 @@
         "name": "Pelaporan & Evaluasi",
         "tasks": [
           {
-            "title": "Susun Laporan Evaluasi dan Pengendalian Transaksi Kas dan Bank (LPJ & realisasi biaya operasional)",
+            "title": "Penyusunan Laporan Evaluasi dan Pengendalian Transaksi Kas dan Bank (LPJ & realisasi biaya operasional)",
             "status": "IN_PROGRESS",
             "percentComplete": 45,
             "plannedMonths": [
@@ -2817,7 +2817,7 @@
             "note": "Program COMPLETED; pedoman telah selesai disusun"
           },
           {
-            "title": "Susun & finalkan Pedoman Kebijakan Akuntansi & Perpajakan ter-update",
+            "title": "Penyusunan & finalisasi Pedoman Kebijakan Akuntansi & Perpajakan ter-update",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2832,7 +2832,7 @@
         "name": "Penetapan & Pengedaran",
         "tasks": [
           {
-            "title": "Edarkan Pedoman Kebijakan Akuntansi & Perpajakan ke seluruh Anper",
+            "title": "Pengedaran Pedoman Kebijakan Akuntansi & Perpajakan ke seluruh Anper",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2851,7 +2851,7 @@
         "name": "Pembentukan Sub Tim & Perencanaan",
         "tasks": [
           {
-            "title": "Tetapkan fokus & program kerja masing-masing Sub Tim Cost Structure",
+            "title": "Penetapan fokus & program kerja masing-masing Sub Tim Cost Structure",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2866,7 +2866,7 @@
         "name": "Analisa & Benchmarking",
         "tasks": [
           {
-            "title": "Lakukan analisa awal cost structure & eksekusi rencana benchmarking",
+            "title": "Pelaksanaan analisa awal cost structure & eksekusi rencana benchmarking",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -2884,7 +2884,7 @@
         "name": "Penyusunan Laporan & Program",
         "tasks": [
           {
-            "title": "Susun Laporan dan program Cost Structure PTPN Group",
+            "title": "Penyusunan Laporan dan program Cost Structure PTPN Group",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -2922,7 +2922,7 @@
         "name": "Penyusunan BPM & RCM",
         "tasks": [
           {
-            "title": "Susun/perbarui Business Process Mapping (BPM) & Risk Control Matrix (RCM)",
+            "title": "Penyusunan/pembaruan Business Process Mapping (BPM) & Risk Control Matrix (RCM)",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -2938,7 +2938,7 @@
         "name": "Pemenuhan Data TOC & TOD",
         "tasks": [
           {
-            "title": "Penuhi data Test of Control (TOC), Test of Design (TOD) & dokumen DAPN",
+            "title": "Pemenuhan data Test of Control (TOC), Test of Design (TOD) & dokumen DAPN",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -2972,7 +2972,7 @@
             "note": "Diskusi dengan Divisi TI & vendor menentukan KAK & output yang diinginkan"
           },
           {
-            "title": "Sampaikan update rencana penyempurnaan aplikasi pembayaran online ke Anper",
+            "title": "Penyampaian update rencana penyempurnaan aplikasi pembayaran online ke Anper",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -2984,10 +2984,10 @@
         ]
       },
       {
-        "name": "Pengembangan & Uji Coba",
+        "name": "Pengembangan & Pengujian Coba",
         "tasks": [
           {
-            "title": "Penyempurnaan aplikasi pembayaran online bersama vendor & uji coba",
+            "title": "Penyempurnaan aplikasi pembayaran online bersama vendor & pengujian coba",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3003,7 +3003,7 @@
         "name": "Go-Live Update Aplikasi",
         "tasks": [
           {
-            "title": "Selesaikan & rilis update aplikasi pembayaran online PTPN III",
+            "title": "Penyelesaian & perilisan update aplikasi pembayaran online PTPN III",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3022,7 +3022,7 @@
         "name": "Pelaksanaan & Pendampingan Audit",
         "tasks": [
           {
-            "title": "Dampingi audit KAP dan penuhi data pendukung untuk opini WTP",
+            "title": "Pendampingan audit KAP dan pemenuhan data pendukung untuk opini WTP",
             "status": "IN_PROGRESS",
             "percentComplete": 70,
             "plannedMonths": [
@@ -3034,7 +3034,7 @@
             "note": "audit berjalan, kini tahap finalisasi LAI"
           },
           {
-            "title": "Komunikasikan ke Partner KAP untuk percepatan penyelesaian LAI",
+            "title": "Komunikasi ke Partner KAP untuk percepatan penyelesaian LAI",
             "status": "IN_PROGRESS",
             "percentComplete": 60,
             "plannedMonths": [
@@ -3049,7 +3049,7 @@
         "name": "Penerbitan & Penyampaian LAI",
         "tasks": [
           {
-            "title": "Finalkan Laporan Auditor Independen (LAI)",
+            "title": "Finalisasi Laporan Auditor Independen (LAI)",
             "status": "IN_PROGRESS",
             "percentComplete": 65,
             "plannedMonths": [
@@ -3058,7 +3058,7 @@
             "note": "progres terkini: Finalisasi LAI"
           },
           {
-            "title": "Terbitkan LAI opini WTP tanpa surat teguran dari Pemegang Saham",
+            "title": "Penerbitan LAI opini WTP tanpa surat teguran dari Pemegang Saham",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3077,7 +3077,7 @@
         "name": "Pelaksanaan Audit Kepatuhan oleh KAP",
         "tasks": [
           {
-            "title": "Sediakan data dan dokumen pendukung penyusunan Management Letter oleh KAP",
+            "title": "Penyediaan data dan dokumen pendukung penyusunan Management Letter oleh KAP",
             "status": "IN_PROGRESS",
             "percentComplete": 50,
             "plannedMonths": [
@@ -3089,7 +3089,7 @@
             "note": "masih dalam proses penyusunan oleh KAP"
           },
           {
-            "title": "Tindaklanjuti draft temuan KAP untuk minimalisasi jumlah temuan",
+            "title": "Tindak lanjut draft temuan KAP untuk minimalisasi jumlah temuan",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -3104,7 +3104,7 @@
         "name": "Penerbitan Laporan Kepatuhan",
         "tasks": [
           {
-            "title": "Terbitkan Management Letter dan Laporan Kepatuhan",
+            "title": "Penerbitan Management Letter dan Laporan Kepatuhan",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3123,7 +3123,7 @@
         "name": "Perencanaan & Penyusunan KAK",
         "tasks": [
           {
-            "title": "Susun KAK dan rencana anggaran pengadaan KAP dan jasa pendukung (KJPP/aktuaria/properti)",
+            "title": "Penyusunan KAK dan rencana anggaran pengadaan KAP dan jasa pendukung (KJPP/aktuaria/properti)",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -3135,7 +3135,7 @@
             "note": "masih dalam proses perencanaan"
           },
           {
-            "title": "Selaraskan KAP terpilih dengan Keputusan RUPS dan persetujuan anggaran",
+            "title": "Penyelarasan KAP terpilih dengan Keputusan RUPS dan persetujuan anggaran",
             "status": "IN_PROGRESS",
             "percentComplete": 35,
             "plannedMonths": [
@@ -3151,7 +3151,7 @@
         "name": "Pelaksanaan Pengadaan",
         "tasks": [
           {
-            "title": "Laksanakan proses pengadaan jasa KAP dan jasa pendukung",
+            "title": "Pelaksanaan proses pengadaan jasa KAP dan jasa pendukung",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3168,7 +3168,7 @@
         "name": "Penetapan & Kontrak",
         "tasks": [
           {
-            "title": "Tetapkan pemenang dan tandatangani kontrak jasa KAP & jasa pendukung",
+            "title": "Penetapan pemenang dan penandatanganan kontrak jasa KAP & jasa pendukung",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3188,7 +3188,7 @@
         "name": "Penyusunan Laporan Keuangan Bulanan",
         "tasks": [
           {
-            "title": "Susun Laporan Keuangan bulanan periode s.d. April 2026",
+            "title": "Penyusunan Laporan Keuangan bulanan periode s.d. April 2026",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -3215,7 +3215,7 @@
             "note": "periode s.d. April masih dalam proses penandatangan komisaris; dukungan percepatan"
           },
           {
-            "title": "Terbitkan LK Bulanan tepat waktu",
+            "title": "Penerbitan LK Bulanan tepat waktu",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -3234,7 +3234,7 @@
         "name": "Persiapan Rekonsiliasi Semester I",
         "tasks": [
           {
-            "title": "Siapkan data dan jadwal pelaksanaan rekonsiliasi Semester I",
+            "title": "Penyiapan data dan jadwal pelaksanaan rekonsiliasi Semester I",
             "status": "IN_PROGRESS",
             "percentComplete": 25,
             "plannedMonths": [
@@ -3250,7 +3250,7 @@
         "name": "Pelaksanaan Rekonsiliasi",
         "tasks": [
           {
-            "title": "Laksanakan rekonsiliasi data keuangan dan akuntansi Semester I (dan III, IV)",
+            "title": "Pelaksanaan rekonsiliasi data keuangan dan akuntansi Semester I (dan III, IV)",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3265,7 +3265,7 @@
         "name": "Penyusunan Laporan",
         "tasks": [
           {
-            "title": "Susun Laporan Rekonsiliasi Data Keuangan dan Akuntansi",
+            "title": "Penyusunan Laporan Rekonsiliasi Data Keuangan dan Akuntansi",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3284,7 +3284,7 @@
         "name": "Penyusunan Laporan Manajemen TW I",
         "tasks": [
           {
-            "title": "Susun Laporan Manajemen Triwulan I beserta surat pengantar",
+            "title": "Penyusunan Laporan Manajemen Triwulan I beserta surat pengantar",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -3311,7 +3311,7 @@
             "note": "dokumen telah dimintakan tanda tangan di Komisaris | tanda tangan Komisaris masih dalam proses"
           },
           {
-            "title": "Sampaikan dan upload Laporan Manajemen ke Portal PT DAM dan BP BUMN",
+            "title": "Penyampaian dan pengunggahan Laporan Manajemen ke Portal PT DAM dan BP BUMN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -3341,7 +3341,7 @@
             "note": "menunggu hasil audit LK tahun 2025"
           },
           {
-            "title": "Kumpulkan dokumen pendukung tindak lanjut dari unit terkait",
+            "title": "Pengumpulan dokumen pendukung tindak lanjut dari unit terkait",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3356,7 +3356,7 @@
         "name": "Eksekusi & Pelaporan Tindak Lanjut",
         "tasks": [
           {
-            "title": "Laksanakan tindak lanjut atas seluruh temuan KAP",
+            "title": "Pelaksanaan tindak lanjut atas seluruh temuan KAP",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3366,7 +3366,7 @@
             "note": "tindak lanjut belum dapat dimulai sebelum hasil audit terbit"
           },
           {
-            "title": "Susun Laporan Tindak Lanjut Temuan KAP tahun 2025",
+            "title": "Penyusunan Laporan Tindak Lanjut Temuan KAP tahun 2025",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3385,7 +3385,7 @@
         "name": "Monitoring Transaksi Berkala",
         "tasks": [
           {
-            "title": "Lakukan monitoring harian dan bulanan atas transaksi keuangan",
+            "title": "Pelaksanaan monitoring harian dan bulanan atas transaksi keuangan",
             "status": "IN_PROGRESS",
             "percentComplete": 45,
             "plannedMonths": [
@@ -3401,7 +3401,7 @@
             "note": "monitoring harian dan bulanan transaksi sedang berjalan"
           },
           {
-            "title": "Lakukan pengkinian dan kelengkapan dokumen transaksi",
+            "title": "Pelaksanaan pengkinian dan kelengkapan dokumen transaksi",
             "status": "IN_PROGRESS",
             "percentComplete": 45,
             "plannedMonths": [
@@ -3422,7 +3422,7 @@
         "name": "Evaluasi & Pencapaian Bebas Fraud",
         "tasks": [
           {
-            "title": "Evaluasi efektivitas verifikasi dan pastikan tidak ada temuan fraud dalam audit",
+            "title": "Evaluasi efektivitas verifikasi dan pemastian tidak ada temuan fraud dalam audit",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -3444,7 +3444,7 @@
         "name": "Persiapan Pembentukan Tim",
         "tasks": [
           {
-            "title": "Selaraskan rencana pembentukan tim dengan timeline pengadaan KAP",
+            "title": "Penyelarasan rencana pembentukan tim dengan timeline pengadaan KAP",
             "status": "IN_PROGRESS",
             "percentComplete": 20,
             "plannedMonths": [
@@ -3456,7 +3456,7 @@
             "note": "menunggu timeline pengadaan KAP"
           },
           {
-            "title": "Susun usulan struktur dan keanggotaan Tim Konsolidasi",
+            "title": "Penyusunan usulan struktur dan keanggotaan Tim Konsolidasi",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3471,7 +3471,7 @@
         "name": "Penetapan SK Tim",
         "tasks": [
           {
-            "title": "Terbitkan SK Tim Konsolidasi Laporan Keuangan PTPN III dan Entitas Anak",
+            "title": "Penerbitan SK Tim Konsolidasi Laporan Keuangan PTPN III dan Entitas Anak",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3491,7 +3491,7 @@
         "name": "Perencanaan & Pengadaan Jasa",
         "tasks": [
           {
-            "title": "Diskusi dengan penyedia jasa dan susun KAK implementasi PSAK 118",
+            "title": "Diskusi dengan penyedia jasa dan penyusunan KAK implementasi PSAK 118",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -3503,7 +3503,7 @@
             "note": "diskusi dengan penyedia jasa & persiapan KAK sedang berjalan"
           },
           {
-            "title": "Siapkan dokumen pengadaan jasa implementasi PSAK 118",
+            "title": "Penyiapan dokumen pengadaan jasa implementasi PSAK 118",
             "status": "IN_PROGRESS",
             "percentComplete": 25,
             "plannedMonths": [
@@ -3519,7 +3519,7 @@
         "name": "Konfigurasi SAP & Penambahan COA",
         "tasks": [
           {
-            "title": "Lakukan konfigurasi penyajian SAP dan penambahan COA untuk PSAK 118",
+            "title": "Pelaksanaan konfigurasi penyajian SAP dan penambahan COA untuk PSAK 118",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3535,7 +3535,7 @@
         "name": "Implementasi & Kesiapan Go-Live 2027",
         "tasks": [
           {
-            "title": "Selesaikan perencanaan, implementasi dan konfigurasi SAP siap terap 1 Januari 2027",
+            "title": "Penyelesaian perencanaan, implementasi dan konfigurasi SAP siap terap 1 Januari 2027",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3567,7 +3567,7 @@
             "note": "pembicaraan/diskusi dengan penyedia jasa sedang berjalan"
           },
           {
-            "title": "Susun kebutuhan update dan amankan persetujuan anggaran",
+            "title": "Penyusunan kebutuhan update dan pengamanan persetujuan anggaran",
             "status": "IN_PROGRESS",
             "percentComplete": 20,
             "plannedMonths": [
@@ -3583,7 +3583,7 @@
         "name": "Pelaksanaan Update & Pengembangan Report Web",
         "tasks": [
           {
-            "title": "Laksanakan update SAP dan kembangkan penyajian report berbasis web",
+            "title": "Pelaksanaan update SAP dan pengembangan penyajian report berbasis web",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3618,7 +3618,7 @@
         "name": "Perencanaan & Persiapan Materi",
         "tasks": [
           {
-            "title": "Tentukan topik terkini webinar Akuntansi dan Keuangan",
+            "title": "Penentuan topik terkini webinar Akuntansi dan Keuangan",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -3630,7 +3630,7 @@
             "note": "proses penentuan topik terkini"
           },
           {
-            "title": "Siapkan narasumber, materi, dan jadwal pelaksanaan webinar",
+            "title": "Penyiapan narasumber, materi, dan jadwal pelaksanaan webinar",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3645,7 +3645,7 @@
         "name": "Pelaksanaan Webinar",
         "tasks": [
           {
-            "title": "Selenggarakan Webinar Akuntansi dan Keuangan",
+            "title": "Penyelenggaraan Webinar Akuntansi dan Keuangan",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3664,7 +3664,7 @@
         "name": "Perencanaan & Persiapan Materi",
         "tasks": [
           {
-            "title": "Tentukan topik terkini webinar Perpajakan untuk peningkatan kapabilitas PIC Perpajakan",
+            "title": "Penentuan topik terkini webinar Perpajakan untuk peningkatan kapabilitas PIC Perpajakan",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -3676,7 +3676,7 @@
             "note": "proses penentuan topik terkini untuk meningkatkan kapabilitas PIC Perpajakan"
           },
           {
-            "title": "Siapkan narasumber, materi, dan jadwal pelaksanaan webinar",
+            "title": "Penyiapan narasumber, materi, dan jadwal pelaksanaan webinar",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3691,7 +3691,7 @@
         "name": "Pelaksanaan Webinar",
         "tasks": [
           {
-            "title": "Selenggarakan Webinar Perpajakan",
+            "title": "Penyelenggaraan Webinar Perpajakan",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3754,7 +3754,7 @@
         "name": "Analisis & Penyusunan Rekomendasi",
         "tasks": [
           {
-            "title": "Menyusun rekomendasi tindak lanjut BPR On Farm Kelapa Sawit (follow up pencurian TBS)",
+            "title": "Penyusunan rekomendasi tindak lanjut BPR On Farm Kelapa Sawit (follow up pencurian TBS)",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -3769,7 +3769,7 @@
         "name": "Penyampaian Hasil",
         "tasks": [
           {
-            "title": "Menyampaikan memorandum hasil rekomendasi tindak lanjut kepada DHKM dan DKSR",
+            "title": "Penyampaian memorandum hasil rekomendasi tindak lanjut kepada DHKM dan DKSR",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -3838,7 +3838,7 @@
         "name": "Stress Testing & Pengesahan Kebijakan",
         "tasks": [
           {
-            "title": "Melaksanakan stress test dinamika geopolitik Timur Tengah dan melaporkan kepada Direksi",
+            "title": "Pelaksanaan stress test dinamika geopolitik Timur Tengah dan pelaporan kepada Direksi",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -3849,7 +3849,7 @@
             "note": "Stress test geopolitik Timur Tengah selesai dan dilaporkan via memo DIMR/KOL/eM-95/III/2026"
           },
           {
-            "title": "Mengajukan pengesahan Dokumen Kebijakan dan Pedoman BCMS kepada Direksi",
+            "title": "Pengajuan pengesahan Dokumen Kebijakan dan Pedoman BCMS kepada Direksi",
             "status": "IN_PROGRESS",
             "percentComplete": 60,
             "plannedMonths": [
@@ -3864,7 +3864,7 @@
         "name": "Penyusunan SOP & Pembaruan BCP/CP",
         "tasks": [
           {
-            "title": "Menyusun SOP BCMS dan menyelesaikan peninjauan Kasubdiv",
+            "title": "Penyusunan SOP BCMS dan penyelesaian peninjauan Kasubdiv",
             "status": "IN_PROGRESS",
             "percentComplete": 50,
             "plannedMonths": [
@@ -3874,7 +3874,7 @@
             "note": "SOP BCMS telah disusun dan sedang dalam proses peninjauan Kasubdiv"
           },
           {
-            "title": "Review dan pembaruan dokumen Contingency Plan",
+            "title": "Reviu dan pembaruan dokumen Contingency Plan",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3890,7 +3890,7 @@
         "name": "Finalisasi Dokumen BCP, CP & Stress Testing",
         "tasks": [
           {
-            "title": "Memfinalisasi dokumen BCP, Contingency Plan, dan Stress Testing",
+            "title": "Finalisasi dokumen BCP, Contingency Plan, dan Stress Testing",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -3912,7 +3912,7 @@
         "name": "Persiapan Tabletop Simulation",
         "tasks": [
           {
-            "title": "Menyiapkan skenario dan materi tabletop simulation BCMS tingkat Kantor Holding",
+            "title": "Penyiapan skenario dan materi tabletop simulation BCMS tingkat Kantor Holding",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -3926,7 +3926,7 @@
         "name": "Pelaksanaan & Pelaporan",
         "tasks": [
           {
-            "title": "Melaksanakan tabletop simulation dan menyusun laporan hasil pelaksanaan",
+            "title": "Pelaksanaan tabletop simulation dan penyusunan laporan hasil pelaksanaan",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -3946,7 +3946,7 @@
         "name": "Pelaksanaan Stress Testing",
         "tasks": [
           {
-            "title": "Membahas stress testing dampak konflik Timur Tengah bersama PT DAM secara hybrid",
+            "title": "Pembahasan stress testing dampak konflik Timur Tengah bersama PT DAM secara hybrid",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -3962,7 +3962,7 @@
         "name": "Pelaporan ke PT DAM",
         "tasks": [
           {
-            "title": "Menyampaikan laporan hasil Stress Testing final kepada PT DAM",
+            "title": "Penyampaian laporan hasil Stress Testing final kepada PT DAM",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -3981,7 +3981,7 @@
         "name": "Penyusunan Laporan Manajemen Risiko",
         "tasks": [
           {
-            "title": "Menyusun Laporan Manajemen Risiko terkait implementasi rencana mitigasi risiko korporasi",
+            "title": "Penyusunan Laporan Manajemen Risiko terkait implementasi rencana mitigasi risiko korporasi",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -3997,7 +3997,7 @@
         "name": "Penyampaian Laporan",
         "tasks": [
           {
-            "title": "Menyampaikan Laporan Manajemen Risiko kepada DAPN",
+            "title": "Penyampaian Laporan Manajemen Risiko kepada DAPN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4016,7 +4016,7 @@
         "name": "Pengumpulan Data Profil Risiko",
         "tasks": [
           {
-            "title": "Mengumpulkan data/dokumen dari Divisi terkait untuk Laporan Monitoring Profil Risiko Korporat s.d. April 2026",
+            "title": "Pengumpulan data/dokumen dari Divisi terkait untuk Laporan Monitoring Profil Risiko Korporat s.d. April 2026",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4031,7 +4031,7 @@
         "name": "Penyusunan Laporan Manajemen Risiko",
         "tasks": [
           {
-            "title": "Menyusun dan menyelesaikan drafting Laporan Manajemen Risiko",
+            "title": "Penyusunan dan penyelesaian drafting Laporan Manajemen Risiko",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4050,7 +4050,7 @@
         "name": "Penyusunan Laporan KPMR",
         "tasks": [
           {
-            "title": "Menyusun Laporan Manajemen Risiko terkait Kualitas Penerapan Manajemen Risiko Terintegrasi (KPMR)",
+            "title": "Penyusunan Laporan Manajemen Risiko terkait Kualitas Penerapan Manajemen Risiko Terintegrasi (KPMR)",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4066,7 +4066,7 @@
         "name": "Penyampaian Laporan",
         "tasks": [
           {
-            "title": "Menyampaikan Laporan Manajemen Risiko kepada DAPN",
+            "title": "Penyampaian Laporan Manajemen Risiko kepada DAPN",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4085,7 +4085,7 @@
         "name": "Pengumpulan Data KPMR",
         "tasks": [
           {
-            "title": "Mengumpulkan data/dokumen dari Divisi terkait untuk laporan monitoring profil risiko korporat s.d. April 2026",
+            "title": "Pengumpulan data/dokumen dari Divisi terkait untuk laporan monitoring profil risiko korporat s.d. April 2026",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4100,7 +4100,7 @@
         "name": "Penyusunan Laporan Manajemen Risiko",
         "tasks": [
           {
-            "title": "Menyusun dan menyelesaikan drafting Laporan Manajemen Risiko KPMR",
+            "title": "Penyusunan dan penyelesaian drafting Laporan Manajemen Risiko KPMR",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4119,7 +4119,7 @@
         "name": "Penyusunan Kuesioner Survei",
         "tasks": [
           {
-            "title": "Menyusun kuesioner survei budaya risiko",
+            "title": "Penyusunan kuesioner survei budaya risiko",
             "status": "IN_PROGRESS",
             "percentComplete": 30,
             "plannedMonths": [
@@ -4136,7 +4136,7 @@
         "name": "Pelaksanaan Survei & Pelaporan",
         "tasks": [
           {
-            "title": "Melaksanakan survei budaya risiko dan menyusun laporan hasil survei",
+            "title": "Pelaksanaan survei budaya risiko dan penyusunan laporan hasil survei",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -4155,7 +4155,7 @@
         "name": "Pelaksanaan Reviu Kajian Risiko",
         "tasks": [
           {
-            "title": "Mereviu kajian risiko Penyusunan HPS Pengadaan Pupuk SM II 2026",
+            "title": "Reviu kajian risiko Penyusunan HPS Pengadaan Pupuk SM II 2026",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4172,7 +4172,7 @@
         "name": "Penyampaian Hasil Reviu",
         "tasks": [
           {
-            "title": "Menyampaikan hasil reviu kajian risiko kepada DKSA",
+            "title": "Penyampaian hasil reviu kajian risiko kepada DKSA",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4192,7 +4192,7 @@
         "name": "Pelaksanaan Reviu Kajian Risiko",
         "tasks": [
           {
-            "title": "Mereviu kajian risiko Penerapan Analisis Mutu Pupuk Semester II 2026",
+            "title": "Reviu kajian risiko Penerapan Analisis Mutu Pupuk Semester II 2026",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4209,7 +4209,7 @@
         "name": "Penyampaian Hasil Reviu",
         "tasks": [
           {
-            "title": "Menyampaikan hasil reviu kajian risiko kepada DKSR",
+            "title": "Penyampaian hasil reviu kajian risiko kepada DKSR",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4229,7 +4229,7 @@
         "name": "Pelaksanaan Reviu Kajian Risiko",
         "tasks": [
           {
-            "title": "Mereviu kajian risiko Penambahan Penyertaan Modal ke PT KPBN melalui Debt to Equity Swap",
+            "title": "Reviu kajian risiko Penambahan Penyertaan Modal ke PT KPBN melalui Debt to Equity Swap",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4246,7 +4246,7 @@
         "name": "Penyampaian Hasil Reviu",
         "tasks": [
           {
-            "title": "Menyampaikan hasil reviu kajian risiko kepada DSMK",
+            "title": "Penyampaian hasil reviu kajian risiko kepada DSMK",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4266,7 +4266,7 @@
         "name": "Pelaksanaan Reviu Kajian Risiko",
         "tasks": [
           {
-            "title": "Mereviu kajian risiko Persiapan Pembelian GKP PT SGN 20.000 Ton melalui ICT",
+            "title": "Reviu kajian risiko Persiapan Pembelian GKP PT SGN 20.000 Ton melalui ICT",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4284,7 +4284,7 @@
         "name": "Penyampaian Hasil Reviu",
         "tasks": [
           {
-            "title": "Menyampaikan hasil reviu kajian risiko kepada DPPN, DATN, dan DKSA",
+            "title": "Penyampaian hasil reviu kajian risiko kepada DPPN, DATN, dan DKSA",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4303,7 +4303,7 @@
         "name": "Pelaksanaan Reviu Kajian Risiko",
         "tasks": [
           {
-            "title": "Mereviu kajian risiko Penyesuaian Nilai Vaksinasi Gotong Royong",
+            "title": "Reviu kajian risiko Penyesuaian Nilai Vaksinasi Gotong Royong",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4321,7 +4321,7 @@
         "name": "Finalisasi Hasil Reviu",
         "tasks": [
           {
-            "title": "Memfinalisasi hasil reviu kajian risiko",
+            "title": "Finalisasi hasil reviu kajian risiko",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4340,7 +4340,7 @@
         "name": "Pelaksanaan Reviu Kajian Risiko",
         "tasks": [
           {
-            "title": "Mereviu kajian risiko Implementasi Teknologi Benang Khusus dan QR Code pada Kemasan Pupuk",
+            "title": "Reviu kajian risiko Implementasi Teknologi Benang Khusus dan QR Code pada Kemasan Pupuk",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4358,7 +4358,7 @@
         "name": "Penyampaian Hasil Reviu",
         "tasks": [
           {
-            "title": "Menyampaikan hasil reviu kajian risiko kepada DKSR",
+            "title": "Penyampaian hasil reviu kajian risiko kepada DKSR",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4377,7 +4377,7 @@
         "name": "Penyusunan Pedoman & Kebijakan Kepatuhan",
         "tasks": [
           {
-            "title": "Menyusun draft Pedoman dan Kebijakan Kepatuhan",
+            "title": "Penyusunan draft Pedoman dan Kebijakan Kepatuhan",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4393,7 +4393,7 @@
         "name": "Reviu KPPU & BPKP",
         "tasks": [
           {
-            "title": "Menjalani proses reviu Pedoman dan Kebijakan Kepatuhan oleh KPPU dan BPKP",
+            "title": "Proses reviu Pedoman dan Kebijakan Kepatuhan oleh KPPU dan BPKP",
             "status": "IN_PROGRESS",
             "percentComplete": 50,
             "plannedMonths": [
@@ -4408,7 +4408,7 @@
         "name": "Finalisasi & Penetapan",
         "tasks": [
           {
-            "title": "Memfinalisasi dan menetapkan Pedoman dan Kebijakan Kepatuhan",
+            "title": "Finalisasi dan penetapan Pedoman dan Kebijakan Kepatuhan",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -4427,7 +4427,7 @@
         "name": "Perancangan Regulatory Compliance System",
         "tasks": [
           {
-            "title": "Merancang kebutuhan dan spesifikasi Regulatory Compliance System",
+            "title": "Perancangan kebutuhan dan spesifikasi Regulatory Compliance System",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4443,7 +4443,7 @@
         "name": "Finalisasi Pengadaan & Implementasi",
         "tasks": [
           {
-            "title": "Memfinalisasi pengadaan Regulatory Compliance System",
+            "title": "Finalisasi pengadaan Regulatory Compliance System",
             "status": "IN_PROGRESS",
             "percentComplete": 60,
             "plannedMonths": [
@@ -4453,7 +4453,7 @@
             "note": "Finalisasi untuk pengadaan sedang berjalan"
           },
           {
-            "title": "Mengimplementasikan Regulatory Compliance System",
+            "title": "Implementasi Regulatory Compliance System",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -4472,7 +4472,7 @@
         "name": "Persiapan Asesmen RMI",
         "tasks": [
           {
-            "title": "Bersurat kepada BPKP sebagai asesor RMI melalui SPI",
+            "title": "Penyampaian surat kepada BPKP sebagai asesor RMI melalui SPI",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4484,7 +4484,7 @@
             "note": "Telah bersurat kepada BPKP sebagai asesor RMI melalui SPI"
           },
           {
-            "title": "Menyusun Laporan Tindak Lanjut AoI RMI Triwulan I",
+            "title": "Penyusunan Laporan Tindak Lanjut AoI RMI Triwulan I",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4499,7 +4499,7 @@
         "name": "Pelaksanaan Penilaian RMI",
         "tasks": [
           {
-            "title": "Melaksanakan entry meeting dan penilaian RMI bersama BPKP",
+            "title": "Pelaksanaan entry meeting dan penilaian RMI bersama BPKP",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -4515,7 +4515,7 @@
         "name": "Pelaporan Hasil Asesmen",
         "tasks": [
           {
-            "title": "Menyusun Laporan Hasil Asesmen RMI",
+            "title": "Penyusunan Laporan Hasil Asesmen RMI",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
@@ -4535,7 +4535,7 @@
         "name": "Perancangan & Implementasi ICOFR",
         "tasks": [
           {
-            "title": "Melaksanakan tahap perancangan, implementasi, dan evaluasi ICOFR",
+            "title": "Pelaksanaan tahap perancangan, implementasi, dan evaluasi ICOFR",
             "status": "COMPLETED",
             "percentComplete": 100,
             "plannedMonths": [
@@ -4551,7 +4551,7 @@
         "name": "Finalisasi TOE & Remediasi",
         "tasks": [
           {
-            "title": "Menyelesaikan finalisasi Test of Operating Effectiveness (TOE) dan remediasi",
+            "title": "Penyelesaian finalisasi Test of Operating Effectiveness (TOE) dan remediasi",
             "status": "IN_PROGRESS",
             "percentComplete": 60,
             "plannedMonths": [
@@ -4566,7 +4566,7 @@
         "name": "Penyusunan Laporan Final, Pedoman & SOP",
         "tasks": [
           {
-            "title": "Menyusun Laporan Pelaksanaan ICOFR final, pedoman, dan SOP bersama Deloitte",
+            "title": "Penyusunan Laporan Pelaksanaan ICOFR final, pedoman, dan SOP bersama Deloitte",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -4585,7 +4585,7 @@
         "name": "Penyusunan Pedoman PMR RKAP 2027",
         "tasks": [
           {
-            "title": "Menyusun Pedoman Penyusunan RKAP bidang Manajemen Risiko",
+            "title": "Penyusunan Pedoman Penyusunan RKAP bidang Manajemen Risiko",
             "status": "IN_PROGRESS",
             "percentComplete": 45,
             "plannedMonths": [
@@ -4601,7 +4601,7 @@
         "name": "Penyusunan Strategi Risiko & Finalisasi",
         "tasks": [
           {
-            "title": "Menyusun Strategi Risiko RKAP 2027",
+            "title": "Penyusunan Strategi Risiko RKAP 2027",
             "status": "IN_PROGRESS",
             "percentComplete": 40,
             "plannedMonths": [
@@ -4611,7 +4611,7 @@
             "note": "Penyusunan Strategi risiko RKAP 2027 sedang dalam proses"
           },
           {
-            "title": "Memfinalisasi Pedoman Penyusunan PMR RKAP 2027",
+            "title": "Finalisasi Pedoman Penyusunan PMR RKAP 2027",
             "status": "TODO",
             "percentComplete": 0,
             "plannedMonths": [
