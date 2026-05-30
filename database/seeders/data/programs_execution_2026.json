@@ -1,0 +1,4626 @@
+[
+  {
+    "code": "PRG-DKMR-DKSA-001",
+    "phases": [
+      {
+        "name": "Identifikasi Kebutuhan Pendanaan",
+        "tasks": [
+          {
+            "title": "Petakan kebutuhan biaya Groundbreaking (Seremoni & Demo Plot)",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Rencana kebutuhan biaya Groundbreaking telah dipetakan, rencana dibiayai dana OPEX (PTPN 1 reimbursement ke Holding)"
+          },
+          {
+            "title": "Rumuskan skema reimbursement OPEX PTPN 1 ke Holding",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Mar",
+              "Apr"
+            ],
+            "note": "Skema pembiayaan via OPEX (reimbursement ke Holding) sedang dirumuskan sebagai alternatif sementara"
+          }
+        ]
+      },
+      {
+        "name": "Koordinasi & Audiensi Danantara",
+        "tasks": [
+          {
+            "title": "Audiensi Senior Leader Danantara soal alternatif pendanaan & payung hukum",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Memerlukan audiensi kepada Senior Leader Danantara terkait alternatif pendanaan & payung hukum selama Penugasan belum diberikan"
+          }
+        ]
+      },
+      {
+        "name": "Penerbitan Arahan Danantara",
+        "tasks": [
+          {
+            "title": "Susun & terbitkan Surat Arahan Danantara",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output Surat Arahan Danantara belum terbit; masih menunggu kejelasan penugasan & payung hukum"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-002",
+    "phases": [
+      {
+        "name": "Konsolidasi Data RKAP",
+        "tasks": [
+          {
+            "title": "Konsolidasi update angka RKAP 2026 sesuai rilis KPPS",
+            "status": "IN_PROGRESS",
+            "percentComplete": 60,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Update angka mengikuti rilis KPPS sedang dikonsolidasi menuju produksi buku final"
+          }
+        ]
+      },
+      {
+        "name": "Produksi & Finalisasi Buku",
+        "tasks": [
+          {
+            "title": "Produksi Buku RKAP 2026 final rilis KPPS",
+            "status": "IN_PROGRESS",
+            "percentComplete": 65,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Sedang dalam tahap produksi Buku RKAP 2026 final rilis KPPS"
+          },
+          {
+            "title": "Finalisasi & distribusi Buku RKAP Final Rilis KPPS",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output buku final belum selesai diproduksi/didistribusikan"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-003",
+    "phases": [
+      {
+        "name": "Pengumpulan & Verifikasi Data",
+        "tasks": [
+          {
+            "title": "Kumpulkan data pelaksanaan G&A Excellence periode Maret",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar"
+            ],
+            "note": "Laporan evaluasi monitoring G&A Excellence telah dilaporkan (program COMPLETED)"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan & Pelaporan",
+        "tasks": [
+          {
+            "title": "Susun Laporan Monitoring & Evaluasi G&A Excellence periode Maret",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar",
+              "Apr"
+            ],
+            "note": "Laporan evaluasi monitoring G&A Excellence telah dilaporkan"
+          },
+          {
+            "title": "Sampaikan Laporan Monitoring G&A Excellence periode Maret",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Laporan telah dilaporkan (program COMPLETED)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-004",
+    "phases": [
+      {
+        "name": "Closing SAP & Pengumpulan Data",
+        "tasks": [
+          {
+            "title": "Selesaikan proses closing SAP Holding",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Saat ini proses closing SAP Holding sedang berjalan (target selambatnya 7 Mei 2026)"
+          },
+          {
+            "title": "Tarik & verifikasi data beban administrasi Holding pasca-closing",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Penarikan data menunggu closing SAP Holding selesai"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan & Pelaporan",
+        "tasks": [
+          {
+            "title": "Susun Laporan Evaluasi & Monitoring Beban Administrasi Holding",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Penyusunan laporan belum dimulai; menunggu data hasil closing SAP"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-005",
+    "phases": [
+      {
+        "name": "Penyiapan Portal RKAPP",
+        "tasks": [
+          {
+            "title": "Penyusunan Portal RKAPP",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Penyusunan Portal RKAPP telah selesai dilakukan"
+          }
+        ]
+      },
+      {
+        "name": "Koordinasi Penugasan & Arahan",
+        "tasks": [
+          {
+            "title": "Tindak lanjut Surat Penugasan Hilirisasi & arahan Pemegang Saham",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Memerlukan Surat Penugasan Hilirisasi & surat arahan Pemegang Saham sebagai basis penyusunan"
+          },
+          {
+            "title": "Audiensi dengan Deputi Peningkatan Nilai BP BUMN (Bpk Endra Gunawan)",
+            "status": "IN_PROGRESS",
+            "percentComplete": 25,
+            "plannedMonths": [
+              "Mei",
+              "Jun"
+            ],
+            "note": "Memerlukan audiensi dengan Deputi Peningkatan Nilai BP BUMN"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan & Konsolidasi RKAPP",
+        "tasks": [
+          {
+            "title": "Susun RKAPP 2026 Konsolidasi",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun",
+              "Jul"
+            ],
+            "note": "Output RKAPP 2026 Konsolidasi belum disusun; menunggu penugasan & arahan pemegang saham"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-006",
+    "phases": [
+      {
+        "name": "Pengembangan Aplikasi",
+        "tasks": [
+          {
+            "title": "Bangun Dashboard Apps monitoring Leading Indicator Direktorat KMR (Project ATLAS)",
+            "status": "IN_PROGRESS",
+            "percentComplete": 70,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Aplikasi sudah pada tahap uji coba, mengindikasikan pengembangan inti telah berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Uji Coba & Penyempurnaan",
+        "tasks": [
+          {
+            "title": "Pelaksanaan uji aplikasi dengan Tim Kecil (25 Mei 2026)",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Uji aplikasi dengan Tim Kecil dijadwalkan/dilaksanakan 25 Mei 2026 full day di ruang Kompeten Lt 11 Agro Plaza"
+          },
+          {
+            "title": "Perbaikan hasil uji coba & finalisasi dashboard",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Perbaikan pasca-uji belum dimulai (uji coba baru tahap pelaksanaan)"
+          }
+        ]
+      },
+      {
+        "name": "Go-Live & Sosialisasi",
+        "tasks": [
+          {
+            "title": "Go-live Dashboard Apps Monitoring Program Kerja Direktorat KMR",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Go-live belum tercapai; aplikasi masih tahap uji coba (health RED, lewat deadline 15 Mei)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-007",
+    "phases": [
+      {
+        "name": "Reviu SINUSA",
+        "tasks": [
+          {
+            "title": "Reviu roadmap SINUSA, khususnya pada sisi database",
+            "status": "IN_PROGRESS",
+            "percentComplete": 55,
+            "plannedMonths": [
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Reviu SINUSA khususnya pada database sedang berjalan menuju penyusunan laporan"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan Laporan Kajian",
+        "tasks": [
+          {
+            "title": "Susun laporan reviu SINUSA (fokus database)",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Sedang dalam penyusunan laporan reviu SINUSA khususnya pada database"
+          },
+          {
+            "title": "Finalisasi Laporan Kajian SINUSA Roadmap Improvement",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output laporan kajian belum difinalisasi"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-008",
+    "phases": [
+      {
+        "name": "Koordinasi & Penyelarasan dengan PTPN IV",
+        "tasks": [
+          {
+            "title": "Koordinasi rencana integrasi SINUSA-WEPC dengan PTPN IV",
+            "status": "IN_PROGRESS",
+            "percentComplete": 20,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Terhambat: belum ada tindak lanjut dari PTPN IV karena PTPN IV sedang membenahi case WEPC internal di level region"
+          }
+        ]
+      },
+      {
+        "name": "Pemetaan Teknis Integrasi",
+        "tasks": [
+          {
+            "title": "Petakan kebutuhan & arsitektur integrasi data SINUSA-WEPC",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei",
+              "Jun"
+            ],
+            "note": "Pemetaan teknis belum dimulai; menunggu kesiapan PTPN IV"
+          }
+        ]
+      },
+      {
+        "name": "Pengembangan & Uji Integrasi",
+        "tasks": [
+          {
+            "title": "Bangun & uji integrasi antara SINUSA dengan WEPC",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun"
+            ],
+            "note": "Output integrasi belum dikerjakan; health RED akibat ketergantungan pada PTPN IV"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-009",
+    "phases": [
+      {
+        "name": "Perhitungan & Penyusunan Formula HPS",
+        "tasks": [
+          {
+            "title": "Hitung HPS BBM PTPN Grup kebutuhan Tahun 2026 dengan formula baru",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb"
+            ],
+            "note": "Program COMPLETED; perhitungan HPS & formula baru telah selesai sebagai basis tender"
+          }
+        ]
+      },
+      {
+        "name": "Penetapan & Tender",
+        "tasks": [
+          {
+            "title": "Tetapkan HPS dan formula perhitungan baru BBM",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar"
+            ],
+            "note": "Penetapan HPS & formula baru telah selesai (program COMPLETED)"
+          },
+          {
+            "title": "Pelaksanaan proses tender oleh Divisi Pengadaan",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Telah dilakukan proses tender oleh Divisi Pengadaan"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-010",
+    "phases": [
+      {
+        "name": "Penyesuaian Tim Teknis",
+        "tasks": [
+          {
+            "title": "Lakukan penyesuaian perhitungan HPS Pupuk oleh tim teknis",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Hasil penyesuaian tim teknis telah tersedia, kini sedang diinput Fungsi Perencanaan di apps Growmate"
+          }
+        ]
+      },
+      {
+        "name": "Input & Approval Anggaran",
+        "tasks": [
+          {
+            "title": "Input hasil penyesuaian di apps Growmate oleh Fungsi Perencanaan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Saat ini hasil penyesuaian tim teknis sedang dilakukan input oleh Fungsi Perencanaan di apps Growmate"
+          },
+          {
+            "title": "Proses approval hasil penyesuaian anggaran oleh fungsi teknis",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Memerlukan percepatan fungsi teknis terkait approval hasil penyesuaian anggaran (health RED)"
+          }
+        ]
+      },
+      {
+        "name": "Penetapan HPS",
+        "tasks": [
+          {
+            "title": "Tetapkan HPS Pupuk kebutuhan SM II Tahun 2026",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Output penetapan HPS Pupuk SM II belum terbit; menunggu input & approval anggaran"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-011",
+    "phases": [
+      {
+        "name": "Penyusunan Draft Formula",
+        "tasks": [
+          {
+            "title": "Susun draft Keputusan Direksi formula perhitungan BBM Solar",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb"
+            ],
+            "note": "Program COMPLETED; draft keputusan telah selesai disusun"
+          }
+        ]
+      },
+      {
+        "name": "Persetujuan & Penetapan Sirkuler",
+        "tasks": [
+          {
+            "title": "Proses persetujuan (approval) seluruh Direksi",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar",
+              "Apr"
+            ],
+            "note": "Telah selesai dan memperoleh persetujuan (approval) seluruh Direksi"
+          },
+          {
+            "title": "Terbitkan Sirkuler Keputusan Direksi formula BBM Solar",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Output sirkuler keputusan Direksi telah selesai (program COMPLETED)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-012",
+    "phases": [
+      {
+        "name": "Regrouping & Pembentukan Tim",
+        "tasks": [
+          {
+            "title": "Laksanakan regrouping standarisasi formula ongkos angkut dengan DKSR",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Telah dilaksanakan regrouping dengan DKSR"
+          },
+          {
+            "title": "Susun SK Tim standarisasi formula ongkos angkut pupuk",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Saat ini progress penyusunan SK Tim sedang berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Reviu SKPTS & Perumusan Formula",
+        "tasks": [
+          {
+            "title": "Reviu SKPTS oleh DHKM",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Memerlukan percepatan reviu SKPTS oleh DHKM"
+          },
+          {
+            "title": "Rumuskan & tetapkan Formula Standar ongkos angkut pupuk PTPN Grup",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output formula standar belum dirumuskan; menunggu SK Tim & reviu SKPTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-013",
+    "phases": [
+      {
+        "name": "Perumusan Flow Proses",
+        "tasks": [
+          {
+            "title": "Masukkan flow proses Tata Kelola Investasi ke draft Peraturan Direksi (DSMK & IABF)",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Flow proses Tata Kelola Investasi telah dimasukkan dalam Peraturan Direksi yang sedang disusun oleh DSMK dan IABF"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan Suplemen Pendukung",
+        "tasks": [
+          {
+            "title": "Susun suplemen pendukung bersama Komite Investasi & Divisi Teknis Holding",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Memerlukan penyusunan suplemen pendukung bersama Komite Investasi & Divisi Teknis Holding"
+          }
+        ]
+      },
+      {
+        "name": "Finalisasi & Penetapan Kebijakan",
+        "tasks": [
+          {
+            "title": "Finalisasi & tetapkan Kebijakan Tata Kelola Investasi",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output kebijakan belum ditetapkan; menunggu Peraturan Direksi & suplemen pendukung"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-014",
+    "phases": [
+      {
+        "name": "Penyiapan & Verifikasi Pembayaran",
+        "tasks": [
+          {
+            "title": "Hitung & verifikasi nilai bunga IP PEN periode April 2026",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Program COMPLETED; pembayaran bunga telah dieksekusi 29 April 2026"
+          }
+        ]
+      },
+      {
+        "name": "Eksekusi & Dokumentasi",
+        "tasks": [
+          {
+            "title": "Eksekusi pembayaran bunga IP PEN periode April 2026",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Pembayaran bunga periode April 2026 telah dilakukan pada 29 April 2026"
+          },
+          {
+            "title": "Terbitkan Surat Pembayaran Bunga IP PEN beserta bukti transfer",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Sesuai Surat No. DKM/X/436/2026 tanggal 29 April 2026"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-015",
+    "phases": [
+      {
+        "name": "Pemenuhan & Monitoring Sinking Fund",
+        "tasks": [
+          {
+            "title": "Pemenuhan & monitoring Sinking Fund IP PEN periode TW I 2026",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Program COMPLETED; pemenuhan sinking fund TW I telah terpantau"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan & Penyampaian Laporan",
+        "tasks": [
+          {
+            "title": "Susun Laporan Sinking Fund periode TW I 2026",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar"
+            ],
+            "note": "Laporan monitoring TW I 2026 telah disusun (program COMPLETED)"
+          },
+          {
+            "title": "Sampaikan Laporan Sinking Fund ke Direktur Keuangan & Manajemen Risiko",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar"
+            ],
+            "note": "Telah disampaikan laporan monitoring periode TW I 2026 kepada Direktur Keuangan & Manajemen Risiko"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-016",
+    "phases": [
+      {
+        "name": "Kajian Penundaan Pembayaran",
+        "tasks": [
+          {
+            "title": "Kajian penundaan pembayaran pokok SHL PT KPBN oleh Tim DHKM",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei",
+              "Jun"
+            ],
+            "note": "Masih dalam kajian oleh Tim DHKM"
+          }
+        ]
+      },
+      {
+        "name": "Persetujuan Direksi",
+        "tasks": [
+          {
+            "title": "Ajukan & peroleh Keputusan Direksi atas penundaan pembayaran pokok",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jul",
+              "Agt",
+              "Sep"
+            ],
+            "note": "Memerlukan Keputusan Direksi; masih menunggu hasil kajian Tim DHKM"
+          }
+        ]
+      },
+      {
+        "name": "Pembaharuan Perjanjian",
+        "tasks": [
+          {
+            "title": "Susun & tandatangani pembaharuan perjanjian SHL PT KPBN",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Okt",
+              "Nov",
+              "Des"
+            ],
+            "note": "Output pembaharuan perjanjian belum disusun; menunggu kajian & Keputusan Direksi"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-017",
+    "phases": [
+      {
+        "name": "Penyusunan Laporan",
+        "tasks": [
+          {
+            "title": "Kompilasi dan verifikasi data penggunaan Dana IP PEN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Laporan penggunaan IP PEN tuntas disusun"
+          },
+          {
+            "title": "Susun Laporan Penggunaan IP PEN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar",
+              "Apr"
+            ],
+            "note": "Laporan Penggunaan IP PEN telah disusun"
+          }
+        ]
+      },
+      {
+        "name": "Penyampaian ke LPEI",
+        "tasks": [
+          {
+            "title": "Sampaikan Laporan Penggunaan IP PEN kepada LPEI",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Telah disampaikan ke LPEI via Surat No. DKSA/X/401/2026 tgl 20 April 2026"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-018",
+    "phases": [
+      {
+        "name": "Penyiapan Materi & Proyeksi",
+        "tasks": [
+          {
+            "title": "Susun materi paparan & proyeksi keuangan PTPN Grup untuk penjaminan PT SGN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Materi paparan & proyeksi keuangan (rasio IP PEN & cash deficiency support) telah dipersiapkan"
+          },
+          {
+            "title": "Koordinasi analisa & proyeksi bersama LPEI",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "DKSA telah berkoordinasi dengan LPEI terkait analisa dan proyeksi"
+          }
+        ]
+      },
+      {
+        "name": "Pertemuan & Pembahasan dengan Kemenkeu/DJKN",
+        "tasks": [
+          {
+            "title": "Jadwalkan & laksanakan pertemuan dengan Direktur KND/DJKN",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Pertemuan Dir KND di-reschedule; baru dapat dilakukan 20/21 Mei 2026"
+          },
+          {
+            "title": "Diskusi bersama tim kerja LPEI dan DJKN",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei",
+              "Jun"
+            ],
+            "note": "Selanjutnya akan dilakukan diskusi bersama tim kerja LPEI dan DJKN"
+          }
+        ]
+      },
+      {
+        "name": "Perolehan Dukungan",
+        "tasks": [
+          {
+            "title": "Peroleh Dukungan Kementerian Keuangan/Pemberi Investasi",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun"
+            ],
+            "note": "Output dukungan belum terbit; masih menunggu hasil pertemuan & diskusi"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-019",
+    "phases": [
+      {
+        "name": "Verifikasi Dokumen Pendukung",
+        "tasks": [
+          {
+            "title": "Verifikasi dokumen pendukung pembayaran",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Telah dilakukan verifikasi dokumen pendukung pembayaran"
+          },
+          {
+            "title": "Konfirmasi hasil verifikasi & underlying ke tim PTPN I dan PTPN IV",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Konfirmasi ke PTPN I selesai; menunggu info penggunaan biaya KSO dari PTPN IV, follow up W2 Mei 2026"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan Keputusan Direksi",
+        "tasks": [
+          {
+            "title": "Susun Keputusan Direksi Diluar Rapat Direksi",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Dalam proses penyusunan Keputusan Direksi Diluar Rapat Direksi"
+          }
+        ]
+      },
+      {
+        "name": "Persetujuan & Penetapan",
+        "tasks": [
+          {
+            "title": "Terbitkan Surat Persetujuan optimalisasi penyerapan Dana IP PEN",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output surat persetujuan belum terbit; menunggu Keputusan Direksi"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-020",
+    "phases": [
+      {
+        "name": "Reviu Hukum Draft SE",
+        "tasks": [
+          {
+            "title": "Reviu Draft SE Dividen oleh Divisi Hukum",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Reviu kembali oleh Divisi Hukum atas Draft SE Dividen"
+          },
+          {
+            "title": "Pembahasan Draft SE Dividen bersama DHKM",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Pertemuan dengan DHKM di-reschedule, follow up W2 Mei 2026"
+          }
+        ]
+      },
+      {
+        "name": "Persetujuan & Penetapan",
+        "tasks": [
+          {
+            "title": "Peroleh persetujuan Direksi & tetapkan Surat Edaran Dividen",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output SE belum ditetapkan; menunggu persetujuan Direksi atas SE Dividen"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-021",
+    "phases": [
+      {
+        "name": "Reviu Hukum Draft Perubahan",
+        "tasks": [
+          {
+            "title": "Reviu Draft Perubahan Peraturan Direksi oleh Divisi Hukum",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Draft Perubahan telah direviu Divisi Hukum"
+          },
+          {
+            "title": "Penyesuaian & re-check ulang Draft Perubahan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 60,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Dalam proses penyesuaian Draft Perubahan dan re-chek ulang"
+          }
+        ]
+      },
+      {
+        "name": "Persetujuan & Penetapan",
+        "tasks": [
+          {
+            "title": "Sampaikan ke Direksi & tetapkan Perubahan Peraturan Direksi Tata Kelola Pinjaman IP PEN",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Akan disampaikan kepada Direksi pada kesempatan pertama; menunggu persetujuan Direksi"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-022",
+    "phases": [
+      {
+        "name": "Site Visit & Pengumpulan Data",
+        "tasks": [
+          {
+            "title": "Lakukan site visit ke Unit Kerja PTPN I/Penerima Dana IP PEN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Telah dilakukan site visit oleh Piesta/Konsultan Pengawas"
+          }
+        ]
+      },
+      {
+        "name": "Verifikasi & Penyusunan Laporan",
+        "tasks": [
+          {
+            "title": "Verifikasi dokumen pembayaran oleh Piesta/Konsultan Pengawas",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Dalam proses verifikasi dokumen pembayaran"
+          },
+          {
+            "title": "Terbitkan Laporan Monitoring IP PEN oleh Piesta/Konsultan Pengawas",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Dalam proses penyusunan laporan oleh Piesta/Konsultan Pengawas"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-023",
+    "phases": [
+      {
+        "name": "Pengumpulan & Kompilasi Data",
+        "tasks": [
+          {
+            "title": "Kompilasi laporan SHL dan/atau ICL dari Anak Perusahaan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "Kompilasi laporan SHL dan/atau ICL dari anper sedang berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan Laporan Grup",
+        "tasks": [
+          {
+            "title": "Susun Laporan Monitoring SHL & ICL PTPN Grup TW 1 2026",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Untuk menjadi laporan SHL dan/atau ICL PTPN grup"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-024",
+    "phases": [
+      {
+        "name": "Penyiapan Format & Pengumpulan Data",
+        "tasks": [
+          {
+            "title": "Bentuk format laporan monitoring",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Pembentukan format laporan monitoring telah dilakukan"
+          },
+          {
+            "title": "Collecting laporan dari Anak Perusahaan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Collecting laporan Anak Perusahaan sedang berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan Laporan Monitoring",
+        "tasks": [
+          {
+            "title": "Susun Laporan Monitoring Implementasi Kebijakan Keuangan Strategi TW 1 2026",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Laporan belum disusun; masih tahap collecting data anper"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-025",
+    "phases": [
+      {
+        "name": "Perhitungan Kewajiban SHL",
+        "tasks": [
+          {
+            "title": "Hitung kewajiban SHL Anper periode Mei 2026",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Melakukan perhitungan kewajiban SHL Anper"
+          },
+          {
+            "title": "Susun informasi suku bunga SHL periode Mei 2026",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Bagian dari perhitungan kewajiban & informasi suku bunga SHL"
+          }
+        ]
+      },
+      {
+        "name": "Persetujuan & Penerbitan Tagihan",
+        "tasks": [
+          {
+            "title": "Peroleh persetujuan Direktur Keuangan & MR dan terbitkan Surat Tagihan",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Surat Tagihan belum terbit; menunggu persetujuan Direktur Keuangan dan Manajemen Risiko"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-026",
+    "phases": [
+      {
+        "name": "Penyampaian Surat & Permintaan Proyeksi",
+        "tasks": [
+          {
+            "title": "Sampaikan Surat ke PTPN I terkait pemenuhan kewajiban sinking fund tertunda",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Telah disampaikan Surat ke PTPN I terkait pemenuhan kewajiban sinking fund tertunda TW II"
+          },
+          {
+            "title": "Minta proyeksi cashflow bulanan PTPN I untuk monitoring",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Permintaan proyeksi cashflow bulanan PTPN I guna monitoring pemenuhan sinking fund"
+          }
+        ]
+      },
+      {
+        "name": "Monitoring & Pelaporan Pemenuhan",
+        "tasks": [
+          {
+            "title": "Monitor pemenuhan sinking fund & susun Laporan Sinking Fund TW II 2026",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Mei",
+              "Jun"
+            ],
+            "note": "Penundaan sinking fund TW I 2026 adalah penundaan kedua; monitoring berlanjut"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-027",
+    "phases": [
+      {
+        "name": "Negosiasi Termsheet",
+        "tasks": [
+          {
+            "title": "Diskusi & negosiasi termsheet dengan perbankan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "Proses diskusi dan negosiasi termsheet dengan perbankan"
+          }
+        ]
+      },
+      {
+        "name": "Persetujuan KPSS",
+        "tasks": [
+          {
+            "title": "Peroleh persetujuan KPSS (PTPN III) atas tambahan fasilitas & penjaminan aset",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei",
+              "Jun"
+            ],
+            "note": "Menunggu Persetujuan KPSS atas tambahan fasilitas pinjaman PTPN I & penjaminan aset"
+          }
+        ]
+      },
+      {
+        "name": "Penandatanganan Perjanjian Kredit",
+        "tasks": [
+          {
+            "title": "Tandatangani Perjanjian Kredit Fasilitas Pinjaman Baru PTPN I",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun"
+            ],
+            "note": "Output perjanjian kredit belum tercapai; masih tahap negosiasi termsheet"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-028",
+    "phases": [
+      {
+        "name": "Pengawalan Fasilitas Pinjaman & Cashflow",
+        "tasks": [
+          {
+            "title": "Diskusi & kawal proses usulan fasilitas pinjaman baru PTPN I",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "Diskusi dan pengawalan proses usulan fasilitas pinjaman baru"
+          },
+          {
+            "title": "Monitor cashflow PTPN I untuk kesiapan pelunasan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Monitoring cashflow PTPN I"
+          }
+        ]
+      },
+      {
+        "name": "Pelunasan MTN Jatuh Tempo",
+        "tasks": [
+          {
+            "title": "Lunasi MTN PTPN X 2018 jatuh tempo & peroleh bukti pelunasan",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Bukti pelunasan belum terbit; menunggu komitmen PTPN I melunasi MTN via fasilitas baru/cashflow"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-029",
+    "phases": [
+      {
+        "name": "Diskusi Waiver/Perpanjangan dengan Kreditur",
+        "tasks": [
+          {
+            "title": "Diskusi dengan kreditur atas usulan waiver/perpanjangan jangka waktu pengikatan agunan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "Diskusi dengan kreditur atas usulan waiver dan/atau perpanjangan jangka waktu pengikatan agunan"
+          }
+        ]
+      },
+      {
+        "name": "Pengikatan Agunan & Kelengkapan",
+        "tasks": [
+          {
+            "title": "Proses perpanjangan pengikatan aset agunan & susun check list kelengkapan",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei",
+              "Jun"
+            ],
+            "note": "Output check list belum tercapai; menunggu hasil diskusi waiver/perpanjangan & dukungan keringanan PNBP"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-030",
+    "phases": [
+      {
+        "name": "Pengajuan Perpanjangan AP",
+        "tasks": [
+          {
+            "title": "Ajukan perpanjangan Availability Period pencairan Fasilitas Tranche II PT SGN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Proses pengajuan perpanjangan AP tuntas"
+          }
+        ]
+      },
+      {
+        "name": "Persetujuan Agen Fasilitas",
+        "tasks": [
+          {
+            "title": "Peroleh Surat Persetujuan Agen Fasilitas Pinjaman Baru",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Persetujuan perpanjangan AP telah disampaikan"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-031",
+    "phases": [
+      {
+        "name": "Pengajuan Permohonan Waiver",
+        "tasks": [
+          {
+            "title": "Ajukan permohonan waiver biaya breakcost fasilitas MAA SGN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Proses permohonan waiver biaya breakcost tuntas"
+          }
+        ]
+      },
+      {
+        "name": "Persetujuan Agen Fasilitas",
+        "tasks": [
+          {
+            "title": "Peroleh Surat Persetujuan Agen Fasilitas Pinjaman MAA SGN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Persetujuan tidak mengenakan biaya breakcost telah disampaikan"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-032",
+    "phases": [
+      {
+        "name": "Persiapan & Pengawalan Pelunasan",
+        "tasks": [
+          {
+            "title": "Kawal proses penyelesaian Fasilitas Pinjaman PT SGN jatuh tempo",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Program selesai; fasilitas dikawal hingga lunas"
+          }
+        ]
+      },
+      {
+        "name": "Pelunasan & Surat Keterangan Lunas",
+        "tasks": [
+          {
+            "title": "Lunasi fasilitas & peroleh Surat Keterangan Lunas dari Agen Fasilitas MAA",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Fasilitas MAA SGN telah lunas pada 27 April 2026"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-033",
+    "phases": [
+      {
+        "name": "Persiapan & Pemenuhan Syarat Pencairan",
+        "tasks": [
+          {
+            "title": "Penuhi syarat dan dokumen pencairan tranche II fasilitas debt Repro PT SGN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Drawdown pencairan telah dilakukan ke rekening PT SGN"
+          }
+        ]
+      },
+      {
+        "name": "Pencairan & Eksekusi Akuisisi",
+        "tasks": [
+          {
+            "title": "Lakukan drawdown pencairan tranche II ke rekening PT SGN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar",
+              "Apr"
+            ],
+            "note": "Drawdown pencairan untuk pendanaan akuisisi telah dilakukan ke rekening PT SGN"
+          },
+          {
+            "title": "Pastikan pembayaran akuisisi saham PT PG RNI dan kumpulkan bukti drawdown pencairan tranche II",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr",
+              "Mei",
+              "Jun"
+            ],
+            "note": "PT SGN telah melakukan pembayaran akuisisi kepada PT RNI"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-034",
+    "phases": [
+      {
+        "name": "Persiapan & Pemenuhan Syarat Pencairan",
+        "tasks": [
+          {
+            "title": "Lengkapi dokumen dan penuhi syarat pencairan (conditions precedent) fasilitas pinjaman tambahan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 35,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei",
+              "Jun"
+            ],
+            "note": "Proses pemenuhan syarat pencairan fasilitas pinjaman sedang berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Persetujuan & Penarikan Fasilitas",
+        "tasks": [
+          {
+            "title": "Ajukan permohonan penarikan fasilitas dan peroleh persetujuan kreditur",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jul",
+              "Agt",
+              "Sep",
+              "Okt"
+            ],
+            "note": "Tahap penarikan belum dimulai, masih pemenuhan syarat pencairan"
+          },
+          {
+            "title": "Lakukan pencairan fasilitas pinjaman tambahan capex dan operasional PT SGN",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Okt",
+              "Nov",
+              "Des"
+            ],
+            "note": "Output pencairan fasilitas ditargetkan menjelang deadline 31 Des"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-035",
+    "phases": [
+      {
+        "name": "Pengajuan & Persetujuan Internal PT SGN",
+        "tasks": [
+          {
+            "title": "Ajukan permohonan persetujuan pinjaman dan penjaminan sesuai Anggaran Dasar PT SGN",
+            "status": "IN_PROGRESS",
+            "percentComplete": 45,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "PT SGN berproses mengajukan persetujuan pinjaman dan penjaminan sesuai AD yang berlaku"
+          }
+        ]
+      },
+      {
+        "name": "Negosiasi & Penandatanganan Perjanjian",
+        "tasks": [
+          {
+            "title": "Negosiasikan term sheet kredit modal kerja bilateral dengan bank",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Tahap lanjutan setelah persetujuan internal yang sedang diproses"
+          },
+          {
+            "title": "Tandatangani Perjanjian Kredit Modal Kerja Bilateral PT SGN",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output perjanjian ditandatangani ditargetkan pada deadline 30 Mei"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-036",
+    "phases": [
+      {
+        "name": "Negosiasi Waiver & Perpanjangan dengan Kreditur",
+        "tasks": [
+          {
+            "title": "Diskusikan usulan waiver dan/atau perpanjangan jangka waktu pengikatan agunan dengan kreditur",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "Diskusi dengan kreditur atas usulan waiver dan/atau perpanjangan jangka waktu pengikatan agunan sedang berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Proses Pengikatan Aset Agunan",
+        "tasks": [
+          {
+            "title": "Selesaikan pengajuan keringanan biaya PNBP dan proses pengikatan aset agunan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Mei",
+              "Jun",
+              "Jul",
+              "Agt"
+            ],
+            "note": "Memerlukan dukungan Direksi untuk penyelesaian pengajuan keringanan biaya PNBP"
+          },
+          {
+            "title": "Monitor dan lengkapi check list kelengkapan pengikatan aset agunan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Agt",
+              "Sep",
+              "Okt"
+            ],
+            "note": "Output check list pengikatan agunan; deadline 23 Okt"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-037",
+    "phases": [
+      {
+        "name": "Pelaksanaan Pemeringkatan oleh PEFINDO",
+        "tasks": [
+          {
+            "title": "Sampaikan data dan laksanakan Komite Rating bersama PEFINDO",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Komite Rating telah dilaksanakan dan PEFINDO telah menyampaikan hasil rating"
+          }
+        ]
+      },
+      {
+        "name": "Persetujuan & Publikasi Rating",
+        "tasks": [
+          {
+            "title": "Peroleh persetujuan hasil rating melalui penandatanganan surat oleh Direktur",
+            "status": "IN_PROGRESS",
+            "percentComplete": 55,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Hasil rating membutuhkan persetujuan; perlu dukungan Direktur penandatanganan surat persetujuan"
+          },
+          {
+            "title": "Publikasikan hasil corporate rating dan tingkat kesehatan PTPN III",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Mei",
+              "Jun"
+            ],
+            "note": "Output corporate rating dan tingkat kesehatan; publikasi rating menunggu persetujuan, deadline 30 Jun"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-038",
+    "phases": [
+      {
+        "name": "Negosiasi dengan Kreditur",
+        "tasks": [
+          {
+            "title": "Diskusikan dan negosiasikan usulan perpanjangan availability period dengan para kreditur",
+            "status": "IN_PROGRESS",
+            "percentComplete": 45,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Diskusi dan negosiasi dengan kreditur sedang berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Persetujuan Komite Kredit & Penerbitan Surat",
+        "tasks": [
+          {
+            "title": "Ajukan persetujuan ke komite kredit masing-masing kreditur",
+            "status": "IN_PROGRESS",
+            "percentComplete": 35,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Kreditur mengajukan persetujuan kepada komite kredit masing-masing"
+          },
+          {
+            "title": "Peroleh Surat Persetujuan dari Agen Fasilitas PTPN IV",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output surat persetujuan dari Agen Fasilitas ditargetkan pada deadline 31 Mei"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-039",
+    "phases": [
+      {
+        "name": "Negosiasi Waiver & Perpanjangan dengan Kreditur",
+        "tasks": [
+          {
+            "title": "Diskusikan usulan waiver dan/atau perpanjangan jangka waktu pengikatan agunan dengan kreditur",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Diskusi dengan kreditur atas usulan waiver dan/atau perpanjangan jangka waktu pengikatan agunan sedang berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Pengajuan & Kelengkapan Pengikatan Agunan",
+        "tasks": [
+          {
+            "title": "Selesaikan pengajuan keringanan biaya PNBP untuk pengikatan agunan PTPN IV",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Memerlukan dukungan Direksi untuk penyelesaian pengajuan keringanan biaya PNBP"
+          },
+          {
+            "title": "Lengkapi dan monitor check list kelengkapan pengikatan aset agunan",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output check list pengikatan agunan ditargetkan pada deadline 31 Mei"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-040",
+    "phases": [
+      {
+        "name": "Persiapan & Persetujuan Injeksi Modal",
+        "tasks": [
+          {
+            "title": "Siapkan dokumen dan peroleh persetujuan injeksi modal PT SGN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Injeksi modal telah disetujui dan dieksekusi"
+          }
+        ]
+      },
+      {
+        "name": "Eksekusi Setoran Modal",
+        "tasks": [
+          {
+            "title": "Lakukan setoran modal dan kumpulkan bukti transfer modal PT SGN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Setoran modal sudah dilakukan pada 24/4/2026 sebesar Rp1,45T"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-041",
+    "phases": [
+      {
+        "name": "Verifikasi Kebutuhan & Persetujuan",
+        "tasks": [
+          {
+            "title": "Verifikasi kebutuhan dan setujui penyaluran uang muka pembelian GKP ICT",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Penyaluran uang muka berjalan dan telah selesai per April 2026"
+          }
+        ]
+      },
+      {
+        "name": "Penyaluran Uang Muka",
+        "tasks": [
+          {
+            "title": "Salurkan uang muka pembelian gula dan kumpulkan bukti transfer",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "Penyaluran uang muka terakhir 24 April 2026, total Rp850 miliar (~85.000 ton GKP)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-042",
+    "phases": [
+      {
+        "name": "Penyusunan Laporan LLD",
+        "tasks": [
+          {
+            "title": "Kompilasi data transaksi devisa dan susun Laporan LLD Bulanan",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Laporan LLD bulanan telah disusun"
+          }
+        ]
+      },
+      {
+        "name": "Penyampaian ke Bank Indonesia",
+        "tasks": [
+          {
+            "title": "Sampaikan Laporan LLD Bulanan kepada Bank Indonesia",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Laporan sudah diterima oleh Bank Indonesia"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-043",
+    "phases": [
+      {
+        "name": "Verifikasi Kebutuhan & Memo Droping",
+        "tasks": [
+          {
+            "title": "Verifikasi permintaan dan kebutuhan dana Holding dan PISMK serta susun memo droping dana",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Droping dana April sudah dilakukan sesuai permintaan dan kebutuhan Holding dan PISMK"
+          }
+        ]
+      },
+      {
+        "name": "Penyaluran Modal Kerja",
+        "tasks": [
+          {
+            "title": "Salurkan droping dana dan kumpulkan bukti transfer droping dana",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Droping dana untuk bulan April sudah dilakukan"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-044",
+    "phases": [
+      {
+        "name": "Monitoring & Kompilasi Progress Tim Penyehatan",
+        "tasks": [
+          {
+            "title": "Monitor dan kompilasi progress update dari masing-masing stream Tim Penyehatan PT SGN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Monitoring & kompilasi progress update dari masing-masing stream telah dilakukan"
+          }
+        ]
+      },
+      {
+        "name": "Rapat OC & Pelaporan ke DKM",
+        "tasks": [
+          {
+            "title": "Selenggarakan Rapat Ketua & Sekretaris OC membahas rekomendasi tanggapan SGN atas usulan SO",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Rapat Ketua & Sekretaris OC realisasi Rabu 29 Apr 2026 dengan persetujuan Ketua OC atas draft memo"
+          },
+          {
+            "title": "Sampaikan progress update Tim Penyehatan kepada DKM",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Output progress update kepada DKM; program selesai per deadline 30 Apr"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-045",
+    "phases": [
+      {
+        "name": "Pembahasan & Kesepakatan Tindak Lanjut",
+        "tasks": [
+          {
+            "title": "Bahas dan sepakati beberapa tindak lanjut inisiatif program Tim Penyehatan PT SGN",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Pembahasan dan kesepakatan beberapa tindak lanjut inisiatif program telah berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Penyelenggaraan Rapat OC",
+        "tasks": [
+          {
+            "title": "Jadwalkan ulang dan selenggarakan Rapat OC Tim Penyehatan PT SGN",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Rapat OC ditunda karena agenda Direksi bersamaan, TBD kemungkinan Kamis 7 Mei 2026 (health RED)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-046",
+    "phases": [
+      {
+        "name": "Monitoring Saldo & Tagihan KSO",
+        "tasks": [
+          {
+            "title": "Monitor saldo secara harian dan pantau tagihan kompensasi KSO PTPN Grup",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Monitoring saldo dilakukan secara harian"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan Laporan Monitoring",
+        "tasks": [
+          {
+            "title": "Susun Laporan monitoring saldo & tagihan kompensasi KSO",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr"
+            ],
+            "note": "Output laporan monitoring; program selesai per deadline 30 Apr"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-047",
+    "phases": [
+      {
+        "name": "Monitoring & Kompilasi Progress Tim Penyehatan",
+        "tasks": [
+          {
+            "title": "Monitor dan kompilasi progress update W5 April dari masing-masing stream Tim Penyehatan PT SGN Holding",
+            "status": "IN_PROGRESS",
+            "percentComplete": 55,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Monitoring dan kompilasi progress update dari masing-masing stream sedang dilakukan"
+          }
+        ]
+      },
+      {
+        "name": "Penjadwalan Rapat OC & Pelaporan ke DKM",
+        "tasks": [
+          {
+            "title": "Jadwalkan Rapat OC Tim Penyehatan PT SGN dan sampaikan progress update W5 April kepada DKM",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Penjadwalan progres OC pada 13 Mei 2026 (TBC to Dirkeu & MR); output progress update W5 April, deadline 7 Mei (health RED)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DKSA-048",
+    "phases": [
+      {
+        "name": "Persiapan & Sosialisasi Penyusunan RKAP",
+        "tasks": [
+          {
+            "title": "Sampaikan Memorandum Persiapan Penyusunan RKAP 2027 (usulan Portal RKAP) kepada seluruh Divisi Holding",
+            "status": "IN_PROGRESS",
+            "percentComplete": 25,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Memorandum Persiapan Penyusunan RKAP 2027 (Usulan Portal RKAP) telah disampaikan ke seluruh Divisi Holding"
+          }
+        ]
+      },
+      {
+        "name": "Pengumpulan Usulan & Konsolidasi Data",
+        "tasks": [
+          {
+            "title": "Kumpulkan usulan program dan anggaran dari Divisi Holding serta konsolidasikan data RKAP 2027",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei",
+              "Jun",
+              "Jul",
+              "Agt"
+            ],
+            "note": "Pengumpulan usulan divisi belum dimulai, masih tahap memorandum persiapan"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan Draft Buku RKAP",
+        "tasks": [
+          {
+            "title": "Susun dan finalisasi Buku RKAP 2027 Draft 1",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Sep",
+              "Okt"
+            ],
+            "note": "Output Buku RKAP 2027 Draft 1 ditargetkan menjelang deadline 30 Okt"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-001",
+    "phases": [
+      {
+        "name": "Pengembangan & Integrasi Dashboard",
+        "tasks": [
+          {
+            "title": "Bangun dashboard monitoring perpajakan terintegrasi holding-subholding",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Dashboard sudah tersedia & dapat diakses subholding"
+          }
+        ]
+      },
+      {
+        "name": "Sosialisasi & Onboarding Subholding",
+        "tasks": [
+          {
+            "title": "Sosialisasi dashboard dan aktivasi akses input data kontribusi pajak subholding",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar",
+              "Apr"
+            ],
+            "note": "Sudah dilakukan sosialisasi; subholding sudah bisa akses & input beberapa masa"
+          }
+        ]
+      },
+      {
+        "name": "Penyempurnaan & Go-Live",
+        "tasks": [
+          {
+            "title": "Tindak lanjut masukan subholding dan penyempurnaan fitur dashboard",
+            "status": "IN_PROGRESS",
+            "percentComplete": 60,
+            "plannedMonths": [
+              "Mei",
+              "Jun"
+            ],
+            "note": "Proses penyempurnaan dashboard atas masukan dan saran dari subholding"
+          },
+          {
+            "title": "Finalisasi Dashboard Monitoring Perpajakan terintegrasi yang dapat diakses holding & subholding",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Jun",
+              "Jul"
+            ],
+            "note": "Output dashboard terintegrasi masih dalam penyempurnaan menuju deadline Jul"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-002",
+    "phases": [
+      {
+        "name": "Pembangunan Database Pajak",
+        "tasks": [
+          {
+            "title": "Susun database kontribusi pajak, sengketa pajak, dan historis penyetoran/pelaporan",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb"
+            ],
+            "note": "Telah disusun database untuk laporan kontribusi & sengketa pajak serta historis"
+          }
+        ]
+      },
+      {
+        "name": "Pengelolaan Denda, KB & LB",
+        "tasks": [
+          {
+            "title": "Pemantauan & pengelolaan denda, kurang bayar, dan lebih bayar pajak PTPN III",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Mar",
+              "Apr",
+              "Mei",
+              "Jun",
+              "Jul",
+              "Agt",
+              "Sep",
+              "Okt",
+              "Nov"
+            ],
+            "note": "Database tersusun; pengelolaan denda/KB/LB berjalan bulanan"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan & Penyampaian Laporan Bulanan",
+        "tasks": [
+          {
+            "title": "Susun & sampaikan Laporan Kontribusi Pajak dan Sengketa Pajak Bulanan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Mar",
+              "Mei",
+              "Jul",
+              "Sep",
+              "Nov",
+              "Des"
+            ],
+            "note": "Output laporan bulanan berjalan; siklus berlanjut s.d. Des"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-003",
+    "phases": [
+      {
+        "name": "Pembangunan Database Pajak Anper",
+        "tasks": [
+          {
+            "title": "Susun database kontribusi pajak, sengketa pajak, dan historis penyetoran/pelaporan Anper",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb"
+            ],
+            "note": "Telah disusun database untuk laporan kontribusi & sengketa pajak serta historis"
+          }
+        ]
+      },
+      {
+        "name": "Koordinasi & Pengelolaan Denda, KB & LB Anper",
+        "tasks": [
+          {
+            "title": "Koordinasi data seluruh unit Anper dan pengelolaan denda, KB, dan LB pajak",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Mar",
+              "Apr",
+              "Mei",
+              "Jun",
+              "Jul",
+              "Agt",
+              "Sep",
+              "Okt",
+              "Nov"
+            ],
+            "note": "Database tersusun; pengelolaan denda/KB/LB Anper berjalan, perlu koordinasi data Anper"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan & Penyampaian Laporan Bulanan",
+        "tasks": [
+          {
+            "title": "Susun & sampaikan Laporan Kontribusi Pajak dan Sengketa Pajak Bulanan Anper",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Mar",
+              "Mei",
+              "Jul",
+              "Sep",
+              "Nov",
+              "Des"
+            ],
+            "note": "Output laporan bulanan Anper berjalan; siklus berlanjut s.d. Des"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-004",
+    "phases": [
+      {
+        "name": "Penyusunan Strategi & Perencanaan Pajak",
+        "tasks": [
+          {
+            "title": "Susun strategi & perencanaan pajak PTPN Group",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Penyusunan laporan LM Pajak menunjukkan perencanaan pajak telah berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan & Penyampaian Laporan LM Pajak Bulanan",
+        "tasks": [
+          {
+            "title": "Susun Laporan LM Pajak Bulanan PTPN Group",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei",
+              "Jun",
+              "Jul",
+              "Agt"
+            ],
+            "note": "Telah disusun laporan LM Pajak Bulanan untuk PTPN Group"
+          },
+          {
+            "title": "Sampaikan Laporan LM Pajak Bulanan ke manajemen untuk masukan & keputusan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Apr",
+              "Jun",
+              "Agt",
+              "Okt",
+              "Des"
+            ],
+            "note": "Output laporan disampaikan ke manajemen secara bulanan s.d. Des"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-005",
+    "phases": [
+      {
+        "name": "Monitoring Kepatuhan SPT Masa",
+        "tasks": [
+          {
+            "title": "Monitoring kepatuhan penyetoran & pelaporan SPT Masa seluruh entitas",
+            "status": "IN_PROGRESS",
+            "percentComplete": 45,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei",
+              "Jun",
+              "Jul",
+              "Agt",
+              "Sep",
+              "Okt",
+              "Nov"
+            ],
+            "note": "Dilakukannya monitoring kepatuhan SPT Masa seluruh entitas"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan & Penyampaian Laporan Bulanan",
+        "tasks": [
+          {
+            "title": "Susun & sampaikan Laporan Kontribusi Pajak dan Sengketa Pajak Bulanan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Mar",
+              "Mei",
+              "Jul",
+              "Sep",
+              "Nov",
+              "Des"
+            ],
+            "note": "Output laporan bulanan berjalan seiring monitoring SPT; siklus s.d. Des"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-006",
+    "phases": [
+      {
+        "name": "Persiapan Materi Banding",
+        "tasks": [
+          {
+            "title": "Persiapan dokumen & materi banding PPh Badan tahun 2020",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Sidang banding telah berjalan, materi persiapan sudah rampung"
+          }
+        ]
+      },
+      {
+        "name": "Pelaksanaan Sidang Banding",
+        "tasks": [
+          {
+            "title": "Hadiri & ikuti rangkaian sidang banding PPh Badan tahun 2020 di Pengadilan Pajak",
+            "status": "IN_PROGRESS",
+            "percentComplete": 55,
+            "plannedMonths": [
+              "Apr",
+              "Mei",
+              "Jun",
+              "Jul"
+            ],
+            "note": "Sidang banding ke-2 pada 28 Apr 2026; sidang berikutnya 26 Mei 2026"
+          }
+        ]
+      },
+      {
+        "name": "Putusan & Pelaporan",
+        "tasks": [
+          {
+            "title": "Susun Laporan Putusan Banding Pajak PPh Badan tahun 2020",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Sep",
+              "Okt",
+              "Nov",
+              "Des"
+            ],
+            "note": "Output laporan putusan menunggu sidang banding selesai"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-007",
+    "phases": [
+      {
+        "name": "Persiapan Materi Banding",
+        "tasks": [
+          {
+            "title": "Persiapan dokumen & materi banding PPh Pasal 26 tahun 2020",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Sidang banding telah mencapai sidang ke-4, materi persiapan rampung"
+          }
+        ]
+      },
+      {
+        "name": "Pelaksanaan Sidang Banding",
+        "tasks": [
+          {
+            "title": "Hadiri & ikuti rangkaian sidang banding PPh Pasal 26 tahun 2020 di Pengadilan Pajak",
+            "status": "IN_PROGRESS",
+            "percentComplete": 65,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei",
+              "Jun"
+            ],
+            "note": "Sidang banding ke-4 pada 28 Apr 2026; sidang berikutnya 26 Mei 2026"
+          }
+        ]
+      },
+      {
+        "name": "Putusan & Pelaporan",
+        "tasks": [
+          {
+            "title": "Susun Laporan Putusan Banding Pajak PPh Pasal 26 tahun 2020",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Sep",
+              "Okt",
+              "Nov",
+              "Des"
+            ],
+            "note": "Output laporan putusan menunggu sidang banding selesai"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-008",
+    "phases": [
+      {
+        "name": "Persiapan Materi Banding",
+        "tasks": [
+          {
+            "title": "Persiapan dokumen & materi banding PPN November 2022",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Sidang banding telah mencapai sidang ke-4, materi persiapan rampung"
+          }
+        ]
+      },
+      {
+        "name": "Pelaksanaan Sidang Banding",
+        "tasks": [
+          {
+            "title": "Hadiri & ikuti rangkaian sidang banding PPN November 2022 di Pengadilan Pajak",
+            "status": "IN_PROGRESS",
+            "percentComplete": 65,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei",
+              "Jun"
+            ],
+            "note": "Sidang banding ke-4 pada 29 Apr 2026; sidang berikutnya 20 Mei 2026"
+          }
+        ]
+      },
+      {
+        "name": "Putusan & Pelaporan",
+        "tasks": [
+          {
+            "title": "Susun Laporan Putusan Banding Pajak PPN November 2022",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Sep",
+              "Okt",
+              "Nov",
+              "Des"
+            ],
+            "note": "Output laporan putusan menunggu sidang banding selesai"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-009",
+    "phases": [
+      {
+        "name": "Sosialisasi & Pendampingan Tenant",
+        "tasks": [
+          {
+            "title": "Sosialisasi & pendampingan tenant KEK Sei Mangkei terkait restitusi PPh 4 ayat (2)",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "Sudah dilakukan sosialisasi & pendampingan tenant pada 6-8 Mei 2026"
+          }
+        ]
+      },
+      {
+        "name": "Pengumpulan Dokumen & Pengajuan",
+        "tasks": [
+          {
+            "title": "Kumpulkan bukti setor & bukti potong PPh 4 ayat (2) dari tenant",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Sudah dilakukan pengumpulan bukti setor dan bukti potong PPh 4 ayat 2"
+          },
+          {
+            "title": "Ajukan permohonan pengembalian/restitusi PPh 4 ayat (2) ke DJP",
+            "status": "IN_PROGRESS",
+            "percentComplete": 35,
+            "plannedMonths": [
+              "Mei",
+              "Jun",
+              "Jul"
+            ],
+            "note": "Bukti terkumpul; monitoring Surat Penegasan yang akan dikeluarkan DJP"
+          }
+        ]
+      },
+      {
+        "name": "Penerbitan Surat Keputusan Restitusi",
+        "tasks": [
+          {
+            "title": "Monitoring & perolehan Surat Keputusan Restitusi dari DJP",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Agt",
+              "Sep",
+              "Okt",
+              "Nov",
+              "Des"
+            ],
+            "note": "Output SK Restitusi menunggu penegasan & keputusan DJP"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-010",
+    "phases": [
+      {
+        "name": "Pengendalian Transaksi Kas & Bank",
+        "tasks": [
+          {
+            "title": "Eksekusi pembayaran internal-eksternal tepat waktu sesuai SOP",
+            "status": "IN_PROGRESS",
+            "percentComplete": 45,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei",
+              "Jun",
+              "Jul",
+              "Agt",
+              "Sep",
+              "Okt",
+              "Nov"
+            ],
+            "note": "Pembayaran minggu I-III Mei 2026 sudah dilakukan tepat waktu sesuai SOP"
+          },
+          {
+            "title": "Monitoring kebutuhan dana kerja Divisi (DPUK) & dropping dana dari DKSA",
+            "status": "IN_PROGRESS",
+            "percentComplete": 45,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei",
+              "Jun",
+              "Jul",
+              "Agt",
+              "Sep",
+              "Okt",
+              "Nov"
+            ],
+            "note": "Monitoring DPUK minggu I-III & dropping dana dari DKSA 21 Mei 2026"
+          }
+        ]
+      },
+      {
+        "name": "Pelaporan & Evaluasi",
+        "tasks": [
+          {
+            "title": "Susun Laporan Evaluasi dan Pengendalian Transaksi Kas dan Bank (LPJ & realisasi biaya operasional)",
+            "status": "IN_PROGRESS",
+            "percentComplete": 45,
+            "plannedMonths": [
+              "Apr",
+              "Mei",
+              "Jun",
+              "Jul",
+              "Agt",
+              "Sep",
+              "Okt",
+              "Nov",
+              "Des"
+            ],
+            "note": "LPJ & realisasi biaya operasional April + permohonan Mei sudah dibuat (memo eM-221/V/2026)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-011",
+    "phases": [
+      {
+        "name": "Reviu & Penyusunan Revisi Pedoman",
+        "tasks": [
+          {
+            "title": "Reviu kebijakan akuntansi & perpajakan terhadap perubahan PSAK & kebijakan bisnis",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Program COMPLETED; pedoman telah selesai disusun"
+          },
+          {
+            "title": "Susun & finalkan Pedoman Kebijakan Akuntansi & Perpajakan ter-update",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Pedoman Kebijakan Akuntansi & Perpajakan telah selesai"
+          }
+        ]
+      },
+      {
+        "name": "Penetapan & Pengedaran",
+        "tasks": [
+          {
+            "title": "Edarkan Pedoman Kebijakan Akuntansi & Perpajakan ke seluruh Anper",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jun"
+            ],
+            "note": "Pedoman siap untuk diedarkan ke seluruh Anper; program COMPLETED"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-012",
+    "phases": [
+      {
+        "name": "Pembentukan Sub Tim & Perencanaan",
+        "tasks": [
+          {
+            "title": "Tetapkan fokus & program kerja masing-masing Sub Tim Cost Structure",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb"
+            ],
+            "note": "Masing-masing Sub Tim telah membuat Fokus Tim Kerja & Program Kerja"
+          }
+        ]
+      },
+      {
+        "name": "Analisa & Benchmarking",
+        "tasks": [
+          {
+            "title": "Lakukan analisa awal cost structure & eksekusi rencana benchmarking",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Mar",
+              "Apr",
+              "Mei",
+              "Jun",
+              "Jul"
+            ],
+            "note": "Analisa awal & rencana benchmarking telah disusun, eksekusi berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan Laporan & Program",
+        "tasks": [
+          {
+            "title": "Susun Laporan dan program Cost Structure PTPN Group",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Agt",
+              "Sep"
+            ],
+            "note": "Output laporan & program menunggu hasil analisa & benchmarking"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-013",
+    "phases": [
+      {
+        "name": "Komunikasi & Koordinasi Divisi",
+        "tasks": [
+          {
+            "title": "Komunikasi & diskusi dengan Divisi terkait untuk pengawalan audit ICOFR 2026",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "Melakukan komunikasi & diskusi dengan Divisi terkait"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan BPM & RCM",
+        "tasks": [
+          {
+            "title": "Susun/perbarui Business Process Mapping (BPM) & Risk Control Matrix (RCM)",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun",
+              "Jul",
+              "Agt"
+            ],
+            "note": "Tahap awal koordinasi; penyusunan BPM/RCM belum dimulai"
+          }
+        ]
+      },
+      {
+        "name": "Pemenuhan Data TOC & TOD",
+        "tasks": [
+          {
+            "title": "Penuhi data Test of Control (TOC), Test of Design (TOD) & dokumen DAPN",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Sep",
+              "Okt",
+              "Nov",
+              "Des"
+            ],
+            "note": "Output pemenuhan data TOC/TOD/DAPN menunggu BPM & RCM siap"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-014",
+    "phases": [
+      {
+        "name": "Penyusunan KAK & Perencanaan",
+        "tasks": [
+          {
+            "title": "Diskusi dengan Divisi TI & vendor untuk menetapkan KAK dan output yang diinginkan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Diskusi dengan Divisi TI & vendor menentukan KAK & output yang diinginkan"
+          },
+          {
+            "title": "Sampaikan update rencana penyempurnaan aplikasi pembayaran online ke Anper",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Update ke Anper bahwa akan dilakukan penyempurnaan aplikasi pembayaran online"
+          }
+        ]
+      },
+      {
+        "name": "Pengembangan & Uji Coba",
+        "tasks": [
+          {
+            "title": "Penyempurnaan aplikasi pembayaran online bersama vendor & uji coba",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun",
+              "Jul",
+              "Agt"
+            ],
+            "note": "Pengembangan menunggu persetujuan biaya penyempurnaan aplikasi"
+          }
+        ]
+      },
+      {
+        "name": "Go-Live Update Aplikasi",
+        "tasks": [
+          {
+            "title": "Selesaikan & rilis update aplikasi pembayaran online PTPN III",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Sep"
+            ],
+            "note": "Output update aplikasi selesai dilaksanakan, target deadline Sep"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-015",
+    "phases": [
+      {
+        "name": "Pelaksanaan & Pendampingan Audit",
+        "tasks": [
+          {
+            "title": "Dampingi audit KAP dan penuhi data pendukung untuk opini WTP",
+            "status": "IN_PROGRESS",
+            "percentComplete": 70,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "audit berjalan, kini tahap finalisasi LAI"
+          },
+          {
+            "title": "Komunikasikan ke Partner KAP untuk percepatan penyelesaian LAI",
+            "status": "IN_PROGRESS",
+            "percentComplete": 60,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "dukungan: komunikasi ke Partner untuk percepatan LAI"
+          }
+        ]
+      },
+      {
+        "name": "Penerbitan & Penyampaian LAI",
+        "tasks": [
+          {
+            "title": "Finalkan Laporan Auditor Independen (LAI)",
+            "status": "IN_PROGRESS",
+            "percentComplete": 65,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "progres terkini: Finalisasi LAI"
+          },
+          {
+            "title": "Terbitkan LAI opini WTP tanpa surat teguran dari Pemegang Saham",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "deliverable LAI WTP belum terbit final"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-016",
+    "phases": [
+      {
+        "name": "Pelaksanaan Audit Kepatuhan oleh KAP",
+        "tasks": [
+          {
+            "title": "Sediakan data dan dokumen pendukung penyusunan Management Letter oleh KAP",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "masih dalam proses penyusunan oleh KAP"
+          },
+          {
+            "title": "Tindaklanjuti draft temuan KAP untuk minimalisasi jumlah temuan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "penyusunan oleh KAP sedang berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Penerbitan Laporan Kepatuhan",
+        "tasks": [
+          {
+            "title": "Terbitkan Management Letter dan Laporan Kepatuhan",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "deliverable Management Letter & Laporan Kepatuhan belum terbit"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-017",
+    "phases": [
+      {
+        "name": "Perencanaan & Penyusunan KAK",
+        "tasks": [
+          {
+            "title": "Susun KAK dan rencana anggaran pengadaan KAP dan jasa pendukung (KJPP/aktuaria/properti)",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "masih dalam proses perencanaan"
+          },
+          {
+            "title": "Selaraskan KAP terpilih dengan Keputusan RUPS dan persetujuan anggaran",
+            "status": "IN_PROGRESS",
+            "percentComplete": 35,
+            "plannedMonths": [
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "dukungan: Keputusan RUPS sudah mencantumkan KAP & persetujuan anggaran"
+          }
+        ]
+      },
+      {
+        "name": "Pelaksanaan Pengadaan",
+        "tasks": [
+          {
+            "title": "Laksanakan proses pengadaan jasa KAP dan jasa pendukung",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun",
+              "Jul",
+              "Agt",
+              "Sep"
+            ],
+            "note": "pengadaan belum dilaksanakan, masih perencanaan"
+          }
+        ]
+      },
+      {
+        "name": "Penetapan & Kontrak",
+        "tasks": [
+          {
+            "title": "Tetapkan pemenang dan tandatangani kontrak jasa KAP & jasa pendukung",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Sep",
+              "Okt"
+            ],
+            "note": "deliverable ketersediaan jasa KAP belum tercapai"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-018",
+    "phases": [
+      {
+        "name": "Penyusunan Laporan Keuangan Bulanan",
+        "tasks": [
+          {
+            "title": "Susun Laporan Keuangan bulanan periode s.d. April 2026",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "LK s.d. April telah disusun, kini di tahap tanda tangan komisaris"
+          }
+        ]
+      },
+      {
+        "name": "Pengesahan & Penerbitan",
+        "tasks": [
+          {
+            "title": "Proses penandatanganan LK bulanan oleh Komisaris",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "periode s.d. April masih dalam proses penandatangan komisaris; dukungan percepatan"
+          },
+          {
+            "title": "Terbitkan LK Bulanan tepat waktu",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "deliverable LK bulanan tertunda di komisaris (health RED)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-019",
+    "phases": [
+      {
+        "name": "Persiapan Rekonsiliasi Semester I",
+        "tasks": [
+          {
+            "title": "Siapkan data dan jadwal pelaksanaan rekonsiliasi Semester I",
+            "status": "IN_PROGRESS",
+            "percentComplete": 25,
+            "plannedMonths": [
+              "Apr",
+              "Mei",
+              "Jun"
+            ],
+            "note": "menunggu pelaksanaan rekonsiliasi Semester I"
+          }
+        ]
+      },
+      {
+        "name": "Pelaksanaan Rekonsiliasi",
+        "tasks": [
+          {
+            "title": "Laksanakan rekonsiliasi data keuangan dan akuntansi Semester I (dan III, IV)",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun",
+              "Jul"
+            ],
+            "note": "rekonsiliasi Semester I belum dilaksanakan"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan Laporan",
+        "tasks": [
+          {
+            "title": "Susun Laporan Rekonsiliasi Data Keuangan dan Akuntansi",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jul"
+            ],
+            "note": "deliverable laporan rekonsiliasi belum disusun"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-020",
+    "phases": [
+      {
+        "name": "Penyusunan Laporan Manajemen TW I",
+        "tasks": [
+          {
+            "title": "Susun Laporan Manajemen Triwulan I beserta surat pengantar",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "dokumen telah disusun dan dimintakan tanda tangan Komisaris"
+          }
+        ]
+      },
+      {
+        "name": "Pengesahan & Penyampaian",
+        "tasks": [
+          {
+            "title": "Proses penandatanganan dokumen oleh Komisaris",
+            "status": "IN_PROGRESS",
+            "percentComplete": 60,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "dokumen telah dimintakan tanda tangan di Komisaris | tanda tangan Komisaris masih dalam proses"
+          },
+          {
+            "title": "Sampaikan dan upload Laporan Manajemen ke Portal PT DAM dan BP BUMN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "dokumen telah di-upload ke Portal Pemegang Saham (PT DAM dan BP BUMN)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-021",
+    "phases": [
+      {
+        "name": "Pengumpulan Temuan & Dokumen Pendukung",
+        "tasks": [
+          {
+            "title": "Kompilasi temuan audit LK tahun 2025 dari KAP",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei",
+              "Jun",
+              "Jul"
+            ],
+            "note": "menunggu hasil audit LK tahun 2025"
+          },
+          {
+            "title": "Kumpulkan dokumen pendukung tindak lanjut dari unit terkait",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jul",
+              "Agt"
+            ],
+            "note": "belum mulai, menunggu hasil audit"
+          }
+        ]
+      },
+      {
+        "name": "Eksekusi & Pelaporan Tindak Lanjut",
+        "tasks": [
+          {
+            "title": "Laksanakan tindak lanjut atas seluruh temuan KAP",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Agt",
+              "Sep"
+            ],
+            "note": "tindak lanjut belum dapat dimulai sebelum hasil audit terbit"
+          },
+          {
+            "title": "Susun Laporan Tindak Lanjut Temuan KAP tahun 2025",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Okt"
+            ],
+            "note": "deliverable laporan tindak lanjut belum disusun"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-022",
+    "phases": [
+      {
+        "name": "Monitoring Transaksi Berkala",
+        "tasks": [
+          {
+            "title": "Lakukan monitoring harian dan bulanan atas transaksi keuangan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 45,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei",
+              "Jun",
+              "Jul",
+              "Agt"
+            ],
+            "note": "monitoring harian dan bulanan transaksi sedang berjalan"
+          },
+          {
+            "title": "Lakukan pengkinian dan kelengkapan dokumen transaksi",
+            "status": "IN_PROGRESS",
+            "percentComplete": 45,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei",
+              "Jun",
+              "Jul",
+              "Agt"
+            ],
+            "note": "pengkinian kelengkapan dokumen transaksi berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Evaluasi & Pencapaian Bebas Fraud",
+        "tasks": [
+          {
+            "title": "Evaluasi efektivitas verifikasi dan pastikan tidak ada temuan fraud dalam audit",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Sep",
+              "Okt",
+              "Nov",
+              "Des"
+            ],
+            "note": "deliverable nihil temuan fraud bersifat sepanjang tahun, masih berjalan"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-023",
+    "phases": [
+      {
+        "name": "Persiapan Pembentukan Tim",
+        "tasks": [
+          {
+            "title": "Selaraskan rencana pembentukan tim dengan timeline pengadaan KAP",
+            "status": "IN_PROGRESS",
+            "percentComplete": 20,
+            "plannedMonths": [
+              "Apr",
+              "Mei",
+              "Jun",
+              "Jul"
+            ],
+            "note": "menunggu timeline pengadaan KAP"
+          },
+          {
+            "title": "Susun usulan struktur dan keanggotaan Tim Konsolidasi",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Agt",
+              "Sep"
+            ],
+            "note": "penyusunan tim menunggu kepastian pengadaan KAP"
+          }
+        ]
+      },
+      {
+        "name": "Penetapan SK Tim",
+        "tasks": [
+          {
+            "title": "Terbitkan SK Tim Konsolidasi Laporan Keuangan PTPN III dan Entitas Anak",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Okt",
+              "Nov"
+            ],
+            "note": "deliverable SK Tim belum diterbitkan"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-024",
+    "phases": [
+      {
+        "name": "Perencanaan & Pengadaan Jasa",
+        "tasks": [
+          {
+            "title": "Diskusi dengan penyedia jasa dan susun KAK implementasi PSAK 118",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "diskusi dengan penyedia jasa & persiapan KAK sedang berjalan"
+          },
+          {
+            "title": "Siapkan dokumen pengadaan jasa implementasi PSAK 118",
+            "status": "IN_PROGRESS",
+            "percentComplete": 25,
+            "plannedMonths": [
+              "Apr",
+              "Mei",
+              "Jun"
+            ],
+            "note": "persiapan dokumen pengadaan dalam proses"
+          }
+        ]
+      },
+      {
+        "name": "Konfigurasi SAP & Penambahan COA",
+        "tasks": [
+          {
+            "title": "Lakukan konfigurasi penyajian SAP dan penambahan COA untuk PSAK 118",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jul",
+              "Agt",
+              "Sep"
+            ],
+            "note": "konfigurasi SAP belum dimulai"
+          }
+        ]
+      },
+      {
+        "name": "Implementasi & Kesiapan Go-Live 2027",
+        "tasks": [
+          {
+            "title": "Selesaikan perencanaan, implementasi dan konfigurasi SAP siap terap 1 Januari 2027",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Okt",
+              "Nov"
+            ],
+            "note": "deliverable kesiapan implementasi PSAK 118 belum tercapai"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-025",
+    "phases": [
+      {
+        "name": "Perencanaan & Diskusi Penyedia Jasa",
+        "tasks": [
+          {
+            "title": "Diskusi dengan penyedia jasa terkait update SAP dan report berbasis web",
+            "status": "IN_PROGRESS",
+            "percentComplete": 25,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "pembicaraan/diskusi dengan penyedia jasa sedang berjalan"
+          },
+          {
+            "title": "Susun kebutuhan update dan amankan persetujuan anggaran",
+            "status": "IN_PROGRESS",
+            "percentComplete": 20,
+            "plannedMonths": [
+              "Apr",
+              "Mei",
+              "Jun"
+            ],
+            "note": "dukungan: persetujuan anggaran yang akan digunakan"
+          }
+        ]
+      },
+      {
+        "name": "Pelaksanaan Update & Pengembangan Report Web",
+        "tasks": [
+          {
+            "title": "Laksanakan update SAP dan kembangkan penyajian report berbasis web",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jul",
+              "Agt",
+              "Sep"
+            ],
+            "note": "pelaksanaan update belum dimulai"
+          }
+        ]
+      },
+      {
+        "name": "Go-Live & Monitoring",
+        "tasks": [
+          {
+            "title": "Go-live update SAP dan report berbasis web serta monitoring perubahan",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Okt"
+            ],
+            "note": "deliverable update SAP & report web belum live"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-026",
+    "phases": [
+      {
+        "name": "Perencanaan & Persiapan Materi",
+        "tasks": [
+          {
+            "title": "Tentukan topik terkini webinar Akuntansi dan Keuangan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "proses penentuan topik terkini"
+          },
+          {
+            "title": "Siapkan narasumber, materi, dan jadwal pelaksanaan webinar",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei",
+              "Jun"
+            ],
+            "note": "persiapan narasumber & materi belum dimulai"
+          }
+        ]
+      },
+      {
+        "name": "Pelaksanaan Webinar",
+        "tasks": [
+          {
+            "title": "Selenggarakan Webinar Akuntansi dan Keuangan",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun"
+            ],
+            "note": "deliverable webinar belum terlaksana"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DAPN-027",
+    "phases": [
+      {
+        "name": "Perencanaan & Persiapan Materi",
+        "tasks": [
+          {
+            "title": "Tentukan topik terkini webinar Perpajakan untuk peningkatan kapabilitas PIC Perpajakan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "proses penentuan topik terkini untuk meningkatkan kapabilitas PIC Perpajakan"
+          },
+          {
+            "title": "Siapkan narasumber, materi, dan jadwal pelaksanaan webinar",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei",
+              "Jun"
+            ],
+            "note": "persiapan narasumber & materi belum dimulai"
+          }
+        ]
+      },
+      {
+        "name": "Pelaksanaan Webinar",
+        "tasks": [
+          {
+            "title": "Selenggarakan Webinar Perpajakan",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun"
+            ],
+            "note": "deliverable webinar belum terlaksana"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-001",
+    "phases": [
+      {
+        "name": "Pengembangan Aplikasi ERIN 2.0",
+        "tasks": [
+          {
+            "title": "Pengembangan internal Aplikasi ERIN 2.0",
+            "status": "IN_PROGRESS",
+            "percentComplete": 55,
+            "plannedMonths": [
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "Telah dilakukan pengembangan internal Aplikasi ERIN 2.0 mulai 31 Maret 2026"
+          },
+          {
+            "title": "Penyelesaian modul alokasi limit risiko dan RCSA serta integrasi AI Tool dari DTDI",
+            "status": "IN_PROGRESS",
+            "percentComplete": 60,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "AI Tool disampaikan DTDI 7 Mei 2026; modul alokasi limit risiko & RCSA dipercepat target W4 Mei 2026"
+          }
+        ]
+      },
+      {
+        "name": "Testing & Go Live",
+        "tasks": [
+          {
+            "title": "Testing aplikasi dan Go Live ERIN 2.0",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun"
+            ],
+            "note": "Output: Aplikasi ERIN 2.0 selesai development & testing, Go Live ditargetkan W4 Juni 2026"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-002",
+    "phases": [
+      {
+        "name": "Analisis & Penyusunan Rekomendasi",
+        "tasks": [
+          {
+            "title": "Menyusun rekomendasi tindak lanjut BPR On Farm Kelapa Sawit (follow up pencurian TBS)",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb"
+            ],
+            "note": "Hasil rapat koordinasi penanganan pencurian TBS ditindaklanjuti dalam rekomendasi"
+          }
+        ]
+      },
+      {
+        "name": "Penyampaian Hasil",
+        "tasks": [
+          {
+            "title": "Menyampaikan memorandum hasil rekomendasi tindak lanjut kepada DHKM dan DKSR",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Feb"
+            ],
+            "note": "Telah disampaikan memorandum DIMR/KOL/eM-43/II/2026 ke DHKM dan DKSR"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-003",
+    "phases": [
+      {
+        "name": "Penyusunan Materi bersama Konsultan",
+        "tasks": [
+          {
+            "title": "Persiapan awal penyusunan Course Design Program PTPN Group bersama konsultan",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Mei",
+              "Jun"
+            ],
+            "note": "Penyusunan Course Design dimulai dengan persiapan awal bersama konsultan W3 Mei 2026 (ongoing)"
+          }
+        ]
+      },
+      {
+        "name": "FGD & Finalisasi Materi",
+        "tasks": [
+          {
+            "title": "FGD tingkat Holding atas materi konsultan dan FGD Subholding finalisasi materi ajar",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun",
+              "Jul"
+            ],
+            "note": "FGD Holding direncanakan W4 Juni 2026, FGD Subholding finalisasi materi pertengahan Juli 2026"
+          }
+        ]
+      },
+      {
+        "name": "TOT & Pelaporan",
+        "tasks": [
+          {
+            "title": "Pelaksanaan TOT ke fungsi MR Holding & Subholding dan penyusunan laporan akhir Course Design",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jul",
+              "Agt"
+            ],
+            "note": "Output: Laporan akhir penyusunan Course Design; TOT direncanakan Agustus 2026"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-004",
+    "phases": [
+      {
+        "name": "Stress Testing & Pengesahan Kebijakan",
+        "tasks": [
+          {
+            "title": "Melaksanakan stress test dinamika geopolitik Timur Tengah dan melaporkan kepada Direksi",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Stress test geopolitik Timur Tengah selesai dan dilaporkan via memo DIMR/KOL/eM-95/III/2026"
+          },
+          {
+            "title": "Mengajukan pengesahan Dokumen Kebijakan dan Pedoman BCMS kepada Direksi",
+            "status": "IN_PROGRESS",
+            "percentComplete": 60,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Dokumen Kebijakan & Pedoman diajukan pengesahan via memo DIMR/DIR/MO/23/2026 tanggal 18 Mei 2026"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan SOP & Pembaruan BCP/CP",
+        "tasks": [
+          {
+            "title": "Menyusun SOP BCMS dan menyelesaikan peninjauan Kasubdiv",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Mei",
+              "Jun"
+            ],
+            "note": "SOP BCMS telah disusun dan sedang dalam proses peninjauan Kasubdiv"
+          },
+          {
+            "title": "Review dan pembaruan dokumen Contingency Plan",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun",
+              "Jul",
+              "Agt"
+            ],
+            "note": "Persiapan review dan pembaruan dokumen CP direncanakan dimulai W1 Juni 2026"
+          }
+        ]
+      },
+      {
+        "name": "Finalisasi Dokumen BCP, CP & Stress Testing",
+        "tasks": [
+          {
+            "title": "Memfinalisasi dokumen BCP, Contingency Plan, dan Stress Testing",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Sep",
+              "Okt",
+              "Nov",
+              "Des"
+            ],
+            "note": "Output: Dokumen BCP, Contingency Plan, dan Stress Testing"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-005",
+    "phases": [
+      {
+        "name": "Persiapan Tabletop Simulation",
+        "tasks": [
+          {
+            "title": "Menyiapkan skenario dan materi tabletop simulation BCMS tingkat Kantor Holding",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan"
+            ],
+            "note": "Tabletop exercise terlaksana 8 Januari 2026, mengindikasikan persiapan telah selesai"
+          }
+        ]
+      },
+      {
+        "name": "Pelaksanaan & Pelaporan",
+        "tasks": [
+          {
+            "title": "Melaksanakan tabletop simulation dan menyusun laporan hasil pelaksanaan",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb"
+            ],
+            "note": "Tabletop exercise dilaksanakan 8 Januari 2026 dengan notula DIMR/KOL/eM-11/I/2026"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-006",
+    "phases": [
+      {
+        "name": "Pelaksanaan Stress Testing",
+        "tasks": [
+          {
+            "title": "Membahas stress testing dampak konflik Timur Tengah bersama PT DAM secara hybrid",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Pembahasan stress testing dengan PT DAM secara hybrid dilaksanakan 27 Maret 2026"
+          }
+        ]
+      },
+      {
+        "name": "Pelaporan ke PT DAM",
+        "tasks": [
+          {
+            "title": "Menyampaikan laporan hasil Stress Testing final kepada PT DAM",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar"
+            ],
+            "note": "Laporan hasil stress testing final disampaikan kepada PT DAM pada 31 Maret 2026"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-007",
+    "phases": [
+      {
+        "name": "Penyusunan Laporan Manajemen Risiko",
+        "tasks": [
+          {
+            "title": "Menyusun Laporan Manajemen Risiko terkait implementasi rencana mitigasi risiko korporasi",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Laporan Manajemen Risiko telah selesai disusun"
+          }
+        ]
+      },
+      {
+        "name": "Penyampaian Laporan",
+        "tasks": [
+          {
+            "title": "Menyampaikan Laporan Manajemen Risiko kepada DAPN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar"
+            ],
+            "note": "Laporan Manajemen Risiko telah disampaikan ke DAPN"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-008",
+    "phases": [
+      {
+        "name": "Pengumpulan Data Profil Risiko",
+        "tasks": [
+          {
+            "title": "Mengumpulkan data/dokumen dari Divisi terkait untuk Laporan Monitoring Profil Risiko Korporat s.d. April 2026",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Permintaan data via Memo DIMR/KOL/eM-134/V/2026 untuk penyusunan laporan monitoring profil risiko"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan Laporan Manajemen Risiko",
+        "tasks": [
+          {
+            "title": "Menyusun dan menyelesaikan drafting Laporan Manajemen Risiko",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output: Laporan Manajemen Risiko (proses drafting); program berstatus COMPLETED"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-009",
+    "phases": [
+      {
+        "name": "Penyusunan Laporan KPMR",
+        "tasks": [
+          {
+            "title": "Menyusun Laporan Manajemen Risiko terkait Kualitas Penerapan Manajemen Risiko Terintegrasi (KPMR)",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Laporan Manajemen Risiko telah selesai disusun"
+          }
+        ]
+      },
+      {
+        "name": "Penyampaian Laporan",
+        "tasks": [
+          {
+            "title": "Menyampaikan Laporan Manajemen Risiko kepada DAPN",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mar"
+            ],
+            "note": "Laporan Manajemen Risiko telah disampaikan ke DAPN"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-010",
+    "phases": [
+      {
+        "name": "Pengumpulan Data KPMR",
+        "tasks": [
+          {
+            "title": "Mengumpulkan data/dokumen dari Divisi terkait untuk laporan monitoring profil risiko korporat s.d. April 2026",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Permintaan data via Memo DIMR/KOL/eM-134/V/2026 untuk penyusunan laporan monitoring profil risiko"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan Laporan Manajemen Risiko",
+        "tasks": [
+          {
+            "title": "Menyusun dan menyelesaikan drafting Laporan Manajemen Risiko KPMR",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output: Laporan Manajemen Risiko (proses drafting); program berstatus COMPLETED"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-011",
+    "phases": [
+      {
+        "name": "Penyusunan Kuesioner Survei",
+        "tasks": [
+          {
+            "title": "Menyusun kuesioner survei budaya risiko",
+            "status": "IN_PROGRESS",
+            "percentComplete": 30,
+            "plannedMonths": [
+              "Mei",
+              "Jun",
+              "Jul",
+              "Agt"
+            ],
+            "note": "Penyusunan kuesioner survei budaya risiko sedang berjalan"
+          }
+        ]
+      },
+      {
+        "name": "Pelaksanaan Survei & Pelaporan",
+        "tasks": [
+          {
+            "title": "Melaksanakan survei budaya risiko dan menyusun laporan hasil survei",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Agt"
+            ],
+            "note": "Output: Laporan hasil survei budaya risiko; pelaksanaan survei dijadwalkan Desember 2026 sesuai program kerja"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-012",
+    "phases": [
+      {
+        "name": "Pelaksanaan Reviu Kajian Risiko",
+        "tasks": [
+          {
+            "title": "Mereviu kajian risiko Penyusunan HPS Pengadaan Pupuk SM II 2026",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Reviu kajian risiko HPS Pengadaan Pupuk SM II 2026 telah selesai"
+          }
+        ]
+      },
+      {
+        "name": "Penyampaian Hasil Reviu",
+        "tasks": [
+          {
+            "title": "Menyampaikan hasil reviu kajian risiko kepada DKSA",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Reviu kajian risiko telah disampaikan ke DKSA"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-013",
+    "phases": [
+      {
+        "name": "Pelaksanaan Reviu Kajian Risiko",
+        "tasks": [
+          {
+            "title": "Mereviu kajian risiko Penerapan Analisis Mutu Pupuk Semester II 2026",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Reviu kajian risiko Penerapan Analisis Mutu Pupuk Semester II 2026 telah selesai"
+          }
+        ]
+      },
+      {
+        "name": "Penyampaian Hasil Reviu",
+        "tasks": [
+          {
+            "title": "Menyampaikan hasil reviu kajian risiko kepada DKSR",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Hasil reviu telah disampaikan ke DKSR"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-014",
+    "phases": [
+      {
+        "name": "Pelaksanaan Reviu Kajian Risiko",
+        "tasks": [
+          {
+            "title": "Mereviu kajian risiko Penambahan Penyertaan Modal ke PT KPBN melalui Debt to Equity Swap",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Reviu kajian risiko penambahan penyertaan modal ke PT KPBN melalui DES telah selesai"
+          }
+        ]
+      },
+      {
+        "name": "Penyampaian Hasil Reviu",
+        "tasks": [
+          {
+            "title": "Menyampaikan hasil reviu kajian risiko kepada DSMK",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Hasil reviu telah disampaikan ke DSMK"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-015",
+    "phases": [
+      {
+        "name": "Pelaksanaan Reviu Kajian Risiko",
+        "tasks": [
+          {
+            "title": "Mereviu kajian risiko Persiapan Pembelian GKP PT SGN 20.000 Ton melalui ICT",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "Reviu kajian risiko persiapan pembelian GKP PT SGN 20.000 ton melalui ICT telah selesai"
+          }
+        ]
+      },
+      {
+        "name": "Penyampaian Hasil Reviu",
+        "tasks": [
+          {
+            "title": "Menyampaikan hasil reviu kajian risiko kepada DPPN, DATN, dan DKSA",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Hasil reviu telah disampaikan ke DPPN, DATN, DKSA"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-016",
+    "phases": [
+      {
+        "name": "Pelaksanaan Reviu Kajian Risiko",
+        "tasks": [
+          {
+            "title": "Mereviu kajian risiko Penyesuaian Nilai Vaksinasi Gotong Royong",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "Reviu kajian risiko penyesuaian nilai Vaksinasi Gotong Royong telah selesai"
+          }
+        ]
+      },
+      {
+        "name": "Finalisasi Hasil Reviu",
+        "tasks": [
+          {
+            "title": "Memfinalisasi hasil reviu kajian risiko",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Hasil reviu telah selesai"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-017",
+    "phases": [
+      {
+        "name": "Pelaksanaan Reviu Kajian Risiko",
+        "tasks": [
+          {
+            "title": "Mereviu kajian risiko Implementasi Teknologi Benang Khusus dan QR Code pada Kemasan Pupuk",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "Reviu kajian risiko implementasi teknologi benang khusus & QR Code pada kemasan pupuk telah selesai"
+          }
+        ]
+      },
+      {
+        "name": "Penyampaian Hasil Reviu",
+        "tasks": [
+          {
+            "title": "Menyampaikan hasil reviu kajian risiko kepada DKSR",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Hasil reviu telah disampaikan ke DKSR"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-018",
+    "phases": [
+      {
+        "name": "Penyusunan Pedoman & Kebijakan Kepatuhan",
+        "tasks": [
+          {
+            "title": "Menyusun draft Pedoman dan Kebijakan Kepatuhan",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Draft pedoman & kebijakan sudah ada, kini memasuki tahap reviu eksternal"
+          }
+        ]
+      },
+      {
+        "name": "Reviu KPPU & BPKP",
+        "tasks": [
+          {
+            "title": "Menjalani proses reviu Pedoman dan Kebijakan Kepatuhan oleh KPPU dan BPKP",
+            "status": "IN_PROGRESS",
+            "percentComplete": 50,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Proses reviu oleh KPPU dan BPKP (health YELLOW)"
+          }
+        ]
+      },
+      {
+        "name": "Finalisasi & Penetapan",
+        "tasks": [
+          {
+            "title": "Memfinalisasi dan menetapkan Pedoman dan Kebijakan Kepatuhan",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun"
+            ],
+            "note": "Output: Pembuatan Pedoman dan Kebijakan Kepatuhan; menunggu hasil reviu KPPU & BPKP"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-019",
+    "phases": [
+      {
+        "name": "Perancangan Regulatory Compliance System",
+        "tasks": [
+          {
+            "title": "Merancang kebutuhan dan spesifikasi Regulatory Compliance System",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Perancangan telah selesai sehingga dapat masuk tahap finalisasi pengadaan"
+          }
+        ]
+      },
+      {
+        "name": "Finalisasi Pengadaan & Implementasi",
+        "tasks": [
+          {
+            "title": "Memfinalisasi pengadaan Regulatory Compliance System",
+            "status": "IN_PROGRESS",
+            "percentComplete": 60,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Finalisasi untuk pengadaan sedang berjalan"
+          },
+          {
+            "title": "Mengimplementasikan Regulatory Compliance System",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output: Regulatory Compliance System; menunggu penyelesaian pengadaan"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-020",
+    "phases": [
+      {
+        "name": "Persiapan Asesmen RMI",
+        "tasks": [
+          {
+            "title": "Bersurat kepada BPKP sebagai asesor RMI melalui SPI",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr"
+            ],
+            "note": "Telah bersurat kepada BPKP sebagai asesor RMI melalui SPI"
+          },
+          {
+            "title": "Menyusun Laporan Tindak Lanjut AoI RMI Triwulan I",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Laporan Tindak Lanjut AoI RMI TW I sudah disusun"
+          }
+        ]
+      },
+      {
+        "name": "Pelaksanaan Penilaian RMI",
+        "tasks": [
+          {
+            "title": "Melaksanakan entry meeting dan penilaian RMI bersama BPKP",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun",
+              "Jul",
+              "Agt"
+            ],
+            "note": "Entry meeting penilaian RMI direncanakan tanggal 5 Juni 2026"
+          }
+        ]
+      },
+      {
+        "name": "Pelaporan Hasil Asesmen",
+        "tasks": [
+          {
+            "title": "Menyusun Laporan Hasil Asesmen RMI",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Sep",
+              "Okt"
+            ],
+            "note": "Output: Laporan Hasil Asesmen RMI"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-021",
+    "phases": [
+      {
+        "name": "Perancangan & Implementasi ICOFR",
+        "tasks": [
+          {
+            "title": "Melaksanakan tahap perancangan, implementasi, dan evaluasi ICOFR",
+            "status": "COMPLETED",
+            "percentComplete": 100,
+            "plannedMonths": [
+              "Jan",
+              "Feb",
+              "Mar"
+            ],
+            "note": "Telah dilakukan tahap perancangan, implementasi dan evaluasi"
+          }
+        ]
+      },
+      {
+        "name": "Finalisasi TOE & Remediasi",
+        "tasks": [
+          {
+            "title": "Menyelesaikan finalisasi Test of Operating Effectiveness (TOE) dan remediasi",
+            "status": "IN_PROGRESS",
+            "percentComplete": 60,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Saat ini dalam progres finalisasi TOE dan remediasi (health RED, deadline 22 Mei 2026)"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan Laporan Final, Pedoman & SOP",
+        "tasks": [
+          {
+            "title": "Menyusun Laporan Pelaksanaan ICOFR final, pedoman, dan SOP bersama Deloitte",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Mei"
+            ],
+            "note": "Output: Laporan Pelaksanaan ICOFR; Deloitte dalam proses penyusunan laporan final, pedoman dan SOP"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PRG-DKMR-DIMR-022",
+    "phases": [
+      {
+        "name": "Penyusunan Pedoman PMR RKAP 2027",
+        "tasks": [
+          {
+            "title": "Menyusun Pedoman Penyusunan RKAP bidang Manajemen Risiko",
+            "status": "IN_PROGRESS",
+            "percentComplete": 45,
+            "plannedMonths": [
+              "Mar",
+              "Apr",
+              "Mei"
+            ],
+            "note": "Pedoman penyusunan RKAP bidang MR sedang dalam proses"
+          }
+        ]
+      },
+      {
+        "name": "Penyusunan Strategi Risiko & Finalisasi",
+        "tasks": [
+          {
+            "title": "Menyusun Strategi Risiko RKAP 2027",
+            "status": "IN_PROGRESS",
+            "percentComplete": 40,
+            "plannedMonths": [
+              "Apr",
+              "Mei"
+            ],
+            "note": "Penyusunan Strategi risiko RKAP 2027 sedang dalam proses"
+          },
+          {
+            "title": "Memfinalisasi Pedoman Penyusunan PMR RKAP 2027",
+            "status": "TODO",
+            "percentComplete": 0,
+            "plannedMonths": [
+              "Jun"
+            ],
+            "note": "Output: Pedoman Penyusunan PMR RKAP 2027; deadline 5 Juni 2026"
+          }
+        ]
+      }
+    ]
+  }
+]
