@@ -531,6 +531,21 @@
     linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 48%, var(--panel) 52%) 0%, var(--panel) 100%);
 }
 
+/* Sel Real yang terisi HARUS menang atas gradient row di atas — keduanya berada di
+   elemen yang sama (row--step-real + cell--real-*). Tanpa override light-mode ini,
+   selector row (spesifisitas 0,3,0) mengalahkan .cell--real-* (0,1,0) → sel hijau/
+   kuning/merah ketimpa abu-abu = baris Real tampak kosong (plan biru tetap muncul
+   karena step-plan tak punya override row). Lihat memory feedback_visual_smoke_test. */
+:root:not([data-theme="dark"]) .execution-grid__row--step-real.execution-grid__cell--real-on-time {
+  background: var(--green);
+}
+:root:not([data-theme="dark"]) .execution-grid__row--step-real.execution-grid__cell--real-late {
+  background: var(--yellow);
+}
+:root:not([data-theme="dark"]) .execution-grid__row--step-real.execution-grid__cell--real-blocked {
+  background: var(--red);
+}
+
 :root:not([data-theme="dark"]) .execution-grid__cell {
   border-color: color-mix(in srgb, var(--panel-border) 72%, transparent);
 }
