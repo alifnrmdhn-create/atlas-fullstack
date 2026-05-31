@@ -20,14 +20,16 @@ export interface BarsProps {
   /** Plot height in px (bars area only; labels sit outside). Default 120. */
   height?: number
   className?: string
+  /** When set, each bar becomes a button — enables hover lift + drill-down. */
+  onBarClick?: (bar: Bar, index: number) => void
 }
 
 /**
- * Bars — a light vertical bar chart (SVG-free, CSS columns). Each bar is
- * RAG-toned and labelled; an optional dashed target line reads as the goal.
- * Encodes by length (accurate), keeps the "analysis" surface fast.
+ * Bars — a light vertical bar chart (CSS columns). RAG-toned, labelled, with an
+ * optional dashed target line. Bars grow in on mount; when `onBarClick` is set
+ * they become focusable buttons that lift on hover.
  */
-export function Bars({ bars, max, target, height = 120, className }: BarsProps) {
+export function Bars({ bars, max, target, height = 120, className, onBarClick }: BarsProps) {
   const scaleMax = max ?? Math.max(...bars.map(b => b.value ?? 0), target ?? 0, 1) * 1.08
 
   return (
@@ -41,14 +43,27 @@ export function Bars({ bars, max, target, height = 120, className }: BarsProps) 
         {bars.map((b, i) => {
           const has = b.value != null
           const h = has ? Math.max((b.value! / scaleMax) * 100, 2) : 0
-          return (
-            <div key={i} className="ds-bars__col">
+          const inner = (
+            <>
               {has && <span className="ds-bars__val">{b.valueLabel ?? Math.round(b.value!)}</span>}
-              <div
+              <span
                 className={`ds-bars__bar ds-bars__bar--${has ? (b.tone ?? 'neutral') : 'empty'}`}
                 style={{ height: `${h}%` }}
               />
-            </div>
+            </>
+          )
+          return onBarClick ? (
+            <button
+              key={i}
+              type="button"
+              className="ds-bars__col ds-bars__col--btn"
+              onClick={() => onBarClick(b, i)}
+              aria-label={`${b.label}: ${b.valueLabel ?? b.value ?? '—'}`}
+            >
+              {inner}
+            </button>
+          ) : (
+            <div key={i} className="ds-bars__col">{inner}</div>
           )
         })}
       </div>

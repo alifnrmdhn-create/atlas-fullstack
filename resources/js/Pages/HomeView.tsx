@@ -6,7 +6,8 @@ import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useAuth } from '../hooks/useAuth'
 import { SkeletonBlock, SectionState } from '../components/ui'
 import { EscalationButton } from '../components/Escalation'
-import { Card, Pill, Sparkline, Meter, Delta, Donut, Bars } from '../design-system'
+import { PortfolioAnalytics } from '../components/PortfolioAnalytics'
+import { Card, Pill, Sparkline, Meter, Delta, Donut, Bars, Tooltip } from '../design-system'
 import { scoreTone, healthTone, type Tone } from '../lib/tone'
 import './HomeView.css'
 
@@ -86,7 +87,7 @@ function ToneGlyph({ tone }: { tone: Tone }) {
 /* ─── Command-strip tile (status, at a glance — no prose) ───── */
 
 function CmdTile({
-  label, tone = 'neutral', value, unit, delta, deltaSuffix, caption, verdict = false,
+  label, tone = 'neutral', value, unit, delta, deltaSuffix, caption, verdict = false, tip,
 }: {
   label: string
   tone?: Tone
@@ -97,12 +98,16 @@ function CmdTile({
   caption?: ReactNode
   /** Verdict tiles show a word (smaller) rather than a number (BAN size). */
   verdict?: boolean
+  /** Definition/formula shown on hover — makes the number self-explaining (trust). */
+  tip?: ReactNode
 }) {
   return (
     <Card padding="md" className={`hv__tile${verdict ? ' hv__tile--verdict' : ''}`} data-tone={tone}>
       <span className="hv__tile-label">
         <span className="hv__tile-glyph" data-tone={tone} aria-hidden><ToneGlyph tone={tone} /></span>
-        {label}
+        {tip
+          ? <Tooltip content={tip} side="bottom"><span className="hv__has-tip">{label}</span></Tooltip>
+          : label}
       </span>
       <span className="hv__tile-value-row">
         <span className="hv__tile-value">
@@ -233,6 +238,17 @@ export default function HomeView() {
       ? scorecard.grid[0].nama
       : `Rata-rata ${scorecard.totalItem} ${scorecard.itemLabel}`
 
+  // Insight — lagging (KPI result) vs leading (execution on-track%). The most
+  // valuable executive signal: a green KPI sitting on top of red execution means
+  // the result hasn't caught up to the slowdown yet (KPI at risk next period).
+  const leadingTone: Tone = onTrackPct >= 80 ? 'green' : onTrackPct >= 50 ? 'amber' : 'red'
+  const kpiDiverges = hasKpi && kpiHeadline >= 100 && leadingTone === 'red'
+  const alignTone: Tone = kpiDiverges ? 'red'
+    : (hasKpi && kpiHeadline >= 100 && leadingTone === 'green') ? 'green'
+    : 'amber'
+  const alignText = kpiDiverges ? 'Tidak selaras' : alignTone === 'green' ? 'Selaras' : 'Perhatikan'
+  const alignGap = hasKpi ? Math.round(kpiHeadline - onTrackPct) : 0
+
   /* ── Overall verdict (management by exception) ───────────────── */
   const exceptionCount = tlm + belowTargetCount + needsAction.length + criticalControlCount
   const statusTone: Tone =
@@ -360,6 +376,7 @@ export default function HomeView() {
               verdict
               value={statusLabel}
               caption={statusCaption}
+              tip="Verdict keseluruhan. Merah = ada terlambat / KPI<target / kontrol kritis. Kuning = ada risiko / approval. Hijau = semua dalam target."
             />
             {canSeePerformance && (
               <CmdTile
@@ -369,23 +386,55 @@ export default function HomeView() {
                 unit={hasKpi ? '%' : undefined}
                 delta={hasKpi ? scorecard.avgDelta : null}
                 caption={hasKpi ? 'achievement vs target 100' : 'belum tersedia'}
+                tip="Skor KPI resmi direktorat vs target 100. ▼/▲ = vs bulan lalu. Bukan rata-rata divisi."
               />
             )}
             <CmdTile
               label="On track"
-              tone={summary.onTrack === activeProgramCount ? 'green' : 'amber'}
+              tone={tlm > 0 ? 'red' : summary.onTrack === activeProgramCount ? 'green' : 'amber'}
               value={summary.onTrack}
               unit={`/${activeProgramCount}`}
               delta={onTrackDelta}
               caption={`${onTrackPct}% program on track`}
+              tip="Program sehat (On Track) ÷ program aktif. ▲/▼ = vs minggu lalu. Aktif = On Track + At Risk + Terlambat."
             />
             <CmdTile
               label="Perlu aksi"
               tone={aksiTone}
               value={exceptionCount}
               caption={exceptionCount > 0 ? aksiParts.join(' · ') : 'semua tertangani'}
+              tip="Terlambat + KPI<target + approval + kontrol kritis. 'Terlambat' = kesehatan/milestone, beda dari 'Lewat tenggat' (tanggal akhir)."
             />
           </section>
+
+          {/* ─── Insight: keselarasan Hasil (lagging) ↔ Eksekusi (leading) ─── */}
+          {hasKpi && (
+            <div className="hv__align" data-tone={alignTone}>
+              <span className="hv__align-eyebrow">Hasil ↔ Eksekusi</span>
+              <div className="hv__align-pair">
+                <span className="hv__align-num" data-tone={kpiTone}>{kpiHeadline.toFixed(1)}%</span>
+                <span className="hv__align-cap">hasil · KPI</span>
+              </div>
+              <span className="hv__align-vs" aria-hidden>↔</span>
+              <div className="hv__align-pair">
+                <span className="hv__align-num" data-tone={leadingTone}>{onTrackPct}%</span>
+                <span className="hv__align-cap">eksekusi · on-track</span>
+              </div>
+              <Tooltip
+                side="bottom"
+                className="hv__align-tip"
+                content={kpiDiverges
+                  ? 'KPI (hasil/lagging) jauh di atas tingkat eksekusi program (leading). Hasil belum mencerminkan perlambatan eksekusi — bila tren berlanjut, KPI berisiko turun periode depan.'
+                  : 'Hasil KPI dan tingkat eksekusi program relatif selaras.'}
+              >
+                <span className="hv__align-pill" data-tone={alignTone}>
+                  <ToneGlyph tone={alignTone} />
+                  {alignText}
+                  {kpiDiverges && <span className="hv__align-gap">· selisih {alignGap} poin</span>}
+                </span>
+              </Tooltip>
+            </div>
+          )}
 
           {/* ─── Balanced panels — KPI (lagging) ⟷ Program (leading) ─── */}
           <section className={`hv__balance${canSeePerformance ? '' : ' hv__balance--single'}`}>
@@ -492,6 +541,9 @@ export default function HomeView() {
             )}
           </section>
 
+          {/* ─── Portfolio program — analitik eksekusi (data sudah dihitung backend) ─── */}
+          <PortfolioAnalytics data={programSummary} />
+
           {/* ─── Analisis — chart untuk telaah (batang + lingkaran) ───── */}
           <section className="hv__section hv__analisis">
             <header className="hv__sec-head">
@@ -502,7 +554,7 @@ export default function HomeView() {
               {hasKpiTrend && (
                 <div className="hv__chart-card">
                   <div className="hv__chart-title">Tren KPI · 6 bulan</div>
-                  <Bars bars={kpiTrendBars} target={100} height={132} />
+                  <Bars bars={kpiTrendBars} target={100} height={132} onBarClick={() => navigate('/performance/scorecard')} />
                 </div>
               )}
 
@@ -515,6 +567,7 @@ export default function HomeView() {
                     centerLabel="on track"
                     size={132}
                     thickness={16}
+                    onSliceClick={() => navigate('/programs')}
                   />
                   <ul className="hv__legend">
                     {statusSegments.map(s => (
@@ -531,7 +584,7 @@ export default function HomeView() {
               {hasKpiDivisi && (
                 <div className="hv__chart-card">
                   <div className="hv__chart-title">KPI per divisi</div>
-                  <Bars bars={kpiDivisiBars} target={100} height={132} />
+                  <Bars bars={kpiDivisiBars} target={100} height={132} onBarClick={(_, i) => navigate(kpiRowUrl(kpiRows[i].kode))} />
                 </div>
               )}
             </div>

@@ -36,3 +36,17 @@
   color: var(--ds-text-tertiary);
   line-height: var(--ds-leading-snug);
 }
+
+/* Slice hover/click — pop out + dim others (handled inline); center swaps. */
+.ds-donut__arc { transition: stroke-width 160ms ease, opacity 160ms ease; }
+
+/* Gentle scale-in on mount. */
+.ds-donut { animation: ds-donut-in 320ms ease both; }
+@keyframes ds-donut-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-donut { animation: none; }
+  .ds-donut__arc { transition: none; }
+}

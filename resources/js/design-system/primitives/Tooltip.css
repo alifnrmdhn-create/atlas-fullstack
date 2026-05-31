@@ -1,0 +1,35 @@
+.ds-tip {
+  display: inline-flex;
+  outline: none;
+}
+
+/* Positioning (top/left/transform) is set inline by the component; this is just
+ * the visual chrome. Rendered in a body portal at z-index above the topbar. */
+.ds-tip__bubble {
+  z-index: 9999;
+  min-width: 160px;
+  max-width: 280px;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  background: var(--ds-text-primary);
+  color: var(--ds-surface-card);
+  border-radius: var(--ds-radius-md);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-regular);
+  line-height: var(--ds-leading-snug);
+  letter-spacing: 0;
+  text-align: left;
+  white-space: normal;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  animation: ds-tip-in 120ms ease both;
+}
+
+@keyframes ds-tip-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-tip__bubble { animation: none; }
+}

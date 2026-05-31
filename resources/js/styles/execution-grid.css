@@ -394,15 +394,51 @@
 
 /* ── Today vertical line overlay ────────────────────────────────────────── */
 
+/* Pita kolom "hari ini" — overlay setinggi grid, di atas sel/bar (z-index 2)
+   tapi di bawah garis (z-index 4). Bikin kolom hari ini tersorot kontinu walau
+   melintasi baris ber-bar (sel--today hanya isi sel kosong). */
+.execution-grid__today-col {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--ptpn-green) 12%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--ptpn-green) 28%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--ptpn-green) 28%, transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+
 .execution-grid__today-line {
   position: absolute;
   top: 0;
   bottom: 0;
   width: 2px;
   background: var(--ptpn-green);
+  /* Halo gelap-terang supaya garis tetap tegas walau melintas bar hijau (Real). */
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--panel) 75%, transparent),
+    0 0 7px color-mix(in srgb, var(--ptpn-green) 55%, transparent);
   pointer-events: none;
-  z-index: 1;
-  box-shadow: 0 0 0 2px var(--ptpn-green-dim);
+  z-index: 4;
+}
+
+/* Flag "HARI INI" — jangkar visual di puncak garis. */
+.execution-grid__today-flag {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ptpn-green);
+  color: var(--text-inverse);
+  font-size: 9px;
+  font-weight: var(--w-heading);
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 3px 6px;
+  border-radius: 0 0 4px 4px;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--text-strong) 24%, transparent);
 }
 
 /* ── Empty / loading / meta ─────────────────────────────────────────────── */
@@ -529,6 +565,21 @@
 :root:not([data-theme="dark"]) .execution-grid__row--step-real {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 48%, var(--panel) 52%) 0%, var(--panel) 100%);
+}
+
+/* Sel Real yang terisi HARUS menang atas gradient row di atas — keduanya berada di
+   elemen yang sama (row--step-real + cell--real-*). Tanpa override light-mode ini,
+   selector row (spesifisitas 0,3,0) mengalahkan .cell--real-* (0,1,0) → sel hijau/
+   kuning/merah ketimpa abu-abu = baris Real tampak kosong (plan biru tetap muncul
+   karena step-plan tak punya override row). Lihat memory feedback_visual_smoke_test. */
+:root:not([data-theme="dark"]) .execution-grid__row--step-real.execution-grid__cell--real-on-time {
+  background: var(--green);
+}
+:root:not([data-theme="dark"]) .execution-grid__row--step-real.execution-grid__cell--real-late {
+  background: var(--yellow);
+}
+:root:not([data-theme="dark"]) .execution-grid__row--step-real.execution-grid__cell--real-blocked {
+  background: var(--red);
 }
 
 :root:not([data-theme="dark"]) .execution-grid__cell {

@@ -158,6 +158,69 @@
 .hv__tile[data-tone="red"]   .hv__tile-value { color: var(--ds-red-600); }
 .hv__tile[data-tone="neutral"] .hv__tile-value { color: var(--ds-text-primary); }
 
+/* Hoverable label affordance — signals "hover me for the definition". */
+.hv__has-tip {
+  border-bottom: 1px dotted color-mix(in srgb, currentColor 45%, transparent);
+  cursor: help;
+}
+
+/* ─── Insight band — Hasil (lagging) ↔ Eksekusi (leading) ─────── */
+
+.hv__align {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-4);
+  flex-wrap: wrap;
+  padding: var(--ds-space-3) var(--ds-space-5);
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-left: 3px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-lg);
+}
+.hv__align[data-tone="red"] {
+  border-left-color: var(--ds-red-600);
+  background: color-mix(in srgb, var(--ds-red-600) 5%, var(--ds-surface-card));
+}
+.hv__align[data-tone="amber"] { border-left-color: var(--ds-amber-600); }
+.hv__align[data-tone="green"] { border-left-color: var(--ds-green-600); }
+
+.hv__align-eyebrow {
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-secondary);
+  letter-spacing: var(--ds-tracking-wide);
+  text-transform: uppercase;
+}
+.hv__align-pair { display: inline-flex; align-items: baseline; gap: var(--ds-space-2); }
+.hv__align-num {
+  font-size: var(--ds-text-20);
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--ds-tracking-tight);
+  color: var(--ds-text-primary);
+}
+.hv__align-num[data-tone="green"] { color: var(--ds-green-600); }
+.hv__align-num[data-tone="amber"] { color: var(--ds-amber-600); }
+.hv__align-num[data-tone="red"]   { color: var(--ds-red-600); }
+.hv__align-cap { font-size: var(--ds-text-13); color: var(--ds-text-tertiary); }
+.hv__align-vs { color: var(--ds-text-tertiary); font-size: var(--ds-text-16); }
+
+.hv__align-tip { margin-left: auto; }
+.hv__align-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-1) var(--ds-space-3);
+  border-radius: var(--ds-radius-pill);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  cursor: help;
+}
+.hv__align-pill[data-tone="red"]   { background: color-mix(in srgb, var(--ds-red-600) 12%, transparent);   color: var(--ds-red-600); }
+.hv__align-pill[data-tone="amber"] { background: color-mix(in srgb, var(--ds-amber-600) 14%, transparent); color: var(--ds-amber-600); }
+.hv__align-pill[data-tone="green"] { background: color-mix(in srgb, var(--ds-green-600) 12%, transparent); color: var(--ds-green-600); }
+.hv__align-gap { font-weight: var(--ds-weight-regular); opacity: 0.85; }
+
 /* ─── Balanced panels — KPI (lagging) ⟷ Program (leading) ─── */
 
 .hv__balance {
@@ -512,6 +575,87 @@
   font-weight: var(--ds-weight-semibold);
   font-variant-numeric: tabular-nums;
   color: var(--ds-text-primary);
+}
+
+/* ─── Portfolio analytics — momentum + capacity cards ─────── */
+
+.hv__momentum {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ds-space-3) var(--ds-space-4);
+}
+.hv__mom-stat { display: flex; flex-direction: column; gap: 2px; }
+.hv__mom-val {
+  font-size: var(--ds-text-28);
+  font-weight: var(--ds-weight-semibold);
+  line-height: var(--ds-leading-tight);
+  letter-spacing: var(--ds-tracking-tight);
+  color: var(--ds-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.hv__mom-unit { font-size: var(--ds-text-16); font-weight: var(--ds-weight-regular); color: var(--ds-text-tertiary); margin-left: 1px; }
+.hv__mom-lbl { font-size: var(--ds-text-13); color: var(--ds-text-tertiary); }
+
+.hv__velocity {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  flex-wrap: wrap;
+  margin-top: var(--ds-space-1);
+  padding-top: var(--ds-space-3);
+  border-top: 1px solid var(--ds-border-subtle);
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-secondary);
+}
+.hv__velocity-label { color: var(--ds-text-tertiary); }
+.hv__velocity-item { display: inline-flex; align-items: center; gap: var(--ds-space-1); }
+
+.hv__cap-list { display: flex; flex-direction: column; gap: var(--ds-space-2); }
+.hv__cap-row {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+.hv__cap-name {
+  font-family: var(--ds-font-mono, 'Geist Mono', ui-monospace, monospace);
+  font-size: var(--ds-text-11);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hv__cap-meta {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.hv__cap-overdue { color: var(--ds-red-600); font-style: normal; font-weight: var(--ds-weight-medium); }
+
+/* ─── Microinteraction — card "alive" hover + page entrance ──── */
+
+.hv__tile,
+.hv__chart-card { transition: box-shadow 160ms ease; }
+.hv__tile:hover,
+.hv__chart-card:hover { box-shadow: 0 2px 14px rgba(0, 0, 0, 0.05); }
+
+@keyframes hv-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.hv > * { animation: hv-fade-up 380ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.hv > *:nth-child(1) { animation-delay: 0ms; }
+.hv > *:nth-child(2) { animation-delay: 40ms; }
+.hv > *:nth-child(3) { animation-delay: 80ms; }
+.hv > *:nth-child(4) { animation-delay: 120ms; }
+.hv > *:nth-child(5) { animation-delay: 160ms; }
+.hv > *:nth-child(n+6) { animation-delay: 200ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hv > * { animation: none; }
+  .hv__tile, .hv__chart-card { transition: none; }
 }
 
 /* ═══════════════ Below the fold — drill-down detail ═══════════════ */

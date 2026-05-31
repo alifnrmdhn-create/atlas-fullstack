@@ -85,3 +85,34 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Drill-down column — hover lift + keyboard focus. */
+.ds-bars__col--btn {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  border-radius: var(--ds-radius-sm);
+  transition: background-color 120ms ease;
+}
+.ds-bars__col--btn:hover { background: color-mix(in srgb, var(--ds-text-primary) 4%, transparent); }
+.ds-bars__col--btn:hover .ds-bars__bar { filter: brightness(1.08); }
+.ds-bars__col--btn:focus-visible { outline: none; }
+.ds-bars__col--btn:focus-visible .ds-bars__bar {
+  outline: 2px solid color-mix(in srgb, var(--ds-green-600) 45%, transparent);
+  outline-offset: 1px;
+}
+
+/* Grow-in on mount. */
+.ds-bars__bar {
+  transform-origin: bottom;
+  animation: ds-bars-grow 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes ds-bars-grow {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-bars__bar { animation: none; }
+}

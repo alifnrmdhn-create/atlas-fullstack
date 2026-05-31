@@ -17,7 +17,7 @@ const WEEK_COL_WIDTH = 38
 // Output + PIC (Divisi) dihapus 19 Mei 2026 — tidak ada di form input Struktur,
 // selalu render "—", dan ketika masih ada bikin sticky-overlap saat scroll.
 const COL_FASE = 54
-const COL_URAIAN = 320
+const COL_URAIAN = 380
 const COL_PIC_PERSON = 200
 const COL_STATUS = 56
 const INFO_PANE_WIDTH = COL_FASE + COL_URAIAN + COL_PIC_PERSON + COL_STATUS
@@ -247,7 +247,7 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                     style={{ gridColumn: '1 / -1' }}
                   >
                     <span className="execution-grid__phase-row__order">{phase.order}</span>
-                    <span className="execution-grid__phase-row__name">{phase.name}</span>
+                    <span className="execution-grid__phase-row__name" title={phase.name}>{phase.name}</span>
                     {(unitLabels || personLabels || (phase.startWeek && phase.endWeek)) && (
                       <span className="execution-grid__phase-row__meta">
                         {unitLabels && <>PIC: {unitLabels}</>}
@@ -272,7 +272,7 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                 return (
                   <Fragment key={`info-${idx}`}>
                     <div className={`${cls} execution-grid__info-cell execution-grid__col-fase execution-grid__fase-num`}>{letter}</div>
-                    <div className={`${cls} execution-grid__info-cell execution-grid__col-uraian execution-grid__uraian-title`}>{step.title}</div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__col-uraian execution-grid__uraian-title`} title={step.title}>{step.title}</div>
                     <div className={`${cls} execution-grid__info-cell execution-grid__col-person`}>
                       {personPrimary ? (
                         <span className="exec-grid-pic" title={personEntries.map(p => p.name).join(', ')}>
@@ -473,11 +473,22 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
           </div>
 
           {todayLeftInWeeks !== null && (
-            <div
-              className="execution-grid__today-line"
-              style={{ left: todayLeftInWeeks }}
-              title={`Hari ini — ${currentWeek}`}
-            />
+            <>
+              {/* Pita kolom "hari ini" — overlay setinggi grid supaya kolom selalu
+                  tersorot walau ada bar Plan/Real (sel--today hanya isi sel kosong). */}
+              <div
+                className="execution-grid__today-col"
+                style={{ left: todayLeftInWeeks - WEEK_COL_WIDTH / 2, width: WEEK_COL_WIDTH }}
+                aria-hidden="true"
+              />
+              <div
+                className="execution-grid__today-line"
+                style={{ left: todayLeftInWeeks }}
+                title={`Hari ini — ${currentWeek}`}
+              >
+                <span className="execution-grid__today-flag">Hari ini</span>
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import './Donut.css'
 
@@ -26,15 +27,19 @@ export interface DonutProps {
   centerValue?: ReactNode
   centerLabel?: ReactNode
   className?: string
+  /** Makes slices clickable (drill-down). */
+  onSliceClick?: (segment: DonutSegment, index: number) => void
 }
 
 /**
- * Donut — a ring for completion (one value vs a max) or composition (RAG-toned
- * slices). Center holds a headline number. SVG, no dependency, no animation.
+ * Donut — completion ring or RAG-toned composition. Hovering a slice pops it
+ * out, dims the rest, and swaps the center to that slice's value + label — a
+ * premium, legible microinteraction without a separate tooltip.
  */
 export function Donut({
-  segments, max, size = 120, thickness = 14, centerValue, centerLabel, className,
+  segments, max, size = 120, thickness = 14, centerValue, centerLabel, className, onSliceClick,
 }: DonutProps) {
+  const [hover, setHover] = useState<number | null>(null)
   const r = (size - thickness) / 2
   const c = size / 2
   const circ = 2 * Math.PI * r
@@ -44,20 +49,31 @@ export function Donut({
   let offset = 0
   const arcs = segments.map((seg, i) => {
     const len = (Math.max(0, seg.value) / total) * circ
+    const isHover = hover === i
+    const dim = hover != null && !isHover
     const node = (
       <circle
         key={i}
         cx={c} cy={c} r={r}
         fill="none"
         stroke={TONE[seg.tone ?? 'neutral']}
-        strokeWidth={thickness}
+        strokeWidth={isHover ? thickness + 4 : thickness}
         strokeDasharray={`${len} ${circ - len}`}
         strokeDashoffset={-offset}
+        opacity={dim ? 0.4 : 1}
+        className="ds-donut__arc"
+        style={onSliceClick ? { cursor: 'pointer' } : undefined}
+        onMouseEnter={() => setHover(i)}
+        onMouseLeave={() => setHover(null)}
+        onClick={onSliceClick ? () => onSliceClick(seg, i) : undefined}
       />
     )
     offset += len
     return node
   })
+
+  const cv = hover != null ? segments[hover].value : centerValue
+  const cl = hover != null ? (segments[hover].label ?? null) : centerLabel
 
   return (
     <div className={['ds-donut', className].filter(Boolean).join(' ')} style={{ width: size, height: size }}>
@@ -65,10 +81,10 @@ export function Donut({
         <circle cx={c} cy={c} r={r} fill="none" stroke="var(--ds-surface-sunken)" strokeWidth={thickness} />
         {arcs}
       </svg>
-      {(centerValue != null || centerLabel != null) && (
+      {(cv != null || cl != null) && (
         <div className="ds-donut__center">
-          {centerValue != null && <div className="ds-donut__value">{centerValue}</div>}
-          {centerLabel != null && <div className="ds-donut__label">{centerLabel}</div>}
+          {cv != null && <div className="ds-donut__value">{cv}</div>}
+          {cl != null && <div className="ds-donut__label">{cl}</div>}
         </div>
       )}
     </div>
