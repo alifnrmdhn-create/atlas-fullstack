@@ -3,6 +3,8 @@
 > Disusun 2026-05-29 setelah feedback Direksi: "apakah ini sudah selevel MIS terbaik dunia? masih terlalu sederhana."
 > Status: **blueprint** (riset + rencana). Belum dieksekusi. Eksekusi bertahap menunggu persetujuan arah.
 
+> **⚠️ AMENDEMEN 2026-05-31:** Direksi menegaskan **ATLAS BUKAN aplikasi manajemen risiko**. Modul **Risk Cockpit DICORET** (heatmap/KRI/loss dari `RiskReport*` **tidak** di-surface ke Home). Fokus MIS dipersempit ke **identitas inti ATLAS: manajemen program kerja (PDCA) + kinerja KPI**. Varians RKAP/`MonthlyReportMetric` (bagian grup "Pelaporan" yang sudah di-hide) **perlu konfirmasi** sebelum dipakai. Bagian risk/RKAP di bawah dipertahankan sebagai histori riset, tapi **tidak dieksekusi**. Lihat memory `feedback_atlas_not_risk_app`.
+
 ---
 
 ## 1. Verdict jujur

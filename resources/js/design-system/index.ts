@@ -38,3 +38,6 @@ export type { DonutProps, DonutSegment } from './primitives/Donut'
 
 export { Bars } from './primitives/Bars'
 export type { BarsProps, Bar } from './primitives/Bars'
+
+export { Tooltip } from './primitives/Tooltip'
+export type { TooltipProps } from './primitives/Tooltip'
