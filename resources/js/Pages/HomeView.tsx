@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import type { ReactNode } from 'react'
+import { useState, Fragment } from 'react'
+import type { ReactNode, CSSProperties } from 'react'
 import { Head, usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
@@ -70,6 +70,32 @@ function direkturSlug(kode: string): string {
   return kode.toLowerCase()
 }
 
+/* Relative time for the activity feed — "baru saja / 3 jam lalu / 2 hr lalu". */
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime()
+  if (Number.isNaN(then)) return ''
+  const m = Math.floor((Date.now() - then) / 60000)
+  if (m < 1) return 'baru saja'
+  if (m < 60) return `${m} mnt lalu`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h} jam lalu`
+  const d = Math.floor(h / 24)
+  if (d < 30) return `${d} hr lalu`
+  return `${Math.floor(d / 30)} bln lalu`
+}
+
+const ENTITY_LABEL: Record<string, string> = {
+  Program: 'program', WorkItem: 'task', Task: 'task', Meeting: 'rapat',
+  ProgressLog: 'progres', Blocker: 'hambatan', Assignment: 'penugasan',
+  EscalationRequest: 'eskalasi', MeetingActionItem: 'tindak lanjut',
+}
+
+function activityText(a: { action: string; entityType: string; description?: string }): string {
+  if (a.description) return a.description
+  const ent = ENTITY_LABEL[a.entityType] ?? a.entityType
+  return `${a.action} ${ent}`.trim()
+}
+
 /* Status glyph — check (aman) / triangle (hati-hati) / cross (bahaya). Tone
  * carried by currentColor; neutral falls back to a dot. */
 function ToneGlyph({ tone }: { tone: Tone }) {
@@ -84,44 +110,54 @@ function ToneGlyph({ tone }: { tone: Tone }) {
   return <span className="hv__dot" data-tone="neutral" />
 }
 
-/* ─── Command-strip tile (status, at a glance — no prose) ───── */
-
-function CmdTile({
-  label, tone = 'neutral', value, unit, delta, deltaSuffix, caption, verdict = false, tip,
-}: {
-  label: string
-  tone?: Tone
-  value: ReactNode
-  unit?: ReactNode
-  delta?: number | null
-  deltaSuffix?: string
-  caption?: ReactNode
-  /** Verdict tiles show a word (smaller) rather than a number (BAN size). */
-  verdict?: boolean
-  /** Definition/formula shown on hover — makes the number self-explaining (trust). */
-  tip?: ReactNode
-}) {
+/* Decorative isometric motif for the hero — stacked translucent planes evoke
+ * the "platform/structure" of the mockup. Static (no transform-in-scroll),
+ * theme-aware via currentColor. PLACEHOLDER pending design refinement. */
+function HeroMotif() {
   return (
-    <Card padding="md" className={`hv__tile${verdict ? ' hv__tile--verdict' : ''}`} data-tone={tone}>
-      <span className="hv__tile-label">
-        <span className="hv__tile-glyph" data-tone={tone} aria-hidden><ToneGlyph tone={tone} /></span>
-        {tip
-          ? <Tooltip content={tip} side="bottom"><span className="hv__has-tip">{label}</span></Tooltip>
-          : label}
-      </span>
-      <span className="hv__tile-value-row">
-        <span className="hv__tile-value">
-          {value}
-          {unit ? <span className="hv__tile-unit">{unit}</span> : null}
-        </span>
-        {delta != null ? <Delta value={delta} suffix={deltaSuffix} /> : null}
-      </span>
-      {caption ? <span className="hv__tile-caption">{caption}</span> : null}
-    </Card>
+    <svg className="hvc__motif" viewBox="0 0 200 160" aria-hidden focusable="false">
+      <defs>
+        <linearGradient id="hvc-motif-g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="var(--ds-green-600)" stopOpacity="0.55" />
+          <stop offset="1" stopColor="var(--ds-green-600)" stopOpacity="0.04" />
+        </linearGradient>
+      </defs>
+      {[0, 1, 2].map(i => {
+        const dy = i * 26
+        return (
+          <g key={i} opacity={0.85 - i * 0.22}>
+            <path
+              d={`M100 ${26 + dy} L172 ${62 + dy} L100 ${98 + dy} L28 ${62 + dy} Z`}
+              fill="url(#hvc-motif-g)"
+              stroke="currentColor"
+              strokeOpacity="0.35"
+              strokeWidth="1"
+            />
+          </g>
+        )
+      })}
+    </svg>
   )
 }
 
-/* Program status row — label + proportional Meter + count. */
+/* Shortcut icon — minimal line glyphs keyed by name. */
+function ShortcutIcon({ name }: { name: string }) {
+  const p = {
+    width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none',
+    stroke: 'currentColor', strokeWidth: 1.8,
+    strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
+  }
+  switch (name) {
+    case 'programs': return <svg {...p}><rect x="3" y="4" width="18" height="16" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="8" y1="14" x2="14" y2="14" /></svg>
+    case 'workboard': return <svg {...p}><rect x="3" y="4" width="6" height="16" rx="1" /><rect x="11" y="4" width="6" height="10" rx="1" /><line x1="20" y1="4" x2="20" y2="20" /></svg>
+    case 'meeting': return <svg {...p}><rect x="3" y="5" width="18" height="16" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="8" y1="3" x2="8" y2="7" /><line x1="16" y1="3" x2="16" y2="7" /></svg>
+    case 'performance': return <svg {...p}><path d="M4 19 L9 12 L13 15 L20 6" /><polyline points="15 6 20 6 20 11" /></svg>
+    default: return <svg {...p}><circle cx="12" cy="12" r="8" /></svg>
+  }
+}
+
+/* Program status row — label + proportional Meter + count (reused for the
+ * "Overdue per divisi" panel). */
 function StatusBar({
   label, value, total, tone, onClick,
 }: {
@@ -159,6 +195,7 @@ export default function HomeView() {
 
   // Inline "✓ Tereskalasi" confirmation for the below-the-fold action tables.
   const [recentlyEscalated, setRecentlyEscalated] = useState<Set<number>>(new Set())
+  const [tab, setTab] = useState<'program' | 'analisis' | 'divisi'>('program')
   const markEscalated = (programId: number) => {
     setRecentlyEscalated(prev => new Set(prev).add(programId))
     setTimeout(() => {
@@ -197,7 +234,10 @@ export default function HomeView() {
     )
   }
 
-  const { summary, byDivisi, controls, needsAction, trendSeries, programsForChart, velocity } = programSummary
+  const {
+    summary, byDivisi, controls, needsAction, trendSeries, programsForChart,
+    velocity, momentum, recentActivity, deadlineClusters, scope,
+  } = programSummary
   const now = new Date()
 
   /* ── Derived figures (all from existing payload) ─────────────── */
@@ -232,11 +272,6 @@ export default function HomeView() {
   const kpiRowUrl = (kode: string) => kpiRowsAreDivisi
     ? `/performance/divisi/${kode.toLowerCase()}`
     : `/performance/kolegial/${direkturSlug(kode)}`
-  const kpiContextLabel = scorecard.ownItem
-    ? scorecard.ownItem.nama
-    : (scorecard.grid && scorecard.grid.length === 1)
-      ? scorecard.grid[0].nama
-      : `Rata-rata ${scorecard.totalItem} ${scorecard.itemLabel}`
 
   // Insight — lagging (KPI result) vs leading (execution on-track%). The most
   // valuable executive signal: a green KPI sitting on top of red execution means
@@ -256,22 +291,6 @@ export default function HomeView() {
     : (summary.atRisk > 0 || needsAction.length > 0) ? 'amber'
     : 'green'
   const statusLabel = statusTone === 'green' ? 'Terkendali' : statusTone === 'amber' ? 'Perhatian' : 'Tindakan'
-  const statusCaption =
-    tlm > 0 ? `${tlm} program terlambat`
-    : belowTargetCount > 0 ? `${belowTargetCount} KPI di bawah target`
-    : criticalControlCount > 0 ? `${criticalControlCount} kontrol kritis`
-    : summary.atRisk > 0 ? `${summary.atRisk} program berisiko`
-    : needsAction.length > 0 ? `${needsAction.length} menunggu keputusan`
-    : 'Semua dalam target'
-
-  const aksiParts = [
-    tlm > 0 ? `${tlm} terlambat` : null,
-    belowTargetCount > 0 ? `${belowTargetCount} KPI` : null,
-    needsAction.length > 0 ? `${needsAction.length} approval` : null,
-    criticalControlCount > 0 ? `${criticalControlCount} kontrol` : null,
-  ].filter(Boolean)
-  const aksiTone: Tone = exceptionCount === 0 ? 'green'
-    : (tlm > 0 || belowTargetCount > 0 || criticalControlCount > 0) ? 'red' : 'amber'
 
   /* ── Exception list (only what needs a decision) ─────────────── */
   type Exc = { id: string; tone: Tone; label: ReactNode; meta?: string; onClick: () => void }
@@ -334,11 +353,70 @@ export default function HomeView() {
   }))
   const hasKpiDivisi = canSeePerformance && kpiDivisiBars.length > 0
 
-  /* ── Below-the-fold detail data (unchanged sources) ──────────── */
-  const divisiDelay = byDivisi
-    .filter(d => d.unit.id !== null && (d.terlambat ?? 0) > 0)
-    .sort((a, b) => (b.terlambat ?? 0) - (a.terlambat ?? 0))
+  /* ── Command-center: Horizon (deadline workload) ─────────────── */
+  const horizonBars = (deadlineClusters ?? []).map(c => ({
+    label: c.label,
+    value: c.total,
+    tone: (c.atRisk > 0 ? (c.atRisk >= c.onTrack ? 'red' : 'amber') : 'green') as Tone,
+    valueLabel: String(c.total),
+  }))
 
+  /* ── Command-center: Overdue per divisi ──────────────────────── */
+  const overdueRows = [...byDivisi]
+    .filter(d => d.unit.id !== null)
+    .map(d => ({ unit: d.unit, value: (d.terlambat ?? 0) + (d.overdue ?? 0) }))
+    .filter(d => d.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6)
+  const overdueMax = Math.max(1, ...overdueRows.map(d => d.value))
+
+  /* ── Command-center: Momentum ────────────────────────────────── */
+  const activeRatePct = momentum ? Math.round((momentum.activeRate ?? 0) * (momentum.activeRate <= 1 ? 100 : 1)) : 0
+  const momentumStats = momentum ? [
+    { label: 'Program selesai · 30 hari', value: momentum.programsCompletedLast30d, tone: 'green' as Tone },
+    { label: 'Program baru · 30 hari', value: momentum.newProgramsLast30d, tone: 'neutral' as Tone },
+    { label: 'Task selesai · pekan ini', value: momentum.tasksCompletedThisWeek, tone: 'green' as Tone },
+    { label: 'Program mandek', value: momentum.stagnantCount, tone: (momentum.stagnantCount > 0 ? 'red' : 'green') as Tone },
+  ] : []
+
+  /* ── Mid: Heatmap rekap program (divisi × status) ────────────── */
+  const heatRows = [...byDivisi]
+    .filter(d => d.unit.id !== null && d.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8)
+  const heatCols: Array<{ key: 'onTrack' | 'atRisk' | 'tlm' | 'selesai'; label: string; tone: Tone }> = [
+    { key: 'onTrack', label: 'On Track', tone: 'green' },
+    { key: 'atRisk', label: 'At Risk', tone: 'amber' },
+    { key: 'tlm', label: 'Terlambat', tone: 'red' },
+    { key: 'selesai', label: 'Selesai', tone: 'neutral' },
+  ]
+  const heatVal = (d: typeof heatRows[number], key: string) =>
+    key === 'tlm' ? (d.terlambat ?? 0) + (d.overdue ?? 0)
+    : key === 'onTrack' ? d.onTrack ?? 0
+    : key === 'atRisk' ? d.atRisk ?? 0
+    : d.selesai ?? 0
+  const heatMax = Math.max(1, ...heatRows.flatMap(d => heatCols.map(c => heatVal(d, c.key))))
+
+  /* ── Mid: Top 5 program terlambat ────────────────────────────── */
+  const top5Terlambat = [...programsForChart]
+    .filter(p => p.healthTone === 'terlambat' || p.healthTone === 'overdue')
+    .sort((a, b) => (a.daysRemaining ?? 9999) - (b.daysRemaining ?? 9999))
+    .slice(0, 5)
+
+  /* ── Mid: Activity timeline ──────────────────────────────────── */
+  const activity = (recentActivity ?? []).slice(0, 7)
+
+  /* ── Shortcuts ───────────────────────────────────────────────── */
+  const shortcuts: Array<{ icon: string; label: string; tone: Tone; onClick: () => void }> = [
+    { icon: 'programs', label: 'Programs', tone: 'green', onClick: () => navigate('/programs') },
+    { icon: 'workboard', label: 'Workboard', tone: 'amber', onClick: () => navigate('/execution') },
+    { icon: 'meeting', label: 'Rapat', tone: 'neutral', onClick: () => navigate('/jadwal') },
+    canSeePerformance
+      ? { icon: 'performance', label: 'Performance', tone: 'green', onClick: () => navigate('/performance/scorecard') }
+      : { icon: 'workboard', label: 'Assignment', tone: 'neutral', onClick: () => navigate('/penugasan') },
+  ]
+
+  /* ── Below-the-fold detail data (unchanged sources) ──────────── */
   const attentionPrograms = [...programsForChart]
     .sort((a, b) => {
       const order: Record<string, number> = { overdue: 0, terlambat: 1, at_risk: 2, on_track: 3, selesai: 4 }
@@ -358,193 +436,327 @@ export default function HomeView() {
     <>
       <Head title="Home" />
       <div className="ds home-v2">
-        <div className="hv">
+        <div className="hv hv--cockpit">
 
-          {/* ─── Greeting (one line — no narrative) ────────── */}
-          <header className="hv__head">
+          {/* ─── Greeting + period context ─────────────────── */}
+          <header className="hv__head hvc__head">
             <h1 className="hv__greeting">
               {getGreeting()},{' '}
               <span className="hv__greeting-name">{currentUser?.name ?? 'Anda'}</span>
             </h1>
+            <div className="hvc__head-meta">
+              <Pill tone={statusTone} variant="soft"><ToneGlyph tone={statusTone} />{statusLabel}</Pill>
+              <Pill tone="neutral" variant="soft">Q{getQuarter(now)} · W{getISOWeek(now)}</Pill>
+            </div>
           </header>
 
-          {/* ─── Command strip — BAN tiles, 3-second verdict ─── */}
-          <section className="hv__strip" aria-label="Ringkasan">
-            <CmdTile
-              label="Status"
-              tone={statusTone}
-              verdict
-              value={statusLabel}
-              caption={statusCaption}
-              tip="Verdict keseluruhan. Merah = ada terlambat / KPI<target / kontrol kritis. Kuning = ada risiko / approval. Hijau = semua dalam target."
-            />
+          {/* ═══════════════ HERO band ═══════════════ */}
+          <section className="hvc__hero" aria-label="Ringkasan utama">
+
+            {/* % Achievement — lagging headline */}
             {canSeePerformance && (
-              <CmdTile
-                label={`KPI · ${scorecard.periodeLabel}`}
-                tone={kpiTone}
-                value={hasKpi ? kpiHeadline.toFixed(1) : '—'}
-                unit={hasKpi ? '%' : undefined}
-                delta={hasKpi ? scorecard.avgDelta : null}
-                caption={hasKpi ? 'achievement vs target 100' : 'belum tersedia'}
-                tip="Skor KPI resmi direktorat vs target 100. ▼/▲ = vs bulan lalu. Bukan rata-rata divisi."
-              />
-            )}
-            <CmdTile
-              label="On track"
-              tone={tlm > 0 ? 'red' : summary.onTrack === activeProgramCount ? 'green' : 'amber'}
-              value={summary.onTrack}
-              unit={`/${activeProgramCount}`}
-              delta={onTrackDelta}
-              caption={`${onTrackPct}% program on track`}
-              tip="Program sehat (On Track) ÷ program aktif. ▲/▼ = vs minggu lalu. Aktif = On Track + At Risk + Terlambat."
-            />
-            <CmdTile
-              label="Perlu aksi"
-              tone={aksiTone}
-              value={exceptionCount}
-              caption={exceptionCount > 0 ? aksiParts.join(' · ') : 'semua tertangani'}
-              tip="Terlambat + KPI<target + approval + kontrol kritis. 'Terlambat' = kesehatan/milestone, beda dari 'Lewat tenggat' (tanggal akhir)."
-            />
-          </section>
-
-          {/* ─── Insight: keselarasan Hasil (lagging) ↔ Eksekusi (leading) ─── */}
-          {hasKpi && (
-            <div className="hv__align" data-tone={alignTone}>
-              <span className="hv__align-eyebrow">Hasil ↔ Eksekusi</span>
-              <div className="hv__align-pair">
-                <span className="hv__align-num" data-tone={kpiTone}>{kpiHeadline.toFixed(1)}%</span>
-                <span className="hv__align-cap">hasil · KPI</span>
-              </div>
-              <span className="hv__align-vs" aria-hidden>↔</span>
-              <div className="hv__align-pair">
-                <span className="hv__align-num" data-tone={leadingTone}>{onTrackPct}%</span>
-                <span className="hv__align-cap">eksekusi · on-track</span>
-              </div>
-              <Tooltip
-                side="bottom"
-                className="hv__align-tip"
-                content={kpiDiverges
-                  ? 'KPI (hasil/lagging) jauh di atas tingkat eksekusi program (leading). Hasil belum mencerminkan perlambatan eksekusi — bila tren berlanjut, KPI berisiko turun periode depan.'
-                  : 'Hasil KPI dan tingkat eksekusi program relatif selaras.'}
-              >
-                <span className="hv__align-pill" data-tone={alignTone}>
-                  <ToneGlyph tone={alignTone} />
-                  {alignText}
-                  {kpiDiverges && <span className="hv__align-gap">· selisih {alignGap} poin</span>}
-                </span>
-              </Tooltip>
-            </div>
-          )}
-
-          {/* ─── Balanced panels — KPI (lagging) ⟷ Program (leading) ─── */}
-          <section className={`hv__balance${canSeePerformance ? '' : ' hv__balance--single'}`}>
-
-            {/* HASIL · KPI — lagging / outcomes */}
-            {canSeePerformance && (
-              <Card padding="lg" className="hv__panel" data-tone={hasKpi ? kpiTone : 'neutral'}>
-                <header className="hv__panel-head">
-                  <span className="hv__panel-eyebrow">Hasil · KPI</span>
-                  <div className="hv__panel-head-right">
-                    <Pill tone="neutral" variant="soft">{scorecard.periodeLabel}</Pill>
-                    <button type="button" className="hv__panel-link" onClick={() => navigate('/performance/scorecard')}>
-                      Scorecard <span aria-hidden>→</span>
-                    </button>
-                  </div>
-                </header>
-
-                <div className="hv__panel-headline">
-                  <div className="hv__panel-metric">
-                    <span className="hv__panel-big" data-tone={hasKpi ? kpiTone : 'neutral'}>
-                      {hasKpi ? kpiHeadline.toFixed(1) : '—'}
-                      {hasKpi && <span className="hv__panel-unit">%</span>}
-                    </span>
-                    {hasKpi && scorecard.avgDelta != null && <Delta value={scorecard.avgDelta} />}
-                  </div>
+              <Card padding="lg" className="hvc__hero-kpi" data-tone={hasKpi ? kpiTone : 'neutral'}>
+                <span className="hvc__eyebrow">% Achievement · {scorecard.periodeLabel}</span>
+                <div className="hvc__hero-kpi-row">
+                  <span className="hvc__bignum" data-tone={hasKpi ? kpiTone : 'neutral'}>
+                    {hasKpi ? kpiHeadline.toFixed(1) : '—'}
+                    {hasKpi && <span className="hvc__bignum-unit">%</span>}
+                  </span>
+                  {hasKpi && scorecard.avgDelta != null && <Delta value={scorecard.avgDelta} />}
+                </div>
+                <div className="hvc__hero-kpi-foot">
+                  <span className="hvc__sub">
+                    {scorecard.ownItem ? scorecard.ownItem.nama : `Rata-rata ${scorecard.totalItem} ${scorecard.itemLabel}`}
+                  </span>
                   {hasKpi && kpiSpark.length >= 2 && (
-                    <Sparkline values={kpiSpark} tone={kpiTone} width={150} height={42} />
+                    <Sparkline values={kpiSpark} tone={kpiTone} width={140} height={36} />
                   )}
                 </div>
-                <div className="hv__panel-sub">{hasKpi ? kpiContextLabel : 'KPI periode ini belum tersedia'}</div>
-
-                {hasKpi && (
-                  <div className="hv__kpi-list">
-                    {kpiRows.map(d => {
-                      const t = scoreTone(d.nilai)
-                      return (
-                        <button key={d.kode} type="button" className="hv__kpi-row" onClick={() => navigate(kpiRowUrl(d.kode))}>
-                          <span className="hv__kpi-name" title={d.nama}>{d.nama}</span>
-                          <Meter className="hv__kpi-meter" value={d.nilai} max={120} target={100} tone={t} height={8} aria-label={`${d.nama}: ${d.nilai.toFixed(1)}%`} />
-                          <span className="hv__kpi-val" data-tone={t}>{d.nilai.toFixed(1)}%</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
               </Card>
             )}
 
-            {/* EKSEKUSI · Program — leading / drivers */}
-            <Card padding="lg" className="hv__panel" data-tone={programTone}>
-              <header className="hv__panel-head">
-                <span className="hv__panel-eyebrow">Eksekusi · Program</span>
-                <div className="hv__panel-head-right">
-                  <Pill tone="neutral" variant="soft">Q{getQuarter(now)} · W{getISOWeek(now)}</Pill>
-                  <button type="button" className="hv__panel-link" onClick={() => navigate('/programs')}>
-                    Programs <span aria-hidden>→</span>
-                  </button>
-                </div>
-              </header>
-
-              <div className="hv__panel-headline">
-                <div className="hv__panel-metric">
-                  <span className="hv__panel-big">
-                    {summary.onTrack}<span className="hv__panel-unit">/{activeProgramCount}</span>
-                  </span>
-                  {onTrackDelta != null && <Delta value={onTrackDelta} />}
-                </div>
-                {trendValues.length >= 2 && (
-                  <Sparkline values={trendValues} tone={trendDelta != null && trendDelta < 0 ? 'red' : 'green'} width={150} height={42} />
-                )}
+            {/* Execution rate — leading donut */}
+            <Card padding="lg" className="hvc__hero-donut" data-tone={programTone}>
+              <span className="hvc__eyebrow">Execution rate</span>
+              <div className="hvc__donut-wrap">
+                <Donut
+                  segments={statusSegments}
+                  centerValue={`${onTrackPct}%`}
+                  centerLabel="on track"
+                  size={132}
+                  thickness={15}
+                  onSliceClick={() => navigate('/programs')}
+                />
               </div>
-              <div className="hv__panel-sub">
-                {onTrackPct}% program on track{draftPipeline > 0 ? ` · ${draftPipeline} pipeline` : ''}
-              </div>
+              <span className="hvc__sub">{summary.onTrack}/{activeProgramCount} program aktif on track</span>
+            </Card>
 
-              <div className="hv__status-list">
-                <StatusBar label="On Track"        value={summary.onTrack} total={statusTotal} tone="green"   onClick={() => navigate('/programs')} />
-                <StatusBar label="At Risk"         value={summary.atRisk}  total={statusTotal} tone="amber"   onClick={() => navigate('/programs')} />
-                <StatusBar label="Terlambat"       value={tlm}             total={statusTotal} tone="red"     onClick={() => navigate('/programs')} />
-                <StatusBar label="Draft / pipeline" value={draftPipeline}  total={statusTotal} tone="neutral" onClick={() => navigate('/programs')} />
+            {/* Stat tiles */}
+            <div className="hvc__hero-stats">
+              <button type="button" className="hvc__stat" data-tone={tlm > 0 ? 'red' : 'green'} onClick={() => navigate('/programs')}>
+                <span className="hvc__stat-val" data-tone={tlm > 0 ? 'red' : 'green'}>{tlm}</span>
+                <span className="hvc__stat-label">Program terlambat</span>
+              </button>
+              <button type="button" className="hvc__stat" data-tone="green" onClick={() => navigate('/programs')}>
+                <span className="hvc__stat-val" data-tone="green">{summary.selesai}</span>
+                <span className="hvc__stat-label">Selesai</span>
+              </button>
+              <button type="button" className="hvc__stat" data-tone="neutral" onClick={() => navigate('/programs')}>
+                <span className="hvc__stat-val">{summary.total}</span>
+                <span className="hvc__stat-label">Total program</span>
+              </button>
+              <button type="button" className="hvc__stat" data-tone={exceptionCount > 0 ? 'amber' : 'green'} onClick={() => navigate('/fokus')}>
+                <span className="hvc__stat-val" data-tone={exceptionCount > 0 ? 'amber' : 'green'}>{exceptionCount}</span>
+                <span className="hvc__stat-label">Perlu aksi</span>
+              </button>
+            </div>
+
+            {/* Decorative hero visual (placeholder — refine) */}
+            <Card padding="lg" className="hvc__hero-visual" data-tone="green">
+              <HeroMotif />
+              <div className="hvc__hero-visual-cap">
+                <span className="hvc__eyebrow">ATLAS · Command Center</span>
+                <span className="hvc__sub">{summary.total} program · {scope?.name ?? 'Portfolio'}</span>
               </div>
             </Card>
           </section>
 
-          {/* ─── Perlu aksi — exceptions only ───────────────── */}
-          <section className="hv__section hv__exceptions">
-            <header className="hv__sec-head">
-              <h2 className="hv__sec-title">Perlu aksi</h2>
-              <span className="hv__sec-meta">{exceptions.length > 0 ? `${exceptions.length} hal` : 'terkendali'}</span>
+          {/* ═══════════════ EXECUTION COMMAND CENTER ═══════════════ */}
+          <section className="hvc__section" aria-label="Execution Command Center">
+            <header className="hvc__sec-head">
+              <h2 className="hvc__sec-title">Execution Command Center</h2>
             </header>
-            {exceptions.length > 0 ? (
-              <div className="hv__exc-list">
-                {exceptions.map(e => (
-                  <button key={e.id} type="button" className="hv__exc-row" data-tone={e.tone} onClick={e.onClick}>
-                    <span className="hv__dot" data-tone={e.tone} aria-hidden />
-                    <span className="hv__exc-label">{e.label}</span>
-                    {e.meta && <span className="hv__exc-meta">{e.meta}</span>}
-                    <span className="hv__exc-arrow" aria-hidden>→</span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="hv__all-clear">Semua terkendali — tidak ada yang menunggu keputusan.</p>
-            )}
+            <div className="hvc__grid hvc__grid--cmd">
+
+              {/* Horizon — workload by deadline window */}
+              <Card padding="lg" className="hvc__panel">
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">Horizon · beban tenggat</span></header>
+                {horizonBars.length > 0
+                  ? <Bars bars={horizonBars} height={150} />
+                  : <p className="hvc__empty">Tidak ada program aktif bertenggat.</p>}
+              </Card>
+
+              {/* Momentum */}
+              <Card padding="lg" className="hvc__panel">
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">Momentum</span></header>
+                <div className="hvc__mhead">
+                  <span className="hvc__bignum hvc__bignum--sm" data-tone={activeRatePct >= 60 ? 'green' : activeRatePct >= 30 ? 'amber' : 'red'}>
+                    {activeRatePct}<span className="hvc__bignum-unit">%</span>
+                  </span>
+                  <span className="hvc__sub">program aktif bergerak</span>
+                </div>
+                <div className="hvc__mstats">
+                  {momentumStats.map(s => (
+                    <div key={s.label} className="hvc__mstat">
+                      <span className="hvc__mstat-val" data-tone={s.tone}>{s.value}</span>
+                      <span className="hvc__mstat-label">{s.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Overdue per divisi */}
+              <Card padding="lg" className="hvc__panel">
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">Overdue per divisi</span></header>
+                {overdueRows.length > 0 ? (
+                  <div className="hv__status-list">
+                    {overdueRows.map(d => (
+                      <StatusBar
+                        key={d.unit.code}
+                        label={d.unit.code}
+                        value={d.value}
+                        total={overdueMax}
+                        tone="red"
+                        onClick={() => navigate(canSeePerformance ? `/performance/divisi/${d.unit.code.toLowerCase()}` : '/programs')}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="hvc__empty">Tidak ada program terlambat di divisi mana pun. 🎯</p>
+                )}
+              </Card>
+
+              {/* Alert & Insight */}
+              <Card padding="lg" className="hvc__panel" data-tone={alignTone}>
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">Alert &amp; Insight</span></header>
+
+                {hasKpi && (
+                  <Tooltip
+                    side="bottom"
+                    content={kpiDiverges
+                      ? 'KPI (hasil/lagging) jauh di atas tingkat eksekusi program (leading). Bila tren berlanjut, KPI berisiko turun periode depan.'
+                      : 'Hasil KPI dan tingkat eksekusi program relatif selaras.'}
+                  >
+                    <div className="hvc__align" data-tone={alignTone}>
+                      <span className="hvc__align-pair"><b data-tone={kpiTone}>{kpiHeadline.toFixed(1)}%</b> hasil</span>
+                      <span className="hvc__align-vs" aria-hidden>↔</span>
+                      <span className="hvc__align-pair"><b data-tone={leadingTone}>{onTrackPct}%</b> eksekusi</span>
+                      <span className="hvc__align-verdict" data-tone={alignTone}><ToneGlyph tone={alignTone} />{alignText}{kpiDiverges ? ` · ${alignGap}p` : ''}</span>
+                    </div>
+                  </Tooltip>
+                )}
+
+                {exceptions.length > 0 ? (
+                  <div className="hv__exc-list">
+                    {exceptions.map(e => (
+                      <button key={e.id} type="button" className="hv__exc-row" data-tone={e.tone} onClick={e.onClick}>
+                        <span className="hv__dot" data-tone={e.tone} aria-hidden />
+                        <span className="hv__exc-label">{e.label}</span>
+                        {e.meta && <span className="hv__exc-meta">{e.meta}</span>}
+                        <span className="hv__exc-arrow" aria-hidden>→</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="hvc__empty">Semua terkendali — tidak ada yang menunggu keputusan.</p>
+                )}
+              </Card>
+            </div>
           </section>
 
-          {/* ─── Portfolio program — analitik eksekusi (data sudah dihitung backend) ─── */}
-          <PortfolioAnalytics data={programSummary} />
+          {/* ═══════════════ Mid grid ═══════════════ */}
+          <section className="hvc__section">
+            <div className="hvc__grid hvc__grid--mid">
 
-          {/* ─── Analisis — chart untuk telaah (batang + lingkaran) ───── */}
+              {/* Heatmap rekap program (divisi × status) */}
+              <Card padding="lg" className="hvc__panel">
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">Heatmap rekap program · per divisi</span></header>
+                {heatRows.length > 0 ? (
+                  <div className="hvc__heat" style={{ '--cols': heatCols.length } as CSSProperties}>
+                    <span className="hvc__heat-corner" aria-hidden />
+                    {heatCols.map(c => <span key={c.key} className="hvc__heat-colh">{c.label}</span>)}
+                    {heatRows.map(d => (
+                      <Fragment key={d.unit.code}>
+                        <span className="hvc__heat-rowh" title={d.unit.name}>{d.unit.code}</span>
+                        {heatCols.map(c => {
+                          const v = heatVal(d, c.key)
+                          return (
+                            <button
+                              key={`${d.unit.code}-${c.key}`}
+                              type="button"
+                              className="hvc__heat-cell"
+                              data-tone={c.tone}
+                              style={{ '--i': v === 0 ? 0 : 0.18 + 0.82 * (v / heatMax) } as CSSProperties}
+                              title={`${d.unit.name} · ${c.label}: ${v}`}
+                              onClick={() => navigate('/programs')}
+                            >
+                              {v > 0 ? v : ''}
+                            </button>
+                          )
+                        })}
+                      </Fragment>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="hvc__empty">Belum ada program untuk direkap.</p>
+                )}
+              </Card>
+
+              {/* Top 5 program terlambat */}
+              <Card padding="lg" className="hvc__panel">
+                <header className="hvc__panel-head">
+                  <span className="hvc__eyebrow">Top 5 program terlambat</span>
+                  <button type="button" className="hvc__link" onClick={() => navigate('/programs')}>Semua <span aria-hidden>→</span></button>
+                </header>
+                {top5Terlambat.length > 0 ? (
+                  <div className="hvc__toplist">
+                    {top5Terlambat.map((p, i) => {
+                      const days = p.daysRemaining ?? 0
+                      const daysLabel = days < 0 ? `${Math.abs(days)} hr lewat` : days === 0 ? 'Hari ini' : `${days} hr lagi`
+                      return (
+                        <button key={p.id} type="button" className="hvc__toprow" onClick={() => openProgramWorkspace(p.id)}>
+                          <span className="hvc__toprank">{i + 1}</span>
+                          <span className="hvc__topbody">
+                            <span className="hvc__topname" title={p.name}>{p.name}</span>
+                            <span className="hvc__topmeta">{p.divisi || '—'} · {p.code}</span>
+                          </span>
+                          <span className="hvc__topdays" data-tone="red">{daysLabel}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="hvc__empty">Tidak ada program terlambat. 🎯</p>
+                )}
+              </Card>
+
+              {/* Activity timeline */}
+              <Card padding="lg" className="hvc__panel">
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">Aktivitas terbaru</span></header>
+                {activity.length > 0 ? (
+                  <ul className="hvc__activity">
+                    {activity.map(a => (
+                      <li key={a.id} className="hvc__act-row">
+                        <span className="hvc__act-dot" aria-hidden />
+                        <span className="hvc__act-text">{activityText(a)}</span>
+                        <span className="hvc__act-time">{relativeTime(a.changeTimestamp)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="hvc__empty">Belum ada aktivitas tercatat.</p>
+                )}
+              </Card>
+            </div>
+          </section>
+
+          {/* ═══════════════ Bottom: deadline timeline + shortcut ═══════════════ */}
+          <section className="hvc__section">
+            <div className="hvc__grid hvc__grid--foot">
+
+              {/* Timeline deadline program */}
+              <Card padding="lg" className="hvc__panel">
+                <header className="hvc__panel-head">
+                  <span className="hvc__eyebrow">Timeline deadline · program aktif</span>
+                  <button type="button" className="hvc__link" onClick={() => navigate('/programs')}>Semua <span aria-hidden>→</span></button>
+                </header>
+                {topDeadlinePrograms.length > 0 ? (
+                  <div className="hvc__timeline">
+                    {topDeadlinePrograms.slice(0, 6).map(p => {
+                      const days = p.daysRemaining ?? 0
+                      const urgency: Tone = days < 0 ? 'red' : days <= 30 ? 'red' : days <= 90 ? 'amber' : 'green'
+                      const daysLabel = days < 0 ? `${Math.abs(days)} hr lewat` : days === 0 ? 'Hari ini' : `${days} hari`
+                      return (
+                        <button key={p.id} type="button" className="hvc__tcard" data-tone={urgency} onClick={() => openProgramWorkspace(p.id)}>
+                          <span className="hvc__tcard-days" data-tone={urgency}>{daysLabel}</span>
+                          <span className="hvc__tcard-name" title={p.name}>{p.name}</span>
+                          <span className="hvc__tcard-meta">{p.divisi || '—'} · {p.targetEndDate ?? '—'}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="hvc__empty">Tidak ada program aktif bertenggat.</p>
+                )}
+              </Card>
+
+              {/* Shortcut */}
+              <Card padding="lg" className="hvc__panel">
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">Shortcut</span></header>
+                <div className="hvc__shortcuts">
+                  {shortcuts.map(s => (
+                    <button key={s.label} type="button" className="hvc__shortcut" data-tone={s.tone} onClick={s.onClick}>
+                      <span className="hvc__shortcut-icon" data-tone={s.tone}><ShortcutIcon name={s.icon} /></span>
+                      <span className="hvc__shortcut-label">{s.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          </section>
+
+          {/* ════════════ Detail lengkap (drill-down per tab) ════════════ */}
+          <div className="hv__tabs" role="tablist" aria-label="Detail">
+            <button type="button" role="tab" aria-selected={tab === 'program'} className="hv__tab" data-active={tab === 'program'} onClick={() => setTab('program')}>Program</button>
+            <button type="button" role="tab" aria-selected={tab === 'analisis'} className="hv__tab" data-active={tab === 'analisis'} onClick={() => setTab('analisis')}>Analisis</button>
+            <button type="button" role="tab" aria-selected={tab === 'divisi'} className="hv__tab" data-active={tab === 'divisi'} onClick={() => setTab('divisi')}>Divisi</button>
+          </div>
+
+          {/* ─── Tab Program: portfolio analytics ─── */}
+          {tab === 'program' && <PortfolioAnalytics data={programSummary} />}
+
+          {/* ─── Tab Analisis — chart untuk telaah (batang + lingkaran) ───── */}
+          {tab === 'analisis' && (
           <section className="hv__section hv__analisis">
             <header className="hv__sec-head">
               <h2 className="hv__sec-title">Analisis</h2>
@@ -589,43 +801,10 @@ export default function HomeView() {
               )}
             </div>
           </section>
-
-          {/* ════════════ Below the fold — drill-down detail ════════════ */}
-
-          {/* ─── Divisi dengan delay ──────────────── */}
-          {canSeePerformance && (
-            <section className="hv__section">
-              <header className="hv__sec-head">
-                <h2 className="hv__sec-title">Divisi dengan delay</h2>
-                {divisiDelay.length > 0 && (
-                  <button type="button" className="hv__sec-link" onClick={() => navigate('/performance/divisi')}>
-                    Lihat per divisi <span aria-hidden>→</span>
-                  </button>
-                )}
-              </header>
-              <div className="hv__divisi-row">
-                {divisiDelay.length > 0 ? (
-                  divisiDelay.map(d => (
-                    <button
-                      key={d.unit.code}
-                      type="button"
-                      className="hv__divisi-chip"
-                      onClick={() => navigate(`/performance/divisi/${d.unit.code.toLowerCase()}`)}
-                      title={d.unit.name}
-                    >
-                      <span className="hv__divisi-code">{d.unit.code}</span>
-                      <span className="hv__divisi-count">{d.terlambat ?? 0}</span>
-                    </button>
-                  ))
-                ) : (
-                  <span className="hv__divisi-empty">Semua divisi on track. Pertahankan kontrol mingguan.</span>
-                )}
-              </div>
-            </section>
           )}
 
-          {/* ─── Program ketat deadline (slide 18 PPT) ──────────── */}
-          {topDeadlinePrograms.length > 0 && (
+          {/* ─── Program ketat deadline ──────────── */}
+          {tab === 'program' && topDeadlinePrograms.length > 0 && (
             <section className="hv__section">
               <header className="hv__sec-head">
                 <h2 className="hv__sec-title">Program ketat deadline</h2>
@@ -694,7 +873,7 @@ export default function HomeView() {
           )}
 
           {/* ─── Program butuh perhatian ──────────── */}
-          {attentionPrograms.length > 0 && (
+          {tab === 'program' && attentionPrograms.length > 0 && (
             <section className="hv__section">
               <header className="hv__sec-head">
                 <h2 className="hv__sec-title">Program butuh perhatian</h2>
@@ -756,7 +935,7 @@ export default function HomeView() {
           )}
 
           {/* ─── Matrix Direktorat (cross-direktorat scorecard) ─── */}
-          {isSuperAdmin && scorecard.grid && scorecard.grid.length > 0 && (
+          {tab === 'divisi' && isSuperAdmin && scorecard.grid && scorecard.grid.length > 0 && (
             <section className="hv__section">
               <header className="hv__sec-head">
                 <h2 className="hv__sec-title">Matrix Direktorat</h2>
@@ -802,7 +981,7 @@ export default function HomeView() {
           )}
 
           {/* ─── Status per Divisi (slide 17 PPT — rollup) ───── */}
-          {byDivisi.length > 0 && (
+          {tab === 'divisi' && byDivisi.length > 0 && (
             <section className="hv__section">
               <header className="hv__sec-head">
                 <h2 className="hv__sec-title">Status per divisi</h2>

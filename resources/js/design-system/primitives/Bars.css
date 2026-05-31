@@ -104,15 +104,6 @@
   outline-offset: 1px;
 }
 
-/* Grow-in on mount. */
-.ds-bars__bar {
-  transform-origin: bottom;
-  animation: ds-bars-grow 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-@keyframes ds-bars-grow {
-  from { transform: scaleY(0); }
-  to   { transform: scaleY(1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ds-bars__bar { animation: none; }
-}
+/* No transform-based mount animation — `transform` inside the scroll container
+ * caused scroll-repaint ghosting (see HomeView.css note). The height transition
+ * on .ds-bars__bar (transient, on data change only) is fine. */
