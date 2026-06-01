@@ -17,8 +17,8 @@
   /* OPSI B (2026-06-01): DARK SLATE RAIL di kedua tema (pola Stripe/Vercel) —
    * rail gelap membingkai cockpit terang; brand hijau & data warna-warni pop.
    * Sebelumnya rail terang #F7F8FA tapi menyatu dgn konten (pemisahan lemah). */
-  --sidebar-bg: #111722;        /* deep slate, sedikit tint biru — premium tech */
-  --sidebar-bg-end: #0D121B;    /* gradient halus → kedalaman */
+  --sidebar-bg: #131C16;        /* deep green-charcoal — tint hijau brand tipis */
+  --sidebar-bg-end: #0E140F;    /* gradient halus → kedalaman, undertone hijau */
   --sidebar-border: rgba(255,255,255,0.07);
   --sidebar-border-strong: rgba(255,255,255,0.12);  /* divider rail↔konten */
   --sidebar-text: #9AA5B4;      /* nav item — slate-light, terbaca di gelap */
