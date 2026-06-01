@@ -86,17 +86,6 @@ export default function Login({ errors: pageErrors }: PageProps) {
                             </p>
                         </div>
 
-                        <div className="auth-panel__highlights" aria-hidden="true">
-                            <div className="auth-panel__highlight auth-panel__highlight--primary">
-                                <span className="auth-panel__highlight-label">Live workspace</span>
-                                <strong>Portfolio, execution, dan insight bergerak dalam satu ritme.</strong>
-                            </div>
-                            <div className="auth-panel__highlight">
-                                <span className="auth-panel__highlight-label">Status sinkron</span>
-                                <strong>Status program dan sinyal performa dari APMS tersinkron di seluruh workspace.</strong>
-                            </div>
-                        </div>
-
                         <div className="auth-panel__org">
                             <div>
                                 <strong>PTPN III (Persero)</strong>

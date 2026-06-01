@@ -30,6 +30,14 @@ try {
 
   await navigate(page, `${baseUrl}/login`)
   await waitFor(page, () => document.querySelector('#identifier') && document.querySelector('#password'), 12000, 'login form')
+  if (process.env.LOGIN_ONLY) {
+    if (process.env.THEME) { await page.send('Runtime.evaluate', { expression: `localStorage.setItem('atlas.theme', ${JSON.stringify(process.env.THEME)})` }); await navigate(page, `${baseUrl}/login`); await waitFor(page, () => document.querySelector('#identifier'), 12000, 'login form'); }
+    await sleep(700)
+    await shot(page, join(outDir, 'login.png'))
+    console.log('OK login shot:', join(outDir, 'login.png'))
+    chrome.kill('SIGTERM'); try { rmSync(userDataDir, { recursive: true, force: true, maxRetries: 3 }) } catch {}
+    process.exit(0)
+  }
   await typeInput(page, '#identifier', loginId)
   await typeInput(page, '#password', loginPassword)
   await page.send('Runtime.evaluate', { expression: `document.querySelector('button[type="submit"]').click()` })

@@ -1205,7 +1205,7 @@
 
 .hvc__grid { display: grid; gap: var(--ds-space-4); }
 .hvc__grid--cmd  { grid-template-columns: repeat(4, 1fr); }
-.hvc__grid--mid  { grid-template-columns: 1.3fr 1fr 1fr; }
+.hvc__grid--mid  { grid-template-columns: 0.9fr 1.3fr 1.3fr; }
 .hvc__grid--foot { grid-template-columns: 2fr 1fr; }
 
 /* ── Panel ─────────────────────────────────────────────────── */
@@ -1788,8 +1788,8 @@
 
 /* Command center — varied widths (break the uniform grid) */
 .hv--cockpit .hvc__grid--cmd { grid-template-columns: repeat(4, 1fr); }
-/* Mid — heatmap dominant */
-.hv--cockpit .hvc__grid--mid { grid-template-columns: 1.6fr 1fr 1fr; }
+/* Mid — rekap divisi ringkas (kiri), beri ruang lebih ke Top 5 + Aktivitas */
+.hv--cockpit .hvc__grid--mid { grid-template-columns: 0.9fr 1.3fr 1.3fr; }
 
 /* Responsive bento */
 @media (max-width: 1280px) {
@@ -3077,12 +3077,13 @@ button.hvc__hcard:hover .hvc__arrow { transform: translateX(3px); }
 
 /* ════════════════════════════════════════════════════════════════════
    ITERASI 32 (V2) — SISTEM GRID KONSISTEN lintas band. Hero & Command = 4
-   kolom sama (tepi 25/50/75%); Mid = 2/1/1 (tepi 50/75% ⇒ align dgn band
-   4-kolom). GAP SERAGAM (space-4) agar tepi kolom benar-benar snap antar-band.
+   kolom sama (tepi 25/50/75%); Mid = 1/1.5/1.5: Rekap divisi ringkas (tepi
+   kiri snap 25% ⇒ align dgn band 4-kolom), sisanya dibagi rata ke Top 5 +
+   Aktivitas yg butuh ruang teks. GAP SERAGAM (space-4) agar tepi snap antar-band.
    ════════════════════════════════════════════════════════════════════ */
 .hv--cockpit .hvc__hud       { grid-template-columns: repeat(4, 1fr); gap: var(--ds-space-4); }
 .hv--cockpit .hvc__grid--cmd { grid-template-columns: repeat(4, 1fr); gap: var(--ds-space-4); }
-.hv--cockpit .hvc__grid--mid { grid-template-columns: 2fr 1fr 1fr;    gap: var(--ds-space-4); }
+.hv--cockpit .hvc__grid--mid { grid-template-columns: 1fr 1.5fr 1.5fr; gap: var(--ds-space-4); }
 /* KPI divbars boleh menyempit di kolom 25% (meter fleksibel) */
 .hvc__kpi-divbars { min-width: 0; }
 
@@ -3210,3 +3211,67 @@ button.hvc__hcard:hover .hvc__arrow { transform: translateX(3px); }
 /* Disiplin warna: legend hero pakai dot, label tetap secondary (bukan tone) →
    warna hanya pada dot+angka, teks netral (tenang). */
 .hv--cockpit .hvc__hcard-legend li { color: var(--ds-text-secondary); }
+
+/* ════════════════════════════════════════════════════════════════════
+   ITERASI 36 (V6) — KALIBRASI DENSITAS layar besar. Kurangi udara berlebih
+   (angka hero & gauge sedikit lebih kecil, kartu hero lebih pendek, bubble &
+   gap lebih rapat) → lebih banyak muat above-the-fold. "Padat tapi bernapas".
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Angka hero: max ~40px → ~34px (tetap prominent, tak terasa "zoom") */
+.hv--cockpit .hvc__hcard-big { font-size: clamp(1.7rem, 2.0vw, 2.15rem); }
+
+/* Gauge value pas utk diameter baru (Exec 84, Momentum 76) */
+.hv--cockpit .hvc__execgauge .ds-gauge__value { font-size: 1.8rem; }
+.hv--cockpit .hvc__mgauge .ds-gauge__value { font-size: 1.4rem; }
+
+/* Kartu hero lebih pendek: body & footer rapat, min-height turun */
+.hv--cockpit .hvc__hcard { min-height: 108px; }
+.hv--cockpit .hvc__hcard-body { padding: var(--ds-space-3) var(--ds-space-4) var(--ds-space-2); gap: 2px; }
+.hv--cockpit .hvc__hcard-link { padding-top: var(--ds-space-1); padding-bottom: var(--ds-space-3); }
+
+/* Execution Map bubble lebih padat (58→50px) */
+.hv--cockpit .hvc__xmap-grid { grid-template-columns: auto repeat(3, 50px); grid-template-rows: repeat(3, 50px) auto; }
+
+/* Gap antar-kartu & antar-band lebih rapat (SAMA di semua band → align grid tetap) */
+.hv--cockpit .hvc__hud,
+.hv--cockpit .hvc__grid--cmd,
+.hv--cockpit .hvc__grid--mid { gap: var(--ds-space-3); }
+.hv.hv--cockpit { gap: var(--ds-space-4); }
+.hv--cockpit .hvc__section { gap: var(--ds-space-3); }
+
+/* Verdict lebih ramping */
+.hvc__verdict-main { padding: var(--ds-space-2) var(--ds-space-4); }
+.hvc__verdict-card .hvc__intel { padding-top: var(--ds-space-1); padding-bottom: var(--ds-space-2); }
+
+/* ════════════════════════════════════════════════════════════════════
+   ITERASI 37 — VERDICT lebih tenang & ramping. Sebelumnya bg merah penuh +
+   border + ikon + CTA solid = "berteriak". Kini tint tipis, ikon/teks kecil,
+   padding rapat, CTA soft → memimpin via kejelasan, bukan kekerasan warna.
+   ════════════════════════════════════════════════════════════════════ */
+.hvc__verdict-card {
+  background: color-mix(in srgb, var(--vt) 5%, var(--ds-surface-card));
+  border: 1px solid color-mix(in srgb, var(--vt) 18%, var(--ds-border-subtle));
+  box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 6px 18px -14px color-mix(in srgb, var(--vt) 30%, transparent);
+}
+[data-theme="dark"] .hvc__verdict-card {
+  background: color-mix(in srgb, var(--vt) 11%, #14161C);
+  border-color: color-mix(in srgb, var(--vt) 24%, transparent);
+}
+/* ikon lebih kecil & kalem */
+.hvc__verdict-icon { width: 26px; height: 26px; border-radius: 8px; }
+.hvc__verdict-icon svg { width: 14px; height: 14px; }
+/* main lebih ramping */
+.hvc__verdict-main { padding: var(--ds-space-2) var(--ds-space-3); gap: var(--ds-space-2); }
+.hvc__verdict-label { font-size: var(--ds-text-11); letter-spacing: 0.05em; }
+.hvc__verdict-sub { font-size: var(--ds-text-14); }
+/* CTA: soft (tint + tone text), bukan merah solid */
+.hvc__verdict-cta {
+  background: color-mix(in srgb, var(--vt) 14%, transparent);
+  color: color-mix(in srgb, var(--vt) 70%, var(--ds-text-primary));
+  box-shadow: none; padding: 6px 13px; font-weight: 700;
+}
+.hvc__verdict-main:hover .hvc__verdict-cta { background: color-mix(in srgb, var(--vt) 22%, transparent); }
+[data-theme="dark"] .hvc__verdict-cta { color: color-mix(in srgb, var(--vt) 55%, #ffffff); }
+/* intel row divider lebih tipis */
+.hvc__verdict-card .hvc__intel { border-top-color: color-mix(in srgb, var(--vt) 12%, var(--ds-border-subtle)); }

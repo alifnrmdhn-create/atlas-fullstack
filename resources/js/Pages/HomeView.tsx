@@ -167,148 +167,6 @@ function ShortcutIcon({ name }: { name: string }) {
   }
 }
 
-/* Health-tone → hex, shared by the radar + execution map markers. */
-const MAP_TONE: Record<string, string> = {
-  on_track: '#10B981', at_risk: '#F59E0B', terlambat: '#EF4444', overdue: '#DC2626', selesai: '#94A3B8',
-}
-
-/* ─── Radar Komando — the signature hero ────────────────────────────
- * Every active program is a blip on a circular radar: SECTOR = divisi,
- * RING (radius) = time-pressure (rim = overdue/urgent, center = relaxed),
- * COLOR = health. The core shows the headline KPI with a thin execution
- * arc around it. One glance = the whole command picture. */
-type RadarProg = { id: number; code: string; name: string; daysRemaining: number | null; healthTone: string; divisi: string }
-function Radar({ programs, kpiText, kpiUnit, kpiSub, executionPct, executionTone, onOpen }: {
-  programs: RadarProg[]
-  kpiText: string
-  kpiUnit?: string
-  kpiSub?: string
-  executionPct: number
-  executionTone: Tone
-  onOpen: (id: number) => void
-}) {
-  const D = 460, cx = D / 2, cy = D / 2, R = 200, rCore = 52
-  const divs = Array.from(new Set(programs.map(p => (p.divisi || '—').split('-')[0])))
-  const N = Math.max(divs.length, 1)
-  const wedge = (2 * Math.PI) / N
-  const sectorOf = (divisi: string) => Math.max(0, divs.indexOf((divisi || '—').split('-')[0]))
-  const pressureOf = (d: number | null) => d == null ? 0.14 : d < 0 ? 0.95 : d <= 30 ? 0.8 : d <= 90 ? 0.6 : d <= 180 ? 0.42 : 0.28
-  const pt = (ang: number, r: number): [number, number] => [cx + r * Math.sin(ang), cy - r * Math.cos(ang)]
-
-  const dots = programs.map(p => {
-    const i = sectorOf(p.divisi)
-    const h1 = ((p.id * 2654435761) % 997) / 997
-    const h2 = ((p.id * 40503) % 991) / 991
-    const ang = i * wedge + (0.16 + 0.68 * h1) * wedge
-    const rr = rCore + 10 + pressureOf(p.daysRemaining) * (R - rCore - 22) + (h2 - 0.5) * 9
-    const [x, y] = pt(ang, Math.min(Math.max(rr, rCore + 8), R - 5))
-    return { id: p.id, code: p.code, name: p.name, divisi: p.divisi, tone: p.healthTone, x, y }
-  })
-
-  const exR = rCore + 8
-  const execFrac = Math.min(Math.max(executionPct, 0), 100) / 100
-  const execAng = execFrac * 2 * Math.PI * 0.999
-  const [esx, esy] = pt(0, exR)
-  const [eex, eey] = pt(execAng, exR)
-  const execLarge = execAng > Math.PI ? 1 : 0
-  const EXEC_COL: Record<Tone, string> = { green: '#10B981', amber: '#F59E0B', red: '#EF4444', neutral: '#94A3B8' }
-  const [s0x, s0y] = pt(-0.55, R)
-  const [s1x, s1y] = pt(0.35, R)
-
-  return (
-    <div className="hvc__radar">
-      <svg viewBox={`0 0 ${D} ${D}`} className="hvc__radar-svg" role="img" aria-label="Radar portfolio program">
-        <defs>
-          <radialGradient id="hvc-radar-bg" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#10B981" stopOpacity="0.06" />
-            <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
-          </radialGradient>
-          <linearGradient id="hvc-radar-sweep" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#10B981" stopOpacity="0.20" />
-            <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
-          </linearGradient>
-          <radialGradient id="hvc-radar-core" cx="50%" cy="40%" r="65%">
-            <stop offset="0%" stopColor="var(--ds-surface-card)" />
-            <stop offset="100%" stopColor="var(--ds-surface-sunken)" />
-          </radialGradient>
-          <filter id="hvc-radar-glow" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="2.2" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-        </defs>
-
-        <circle cx={cx} cy={cy} r={R} fill="url(#hvc-radar-bg)" />
-        <path d={`M ${cx} ${cy} L ${s0x} ${s0y} A ${R} ${R} 0 0 1 ${s1x} ${s1y} Z`} fill="url(#hvc-radar-sweep)" />
-
-        {[0.34, 0.62, 0.9].map((f, k) => (
-          <circle key={k} cx={cx} cy={cy} r={rCore + 10 + f * (R - rCore - 22)} className="hvc__radar-ring" />
-        ))}
-        <circle cx={cx} cy={cy} r={R} className="hvc__radar-rim" />
-
-        {divs.map((d, i) => {
-          const a = i * wedge
-          const [lx, ly] = pt(a, R)
-          const [tx, ty] = pt(a + wedge / 2, R + 15)
-          return (
-            <g key={d}>
-              <line x1={cx} y1={cy} x2={lx} y2={ly} className="hvc__radar-spoke" />
-              <text x={tx} y={ty} className="hvc__radar-sector" textAnchor="middle" dominantBaseline="middle">{d}</text>
-            </g>
-          )
-        })}
-        <text x={cx} y={cy - R + 13} className="hvc__radar-ringlabel" textAnchor="middle">▲ mendesak</text>
-
-        {dots.map(d => (
-          <circle
-            key={d.id} cx={d.x} cy={d.y} r={5.5}
-            fill={MAP_TONE[d.tone] ?? '#94A3B8'} fillOpacity={0.52}
-            stroke={MAP_TONE[d.tone] ?? '#94A3B8'} strokeWidth={1.3}
-            className="hvc__radar-dot" filter="url(#hvc-radar-glow)"
-            onClick={() => onOpen(d.id)}
-          >
-            <title>{d.code} · {d.name} ({d.divisi})</title>
-          </circle>
-        ))}
-
-        <circle cx={cx} cy={cy} r={rCore} fill="url(#hvc-radar-core)" className="hvc__radar-corec" />
-        {execFrac > 0 && (
-          <path
-            d={`M ${esx} ${esy} A ${exR} ${exR} 0 ${execLarge} 1 ${eex} ${eey}`}
-            fill="none" stroke={EXEC_COL[executionTone]} strokeWidth={4} strokeLinecap="round" opacity={0.92}
-          />
-        )}
-      </svg>
-      <div className="hvc__radar-center">
-        <div className="hvc__radar-kpi">{kpiText}{kpiUnit && <span className="hvc__radar-kpiunit">{kpiUnit}</span>}</div>
-        {kpiSub && <div className="hvc__radar-kpisub">{kpiSub}</div>}
-        <div className="hvc__radar-execlabel" data-tone={executionTone}>{executionPct}% eksekusi</div>
-      </div>
-    </div>
-  )
-}
-
-/* Program status row — label + proportional Meter + count (reused for the
- * "Overdue per divisi" panel). */
-function StatusBar({
-  label, value, total, tone, onClick,
-}: {
-  label: string
-  value: number
-  total: number
-  tone: Tone
-  onClick: () => void
-}) {
-  return (
-    <button type="button" className="hv__status-row" onClick={onClick}>
-      <span className="hv__status-label">
-        <span className="hv__dot" data-tone={tone} aria-hidden />
-        {label}
-      </span>
-      <Meter className="hv__status-meter" value={value} max={total} tone={tone} height={6} aria-label={`${label}: ${value}`} />
-      <span className="hv__status-val">{value}</span>
-    </button>
-  )
-}
-
 /* ─── Execution Map — compact 3×3 grid: progress band × time-pressure band,
  * each cell = program count (mockup "Execution Map"). A digest of the scatter
  * Peta Portfolio: same two axes, bucketed for at-a-glance density. */
@@ -709,13 +567,13 @@ export default function HomeView() {
    * lagging KPI against the leading execution risk). All from existing data. */
   const verdictLabel = statusTone === 'red' ? 'Perlu Tindakan' : statusTone === 'amber' ? 'Perhatian' : 'Terkendali'
   const verdictSub: ReactNode = kpiDiverges
-    ? <>Hasil di target (<b>{kpiHeadline.toFixed(1)}%</b>), tapi eksekusi tertinggal (<b>{onTrackPct}%</b>) — <b>{tlm} program telat</b> menahan KPI kuartal depan.</>
+    ? <>Hasil di atas target (<b>{kpiHeadline.toFixed(1)}%</b>), tapi eksekusi tertinggal (<b>{onTrackPct}%</b>) — <b>{tlm} program terlambat</b> berisiko menekan KPI kuartal depan.</>
     : tlm > 0
-      ? <><b>{tlm} program telat</b>{belowTargetCount > 0 ? <> &amp; <b>{belowTargetCount} KPI</b> di bawah target</> : null} butuh perhatian — sisanya bergerak sesuai rencana.</>
+      ? <><b>{tlm} program terlambat</b>{belowTargetCount > 0 ? <> &amp; <b>{belowTargetCount} KPI</b> di bawah target</> : null} butuh perhatian — sisanya bergerak sesuai rencana.</>
       : exceptionCount > 0
         ? <><b>{exceptionCount} hal</b> butuh keputusan Anda; portofolio lainnya terkendali.</>
-        : <>Semua indikator terkendali — tidak ada eksepsi yang perlu tindakan.</>
-  const verdictCta = tlm > 0 ? `Tinjau ${tlm} telat` : exceptionCount > 0 ? 'Buka Focus' : 'Lihat program'
+        : <>Semua indikator terkendali — tidak ada yang perlu tindakan khusus.</>
+  const verdictCta = tlm > 0 ? `Tinjau ${tlm} program` : exceptionCount > 0 ? 'Buka Focus' : 'Lihat program'
   const verdictHref = tlm > 0 ? '/programs' : exceptionCount > 0 ? '/fokus' : '/programs'
 
   /* ── Portofolio scope — jawab "apa yang saya kelola & berapa" (data: scope+summary,
@@ -733,7 +591,7 @@ export default function HomeView() {
   const totalOverAll = overByDiv.reduce((s, d) => s + d.over, 0)
   const topOver = [...overByDiv].sort((a, b) => b.over - a.over)[0]
   const insightText = topOver && totalOverAll > 0 && topOver.over > 0 && overByDiv.length > 1 && topOver.over / totalOverAll >= 0.34
-    ? `${topOver.code} menahan ${Math.round((topOver.over / totalOverAll) * 100)}% keterlambatan`
+    ? `${topOver.code} menyumbang ${Math.round((topOver.over / totalOverAll) * 100)}% keterlambatan`
     : null
   // Delta vs periode pembanding (velocity): Δtelat (naik = buruk), Δon-track (naik = baik)
   const velLate = velocity?.terlambat ?? null
@@ -791,7 +649,7 @@ export default function HomeView() {
               {hasDelta && (
                 <span className="hvc__intel-seg hvc__intel-seg--delta">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 12a9 9 0 1 1-2.6-6.4" /><polyline points="21 3 21 8 16 8" /></svg>
-                  <span className="hvc__intel-deltawrap">vs {Math.abs(velDays!)} hr lalu:{velLate != null && velLate !== 0 && <b data-tone={velLate > 0 ? 'red' : 'green'}>{velLate > 0 ? '+' : ''}{velLate} telat</b>}{velOn != null && velOn !== 0 && <b data-tone={velOn > 0 ? 'green' : 'red'}>{velOn > 0 ? '+' : ''}{velOn} on-track</b>}</span>
+                  <span className="hvc__intel-deltawrap">vs {Math.abs(velDays!)} hr lalu:{velLate != null && velLate !== 0 && <b data-tone={velLate > 0 ? 'red' : 'green'}>{velLate > 0 ? '+' : ''}{velLate} terlambat</b>}{velOn != null && velOn !== 0 && <b data-tone={velOn > 0 ? 'green' : 'red'}>{velOn > 0 ? '+' : ''}{velOn} On Track</b>}</span>
                 </span>
               )}
             </div>
@@ -805,7 +663,7 @@ export default function HomeView() {
               {canSeePerformance && hasKpi && (
                 <Card padding="none" className="hvc__hcard hvc__hcard--kpi" data-tone={kpiTone}>
                   <div className="hvc__hcard-body">
-                    <span className="hvc__hcard-eyebrow">KPI Achievement · {scorecard.periodeLabel}</span>
+                    <span className="hvc__hcard-eyebrow">Capaian KPI · {scorecard.periodeLabel}</span>
                     <div className="hvc__kpi-split">
                       <div className="hvc__kpi-left">
                         <div className="hvc__hcard-figure">
@@ -843,9 +701,9 @@ export default function HomeView() {
               {/* ② Execution health — arc gauge + legend */}
               <Card padding="none" className="hvc__hcard hvc__hcard--exec" data-tone={programTone}>
                 <div className="hvc__hcard-body">
-                  <span className="hvc__hcard-eyebrow">Execution Health</span>
+                  <span className="hvc__hcard-eyebrow">Kesehatan Eksekusi</span>
                   <div className="hvc__hcard-exec-row">
-                    <Gauge value={onTrackPct} max={100} tone={leadingTone} size={96} thickness={10} valueText={`${onTrackPct}`} unit="%" label="on track" rich />
+                    <Gauge value={onTrackPct} max={100} tone={leadingTone} size={84} thickness={9} valueText={`${onTrackPct}`} unit="%" label="on track" rich className="hvc__execgauge" />
                     <ul className="hvc__hcard-legend">
                       <li><i className="hvc__dot" data-tone="green" />On Track<b>{summary.onTrack}</b></li>
                       <li><i className="hvc__dot" data-tone="amber" />At Risk<b>{summary.atRisk}</b></li>
@@ -860,7 +718,7 @@ export default function HomeView() {
               {/* ③ Program tertinggal — big number + embedded area trend */}
               <button type="button" className="ds-card hvc__hcard hvc__hcard--late" data-tone={tlm > 0 ? 'red' : 'green'} onClick={() => navigate('/programs')}>
                 <div className="hvc__hcard-body">
-                  <span className="hvc__hcard-eyebrow">Program Tertinggal</span>
+                  <span className="hvc__hcard-eyebrow">Program Terlambat</span>
                   <span className="hvc__hcard-big" data-tone={tlm > 0 ? 'red' : 'green'}><CountUp value={tlm} /></span>
                   <span className="hvc__hcard-foot">{needsAction.length} menunggu keputusan</span>
                 </div>
@@ -906,15 +764,15 @@ export default function HomeView() {
           {<>
 
           {/* ═══════════════ EXECUTION COMMAND CENTER (+ rail keputusan) ═══════════════ */}
-          <section className="hvc__section" aria-label="Execution Command Center">
+          <section className="hvc__section" aria-label="Pusat Kendali Eksekusi">
             <header className="hvc__sec-head">
-              <h2 className="hvc__sec-title">Execution Command Center</h2>
+              <h2 className="hvc__sec-title">Pusat Kendali Eksekusi</h2>
             </header>
             <div className="hvc__grid hvc__grid--cmd">
 
               {/* Horizon — workload by deadline window */}
               <Card padding="lg" className="hvc__panel">
-                <header className="hvc__panel-head"><span className="hvc__eyebrow">Horizon · beban tenggat</span></header>
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">Beban tenggat</span></header>
                 {horizonBars.length > 0
                   ? <Bars bars={horizonBars} height={112} rich />
                   : <p className="hvc__empty">Tidak ada program aktif bertenggat.</p>}
@@ -922,7 +780,7 @@ export default function HomeView() {
 
               {/* Execution Map — 3×3 progres × tekanan (digest peta) */}
               <Card padding="lg" className="hvc__panel">
-                <header className="hvc__panel-head"><span className="hvc__eyebrow">Execution Map</span></header>
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">Peta Eksekusi</span></header>
                 <ExecutionMap programs={programsForChart} onOpen={() => navigate('/programs')} />
               </Card>
 
@@ -930,7 +788,7 @@ export default function HomeView() {
               <Card padding="lg" className="hvc__panel">
                 <header className="hvc__panel-head"><span className="hvc__eyebrow">Momentum</span></header>
                 <div className="hvc__mhead">
-                  <Gauge value={activeRatePct} max={100} tone={activeRateTone} size={84} thickness={9} valueText={`${activeRatePct}`} unit="%" rich className="hvc__mgauge" />
+                  <Gauge value={activeRatePct} max={100} tone={activeRateTone} size={76} thickness={8} valueText={`${activeRatePct}`} unit="%" rich className="hvc__mgauge" />
                   <div className="hvc__mtrend">
                     <span className="hvc__sub">program aktif bergerak</span>
                     {(() => {
@@ -939,7 +797,7 @@ export default function HomeView() {
                         ? <Sparkline values={tv} tone={activeRateTone} width={150} height={40} smooth />
                         : null
                     })()}
-                    <span className="hvc__mtrend-cap">tren on-track · 14 hari</span>
+                    <span className="hvc__mtrend-cap">tren On Track · 14 hari</span>
                   </div>
                 </div>
                 <div className="hvc__mstats">
@@ -974,7 +832,7 @@ export default function HomeView() {
 
               {/* Heatmap rekap program (divisi × status) */}
               <Card padding="lg" className="hvc__panel">
-                <header className="hvc__panel-head"><span className="hvc__eyebrow">Heatmap rekap program · per divisi</span></header>
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">Rekap program · per divisi</span></header>
                 {heatRows.length > 0 ? (
                   <div className="hvc__heat" style={{ '--cols': heatCols.length } as CSSProperties}>
                     <span className="hvc__heat-corner" aria-hidden />
@@ -1032,7 +890,7 @@ export default function HomeView() {
                     })}
                   </div>
                 ) : (
-                  <p className="hvc__empty">Tidak ada program terlambat. 🎯</p>
+                  <p className="hvc__empty">Tidak ada program terlambat.</p>
                 )}
               </Card>
 
@@ -1064,7 +922,7 @@ export default function HomeView() {
           <section className="hvc__section">
             <Card padding="lg" className="hvc__panel hvc__tl-card">
               <header className="hvc__panel-head">
-                <span className="hvc__eyebrow">Timeline deadline kritis · program aktif</span>
+                <span className="hvc__eyebrow">Tenggat kritis · program aktif</span>
                 <button type="button" className="hvc__link" onClick={() => navigate('/programs')}>Semua <span aria-hidden>→</span></button>
               </header>
               <DeadlineTimeline programs={topDeadlinePrograms} onOpen={openProgramWorkspace} />

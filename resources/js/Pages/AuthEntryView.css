@@ -1062,3 +1062,32 @@
     transform: scale(1.03);
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   OPSI A (2026-06-01) — LOGIN SPLIT: panel brand SELALU dark green-charcoal
+   (senada sidebar app) + form ikut tema (terang di light). 100% hijau-sentris
+   (aksen biru lama dibuang). Teks panel kiri dipaksa terang (theme --text-*
+   gelap di light mode). Form tokens TAK disentuh → form tetap terang & aksesibel.
+   ════════════════════════════════════════════════════════════════════ */
+.auth-shell {
+  --auth-panel-bg: linear-gradient(158deg, #16241B 0%, #111B15 52%, #0C120F 100%);
+  --auth-panel-border: rgba(255,255,255,0.08);
+  --auth-glow-accent: radial-gradient(circle, color-mix(in srgb, #34D399 20%, transparent), transparent 66%);
+  --auth-glow-blue:   radial-gradient(circle, color-mix(in srgb, #10B981 13%, transparent), transparent 68%);
+  --auth-map-opacity: 0.16;
+  --auth-map-blend: screen;
+  --auth-mark-shadow: 0 16px 34px color-mix(in srgb, #10B981 28%, transparent);
+  --auth-eyebrow: rgba(223,238,230,0.64);
+  --auth-desc:    rgba(223,238,230,0.76);
+  --auth-org-label: rgba(223,238,230,0.5);
+  --auth-org-pill-bg: rgba(74,222,128,0.12);
+  --auth-org-pill-color: #6EE7B7;
+  --auth-org-pill-border: rgba(74,222,128,0.24);
+}
+/* Teks panel kiri = terang (override --text-* yang gelap di light mode) */
+.auth-panel { color: #E6F0EA; }
+.auth-panel__wordmark { color: #F1F5F9; }
+.auth-panel__headline { color: #F4F8F5; }
+.auth-panel__org strong { color: #E6F0EA; }
+/* peta lebih terbaca sebagai outline terang di panel gelap */
+.auth-panel__map { filter: brightness(1.7) saturate(0.7); }
