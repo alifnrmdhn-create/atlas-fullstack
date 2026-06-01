@@ -56,7 +56,9 @@ export const NAV_SECTIONS: NavSection[] = [
       { path: '/jadwal', label: 'Coordination' },
       { path: '/channels', label: 'Channels' },
       { path: '/presence', label: 'Presence' },
-      { path: '/search', label: 'Search' },
+      // /search is NOT a nav destination — search lives in the ⌘K palette
+      // (inline live results). The page survives only as the "lihat semua
+      // hasil" deep view, reached from the palette's Pencarian item.
     ],
   },
   // Account section dihapus 2026-05-26: Presence dipindah ke My Work

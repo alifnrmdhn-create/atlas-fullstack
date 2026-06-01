@@ -20,6 +20,8 @@ export interface BarsProps {
   /** Plot height in px (bars area only; labels sit outside). Default 120. */
   height?: number
   className?: string
+  /** Premium rendering — gradient fills, rounded tops, soft glow. */
+  rich?: boolean
   /** When set, each bar becomes a button — enables hover lift + drill-down. */
   onBarClick?: (bar: Bar, index: number) => void
 }
@@ -29,11 +31,11 @@ export interface BarsProps {
  * optional dashed target line. Bars grow in on mount; when `onBarClick` is set
  * they become focusable buttons that lift on hover.
  */
-export function Bars({ bars, max, target, height = 120, className, onBarClick }: BarsProps) {
+export function Bars({ bars, max, target, height = 120, className, rich = false, onBarClick }: BarsProps) {
   const scaleMax = max ?? Math.max(...bars.map(b => b.value ?? 0), target ?? 0, 1) * 1.08
 
   return (
-    <div className={['ds-bars', className].filter(Boolean).join(' ')}>
+    <div className={['ds-bars', rich && 'ds-bars--rich', className].filter(Boolean).join(' ')}>
       <div className="ds-bars__plot" style={{ height }}>
         {target != null && (
           <div className="ds-bars__target" style={{ bottom: `${(target / scaleMax) * 100}%` }}>

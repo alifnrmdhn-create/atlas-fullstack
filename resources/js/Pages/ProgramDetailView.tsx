@@ -2068,7 +2068,7 @@ export function ProgramDetailView() {
 
       {/* ── Tab bar ───────────────────────────────────────────────────── */}
       {detail && (
-        <div className="prog-detail-tabs">
+        <div className="prog-detail-tabs scroll-tabs">
           {tabDefs.map(([dt, label]) => {
             const badgeCount = dt === 'blocker' ? blockers.length : 0
             return (

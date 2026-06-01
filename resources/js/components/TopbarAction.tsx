@@ -28,7 +28,7 @@ export function TopbarAction({ action, page }: Props) {
 
   if (action.href) {
     return (
-      <Link href={action.href} className="topbar__action-btn">
+      <Link href={action.href} className="topbar__action-btn" data-icon={action.icon}>
         {content}
       </Link>
     )
@@ -38,6 +38,7 @@ export function TopbarAction({ action, page }: Props) {
     <button
       type="button"
       className="topbar__action-btn"
+      data-icon={action.icon}
       onClick={() => {
         window.dispatchEvent(
           new CustomEvent(TOPBAR_ACTION_EVENT, {

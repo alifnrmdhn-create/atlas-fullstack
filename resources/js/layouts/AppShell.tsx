@@ -1,5 +1,4 @@
 import { Fragment, useEffect, useId, useRef, useState, startTransition } from 'react'
-import { createPortal } from 'react-dom'
 import type { ReactNode } from 'react'
 import { Link, usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
@@ -16,7 +15,7 @@ import { CommandPalette } from '../components/CommandPalette'
 import { ContextPanel } from '../components/ContextPanel'
 import { TOPBAR_ACTIONS, TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import { resolveContextPanel } from '../lib/context-panel-config'
-import { formatRoleLabel, formatRoleLabelTitleCase } from '../lib/roleLabel'
+import { formatRoleLabel } from '../lib/roleLabel'
 
 type NavItem = {
   path: string
@@ -87,13 +86,26 @@ function IconRoadmap() {
     </svg>
   )
 }
-function IconKpiKolegial() {
+// KPI Direktorat — institusi/pilar (badan direktorat). Dipisah dari IconKpiDivisi
+// 2026-06-01: dulu keduanya pakai satu ikon jam yang sama → ambigu & lambat di-scan.
+// Glyph "orang" sengaja dihindari (sudah dipakai item Presence di sidebar yang sama).
+function IconKpiDirektorat() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="8" cy="8" r="5.5" />
-      <path d="M8 8 8 4.5" />
-      <path d="M8 8 11 9.5" />
-      <circle cx="8" cy="8" r="1" fill="currentColor" stroke="none" />
+      <path d="M8 2 13.5 5.5H2.5z" />
+      <path d="M4 5.5v6.5M8 5.5v6.5M12 5.5v6.5" />
+      <path d="M2.5 12.5h11" />
+    </svg>
+  )
+}
+// KPI Divisi — grid unit (divisi-divisi di bawah direktorat).
+function IconKpiDivisi() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2.5" y="2.5" width="4.5" height="4.5" rx="1.2" />
+      <rect x="9" y="2.5" width="4.5" height="4.5" rx="1.2" />
+      <rect x="2.5" y="9" width="4.5" height="4.5" rx="1.2" />
+      <rect x="9" y="9" width="4.5" height="4.5" rx="1.2" />
     </svg>
   )
 }
@@ -126,7 +138,7 @@ function IconReports() {
 }
 function IconInbox() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="8" cy="8" r="6" />
       <circle cx="8" cy="8" r="2.5" />
       <path d="M8 2v1.5M8 12.5V14M2 8h1.5M12.5 8H14" />
@@ -155,7 +167,7 @@ function IconSettings() {
   // disalahartikan sebagai "light mode toggle". Sliders = universal "settings
   // / preferences" idiom yang clean di 16×16.
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2.5 4.5h7M12 4.5h1.5" />
       <circle cx="10.5" cy="4.5" r="1.5" />
       <path d="M2.5 8h3M8 8h5.5" />
@@ -188,6 +200,15 @@ function IconProfile() {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="8" cy="5.5" r="3" />
       <path d="M2 14a6 6 0 0 1 12 0" />
+    </svg>
+  )
+}
+function helpIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="6" />
+      <path d="M6.4 6.1c0-.9.72-1.6 1.6-1.6s1.6.7 1.6 1.6c0 .64-.4 1.12-.96 1.36-.4.16-.64.48-.64.88V9" />
+      <circle cx="8" cy="11.1" r="0.55" fill="currentColor" stroke="none" />
     </svg>
   )
 }
@@ -617,30 +638,43 @@ export function AppShell({ children }: { children?: ReactNode }) {
     mql.addEventListener('change', update)
     return () => mql.removeEventListener('change', update)
   }, [])
-  const effectiveCollapsed = sidebarCollapsedView || viewportNarrow
+
+  /* Phone off-canvas (≤640 = --bp-sm). Sidebar keluar dari grid, jadi drawer
+   * slide-in di atas scrim, di-toggle hamburger di topbar. Lihat
+   * docs/mobile-phone-support-plan-2026-06.md Fase 1. */
+  const [viewportPhone, setViewportPhone] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(max-width: 640px)').matches
+  })
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mql = window.matchMedia('(max-width: 640px)')
+    const update = (e: MediaQueryListEvent | MediaQueryList) => {
+      setViewportPhone(e.matches)
+      if (!e.matches) setMobileNavOpen(false) // resize ke desktop → tutup drawer
+    }
+    update(mql)
+    mql.addEventListener('change', update)
+    return () => mql.removeEventListener('change', update)
+  }, [])
+
+  // Di phone drawer tampil expanded (label penuh), bukan icon-rail — jadi
+  // collapse efektif hanya berlaku saat BUKAN phone.
+  const effectiveCollapsed = !viewportPhone && (sidebarCollapsedView || viewportNarrow)
+
+  // Tutup drawer otomatis saat navigasi (klik nav-item → route berubah).
+  useEffect(() => { setMobileNavOpen(false) }, [activePath])
 
   const [tooltipState, setTooltipState] = useState<SidebarTooltipState | null>(null)
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [paletteOpen, setPaletteOpen] = useState(false)
-  const [quickCreateOpen, setQuickCreateOpen] = useState(false)
   const [stickyTitleVisible, setStickyTitleVisible] = useState(false)
-  const quickCreateRef = useRef<HTMLDivElement>(null)
 
-  // User menu (sidebar footer) — popover di-portal ke body karena `.sidebar`
-  // punya `overflow: hidden` yang meng-clip popover saat collapsed
-  // (popover positioned ke kanan sidebar dengan `left: calc(100% + 8px)`).
-  // Tanpa portal, popover dan backdrop tidak terlihat → click avatar terasa
-  // tidak respond. Rect dihitung saat menu open untuk positioning fixed.
-  const userCardRef = useRef<HTMLButtonElement>(null)
-  const [userCardRect, setUserCardRect] = useState<DOMRect | null>(null)
-  useEffect(() => {
-    if (userMenuSurface === 'sidebar' && userCardRef.current) {
-      setUserCardRect(userCardRef.current.getBoundingClientRect())
-    } else if (userMenuSurface !== 'sidebar') {
-      setUserCardRect(null)
-    }
-  }, [userMenuSurface])
+  // User account menu kini hidup di kanan-atas topbar (avatar) — popover pakai
+  // positioning absolut biasa di dalam `.topbar__user-menu` (topbar tidak
+  // overflow:hidden), jadi tak perlu portal/rect seperti footer sidebar dulu.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -657,17 +691,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEscKey(() => setQuickCreateOpen(false), quickCreateOpen)
-  useEffect(() => {
-    if (!quickCreateOpen) return
-    const handler = (e: MouseEvent) => {
-      if (quickCreateRef.current && !quickCreateRef.current.contains(e.target as Node)) {
-        setQuickCreateOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [quickCreateOpen])
+  useEscKey(() => setMobileNavOpen(false), mobileNavOpen)
 
   useEscKey(closeUserMenu, userMenuSurface !== null)
   useEscKey(cancelLogout, logoutPending)
@@ -952,8 +976,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
     reports:       { path: '/reports',         label: 'Analytics',       caption: 'KPI, program health & leaderboard',  icon: IconReports       },
     executive:     { path: '/executive',             label: 'Executive Summary', caption: 'Snapshot eksekutif 1-halaman',     icon: IconScorecard    },
     perfScorecard: { path: '/performance/scorecard', label: 'Scorecard',       caption: 'Ranking capaian direktorat & divisi',  icon: IconScorecard    },
-    perfDirektorat:{ path: '/performance/kolegial',  label: 'KPI Direktorat',  caption: 'Capaian KPI bersama jajaran direksi',  icon: IconKpiKolegial  },
-    perfDivisi:    { path: '/performance/divisi',    label: 'KPI Divisi',      caption: 'Capaian KPI level divisi',             icon: IconKpiKolegial  },
+    perfDirektorat:{ path: '/performance/kolegial',  label: 'KPI Direktorat',  caption: 'Capaian KPI bersama jajaran direksi',  icon: IconKpiDirektorat },
+    perfDivisi:    { path: '/performance/divisi',    label: 'KPI Divisi',      caption: 'Capaian KPI level divisi',             icon: IconKpiDivisi    },
     perfSaya:      { path: '/performance/me',        label: 'KPI Saya',        caption: 'KPI individual saya',                  icon: IconKpiIndividu  },
     perfIndividu:  { path: '/performance/individu',  label: 'Leaderboard',     caption: 'Top performer per BOD level',          icon: IconKpiIndividu  },
     schedule:    { path: '/jadwal',    label: 'Coordination',     caption: 'Rapat koordinasi & cadence tim',    icon: IconSchedule,    shortcut: 'G R' },
@@ -1051,7 +1075,11 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const currentPage = PAGE_NAMES[activePath] ?? PAGE_NAMES[pathname] ?? 'ATLAS'
 
   return (
-    <div className={`app-shell${effectiveCollapsed ? ' app-shell--collapsed' : ''}${hasContextPanel ? ' app-shell--with-panel' : ''}${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}`} ref={shellRef}>
+    <div className={`app-shell${effectiveCollapsed ? ' app-shell--collapsed' : ''}${hasContextPanel ? ' app-shell--with-panel' : ''}${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}${viewportPhone ? ' app-shell--mobile' : ''}${mobileNavOpen ? ' app-shell--nav-open' : ''}`} ref={shellRef}>
+      {/* Phone off-canvas scrim — klik untuk tutup drawer (≤640). */}
+      {viewportPhone ? (
+        <div className="app-shell__scrim" onClick={() => setMobileNavOpen(false)} aria-hidden="true" />
+      ) : null}
       {/* ── Sidebar ── */}
       <aside className="sidebar">
         <div className="sidebar__header">
@@ -1167,151 +1195,39 @@ export function AppShell({ children }: { children?: ReactNode }) {
           )})}
         </nav>
 
+        {/* Footer — rak utilitas (2026-06-01): ikon kalem tanpa label, hint via
+            title native. Bantuan & Panduan + toggle tema (dipindah dari topbar).
+            Expanded = baris rata kiri (sejajar kolom ikon nav); collapsed = tumpuk. */}
         <div className="sidebar__footer">
-          {/* User mini-card — clicking opens menu (popover di-portal ke body
-              karena .sidebar overflow:hidden meng-clip popover saat collapsed) */}
-          <button
-            ref={userCardRef}
-            className="sidebar__user-card"
-            onClick={() => toggleUserMenu('sidebar')}
-            aria-expanded={userMenuSurface === 'sidebar'}
-            aria-haspopup="menu"
-            title={currentUser?.name ?? 'User menu'}
-            type="button"
+          <Link
+            className={`sidebar__util-btn${activePath === '/panduan' ? ' sidebar__util-btn--active' : ''}`}
+            href="/panduan"
+            title="Bantuan & Panduan"
+            aria-label="Bantuan & Panduan"
+            onMouseEnter={() => prefetchRoute('/panduan')}
+            onFocus={() => prefetchRoute('/panduan')}
+            aria-current={activePath === '/panduan' ? 'page' : undefined}
           >
-            <span className="sidebar__user-card-avatar">
-              {userInitials || 'AU'}
-              <span className="sidebar__user-card-status" aria-hidden="true" />
-            </span>
-            <span className="sidebar__user-card-body">
-              <span className="sidebar__user-card-name">{currentUser?.name ?? 'Atlas User'}</span>
-              <span className="sidebar__user-card-role">{
-                currentUser?.unit?.name
-                ?? formatRoleLabelTitleCase(currentUser?.roleType, 'Member')
-              }</span>
-            </span>
-            <svg className="sidebar__user-card-chev" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="m3 7.5 3-3 3 3" />
-            </svg>
+            {helpIcon()}
+          </Link>
+          <button
+            type="button"
+            className="sidebar__util-btn"
+            onClick={toggleTheme}
+            title={resolvedTheme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+            aria-label={resolvedTheme === 'dark' ? 'Beralih ke mode terang' : 'Beralih ke mode gelap'}
+          >
+            {resolvedTheme === 'dark' ? (
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="10" cy="10" r="4" />
+                <path d="M10 1.5v2M10 16.5v2M1.5 10h2M16.5 10h2M3.9 3.9l1.4 1.4M14.7 14.7l1.4 1.4M3.9 16.1l1.4-1.4M14.7 5.3l1.4-1.4" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M17 11.5A7.5 7.5 0 0 1 8.5 3a7.5 7.5 0 1 0 8.5 8.5Z" />
+              </svg>
+            )}
           </button>
-
-          {userMenuSurface === 'sidebar' && userCardRect ? createPortal(
-            <>
-              <div className="topbar__menu-backdrop" onClick={closeUserMenu} />
-              <div
-                className="sidebar__user-popover"
-                role="menu"
-                style={sidebarCollapsedView ? {
-                  position: 'fixed',
-                  left: userCardRect.right + 8,
-                  bottom: window.innerHeight - userCardRect.bottom,
-                  right: 'auto',
-                  width: 220,
-                } : {
-                  position: 'fixed',
-                  left: userCardRect.left,
-                  bottom: window.innerHeight - userCardRect.top + 6,
-                  right: 'auto',
-                  width: userCardRect.width,
-                }}
-              >
-                <div className="sidebar__user-popover-identity">
-                  <div className="sidebar__user-popover-avatar">{userInitials || 'AU'}</div>
-                  <div>
-                    <strong>{currentUser?.name}</strong>
-                    <span>{currentUser?.unit?.name ?? formatRoleLabel(currentUser?.roleType)}</span>
-                  </div>
-                </div>
-                <div className="sidebar__user-popover-divider" />
-                <button
-                  className="sidebar__user-popover-item"
-                  onClick={() => { toggleTheme(); closeUserMenu() }}
-                  type="button"
-                >
-                  {resolvedTheme === 'dark' ? (
-                    <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-                      <circle cx="9" cy="9" r="3.5" />
-                      <path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.22 3.22l1.42 1.42M13.36 13.36l1.42 1.42M3.22 14.78l1.42-1.42M13.36 4.64l1.42-1.42" />
-                    </svg>
-                  ) : (
-                    <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M15.5 10.5A7 7 0 0 1 7.5 2.5a7.002 7.002 0 1 0 8 8Z" />
-                    </svg>
-                  )}
-                  {resolvedTheme === 'dark' ? 'Mode terang' : 'Mode gelap'}
-                </button>
-                <Link
-                  className="sidebar__user-popover-item"
-                  href="/playbook"
-                  onClick={closeUserMenu}
-                  onFocus={() => prefetchRoute('/playbook')}
-                  onMouseEnter={() => prefetchRoute('/playbook')}
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="1" width="10" height="12" rx="1" />
-                    <path d="M5 4h4M5 7h4M5 10h2" />
-                  </svg>
-                  Playbook
-                </Link>
-                <Link
-                  className="sidebar__user-popover-item"
-                  href="/profile"
-                  onClick={closeUserMenu}
-                  onFocus={() => prefetchRoute('/profile')}
-                  onMouseEnter={() => prefetchRoute('/profile')}
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="7" cy="4.5" r="2.5" />
-                    <path d="M2.5 12a4.5 4.5 0 0 1 9 0" />
-                  </svg>
-                  Profile
-                </Link>
-                <Link
-                  className="sidebar__user-popover-item"
-                  href="/settings"
-                  onClick={closeUserMenu}
-                  onFocus={() => prefetchRoute('/settings')}
-                  onMouseEnter={() => prefetchRoute('/settings')}
-                >
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M2.5 4.5h7M12 4.5h1.5" />
-                    <circle cx="10.5" cy="4.5" r="1.5" />
-                    <path d="M2.5 8h3M8 8h5.5" />
-                    <circle cx="6.5" cy="8" r="1.5" />
-                    <path d="M2.5 11.5h8M13 11.5h.5" />
-                    <circle cx="11.5" cy="11.5" r="1.5" />
-                  </svg>
-                  Settings
-                </Link>
-                <div className="sidebar__user-popover-divider" />
-                <button
-                  className="sidebar__user-popover-item"
-                  onClick={() => { void loadOverview('refresh'); closeUserMenu() }}
-                  type="button"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-                    <path d="M12.5 7A5.5 5.5 0 1 1 7 1.5a5.5 5.5 0 0 1 4.5 2.3" />
-                    <path d="M10 1.5h3v3" />
-                  </svg>
-                  {overviewStatus.refreshing ? 'Menyegarkan…' : 'Refresh data'}
-                </button>
-                <div className="sidebar__user-popover-divider" />
-                <button
-                  className="sidebar__user-popover-item sidebar__user-popover-item--danger"
-                  onClick={() => { requestLogout(); closeUserMenu() }}
-                  type="button"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 7h7M9.5 4.5 12 7l-2.5 2.5" />
-                    <path d="M5 2H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2" />
-                  </svg>
-                  Sign out
-                </button>
-              </div>
-            </>,
-            document.body
-          ) : null}
-
         </div>
 
         {sidebarCollapsedView && tooltipState ? (
@@ -1342,30 +1258,37 @@ export function AppShell({ children }: { children?: ReactNode }) {
       {/* ── Main workspace ── */}
       <div className="workspace" id="workspace-modal-root">
         <header className="topbar">
+          {/* Hamburger — hanya tampil di phone (≤640), buka off-canvas drawer. */}
+          <button
+            type="button"
+            className="topbar__hamburger"
+            onClick={() => setMobileNavOpen((o) => !o)}
+            aria-label={mobileNavOpen ? 'Tutup menu' : 'Buka menu'}
+            aria-expanded={mobileNavOpen}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
+              <line x1="2.5" y1="5" x2="15.5" y2="5" />
+              <line x1="2.5" y1="9" x2="15.5" y2="9" />
+              <line x1="2.5" y1="13" x2="15.5" y2="13" />
+            </svg>
+          </button>
           {/* ── Slim utility bar — date/period/live + sticky title + actions ──
            * Pure System: no breadcrumb, no full-width search input. Topbar is
            * a thin context strip sharing the sidebar's canvas. Sticky page
            * title fades in once user scrolls past the page heading. */}
+          {/* Meta kiri (rev 2026-06-01): Live + periode ringkas (Q · W · tahun).
+           * Dikembalikan ke kiri agar cluster kanan tidak terlalu padat. Spacer
+           * di bawah mendorong actions ke kanan. Periode di-hide di ≤1024. */}
           {(() => {
             const now = new Date()
-            // Hybrid: sentence case (bukan UPPERCASE) + dua granularitas week.
-            // Week-of-month untuk konteks ritme bulanan (cocok dengan ProgressLog mingguan),
-            // ISO week-of-year sebagai anchor universal kalender perusahaan.
-            const dateStr = now.toLocaleDateString('id-ID', {
-              weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-            })
-            const monthShort = now.toLocaleDateString('id-ID', { month: 'short' })
             const quarter = Math.floor(now.getMonth() / 3) + 1
-            // ISO-week (Mon=1) — week containing first Thursday of the year.
-            const tmp = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
-            const dayNum = tmp.getUTCDay() || 7
-            tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum)
-            const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1))
-            const weekOfYear = Math.ceil(((tmp.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
-            // Week-of-month (Mon-aligned): kalender-week ke berapa di bulan ini.
+            // Minggu-dalam-bulan (Mon-aligned): pekan ke berapa di bulan ini.
             const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
             const firstISO = firstOfMonth.getDay() || 7 // Mon=1 … Sun=7
             const weekOfMonth = Math.ceil((now.getDate() + firstISO - 1) / 7)
+            const monthName = now.toLocaleDateString('id-ID', { month: 'long' })
+            const monthLabel = monthName.charAt(0).toUpperCase() + monthName.slice(1)
+            const periodLabel = `Q${quarter} · W${weekOfMonth} ${monthLabel} ${now.getFullYear()}`
             const liveLabel = realtimeStatus === 'connected' ? 'Live'
               : realtimeStatus === 'connecting' ? 'Syncing'
               : realtimeStatus === 'disconnected' ? 'Offline'
@@ -1375,9 +1298,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
               : 'topbar__live--connecting'
             return (
               <div className="topbar__meta">
-                <span className="topbar__meta-date">{dateStr}</span>
-                <span className="topbar__meta-sep" aria-hidden>·</span>
-                <span className="topbar__meta-period">Q{quarter} · W{weekOfMonth} {monthShort} · W{weekOfYear}</span>
                 {liveLabel ? (
                   <span
                     className={`topbar__live ${liveClass}`}
@@ -1392,6 +1312,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                     {liveLabel}
                   </span>
                 ) : null}
+                <span className="topbar__meta-period">{periodLabel}</span>
               </div>
             )
           })()}
@@ -1403,62 +1324,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
             <TopbarAction action={TOPBAR_ACTIONS[activePath]} page={activePath} />
           ) : null}
 
-          {/* Global Quick-Create — universal "+" with mini-menu */}
-          <div className="topbar__quick-menu" ref={quickCreateRef}>
-            <button
-              type="button"
-              className="topbar__quick-btn"
-              onClick={() => setQuickCreateOpen(o => !o)}
-              aria-expanded={quickCreateOpen}
-              aria-haspopup="menu"
-              aria-label="Buat baru"
-              title="Buat baru"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-                <path d="M8 3.5v9M3.5 8h9" />
-              </svg>
-            </button>
-            {quickCreateOpen && (
-              <div className="topbar__quick-popover" role="menu">
-                <div className="topbar__quick-popover-head">Buat baru</div>
-                {([
-                  { id: 'task.new',       label: 'Task',       sub: 'di Workboard',          route: '/execution', icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2.5" width="10" height="11" rx="1.5"/><path d="m5.5 8 1.3 1.3L10 6.5"/></svg> },
-                  { id: 'program.new',    label: 'Program',    sub: 'portfolio baru',        route: '/programs',  icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2.5" width="10" height="11" rx="1.6"/><path d="M6 2.5h4v2H6z"/><path d="M5.5 7h5M5.5 10h5"/></svg> },
-                  { id: 'meeting.new',    label: 'Meeting',    sub: 'koordinasi',            route: '/jadwal',    icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M5 1.5v3M11 1.5v3M2 7h12"/></svg> },
-                  { id: 'assignment.new', label: 'Assignment', sub: 'di luar Program',       route: '/penugasan', icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2.5" width="10" height="11" rx="1.5"/><path d="M6 2.5h4v2H6z"/><path d="M5.5 11.5h3"/></svg> },
-                ] as const).map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    role="menuitem"
-                    className="topbar__quick-item"
-                    onClick={() => {
-                      setQuickCreateOpen(false)
-                      // Navigate first if not on the page, lalu dispatch action.
-                      // Page listeners pakai TOPBAR_ACTION_EVENT; mereka self-mount,
-                      // jadi kita kasih microtask delay untuk navigation in-flight.
-                      if (activePath !== item.route) {
-                        navigate(item.route)
-                        setTimeout(() => {
-                          window.dispatchEvent(new CustomEvent(TOPBAR_ACTION_EVENT, { detail: { id: item.id, page: item.route } }))
-                        }, 220)
-                      } else {
-                        window.dispatchEvent(new CustomEvent(TOPBAR_ACTION_EVENT, { detail: { id: item.id, page: item.route } }))
-                      }
-                    }}
-                    onMouseEnter={() => prefetchRoute(item.route)}
-                    onFocus={() => prefetchRoute(item.route)}
-                  >
-                    <span className="topbar__quick-item-icon" aria-hidden="true">{item.icon}</span>
-                    <span className="topbar__quick-item-body">
-                      <span className="topbar__quick-item-title">{item.label}</span>
-                      <span className="topbar__quick-item-sub">{item.sub}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Global Quick-Create "+" dihapus 2026-06-01: redundan dengan ⌘K
+              palette (grup "Aksi" mengekspos task/meeting/assignment.new yang
+              sama) + contextual CTA di work-pages. Create kini lewat ⌘K atau
+              tombol contextual; Program via CTA di ProgramsView. */}
 
           {/* ⌘K command palette — prominent search pill */}
           <button
@@ -1478,21 +1347,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
           {/* Right cluster */}
           <div className="topbar__right">
-            {/* Pusat Bantuan — friendly task-oriented help entry */}
-            <Link
-              href="/panduan"
-              className="topbar__help-btn"
-              aria-label="Pusat Bantuan"
-              title="Pusat Bantuan & Panduan"
-              onMouseEnter={() => prefetchRoute('/panduan')}
-              onFocus={() => prefetchRoute('/panduan')}
-            >
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="10" cy="10" r="7.5" />
-                <path d="M8 7.5c0-1.1.9-2 2-2s2 .9 2 2c0 .8-.5 1.4-1.2 1.7-.5.2-.8.6-.8 1.1V11" />
-                <circle cx="10" cy="13.8" r="0.7" fill="currentColor" stroke="none" />
-              </svg>
-            </Link>
             {/* Notification bell */}
             <div className="topbar__notif-menu" ref={notifDropRef}>
               <button
@@ -1599,9 +1453,115 @@ export function AppShell({ children }: { children?: ReactNode }) {
               )}
             </div>
 
+            {/* Account avatar + menu — kanan-atas (Gmail/Linear pattern).
+                Popover positioned absolut di dalam .topbar__user-menu; backdrop
+                menangani click-outside. Menu pindah dari footer sidebar 2026-06-01. */}
+            <div className="topbar__user-menu">
+              <button
+                className="topbar__avatar-btn"
+                onClick={() => toggleUserMenu('topbar')}
+                aria-expanded={userMenuSurface === 'topbar'}
+                aria-haspopup="menu"
+                title={currentUser?.name ?? 'User menu'}
+                type="button"
+              >
+                <span className="topbar__avatar"><span className="topbar__avatar-initials">{userInitials || 'AU'}</span></span>
+                <span className="topbar__avatar-name">{currentUser?.name ?? 'Atlas User'}</span>
+                <svg className="topbar__avatar-chev" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m3 4.5 3 3 3-3" />
+                </svg>
+              </button>
+
+              {userMenuSurface === 'topbar' && (
+                <>
+                  <div className="topbar__menu-backdrop" onClick={closeUserMenu} />
+                  <div className="topbar__user-popover" role="menu">
+                    <div className="topbar__user-popover-identity">
+                      <div className="topbar__user-popover-avatar">{userInitials || 'AU'}</div>
+                      <div>
+                        <strong>{currentUser?.name}</strong>
+                        <span>{currentUser?.unit?.name ?? formatRoleLabel(currentUser?.roleType)}</span>
+                      </div>
+                    </div>
+                    <div className="topbar__user-popover-divider" />
+                    <Link
+                      className="topbar__user-popover-item"
+                      href="/playbook"
+                      onClick={closeUserMenu}
+                      onFocus={() => prefetchRoute('/playbook')}
+                      onMouseEnter={() => prefetchRoute('/playbook')}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="1" width="10" height="12" rx="1" />
+                        <path d="M5 4h4M5 7h4M5 10h2" />
+                      </svg>
+                      Playbook
+                    </Link>
+                    <Link
+                      className="topbar__user-popover-item"
+                      href="/profile"
+                      onClick={closeUserMenu}
+                      onFocus={() => prefetchRoute('/profile')}
+                      onMouseEnter={() => prefetchRoute('/profile')}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="7" cy="4.5" r="2.5" />
+                        <path d="M2.5 12a4.5 4.5 0 0 1 9 0" />
+                      </svg>
+                      Profile
+                    </Link>
+                    <Link
+                      className="topbar__user-popover-item"
+                      href="/settings"
+                      onClick={closeUserMenu}
+                      onFocus={() => prefetchRoute('/settings')}
+                      onMouseEnter={() => prefetchRoute('/settings')}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M2.5 4.5h7M12 4.5h1.5" />
+                        <circle cx="10.5" cy="4.5" r="1.5" />
+                        <path d="M2.5 8h3M8 8h5.5" />
+                        <circle cx="6.5" cy="8" r="1.5" />
+                        <path d="M2.5 11.5h8M13 11.5h.5" />
+                        <circle cx="11.5" cy="11.5" r="1.5" />
+                      </svg>
+                      Settings
+                    </Link>
+                    <div className="topbar__user-popover-divider" />
+                    <button
+                      className="topbar__user-popover-item"
+                      onClick={() => { void loadOverview('refresh'); closeUserMenu() }}
+                      type="button"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+                        <path d="M12.5 7A5.5 5.5 0 1 1 7 1.5a5.5 5.5 0 0 1 4.5 2.3" />
+                        <path d="M10 1.5h3v3" />
+                      </svg>
+                      {overviewStatus.refreshing ? 'Menyegarkan…' : 'Refresh data'}
+                    </button>
+                    <div className="topbar__user-popover-divider" />
+                    <button
+                      className="topbar__user-popover-item topbar__user-popover-item--danger"
+                      onClick={() => { requestLogout(); closeUserMenu() }}
+                      type="button"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 7h7M9.5 4.5 12 7l-2.5 2.5" />
+                        <path d="M5 2H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2" />
+                      </svg>
+                      Sign out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
           </div>
         </header>
 
+        {/* Home runs flush so its greeting shares the floating cluster's row;
+            all pages (incl. Home) reserve the cluster band; Home's greeting then
+            sits as a sticky tier BELOW the topbar instead of fused into its row. */}
         <main className="workspace__content">
           {children}
         </main>

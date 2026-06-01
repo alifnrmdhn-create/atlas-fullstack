@@ -25,13 +25,14 @@ import { ExecutionTab } from '../components/ExecutionTab'
 import { MonitoringMatrix } from '../components/MonitoringMatrix'
 import { useInlineToast } from '../components/InlineToast'
 import { UserPicker } from '../components/UserPicker'
-import { PageHeader } from '../design-system'
+import { PageHeader, Bars, Donut, Sparkline, Delta } from '../design-system'
+import type { Tone } from '../lib/tone'
 import './ProgramsView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 type ProgramTab = 'portfolio' | 'timeline' | 'monitoring' | 'pulse' | 'risiko' | 'archive'
-type PortfolioView = 'list' | 'kanban' | 'table'
+type PortfolioView = 'list' | 'kanban' | 'table' | 'map'
 type TimelineView = 'lanes' | 'gantt'
 type LaneGrouping = 'status' | 'priority' | 'health'
 
@@ -69,6 +70,9 @@ type ExecutionPulse = {
 
 const STATUS_ORDER = ['IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'CANCELLED']
 const VALID_SEVERITIES = new Set(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'])
+// Paginasi List & Table — 97 program di-render sekaligus = DOM berat + scroll
+// melelahkan. Hanya 1 halaman dirender pada satu waktu.
+const PORTFOLIO_PAGE_SIZE = 20
 
 const approvalBadge = (prog: { approvalStatus?: string | null; rejectionNote?: string | null }) => {
   // Rejected = DRAFT + rejectionNote populated. The literal 'REJECTED' status
@@ -165,6 +169,269 @@ function HealthDonut({ green, yellow, red, total }: {
   )
 }
 
+// ── Peta Programs — portfolio scatter ────────────────────────────────────
+// Setiap program = satu titik di bidang dua-sumbu: X = progres (0→100%),
+// Y = tekanan waktu (atas = paling mendesak). Warna titik = health asli —
+// jadi mismatch langsung kelihatan (titik merah di zona "Aman", titik hijau
+// di "Zona Bahaya"). Empat kuadran memberi baca cepat: pojok kiri-atas
+// (mendesak + progres rendah) = klaster yang butuh perhatian. Pure SVG,
+// dipindah dari peta portfolio Home — di sini fokusnya memang seluruh
+// portofolio, bukan ringkasan. */
+type ScatterProg = {
+  id: number; code: string; name: string
+  progressPercent: number
+  health: 'GREEN' | 'YELLOW' | 'RED'
+  days: number | null
+  completed: boolean
+  owner?: string | null
+}
+
+const SCATTER_HEX: Record<'GREEN' | 'YELLOW' | 'RED' | 'SELESAI', string> = {
+  GREEN: 'var(--ds-green-500)',
+  YELLOW: 'var(--ds-amber-500)',
+  RED: 'var(--ds-red-500)',
+  SELESAI: '#94A3B8',
+}
+
+function ProgramScatter({ programs, onOpen }: {
+  programs: ScatterProg[]
+  onOpen: (id: number) => void
+}) {
+  const [hoveredId, setHoveredId] = useState<number | null>(null)
+
+  // Geometri plot — viewBox tetap, scale 100% via CSS.
+  const W = 960, H = 520
+  const ML = 60, MR = 28, MT = 30, MB = 54
+  const plotW = W - ML - MR
+  const plotH = H - MT - MB
+  const xAt = (frac: number) => ML + frac * plotW
+  const yAt = (frac: number) => (H - MB) - frac * plotH // frac=pressure → top mendesak
+
+  // Tekanan waktu → fraksi vertikal [0..1]. Overdue di rim atas, tanpa tenggat
+  // & selesai di dasar. Continuous biar sebaran lebih jujur dari sekadar bucket.
+  const pressureFrac = (days: number | null, completed: boolean): number => {
+    if (completed) return 0.05
+    if (days == null) return 0.12
+    if (days < 0) return 0.97
+    return 0.12 + 0.78 * (1 - Math.min(days, 270) / 270)
+  }
+
+  const dots = useMemo(() => programs.map(p => {
+    // Jitter deterministik dari id supaya titik bertumpuk tidak saling tutup.
+    const h1 = ((p.id * 2654435761) % 97) / 97
+    const h2 = ((p.id * 40503) % 89) / 89
+    let fx: number, fy: number
+    if (p.completed) {
+      // Program selesai (100%) ditata jadi pita rapi di zona "Aman" (kanan-bawah)
+      // memakai hash id — bukan tumpukan keras di satu titik pojok.
+      fx = 0.86 + h1 * 0.09
+      fy = 0.05 + h2 * 0.13
+    } else {
+      fx = p.progressPercent / 100 + (h1 - 0.5) * 0.03
+      fy = pressureFrac(p.days, p.completed) + (h2 - 0.5) * 0.06
+    }
+    // Clamp di dalam frame dengan margin — titik & glow tak menyentuh tepi.
+    fx = Math.min(0.965, Math.max(0.03, fx))
+    fy = Math.min(0.95, Math.max(0.035, fy))
+    const tone = p.completed ? 'SELESAI' : p.health
+    return { ...p, fx, fy, x: xAt(fx), y: yAt(fy), fill: SCATTER_HEX[tone], tone }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [programs])
+
+  // Hitung populasi per kuadran (batas di progres 50% & tekanan 50%).
+  const zoneCounts = useMemo(() => {
+    const c = { danger: 0, push: 0, early: 0, safe: 0 }
+    dots.forEach(d => {
+      const hi = d.fy >= 0.5
+      const adv = d.fx >= 0.5
+      if (hi && !adv) c.danger++
+      else if (hi && adv) c.push++
+      else if (!hi && !adv) c.early++
+      else c.safe++
+    })
+    return c
+  }, [dots])
+
+  const midX = xAt(0.5)
+  const midY = yAt(0.5)
+  const hovered = dots.find(d => d.id === hoveredId) ?? null
+
+  // Label hover — flip ke kiri bila titik dekat tepi kanan.
+  const labelW = 196
+  const flip = hovered ? hovered.x > W - MR - labelW - 12 : false
+
+  return (
+    <div className="program-scatter">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="program-scatter__svg"
+        role="img"
+        aria-label={`Peta ${programs.length} program: ${zoneCounts.danger} di zona bahaya, ${zoneCounts.push} dorong tuntas, ${zoneCounts.early} tahap awal, ${zoneCounts.safe} aman`}
+        onMouseLeave={() => setHoveredId(null)}
+      >
+        <defs>
+          <linearGradient id="scatter-danger" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--ds-red-500)" stopOpacity="0.07" />
+            <stop offset="100%" stopColor="var(--ds-red-500)" stopOpacity="0.01" />
+          </linearGradient>
+          <linearGradient id="scatter-safe" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stopColor="var(--ds-green-500)" stopOpacity="0.06" />
+            <stop offset="100%" stopColor="var(--ds-green-500)" stopOpacity="0.01" />
+          </linearGradient>
+          <filter id="scatter-dotglow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="2.4" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+
+        {/* Zona shading — bahaya (kiri-atas) & aman (kanan-bawah) */}
+        <rect x={ML} y={MT} width={midX - ML} height={midY - MT} fill="url(#scatter-danger)" />
+        <rect x={midX} y={midY} width={W - MR - midX} height={(H - MB) - midY} fill="url(#scatter-safe)" />
+
+        {/* Frame + garis kuadran */}
+        <rect x={ML} y={MT} width={plotW} height={plotH} className="program-scatter__frame" />
+        <line x1={midX} y1={MT} x2={midX} y2={H - MB} className="program-scatter__div" />
+        <line x1={ML} y1={midY} x2={W - MR} y2={midY} className="program-scatter__div" />
+
+        {/* Sumbu */}
+        <text x={ML} y={H - MB + 30} className="program-scatter__axt">0%</text>
+        <text x={midX} y={H - MB + 30} textAnchor="middle" className="program-scatter__axt">50%</text>
+        <text x={W - MR} y={H - MB + 30} textAnchor="end" className="program-scatter__axt">100%</text>
+        <text x={(ML + W - MR) / 2} y={H - 8} textAnchor="middle" className="program-scatter__axlabel">Progres eksekusi →</text>
+        <text x={18} y={(MT + H - MB) / 2} className="program-scatter__axlabel" transform={`rotate(-90 18 ${(MT + H - MB) / 2})`} textAnchor="middle">↑ Tekanan waktu</text>
+
+        {/* Titik program */}
+        {dots.map(d => {
+          const dim = hoveredId != null && hoveredId !== d.id
+          const active = hoveredId === d.id
+          return (
+            <circle
+              key={d.id}
+              cx={d.x} cy={d.y}
+              r={active ? 8.5 : 6}
+              fill={d.fill}
+              fillOpacity={dim ? 0.16 : 0.62}
+              stroke={d.fill}
+              strokeWidth={active ? 2 : 1.4}
+              strokeOpacity={dim ? 0.3 : 1}
+              className="program-scatter__dot"
+              filter={active ? 'url(#scatter-dotglow)' : undefined}
+              onMouseEnter={() => setHoveredId(d.id)}
+              onClick={() => onOpen(d.id)}
+              tabIndex={0}
+              role="button"
+              aria-label={`${d.code} ${d.name}, progres ${d.progressPercent}%`}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(d.id) } }}
+            >
+              <title>{d.code} · {d.name} — {d.progressPercent}%</title>
+            </circle>
+          )
+        })}
+
+        {/* Label kuadran + populasi — di atas titik, halo (paint-order) biar terbaca */}
+        <g pointerEvents="none">
+          <text x={ML + 12} y={MT + 20} className="program-scatter__zone program-scatter__zone--danger">
+            Zona Bahaya <tspan className="program-scatter__zone-n">{zoneCounts.danger}</tspan>
+          </text>
+          <text x={W - MR - 12} y={MT + 20} textAnchor="end" className="program-scatter__zone program-scatter__zone--push">
+            <tspan className="program-scatter__zone-n">{zoneCounts.push}</tspan> Dorong Tuntas
+          </text>
+          <text x={ML + 12} y={H - MB - 12} className="program-scatter__zone program-scatter__zone--early">
+            Tahap Awal <tspan className="program-scatter__zone-n">{zoneCounts.early}</tspan>
+          </text>
+          <text x={W - MR - 12} y={H - MB - 12} textAnchor="end" className="program-scatter__zone program-scatter__zone--safe">
+            <tspan className="program-scatter__zone-n">{zoneCounts.safe}</tspan> Aman
+          </text>
+        </g>
+
+        {/* Kartu hover — dirender terakhir agar di atas semua titik */}
+        {hovered && (() => {
+          const lx = flip ? hovered.x - labelW - 12 : hovered.x + 12
+          const ly = Math.min(Math.max(hovered.y - 30, MT + 4), H - MB - 70)
+          const daysTxt = hovered.completed
+            ? 'Selesai'
+            : hovered.days == null ? 'Tanpa tenggat'
+            : hovered.days < 0 ? `${Math.abs(hovered.days)} hari terlambat`
+            : hovered.days === 0 ? 'Jatuh tempo hari ini'
+            : `${hovered.days} hari lagi`
+          const name = hovered.name.length > 42 ? hovered.name.slice(0, 41) + '…' : hovered.name
+          return (
+            <g className="program-scatter__tip" pointerEvents="none">
+              <rect x={lx} y={ly} width={labelW} height={64} rx={9} className="program-scatter__tip-bg" />
+              <text x={lx + 12} y={ly + 19} className="program-scatter__tip-code">{hovered.code}</text>
+              <text x={lx + 12} y={ly + 37} className="program-scatter__tip-name">{name}</text>
+              <text x={lx + 12} y={ly + 54} className="program-scatter__tip-meta">
+                {hovered.progressPercent}% · {daysTxt}
+              </text>
+            </g>
+          )
+        })()}
+      </svg>
+
+      <div className="program-scatter__legend">
+        <span className="program-scatter__legend-item"><i style={{ background: SCATTER_HEX.GREEN }} /> On Track</span>
+        <span className="program-scatter__legend-item"><i style={{ background: SCATTER_HEX.YELLOW }} /> At Risk</span>
+        <span className="program-scatter__legend-item"><i style={{ background: SCATTER_HEX.RED }} /> Terlambat</span>
+        <span className="program-scatter__legend-item"><i style={{ background: SCATTER_HEX.SELESAI }} /> Selesai</span>
+        <span className="program-scatter__legend-hint">Klik titik untuk buka program</span>
+      </div>
+    </div>
+  )
+}
+
+// ── Pager — paginasi diskrit untuk List/Table ────────────────────────────
+// Window nomor halaman dengan ellipsis (1 … 3 4 5 … 9) supaya tetap ringkas
+// walau jumlah halaman banyak. Sembunyikan saat hanya 1 halaman.
+function Pager({ page, pageCount, total, pageSize, onPage }: {
+  page: number; pageCount: number; total: number; pageSize: number; onPage: (p: number) => void
+}) {
+  if (pageCount <= 1) return null
+  const from = (page - 1) * pageSize + 1
+  const to = Math.min(page * pageSize, total)
+  const win = 1
+  const nums: (number | 'gap')[] = []
+  for (let i = 1; i <= pageCount; i++) {
+    if (i === 1 || i === pageCount || (i >= page - win && i <= page + win)) nums.push(i)
+    else if (nums[nums.length - 1] !== 'gap') nums.push('gap')
+  }
+  return (
+    <nav className="programs-pager" aria-label="Paginasi program">
+      <span className="programs-pager__range">
+        Menampilkan <strong>{from}–{to}</strong> dari <strong>{total}</strong> program
+      </span>
+      <div className="programs-pager__nav">
+        <button
+          type="button" className="programs-pager__btn"
+          disabled={page <= 1} onClick={() => onPage(page - 1)}
+          aria-label="Halaman sebelumnya"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 3 5 7l4 4" /></svg>
+        </button>
+        {nums.map((n, i) => n === 'gap'
+          ? <span key={`gap${i}`} className="programs-pager__gap" aria-hidden="true">…</span>
+          : (
+            <button
+              key={n} type="button"
+              className={`programs-pager__num${n === page ? ' programs-pager__num--active' : ''}`}
+              aria-current={n === page ? 'page' : undefined}
+              onClick={() => onPage(n)}
+            >
+              {n}
+            </button>
+          )
+        )}
+        <button
+          type="button" className="programs-pager__btn"
+          disabled={page >= pageCount} onClick={() => onPage(page + 1)}
+          aria-label="Halaman berikutnya"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 3 4 4-4 4" /></svg>
+        </button>
+      </div>
+    </nav>
+  )
+}
+
 // ── Main view ──────────────────────────────────────────────────────────────
 
 export function ProgramsView() {
@@ -172,7 +439,7 @@ export function ProgramsView() {
     programs, kpis, dashboard, selectedProgramId,
     loadOverview,
     normalizeHealthStatus, formatStatusLabel,
-    currentUser, apmsKpis,
+    currentUser, apmsKpis, programSummary,
   } = useWorkspace()
 
   const navigate = useInertiaNavigate()
@@ -212,6 +479,7 @@ export function ProgramsView() {
   const [laneSearch, setLaneSearch] = useState('')
   const [portfolioSearch, setPortfolioSearch] = useState('')
   const [approvalFilter, setApprovalFilter] = useState<'all' | 'needs_action'>('all')
+  const [portfolioPage, setPortfolioPage] = useState(1)
 
   // ── URL-driven filters from Context Panel (M6.1) ───────────────────────────
   // Status values in the URL stay human-readable (on_track | at_risk | terlambat)
@@ -677,6 +945,60 @@ export function ProgramsView() {
   }
   const riskPrograms = programs.filter(p => normalizeHealthStatus(p.healthStatus) === 'RED' || p.riskScore >= 15).length
 
+  // ── Portfolio insight panels (data dari programSummary, sama dgn Home) ──
+  // Fokus EKSEKUSI PROGRAM (bukan KPI/risiko) — Sebaran tenggat, Laju eksekusi,
+  // dan Kesehatan per divisi. Tidak ada query baru; semua derive dari payload.
+  const trendValues = (programSummary?.trendSeries ?? []).slice(-14).map(t => t.pctOnTrack)
+  const onTrackTrendDelta = trendValues.length >= 2
+    ? trendValues[trendValues.length - 1] - trendValues[0]
+    : null
+  // Horizon di-derive client-side dari programsForChart (bukan deadlineClusters
+  // backend) supaya bisa pisahkan bucket "Lewat" — di backend program overdue
+  // tertelan di "≤ 30 hari" (days <= 30 termasuk negatif), menyembunyikan yang
+  // paling genting. Tanpa ubah backend (Home tetap memakai cluster lama).
+  const horizonBars = (() => {
+    const chart = programSummary?.programsForChart ?? []
+    const defs: Array<{ label: string; test: (d: number | null) => boolean; forceRed?: boolean }> = [
+      { label: 'Lewat', test: d => d != null && d < 0, forceRed: true },
+      { label: '≤ 30 hari', test: d => d != null && d >= 0 && d <= 30 },
+      { label: '31–60 hari', test: d => d != null && d > 30 && d <= 60 },
+      { label: '61–90 hari', test: d => d != null && d > 60 && d <= 90 },
+      { label: '90+ hari', test: d => d != null && d > 90 },
+    ]
+    return defs.map(def => {
+      const items = chart.filter(p => def.test(p.daysRemaining))
+      const atRisk = items.filter(p => p.healthTone === 'at_risk' || p.healthTone === 'terlambat' || p.healthTone === 'overdue').length
+      const onTrack = items.filter(p => p.healthTone === 'on_track').length
+      const tone: Tone = def.forceRed ? 'red' : atRisk > 0 ? (atRisk >= onTrack ? 'red' : 'amber') : 'green'
+      return { label: def.label, value: items.length, tone, valueLabel: String(items.length) }
+    }).filter(c => c.value > 0)
+  })()
+  const momentum = programSummary?.momentum
+  const activeRatePct = momentum
+    ? Math.round((momentum.activeRate ?? 0) * (momentum.activeRate <= 1 ? 100 : 1))
+    : 0
+  const activeRateTone: Tone = activeRatePct >= 60 ? 'green' : activeRatePct >= 30 ? 'amber' : 'red'
+  const momentumStats = momentum ? [
+    { label: 'Selesai · 30 hari', value: momentum.programsCompletedLast30d, tone: 'green' as Tone },
+    { label: 'Baru · 30 hari', value: momentum.newProgramsLast30d, tone: 'neutral' as Tone },
+    { label: 'Task selesai · pekan ini', value: momentum.tasksCompletedThisWeek, tone: 'green' as Tone },
+    { label: 'Tertahan', value: momentum.stagnantCount, tone: (momentum.stagnantCount > 0 ? 'red' : 'green') as Tone },
+  ] : []
+  const divisiHealthRows = [...(programSummary?.byDivisi ?? [])]
+    .filter(d => d.unit.id !== null && d.total > 0)
+    .map(d => ({
+      code: d.unit.code.split('-')[0],
+      name: d.unit.name,
+      total: d.total,
+      onTrack: d.onTrack,
+      atRisk: d.atRisk,
+      terlambat: (d.terlambat ?? 0) + (d.overdue ?? 0),
+      selesai: d.selesai,
+    }))
+    .sort((a, b) => (b.terlambat - a.terlambat) || (b.total - a.total))
+    .slice(0, 6)
+  const showInsight = programs.length > 0 && !!programSummary
+
   const daysUntil = (dateStr: string) =>
     Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
 
@@ -706,6 +1028,25 @@ export function ProgramsView() {
     const matchesApproval = approvalFilter === 'all' || needsActionPrograms.some(n => n.id === p.id)
     return matchesSearch && matchesApproval && matchesUrlStatus(p)
   })
+
+  // ── Paginasi (List & Table) ───────────────────────────────────────────
+  const portfolioPageCount = Math.max(1, Math.ceil(filteredPortfolio.length / PORTFOLIO_PAGE_SIZE))
+  // Clamp render-time: filter yang menyusut bisa membuat page > pageCount.
+  const portfolioPageSafe = Math.min(portfolioPage, portfolioPageCount)
+  const pagedPortfolio = filteredPortfolio.slice(
+    (portfolioPageSafe - 1) * PORTFOLIO_PAGE_SIZE,
+    portfolioPageSafe * PORTFOLIO_PAGE_SIZE,
+  )
+  // Reset ke halaman 1 saat filter/search/URL berubah supaya tidak nyangkut di
+  // halaman kosong. `url` mencakup chip status & stale.
+  useEffect(() => { setPortfolioPage(1) }, [portfolioSearch, approvalFilter, url])
+  const goToPage = useCallback((p: number) => {
+    setPortfolioPage(p)
+    // Naik ke atas daftar saat ganti halaman — tanpa ini fokus tetap di pager bawah.
+    if (typeof document !== 'undefined') {
+      document.querySelector('.workspace__content')?.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [])
 
   const filteredLane = programs.filter(p =>
     (!laneSearch || p.name.toLowerCase().includes(laneSearch.toLowerCase()) ||
@@ -873,8 +1214,101 @@ export function ProgramsView() {
         </div>
       )}
 
+      {/* ── Portfolio insight row — 3 panel eksekusi (Horizon / Momentum /
+          Health per divisi). Data dari programSummary, primitive design-system.
+          Memperkaya halaman mendekati command center Home tanpa duplikasi:
+          fokus eksekusi program, bukan KPI/risiko. ───────────────────────── */}
+      {showInsight && (
+        <div className="programs-insight">
+          {/* Horizon tenggat — beban program aktif per jendela deadline */}
+          <div className="programs-insight__panel">
+            <header className="programs-insight__head">
+              <span className="programs-insight__eyebrow">Sebaran tenggat</span>
+              <span className="programs-insight__hint">program aktif</span>
+            </header>
+            {horizonBars.length > 0 ? (
+              <Bars bars={horizonBars} height={88} rich />
+            ) : (
+              <p className="programs-insight__empty">Tidak ada program aktif bertenggat.</p>
+            )}
+          </div>
+
+          {/* Momentum eksekusi — laju portfolio bergerak */}
+          <div className="programs-insight__panel">
+            <header className="programs-insight__head">
+              <span className="programs-insight__eyebrow">Laju eksekusi</span>
+            </header>
+            <div className="programs-insight__momentum">
+              <Donut
+                segments={[{ value: activeRatePct, tone: activeRateTone }]}
+                max={100}
+                size={60}
+                thickness={8}
+                rich
+                centerValue={`${activeRatePct}%`}
+              />
+              <div className="programs-insight__mtrend">
+                <span className="programs-insight__msub">program aktif bergerak</span>
+                {trendValues.length >= 2 && (
+                  <Sparkline values={trendValues} tone={activeRateTone} width={150} height={36} smooth />
+                )}
+                <span className="programs-insight__mcap">
+                  tren on-track · 14 hari
+                  {onTrackTrendDelta != null && <Delta value={onTrackTrendDelta} suffix="%" />}
+                </span>
+              </div>
+            </div>
+            {momentumStats.length > 0 && (
+              <div className="programs-insight__mstats">
+                {momentumStats.map(s => (
+                  <div key={s.label} className="programs-insight__mstat">
+                    <span className="programs-insight__mstat-val" data-tone={s.tone}>{s.value}</span>
+                    <span className="programs-insight__mstat-label">{s.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Health per divisi — komposisi On Track / At Risk / Terlambat */}
+          <div className="programs-insight__panel">
+            <header className="programs-insight__head">
+              <span className="programs-insight__eyebrow">Kesehatan per divisi</span>
+              {divisiHealthRows.length > 0 && (
+                <span className="programs-insight__hint">{divisiHealthRows.length} divisi</span>
+              )}
+            </header>
+            {divisiHealthRows.length > 0 ? (
+              <div className="programs-insight__divlist">
+                {divisiHealthRows.map(d => {
+                  const pct = (n: number) => `${(n / d.total) * 100}%`
+                  return (
+                    <div
+                      key={d.code}
+                      className="programs-insight__divrow"
+                      title={`${d.name} — ${d.onTrack} on track · ${d.atRisk} at risk · ${d.terlambat} terlambat · ${d.selesai} selesai · ${d.total} total`}
+                    >
+                      <span className="programs-insight__divcode">{d.code}</span>
+                      <span className="programs-insight__divbar" aria-hidden="true">
+                        {d.onTrack > 0 && <i className="programs-insight__seg programs-insight__seg--green" style={{ width: pct(d.onTrack) }} />}
+                        {d.atRisk > 0 && <i className="programs-insight__seg programs-insight__seg--amber" style={{ width: pct(d.atRisk) }} />}
+                        {d.terlambat > 0 && <i className="programs-insight__seg programs-insight__seg--red" style={{ width: pct(d.terlambat) }} />}
+                        {d.selesai > 0 && <i className="programs-insight__seg programs-insight__seg--done" style={{ width: pct(d.selesai) }} />}
+                      </span>
+                      <span className="programs-insight__divtotal">{d.total}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="programs-insight__empty">Belum ada data divisi.</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── Tabs ────────────────────────────────────────────────────────── */}
-      <nav className="programs-v2__tabs" role="tablist" aria-label="Program views">
+      <nav className="programs-v2__tabs scroll-tabs" role="tablist" aria-label="Program views">
         {([
           ['portfolio', 'Portofolio'],
           ['timeline',  'Timeline'],
@@ -970,10 +1404,10 @@ export function ProgramsView() {
             {tab === 'portfolio' && (
               <>
                 <div className="view-toggle">
-                  {(['list', 'kanban', 'table'] as PortfolioView[]).map(mode => (
+                  {(['list', 'kanban', 'table', 'map'] as PortfolioView[]).map(mode => (
                     <button key={mode} className={`view-toggle-btn${portfolioView === mode ? ' active' : ''}`}
                       onClick={() => setPortfolioView(mode)}>
-                      {mode === 'list' ? 'List' : mode === 'kanban' ? 'Board' : 'Table'}
+                      {mode === 'list' ? 'List' : mode === 'kanban' ? 'Board' : mode === 'table' ? 'Table' : 'Peta'}
                     </button>
                   ))}
                 </div>
@@ -1027,6 +1461,7 @@ export function ProgramsView() {
               {portfolioView === 'list' && (
                 <div className="section-block section-block--bare">
                   {filteredPortfolio.length > 0 ? (
+                    <>
                     <div className="program-roster">
                       <div className="program-roster__header" aria-hidden="true">
                         <div className="program-roster__header-main">
@@ -1039,7 +1474,7 @@ export function ProgramsView() {
                             kolom header benar-benar align dengan kolom konten. */}
                         <span className="program-roster__header-actions-spacer" aria-hidden="true" />
                       </div>
-                      {filteredPortfolio.map((prog) => {
+                      {pagedPortfolio.map((prog) => {
                         const health = normalizeHealthStatus(prog.healthStatus)
                         const sc = health === 'GREEN' ? 'on-track' : health === 'YELLOW' ? 'at-risk' : 'off-track'
                         const healthLabel = healthStatusLabel(health)
@@ -1170,6 +1605,14 @@ export function ProgramsView() {
                         )
                       })}
                     </div>
+                    <Pager
+                      page={portfolioPageSafe}
+                      pageCount={portfolioPageCount}
+                      total={filteredPortfolio.length}
+                      pageSize={PORTFOLIO_PAGE_SIZE}
+                      onPage={goToPage}
+                    />
+                    </>
                   ) : portfolioSearch ? (
                     <SectionState
                       tone="info" compact
@@ -1282,7 +1725,7 @@ export function ProgramsView() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredPortfolio.map(prog => {
+                      {pagedPortfolio.map(prog => {
                         const bCount = blockerCountByProgram[prog.id] ?? 0
                         const days = prog.targetEndDate ? daysUntil(prog.targetEndDate) : null
                         const deadlineInfo = days !== null ? formatDaysLabel(days) : null
@@ -1336,6 +1779,50 @@ export function ProgramsView() {
                       })}
                     </tbody>
                   </table>
+                  <Pager
+                    page={portfolioPageSafe}
+                    pageCount={portfolioPageCount}
+                    total={filteredPortfolio.length}
+                    pageSize={PORTFOLIO_PAGE_SIZE}
+                    onPage={goToPage}
+                  />
+                </div>
+              )}
+
+              {portfolioView === 'map' && (
+                <div className="section-block section-block--bare">
+                  {filteredPortfolio.length > 0 ? (
+                    <ProgramScatter
+                      programs={filteredPortfolio.map(prog => {
+                        const days = prog.targetEndDate ? daysUntil(prog.targetEndDate) : null
+                        return {
+                          id: prog.id,
+                          code: prog.code,
+                          name: prog.name,
+                          progressPercent: prog.progressPercent,
+                          health: normalizeHealthStatus(prog.healthStatus) as 'GREEN' | 'YELLOW' | 'RED',
+                          days,
+                          completed: (prog as { status?: string }).status === 'COMPLETED',
+                          owner: prog.owner?.name ?? null,
+                        }
+                      })}
+                      onOpen={(id) => navigate(`/programs/${id}`)}
+                    />
+                  ) : (
+                    <SectionState
+                      tone="info" compact
+                      icon={
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <circle cx="11" cy="11" r="7" />
+                          <path d="m20 20-4-4" />
+                        </svg>
+                      }
+                      title={portfolioSearch ? 'Tidak ditemukan' : 'Portfolio kosong'}
+                      text={portfolioSearch
+                        ? `Tidak ada program yang cocok dengan "${portfolioSearch}".`
+                        : 'Program akan muncul setelah data dimuat.'}
+                    />
+                  )}
                 </div>
               )}
 
