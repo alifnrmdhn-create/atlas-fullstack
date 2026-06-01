@@ -10,22 +10,33 @@
    * NEVER via background colors. Cards are elevated through border + shadow,
    * not through a different surface tint. */
 
-  /* Sidebar — DARK SURFACE in light mode (Stripe / SAP enterprise pattern).
-   * Premium corporate authority via deep navy slate. Brand green accent for
-   * active states + interactive elements. Text in slate-gray hierarchy. */
-  --sidebar-bg: #0E1525;
-  --sidebar-bg-end: #131B2D;
+  /* Sidebar — LIGHT SURFACE (2026-06-01 redesign): seamless with the workspace
+   * canvas, differentiated only by a right hairline (mockup "ChatGPT Image
+   * Jun 1"). Dark identity retained for dark theme (see [data-theme="dark"]).
+   * Text in slate-gray hierarchy; brand green carries the active state. */
+  /* OPSI B (2026-06-01): DARK SLATE RAIL di kedua tema (pola Stripe/Vercel) —
+   * rail gelap membingkai cockpit terang; brand hijau & data warna-warni pop.
+   * Sebelumnya rail terang #F7F8FA tapi menyatu dgn konten (pemisahan lemah). */
+  --sidebar-bg: #131C16;        /* deep green-charcoal — tint hijau brand tipis */
+  --sidebar-bg-end: #0E140F;    /* gradient halus → kedalaman, undertone hijau */
   --sidebar-border: rgba(255,255,255,0.07);
-  --sidebar-border-strong: rgba(255,255,255,0.12);
-  --sidebar-text: #94A3B8;
+  --sidebar-border-strong: rgba(255,255,255,0.12);  /* divider rail↔konten */
+  --sidebar-text: #9AA5B4;      /* nav item — slate-light, terbaca di gelap */
   --sidebar-text-strong: #F1F5F9;
-  --sidebar-text-muted: rgba(255,255,255,0.42);
-  --sidebar-text-active: #6EE7A1;
-  --sidebar-hover: rgba(255,255,255,0.04);
-  --sidebar-active-bg: rgba(45,140,62,0.20);
-  --sidebar-active-bg-strong: rgba(45,140,62,0.28);
+  --sidebar-text-muted: #79828F; /* group label */
+  --sidebar-text-active: #4ADE80; /* brand green menyala di gelap */
+  --sidebar-hover: rgba(255,255,255,0.06);
+  --sidebar-active-bg: rgba(74,222,128,0.13);
+  --sidebar-active-bg-strong: rgba(74,222,128,0.20);
   --sidebar-width: 224px;
   --sidebar-width-collapsed: 60px;
+  /* Surface overlays + dropdown chrome — white-ink utk rail gelap (kedua tema) */
+  --sidebar-overlay: rgba(255,255,255,0.05);
+  --sidebar-overlay-strong: rgba(255,255,255,0.10);
+  --sidebar-popover-bg: #1A2230;
+  --sidebar-popover-bg-end: #141B26;
+  --sidebar-popover-border: rgba(255,255,255,0.10);
+  --sidebar-popover-shadow: 0 18px 44px rgba(0,0,0,0.32), 0 4px 12px rgba(0,0,0,0.20);
 
   /* App surface — single foundation, minimal elevation system */
   --app-bg: #FFFFFF;            /* canvas — sidebar/topbar/workspace ALL share */
@@ -57,10 +68,9 @@
   --shell-card-shadow-strong:
     0 2px 6px rgba(15,20,40,0.05),
     0 10px 24px rgba(15,20,40,0.07);
-  --shell-sidebar-shadow:
-    0 2px 6px rgba(15,20,40,0.10),
-    0 14px 36px rgba(15,20,40,0.16),
-    inset 0 1px 0 rgba(255,255,255,0.04);
+  /* Flush light rail (2026-06-01) — no drop shadow; the right hairline is the
+   * only divider from the canvas. */
+  --shell-sidebar-shadow: none;
 
   /* Typography — scale */
   --type-display:    2rem;       /* 32px — page titles, hero */
@@ -252,6 +262,8 @@
   --z-modal: 9001;           /* dialog/modal content */
   --z-topbar: 9500;          /* app topbar (floats di atas modal) */
   --z-floating: 9600;        /* dropdown/popover di atas topbar */
+  --z-nav-scrim: 9700;       /* phone off-canvas scrim (≤640) — di atas topbar */
+  --z-nav-drawer: 9750;      /* phone off-canvas sidebar drawer (≤640) */
   --z-toast: 9999;           /* notif toast stack — paling atas */
 
   /* Spacing ladder — Tier 2 visual cleanup (2026-05-24).
@@ -323,11 +335,22 @@
   --sidebar-bg: #0A0A0B;             /* same as canvas */
   --sidebar-bg-end: #0A0A0B;         /* match top — no slate tinge from light-mode fallback */
   --sidebar-border: rgba(255,255,255,0.06);
+  --sidebar-border-strong: rgba(255,255,255,0.14);   /* pinned — :root is now light; crisper divider */
   --shell-canvas: #0A0A0B;           /* shell gutter — was missing in dark, fell back to #ECEEF3 light gray showing through */
   --sidebar-text: #737373;
+  --sidebar-text-strong: #F1F5F9;    /* pinned — :root is now dark ink for the light rail */
+  --sidebar-text-muted: rgba(255,255,255,0.42);      /* pinned */
   --sidebar-text-active: #34D399;
   --sidebar-hover: rgba(255,255,255,0.04);
   --sidebar-active-bg: rgba(52,211,153,0.10);
+  --sidebar-active-bg-strong: rgba(52,211,153,0.18); /* pinned */
+  /* Overlays + dropdown chrome — white-ink for the dark rail */
+  --sidebar-overlay: rgba(255,255,255,0.05);
+  --sidebar-overlay-strong: rgba(255,255,255,0.10);
+  --sidebar-popover-bg: #1A2235;
+  --sidebar-popover-bg-end: #131B2D;
+  --sidebar-popover-border: rgba(255,255,255,0.10);
+  --sidebar-popover-shadow: 0 20px 40px rgba(0,0,0,0.36), 0 4px 10px rgba(0,0,0,0.18);
 
   /* Brand green — matches --ds-brand-500/600. Earlier value (#34D399 mint)
    * was too saturated against pure-black canvas; primary CTAs read as
@@ -346,9 +369,11 @@
   --panel: #111114;                  /* elevated cards — slightly lifted from canvas */
   --panel-bg: #111114;
   --panel-border: rgba(255,255,255,0.08);
-  --panel-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 1px 4px rgba(0,0,0,0.4);
-  --panel-shadow-md: 0 0 0 1px rgba(255,255,255,0.06), 0 4px 12px rgba(0,0,0,0.4);
-  --panel-shadow-xl: 0 0 0 1px rgba(255,255,255,0.07), 0 12px 28px rgba(0,0,0,0.5);
+  /* 3 layer (ring + mid + ambient) — WAJIB sama jumlah layer dgn light, kalau
+   * tidak box-shadow tak bisa di-interpolasi saat ganti tema → snap (2026-06-01). */
+  --panel-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 1px 4px rgba(0,0,0,0.4), 0 8px 20px rgba(0,0,0,0.3);
+  --panel-shadow-md: 0 0 0 1px rgba(255,255,255,0.06), 0 4px 12px rgba(0,0,0,0.4), 0 16px 32px rgba(0,0,0,0.3);
+  --panel-shadow-xl: 0 0 0 1px rgba(255,255,255,0.07), 0 12px 28px rgba(0,0,0,0.5), 0 32px 60px rgba(0,0,0,0.4);
   --lift-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
 
   /* Shell card chrome (dark) — drop-only shadows; ring drawn via border */
@@ -358,10 +383,7 @@
   --shell-card-shadow-strong:
     0 2px 6px rgba(0,0,0,0.36),
     0 10px 24px rgba(0,0,0,0.42);
-  --shell-sidebar-shadow:
-    0 2px 6px rgba(0,0,0,0.40),
-    0 14px 36px rgba(0,0,0,0.50),
-    inset 0 1px 0 rgba(255,255,255,0.03);
+  --shell-sidebar-shadow: none;     /* flush rail — right hairline divides */
 
   --text: #B8C4D4;
   --text-strong: #E2E8F0;
@@ -664,6 +686,11 @@
  *
  * Skipped on initial hydration (no flash on page load). */
 @media (prefers-reduced-motion: no-preference) {
+  /* (A) Properti MURAH di semua elemen — color/bg/border/fill/stroke perlu
+   * sinkron & repaint-nya ringan. box-shadow SENGAJA tidak di sini: ia
+   * non-GPU + repaint penuh, jadi kalau dipasang di `*` (ratusan node: kartu,
+   * tiap <path> SVG donut/sparkline, ikon) → paint storm 160ms = frame drop.
+   * (2026-06-01: dipersempit, lihat rule B.) */
   .theme-transitioning,
   .theme-transitioning *,
   .theme-transitioning *::before,
@@ -674,7 +701,24 @@
       border-color 160ms cubic-bezier(0.4, 0, 0.2, 1),
       color 160ms cubic-bezier(0.4, 0, 0.2, 1),
       fill 160ms cubic-bezier(0.4, 0, 0.2, 1),
-      stroke 160ms cubic-bezier(0.4, 0, 0.2, 1),
+      stroke 160ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  /* (B) box-shadow HANYA di permukaan besar (jumlahnya sedikit) — cukup untuk
+   * kesan kedalaman tanpa membebani repaint. Specificity kelas > universal,
+   * jadi rule ini menang & menambahkan box-shadow utk node-node ini saja. */
+  .theme-transitioning .app-shell,
+  .theme-transitioning .sidebar,
+  .theme-transitioning .topbar,
+  .theme-transitioning .page-shell,
+  .theme-transitioning [class*="card"],
+  .theme-transitioning [class*="Card"],
+  .theme-transitioning [class*="panel"],
+  .theme-transitioning [class*="Panel"] {
+    transition:
+      background-color 160ms cubic-bezier(0.4, 0, 0.2, 1),
+      background 160ms cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 160ms cubic-bezier(0.4, 0, 0.2, 1),
+      color 160ms cubic-bezier(0.4, 0, 0.2, 1),
       box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1) !important;
   }
 }

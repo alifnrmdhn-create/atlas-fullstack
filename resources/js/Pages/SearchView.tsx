@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { InlineNotice, SectionState, SkeletonBlock, SkeletonStack } from '../components/ui'
@@ -30,6 +30,15 @@ export function SearchView() {
   const navigate = useInertiaNavigate()
 
   const [searchType, setSearchType] = useState('ALL')
+
+  // Deep-view entry: the ⌘K palette routes "lihat semua hasil" here with
+  // ?q=… — pre-fill the box and run the search once on mount so the page
+  // lands populated instead of empty.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('q')?.trim()
+    if (q) { setQuery(q); void runSearch(q, 'ALL') }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()

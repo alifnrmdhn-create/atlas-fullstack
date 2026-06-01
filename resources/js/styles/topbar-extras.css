@@ -135,6 +135,14 @@
   .topbar__action-btn { padding: 0 8px; }
 }
 
+/* Phone (≤640): page-action ber-ikon Plus collapse ke "+" telanjang yang kembar
+ * dengan quick-create "+" → redundan. Sembunyikan; creation tetap lewat
+ * quick-create menu. Action lain (Download/Ekspor dst) tetap tampil.
+ * Fase 3 mobile, 2026-06-01. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .topbar__action-btn[data-icon="Plus"] { display: none; }
+}
+
 /* Search-as-trigger: button styled like the original search input */
 .topbar__search--trigger {
   height: 32px;

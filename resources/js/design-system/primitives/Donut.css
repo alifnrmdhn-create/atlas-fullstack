@@ -38,7 +38,11 @@
 }
 
 /* Slice hover/click — pop out + dim others (handled inline); center swaps. */
-.ds-donut__arc { transition: stroke-width 160ms ease, opacity 160ms ease; }
+.ds-donut__arc { transition: stroke-width 160ms ease, opacity 160ms ease, filter 160ms ease; }
+
+/* Rich variant — larger, bolder center readout. */
+.ds-donut--rich .ds-donut__value { font-size: var(--ds-text-28); font-weight: var(--ds-weight-semibold); }
+.ds-donut--rich .ds-donut__label { font-size: var(--ds-text-13); }
 
 /* No transform-based mount animation (scroll-repaint ghosting — see
  * HomeView.css note). Slice hover transition is fine (runs on hover only). */

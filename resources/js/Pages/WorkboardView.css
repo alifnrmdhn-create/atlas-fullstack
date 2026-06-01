@@ -170,6 +170,20 @@
   color: var(--ds-red-600);
 }
 
+/* Phone (≤640): stat-chip row tadinya inline-flex tanpa wrap → "0 sel…" clip
+ * di tepi kanan. Wrap penuh + buang border-left/padding kiri (divider tak
+ * relevan saat chips pindah ke baris sendiri). Fase 3 mobile, 2026-06-01. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .workboard-v2 .view-toolbar__stats,
+  .workboard-v2 .wb-stats {
+    flex-wrap: wrap;
+    width: 100%;
+    border-left: 0;
+    padding-left: 0;
+    gap: 10px 16px;
+  }
+}
+
 /* ─── Role badge ────────────────────────────────────────── */
 
 .workboard-v2 .role-monitoring-badge {

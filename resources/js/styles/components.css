@@ -535,7 +535,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--sidebar-bg);
+  /* Deep navy brand bg — pinned literal because --sidebar-bg is now the light
+   * rail surface (2026-06-01). Login keeps its dark identity. */
+  background: #0E1525;
   padding: 24px;
 }
 .auth-card {

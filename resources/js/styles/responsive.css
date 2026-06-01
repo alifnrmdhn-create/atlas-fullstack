@@ -5,6 +5,29 @@
   .search-workspace, .presence-workspace { grid-template-columns: 1fr; }
 }
 
+/* ── Scroll-tabs utility (Fase 2 mobile, 2026-06-01) ───────────────────────
+ * Strip tab/segmented yang muat di desktop tapi clip di phone (Programs,
+ * ProgramDetail, Jadwal — lihat docs/mobile-phone-support-plan-2026-06.md).
+ * Tambah class `scroll-tabs` ke container tab → di ≤640 jadi satu baris
+ * scrollable horizontal (momentum + snap), scrollbar disembunyikan. Item tak
+ * boleh menyusut. Desktop (≥641) sama sekali tidak berubah. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .scroll-tabs {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scroll-tabs::-webkit-scrollbar { display: none; }
+  .scroll-tabs > * {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    SHARED UTILITY CLASSES (used by ChannelsView + components/ui)
 ═══════════════════════════════════════════════════════════════ */

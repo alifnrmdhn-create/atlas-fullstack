@@ -97,7 +97,7 @@ class OrganizationController extends Controller
         $programs = $programQuery
             ->select([
                 'id', 'code', 'name', 'ownerId', 'ownerUnitId', 'submittedById',
-                'healthStatus', 'status',
+                'healthStatus', 'status', 'priority',
                 'startDate', 'targetEndDate', 'progressPercent', 'approvalStatus', 'updatedAt',
                 'kelompok', 'pilarStrategis', 'progresTerkini', 'dukunganDibutuhkan',
             ])
@@ -411,6 +411,7 @@ class OrganizationController extends Controller
                     'timeElapsedPct'     => $timeElapsedPct,
                     'daysIdle'           => $updatedAt ? (int) $updatedAt->diffInDays($now) : null,
                     'ownerName'          => $p['owner']['name'] ?? null,
+                    'priority'           => $p['priority'] ?? null,
                     'taskTotal'          => (int) ($taskCountsByProgram[$p['id']]->total ?? 0),
                     'taskDone'           => (int) ($taskCountsByProgram[$p['id']]->done ?? 0),
                     'progresTerkini'     => $p['progresTerkini'] ?? null,

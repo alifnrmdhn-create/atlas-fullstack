@@ -694,6 +694,7 @@ export type ProgramSummaryPayload = {
     timeElapsedPct?: number | null
     daysIdle?: number | null
     ownerName?: string | null
+    priority?: string | null
     taskTotal?: number
     taskDone?: number
     progresTerkini?: string | null

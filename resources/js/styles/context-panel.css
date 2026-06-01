@@ -427,3 +427,18 @@
   }
   .context-panel { display: none; }
 }
+
+/* Phone (≤640): sidebar sudah jadi off-canvas drawer (position:fixed, keluar
+ * grid — lihat shell.css "Phone off-canvas shell"). Karena di phone shell TIDAK
+ * pakai .app-shell--collapsed, rule 900px di atas memberi `--sidebar-width 1fr`
+ * → kolom sidebar 224px KOSONG + workspace menyusut. Paksa single-column.
+ * Selector di-compound (.app-shell--mobile + ...) supaya menang specificity.
+ * Fase 3 mobile, 2026-06-01. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .app-shell--mobile.app-shell--with-panel,
+  .app-shell--mobile.app-shell--with-panel.app-shell--collapsed,
+  .app-shell--mobile.app-shell--with-panel:has(.context-panel--collapsed),
+  .app-shell--mobile.app-shell--with-panel.app-shell--collapsed:has(.context-panel--collapsed) {
+    grid-template-columns: 1fr;
+  }
+}

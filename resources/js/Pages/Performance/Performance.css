@@ -177,6 +177,25 @@
   .perf__cols-2 { grid-template-columns: 1fr; }
 }
 
+/* Phone (≤640): header tadinya flex sebaris tanpa wrap — title + summary
+ * ("102.7% rata-rata · N direktorat") + period pill min-content > lebar layar
+ * → overflow halaman (gap kosong di kanan + pill kepotong). Wrap + lepas
+ * divider/margin summary saat pindah baris. Fase 3 mobile, 2026-06-01. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .perf__header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .perf__header-summary {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: 0;
+    flex-wrap: wrap;
+  }
+  .perf__header-actions { margin-left: 0; }
+}
+
 /* ─── Subject header card (Direktur / Divisi / Individu) ──── */
 
 /* Compressed hero — was ~280px tall, now ~180px. Same info density,
@@ -868,6 +887,18 @@
 .perf-rank-bar__value[data-tone="green"] { color: var(--ds-green-600); }
 .perf-rank-bar__value[data-tone="amber"] { color: var(--ds-amber-600); }
 .perf-rank-bar__value[data-tone="red"]   { color: var(--ds-red-600); }
+
+/* Phone (≤640): grid min ~372px (24 + 140 + 180 + gap) > lebar konten ~342px
+ * → kolom bar viz overflow tepi kanan. Perkecil mins + gap supaya muat; nama
+ * tetap truncate (min-width:0), bar tetap kelihatan. Fase 3 mobile, 2026-06-01. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .perf-rank-bar {
+    grid-template-columns: 22px minmax(0, 1fr) minmax(96px, 1fr);
+    gap: 10px;
+  }
+  .perf-rank-bar__viz { gap: 8px; }
+  .perf-rank-bar__value { min-width: 0; }
+}
 
 /* ─── Section head with meta ──────────────────────────── */
 

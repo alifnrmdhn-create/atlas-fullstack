@@ -107,11 +107,17 @@
   display: flex;
   align-items: stretch;
   gap: 0;
-  margin: 4px 0 24px;
+  /* Bagian atas dari satu band dashboard flat — border-bottom dihapus supaya
+     menyatu dengan baris panel (.programs-insight) di bawahnya. */
+  margin: 4px 0 0;
   padding: 18px 0;
   border-top: 1px solid var(--ds-border-subtle);
-  border-bottom: 1px solid var(--ds-border-subtle);
   flex-wrap: wrap;
+}
+/* Sel glance dibuat 3 kolom setara agar sejajar dgn 3 panel di bawah & tidak
+   menyisakan ruang kosong di kanan. */
+.programs-v2 .programs-v2__hero-stats > .programs-v2__stat {
+  flex: 1 1 0;
 }
 
 .programs-v2 .programs-v2__stat {
@@ -610,6 +616,22 @@
   transform: translateY(-50%);
   color: var(--ds-text-tertiary);
   pointer-events: none;
+}
+
+/* Phone (≤640): toolbar view-group ambil 1 baris penuh, search turun
+ * full-width di bawah segmented (sebelumnya flex-shrink:0 → search overflow
+ * tepi kanan). Fase 2 mobile, 2026-06-01. Desktop tak berubah. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .programs-v2 .programs-controls__view {
+    flex-shrink: 1;
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 8px;
+  }
+  .programs-v2 .programs-search {
+    flex: 1 1 100%;
+    max-width: none;
+  }
 }
 
 .programs-v2 .programs-search__input {
@@ -1478,4 +1500,343 @@
   background: var(--ds-surface-card);
   border-color: var(--ds-border-strong);
   color: var(--ds-text-primary);
+}
+
+/* ── Peta Programs — portfolio scatter ───────────────────────────────────
+   Bidang dua-sumbu (progres × tekanan waktu). Pure SVG, di-scale via CSS.
+   Dipindah dari peta portfolio Home; di sini fokus seluruh portofolio. */
+.program-scatter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-2) 0 var(--ds-space-1);
+}
+
+.program-scatter__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Plot tetap proporsional namun tidak terlalu jangkung di layar lebar. */
+  max-height: 560px;
+  overflow: visible;
+}
+
+.program-scatter__frame {
+  fill: none;
+  stroke: var(--ds-border-subtle);
+  stroke-width: 1;
+}
+.program-scatter__div {
+  stroke: var(--ds-border-subtle);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+/* Label kuadran — kalem, biar titik yang jadi bintang. */
+.program-scatter__zone {
+  font-size: 11px;
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  fill: var(--ds-text-tertiary);
+  /* Halo tipis warna kanvas — label tetap terbaca walau ada titik di belakang. */
+  paint-order: stroke;
+  stroke: var(--ds-surface-card);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+.program-scatter__zone-n {
+  font-weight: var(--ds-weight-bold, 700);
+  font-size: 12px;
+}
+.program-scatter__zone--danger { fill: var(--ds-red-500); fill-opacity: 0.72; }
+.program-scatter__zone--push   { fill: var(--ds-amber-500); fill-opacity: 0.78; }
+.program-scatter__zone--safe   { fill: var(--ds-green-500); fill-opacity: 0.72; }
+.program-scatter__zone--early  { fill: var(--ds-text-tertiary); }
+
+.program-scatter__axt {
+  font-size: 10.5px;
+  font-weight: var(--ds-weight-medium);
+  fill: var(--ds-text-tertiary);
+  font-family: var(--ds-font-mono);
+}
+.program-scatter__axlabel {
+  font-size: 11px;
+  font-weight: var(--ds-weight-medium);
+  letter-spacing: 0.02em;
+  fill: var(--ds-text-secondary);
+}
+
+.program-scatter__dot {
+  cursor: pointer;
+  transition: r 120ms ease, fill-opacity 120ms ease, stroke-width 120ms ease;
+}
+.program-scatter__dot:focus-visible {
+  outline: 2px solid var(--ds-border-focus);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+/* Kartu hover — kontras tinggi, melayang di atas sebaran. */
+.program-scatter__tip-bg {
+  fill: var(--ds-surface-card);
+  stroke: var(--ds-border-default);
+  stroke-width: 1;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.12));
+}
+.program-scatter__tip-code {
+  font-family: var(--ds-font-mono);
+  font-size: 10.5px;
+  font-weight: var(--ds-weight-medium);
+  fill: var(--ds-text-tertiary);
+  letter-spacing: 0.02em;
+}
+.program-scatter__tip-name {
+  font-size: 12.5px;
+  font-weight: var(--ds-weight-semibold);
+  fill: var(--ds-text-primary);
+}
+.program-scatter__tip-meta {
+  font-size: 11px;
+  fill: var(--ds-text-secondary);
+}
+
+.program-scatter__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-4);
+  padding: 0 var(--ds-space-1);
+}
+.program-scatter__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-secondary);
+}
+.program-scatter__legend-item i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.program-scatter__legend-hint {
+  margin-left: auto;
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-tertiary);
+  font-style: italic;
+}
+
+/* ── Pager — paginasi List & Table ───────────────────────────────────────── */
+.programs-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-4) var(--ds-space-1) var(--ds-space-2);
+  border-top: 1px solid var(--ds-border-subtle);
+  margin-top: var(--ds-space-2);
+}
+.programs-pager__range {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+}
+.programs-pager__range strong {
+  color: var(--ds-text-secondary);
+  font-weight: var(--ds-weight-semibold);
+}
+.programs-pager__nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.programs-pager__btn,
+.programs-pager__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  background: transparent;
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-md);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.programs-pager__btn:hover:not(:disabled),
+.programs-pager__num:hover {
+  background: var(--ds-surface-sunken);
+  border-color: var(--ds-border-strong);
+  color: var(--ds-text-primary);
+}
+.programs-pager__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.programs-pager__num--active,
+.programs-pager__num--active:hover {
+  background: var(--ds-brand-600, var(--ds-green-500));
+  border-color: var(--ds-brand-600, var(--ds-green-500));
+  color: #fff;
+}
+.programs-pager__gap {
+  min-width: 18px;
+  text-align: center;
+  color: var(--ds-text-tertiary);
+  font-size: var(--ds-text-13);
+  user-select: none;
+}
+
+/* ── Portfolio insight row — 3 panel eksekusi (Horizon/Momentum/Divisi) ───
+   Auto-fit grid: wrap natural tanpa @media (tidak nambah breakpoint liar). */
+.programs-insight {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 0;
+  /* Bagian bawah band dashboard: flat, dipisah dari glance oleh satu hairline
+     (border-top), ditutup border-bottom. Tanpa kotak/shadow → satu bahasa
+     visual dengan strip & list (Pattern A). */
+  margin: 0 0 var(--ds-space-6);
+  padding: var(--ds-space-5) 0;
+  border-top: 1px solid var(--ds-border-subtle);
+  border-bottom: 1px solid var(--ds-border-subtle);
+}
+.programs-insight__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+  min-width: 0;
+  padding: 0 28px;
+}
+.programs-insight__panel:first-child { padding-left: 0; }
+.programs-insight__panel:last-child { padding-right: 0; }
+.programs-insight__panel + .programs-insight__panel {
+  border-left: 1px solid var(--ds-border-subtle);
+}
+.programs-insight__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ds-space-2);
+}
+.programs-insight__eyebrow {
+  font-size: var(--ds-text-11);
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ds-text-secondary);
+}
+.programs-insight__hint {
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-tertiary);
+}
+.programs-insight__empty {
+  margin: 0;
+  padding: var(--ds-space-4) 0;
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+}
+
+/* Momentum — donut + tren */
+.programs-insight__momentum {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-4);
+}
+.programs-insight__mtrend {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.programs-insight__msub {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-secondary);
+}
+.programs-insight__mcap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-tertiary);
+}
+.programs-insight__mstats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--ds-space-2) var(--ds-space-4);
+  padding-top: var(--ds-space-3);
+  border-top: 1px solid var(--ds-border-subtle);
+}
+.programs-insight__mstat {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.programs-insight__mstat-val {
+  font-size: var(--ds-text-16);
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-text-primary);
+}
+.programs-insight__mstat-val[data-tone="green"] { color: var(--ds-green-600, var(--ds-green-500)); }
+.programs-insight__mstat-val[data-tone="red"]   { color: var(--ds-red-600, var(--ds-red-500)); }
+.programs-insight__mstat-label {
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-tertiary);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Health per divisi — stacked composition bar per baris */
+.programs-insight__divlist {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.programs-insight__divrow {
+  display: grid;
+  grid-template-columns: 48px 1fr 28px;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+.programs-insight__divcode {
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-11);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
+  letter-spacing: 0.02em;
+}
+.programs-insight__divbar {
+  display: flex;
+  height: 9px;
+  border-radius: var(--ds-radius-pill);
+  overflow: hidden;
+  background: var(--ds-surface-sunken);
+}
+.programs-insight__seg {
+  display: block;
+  height: 100%;
+}
+.programs-insight__seg + .programs-insight__seg {
+  border-left: 1px solid var(--ds-surface-card);
+}
+.programs-insight__seg--green { background: var(--ds-green-500); }
+.programs-insight__seg--amber { background: var(--ds-amber-500); }
+.programs-insight__seg--red   { background: var(--ds-red-500); }
+.programs-insight__seg--done  { background: var(--ds-border-strong); }
+.programs-insight__divtotal {
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-text-primary);
+  text-align: right;
 }

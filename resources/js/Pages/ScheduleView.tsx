@@ -895,7 +895,7 @@ export function ScheduleView() {
           )}
         </div>
 
-        <div className="view-toggle schedule-toolbar__filters">
+        <div className="view-toggle schedule-toolbar__filters scroll-tabs">
           {(['upcoming', 'completed', 'mine', 'person', 'decisions'] as FilterMode[]).map(f => (
             <button
               key={f}

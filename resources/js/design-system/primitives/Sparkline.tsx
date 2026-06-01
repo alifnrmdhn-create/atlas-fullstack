@@ -20,7 +20,27 @@ export interface SparklineProps {
   areaFill?: boolean
   /** Highlight the most recent point with a dot (Tufte). */
   lastDot?: boolean
+  /** Smooth the line with a Catmull-Rom curve (flowing, not angular). */
+  smooth?: boolean
   className?: string
+}
+
+/* Catmull-Rom → cubic bezier smoothing for an organic, non-stiff line. */
+function smoothLine(coords: ReadonlyArray<readonly [number, number]>): string {
+  if (coords.length < 2) return ''
+  let d = `M ${coords[0][0].toFixed(1)} ${coords[0][1].toFixed(1)}`
+  for (let i = 0; i < coords.length - 1; i++) {
+    const p0 = coords[i - 1] ?? coords[i]
+    const p1 = coords[i]
+    const p2 = coords[i + 1]
+    const p3 = coords[i + 2] ?? p2
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6
+    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`
+  }
+  return d
 }
 
 /**
@@ -35,6 +55,7 @@ export function Sparkline({
   height = 40,
   areaFill = true,
   lastDot = true,
+  smooth = false,
   className,
 }: SparklineProps) {
   const gradId = useId().replace(/:/g, '')
@@ -51,8 +72,8 @@ export function Sparkline({
     const y = height - ((v - min) / range) * (height - padY * 2) - padY
     return [x, y] as const
   })
-  const line = coords.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
-  const area = `${line} ${width.toFixed(1)},${height.toFixed(1)} 0,${height.toFixed(1)}`
+  const lineD = smooth ? smoothLine(coords) : `M ${coords.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(' L ')}`
+  const areaD = `${lineD} L ${width.toFixed(1)} ${height.toFixed(1)} L 0 ${height.toFixed(1)} Z`
   const [lastX, lastY] = coords[coords.length - 1]
 
   return (
@@ -72,11 +93,11 @@ export function Sparkline({
               <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
             </linearGradient>
           </defs>
-          <polygon points={area} fill={`url(#spk-${gradId})`} stroke="none" />
+          <path d={areaD} fill={`url(#spk-${gradId})`} stroke="none" />
         </>
       )}
-      <polyline
-        points={line}
+      <path
+        d={lineD}
         fill="none"
         stroke="currentColor"
         strokeWidth={1.75}

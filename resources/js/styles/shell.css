@@ -1,15 +1,16 @@
-/* ─── AppShell — FLOATING PANEL pattern (Stripe Dashboard) ───────────────
- * Both sidebar & workspace are lifted panels with border-radius + shadow.
- * Canvas (--app-bg) shows through as a subtle gutter around panels. */
+/* ─── AppShell — SEAMLESS CANVAS (2026-06-01) ────────────────────────────
+ * Sidebar + workspace sit edge-to-edge on one surface (--app-bg). The only
+ * chrome is the sidebar's right hairline + the inner content cards. Replaces
+ * the Stripe floating-panel pattern (12px gutter over --shell-canvas). */
 .app-shell {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
-  column-gap: 12px;
-  padding: 12px;
+  column-gap: 0;
+  padding: 0;
   height: 100vh;
   overflow: hidden;
   transition: grid-template-columns 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  background: var(--shell-canvas);
+  background: var(--app-bg);
   animation: app-shell-enter 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 /* HATI-HATI 2026-05-19: keyframe ini DULU pakai transform: scale(0.99) → scale(1).
@@ -55,6 +56,10 @@
   }
   .topbar__cmdk-placeholder,
   .topbar__cmdk kbd { display: none; }
+  /* User chip jadi avatar-only di viewport sempit — hemat ruang topbar */
+  .topbar__avatar-name,
+  .topbar__avatar-chev { display: none; }
+  .topbar__avatar-btn { padding: 2px; }
 }
 
 /* Viewport sangat sempit (tablet portrait): tambahan reduksi */
@@ -64,9 +69,80 @@
   .topbar__meta-date { display: none; }
 }
 
-/* ══ Sidebar — DARK FLOATING PANEL (Stripe Dashboard pattern) ════════════
- * Lifted dark navy slate panel with border-radius + drop shadow + full border.
- * Sits on light canvas with subtle gutter all around. */
+/* ══ Phone off-canvas shell (≤640 = --bp-sm) — Fase 1 mobile, 2026-06-01 ══════
+ * Di phone, sidebar KELUAR dari grid lalu jadi drawer slide-in di atas scrim;
+ * hamburger di topbar yang toggle. Desktop ≥641 sama sekali tidak berubah.
+ * Drawer transform ada di `.sidebar` (BUKAN `.app-shell`) supaya tidak bikin
+ * containing block untuk position:fixed — lihat catatan keras di blok
+ * @keyframes app-shell-enter di atas. Rencana: docs/mobile-phone-support-plan-2026-06.md */
+
+/* Hamburger: hidden di desktop, flex di phone (via media di bawah). */
+.topbar__hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-right: auto; /* dorong sisa actions topbar ke kanan */
+  flex-shrink: 0;
+  border: 1px solid var(--panel-border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+.topbar__hamburger:hover { background: var(--surface-3, var(--surface-2)); }
+.topbar__hamburger:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* Scrim — selalu di DOM saat phone, opacity-toggle (anti layout thrash). */
+.app-shell__scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+  z-index: var(--z-nav-scrim);
+}
+
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  /* Sidebar keluar grid → workspace full-width. */
+  .app-shell--mobile { grid-template-columns: 1fr; }
+
+  .app-shell--mobile .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(82vw, 300px);
+    transform: translateX(-100%);
+    transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: var(--z-nav-drawer);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+  .app-shell--mobile.app-shell--nav-open .sidebar { transform: translateX(0); }
+
+  .app-shell--nav-open .app-shell__scrim {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .topbar__hamburger { display: inline-flex; }
+
+  /* Topbar respect notch + sedikit rapatkan padding di phone. */
+  .topbar {
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+    gap: 8px;
+  }
+}
+
+/* ══ Sidebar — FLUSH LIGHT RAIL (2026-06-01) ═════════════════════════════
+ * Seamless with the canvas; divided only by a right hairline. Light surface
+ * in light theme, dark navy in dark theme (token-driven). No radius / drop
+ * shadow — it is no longer a floating panel. */
 .sidebar {
   background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-end) 100%);
   color: var(--sidebar-text);
@@ -75,8 +151,9 @@
   overflow: hidden;
   z-index: var(--z-sidebar);
   height: 100%;
-  border-radius: var(--shell-card-radius);
-  border: 1px solid var(--sidebar-border-strong);
+  border-radius: 0;
+  border: 0;
+  border-right: 1px solid var(--sidebar-border-strong);
   box-shadow: var(--shell-sidebar-shadow);
 }
 
@@ -168,15 +245,14 @@
 .sidebar__brand-title {
   font-size: 14px;
   font-weight: 700;
+  /* Solid theme-aware ink (2026-06-01) — was a white→green gradient clip that
+   * vanished on the light rail. --sidebar-text-strong is dark on light, light
+   * on dark. */
   color: var(--sidebar-text-strong);
   white-space: nowrap;
   letter-spacing: 0.10em;
   line-height: 1.15;
   font-feature-settings: 'cv11' on, 'ss01' on;
-  background: linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, #ffffff 78%, var(--ptpn-green) 22%) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 .sidebar__brand-tagline {
   font-size: 9.5px;
@@ -191,180 +267,8 @@
 .sidebar__brand-sub {
   display: none;
 }
-.sidebar__footer {
-  border-top: 1px solid var(--sidebar-border);
-  padding: 6px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  position: relative; /* containing block for .sidebar__user-popover */
-}
 
-/* User mini-card — Slack/Linear/Notion footer pattern. Click → opens menu */
-.sidebar__user-card {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 9px;
-  background: transparent;
-  border: 0;
-  border-radius: 9px;
-  cursor: pointer;
-  text-align: left;
-  color: var(--sidebar-text-strong);
-  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-}
-.sidebar__user-card:hover {
-  background: rgba(255,255,255,0.05);
-}
-.sidebar__user-card[aria-expanded="true"] {
-  background: var(--sidebar-active-bg);
-}
-.sidebar__user-card:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.sidebar__user-card-avatar {
-  position: relative;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--ptpn-green) 0%, color-mix(in srgb, var(--ptpn-green) 70%, #0a4d20 30%) 100%);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  flex-shrink: 0;
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.10),
-    0 4px 10px color-mix(in srgb, var(--ptpn-green) 32%, transparent),
-    inset 0 1px 0 rgba(255,255,255,0.18);
-  font-feature-settings: 'cv11' on;
-  letter-spacing: 0.02em;
-}
-.sidebar__user-card-status {
-  position: absolute;
-  right: -1px;
-  bottom: -1px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #22c55e;
-  border: 1.5px solid var(--sidebar-bg-end);
-  box-shadow: 0 0 0 2px color-mix(in srgb, #22c55e 28%, transparent), 0 0 8px color-mix(in srgb, #22c55e 50%, transparent);
-}
-.sidebar__user-card-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  overflow: hidden;
-  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms;
-}
-.sidebar__user-card-name {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--sidebar-text-strong);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.2;
-}
-.sidebar__user-card-role {
-  font-size: 10.5px;
-  font-weight: 500;
-  color: var(--sidebar-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.2;
-}
-.sidebar__user-card-chev {
-  color: var(--sidebar-text-muted);
-  opacity: 0.6;
-  flex-shrink: 0;
-  transition: opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.sidebar__user-card:hover .sidebar__user-card-chev { opacity: 1; }
-
-/* User dropdown — dark surface matching sidebar */
-.sidebar__user-popover {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 6px;
-  right: 6px;
-  background: linear-gradient(180deg, #1a2235 0%, #131b2d 100%);
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: var(--radius-lg);
-  box-shadow:
-    0 20px 40px rgba(0,0,0,0.36),
-    0 4px 10px rgba(0,0,0,0.18),
-    inset 0 1px 0 rgba(255,255,255,0.06);
-  z-index: var(--z-popover);
-  overflow: hidden;
-  animation: fade-in 140ms var(--ease-enter);
-}
-.sidebar__user-popover-identity {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 13px;
-  background: linear-gradient(135deg,
-    color-mix(in srgb, var(--ptpn-green) 14%, transparent) 0%,
-    transparent 100%);
-}
-.sidebar__user-popover-identity strong { display: block; font-size: 12.5px; font-weight: 700; color: var(--sidebar-text-strong); }
-.sidebar__user-popover-identity span { display: block; font-size: 11px; color: var(--sidebar-text-muted); margin-top: 2px; }
-.sidebar__user-popover-avatar {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, var(--ptpn-green) 0%, color-mix(in srgb, var(--ptpn-green) 70%, #0a4d20 30%) 100%);
-  color: #ffffff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  flex-shrink: 0;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.10), inset 0 1px 0 rgba(255,255,255,0.18);
-}
-.sidebar__user-popover-divider { height: 1px; background: rgba(255,255,255,0.06); }
-.sidebar__user-popover-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 9px 13px;
-  background: none;
-  border: none;
-  font-size: 0.84rem;
-  color: var(--sidebar-text);
-  cursor: pointer;
-  text-align: left;
-  transition: background var(--transition), color var(--transition);
-}
-.sidebar__user-popover-item:hover { background: rgba(255,255,255,0.05); color: var(--sidebar-text-strong); }
-.sidebar__user-popover-item--danger { color: #fca5a5; }
-.sidebar__user-popover-item--danger:hover { background: rgba(239,68,68,0.14); color: #fecaca; }
-.sidebar__user-popover-item-kbd {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 600;
-  color: var(--sidebar-text-muted);
-  letter-spacing: 0.04em;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-
-.sidebar__item:focus-visible,
-.sidebar__user-card:focus-visible {
+.sidebar__item:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
@@ -382,12 +286,12 @@
   scrollbar-color: transparent transparent;
   transition: scrollbar-color 200ms ease;
 }
-.sidebar__nav:hover { scrollbar-color: rgba(255,255,255,0.12) transparent; }
+.sidebar__nav:hover { scrollbar-color: var(--sidebar-overlay-strong) transparent; }
 .sidebar__nav::-webkit-scrollbar { width: 4px; }
 .sidebar__nav::-webkit-scrollbar-track { background: transparent; }
 .sidebar__nav::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; transition: background 200ms ease; }
-.sidebar__nav:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
-.sidebar__nav:hover::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+.sidebar__nav:hover::-webkit-scrollbar-thumb { background: var(--sidebar-overlay-strong); }
+.sidebar__nav:hover::-webkit-scrollbar-thumb:hover { background: var(--sidebar-text-muted); }
 .sidebar__group { display: flex; flex-direction: column; gap: 3px; }
 
 /* Fokus — ungrouped top item */
@@ -408,37 +312,24 @@
   opacity: 0.55;
 }
 .sidebar__group-label {
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 600;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--sidebar-text-muted);
   padding: 0 14px 6px;
   white-space: nowrap;
   overflow: hidden;
   transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 70ms;
-  opacity: 0.85;
+  opacity: 0.7;
   display: flex;
   align-items: center;
   gap: 7px;
 }
-/* PDCA section accent — slim 2px vertical bar di kiri label.
- * Aligned to label cap height (8px) with subtle rounded ends. */
-.sidebar__group-label::before {
-  content: '';
-  width: 2px;
-  height: 8px;
-  border-radius: 2px;
-  background: var(--ptpn-green);
-  opacity: 0.7;
-  flex-shrink: 0;
-}
-.sidebar__group--plan .sidebar__group-label::before    { background: var(--blue); }
-.sidebar__group--do .sidebar__group-label::before      { background: var(--yellow); }
-.sidebar__group--check .sidebar__group-label::before   { background: var(--ptpn-green); }
-.sidebar__group--act .sidebar__group-label::before     { background: var(--red); }
-.sidebar__group--utility .sidebar__group-label::before { background: var(--text-muted); opacity: 0.4; }
-.sidebar__group--admin .sidebar__group-label::before   { background: var(--text-muted); opacity: 0.35; }
+/* Modernisasi 2026-06-01: bar warna PDCA dihapus — sisa skema PDCA yang sudah
+ * usang (sidebar kini intent-based, bukan PDCA) + kombinasi caps/spasi-lebar/
+ * dot-warna = sinyal template-admin lama. Label diperhalus (spasi rapat,
+ * opacity turun) ala Linear/Vercel. ::before disisakan kalau perlu divider. */
 
 /* Nav item — Linear/Notion-style restraint:
  *   - default: muted text + faint icon
@@ -484,7 +375,8 @@
   width: 2.5px;
   border-radius: 0 2px 2px 0;
   background: var(--ptpn-green);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--ptpn-green) 55%, transparent);
+  /* Glow neon dihapus 2026-06-01 — terbaca "gamer/2020". Bar tipis solid =
+   * aksen identitas yang cukup, lebih restrained (Linear-style). */
 }
 .sidebar__item--active:hover {
   background: linear-gradient(135deg,
@@ -533,12 +425,55 @@
 .sidebar__item--utility:hover,
 .sidebar__item--utility.sidebar__item--active { opacity: 1; }
 
+/* Footer — rak utilitas ikon-only (2026-06-01): Bantuan & Panduan + toggle tema.
+ * Expanded = baris rata kiri (ikon pertama sejajar kolom ikon nav ~26px dari tepi);
+ * collapsed = tumpuk vertikal + center. Sengaja kalem (muted, no fill/border). */
+.sidebar__footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--sidebar-border);
+  padding: 6px 8px 8px 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2px;
+}
+.app-shell--collapsed .sidebar__footer {
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 6px 8px;
+  gap: 4px;
+}
+.sidebar__util-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sidebar-text-muted);
+  opacity: 0.7;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 140ms cubic-bezier(0.4, 0, 0.2, 1), color 140ms cubic-bezier(0.4, 0, 0.2, 1), opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sidebar__util-btn:hover {
+  background: var(--sidebar-overlay);
+  color: var(--sidebar-text-strong);
+  opacity: 1;
+}
+.sidebar__util-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.sidebar__util-btn--active { color: var(--sidebar-text-active); opacity: 1; }
+.sidebar__util-btn svg { width: 16px; height: 16px; }
+
 /* ③ Badge — count metadata. Two flavors:
  *    - default (count): subtle muted pill — informational
  *    - urgent (unread/action): brand green pill — calls attention */
 .sidebar__badge {
   margin-left: auto;
-  background: rgba(255,255,255,0.06);
+  background: var(--sidebar-overlay);
   color: var(--sidebar-text-muted);
   font-size: 10px;
   font-weight: 700;
@@ -554,11 +489,11 @@
   letter-spacing: 0.02em;
 }
 .sidebar__item:hover .sidebar__badge {
-  background: rgba(255,255,255,0.10);
+  background: var(--sidebar-overlay-strong);
   color: var(--sidebar-text-strong);
 }
 .sidebar__item--active .sidebar__badge {
-  background: rgba(110,231,161,0.18);
+  background: var(--sidebar-active-bg-strong);
   color: var(--sidebar-text-active);
 }
 /* Urgent variant — brand green saturated, glow */
@@ -582,16 +517,13 @@
   min-width: 188px;
   max-width: 246px;
   padding: 12px 14px;
-  background: linear-gradient(180deg, #1a2235 0%, #131b2d 100%);
-  border: 1px solid rgba(255,255,255,0.10);
+  background: linear-gradient(180deg, var(--sidebar-popover-bg) 0%, var(--sidebar-popover-bg-end) 100%);
+  border: 1px solid var(--sidebar-popover-border);
   border-radius: 12px;
   transform: translateY(-50%);
   pointer-events: auto;
   white-space: normal;
-  box-shadow:
-    0 16px 36px rgba(0,0,0,0.32),
-    0 4px 10px rgba(0,0,0,0.20),
-    inset 0 1px 0 rgba(255,255,255,0.06);
+  box-shadow: var(--sidebar-popover-shadow);
 }
 .sidebar__tooltip::before {
   content: '';
@@ -627,8 +559,8 @@
   letter-spacing: 0.04em;
   padding: 1px 5px;
   border-radius: 4px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.10);
+  background: var(--sidebar-overlay);
+  border: 1px solid var(--sidebar-popover-border);
   white-space: nowrap;
 }
 .sidebar__tooltip-copy > span {
@@ -659,8 +591,8 @@
   top: 50%;
   width: 10px;
   height: 10px;
-  background: #131b2d;
-  border: 1px solid rgba(255,255,255,0.10);
+  background: var(--sidebar-popover-bg-end);
+  border: 1px solid var(--sidebar-popover-border);
   transform: translateY(-50%) rotate(45deg);
 }
 .sidebar__tooltip--right .sidebar__tooltip-arrow {
@@ -742,41 +674,6 @@
 .app-shell--collapsed .sidebar__badge {
   display: none;
 }
-.app-shell--collapsed .sidebar__footer {
-  padding: 8px 0;
-  align-items: center;
-}
-.app-shell--collapsed .sidebar__user-card {
-  gap: 0;
-  justify-content: center;
-  padding: 6px 0;
-  width: 44px;
-}
-/* Avatar hover di collapsed — konsisten dengan brand mark (scale + glow) */
-.app-shell--collapsed .sidebar__user-card:hover {
-  background: transparent;
-  box-shadow: none;
-}
-.app-shell--collapsed .sidebar__user-card:hover .sidebar__user-card-avatar {
-  transform: scale(1.05);
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.16),
-    0 8px 20px color-mix(in srgb, var(--ptpn-green) 50%, transparent),
-    inset 0 1px 0 rgba(255,255,255,0.28);
-}
-.sidebar__user-card-avatar {
-  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.app-shell--collapsed .sidebar__user-card-body,
-.app-shell--collapsed .sidebar__user-card-chev {
-  display: none;
-}
-.app-shell--collapsed .sidebar__user-popover {
-  left: calc(100% + 8px);
-  right: auto;
-  bottom: 6px;
-  width: 220px;
-}
 
 /* ══ Workspace — FLOATING PANEL pattern ════════════════════════════════
  * Lifted panel with rounded corners + hairline border + subtle shadow.
@@ -786,6 +683,9 @@
   flex-direction: column;
   overflow: hidden;
   height: 100%;
+  /* Containing block for the absolute floating topbar (2026-06-01). Scopes only
+   * position:absolute — modals use position:fixed and stay viewport-relative. */
+  position: relative;
   /* TRANSFORM DIHAPUS 2026-05-19: sebelumnya `transform: translate(0,0)`
    * memaksa workspace jadi containing block untuk `position: fixed` children,
    * sehingga modal-backdrop ter-scope ke workspace saja (sidebar tidak ikut
@@ -799,7 +699,7 @@
   border: 0;
   box-shadow: none;
   border-radius: 0;
-  gap: 12px;
+  gap: 0;
   min-width: 0;
 }
 
@@ -834,16 +734,22 @@
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  /* Floating card below the topbar. Real 1px border traces the radius
-   * pixel-perfectly; drop shadows handle elevation only. */
-  background: var(--panel);
-  border: 1px solid var(--panel-border-soft);
-  border-radius: var(--shell-card-radius);
-  box-shadow: var(--shell-card-shadow-strong);
+  /* Seamless canvas (2026-06-01): no card chrome — the content area shares the
+   * app background with the topbar above. Inner cards carry all elevation. */
+  background: var(--app-bg);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  /* Clear the floating topbar cluster (2026-06-01): content starts below the
+   * cluster band so page-level top-right actions never hide under it. Restores
+   * the spacing the in-flow topbar used to reserve. Home opts out via --flush
+   * so its greeting shares the cluster's row (benchmark one-row header). */
+  padding-top: var(--topbar-height);
   /* Subtle scrollbar */
   scrollbar-width: thin;
   scrollbar-color: var(--panel-border-strong) transparent;
 }
+.workspace__content--flush { padding-top: 0; }
 .workspace__content::-webkit-scrollbar { width: 6px; }
 .workspace__content::-webkit-scrollbar-track { background: transparent; }
 .workspace__content::-webkit-scrollbar-thumb { background: var(--panel-border-strong); border-radius: 99px; }
@@ -854,18 +760,32 @@
  * No panel shadow — topbar feels structural with the rest of the page,
  * not a separate elevated bar. */
 .topbar {
+  /* Slim two-sided utility bar (rev 2026-06-01): full-width, out of flow.
+   * KIRI = meta (periode + Live), KANAN = actions. Spacer flex:1 di tengah
+   * mendorong actions ke kanan. Sebelumnya sempat cluster kanan-only, tapi
+   * terlalu padat di kanan — meta dikembalikan ke kiri (preferensi user). */
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  width: auto;
   height: var(--topbar-height);
+  /* Opaque fill (fix 2026-06-01): bar was transparent + pointer-events:none so
+   * scrolled content bled through it. Konten reserve band lewat padding-top di
+   * .workspace__content, jadi fill solid menutup konten yang menggulung di
+   * belakang bar — tidak lagi tembus pandang. Hairline bawah jadi pembatas.
+   * Bg opak (bukan backdrop-filter) — blur di selector ini = stutter scroll. */
   background: var(--topbar-bg);
-  border: 1px solid var(--panel-border-soft);
-  border-radius: var(--shell-card-radius);
-  box-shadow: var(--shell-card-shadow);
+  border: 0;
+  border-bottom: 1px solid var(--panel-border);
+  border-radius: 0;
+  box-shadow: none;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   padding: 0 20px;
   /* 9500 > backdrop (9000) so topbar stays above any modal overlay within workspace */
   z-index: var(--z-topbar);
-  flex-shrink: 0;
 }
 
 /* ── Slim utility bar: meta (date/period/live) + cmdk + spacer ─────
@@ -911,8 +831,6 @@
   font-weight: 500;
   color: var(--text-muted);
   flex-shrink: 0;
-  border-left: 1px solid var(--panel-border);
-  margin-left: 2px;
   height: 14px;
 }
 .topbar__live-dot {
@@ -943,6 +861,8 @@
 
 .topbar__spacer {
   flex: 1 1 auto;
+  /* Biarkan klik tembus ke konten di band kosong tengah (di atas .topbar > *) */
+  pointer-events: none;
 }
 
 /* ⌘K command palette trigger — prominent search pill (Linear/Vercel pattern).
@@ -1079,141 +999,10 @@
 }
 
 /* Right cluster */
-.topbar__right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-
-.topbar__quick-create {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--indigo);
-  color: var(--text-inverse);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), background 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.topbar__quick-create:hover {
-  background: var(--indigo-dark);
-  box-shadow: var(--lift-shadow);
-  transform: translateY(-1px);
-}
-
-/* Global Quick-Create button — anchored dropdown with universal create options */
-.topbar__quick-menu { position: relative; flex-shrink: 0; }
-.topbar__quick-btn {
-  width: 32px;
-  height: 32px;
-  border: 0;
-  background: linear-gradient(135deg, var(--ptpn-green) 0%, color-mix(in srgb, var(--ptpn-green) 78%, var(--indigo-dark) 22%) 100%);
-  color: var(--text-inverse);
-  border-radius: 9px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), background 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow:
-    0 2px 6px color-mix(in srgb, var(--ptpn-green) 22%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 22%, transparent);
-}
-.topbar__quick-btn:hover {
-  box-shadow:
-    0 8px 18px color-mix(in srgb, var(--ptpn-green) 32%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
-  transform: translateY(-1px);
-}
-.topbar__quick-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.topbar__quick-popover {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 8px);
-  background: var(--panel);
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--panel-shadow-xl);
-  min-width: 244px;
-  z-index: var(--z-popover);
-  overflow: hidden;
-  animation: fade-in 140ms var(--ease-enter);
-}
-.topbar__quick-popover-head {
-  padding: 9px 12px 6px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-}
-.topbar__quick-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 12px;
-  background: none;
-  border: 0;
-  font: inherit;
-  font-size: 13px;
-  color: var(--text);
-  cursor: pointer;
-  text-align: left;
-  transition: background var(--transition);
-}
-.topbar__quick-item:hover { background: var(--surface-1); color: var(--text-strong); }
-.topbar__quick-item-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: var(--ptpn-green-dim);
-  color: var(--ptpn-green);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.topbar__quick-item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.topbar__quick-item-title { font-size: 12.5px; font-weight: 600; color: var(--text-strong); line-height: 1.2; }
-.topbar__quick-item-sub { font-size: 10.5px; color: var(--text-muted); line-height: 1.2; }
-.topbar__quick-item-kbd {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: 0.04em;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: var(--surface-1);
-  border: 1px solid var(--panel-border);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
+.topbar__right { display: flex; align-items: center; gap: 8px; }
 
 /* Icon buttons */
-.topbar__theme-btn {
-  width: 32px;
-  height: 32px;
-  background: var(--panel);
-  border: 0.5px solid var(--panel-border);
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  transition: background 160ms cubic-bezier(0.4, 0, 0.2, 1), color 160ms cubic-bezier(0.4, 0, 0.2, 1), border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.topbar__theme-btn:hover {
-  background: var(--surface-1);
-  color: var(--text-strong);
-}
-.topbar__theme-icon {
-  width: 18px;
-  height: 18px;
-}
-
-.topbar__notif-btn,
-.topbar__help-btn {
+.topbar__notif-btn {
   position: relative;
   width: 32px;
   height: 32px;
@@ -1228,8 +1017,7 @@
   text-decoration: none;
   transition: background 160ms cubic-bezier(0.4, 0, 0.2, 1), color 160ms cubic-bezier(0.4, 0, 0.2, 1), border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-.topbar__notif-btn:hover,
-.topbar__help-btn:hover {
+.topbar__notif-btn:hover {
   background: var(--surface-1);
   border-color: color-mix(in srgb, var(--ptpn-green) 22%, var(--panel-border-strong));
   color: var(--text-strong);
@@ -1289,6 +1077,145 @@
   margin: 0 6px;
   flex-shrink: 0;
 }
+
+/* ── Account avatar + menu (kanan-atas topbar, 2026-06-01) ──
+ * Dipindah dari footer sidebar. Avatar selaras dimensi tombol help/notif
+ * (32px), popover pakai surface terang (--panel) seperti notif-popover. */
+.topbar__user-menu { position: relative; }
+/* User chip — avatar 3D glossy + nama lengkap (2026-06-01). Chip transparan
+ * yang menyala saat hover/open; avatar pakai gradient + gloss + drop-shadow
+ * supaya terbaca sebagai objek dimensional, bukan flat shape + border. */
+.topbar__avatar-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 9px 3px 3px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  background: transparent;
+  transition: background 160ms cubic-bezier(0.4, 0, 0.2, 1), border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.topbar__avatar-btn:hover,
+.topbar__avatar-btn[aria-expanded="true"] {
+  background: var(--panel);
+  border-color: var(--panel-border);
+}
+.topbar__avatar-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* Dimensional selaras brand mark "A" (shell.css:139) — gradient 135° + soft
+ * glow + inset highlight/shade tipis + ::after gloss halus. Bukan orb glossy,
+ * tapi sepasang facet hijau dengan logo. */
+.topbar__avatar {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--ptpn-green) 0%, color-mix(in srgb, var(--ptpn-green) 70%, #0a4d20 30%) 100%);
+  box-shadow:
+    0 6px 16px color-mix(in srgb, var(--ptpn-green) 40%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 0 -1px 0 rgba(0,0,0,0.18);
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.topbar__avatar::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.16) 0%, transparent 55%);
+  pointer-events: none;
+}
+.topbar__avatar-btn:hover .topbar__avatar {
+  transform: scale(1.04);
+}
+.topbar__avatar-initials {
+  position: relative;
+  z-index: 1;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-feature-settings: 'cv11' on;
+}
+.topbar__avatar-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-strong);
+  white-space: nowrap;
+  line-height: 1;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topbar__avatar-chev {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.topbar__user-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 230px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--panel-shadow-xl);
+  z-index: var(--z-popover);
+  overflow: hidden;
+  animation: fade-in 140ms var(--ease-enter);
+}
+.topbar__user-popover-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 13px;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--ptpn-green) 10%, transparent) 0%,
+    transparent 100%);
+  border-bottom: 1px solid var(--panel-border-soft);
+}
+.topbar__user-popover-identity strong { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-strong); }
+.topbar__user-popover-identity span { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.topbar__user-popover-avatar {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--ptpn-green) 0%, color-mix(in srgb, var(--ptpn-green) 70%, #0a4d20 30%) 100%);
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.10), inset 0 1px 0 rgba(255,255,255,0.18);
+}
+.topbar__user-popover-divider { height: 1px; background: var(--panel-border); }
+.topbar__user-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 13px;
+  background: none;
+  border: none;
+  font-size: 0.84rem;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  transition: background var(--transition), color var(--transition);
+}
+.topbar__user-popover-item:hover { background: var(--surface-1); color: var(--text-strong); }
+.topbar__user-popover-item--danger { color: var(--red); }
+.topbar__user-popover-item--danger:hover { background: var(--red-dim, color-mix(in srgb, var(--red) 12%, transparent)); color: var(--red); }
 
 /* Notification dropdown */
 .topbar__notif-menu { position: relative; }
@@ -1752,21 +1679,6 @@
 :root:not([data-theme="dark"]) .topbar__search-kbd {
   background: var(--panel);
   border-color: color-mix(in srgb, var(--panel-border) 90%, transparent);
-}
-
-:root:not([data-theme="dark"]) .topbar__quick-create {
-  background: linear-gradient(135deg, var(--indigo) 0%, color-mix(in srgb, var(--indigo) 78%, var(--ptpn-green) 22%) 100%);
-}
-
-:root:not([data-theme="dark"]) .topbar__theme-btn {
-  background: color-mix(in srgb, var(--surface-2) 78%, var(--panel) 22%);
-  border-color: color-mix(in srgb, var(--panel-border) 82%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 76%, transparent);
-}
-
-:root:not([data-theme="dark"]) .topbar__theme-btn:hover {
-  background: color-mix(in srgb, var(--surface-2) 60%, var(--indigo-dim) 40%);
-  border-color: color-mix(in srgb, var(--indigo) 12%, transparent);
 }
 
 :root:not([data-theme="dark"]) .topbar__notif-btn {

@@ -1,81 +1,168 @@
 /* PanduanView — Pusat Bantuan ATLAS.
  *
- * Pattern A: single surface (no nested cards), hairline dividers, generous
- * vertical rhythm. Mirror style HomeView / ProfileView (sentence case
- * typography, no uppercase chrome).
+ * Arah desain (rev 2026-06-01): help center profesional & "mewah" ala
+ * Stripe / Linear / Notion docs. Prinsip: RESTRAINT + satu aksen warna
+ * (hijau brand). Bukan dashboard warna-warni.
+ *   - Ikon garis kustom monokrom (BUKAN emoji — emoji = sinyal AI-slop).
+ *   - Satu aksen hijau dipakai dengan sengaja; sisanya netral (ink, slate).
+ *   - Kartu putih bersih di atas page sunken; depth dari shadow + hairline,
+ *     bukan dari pita warna dekoratif.
+ *   - Hover-only transform (aman di scroll container).
+ *   - Entrance staggered via .ds-stagger (dipasang di JSX).
+ * Token theme-aware (panel, text, green flip otomatis di dark).
  */
 
 .panduan {
-  background: var(--app-bg);
+  --pn-card-border: var(--panel-border);
+  --pn-radius: 14px;
+  --pn-radius-sm: 11px;
+  --pn-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 6px 18px -10px rgba(16, 24, 40, 0.12);
+  --pn-shadow-hover: 0 2px 6px rgba(16, 24, 40, 0.08), 0 16px 36px -14px rgba(16, 24, 40, 0.20);
+  --pn-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --pn-tile-bg: color-mix(in srgb, var(--green) 10%, var(--surface-1));
+  --pn-tile-bg-hover: color-mix(in srgb, var(--green) 18%, var(--surface-1));
+  --pn-tile-border: color-mix(in srgb, var(--green) 20%, transparent);
+  --pn-card-bg: linear-gradient(158deg, var(--panel) 0%, color-mix(in srgb, var(--panel) 93%, var(--surface-1)) 100%);
+
+  position: relative;
   min-height: 100vh;
   width: 100%;
+  background:
+    radial-gradient(1100px 460px at 100% -10%, rgba(16, 185, 129, 0.06), transparent 58%),
+    var(--surface-2);
 }
 
+[data-theme="dark"] .panduan {
+  --pn-card-border: rgba(255, 255, 255, 0.08);
+  --pn-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 12px 32px -16px rgba(0, 0, 0, 0.7);
+  --pn-shadow-hover: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 18px 44px -16px rgba(0, 0, 0, 0.85);
+  --pn-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --pn-tile-bg: color-mix(in srgb, var(--green) 14%, transparent);
+  --pn-tile-bg-hover: color-mix(in srgb, var(--green) 22%, transparent);
+  --pn-tile-border: color-mix(in srgb, var(--green) 24%, transparent);
+  background:
+    radial-gradient(1100px 500px at 100% -10%, rgba(16, 185, 129, 0.10), transparent 55%),
+    #0A0A0B;
+}
+
+/* Full-bleed (pakem rule 6): stretch ke lebar workspace; whitespace dari
+ * padding, BUKAN max-width cap + margin auto. */
 .panduan__inner {
+  position: relative;
   width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 32px 32px 56px;
+  padding: 26px clamp(20px, 2.6vw, 40px) 52px;
   box-sizing: border-box;
 }
 
-@media (max-width: 980px) {
-  .panduan__inner { padding: 20px 18px 40px; }
+@media (max-width: 1024px) { /* bp-allow: sidebar collapse floor */
+  .panduan__inner { padding: 20px 18px 44px; }
+}
+
+/* Detail topik = artikel prose → batasi lebar baca (60–80ch). Pengecualian
+ * prose yang diizinkan pakem full-bleed. */
+.panduan__inner--reading { max-width: 880px; }
+
+/* Brand-green icon-tile — hero / concept banner / footer / "apa ini". One
+ * accent for navigational/structural elements. */
+.panduan__hero-card-icon,
+.panduan__concept-banner-icon,
+.panduan__footer-icon,
+.panduan__apa-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green-ink, var(--green));
+  background: linear-gradient(155deg, var(--pn-tile-bg-hover), var(--pn-tile-bg));
+  border: 1px solid var(--pn-tile-border);
+  border-radius: var(--pn-radius-sm);
+  transition: background 0.16s, transform 0.16s ease;
+}
+
+/* Category icon-tile — colored per topic via --tc (curated palette). Carries
+ * the page's energy; each topic gets a distinct, harmonized identity. */
+.panduan__topik-card-icon,
+.panduan__topik-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tc, var(--green));
+  background: linear-gradient(155deg,
+    color-mix(in srgb, var(--tc, var(--green)) 18%, var(--panel)),
+    color-mix(in srgb, var(--tc, var(--green)) 9%, var(--panel)));
+  border: 1px solid color-mix(in srgb, var(--tc, var(--green)) 24%, transparent);
+  border-radius: var(--pn-radius-sm);
+  transition: background 0.16s, transform 0.16s ease, box-shadow 0.16s;
+}
+
+[data-theme="dark"] .panduan__topik-card-icon,
+[data-theme="dark"] .panduan__topik-icon {
+  color: color-mix(in srgb, var(--tc, var(--green)) 55%, #fff);
+  background: linear-gradient(155deg,
+    color-mix(in srgb, var(--tc, var(--green)) 28%, transparent),
+    color-mix(in srgb, var(--tc, var(--green)) 14%, transparent));
+  border-color: color-mix(in srgb, var(--tc, var(--green)) 36%, transparent);
 }
 
 /* ── Hero ─────────────────────────────────────────────────────────── */
 
 .panduan__hero {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .panduan__hero-eyebrow {
-  display: inline-block;
-  font-size: 10.5px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--green-ink, var(--green));
-  margin-bottom: 8px;
-  padding: 2px 8px;
-  background: color-mix(in srgb, var(--green) 10%, transparent);
-  border-radius: 4px;
-}
-
-.panduan__hero-greet {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
-.panduan__hero-wave {
-  font-size: 22px;
-  line-height: 1;
+  margin-bottom: 10px;
+  padding: 3px 10px;
+  background: color-mix(in srgb, var(--green) 11%, transparent);
+  border: 1px solid color-mix(in srgb, var(--green) 20%, transparent);
+  border-radius: 999px;
 }
 
 .panduan__hero-title {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  margin: 0 0 6px;
+  font-size: clamp(22px, 2.6vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
   color: var(--text-strong, var(--text));
 }
 
 .panduan__hero-sub {
-  margin: 0 0 16px;
-  font-size: 13px;
+  margin: 0 0 20px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  max-width: 58ch;
+}
+
+.panduan__hero-quick-head {
+  margin-bottom: 10px;
+}
+
+.panduan__hero-quick-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--text-muted);
 }
 
-.panduan__hero-sub strong {
+.panduan__hero-quick-label strong {
   color: var(--text);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .panduan__hero-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 10px;
 }
 
@@ -84,88 +171,66 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  padding: 14px 14px 14px 16px;
+  padding: 13px 15px;
   text-decoration: none;
-  border: 1px solid var(--panel-border);
-  border-radius: 8px;
-  background: var(--surface, #fff);
-  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  border: 1px solid var(--pn-card-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-card-bg);
+  box-shadow: var(--pn-shadow), var(--pn-inset-top);
+  transition: border-color 0.16s, transform 0.16s ease, box-shadow 0.16s ease;
   color: inherit;
-  overflow: hidden;
 }
 
-.panduan__hero-card::before {
-  content: '';
-  position: absolute;
-  top: 0; bottom: 0; left: 0;
-  width: 3px;
-  background: var(--green);
-  transform: scaleY(0);
-  transform-origin: center;
-  transition: transform 0.22s cubic-bezier(.4,0,.2,1);
-}
+.panduan__hero-card-icon { width: 38px; height: 38px; }
+.panduan__hero-card-icon svg { width: 18px; height: 18px; }
 
 .panduan__hero-card:hover {
-  border-color: color-mix(in srgb, var(--green) 30%, var(--panel-border));
+  border-color: color-mix(in srgb, var(--green) 34%, var(--pn-card-border));
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
-}
-
-.panduan__hero-card:hover::before { transform: scaleY(1); }
-
-.panduan__hero-card-icon {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb, var(--green) 10%, transparent);
-  color: var(--green-ink, var(--green));
-  border-radius: 8px;
-  transition: background 0.15s, color 0.15s;
+  box-shadow: var(--pn-shadow-hover), var(--pn-inset-top);
 }
 
 .panduan__hero-card:hover .panduan__hero-card-icon {
-  background: color-mix(in srgb, var(--green) 18%, transparent);
+  background: var(--pn-tile-bg-hover);
 }
 
 .panduan__hero-card-body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
 .panduan__hero-card-label {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
   color: var(--text-strong, var(--text));
 }
 
 .panduan__hero-card-sub {
   font-size: 11.5px;
   color: var(--text-muted);
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .panduan__hero-card-arrow {
   flex-shrink: 0;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text-muted);
   opacity: 0;
-  transform: translateX(-4px);
-  transition: opacity 0.15s, transform 0.15s, color 0.15s;
+  transform: translateX(-6px);
+  transition: opacity 0.16s, transform 0.16s ease, color 0.16s;
 }
 
 .panduan__hero-card:hover .panduan__hero-card-arrow {
   opacity: 1;
   transform: translateX(0);
-  color: var(--green);
+  color: var(--green-ink, var(--green));
 }
 
-/* ── Search ───────────────────────────────────────────────────────── */
+/* ── Search — visual centerpiece (help = search-first) ───────────── */
 
 .panduan__search-wrap {
   position: relative;
@@ -174,47 +239,54 @@
 
 .panduan__search-icon {
   position: absolute;
-  left: 12px;
+  left: 15px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
   pointer-events: none;
+  transition: color 0.14s;
 }
+
+.panduan__search-wrap:focus-within .panduan__search-icon { color: var(--green-ink, var(--green)); }
 
 .panduan__search {
   width: 100%;
-  height: 38px;
-  padding: 0 36px 0 36px;
-  border: 1px solid var(--panel-border);
-  border-radius: 7px;
-  background: var(--surface, #fff);
+  height: 44px;
+  padding: 0 42px;
+  border: 1px solid var(--pn-card-border);
+  border-radius: 11px;
+  background: var(--pn-card-bg);
+  box-shadow: var(--pn-shadow), var(--pn-inset-top);
   font: inherit;
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--text);
   outline: none;
-  transition: border-color 0.12s;
+  transition: border-color 0.14s, box-shadow 0.14s;
   box-sizing: border-box;
 }
 
+.panduan__search::placeholder { color: var(--text-muted); }
+
 .panduan__search:focus {
   border-color: var(--green);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 12%, transparent);
+  box-shadow: var(--pn-shadow), var(--pn-inset-top), 0 0 0 3px color-mix(in srgb, var(--green) 16%, transparent);
 }
 
 .panduan__search-clear {
   position: absolute;
-  right: 8px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   border: 0;
   background: var(--surface-overlay-soft);
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 16px;
   cursor: pointer;
   line-height: 1;
+  transition: background 0.12s, color 0.12s;
 }
 
 .panduan__search-clear:hover {
@@ -224,16 +296,17 @@
 
 .panduan__search-kbd {
   position: absolute;
-  right: 12px;
+  right: 16px;
   top: 50%;
   transform: translateY(-50%);
   font-family: inherit;
   font-size: 10.5px;
   font-weight: 600;
   color: var(--text-muted);
-  padding: 3px 8px;
+  padding: 4px 10px;
   background: var(--surface-overlay-faint);
-  border-radius: 4px;
+  border: 1px solid var(--pn-card-border);
+  border-radius: 7px;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
@@ -243,11 +316,11 @@
 .panduan__sec-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   margin: 0 0 14px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.005em;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
   color: var(--text-strong, var(--text));
 }
 
@@ -256,113 +329,102 @@
   align-items: center;
   justify-content: center;
   min-width: 22px;
-  height: 20px;
-  padding: 0 7px;
+  height: 21px;
+  padding: 0 8px;
   font-size: 11px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
   background: var(--surface-overlay-faint);
+  border: 1px solid var(--pn-card-border);
   border-radius: 10px;
 }
 
-/* ── Foundational concept banner (Program/Workstream/Phase/Task) ─── */
+/* ── Concept banner (Program/Workstream/Phase/Task) — quiet, premium ─ */
 
 .panduan__concept-banner {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
   width: 100%;
-  padding: 16px 20px;
-  margin-bottom: 24px;
-  background: color-mix(in srgb, var(--green) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--green) 24%, var(--panel-border));
-  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 28px;
+  background: var(--pn-card-bg);
+  border: 1px solid var(--pn-card-border);
+  border-radius: var(--pn-radius);
+  box-shadow: var(--pn-shadow), var(--pn-inset-top);
   cursor: pointer;
   text-align: left;
   font: inherit;
   color: inherit;
-  transition: background 0.15s, transform 0.12s, border-color 0.15s;
+  transition: transform 0.14s ease, box-shadow 0.16s ease, border-color 0.16s;
 }
 
 .panduan__concept-banner:hover {
-  background: color-mix(in srgb, var(--green) 12%, transparent);
-  border-color: var(--green);
-  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--green) 34%, var(--pn-card-border));
+  transform: translateY(-2px);
+  box-shadow: var(--pn-shadow-hover), var(--pn-inset-top);
 }
 
-.panduan__concept-banner-icon {
-  font-size: 24px;
-  line-height: 1;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  background: color-mix(in srgb, var(--green) 15%, transparent);
-  border-radius: 10px;
-  transition: transform 0.2s cubic-bezier(.4,0,.2,1), background 0.15s;
-}
-
-.panduan__concept-banner:hover .panduan__concept-banner-icon {
-  transform: scale(1.08) rotate(-3deg);
-  background: color-mix(in srgb, var(--green) 22%, transparent);
-}
+.panduan__concept-banner-icon { width: 40px; height: 40px; }
+.panduan__concept-banner-icon svg { width: 19px; height: 19px; }
+.panduan__concept-banner:hover .panduan__concept-banner-icon { background: var(--pn-tile-bg-hover); }
 
 .panduan__concept-banner-body {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .panduan__concept-banner-title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
   color: var(--text-strong, var(--text));
 }
 
 .panduan__concept-banner-sub {
   font-size: 12.5px;
-  color: var(--text);
+  color: var(--text-muted);
   line-height: 1.5;
 }
 
 .panduan__concept-banner-sub strong {
-  color: var(--green-ink, var(--green));
+  color: var(--text);
   font-weight: 600;
 }
 
 .panduan__concept-banner-arrow {
   font-size: 20px;
-  color: var(--green);
+  color: var(--text-muted);
   flex-shrink: 0;
-  transition: transform 0.12s;
+  transition: transform 0.14s ease, color 0.14s;
 }
 
 .panduan__concept-banner:hover .panduan__concept-banner-arrow {
-  transform: translateX(3px);
+  transform: translateX(4px);
+  color: var(--green-ink, var(--green));
 }
 
-@media (max-width: 640px) {
-  .panduan__concept-banner { flex-wrap: wrap; gap: 10px; }
-  .panduan__concept-banner-icon { font-size: 24px; }
+@media (max-width: 640px) { /* bp-allow: phone reflow */
+  .panduan__concept-banner { flex-wrap: wrap; gap: 12px; }
 }
 
-/* ── Topik grid (index view) ─────────────────────────────────────── */
+/* ── Topik grid ──────────────────────────────────────────────────── */
 
 .panduan__topiks {
   border-top: 1px solid var(--surface-overlay);
   padding-top: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .panduan__topik-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 10px;
 }
 
 .panduan__topik-card {
@@ -370,104 +432,81 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid var(--panel-border);
-  border-radius: 8px;
-  background: var(--surface, #fff);
+  padding: 14px;
+  border: 1px solid var(--pn-card-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-card-bg);
+  box-shadow: var(--pn-shadow), var(--pn-inset-top);
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  transition: border-color 0.16s, transform 0.16s ease, box-shadow 0.16s ease;
   font: inherit;
-  --tc-accent: var(--green);
-}
-
-.panduan__topik-card::before {
-  content: '';
-  position: absolute;
-  top: 12px; bottom: 12px; left: 0;
-  width: 3px;
-  background: var(--tc-accent);
-  border-radius: 0 2px 2px 0;
-  opacity: 0;
-  transition: opacity 0.18s;
 }
 
 .panduan__topik-card:hover {
-  border-color: color-mix(in srgb, var(--tc-accent) 35%, var(--panel-border));
+  border-color: color-mix(in srgb, var(--tc, var(--green)) 38%, var(--pn-card-border));
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
+  box-shadow: var(--pn-shadow-hover), var(--pn-inset-top),
+    0 10px 28px -16px color-mix(in srgb, var(--tc, var(--green)) 55%, transparent);
 }
 
-.panduan__topik-card:hover::before { opacity: 1; }
-
-/* Category color accents — purely for hover left-bar tint */
-.panduan__topik-card--plan      { --tc-accent: #2563eb; }  /* blue — planning */
-.panduan__topik-card--structure { --tc-accent: #059669; }  /* green — structure */
-.panduan__topik-card--exec      { --tc-accent: #d97706; }  /* amber — execution */
-.panduan__topik-card--block     { --tc-accent: #dc2626; }  /* red — blocker */
-.panduan__topik-card--assign    { --tc-accent: #6366f1; }  /* indigo — assignment */
-
-.panduan__topik-card-icon {
-  font-size: 22px;
-  line-height: 1;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  background: color-mix(in srgb, var(--tc-accent) 10%, transparent);
-  border-radius: 8px;
-  transition: background 0.15s, transform 0.15s;
-}
-
+.panduan__topik-card-icon { width: 40px; height: 40px; }
+.panduan__topik-card-icon svg { width: 20px; height: 20px; }
 .panduan__topik-card:hover .panduan__topik-card-icon {
-  background: color-mix(in srgb, var(--tc-accent) 18%, transparent);
-  transform: scale(1.05);
+  transform: scale(1.06);
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--tc, var(--green)) 60%, transparent);
 }
 
 .panduan__topik-card-body {
   flex: 1;
   min-width: 0;
+  padding-top: 1px;
 }
 
 .panduan__topik-card-judul {
   margin: 0 0 3px;
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
   color: var(--text-strong, var(--text));
 }
 
 .panduan__topik-card-ringkas {
-  margin: 0 0 6px;
-  font-size: 12px;
+  margin: 0 0 7px;
+  font-size: 11.5px;
   color: var(--text-muted);
   line-height: 1.45;
 }
 
 .panduan__topik-card-meta {
-  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 500;
   color: var(--text-muted);
-  opacity: 0.7;
 }
 
 .panduan__topik-card-arrow {
-  font-size: 16px;
+  display: inline-flex;
   color: var(--text-muted);
   flex-shrink: 0;
-  transition: transform 0.12s;
   align-self: center;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: transform 0.14s ease, color 0.14s, opacity 0.14s;
 }
 
 .panduan__topik-card:hover .panduan__topik-card-arrow {
-  color: var(--green);
-  transform: translateX(2px);
+  color: var(--green-ink, var(--green));
+  transform: translateX(0);
+  opacity: 1;
 }
 
 .panduan__empty {
   font-size: 13px;
   color: var(--text-muted);
-  padding: 16px 4px;
+  padding: 24px 4px;
   margin: 0;
 }
 
@@ -476,152 +515,152 @@
 .panduan__faq {
   border-top: 1px solid var(--surface-overlay);
   padding-top: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .panduan__faq-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 8px;
+}
+
+@media (min-width: 1280px) { /* bp-lg: 2-up FAQ di workspace lebar */
+  .panduan__faq-list { grid-template-columns: 1fr 1fr; }
 }
 
 .panduan__faq-item {
-  border-bottom: 1px solid var(--surface-overlay);
-  padding: 0;
-  transition: background 0.12s;
-  border-radius: 4px;
+  border: 1px solid var(--pn-card-border);
+  border-radius: var(--pn-radius-sm);
+  background: var(--pn-card-bg);
+  box-shadow: var(--pn-shadow), var(--pn-inset-top);
+  transition: border-color 0.14s;
+  overflow: hidden;
 }
 
-.panduan__faq-item:hover {
-  background: var(--surface-overlay-faint);
-}
+.panduan__faq-item:hover { border-color: color-mix(in srgb, var(--green) 22%, var(--pn-card-border)); }
+.panduan__faq-item[open] { border-color: color-mix(in srgb, var(--green) 28%, var(--pn-card-border)); }
 
 .panduan__faq-q {
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--text);
-  padding: 12px 12px 12px 28px;
+  padding: 12px 16px 12px 38px;
   position: relative;
   list-style: none;
   outline: none;
+  transition: color 0.12s;
 }
 
 .panduan__faq-q::-webkit-details-marker { display: none; }
 
 .panduan__faq-q::before {
-  content: '▸';
+  content: '';
   position: absolute;
-  left: 6px;
-  top: 12px;
-  font-size: 10px;
-  color: var(--text-muted);
-  transition: transform 0.15s;
+  left: 18px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-right: 1.6px solid var(--text-muted);
+  border-bottom: 1.6px solid var(--text-muted);
+  transform: translateY(-65%) rotate(-45deg);
+  transition: transform 0.18s, border-color 0.12s;
 }
 
-details[open] > .panduan__faq-q::before {
-  transform: rotate(90deg);
+.panduan__faq-item[open] > .panduan__faq-q::before {
+  transform: translateY(-30%) rotate(45deg);
+  border-color: var(--green-ink, var(--green));
 }
 
-.panduan__faq-q:hover {
-  color: var(--text-strong, var(--text));
-}
+.panduan__faq-q:hover { color: var(--text-strong, var(--text)); }
+.panduan__faq-q:hover::before { border-color: var(--green-ink, var(--green)); }
 
 .panduan__faq-a {
-  padding: 0 4px 14px 24px;
+  padding: 0 18px 16px 40px;
   font-size: 12.5px;
   color: var(--text-muted);
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
-.panduan__faq-a p {
-  margin: 0 0 8px;
-}
+.panduan__faq-a p { margin: 0 0 10px; }
 
 .panduan__faq-link {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12px;
-  color: var(--green);
+  color: var(--green-ink, var(--green));
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
 }
 
-.panduan__faq-link:hover {
-  text-decoration: underline;
-}
+.panduan__faq-link:hover { text-decoration: underline; }
 
-/* ── Footer (link Playbook lengkap) ──────────────────────────────── */
+/* ── Footer (Playbook lengkap) ───────────────────────────────────── */
 
 .panduan__footer {
-  margin-top: 32px;
+  margin-top: 28px;
 }
 
 .panduan__footer-card {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 18px 20px;
-  background: var(--surface-overlay-faint);
-  border: 1px solid var(--panel-border);
-  border-radius: 8px;
+  padding: 16px 20px;
+  background: var(--pn-card-bg);
+  border: 1px solid var(--pn-card-border);
+  border-radius: var(--pn-radius);
+  box-shadow: var(--pn-shadow), var(--pn-inset-top);
 }
 
-.panduan__footer-icon {
-  font-size: 22px;
-  line-height: 1;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  background: var(--surface, #fff);
-  border: 1px solid var(--panel-border);
-  border-radius: 10px;
-}
+.panduan__footer-icon { width: 42px; height: 42px; }
+.panduan__footer-icon svg { width: 20px; height: 20px; }
+.panduan__footer-text { min-width: 0; }
 
 .panduan__footer-title {
   margin: 0 0 4px;
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
   color: var(--text-strong, var(--text));
 }
 
 .panduan__footer-sub {
   margin: 0;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--text-muted);
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .panduan__footer-link {
   flex-shrink: 0;
   margin-left: auto;
-  padding: 7px 14px;
-  font-size: 12.5px;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
   background: var(--text-strong, var(--text));
   color: var(--app-bg);
-  border-radius: 6px;
+  border-radius: 10px;
   text-decoration: none;
-  transition: opacity 0.12s;
+  box-shadow: 0 2px 8px -2px rgba(16, 24, 40, 0.3);
+  transition: transform 0.14s ease, box-shadow 0.16s;
 }
 
 .panduan__footer-link:hover {
-  opacity: 0.85;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px -3px rgba(16, 24, 40, 0.42);
 }
 
-@media (max-width: 640px) {
-  .panduan__footer-card {
-    flex-wrap: wrap;
-  }
-  .panduan__footer-link {
-    margin-left: 0;
-    margin-top: 8px;
-  }
+@media (max-width: 640px) { /* bp-allow: phone reflow */
+  .panduan__footer-card { flex-wrap: wrap; }
+  .panduan__footer-link { margin-left: 0; margin-top: 12px; }
 }
 
 /* ── Topik detail view ───────────────────────────────────────────── */
@@ -629,40 +668,50 @@ details[open] > .panduan__faq-q::before {
 .panduan__back {
   display: inline-flex;
   align-items: center;
-  padding: 6px 0;
-  margin-bottom: 18px;
-  background: none;
-  border: 0;
+  gap: 5px;
+  padding: 8px 14px 8px 12px;
+  margin-bottom: 24px;
+  background: var(--pn-card-bg);
+  border: 1px solid var(--pn-card-border);
+  border-radius: 10px;
+  box-shadow: var(--pn-shadow), var(--pn-inset-top);
   color: var(--text-muted);
   font-size: 12.5px;
+  font-weight: 500;
   cursor: pointer;
-  font: inherit;
+  font-family: inherit;
+  transition: color 0.12s, border-color 0.14s, transform 0.14s ease;
 }
 
 .panduan__back:hover {
   color: var(--text);
+  border-color: color-mix(in srgb, var(--green) 28%, var(--pn-card-border));
+  transform: translateX(-2px);
 }
 
 .panduan__topik-head {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 24px;
-  padding-bottom: 18px;
+  gap: 18px;
+  margin-bottom: 30px;
+  padding-bottom: 24px;
   border-bottom: 1px solid var(--surface-overlay);
 }
 
 .panduan__topik-icon {
-  font-size: 36px;
-  line-height: 1;
-  flex-shrink: 0;
+  width: 62px;
+  height: 62px;
+  border-radius: 16px;
 }
 
+.panduan__topik-icon svg { width: 28px; height: 28px; }
+
 .panduan__topik-title {
-  margin: 0 0 4px;
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  margin: 0 0 6px;
+  font-size: clamp(23px, 2.8vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
   color: var(--text-strong, var(--text));
 }
 
@@ -672,51 +721,50 @@ details[open] > .panduan__faq-q::before {
   color: var(--text-muted);
 }
 
-.panduan__topik-meta-sep {
-  margin: 0 8px;
-  opacity: 0.5;
-}
+.panduan__topik-meta-sep { margin: 0 8px; opacity: 0.5; }
 
 /* ── "Apa ini?" callout ───────────────────────────────────────── */
 
 .panduan__apa {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: flex-start;
-  padding: 14px 16px;
-  margin-bottom: 28px;
-  background: var(--surface-overlay-faint);
-  border-left: 3px solid var(--green);
-  border-radius: 0 6px 6px 0;
+  padding: 18px 20px;
+  margin-bottom: 32px;
+  background: var(--pn-card-bg);
+  border: 1px solid var(--pn-card-border);
+  border-radius: var(--pn-radius);
+  box-shadow: var(--pn-shadow), var(--pn-inset-top);
+}
+
+.panduan__apa-icon { width: 40px; height: 40px; }
+
+.panduan__apa-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .panduan__apa-label {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-strong, var(--text));
-  flex-shrink: 0;
-  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--green-ink, var(--green));
 }
 
 .panduan__apa-text {
   margin: 0;
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--text);
-  line-height: 1.6;
-}
-
-@media (max-width: 640px) {
-  .panduan__apa {
-    flex-direction: column;
-    gap: 6px;
-  }
+  line-height: 1.65;
 }
 
 /* ── Langkah (numbered steps) ───────────────────────────────────── */
 
-.panduan__langkah-section {
-  margin-bottom: 28px;
-}
+.panduan__langkah-section { margin-bottom: 32px; }
 
 .panduan__langkah {
   list-style: none;
@@ -724,117 +772,158 @@ details[open] > .panduan__faq-q::before {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
 }
 
 .panduan__langkah-item {
+  position: relative;
   display: flex;
-  gap: 14px;
+  gap: 16px;
   align-items: flex-start;
+  padding: 14px 0;
 }
 
+/* Connector line antar nomor langkah */
+.panduan__langkah-item::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 44px;
+  bottom: -2px;
+  width: 1.5px;
+  background: var(--surface-overlay);
+}
+
+.panduan__langkah-item:last-child::before { display: none; }
+
 .panduan__langkah-num {
+  position: relative;
+  z-index: 1;
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 31px;
+  height: 31px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--green);
-  background: color-mix(in srgb, var(--green) 12%, transparent);
+  font-weight: 700;
+  color: var(--green-ink, var(--green));
+  background: var(--pn-tile-bg);
+  border: 1px solid var(--pn-tile-border);
   border-radius: 50%;
+  font-variant-numeric: tabular-nums;
 }
 
-.panduan__langkah-body {
-  flex: 1;
-  min-width: 0;
-  padding-top: 2px;
-}
+.panduan__langkah-body { flex: 1; min-width: 0; padding-top: 4px; }
 
 .panduan__langkah-judul {
-  margin: 0 0 3px;
-  font-size: 13.5px;
-  font-weight: 600;
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 650;
   color: var(--text-strong, var(--text));
 }
 
 .panduan__langkah-desc {
   margin: 0;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text);
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .panduan__langkah-tip {
-  margin: 6px 0 0;
-  padding: 7px 10px;
-  font-size: 12px;
+  margin: 10px 0 0;
+  padding: 10px 13px;
+  font-size: 12.5px;
   color: var(--text-muted);
-  line-height: 1.45;
+  line-height: 1.5;
   background: var(--surface-overlay-faint);
+  border: 1px solid var(--pn-card-border);
+  border-radius: 9px;
+}
+
+.panduan__langkah-tip-label {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--green-ink, var(--green));
+  background: color-mix(in srgb, var(--green) 12%, transparent);
   border-radius: 5px;
+  vertical-align: middle;
 }
 
 /* ── Tips list ──────────────────────────────────────────────────── */
 
-.panduan__tips-section {
-  margin-bottom: 28px;
-}
+.panduan__tips-section { margin-bottom: 32px; }
 
 .panduan__tips {
   list-style: none;
-  padding: 0;
+  padding: 18px 20px;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+  background: var(--pn-card-bg);
+  border: 1px solid var(--pn-card-border);
+  border-radius: var(--pn-radius);
+  box-shadow: var(--pn-shadow), var(--pn-inset-top);
 }
 
 .panduan__tips-item {
   position: relative;
-  padding-left: 18px;
-  font-size: 12.5px;
+  padding-left: 24px;
+  font-size: 13px;
   color: var(--text);
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .panduan__tips-item::before {
-  content: '•';
+  content: '';
   position: absolute;
-  left: 6px;
-  color: var(--green);
-  font-weight: bold;
+  left: 5px;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 16%, transparent);
 }
 
-/* ── Playbook link ──────────────────────────────────────────────── */
+/* ── Playbook link (detail footer) ──────────────────────────────── */
 
 .panduan__playbook-link {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  background: var(--surface-overlay-faint);
-  border: 1px solid var(--panel-border);
-  border-radius: 8px;
-  font-size: 12.5px;
-  color: var(--text);
+  gap: 13px;
+  padding: 16px 18px;
+  background: var(--pn-card-bg);
+  border: 1px solid var(--pn-card-border);
+  border-radius: var(--pn-radius);
+  box-shadow: var(--pn-shadow), var(--pn-inset-top);
+  font-size: 13px;
+  color: var(--text-muted);
   line-height: 1.5;
 }
 
 .panduan__playbook-link-icon {
-  font-size: 18px;
-  line-height: 1;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  color: var(--green-ink, var(--green));
+  background: var(--pn-tile-bg);
+  border: 1px solid var(--pn-tile-border);
+  border-radius: 10px;
 }
 
 .panduan__playbook-link-anchor {
-  color: var(--green);
+  color: var(--green-ink, var(--green));
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
 }
 
-.panduan__playbook-link-anchor:hover {
-  text-decoration: underline;
-}
+.panduan__playbook-link-anchor:hover { text-decoration: underline; }
