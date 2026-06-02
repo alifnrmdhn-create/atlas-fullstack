@@ -19,6 +19,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -71,6 +72,31 @@ class OrganizationController extends Controller
     public function programSummary(Request $request): JsonResponse
     {
         $user = $request->user();
+
+        // Endpoint terberat di workspace bootstrap (agregasi 97 program + ratusan
+        // task/blocker/KPI, dihitung fresh tiap request). Cache per-user TTL 3 menit
+        // memangkas waktu absolut tanpa bikin angka basi terlalu lama. Key per-user
+        // karena scope/visibility diturunkan dari user. `bust=1` untuk skip cache.
+        $cacheKey = "program_summary:user:{$user->id}";
+        if ($request->boolean('bust')) {
+            Cache::forget($cacheKey);
+        }
+
+        $payload = Cache::remember($cacheKey, now()->addMinutes(3), function () use ($user) {
+            return $this->buildProgramSummary($user);
+        });
+
+        return response()->json($payload);
+    }
+
+    /**
+     * Build the executive dashboard payload for a user. Pure computation (no request
+     * state beyond the user) so the result is safely cacheable — see programSummary().
+     *
+     * @return array<string, mixed>
+     */
+    private function buildProgramSummary(User $user): array
+    {
         $orgScope = OrgScope::forUser($user);
         $role = $orgScope->role;
         $isExecutive = $orgScope->isExecutive;
@@ -566,7 +592,7 @@ class OrganizationController extends Controller
             ->take(5)
             ->values();
 
-        return response()->json([
+        return [
             'scope'           => [
                 'role'      => $role,
                 'level'     => $orgScope->level,
@@ -590,7 +616,7 @@ class OrganizationController extends Controller
             'topBlockerPrograms'=> $topBlockerPrograms,
             'checkpoints'       => $checkpoints,
             'recentActivity'    => $recentActivity,
-        ]);
+        ];
     }
 
     /**

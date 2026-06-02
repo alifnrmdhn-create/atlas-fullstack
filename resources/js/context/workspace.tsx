@@ -514,29 +514,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setOverviewStatus({ loading: mode === 'initial', refreshing: mode === 'refresh', message: null })
 
     try {
-      const results = await Promise.allSettled([
-        api.get<DashboardApiPayload>('/workspace/overview'),
-        api.get<CollectionResponse<ChannelSummary>>('/channels'),
-        api.get<CollectionResponse<Program>>('/programs'),
-        api.get<TasksResponse>('/tasks'),
-        api.get<CollectionResponse<Kpi>>('/kpis'),
-        api.get<CollectionResponse<Blocker>>('/blockers'),
-        api.get<{ users: PresenceUser[] }>('/users/presence'),
-        api.get<NotificationsResponse>('/notifications?read=all'),
-        api.get<{ data: SavedSearch[] }>('/search/saved'),
-        api.get<SystemStatus>('/system/status'),
-        api.get<{ data: MyWorkPayload }>('/my-work'),
-        api.get<ApmsKpiResponse>('/apms/kpi'),
-        api.get<ProgramSummaryPayload>('/organization/program-summary'),
-      ])
+      // Terapkan tiap respons begitu ia resolve (TANPA barrier). Halaman unblock
+      // segera setelah DATA-nya sendiri tiba — Home tidak lagi menunggu request
+      // paling lambat di batch (mis. /channels) selesai. `track` menelan error per
+      // request (mirror perilaku allSettled lama) dan mengembalikan boolean sukses.
+      const track = <T,>(p: Promise<T>, apply: (v: T) => void): Promise<boolean> =>
+        p.then((v) => { apply(v); return true }).catch(() => false)
 
-      const [dashR, chR, progR, wiR, kpiR, blkR, presR, notifR, ssR, sysR, mwR, apmsR, psR] = results
-
-      if (dashR.status === 'fulfilled') setDashboard(normalizeDashboardPayload(dashR.value))
-      if (mwR.status === 'fulfilled') setMyWork(mwR.value.data)
-      if (psR.status === 'fulfilled') setProgramSummary(psR.value)
-      if (chR.status === 'fulfilled') {
-        const loadedChannels = chR.value.data
+      const dashP = track(api.get<DashboardApiPayload>('/workspace/overview'), (v) => setDashboard(normalizeDashboardPayload(v)))
+      const chP = track(api.get<CollectionResponse<ChannelSummary>>('/channels'), (v) => {
+        const loadedChannels = v.data
         // Override unreadCount to 0 for the currently open channel — user is actively watching it
         const patched = loadedChannels.map((c) =>
           c.id === selectedChannelId ? { ...c, unreadCount: 0 } : c
@@ -548,28 +535,30 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           // Fall back to first channel
           return loadedChannels[0]?.id ?? null
         })
-      }
-      if (progR.status === 'fulfilled') {
-        setPrograms(progR.value.data)
-      }
-      if (wiR.status === 'fulfilled') {
-        setWorkGroups(wiR.value.groups)
-      }
-      if (kpiR.status === 'fulfilled') setKpis(kpiR.value.data)
-      if (apmsR.status === 'fulfilled') {
-        setApmsKpis(apmsR.value.data)
-        setApmsConnected(apmsR.value.meta.connected)
-        setApmsLinkedPrograms(apmsR.value.linkedPrograms ?? {})
+      })
+      const progP = track(api.get<CollectionResponse<Program>>('/programs'), (v) => setPrograms(v.data))
+      const wiP = track(api.get<TasksResponse>('/tasks'), (v) => setWorkGroups(v.groups))
+      const kpiP = track(api.get<CollectionResponse<Kpi>>('/kpis'), (v) => setKpis(v.data))
+      const blkP = track(api.get<CollectionResponse<Blocker>>('/blockers'), (v) => setBlockers(v.data))
+      const presP = track(api.get<{ users: PresenceUser[] }>('/users/presence'), (v) => setPresence(v.users))
+      const notifP = track(api.get<NotificationsResponse>('/notifications?read=all'), (v) => setNotifications(v.notifications))
+      const ssP = track(api.get<{ data: SavedSearch[] }>('/search/saved'), (v) => setSavedSearches(v.data))
+      const sysP = track(api.get<SystemStatus>('/system/status'), (v) => setSystemStatus(v))
+      const mwP = track(api.get<{ data: MyWorkPayload }>('/my-work'), (v) => setMyWork(v.data))
+      const apmsP = track(api.get<ApmsKpiResponse>('/apms/kpi'), (v) => {
+        setApmsKpis(v.data)
+        setApmsConnected(v.meta.connected)
+        setApmsLinkedPrograms(v.linkedPrograms ?? {})
         setApmsLastFetchedAt(new Date().toISOString())
-      }
-      if (blkR.status === 'fulfilled') setBlockers(blkR.value.data)
-      if (presR.status === 'fulfilled') setPresence(presR.value.users)
-      if (notifR.status === 'fulfilled') setNotifications(notifR.value.notifications)
-      if (ssR.status === 'fulfilled') setSavedSearches(ssR.value.data)
-      if (sysR.status === 'fulfilled') setSystemStatus(sysR.value)
+      })
+      const psP = track(api.get<ProgramSummaryPayload>('/organization/program-summary'), (v) => setProgramSummary(v))
 
-      const hasCoreData = dashR.status === 'fulfilled' || psR.status === 'fulfilled' || progR.status === 'fulfilled'
-      const failedCount = results.filter((result) => result.status === 'rejected').length
+      const oks = await Promise.all([dashP, chP, progP, wiP, kpiP, blkP, presP, notifP, ssP, sysP, mwP, apmsP, psP])
+      const [dashOk, , progOk] = oks
+      const psOk = oks[12]
+
+      const hasCoreData = dashOk || psOk || progOk
+      const failedCount = oks.filter((ok) => !ok).length
       const syncedAt = Date.now()
       if (hasCoreData) {
         setLastSyncedAt(new Date(syncedAt).toISOString())

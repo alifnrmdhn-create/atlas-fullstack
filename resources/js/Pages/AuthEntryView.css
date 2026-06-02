@@ -160,15 +160,16 @@
   --auth-toggle-color: var(--gray-ink);
   --auth-toggle-hover-color: var(--text);
   --auth-submit-bg: var(--ptpn-green);
+  /* Glow diredam (2026-06-02): dari halo hijau besar → shadow ber-tint hijau tipis */
   --auth-submit-shadow:
-    0 20px 34px color-mix(in srgb, var(--ptpn-green) 28%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 22%, transparent);
+    0 6px 16px color-mix(in srgb, var(--ptpn-green) 18%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 20%, transparent);
   --auth-submit-hover-shadow:
-    0 24px 44px color-mix(in srgb, var(--ptpn-green) 32%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 22%, transparent);
+    0 10px 22px color-mix(in srgb, var(--ptpn-green) 22%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 20%, transparent);
   --auth-submit-active-shadow:
-    0 10px 18px color-mix(in srgb, var(--ptpn-green) 16%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 16%, transparent);
+    0 3px 8px color-mix(in srgb, var(--ptpn-green) 14%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 14%, transparent);
   --auth-submit-overlay: linear-gradient(180deg, color-mix(in srgb, var(--text-inverse) 14%, transparent), transparent 46%);
   --auth-submit-success-bg: linear-gradient(135deg, var(--green) 0%, color-mix(in srgb, var(--green) 72%, var(--ptpn-green) 28%) 100%);
   --auth-spinner-border: color-mix(in srgb, var(--text-inverse) 32%, transparent);
@@ -180,7 +181,9 @@
   --auth-legal: var(--gray);
   height: 100svh;
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(380px, 0.92fr);
+  /* Kanan "memeluk" form (cap 600px) — kiri (brand) mengisi sisa → lebih lebar &
+   * dramatis; hilangkan lautan putih di sekitar form (2026-06-02). */
+  grid-template-columns: minmax(0, 1fr) minmax(440px, 600px);
   background: var(--auth-shell-bg);
   overflow: hidden;
   animation: auth-shell-enter 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -266,7 +269,7 @@
 .auth-panel__map {
   position: absolute;
   top: 38%;
-  left: calc(3% - 10px);
+  left: 15.6%;
   transform: translateY(-50%);
   width: 170%;
   max-width: 960px;
