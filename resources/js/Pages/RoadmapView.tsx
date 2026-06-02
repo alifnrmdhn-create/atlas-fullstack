@@ -157,7 +157,6 @@ export function RoadmapView() {
                     {group.items.map(prog => {
                       const health = normalizeHealthStatus(prog.healthStatus)
                       const statusClass = health === 'GREEN' ? 'on-track' : health === 'YELLOW' ? 'at-risk' : 'off-track'
-                      const riskTone = prog.riskScore >= 15 ? 'critical' : 'warn'
                       return (
                         <button className="roadmap-bar list-row" key={prog.id} onClick={() => openProgramWorkspace(prog.id)}>
                           <span className="code-badge roadmap-bar__code">{prog.code}</span>
@@ -171,11 +170,7 @@ export function RoadmapView() {
                           <span className="roadmap-bar__pct">
                             {prog.progressPercent}%
                           </span>
-                          {prog.riskScore >= 10 ? (
-                            <span className={`risk-chip risk-chip--${riskTone} roadmap-bar__risk`}>
-                              Risk {prog.riskScore}
-                            </span>
-                          ) : <span className="roadmap-bar__risk-placeholder" />}
+                          <span className="roadmap-bar__risk-placeholder" />
                           {prog.owner ? (
                             <span className="roadmap-bar__owner text-muted text-xs">{prog.owner.name}</span>
                           ) : <span className="roadmap-bar__owner-placeholder" />}
@@ -186,34 +181,6 @@ export function RoadmapView() {
                 </div>
               ))}
 
-              {/* Program alignment matrix */}
-              {dashboard?.dimensions.strategic && dashboard.dimensions.strategic.length > 0 && (
-                <div className="roadmap-alignment">
-                  <div className="section-block">
-                    <div className="section-header">
-                      <h3 className="section-title">Program Alignment</h3>
-                    </div>
-                    <div className="alignment-grid">
-                      {dashboard.dimensions.strategic.slice(0, 8).map(s => (
-                        <div className="alignment-cell" key={s.programId} title={`${s.program} — ${s.strategicAlignment ?? 0}%`}>
-                          <div className="alignment-cell__bar">
-                            <div
-                              className={`alignment-cell__fill alignment-cell__fill--${normalizeHealthStatus(s.healthStatus).toLowerCase()}`}
-                              style={{ height: `${s.strategicAlignment ?? 0}%` }}
-                            >
-                              <span className={`alignment-cell__fill-label${(s.strategicAlignment ?? 0) >= 20 ? ' alignment-cell__fill-label--visible' : ''}`}>
-                                {s.program}
-                              </span>
-                            </div>
-                          </div>
-                          <span className="alignment-cell__label text-muted">{s.program}</span>
-                          <span className="alignment-cell__val">{s.strategicAlignment}%</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
             </>
           )}
         </div>

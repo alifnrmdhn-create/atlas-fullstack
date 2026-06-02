@@ -173,7 +173,7 @@ export function ChannelsViewWrapper() {
       }
     } catch (err) {
       setComposerValue(content)
-      const msg = err instanceof Error ? err.message : 'Pesan gagal dikirim. Coba lagi.'
+      const msg = err instanceof Error ? err.message : 'Failed to send message. Try again.'
       setChannelStatus({ loading: false, message: msg })
       console.error('[sendMessage] failed:', err)
     } finally {
@@ -226,8 +226,8 @@ export function ChannelsViewWrapper() {
       const msg = extractErrorMessage(
         err,
         scope === 'all'
-          ? 'Pesan gagal dihapus untuk semua anggota.'
-          : 'Pesan gagal dihapus dari tampilan Anda.',
+          ? 'Failed to delete message for all members.'
+          : 'Failed to delete message from your view.',
       )
       setChannelStatus({ loading: false, message: msg })
       throw err
@@ -240,7 +240,7 @@ export function ChannelsViewWrapper() {
       await api.put(`/channels/${selectedChannelId}/messages/${messageId}/pin`)
       void refreshChannel(selectedChannelId, selectedThreadId, true)
     } catch (err) {
-      const msg = extractErrorMessage(err, 'Pin pesan gagal diperbarui.')
+      const msg = extractErrorMessage(err, 'Failed to update message pin.')
       setChannelStatus({ loading: false, message: msg })
     }
   }
@@ -389,7 +389,7 @@ export function ChannelsViewWrapper() {
       void refreshChannel(channelId, null, true)
       void loadOverview('refresh')
     } catch (err) {
-      const msg = extractErrorMessage(err, 'Anggota gagal dihapus dari channel.')
+      const msg = extractErrorMessage(err, 'Failed to remove member from channel.')
       setChannelStatus({ loading: false, message: msg })
       throw err
     }

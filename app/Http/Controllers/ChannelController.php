@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Channel;
 use App\Models\ChannelMember;
 use App\Models\ChannelMessage;
+use App\Models\Program;
 use App\Services\BroadcastService;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
@@ -37,7 +38,12 @@ class ChannelController extends Controller
             return response()->json(['data' => $channels, 'total' => count($channels)]);
         }
 
-        return Inertia::render('ChannelsViewWrapper', ['channels' => $channels]);
+        return Inertia::render('ChannelsViewWrapper', [
+            'channels' => $channels,
+            // Lean program list for the channel context banner — only programs
+            // actually linked to one of the user's channels (find-by-id on FE).
+            'programs' => $this->linkedProgramsFor($channels),
+        ]);
     }
 
     public function show(Request $request, int $id)
@@ -443,5 +449,35 @@ class ChannelController extends Controller
                 ] : null,
             ];
         })->all();
+    }
+
+    /**
+     * Build the lean Program payload for the channel context banner.
+     * Only programs linked (via Channel.linkedProgramId) to one of the
+     * passed channels are returned, with just the fields the banner needs.
+     */
+    private function linkedProgramsFor(array $channels): array
+    {
+        $ids = collect($channels)->pluck('linkedProgramId')->filter()->unique()->values();
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        return Program::query()
+            ->whereIn('id', $ids)
+            ->get(['id', 'code', 'name', 'status', 'priority', 'progressPercent', 'healthStatus', 'approvalStatus', 'rejectionNote', 'targetEndDate'])
+            ->map(fn ($p) => [
+                'id' => $p->id,
+                'code' => $p->code,
+                'name' => $p->name,
+                'status' => $p->status,
+                'priority' => $p->priority,
+                'progressPercent' => $p->progressPercent ?? 0,
+                'healthStatus' => $p->healthStatus ?? 'YELLOW',
+                'approvalStatus' => $p->approvalStatus,
+                'rejectionNote' => $p->rejectionNote,
+                'targetEndDate' => $p->targetEndDate,
+            ])
+            ->all();
     }
 }

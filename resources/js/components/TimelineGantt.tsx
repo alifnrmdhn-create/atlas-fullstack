@@ -191,7 +191,7 @@ export function TimelineGantt({ programs, emptyText, onOpenProgram }: TimelineGa
               {monthLabel.format(date)}
             </div>
           ))}
-          {showToday ? <div className="gantt-today" style={todayStyle} title="Hari ini" /> : null}
+          {showToday ? <div className="gantt-today" style={todayStyle} title="Today" /> : null}
         </div>
       </div>
 

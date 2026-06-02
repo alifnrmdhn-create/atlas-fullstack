@@ -28,6 +28,64 @@
   }
 }
 
+/* ── M6: Density tuning di phone (Mobile UX, 2026-06-02) ───────────────────
+ * Padding halaman 32px (×2 = 64px) terlalu boros di layar 390px → konten cuma
+ * ~326px. Kecilkan via token; semua *__inner (perf/workboard/goals/presence
+ * dst) ikut dapat lebih banyak lebar + buang white-space vertikal berlebih.
+ * (Clearance bottom tab bar diatur terpisah di .workspace__content shell.css.) */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  :root {
+    --space-page-x: 16px;
+    --space-page-top: 16px;
+    --space-page-bot: 20px;
+  }
+}
+
+/* ── M3: Touch targets di phone (Mobile UX, 2026-06-02) ────────────────────
+ * Kontrol interaktif kecil (28–36px) terlalu kecil untuk jari di HP. Naikkan
+ * min target di ≤640. Terpusat di sini supaya gampang di-tune / revert. Tidak
+ * mengubah desktop sama sekali. Pedoman: 44px tombol utama, 40px chrome padat. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  /* Tombol utama → ≥44px */
+  .btn,
+  .wi-btn {
+    min-height: 44px;
+  }
+  /* design-system Button pakai height tetap → override ke 44 */
+  .ds-button--sm,
+  .ds-button--md {
+    height: 44px;
+  }
+
+  /* Chrome padat / segmented / select / search → 40px (tappable tanpa bongsor) */
+  .topbar__notif-btn,
+  .topbar__avatar-btn,
+  .topbar__cmdk,
+  .topbar__quick-btn,
+  .view-toggle-btn,
+  .wb-program-filter,
+  .programs-search,
+  select {
+    min-height: 40px;
+  }
+  .topbar__notif-btn,
+  .topbar__avatar-btn,
+  .topbar__cmdk,
+  .topbar__quick-btn {
+    min-width: 40px;
+  }
+
+  /* Item nav di drawer → 44px */
+  .app-shell--mobile .sidebar__item {
+    min-height: 44px;
+  }
+
+  /* Feedback sentuh: matikan highlight biru default browser di kontrol. */
+  a, button, [role="button"], select, summary, label[for] {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    SHARED UTILITY CLASSES (used by ChannelsView + components/ui)
 ═══════════════════════════════════════════════════════════════ */
@@ -2439,6 +2497,48 @@
   gap: 8px;
   padding: 12px 20px 16px;
   border-top: 1px solid var(--panel-border);
+}
+
+/* M5 mobile (≤640): modal terpusat → bottom sheet full-width yang slide dari
+ * bawah (pola native HP). Body scroll, footer sticky + hormati safe-area.
+ * Mengcover sistem .modal/.modal-backdrop dominan + varian wide/panel/overlay.
+ * Mobile UX 2026-06-02. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .modal-backdrop,
+  .modal-overlay,
+  .overlay-backdrop {
+    align-items: flex-end;
+  }
+  .modal-backdrop--top { align-items: flex-start; } /* yang sengaja anchor-atas tetap */
+
+  .modal,
+  .modal--wide,
+  .modal-panel {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+    border-bottom: 0;
+    animation: sheet-up 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .modal__body,
+  .modal-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+  }
+  .modal__footer,
+  .modal-footer {
+    position: sticky;
+    bottom: 0;
+    background: var(--panel);
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  }
+}
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
 }
 
 /* Form fields (modal) */

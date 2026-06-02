@@ -91,7 +91,7 @@ export function ReportsView() {
             {/* Filter periode */}
             <div className="apms-filter-bar">
               <div className="apms-filter-group">
-                <label className="apms-filter-label">Tahun</label>
+                <label className="apms-filter-label">Year</label>
                 <select
                   className="apms-filter-select"
                   value={filterTahun}
@@ -101,7 +101,7 @@ export function ReportsView() {
                 </select>
               </div>
               <div className="apms-filter-group">
-                <label className="apms-filter-label">Bulan</label>
+                <label className="apms-filter-label">Month</label>
                 <select
                   className="apms-filter-select"
                   value={filterBulan}
@@ -111,7 +111,7 @@ export function ReportsView() {
                 </select>
               </div>
               <span className="text-xs text-muted reports-period-note">
-                Periode: {MONTHS[filterBulan - 1]} {filterTahun}
+                Period: {MONTHS[filterBulan - 1]} {filterTahun}
               </span>
             </div>
 
@@ -119,7 +119,7 @@ export function ReportsView() {
             {apmsKpis.length > 0 && (
               <div className="apms-summary-cards">
                 <div className="apms-summary-card">
-                  <span className="apms-summary-card__label">Realisasi {MONTHS[filterBulan - 1]}</span>
+                  <span className="apms-summary-card__label">Actual {MONTHS[filterBulan - 1]}</span>
                   <span className="apms-summary-card__value">{realisasiBulanIni}</span>
                 </div>
                 <div className="apms-summary-card">
@@ -127,11 +127,11 @@ export function ReportsView() {
                   <span className="apms-summary-card__value">{apmsKpis.length}</span>
                 </div>
                 <div className="apms-summary-card">
-                  <span className="apms-summary-card__label">Total Bobot</span>
+                  <span className="apms-summary-card__label">Total Weight</span>
                   <span className="apms-summary-card__value">{totalBobot}%</span>
                 </div>
                 <div className="apms-summary-card">
-                  <span className="apms-summary-card__label">Total Skor</span>
+                  <span className="apms-summary-card__label">Total Score</span>
                   <span className="apms-summary-card__value apms-summary-card__value--success">
                     {totalSkor.toFixed(2)}
                   </span>
@@ -156,14 +156,14 @@ export function ReportsView() {
                 <table className="apms-kpi-table">
                   <thead>
                     <tr>
-                      <th>Kode</th>
-                      <th>Nama KPI</th>
-                      <th className="apms-kpi-table__head--center">Bobot</th>
-                      <th className="apms-kpi-table__head--right">Sasaran</th>
-                      <th className="apms-kpi-table__head--right">Realisasi</th>
-                      <th className="apms-kpi-table__head--right">Skor</th>
+                      <th>Code</th>
+                      <th>KPI Name</th>
+                      <th className="apms-kpi-table__head--center">Weight</th>
+                      <th className="apms-kpi-table__head--right">Target</th>
+                      <th className="apms-kpi-table__head--right">Actual</th>
+                      <th className="apms-kpi-table__head--right">Score</th>
                       <th>Status</th>
-                      <th>Program Terkait</th>
+                      <th>Related Program</th>
                     </tr>
                   </thead>
                   <tbody>

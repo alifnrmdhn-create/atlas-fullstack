@@ -93,6 +93,12 @@ try {
           })
           console.log('   CHAIN', r.name, c.result.value)
         }
+        if (process.env.CLICK) {
+          await page.send('Runtime.evaluate', { expression: `(() => { const els=[...document.querySelectorAll(${JSON.stringify(process.env.CLICK)})]; const want=${JSON.stringify(process.env.CLICK_TEXT || '')}; const el=(want?els.find(e=>e.textContent.includes(want)):null)||els[0]; el&&el.click(); })()` })
+          await sleep(700)
+          await shot(page, join(outDir, `${d.name}-${r.name}-modal.png`))
+          console.log('OK', `${d.name}-${r.name}-modal.png`)
+        }
         if (process.env.MEASURE) {
           const m = await page.send('Runtime.evaluate', {
             expression: `(() => {

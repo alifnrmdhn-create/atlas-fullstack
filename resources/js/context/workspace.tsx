@@ -441,8 +441,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [currentTimeTick, dashboard, nextRefreshAt, overviewStatus.loading, overviewStatus.refreshing])
 
   const topbarSyncLabel = useMemo(() => {
-    if (!lastSyncedAt) return 'Belum ada sinkronisasi'
-    return `Tersinkron ${formatDate(lastSyncedAt)}`
+    if (!lastSyncedAt) return 'Not synced yet'
+    return `Synced ${formatDate(lastSyncedAt)}`
   }, [lastSyncedAt])
 
   // ── Auth helpers ─────────────────────────────────────────
@@ -487,11 +487,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const handleForgotPassword = async () => {
     if (!authForm.identifier.trim()) {
-      setAuthError('Masukkan NIK atau User ID terlebih dahulu.')
+      setAuthError('Enter your NIK or User ID first.')
       return
     }
     setAuthError(null)
-    setAuthMessage('Reset kata sandi belum tersedia di aplikasi Laravel.')
+    setAuthMessage('Password reset is not yet available in the Laravel app.')
   }
 
   const requestLogout = () => setLogoutPending(true)
@@ -505,7 +505,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     // Hindari fetch + manual navigate — bisa race dengan polling yang lagi
     // in-flight, balas 401, dispatch auth-expired, lalu refresh /login berulang.
     router.post('/logout', {}, {
-      onError: () => signOutToEntry('Logout gagal. Mencoba reset lokal.'),
+      onError: () => signOutToEntry('Logout failed. Trying a local reset.'),
     })
   }
 
@@ -568,11 +568,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         loading: false,
         refreshing: false,
         message: failedCount > 0 && !hasCoreData
-          ? 'Sebagian data workspace gagal dimuat. Coba refresh halaman.'
+          ? 'Some workspace data failed to load. Try refreshing the page.'
           : null,
       })
     } catch {
-      setOverviewStatus({ loading: false, refreshing: false, message: 'Workspace gagal dimuat. Coba refresh halaman.' })
+      setOverviewStatus({ loading: false, refreshing: false, message: 'Workspace failed to load. Try refreshing the page.' })
     } finally {
       setOverviewStatus((cur) => ({ ...cur, loading: false, refreshing: false }))
     }
@@ -635,7 +635,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (!silent) setWorkstreamDetailStatus({ loading: false, message: null })
       setLastSyncedAt(new Date().toISOString())
     } catch {
-      if (!silent) setWorkstreamDetailStatus({ loading: false, message: 'Detail workstream tidak dapat dimuat.' })
+      if (!silent) setWorkstreamDetailStatus({ loading: false, message: 'Workstream detail could not be loaded.' })
     }
   })
 
@@ -647,7 +647,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (!silent) setTaskDetailStatus({ loading: false, message: null })
       setLastSyncedAt(new Date().toISOString())
     } catch {
-      if (!silent) setTaskDetailStatus({ loading: false, message: 'Tugas tidak dapat dimuat.' })
+      if (!silent) setTaskDetailStatus({ loading: false, message: 'Task could not be loaded.' })
     }
   })
 
@@ -676,7 +676,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       await api.post(`/channels/${selectedChannelId}/messages/${messageId}/reactions`, { emoji: ':thumbsup:' })
       await refreshChannel(selectedChannelId, selectedThreadId)
     } catch {
-      setChannelStatus({ loading: false, message: 'Reaction gagal disimpan.' })
+      setChannelStatus({ loading: false, message: 'Failed to save reaction.' })
     }
   }
 
@@ -694,7 +694,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } catch {
       // Server gagal — re-sync state dari server
       await loadOverview('refresh')
-      setOverviewStatus((cur) => ({ ...cur, message: 'Notifikasi gagal diperbarui.' }))
+      setOverviewStatus((cur) => ({ ...cur, message: 'Failed to update notification.' }))
     }
   }
 
@@ -711,7 +711,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       await api.put(`/notifications/${notificationId}/dismiss`)
     } catch {
       await loadOverview('refresh')
-      setOverviewStatus((cur) => ({ ...cur, message: 'Notifikasi gagal disembunyikan.' }))
+      setOverviewStatus((cur) => ({ ...cur, message: 'Failed to hide notification.' }))
     }
   }
 
@@ -728,9 +728,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         const meId = currentUser.id
         setPresence(prev => prev.map(p => p.userId === meId ? { ...p, ...presenceDraft, lastActivityAt: nowIso } : p))
       }
-      setOverviewStatus((cur) => ({ ...cur, message: 'Status berhasil diperbarui.' }))
+      setOverviewStatus((cur) => ({ ...cur, message: 'Status updated.' }))
     } catch {
-      setOverviewStatus((cur) => ({ ...cur, message: 'Status gagal diperbarui.' }))
+      setOverviewStatus((cur) => ({ ...cur, message: 'Failed to update status.' }))
     }
   }
 

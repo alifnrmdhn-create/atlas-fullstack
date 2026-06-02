@@ -886,10 +886,7 @@
   padding: 9px 13px;
   background: var(--surface-1);
   border: 1px solid var(--panel-border-soft);
-  box-shadow:
-    0 8px 22px color-mix(in srgb, var(--panel-border-strong) 7%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 5%, transparent);
-  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+  transition: border-color 120ms ease, background 120ms ease;
 }
 
 /* Own: samakan perilaku lebar jadi hug-content (override flex:0 1 720px dari
@@ -906,13 +903,9 @@
   border-radius: 18px 18px 18px 6px;
 }
 
-/* Hover lift halus untuk bubble non-own (mengimbangi hover own) */
+/* Hover non-own: cukup pertegas border, tanpa lift/shadow (lift = kesan kartu) */
 .ds.channels-v2 .message-card:not(.message-card--own):not(.message-card--deleted-state):hover .message-card__body {
-  transform: translateY(-1px);
   border-color: var(--panel-border);
-  box-shadow:
-    0 12px 28px color-mix(in srgb, var(--panel-border-strong) 10%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 6%, transparent);
 }
 
 /* Reaksi & lampiran tetap rata-kiri di dalam bubble kiri (default own rata-kanan
@@ -920,4 +913,97 @@
 .ds.channels-v2 .message-card:not(.message-card--own) .message-reactions,
 .ds.channels-v2 .message-card:not(.message-card--own) .message-attachments {
   justify-content: flex-start;
+}
+
+
+/* ───────── PHASE 6 — De-card: bubble rata, pesan beruntun = satu blok ─────────
+   Tiap bubble sebelumnya punya drop-shadow tebal (own + cluster, dari
+   responsive.css; non-own dari PHASE 5) → tampak seperti TUMPUKAN KARTU melayang.
+   Untuk percakapan kerja, bubble = permukaan rata berdempetan; definisi cukup
+   dari border + bg. Buang semua drop-shadow & hover-lift. Radius "ekor" cluster
+   (responsive.css:12399+) tetap, jadi pesan beruntun menyatu sebagai satu blok. */
+.ds.channels-v2 .message-card__body,
+.ds.channels-v2 .message-card--own .message-card__body,
+.ds.channels-v2 .message-card--cluster-middle .message-card__body,
+.ds.channels-v2 .message-card--cluster-end .message-card__body,
+.ds.channels-v2 .message-card--cluster-middle.message-card--own .message-card__body,
+.ds.channels-v2 .message-card--cluster-end.message-card--own .message-card__body {
+  box-shadow: none;
+}
+.ds.channels-v2 .message-card--own:hover .message-card__body {
+  transform: none;
+  box-shadow: none;
+}
+
+
+/* ───────── PHASE 7 — Kolom percakapan terpusat (idiomatik bubble-chat) ─────────
+   Di layar lebar, bubble kiri sebelumnya mengambang di kolom sangat lebar →
+   ruang kanan kosong & tidak seimbang. Pusatkan kolom (pesan + intro + composer)
+   pada lebar nyaman ala iMessage/Telegram. Workspace tetap full-bleed; ini kolom
+   keterbacaan (analog 'prose'/pengecualian pakem full-bleed), bukan cap wrapper
+   page-level. Header/banner/tab tetap full-width (chrome). */
+.ds.channels-v2 {
+  --chat-col: 980px;
+}
+.ds.channels-v2 .message-stream--slackish > .message-group,
+.ds.channels-v2 .message-stream--slackish > .channel-intro-card {
+  max-width: var(--chat-col);
+  margin-inline: auto;
+}
+.ds.channels-v2 .composer-slim__box,
+.ds.channels-v2 .composer-slim__context,
+.ds.channels-v2 .composer-slim__format-bar {
+  max-width: var(--chat-col);
+  margin-inline: auto;
+}
+
+
+/* ───────── PHASE 8 — Bottom-anchor pesan (konvensi chat) ─────────
+   Stream sebelumnya block top-anchored → percakapan pendek mengambang di ATAS
+   dgn void besar di bawah. Jadikan flex-column + margin-top:auto pada elemen
+   pertama → pesan menempel ke BAWAH (dekat composer); saat konten penuh, free
+   space habis → margin auto = 0 → scroll normal. */
+.ds.channels-v2 .message-stream--slackish {
+  display: flex;
+  flex-direction: column;
+}
+/* Spacer pertama menyerap ruang kosong di ATAS → seluruh konten menempel ke
+   BAWAH (dekat composer). Pakai ::before (bukan :first-child) agar tahan thd
+   urutan child — tombol jump-to-bottom (sticky, in-flow) sering jadi child
+   pertama. Saat konten penuh, free space habis → margin auto = 0 → scroll normal. */
+.ds.channels-v2 .message-stream--slackish::before {
+  content: '';
+  margin-top: auto;
+}
+/* Stream kini flex-column → tombol jump-to-bottom (flex item) jangan ter-stretch
+   full-width. Tetap pil mengambang di bawah-tengah (sticky bottom). */
+.ds.channels-v2 .jump-to-bottom {
+  align-self: center;
+  left: auto;
+  transform: none;
+  width: auto;
+  /* jadikan item visual TERAKHIR agar sticky bottom mengambang benar (default
+     ia child pertama → sticky-bottom gagal & nyangkut di atas) */
+  order: 999;
+}
+.ds.channels-v2 .jump-to-bottom:hover {
+  transform: translateY(-1px);
+}
+
+
+/* ───────── PHASE 9 — Channel topic di header (isi ruang tengah) ─────────
+   Header sebelumnya: judul kiri, ikon kanan, tengah melompong. Tampilkan
+   deskripsi channel inline (gaya Slack) → mengisi tengah + konteks. Deskripsi
+   dipindah dari intro-card ke sini (tak dobel di chrome). Truncated 1 baris. */
+.ds.channels-v2 .channel-header-slim__topic {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 460px;
+  padding-left: 12px;
+  margin-left: 8px;
+  border-left: 1px solid var(--panel-border-soft);
 }

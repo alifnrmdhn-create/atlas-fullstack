@@ -60,9 +60,9 @@ export function useOnboardingTour(tourId: TourId, options: { trigger: boolean } 
           text: step.text,
           attachTo: step.attachTo,
           buttons: [
-            ...(idx > 0 ? [{ text: 'Kembali', action: () => tour.back(), classes: 'btn btn--ghost btn--sm' }] : []),
+            ...(idx > 0 ? [{ text: 'Back', action: () => tour.back(), classes: 'btn btn--ghost btn--sm' }] : []),
             {
-              text: isLast ? 'Selesai' : 'Lanjut',
+              text: isLast ? 'Done' : 'Next',
               action: () => isLast ? tour.complete() : tour.next(),
               classes: 'btn btn--primary btn--sm',
             },

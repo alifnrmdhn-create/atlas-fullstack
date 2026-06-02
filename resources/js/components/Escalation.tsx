@@ -259,7 +259,7 @@ export function EscalationTriagePanel({
       const payload = await api.post<{ data: EscalationRequest }>(`/escalations/${request.id}/${path}`, body)
       onUpdated(payload.data)
     } catch (err) {
-      setError((err as Error).message || 'Gagal melakukan aksi.')
+      setError((err as Error).message || 'Action failed.')
     } finally {
       setSaving(false)
     }

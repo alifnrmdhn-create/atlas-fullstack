@@ -22,7 +22,7 @@ export function ExportButton({ data }: Props) {
       await exportProgramCharter(data)
     } catch (err) {
       console.error('[charter] export failed', err)
-      setError(err instanceof Error ? err.message : 'Export gagal.')
+      setError(err instanceof Error ? err.message : 'Export failed.')
     } finally {
       setLoading(false)
     }

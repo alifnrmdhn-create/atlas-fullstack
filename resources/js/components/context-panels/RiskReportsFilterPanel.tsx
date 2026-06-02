@@ -88,7 +88,7 @@ export function RiskReportsFilterPanel() {
           <span className="context-panel__section-icon" aria-hidden="true">
             <Calendar size={13} />
           </span>
-          <h3 className="context-panel__section-title">Tahun</h3>
+          <h3 className="context-panel__section-title">Year</h3>
           {hasActive ? (
             <button type="button" className="context-panel__reset" onClick={reset}>
               Reset

@@ -41,12 +41,6 @@ const KPI_HEALTH_LABEL: Record<string, string> = {
   RED: 'Off Track',
 }
 
-function getAlignmentTone(pct: number): 'green' | 'yellow' | 'red' {
-  if (pct > 90) return 'green'
-  if (pct >= 85) return 'yellow'
-  return 'red'
-}
-
 function getDeadlineTone(daysLeft: number): 'overdue' | 'today' | 'soon' | 'calm' {
   if (daysLeft < 0) return 'overdue'
   if (daysLeft === 0) return 'today'
@@ -114,19 +108,19 @@ function KpiSection({
               }
               return (
                 <tr key={kpi.id}>
-                  <td><span className="code-badge">{kpi.code}</span></td>
-                  <td>
+                  <td data-label="Code"><span className="code-badge">{kpi.code}</span></td>
+                  <td data-label="KPI Name">
                     <span className="goals-kpi-name">
                       {kpi.name}
                     </span>
                   </td>
-                  <td className="goals-kpi-target">
+                  <td className="goals-kpi-target" data-label="Target">
                     {kpi.targetValue.toLocaleString('en-US')}
                   </td>
-                  <td><span className="text-xs text-muted">{kpi.unitOfMeasure ?? '–'}</span></td>
-                  <td><span className="badge">{kpi.metricType}</span></td>
-                  <td><span className="text-xs text-muted">{freqLabel[kpi.reviewFrequency ?? ''] ?? '–'}</span></td>
-                  <td>
+                  <td data-label="Unit"><span className="text-xs text-muted">{kpi.unitOfMeasure ?? '–'}</span></td>
+                  <td data-label="Type"><span className="badge">{kpi.metricType}</span></td>
+                  <td data-label="Frequency"><span className="text-xs text-muted">{freqLabel[kpi.reviewFrequency ?? ''] ?? '–'}</span></td>
+                  <td data-label="Status">
                     <span className={`status-badge goals-kpi-status ${healthClass}`}>
                       {healthLabel}
                     </span>
@@ -292,11 +286,6 @@ export function GoalsView() {
 
   const leadingKpis = kpis.filter(k => k.isLeadingIndicator)
   const laggingKpis = kpis.filter(k => !k.isLeadingIndicator)
-  const strategicItems = dashboard?.dimensions.strategic ?? []
-
-  const overallScore = strategicItems.length > 0
-    ? Math.round(strategicItems.reduce((s, i) => s + i.strategicAlignment, 0) / strategicItems.length)
-    : null
 
   const onTrack  = kpis.filter(k => normalizeHealthStatus(k.status) === 'GREEN').length
   const atRisk   = kpis.filter(k => normalizeHealthStatus(k.status) === 'YELLOW').length
@@ -321,7 +310,6 @@ export function GoalsView() {
             <span className="goals-toolbar-stat goals-toolbar-stat--green">{onTrack} <em>on track</em></span>
             {atRisk > 0   && <span className="goals-toolbar-stat goals-toolbar-stat--yellow">{atRisk} <em>at risk</em></span>}
             {offTrack > 0 && <span className="goals-toolbar-stat goals-toolbar-stat--red">{offTrack} <em>off track</em></span>}
-            {overallScore !== null && <span className="goals-toolbar-stat goals-toolbar-stat--blue">{overallScore}% <em>alignment</em></span>}
           </div>
           {canManage && (
             <button className="btn btn--primary btn--sm goals-toolbar-cta" onClick={openCreateKpi}>
@@ -354,36 +342,8 @@ export function GoalsView() {
           />
         </div>
 
-        {/* Right: alignment rail */}
+        {/* Right: execution rail */}
         <aside className="goals-rail right-rail">
-
-          {/* Program Alignment */}
-          {strategicItems.length > 0 && (
-            <div className="section-block">
-              <div className="section-header">
-                <h3 className="section-title goals-rail-title">Program Alignment</h3>
-              </div>
-              <div className="goals-alignment-list">
-                {[...strategicItems]
-                  .sort((a, b) => b.strategicAlignment - a.strategicAlignment)
-                  .map(item => {
-                    const pct = item.strategicAlignment
-                    const tone = getAlignmentTone(pct)
-                    return (
-                      <div className="goals-alignment-row" key={item.programId}>
-                        <div className="goals-alignment-row__top">
-                          <span className="goals-alignment-row__name">{item.program}</span>
-                          <span className={`goals-alignment-row__pct goals-alignment-row__pct--${tone}`}>{pct}%</span>
-                        </div>
-                        <div className="goals-alignment-row__track">
-                          <div className={`goals-alignment-row__fill goals-alignment-row__fill--${tone}`} style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    )
-                  })}
-              </div>
-            </div>
-          )}
 
           {/* Upcoming Deadlines */}
           {dashboard?.dimensions.timeIntelligence && dashboard.dimensions.timeIntelligence.length > 0 && (

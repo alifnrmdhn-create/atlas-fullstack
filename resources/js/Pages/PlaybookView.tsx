@@ -63,15 +63,15 @@ type ParseResult = { html: string; toc: TocEntry[]; h1: string; mermaidSources: 
 // Mirrors ATLAS sidebar's PDCA structure (Plan/Do/Check/Act + Komunikasi/Akun/Admin)
 // so playbook navigation matches the product navigation it documents.
 function pdcaGroup(num: number | null): string {
-  if (num === null) return 'Mulai di Sini'   // preamble: Referensi Jabatan, Glosarium, Alur Proses
-  if (num <= 2) return 'Mulai di Sini'        // 1. Auth, 2. Navigasi Sidebar
-  if (num <= 4) return 'Hari Ini'             // 3. Home, 4. Fokus
-  if (num <= 7) return 'Perencanaan'          // 5-7. Program, Charter, Roadmap
-  if (num <= 11) return 'Eksekusi'            // 8-11. Workboard, Penugasan, Grid, Blocker
+  if (num === null) return 'Get Started'      // preamble: Referensi Jabatan, Glosarium, Alur Proses
+  if (num <= 2) return 'Get Started'          // 1. Auth, 2. Navigasi Sidebar
+  if (num <= 4) return 'Today'                // 3. Home, 4. Fokus
+  if (num <= 7) return 'Planning'             // 5-7. Program, Charter, Roadmap
+  if (num <= 11) return 'Execution'           // 8-11. Workboard, Penugasan, Grid, Blocker
   if (num <= 16) return 'Performance'         // 12-16. Executive, Scorecard, KPI ×3
-  if (num <= 18) return 'Tindak Lanjut'       // 17. Rapat, 18. Eskalasi
-  if (num <= 21) return 'Komunikasi & Akun'   // 19. Channels, 20. Akun, 21. Search
-  return 'Lampiran'                            // 22. Admin, 23. Evaluasi
+  if (num <= 18) return 'Follow-up'           // 17. Rapat, 18. Eskalasi
+  if (num <= 21) return 'Communication & Account'   // 19. Channels, 20. Akun, 21. Search
+  return 'Appendix'                            // 22. Admin, 23. Evaluasi
 }
 
 function groupToc(toc: TocEntry[]): TocGroup[] {
@@ -428,7 +428,7 @@ export function PlaybookView() {
     <div className="ds playbook-v2 pb-workspace ds-stagger">
       <div className="pb-state">
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="7.5" cy="7.5" r="6"/><path d="M7.5 4.5v3.5M7.5 10v.5"/></svg>
-        Gagal memuat playbook: {error}
+        Failed to load playbook: {error}
       </div>
     </div>
   )
@@ -437,7 +437,7 @@ export function PlaybookView() {
     <div className="ds playbook-v2 pb-workspace ds-stagger">
       <div className="pb-state">
         <span className="pb-state__spin" />
-        Memuat playbook…
+        Loading playbook…
       </div>
     </div>
   )

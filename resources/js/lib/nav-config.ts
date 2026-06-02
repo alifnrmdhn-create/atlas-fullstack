@@ -77,7 +77,6 @@ export function normalizeNavPath(pathname: string): string {
   if (pathname.startsWith('/channels/')) return '/channels'
   if (pathname.startsWith('/meetings')) return '/jadwal'
   if (pathname.startsWith('/monthly-reports') || pathname.startsWith('/laporan-bulanan/')) return '/laporan-bulanan'
-  if (pathname.startsWith('/risk-reports') || pathname.startsWith('/laporan-risiko/')) return '/laporan-risiko'
   if (pathname.startsWith('/organization')) return '/admin/orgs'
   if (pathname.startsWith('/performance/kolegial')) return '/performance/kolegial'
   if (pathname.startsWith('/performance/scorecard')) return '/performance/scorecard'

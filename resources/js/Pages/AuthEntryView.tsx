@@ -82,9 +82,9 @@ export function AuthEntryView({
 
           <div className="auth-panel__content">
             <p className="auth-panel__eyebrow">Advanced Transformation &amp; Leadership Alignment System</p>
-            <h2 className="auth-panel__headline">Program, eksekusi, dan alignment — satu platform, satu tampilan.</h2>
+            <h2 className="auth-panel__headline">Programs, execution, and alignment — one platform, one view.</h2>
             <p className="auth-panel__desc">
-              ATLAS menyatukan program prioritas, kolaborasi lintas fungsi, dan keselarasan strategis dalam satu platform yang mudah dipantau dan nyaman digunakan setiap hari.
+              ATLAS brings priority programs, cross-functional collaboration, and strategic alignment into one platform that is easy to monitor and comfortable to use every day.
             </p>
           </div>
 
@@ -99,8 +99,8 @@ export function AuthEntryView({
       <div className="auth-form-side">
         <div className="auth-form-container">
           <div className="auth-form-header">
-            <span className="auth-form-header__eyebrow">Masuk ke ATLAS Workspace</span>
-            <p>Masuk dengan NIK atau User ID untuk membuka workspace kerja hari ini.</p>
+            <span className="auth-form-header__eyebrow">Sign in to ATLAS Workspace</span>
+            <p>Sign in with your NIK or User ID to open today's workspace.</p>
           </div>
 
           {authMessage && <div className="auth-notice auth-notice--info">{authMessage}</div>}
@@ -117,7 +117,7 @@ export function AuthEntryView({
                 type="text"
                 value={identifier}
               />
-              <label htmlFor="identifier" className="auth-float-label">NIK atau User ID khusus</label>
+              <label htmlFor="identifier" className="auth-float-label">NIK or dedicated User ID</label>
             </div>
 
             <div className="auth-float-group">
@@ -130,17 +130,17 @@ export function AuthEntryView({
                 type={showPassword ? 'text' : 'password'}
                 value={password}
               />
-              <label htmlFor="password" className="auth-float-label">Kata sandi</label>
+              <label htmlFor="password" className="auth-float-label">Password</label>
               <button
                 className="auth-input-toggle"
                 onClick={() => setShowPassword((v) => !v)}
                 type="button"
-                aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
               <button className="auth-form__forgot" onClick={onForgotPassword} type="button">
-                Lupa kata sandi?
+                Forgot password?
               </button>
             </div>
 
@@ -149,14 +149,14 @@ export function AuthEntryView({
               disabled={isLoading || isSuccess}
                 type="submit"
               >
-                <span className="auth-form__submit-text">Masuk</span>
+                <span className="auth-form__submit-text">Sign in</span>
               <span className="auth-form__submit-loader">
                 <span className="auth-spinner" />
-                Memproses…
+                Processing…
               </span>
               <span className="auth-form__submit-success">
                 <CheckIcon />
-                Berhasil masuk
+                Signed in
               </span>
               </button>
           </form>

@@ -7,6 +7,7 @@ import { useEscKey } from '../hooks/useEscKey'
 import { extractErrorMessage } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { formatRoleLabel } from '../lib/roleLabel'
+import { getProgramHealthDisplay, getProgramDisplayStatus } from '../lib/programStatus'
 import { useInlineToast } from '../components/InlineToast'
 import { PageHeader } from '../design-system'
 import './ChannelsView.css'
@@ -1236,6 +1237,16 @@ export function ChannelsView({
       : undefined,
     [selectedChannel, programs],
   )
+  // Canonical health/status labels (On Track / At Risk / Delayed, Active, …)
+  // — keeps banner vocabulary aligned with the rest of ATLAS.
+  const linkedProgramHealth = useMemo(
+    () => (linkedProgram ? getProgramHealthDisplay(linkedProgram) : null),
+    [linkedProgram],
+  )
+  const linkedProgramStatusLabel = useMemo(
+    () => (linkedProgram ? getProgramDisplayStatus(linkedProgram).label : ''),
+    [linkedProgram],
+  )
 
   // ── Smart @WI- mention state ────────────────────────────
   const [wiMentionState, setWiMentionState] = useState<{
@@ -1607,12 +1618,11 @@ export function ChannelsView({
         title="Channels"
         subtitle="Team communication, discussions, and project updates."
         actions={
-          <div className="view-toolbar__stats">
-            <span>{channels.length} <em>channels</em></span>
-            {unreadTotal > 0 && (
+          unreadTotal > 0 ? (
+            <div className="view-toolbar__stats">
               <span className="text-red">{unreadTotal} <em>unread</em></span>
-            )}
-          </div>
+            </div>
+          ) : undefined
         }
       />
     <section className="channels-layout channels-layout--polished" style={{ flex: 1, minHeight: 0 }}>
@@ -1902,6 +1912,11 @@ export function ChannelsView({
                     <IcoPin /> {pinnedCount}
                   </button>
                 )}
+                {selectedChannel?.description && (
+                  <span className="channel-header-slim__topic" title={selectedChannel.description}>
+                    {selectedChannel.description}
+                  </span>
+                )}
               </>
             )}
           </div>
@@ -2083,7 +2098,7 @@ export function ChannelsView({
                 <span className="eyebrow">Linked program</span>
                 <strong>{linkedProgram.name}</strong>
                 <span className={`channel-context-banner__health-pill channel-context-banner__health-pill--${linkedProgram.healthStatus.toLowerCase()}`}>
-                  {linkedProgram.healthStatus}
+                  {linkedProgramHealth?.label ?? linkedProgram.healthStatus}
                 </span>
               </div>
               {/* Mini progress bar */}
@@ -2097,9 +2112,7 @@ export function ChannelsView({
                 <span className="channel-context-banner__progress-pct">{linkedProgram.progressPercent}%</span>
               </div>
               <div className="channel-context-banner__metrics">
-                <span>Status: <strong>{linkedProgram.status.replace(/_/g, ' ')}</strong></span>
-                <span className="channel-context-banner__sep" />
-                <span>Risk: <strong style={{ color: linkedProgram.riskScore >= 15 ? 'var(--red)' : linkedProgram.riskScore >= 8 ? 'var(--yellow)' : 'var(--green)' }}>{linkedProgram.riskScore}</strong></span>
+                <span>Status: <strong>{linkedProgramStatusLabel || linkedProgram.status.replace(/_/g, ' ')}</strong></span>
                 <span className="channel-context-banner__sep" />
                 <span>Priority: <strong>{linkedProgram.priority}</strong></span>
               </div>
@@ -2193,9 +2206,6 @@ export function ChannelsView({
                       <span className="channel-intro-card__private-badge"><IcoLock /> Private</span>
                     )}
                   </div>
-                  {selectedChannel.description && (
-                    <p className="channel-intro-card__desc">{selectedChannel.description}</p>
-                  )}
                 </div>
               </div>
             )}

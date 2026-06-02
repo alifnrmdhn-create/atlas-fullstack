@@ -116,7 +116,7 @@ export function ProgramsFilterPanel() {
 
       <section className="context-panel__section">
         <header className="context-panel__section-header">
-          <h3 className="context-panel__section-title">Lainnya</h3>
+          <h3 className="context-panel__section-title">Other</h3>
         </header>
         <div className="context-panel__section-body">
           <label className="context-panel__check">
@@ -126,8 +126,8 @@ export function ProgramsFilterPanel() {
               onChange={toggleStale}
             />
             <span className="context-panel__check-label">
-              Stale &gt;30 hari
-              <span className="context-panel__check-hint">tidak ada update</span>
+              Stale &gt;30 days
+              <span className="context-panel__check-hint">no updates</span>
             </span>
           </label>
         </div>

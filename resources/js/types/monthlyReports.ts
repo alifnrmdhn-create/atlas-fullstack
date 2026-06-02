@@ -30,16 +30,16 @@ export const YEARS    = [CY, CY - 1, CY - 2]
 
 export const STATUS: Record<string, { label: string; cls: string; row: string; color: string }> = {
   DRAFT:     { label: 'Draft',      cls: 'draft',     row: 'draft',     color: 'var(--text-muted)' },
-  SUBMITTED: { label: 'Diajukan',   cls: 'submitted', row: 'submitted', color: 'var(--yellow)' },
-  REVIEWED:  { label: 'Direview',   cls: 'reviewed',  row: 'reviewed',  color: 'var(--blue)' },
-  APPROVED:  { label: 'Disetujui',  cls: 'approved',  row: 'approved',  color: 'var(--green)' },
-  REJECTED:  { label: 'Ditolak',    cls: 'rejected',  row: 'rejected',  color: 'var(--red)' },
+  SUBMITTED: { label: 'Submitted',  cls: 'submitted', row: 'submitted', color: 'var(--yellow)' },
+  REVIEWED:  { label: 'Reviewed',   cls: 'reviewed',  row: 'reviewed',  color: 'var(--blue)' },
+  APPROVED:  { label: 'Approved',   cls: 'approved',  row: 'approved',  color: 'var(--green)' },
+  REJECTED:  { label: 'Rejected',   cls: 'rejected',  row: 'rejected',  color: 'var(--red)' },
 }
 
 export const APPROVAL_ACTION: Record<string, { label: string; cls: string; dot: string }> = {
-  APPROVED:           { label: 'Disetujui',    cls: 'green', dot: 'approved' },
-  REJECTED:           { label: 'Ditolak',      cls: 'red',   dot: 'rejected' },
-  REVISION_REQUESTED: { label: 'Minta revisi', cls: 'amber', dot: 'revision' },
+  APPROVED:           { label: 'Approved',         cls: 'green', dot: 'approved' },
+  REJECTED:           { label: 'Rejected',         cls: 'red',   dot: 'rejected' },
+  REVISION_REQUESTED: { label: 'Revision requested', cls: 'amber', dot: 'revision' },
 }
 
 export const n     = (v: string | null) => v == null ? 0 : Number(v)
@@ -158,7 +158,7 @@ export const SCORE_CHANGE_META: Record<string, { icon: string; color: string }> 
 }
 
 export const RECOVERY_META: Record<string, { label: string; color: string }> = {
-  UNRECOVERED: { label: 'Belum pulih', color: '#ef4444' },
+  UNRECOVERED: { label: 'Not recovered', color: '#ef4444' },
   PARTIAL:     { label: 'Sebagian',    color: '#f59e0b' },
   RECOVERED:   { label: 'Pulih',       color: '#22c55e' },
 }

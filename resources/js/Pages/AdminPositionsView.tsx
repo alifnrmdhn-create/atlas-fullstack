@@ -329,20 +329,20 @@ export function AdminPositionsView() {
                 </tr>
               ) : positions.map(pos => (
                 <tr key={pos.id}>
-                  <td>
+                  <td data-label="Code">
                     {pos.code
                       ? <span className="code-badge">{pos.code}</span>
                       : <span className="text-muted text-xs">–</span>}
                   </td>
-                  <td>
+                  <td data-label="Position">
                     <span className="text-strong admin-cell-title">{pos.title}</span>
                   </td>
-                  <td>
+                  <td data-label="Level">
                     {pos.level !== undefined && pos.level !== null
                       ? <span className={`badge ${LEVEL_BADGE[pos.level] ?? ''}`}>{LEVEL_LABEL[pos.level] ?? pos.level}</span>
                       : <span className="text-muted text-xs">–</span>}
                   </td>
-                  <td>
+                  <td data-label="Unit">
                     {pos.unit
                       ? <div className="admin-cell-inline">
                           <span className="code-badge">{pos.unit.code}</span>
@@ -350,7 +350,7 @@ export function AdminPositionsView() {
                         </div>
                       : <span className="text-muted text-xs">–</span>}
                   </td>
-                  <td>
+                  <td data-label="Directorate">
                     {pos.directorate
                       ? <div className="admin-cell-inline">
                           <span className="code-badge">{pos.directorate.code}</span>
@@ -358,7 +358,7 @@ export function AdminPositionsView() {
                         </div>
                       : <span className="text-muted text-xs">–</span>}
                   </td>
-                  <td>
+                  <td data-label="Holder">
                     {pos.currentHolder
                       ? <div className="admin-cell-stack">
                           <span className="text-sm admin-cell-name">{pos.currentHolder.name}</span>
@@ -366,7 +366,7 @@ export function AdminPositionsView() {
                         </div>
                       : <span className="badge badge--yellow">Vacant</span>}
                   </td>
-                  <td>
+                  <td data-label="Status">
                     <span className={`badge ${pos.isActive ? 'badge--green' : 'badge--red'}`}>
                       {pos.isActive ? 'Active' : 'Inactive'}
                     </span>

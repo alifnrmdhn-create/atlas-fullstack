@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react'
-import { Activity, Trophy, FileText, ShieldAlert, Zap, ZapOff } from 'lucide-react'
+import { Activity, Trophy, FileText, Zap, ZapOff } from 'lucide-react'
 import { useWorkspace } from '../../hooks/useWorkspace'
 
 /**
@@ -98,12 +98,6 @@ export function ReportsAnalyticsPanel() {
               <FileText size={13} />
             </span>
             <span className="context-panel__focus-label">Monthly Report</span>
-          </Link>
-          <Link href="/laporan-risiko" className="context-panel__focus-item">
-            <span className="context-panel__focus-icon-inline" aria-hidden="true">
-              <ShieldAlert size={13} />
-            </span>
-            <span className="context-panel__focus-label">Risk Report</span>
           </Link>
         </div>
       </section>

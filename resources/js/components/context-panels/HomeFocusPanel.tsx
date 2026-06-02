@@ -21,14 +21,11 @@ export function HomeFocusPanel() {
     )
   }
 
-  const { summary, controls, needsAction } = programSummary
+  const { summary, needsAction } = programSummary
   const terlambatCount = summary.terlambat + summary.overdue
-  const criticalControls = (controls ?? []).filter(
-    (c) => c.severity === 'CRITICAL' || c.severity === 'HIGH',
-  ).length
   const decisionCount = needsAction.length
 
-  const hasAttention = terlambatCount > 0 || criticalControls > 0 || decisionCount > 0
+  const hasAttention = terlambatCount > 0 || decisionCount > 0
 
   return (
     <>
@@ -40,13 +37,6 @@ export function HomeFocusPanel() {
                 label={`${terlambatCount} programs delayed`}
                 meta="needs intervention"
                 href="/programs?status=terlambat"
-              />
-            ) : null}
-            {criticalControls > 0 ? (
-              <FocusItem
-                label={`${criticalControls} critical controls open`}
-                meta="risk"
-                href="/laporan-risiko"
               />
             ) : null}
             {decisionCount > 0 ? (

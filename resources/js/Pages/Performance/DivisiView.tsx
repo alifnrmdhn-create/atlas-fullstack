@@ -109,7 +109,7 @@ type KpiGroup = { perspektif: string; items: KpiItem[]; bobot: number; pct: numb
 function groupByPerspektif(items: KpiItem[]): KpiGroup[] {
   const map = new Map<string, KpiItem[]>()
   for (const it of items) {
-    const key = it.perspektif?.trim() || 'Lainnya'
+    const key = it.perspektif?.trim() || 'Other'
     if (!map.has(key)) map.set(key, [])
     map.get(key)!.push(it)
   }

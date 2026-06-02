@@ -198,7 +198,7 @@ function InfoHint({ content }: { content: string }) {
  * Peta Portfolio: same two axes, bucketed for at-a-glance density. */
 function ExecutionMap({ programs, onOpen }: {
   programs: Array<{ progressPercent: number; daysRemaining: number | null; healthTone: string }>
-  onOpen: () => void
+  onOpen: (href: string) => void
 }) {
   // rows = time-pressure (Tinggi/Sedang/Rendah), cols = progress (Awal/Tengah/Akhir)
   const grid = [0, 1, 2].map(() => [0, 0, 0])
@@ -207,6 +207,14 @@ function ExecutionMap({ programs, onOpen }: {
   programs.forEach(p => { grid[pressRow(p.daysRemaining)][progCol(p.progressPercent)]++ })
   const max = Math.max(1, ...grid.flat())
   const rowLabels = ['High', 'Medium', 'Low']
+  // Composite deep-link (Tier 3): baris pressure → token ?deadline (bisa >1),
+  // kolom progress → token ?progress. Selaras bucket di ProgramsView.
+  // Catatan: baris Low juga mencakup program tanpa tenggat (pressRow null→2); filter
+  // gt90 tak menyertakannya → hitungan Low bisa sedikit beda bila ada program no-deadline.
+  const PRESSURE_DEADLINE = [['overdue', 'le30'], ['le60', 'le90'], ['gt90']]
+  const PROGRESS_TOKEN = ['early', 'mid', 'final']
+  const cellHref = (r: number, c: number) =>
+    `/programs?deadline=${PRESSURE_DEADLINE[r].join(',')}&progress=${PROGRESS_TOKEN[c]}`
   // tone: high-pressure + low-progress (top-left) = danger; low-pressure + high-progress = safe
   const cellTone = (r: number, c: number): Tone => {
     const score = (2 - r) + c // 0..4
@@ -223,7 +231,7 @@ function ExecutionMap({ programs, onOpen }: {
               <button key={c} type="button" className="hvc__xmap-cell" data-tone={cellTone(r, c)} data-empty={count === 0 ? '' : undefined}
                 style={{ ['--i' as string]: count === 0 ? 0.05 : 0.18 + 0.82 * (count / max) } as CSSProperties}
                 title={`${rowLabels[r]} pressure · ${['early','mid','final'][c]} progress: ${count} programs`}
-                onClick={onOpen}>
+                onClick={() => onOpen(cellHref(r, c))}>
                 {count > 0
                   ? <span className="hvc__xmap-count">{count}<span className="hvc__xmap-cap">Programs</span></span>
                   : <span className="hvc__xmap-count hvc__xmap-count--zero">0<span className="hvc__xmap-cap">Programs</span></span>}
@@ -258,17 +266,30 @@ function initials(text: string): string {
 type TLProg = { id: number; code: string; name: string; daysRemaining: number | null; targetEndDate?: string | null; divisi: string; healthTone: string }
 const TL_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-// Deep-link ke /programs ter-filter. ProgramsView hanya mengenal status
-// GREEN/YELLOW/RED via ?status (on_track/at_risk/terlambat) — Completed & filter
-// divisi tidak ada di URL → fallback ke /programs generik. (ProgramsView = modul
-// inti, tidak diubah; kita hanya memanfaatkan param yang sudah didukungnya.)
-const PROGRAM_STATUS_HREF: Record<string, string> = {
-  onTrack: '/programs?status=on_track',
-  atRisk: '/programs?status=at_risk',
-  tlm: '/programs?status=terlambat',
-  terlambat: '/programs?status=terlambat',
+// Deep-link ke /programs ter-filter. ProgramsView mengenal (sejak Tier 1–3 2026-06-02):
+//   ?status=on_track|at_risk|terlambat (health), ?completed=1 (lifecycle),
+//   ?division=CODE, ?deadline=overdue|le30|le60|le90|gt90, ?progress=early|mid|final.
+// Tiap filter tampil sbg chip clearable di ProgramsView.
+const PROGRAM_STATUS_PART: Record<string, string> = {
+  onTrack: 'status=on_track',
+  atRisk: 'status=at_risk',
+  tlm: 'status=terlambat',
+  terlambat: 'status=terlambat',
+  selesai: 'completed=1',
 }
-const programsHref = (key?: string) => (key && PROGRAM_STATUS_HREF[key]) || '/programs'
+// key = kolom status/health (atau 'selesai'); divisionCode opsional (mis. "DKSA-HLD").
+const programsHref = (key?: string, divisionCode?: string) => {
+  const parts: string[] = []
+  const statusPart = key ? PROGRAM_STATUS_PART[key] : undefined
+  if (statusPart) parts.push(statusPart)
+  const div = divisionCode ? divisionCode.split('-')[0] : ''
+  if (div) parts.push(`division=${div}`)
+  return parts.length ? `/programs?${parts.join('&')}` : '/programs'
+}
+// Label bar Deadlines → token ?deadline. Cocokkan prefix (tak bentrok:
+// "61–90"→61, "90+"→90). "No deadline" → null (tanpa filter).
+const DEADLINE_PREFIX: Array<[string, string]> = [['Overdue', 'overdue'], ['≤', 'le30'], ['31', 'le60'], ['61', 'le90'], ['90', 'gt90']]
+const deadlineToken = (label: string) => DEADLINE_PREFIX.find(([p]) => label.startsWith(p))?.[1] ?? null
 
 function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (id: number) => void }) {
   const dated = programs.filter(p => p.targetEndDate && p.daysRemaining != null)
@@ -563,7 +584,7 @@ export default function HomeView() {
   //  • 'Stalled' (stagnantCount) → sebab sama (semua updatedAt baru) → ~0 palsu.
   // Sisa stat = throughput nyata (program selesai 30 hari + task selesai pekan ini).
   const momentumStats = momentum ? [
-    { label: 'Completed · 30d', value: momentum.programsCompletedLast30d, suffix: '', tone: 'green' as Tone, href: '/programs' },
+    { label: 'Completed · 30d', value: momentum.programsCompletedLast30d, suffix: '', tone: 'green' as Tone, href: '/programs?completed=1' },
     { label: 'Tasks done · this week', value: momentum.tasksCompletedThisWeek, suffix: '', tone: 'green' as Tone, href: '/execution' },
   ] : []
 
@@ -797,7 +818,7 @@ export default function HomeView() {
                       <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('onTrack'))}><i className="hvc__dot" data-tone="green" />On Track<b>{summary.onTrack}</b></button></li>
                       <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('atRisk'))}><i className="hvc__dot" data-tone="amber" />At Risk<b>{summary.atRisk}</b></button></li>
                       <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('tlm'))}><i className="hvc__dot" data-tone="red" />Delayed<b>{tlm}</b></button></li>
-                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate('/programs')}><i className="hvc__dot" data-tone="neutral" />Completed<b>{summary.selesai}</b></button></li>
+                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('selesai'))}><i className="hvc__dot" data-tone="neutral" />Completed<b>{summary.selesai}</b></button></li>
                     </ul>
                   </div>
                 </div>
@@ -879,7 +900,7 @@ export default function HomeView() {
                   </span>
                 </header>
                 {horizonBars.length > 0
-                  ? <Bars bars={horizonBars} height={112} rich onBarClick={(b) => navigate(b.label.toLowerCase().includes('overdue') ? '/programs?status=terlambat' : '/programs')} />
+                  ? <Bars bars={horizonBars} height={112} rich onBarClick={(b) => { const dl = deadlineToken(b.label); navigate(dl ? `/programs?deadline=${dl}` : '/programs') }} />
                   : <p className="hvc__empty">No active programs with deadlines.</p>}
               </Card>
 
@@ -888,7 +909,7 @@ export default function HomeView() {
                 <header className="hvc__panel-head">
                   <span className="hvc__eyebrow">Execution Map</span>
                 </header>
-                <ExecutionMap programs={programsForChart} onOpen={() => navigate('/programs')} />
+                <ExecutionMap programs={programsForChart} onOpen={(href) => navigate(href)} />
               </Card>
 
               {/* Momentum — fokus ke arah tren On Track 14 hari (sinyal leading nyata).
@@ -964,7 +985,7 @@ export default function HomeView() {
                               data-col={c.key}
                               style={{ '--i': v === 0 ? 0 : 0.18 + 0.82 * (v / heatMax) } as CSSProperties}
                               title={`${d.unit.name} · ${c.label}: ${v}`}
-                              onClick={() => navigate(programsHref(c.key))}
+                              onClick={() => navigate(programsHref(c.key, d.unit.code))}
                             >
                               {v > 0 ? v : ''}
                             </button>

@@ -43,6 +43,16 @@ try {
   await waitFor(page, () => document.querySelector('.ds.channels-v2') && document.querySelector('.message-stream'), 15000, 'channels view')
   await sleep(1300)
 
+  // Optional: click a channel/DM row whose text contains CHANNEL_PICK
+  if (process.env.CHANNEL_PICK) {
+    await page.send('Runtime.evaluate', { expression: `(() => {
+      const rows = [...document.querySelectorAll('.channel-row')];
+      const t = rows.find(r => r.textContent && r.textContent.includes(${JSON.stringify(process.env.CHANNEL_PICK)}));
+      if (t) t.click();
+    })()` })
+    await sleep(1400)
+  }
+
   await shot(page, join(outDir, `${tag}-top.png`))
 
   // Scroll the message stream up to reveal earlier messages

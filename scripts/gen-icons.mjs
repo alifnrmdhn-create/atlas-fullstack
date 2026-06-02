@@ -10,20 +10,22 @@ const chromeBin = process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Con
 const outDir = join(process.cwd(), 'public', 'icons')
 mkdirSync(outDir, { recursive: true })
 
-// sizes: [name, px, padScale] — padScale = logo size as fraction of canvas (maskable wants ~0.6 safe zone)
+// sizes: [name, px, padScale, radiusScale] — padScale = logo size as fraction of canvas
+// (maskable wants ~0.5 safe zone). radiusScale = corner radius as fraction of canvas;
+// 0 = full-bleed square (REQUIRED for maskable so the OS applies its own mask cleanly).
 const targets = [
-  ['icon-192.png', 192, 0.62],
-  ['icon-512.png', 512, 0.62],
-  ['icon-maskable-512.png', 512, 0.52], // tighter safe zone for circular masks
-  ['apple-touch-icon.png', 180, 0.62],
-  ['favicon-32.png', 32, 0.70],
+  ['icon-192.png', 192, 0.62, 0.22],
+  ['icon-512.png', 512, 0.62, 0.22],
+  ['icon-maskable-512.png', 512, 0.52, 0], // full bleed, no radius — platform masks it
+  ['apple-touch-icon.png', 180, 0.62, 0.22],
+  ['favicon-32.png', 32, 0.70, 0.22],
 ]
 
-function iconHTML(px, logoScale) {
+function iconHTML(px, logoScale, radiusScale) {
   const inner = Math.round(px * logoScale)
-  const radius = Math.round(px * 0.22)
+  const radius = Math.round(px * radiusScale)
   return `<!doctype html><html><head><meta charset="utf-8"><style>
-    html,body{margin:0;padding:0}
+    html,body{margin:0;padding:0;background:transparent}
     .wrap{width:${px}px;height:${px}px;display:flex;align-items:center;justify-content:center;
       background:linear-gradient(135deg,#2D8C3E 0%,#0a4d20 100%);border-radius:${radius}px;overflow:hidden}
     svg{width:${inner}px;height:${inner}px}
@@ -50,9 +52,12 @@ try {
   const page = await connectCDP(target.webSocketDebuggerUrl)
   await page.send('Page.enable'); await page.send('Runtime.enable')
 
-  for (const [name, px, scale] of targets) {
+  for (const [name, px, scale, radiusScale] of targets) {
     await page.send('Emulation.setDeviceMetricsOverride', { width: px, height: px, deviceScaleFactor: 1, mobile: false })
-    const html = iconHTML(px, scale)
+    // Capture with a transparent backdrop so corners outside the border-radius are
+    // alpha=0, not white. Without this Chrome paints an opaque white default bg.
+    await page.send('Emulation.setDefaultBackgroundColorOverride', { color: { r: 0, g: 0, b: 0, a: 0 } })
+    const html = iconHTML(px, scale, radiusScale)
     await page.send('Page.navigate', { url: 'data:text/html;charset=utf-8,' + encodeURIComponent(html) })
     await waitForEvent(page, 'Page.loadEventFired', 8000)
     await sleep(120)

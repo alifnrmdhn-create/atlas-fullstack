@@ -31,7 +31,7 @@ import './ProgramsView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type ProgramTab = 'portfolio' | 'timeline' | 'monitoring' | 'pulse' | 'risiko' | 'archive'
+type ProgramTab = 'portfolio' | 'timeline' | 'monitoring' | 'pulse' | 'archive'
 type PortfolioView = 'list' | 'kanban' | 'table' | 'map'
 type TimelineView = 'lanes' | 'gantt'
 type LaneGrouping = 'status' | 'priority' | 'health'
@@ -73,6 +73,11 @@ const VALID_SEVERITIES = new Set(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'])
 // Paginasi List & Table — 97 program di-render sekaligus = DOM berat + scroll
 // melelahkan. Hanya 1 halaman dirender pada satu waktu.
 const PORTFOLIO_PAGE_SIZE = 20
+
+// Label chip filter window tenggat (deep-link ?deadline=), selaras bar "Deadlines" di Home.
+const DEADLINE_LABEL: Record<string, string> = {
+  overdue: 'Overdue', le30: '≤30 days', le60: '31–60 days', le90: '61–90 days', gt90: '90+ days',
+}
 
 const approvalBadge = (prog: { approvalStatus?: string | null; rejectionNote?: string | null }) => {
   // Rejected = DRAFT + rejectionNote populated. The literal 'REJECTED' status
@@ -504,6 +509,46 @@ export function ProgramsView() {
   const urlStaleOnly = useMemo<boolean>(() => {
     const qs = url.split('?')[1] ?? ''
     return new URLSearchParams(qs).get('stale') === '1'
+  }, [url])
+
+  // ── Deep-link filters dari Home (param ortogonal — TIDAK mengubah logika
+  // ?status/?stale yang sudah ada). Semua di-render sebagai chip yang bisa
+  // di-clear (transparansi: user tahu kenapa list ter-filter & bisa membuangnya).
+  //   ?completed=1            → program selesai (approvalStatus/status COMPLETED)
+  //   ?division=DKSA[,DAPN]   → kode divisi pemilik (shortcode, dari ownerUnitId)
+  //   ?deadline=overdue|le30|le60|le90|gt90  → window tenggat (Tier 2)
+  //   ?progress=early|mid|final              → bucket progress (Tier 3)
+  const qParam = useCallback((key: string) => new URLSearchParams(url.split('?')[1] ?? '').get(key) ?? '', [url])
+  const urlCompletedOnly = useMemo<boolean>(() => qParam('completed') === '1', [qParam])
+  const urlDivisionFilter = useMemo<Set<string>>(() =>
+    new Set(qParam('division').split(',').map(s => s.trim().toUpperCase()).filter(Boolean)), [qParam])
+  const urlDeadlineFilter = useMemo<Set<string>>(() =>
+    new Set(qParam('deadline').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)), [qParam])
+  const urlProgressFilter = useMemo<Set<string>>(() =>
+    new Set(qParam('progress').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)), [qParam])
+
+  // unitId → kode divisi (shortcode), dari programSummary.byDivisi (sumber yang
+  // sama dengan heatmap Home), jadi filter divisi konsisten lintas halaman.
+  const unitCodeById = useMemo<Map<number, string>>(() => {
+    const m = new Map<number, string>()
+    for (const d of programSummary?.byDivisi ?? []) {
+      if (d.unit?.id != null) m.set(d.unit.id, (d.unit.code ?? '').split('-')[0].toUpperCase())
+    }
+    return m
+  }, [programSummary])
+
+  // Toggle/clear satu nilai pada param multi-nilai (division/deadline/progress).
+  const toggleMultiParam = useCallback((key: string, value: string) => {
+    const params = new URLSearchParams(url.split('?')[1] ?? '')
+    const cur = new Set((params.get(key) ?? '').split(',').filter(Boolean))
+    if (cur.has(value)) cur.delete(value); else cur.add(value)
+    if (cur.size > 0) params.set(key, Array.from(cur).join(',')); else params.delete(key)
+    router.visit(`/programs${params.toString() ? '?' + params.toString() : ''}`, { preserveState: true, preserveScroll: true, replace: true })
+  }, [url])
+  const clearParam = useCallback((key: string) => {
+    const params = new URLSearchParams(url.split('?')[1] ?? '')
+    params.delete(key)
+    router.visit(`/programs${params.toString() ? '?' + params.toString() : ''}`, { preserveState: true, preserveScroll: true, replace: true })
   }, [url])
 
   const toggleStatusFilter = useCallback((tone: 'GREEN' | 'YELLOW' | 'RED') => {
@@ -943,7 +988,9 @@ export function ProgramsView() {
     yellow: programs.filter(p => normalizeHealthStatus(p.healthStatus) === 'YELLOW').length,
     red:    programs.filter(p => normalizeHealthStatus(p.healthStatus) === 'RED').length,
   }
-  const riskPrograms = programs.filter(p => normalizeHealthStatus(p.healthStatus) === 'RED' || p.riskScore >= 15).length
+  // Program butuh perhatian = health RED (Delayed). Sebelumnya OR riskScore>=15 —
+  // dilepas: ATLAS bukan app manajemen risiko, skor risiko ditiadakan (2026-06-02).
+  const attentionPrograms = programs.filter(p => normalizeHealthStatus(p.healthStatus) === 'RED').length
 
   // ── Portfolio insight panels (data dari programSummary, sama dgn Home) ──
   // Fokus EKSEKUSI PROGRAM (bukan KPI/risiko) — Sebaran tenggat, Laju eksekusi,
@@ -1021,12 +1068,38 @@ export function ProgramsView() {
   const matchesUrlStatus = (p: typeof programs[number]) =>
     urlStatusFilter.size === 0 || urlStatusFilter.has(normalizeHealthStatus(p.healthStatus) as 'GREEN' | 'YELLOW' | 'RED')
 
+  // Deep-link filters (ortogonal, AND antar-jenis; OR di dalam satu jenis).
+  const deadlineBucket = (p: typeof programs[number]): string | null => {
+    if (!p.targetEndDate) return null
+    const d = Math.round((new Date(p.targetEndDate).getTime() - Date.now()) / 86_400_000)
+    if (d < 0) return 'overdue'
+    if (d <= 30) return 'le30'
+    if (d <= 60) return 'le60'
+    if (d <= 90) return 'le90'
+    return 'gt90'
+  }
+  const progressBucket = (p: typeof programs[number]): string =>
+    p.progressPercent < 34 ? 'early' : p.progressPercent < 67 ? 'mid' : 'final'
+  const matchesDeepFilters = (p: typeof programs[number]) => {
+    if (urlCompletedOnly && p.approvalStatus !== 'COMPLETED' && p.status !== 'COMPLETED') return false
+    if (urlDivisionFilter.size > 0) {
+      const code = p.ownerUnitId != null ? unitCodeById.get(p.ownerUnitId) ?? null : null
+      if (!code || !urlDivisionFilter.has(code)) return false
+    }
+    if (urlDeadlineFilter.size > 0) {
+      const b = deadlineBucket(p)
+      if (!b || !urlDeadlineFilter.has(b)) return false
+    }
+    if (urlProgressFilter.size > 0 && !urlProgressFilter.has(progressBucket(p))) return false
+    return true
+  }
+
   const filteredPortfolio = programs.filter(p => {
     const matchesSearch = !portfolioSearch ||
       p.name.toLowerCase().includes(portfolioSearch.toLowerCase()) ||
       p.code.toLowerCase().includes(portfolioSearch.toLowerCase())
     const matchesApproval = approvalFilter === 'all' || needsActionPrograms.some(n => n.id === p.id)
-    return matchesSearch && matchesApproval && matchesUrlStatus(p)
+    return matchesSearch && matchesApproval && matchesUrlStatus(p) && matchesDeepFilters(p)
   })
 
   // ── Paginasi (List & Table) ───────────────────────────────────────────
@@ -1051,7 +1124,7 @@ export function ProgramsView() {
   const filteredLane = programs.filter(p =>
     (!laneSearch || p.name.toLowerCase().includes(laneSearch.toLowerCase()) ||
      p.code.toLowerCase().includes(laneSearch.toLowerCase())) &&
-    matchesUrlStatus(p)
+    matchesUrlStatus(p) && matchesDeepFilters(p)
   )
   const filteredTimeline = timelineData.filter(p =>
     !laneSearch || p.name.toLowerCase().includes(laneSearch.toLowerCase()) ||
@@ -1184,7 +1257,7 @@ export function ProgramsView() {
             </div>
           </div>
 
-          {(riskPrograms > 0 || needsActionPrograms.length > 0) && (
+          {(attentionPrograms > 0 || needsActionPrograms.length > 0) && (
             <button
               type="button"
               className="programs-v2__stat programs-v2__stat--action"
@@ -1203,7 +1276,7 @@ export function ProgramsView() {
                 : 'Filter at-risk programs (At Risk + Delayed)'}
             >
               <div className="programs-v2__stat-num">
-                {needsActionPrograms.length > 0 ? needsActionPrograms.length : riskPrograms}
+                {needsActionPrograms.length > 0 ? needsActionPrograms.length : attentionPrograms}
               </div>
               <div className="programs-v2__stat-label">
                 {needsActionPrograms.length > 0 ? 'Needs Your Action' : 'Needs Attention'}
@@ -1314,7 +1387,6 @@ export function ProgramsView() {
           ['timeline',  'Timeline'],
           ['monitoring', 'Monitoring'],
           ['pulse',     'Pulse'],
-          ['risiko',    'Risk'],
         ] as [ProgramTab, string][]).map(([t, label]) => (
           <button
             key={t}
@@ -1386,7 +1458,36 @@ export function ProgramsView() {
                 <span className="programs-filter-chip__count">{needsActionPrograms.length}</span>
               </button>
             )}
-            {(urlStatusFilter.size > 0 || urlStaleOnly || approvalFilter === 'needs_action') && (
+            {/* Completed — toggle persisten (lifecycle), setara Stale */}
+            <button
+              type="button"
+              className={`programs-filter-chip programs-filter-chip--neutral${urlCompletedOnly ? ' programs-filter-chip--active' : ''}`}
+              aria-pressed={urlCompletedOnly}
+              onClick={() => (urlCompletedOnly ? clearParam('completed') : router.visit(`/programs?${(() => { const pr = new URLSearchParams(url.split('?')[1] ?? ''); pr.set('completed', '1'); return pr.toString() })()}`, { preserveState: true, preserveScroll: true, replace: true }))}
+            >
+              <span className="programs-filter-chip__dot" aria-hidden="true" />
+              Completed
+            </button>
+            {/* Chip deep-link aktif (division/deadline/progress) — bisa di-clear per nilai */}
+            {Array.from(urlDivisionFilter).map(code => (
+              <button key={`div-${code}`} type="button" className="programs-filter-chip programs-filter-chip--active programs-filter-chip--removable"
+                aria-pressed onClick={() => toggleMultiParam('division', code)}>
+                Division: {code} <span className="programs-filter-chip__x" aria-hidden>×</span>
+              </button>
+            ))}
+            {Array.from(urlDeadlineFilter).map(b => (
+              <button key={`dl-${b}`} type="button" className="programs-filter-chip programs-filter-chip--active programs-filter-chip--removable"
+                aria-pressed onClick={() => toggleMultiParam('deadline', b)}>
+                {DEADLINE_LABEL[b] ?? b} <span className="programs-filter-chip__x" aria-hidden>×</span>
+              </button>
+            ))}
+            {Array.from(urlProgressFilter).map(b => (
+              <button key={`pg-${b}`} type="button" className="programs-filter-chip programs-filter-chip--active programs-filter-chip--removable"
+                aria-pressed onClick={() => toggleMultiParam('progress', b)}>
+                {b === 'early' ? 'Early' : b === 'mid' ? 'Mid' : 'Final'} progress <span className="programs-filter-chip__x" aria-hidden>×</span>
+              </button>
+            ))}
+            {(urlStatusFilter.size > 0 || urlStaleOnly || approvalFilter === 'needs_action' || urlCompletedOnly || urlDivisionFilter.size > 0 || urlDeadlineFilter.size > 0 || urlProgressFilter.size > 0) && (
               <button
                 type="button"
                 className="programs-filter-reset"
@@ -1707,7 +1808,7 @@ export function ProgramsView() {
                   <div className="panel__header">
                     <div>
                       <h3 className="panel__title">Portfolio Table</h3>
-                      <p className="panel__sub">Risk score, alignment, and health status per program.</p>
+                      <p className="panel__sub">Status, progress, blockers, and health per program.</p>
                     </div>
                   </div>
                   <table className="gov-table">
@@ -1717,9 +1818,7 @@ export function ProgramsView() {
                         <th>Status</th>
                         <th>Progress</th>
                         <th>Deadline</th>
-                        <th>Risk</th>
                         <th>Blocker</th>
-                        <th>Alignment</th>
                         <th>Health</th>
                         <th>KPI</th>
                       </tr>
@@ -1754,16 +1853,10 @@ export function ProgramsView() {
                               ) : <span className="text-muted">—</span>}
                             </td>
                             <td>
-                              <span className={prog.riskScore >= 15 ? 'text-red fw-bold' : prog.riskScore >= 8 ? 'text-yellow fw-bold' : 'text-green fw-bold'}>
-                                {prog.riskScore}
-                              </span>
-                            </td>
-                            <td>
                               {bCount > 0 ? (
                                 <span className="program-table-count program-table-count--blockers">{bCount}</span>
                               ) : <span className="program-table-count program-table-count--empty">—</span>}
                             </td>
-                            <td>{prog.strategicAlignment}%</td>
                             <td><HealthPill status={normalizeHealthStatus(prog.healthStatus)} /></td>
                             <td>
                               {(prog.kpiCount ?? 0) === 0 ? (
@@ -1850,7 +1943,6 @@ export function ProgramsView() {
                             {group.items.map(prog => {
                               const health = normalizeHealthStatus(prog.healthStatus)
                               const sc = health === 'GREEN' ? 'on-track' : health === 'YELLOW' ? 'at-risk' : 'off-track'
-                              const riskTone = prog.riskScore >= 15 ? 'critical' : 'warn'
                               return (
                                 <button key={prog.id} className="roadmap-bar list-row"
                                   onClick={() => navigate(`/programs/${prog.id}`)}>
@@ -1864,11 +1956,7 @@ export function ProgramsView() {
                                   <span className="roadmap-bar__pct">
                                     {prog.progressPercent}%
                                   </span>
-                                  {prog.riskScore >= 10 ? (
-                                    <span className={`risk-chip risk-chip--${riskTone} roadmap-bar__risk`}>
-                                      Risk {prog.riskScore}
-                                    </span>
-                                  ) : <span className="roadmap-bar__risk-placeholder" />}
+                                  <span className="roadmap-bar__risk-placeholder" />
                                   {prog.owner ? (
                                     <span className="roadmap-bar__owner text-muted text-xs">{prog.owner.name}</span>
                                   ) : <span className="roadmap-bar__owner-placeholder" />}
@@ -1884,30 +1972,6 @@ export function ProgramsView() {
                         </div>
                       ))}
 
-                      {/* Alignment matrix */}
-                      {dashboard?.dimensions.strategic && dashboard.dimensions.strategic.length > 0 && (
-                        <div className="roadmap-alignment">
-                          <div className="section-block">
-                            <div className="section-header">
-                              <h3 className="section-title">Program Alignment</h3>
-                            </div>
-                            <div className="alignment-grid">
-                              {dashboard.dimensions.strategic.slice(0, 8).map(s => (
-                                <div className="alignment-cell" key={s.programId} title={`${s.program} — ${s.strategicAlignment ?? 0}%`}>
-                                  <div className="alignment-cell__bar">
-                                    <div
-                                      className={`alignment-cell__fill alignment-cell__fill--${(s.strategicAlignment ?? 0) >= 80 ? 'green' : (s.strategicAlignment ?? 0) >= 60 ? 'yellow' : 'red'}`}
-                                      style={{ height: `${s.strategicAlignment ?? 0}%` }}
-                                    />
-                                  </div>
-                                  <span className="alignment-cell__label text-muted">{s.program}</span>
-                                  <span className="alignment-cell__val">{s.strategicAlignment != null ? `${s.strategicAlignment}%` : '—'}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </>
                   )}
                 </div>
@@ -2141,83 +2205,6 @@ export function ProgramsView() {
           )}
 
           {/* ── TAB: RISIKO ─────────────────────────────────────────────── */}
-          {tab === 'risiko' && (
-            <div className="programs-section-stack">
-              <div className="section-block">
-                <div className="section-header">
-                  <div>
-                    <h3 className="section-title">Program Alignment</h3>
-                    <p className="section-subtitle">Strategic alignment level per program.</p>
-                  </div>
-                </div>
-                {dashboard?.dimensions.strategic && dashboard.dimensions.strategic.length > 0 ? (
-                  <div className="alignment-grid">
-                    {dashboard.dimensions.strategic.slice(0, 8).map(s => (
-                      <div className="alignment-cell" key={s.programId} title={`${s.program} — ${s.strategicAlignment}%`}>
-                        <div className="alignment-cell__bar">
-                          <div
-                            className={`alignment-cell__fill alignment-cell__fill--${s.strategicAlignment >= 80 ? 'green' : s.strategicAlignment >= 60 ? 'yellow' : 'red'}`}
-                            style={{ height: `${s.strategicAlignment}%` }}
-                          >
-                            <span className={`alignment-cell__fill-label${s.strategicAlignment >= 20 ? ' alignment-cell__fill-label--visible' : ''}`}>{s.program}</span>
-                          </div>
-                        </div>
-                        <span className="alignment-cell__label text-muted">{s.program}</span>
-                        <span className="alignment-cell__val">{s.strategicAlignment}%</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <SectionState icon="📊" title="No alignment data yet" text="Data appears once programs are configured." compact />
-                )}
-              </div>
-
-              <div className="section-block">
-                <div className="section-header">
-                  <div>
-                    <h3 className="section-title">Risk per Program</h3>
-                    <p className="section-subtitle">Aggregate risk score per program.</p>
-                  </div>
-                </div>
-                <table className="gov-table">
-                  <thead>
-                    <tr>
-                      <th>Program</th>
-                      <th>Risk Score</th>
-                      <th>Alignment</th>
-                      <th>Health</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {programs
-                      .slice()
-                      .sort((a, b) => (b.riskScore ?? 0) - (a.riskScore ?? 0))
-                      .map(prog => (
-                        <tr key={prog.id}
-                          className={`gov-table__row${prog.id === selectedProgramId ? ' gov-table__row--active' : ''}`}
-                          onClick={() => navigate(`/programs/${prog.id}`)}>
-                          <td>
-                            <div className="gov-table__name">
-                              <span className="code-badge">{prog.code}</span>
-                              <strong>{prog.name}</strong>
-                            </div>
-                          </td>
-                          <td>
-                            <span className={prog.riskScore >= 15 ? 'text-red fw-bold' : prog.riskScore >= 8 ? 'text-yellow fw-bold' : 'text-green fw-bold'}>
-                              {prog.riskScore ?? 0}
-                            </span>
-                          </td>
-                          <td>{prog.strategicAlignment ?? 0}%</td>
-                          <td><HealthPill status={normalizeHealthStatus(prog.healthStatus)} /></td>
-                          <td>{(() => { const d = getProgramDisplayStatus(prog); return <span className={`badge badge--${d.tone}`}>{d.label}</span> })()}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
           </div>{/* end .programs-tab-content */}
         </div>
       </div>

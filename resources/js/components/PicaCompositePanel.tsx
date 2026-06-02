@@ -351,7 +351,7 @@ function PicaRow({
       <div className="pica-cell pica-cell--issue">
         <div className="pica-cell__text">{issueText}</div>
         {!blocker.rootCause && fallbackKendala && (
-          <div className="pica-cell__meta-faint">dari ProgressLog</div>
+          <div className="pica-cell__meta-faint">from ProgressLog</div>
         )}
       </div>
 

@@ -353,10 +353,10 @@ export function AdminOrgsView() {
                   <tbody>
                     {units.map(unit => (
                       <tr key={unit.id}>
-                        <td><span className="code-badge">{unit.code}</span></td>
-                        <td><span className="text-strong admin-cell-title">{unit.name}</span></td>
-                        <td><span className="text-sm text-muted">{unit.directorate?.name ?? '–'}</span></td>
-                        <td><span className="text-sm text-muted">{unit.unitType}</span></td>
+                        <td data-label="Code"><span className="code-badge">{unit.code}</span></td>
+                        <td data-label="Unit Name"><span className="text-strong admin-cell-title">{unit.name}</span></td>
+                        <td data-label="Directorate"><span className="text-sm text-muted">{unit.directorate?.name ?? '–'}</span></td>
+                        <td data-label="Type"><span className="text-sm text-muted">{unit.unitType}</span></td>
                         <td>
                           <div className="admin-row-actions">
                             <button

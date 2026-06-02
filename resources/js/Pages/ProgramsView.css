@@ -544,11 +544,21 @@
   color: var(--tone-red);
 }
 
-.programs-v2 .programs-filter-chip--stale.programs-filter-chip--active {
+.programs-v2 .programs-filter-chip--stale.programs-filter-chip--active,
+.programs-v2 .programs-filter-chip--neutral.programs-filter-chip--active {
   background: var(--ds-neutral-100);
   border-color: var(--ds-text-secondary);
   color: var(--ds-text-primary);
 }
+
+/* Chip deep-link aktif (division/deadline/progress) — bisa di-clear (× ) */
+.programs-v2 .programs-filter-chip--removable {
+  background: var(--ds-neutral-100);
+  border-color: var(--ds-text-secondary);
+  color: var(--ds-text-primary);
+}
+.programs-v2 .programs-filter-chip__x { margin-left: 4px; opacity: 0.55; font-weight: 600; }
+.programs-v2 .programs-filter-chip--removable:hover .programs-filter-chip__x { opacity: 1; }
 
 /* Reset link — inline text button, only visible when filters are active */
 .programs-v2 .programs-filter-reset {

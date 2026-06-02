@@ -115,8 +115,8 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
     return (
       <div className="execution-grid">
         <div className="execution-grid__empty">
-          Workstream ini belum memiliki sub-tahap dengan rencana mingguan. Tambah fase &amp; sub-tahap
-          untuk mulai tracking Plan/Real.
+          This workstream has no sub-steps with a weekly plan yet. Add phases &amp; sub-steps
+          to start tracking Plan/Real.
         </div>
       </div>
     )
@@ -486,7 +486,7 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                 style={{ left: todayLeftInWeeks }}
                 title={`Hari ini — ${currentWeek}`}
               >
-                <span className="execution-grid__today-flag">Hari ini</span>
+                <span className="execution-grid__today-flag">Today</span>
               </div>
             </>
           )}

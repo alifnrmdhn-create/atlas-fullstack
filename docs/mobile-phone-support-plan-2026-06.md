@@ -149,7 +149,15 @@ Konteks: Fase 1–3 = "tidak rusak / muat" (responsive bug-fixing). Track ini = 
 - Installable di deploy HTTPS (Railway) setelah `npm run build`. Validated: manifest JSON ok, sw.js syntax ok, ikon render ok.
 - NB build penuh tertahan sementara karena HomeView.tsx WIP user (bukan dari mobile work).
 
-### M3 — Touch targets ≥44px (global pass)
-### M4 — Tabel → kartu reflow (pola reusable)
-### M5 — Modal → full-screen sheet (phone)
-### M6 — Density tuning per-flow
+### M3 — Touch targets ≥44px ✅ DONE (2026-06-02)
+- Layer phone (≤640) terpusat di `responsive.css`: tombol utama (.btn/.wi-btn) min-height 44; ds-button--sm/md height 44; chrome padat (topbar notif/avatar/cmdk/quick, view-toggle-btn, select, search, wb-program-filter) min 40; sidebar__item drawer 44; tap-highlight off. Verified: topbar icon ~40px, tombol Schedule/CTA ≥44px nyaman dijari. Desktop tak berubah.
+### M4 — Tabel → kartu reflow ✅ DONE (2026-06-02)
+- Reusable: `.reports-table` di ≤640 → kartu bertumpuk (thead clip, tr=kartu, td=baris label:nilai via data-label, sel aksi=baris penuh). CSS di misc-views.css.
+- data-label ditambah di AdminUsers/Positions/Orgs + Goals. Matriks (atl/kpt/monitoring/perm) tetap scroll-x (benar). Verified: Admin Users jadi kartu rapi  (label kiri/nilai kanan + aksi).
+- TEMUAN: Goals punya layout 2-kolom yg overflow di phone → batch ke M6.
+### M5 — Modal → bottom sheet ✅ DONE (2026-06-02)
+- ≤640 di responsive.css: .modal-backdrop/.modal-overlay/.overlay-backdrop align flex-end; .modal/.modal--wide/.modal-panel full-width, radius atas, max-height 92vh, slide-up (sheet-up); body scroll; footer sticky + safe-area. Verified: modal "Add New User" jadi bottom sheet (field full-width, footer Cancel/Add User sticky).
+### M6 — Density tuning ✅ DONE (2026-06-02)
+- ≤640 token override (responsive.css): --space-page-x 32→16, top 28→16, bot 48→20 → semua *__inner dapat lebih banyak lebar (konten 326→358px) + buang white-space. 
+- Goals 2-kolom (main+rail 280px) collapse ke 1-kolom (misc-views.css) → rail "Upcoming Deadlines" yg tadinya off-screen kini terjangkau. Verified MEASURE goals: 0 overflow.
+- Metode: MEASURE/CHAIN env di mobile-shot.mjs (data-driven cari offender).

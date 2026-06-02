@@ -463,6 +463,59 @@
 .reports-table tr:last-child td { border-bottom: none; }
 .reports-table tr:hover td { background: var(--surface-1); }
 
+/* M4 mobile (≤640): tabel record klasik → kartu bertumpuk. Setiap <tr> jadi
+ * kartu, tiap <td> jadi baris "Label: nilai" (label dari atribut data-label di
+ * td). Sel tanpa data-label (mis. kolom aksi) tampil sebagai baris aksi penuh.
+ * Matriks/timeline (atl/kpt/monitoring/perm) TIDAK pakai ini — mereka scroll-x.
+ * Mobile UX 2026-06-02. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .reports-table { font-size: 13px; }
+  .reports-table thead {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .reports-table,
+  .reports-table tbody,
+  .reports-table tr,
+  .reports-table td { display: block; width: 100%; }
+  .reports-table tr {
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    background: var(--panel);
+    padding: 4px 14px;
+    margin-bottom: 10px;
+  }
+  .reports-table tr:hover td { background: transparent; }
+  .reports-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 9px 0;
+    border: 0;
+    border-bottom: 1px solid var(--panel-border-soft);
+    text-align: right;
+    min-height: 40px;
+  }
+  .reports-table td:last-child { border-bottom: 0; }
+  .reports-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+    text-align: left;
+    flex-shrink: 0;
+  }
+  /* Sel aksi (tanpa data-label) → baris penuh, tombol rata kanan. */
+  .reports-table td:not([data-label]) { justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+  .reports-table td:not([data-label])::before { content: none; }
+}
+
 .reports-blocker-layout { display: flex; flex-direction: column; gap: 12px; }
 .reports-blocker-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .blocker-sev-card {
@@ -650,6 +703,12 @@
 .goals-workspace { display: grid; grid-template-columns: 1fr 280px; gap: 16px; padding: 20px 36px; align-items: start; }
 .goals-main { display: flex; flex-direction: column; gap: 12px; }
 .goals-rail { display: flex; flex-direction: column; gap: 12px; }
+/* M6 mobile (≤640): Goals 2-kolom (main + rail 280px) tak collapse → rail
+ * "Upcoming Deadlines" ke luar layar & tak terjangkau. Jadikan 1-kolom (rail
+ * pindah ke bawah main). Mobile UX 2026-06-02. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .goals-workspace { grid-template-columns: 1fr; padding: 16px; gap: 14px; }
+}
 .goals-section-title { display: flex; align-items: center; gap: 8px; }
 .goals-section-title__pill {
   display: inline-flex;

@@ -152,15 +152,15 @@ export const sessionStorage = {
 
 // Field labels untuk Zod-style error extraction (kompat dengan kode lama)
 const FIELD_LABELS: Record<string, string> = {
-    name: 'Nama', title: 'Judul', description: 'Deskripsi',
-    status: 'Status', priority: 'Prioritas',
-    startDate: 'Tanggal Mulai', targetCompletion: 'Target Selesai', dueDate: 'Tenggat',
+    name: 'Name', title: 'Title', description: 'Description',
+    status: 'Status', priority: 'Priority',
+    startDate: 'Start Date', targetCompletion: 'Target Completion', dueDate: 'Due Date',
     programId: 'Program', workstreamId: 'Workstream', phaseId: 'Phase',
-    content: 'Konten', type: 'Tipe', note: 'Catatan',
+    content: 'Content', type: 'Type', note: 'Note',
     identifier: 'NIK/User ID', email: 'Email', password: 'Password',
 }
 
-export function extractErrorMessage(err: unknown, fallback = 'Terjadi kesalahan.'): string {
+export function extractErrorMessage(err: unknown, fallback = 'Something went wrong.'): string {
     if (!(err instanceof ApiRequestError)) {
         return (err as { message?: string })?.message ?? fallback
     }

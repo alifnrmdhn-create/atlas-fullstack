@@ -318,22 +318,22 @@ export function AdminUsersView() {
                 </tr>
               ) : users.map(user => (
                 <tr key={user.id}>
-                  <td>
+                  <td data-label="Nama / ID">
                     <div className="admin-cell-stack">
                       <span className="text-strong admin-cell-title">{user.name}</span>
                       <span className="code-badge">{user.userId}</span>
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Role">
                     <span className={`badge ${ROLE_BADGE[user.roleType] ?? ''}`}>{formatRoleLabel(user.roleType)}</span>
                   </td>
-                  <td>
+                  <td data-label="Position">
                     <div className="admin-cell-stack">
                       {user.position?.code && <span className="code-badge admin-code-badge--micro admin-code-badge--fit">{user.position.code}</span>}
                       <span className="text-sm text-muted">{user.position?.name ?? user.positionTitle ?? '–'}</span>
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Unit">
                     {user.unit
                       ? <div className="admin-cell-inline">
                           <span className="code-badge">{user.unit.code}</span>
@@ -341,7 +341,7 @@ export function AdminUsersView() {
                         </div>
                       : <span className="text-muted text-xs">–</span>}
                   </td>
-                  <td>
+                  <td data-label="Directorate">
                     {user.directorate
                       ? <div className="admin-cell-inline">
                           <span className="code-badge">{user.directorate.code}</span>
@@ -349,7 +349,7 @@ export function AdminUsersView() {
                         </div>
                       : <span className="text-muted text-xs">–</span>}
                   </td>
-                  <td>
+                  <td data-label="Status">
                     <span className={`badge ${user.isActive ? 'badge--green' : 'badge--red'}`}>
                       {user.isActive ? 'Active' : 'Inactive'}
                     </span>

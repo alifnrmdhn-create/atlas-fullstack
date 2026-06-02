@@ -63,7 +63,7 @@ export function getKpiStatusLabel(status?: string | null) {
   if (normalized === 'GREEN') return 'On Track'
   if (normalized === 'YELLOW') return 'At Risk'
   if (normalized === 'RED') return 'Off Track'
-  return 'Belum Diukur'
+  return 'Not Measured'
 }
 
 export function getKpiFillPercent(actualValue?: number | null, targetValue?: number | null) {

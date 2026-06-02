@@ -292,7 +292,6 @@ function prefetchRoute(path: string) {
     '/goals': () => import('../Pages/GoalsView'),
     '/jadwal': () => import('../Pages/ScheduleView'),
     '/laporan-bulanan': () => import('../Pages/MonthlyReportsView'),
-    '/laporan-risiko': () => import('../Pages/RiskReportsView'),
     '/playbook': () => import('../Pages/PlaybookView'),
     '/panduan': () => import('../Pages/PanduanView'),
     '/executive': () => import('../Pages/ExecutiveSummaryView'),
@@ -321,7 +320,6 @@ function normalizeShellPath(pathname: string): string {
   if (pathname.startsWith('/channels/')) return '/channels'
   if (pathname.startsWith('/meetings')) return '/jadwal'
   if (pathname.startsWith('/monthly-reports') || pathname.startsWith('/laporan-bulanan/')) return '/laporan-bulanan'
-  if (pathname.startsWith('/risk-reports') || pathname.startsWith('/laporan-risiko/')) return '/laporan-risiko'
   if (pathname.startsWith('/organization')) return '/admin/orgs'
   if (pathname.startsWith('/performance/kolegial')) return '/performance/kolegial'
   if (pathname.startsWith('/performance/scorecard')) return '/performance/scorecard'
@@ -1048,8 +1046,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
   //
   // NOTE: grup "Pelaporan" dihilangkan dari semua surface navigasi utama
   // (sidebar + Command Palette + breadcrumb) per permintaan user 2026-05-10.
-  // Halaman /laporan-bulanan & /laporan-risiko tetap hidup: accessible via
-  // direct URL, notif deep-link, dan link di Analytics/Home focus card.
+  // Halaman /laporan-bulanan tetap hidup: accessible via direct URL & notif deep-link.
+  // Dashboard Risiko standalone (/laporan-risiko) DIHILANGKAN dari discovery 2026-06-02
+  // (ATLAS bukan app manajemen risiko); API /risk-reports tetap untuk Monthly Report DIMR.
   const navGroups: { label: string; items: NavItem[] }[] = [
     grpPortfolio,
     grpMyWork,
@@ -1059,7 +1058,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // Page name for breadcrumb
   const PAGE_NAMES: Record<string, string> = {
     '/': 'Home', '/programs': 'Programs',
-    '/goals': 'Goals & KPI', '/activity': 'Team Activity', '/execution': 'Workboard', '/penugasan': 'Assignment', '/reports': 'Analytics', '/laporan-bulanan': 'Monthly Reports', '/laporan-risiko': 'Risk Reports',
+    '/goals': 'Goals & KPI', '/activity': 'Team Activity', '/execution': 'Workboard', '/penugasan': 'Assignment', '/reports': 'Analytics', '/laporan-bulanan': 'Monthly Reports',
     '/fokus': 'Focus', '/channels': 'Channels', '/jadwal': 'Coordination', '/search': 'Search',
     '/presence': 'Presence', '/profile': 'Profile', '/settings': 'Settings',
     '/executive': 'Executive Summary',

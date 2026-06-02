@@ -1584,8 +1584,8 @@ export function ProgramDetailView() {
                   aria-expanded={approvalLogExpanded}
                 >
                   {approvalLogExpanded
-                    ? 'Sembunyikan riwayat lama'
-                    : `Lihat ${hiddenCount} entry lainnya`}
+                    ? 'Hide old history'
+                    : `View ${hiddenCount} more entries`}
                 </button>
               )}
             </div>
@@ -2303,7 +2303,7 @@ export function ProgramDetailView() {
                         onClick={() => setActiveTab('workstream')}
                       >
                         {(detail.workstreams ?? []).length > 3
-                          ? `Lihat semua ${(detail.workstreams ?? []).length} →`
+                          ? `View all ${(detail.workstreams ?? []).length} →`
                           : 'Detail →'}
                       </button>
                     </div>
@@ -2352,7 +2352,7 @@ export function ProgramDetailView() {
                         className="prog-blocker-callout__link"
                         onClick={() => setActiveTab('blocker')}
                       >
-                        Coba di tab Hambatan →
+                        Try the Blockers tab →
                       </button>
                     </div>
                   </div>
@@ -2361,13 +2361,13 @@ export function ProgramDetailView() {
                   <div className="prog-blocker-callout">
                     <div className="prog-blocker-callout__head">
                       <span className="prog-blocker-callout__icon">{PIcon.blocker}</span>
-                      <strong className="prog-blocker-callout__title">{blockers.length} blocker aktif</strong>
+                      <strong className="prog-blocker-callout__title">{blockers.length} active {blockers.length === 1 ? 'blocker' : 'blockers'}</strong>
                       <button
                         type="button"
                         className="prog-blocker-callout__link"
                         onClick={() => setActiveTab('blocker')}
                       >
-                        Lihat semua →
+                        View all →
                       </button>
                     </div>
                     <div className="prog-blocker-callout__list">
@@ -2501,8 +2501,8 @@ export function ProgramDetailView() {
                   // Program::getReadinessAttribute), jadi label memakai "KPI" generik.
                   const checks = [
                     { done: !!(detail.description?.trim()), label: 'Program description filled', cta: openEdit },
-                    { done: !!detail.readiness?.hasWorkstream && !!detail.readiness?.hasTask, label: 'Minimal 1 workstream dengan 1 task', cta: () => setActiveTab('workstream') },
-                    { done: !!detail.readiness?.hasKpi, label: 'KPI ditautkan (APMS atau internal)', cta: () => setActiveTab('kpi') },
+                    { done: !!detail.readiness?.hasWorkstream && !!detail.readiness?.hasTask, label: 'At least 1 workstream with 1 task', cta: () => setActiveTab('workstream') },
+                    { done: !!detail.readiness?.hasKpi, label: 'KPI linked (APMS or internal)', cta: () => setActiveTab('kpi') },
                   ]
                   const doneCount = checks.filter(c => c.done).length
                   const allDone = doneCount === checks.length
@@ -3235,7 +3235,7 @@ export function ProgramDetailView() {
               <div className="program-detail-section-head">
                 <h3 className="wi-section__title program-detail-section-title">
                   {PIcon.blocker}
-                  Hambatan Program
+                  Program Blockers
                 </h3>
                 {/* Badge count: hide saat 0. "0 open" = noise tanpa info actionable.
                     Tampilkan hanya saat ada blocker aktif sebagai signal scan-cepat. */}
@@ -3828,8 +3828,8 @@ export function ProgramDetailView() {
                   </div>
                   <div className="form-field">
                     <label>
-                      Channel Komunikasi
-                      <span className="form-field__hint"> · tautkan ke channel agar update program juga muncul di sana</span>
+                      Communication Channel
+                      <span className="form-field__hint"> · link to a channel so program updates also appear there</span>
                     </label>
                     <select
                       className="form-input"
@@ -3849,8 +3849,8 @@ export function ProgramDetailView() {
                 </section>
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>PIC &amp; Tim</h4>
-                    <p>Tetapkan siapa yang bertanggung jawab atas program ini. PIC Utama memiliki hak penuh; Tim PIC dapat turut mengedit.</p>
+                    <h4>PIC &amp; Team</h4>
+                    <p>Set who is responsible for this program. The Main PIC has full rights; the PIC Team can also edit.</p>
                   </div>
                   {userDirectory.length === 0 ? (
                     <p className="wi-sidebar-value" style={{ color: 'var(--text-muted)', fontSize: 12 }}>Loading user list…</p>
@@ -4025,8 +4025,8 @@ export function ProgramDetailView() {
                 </div>
                 <div className="form-field">
                   <label>
-                    Owner Workstream
-                    <span className="form-field__hint"> · reviewer task yang masuk IN_REVIEW</span>
+                    Workstream Owner
+                    <span className="form-field__hint"> · reviewer for tasks entering IN_REVIEW</span>
                   </label>
                   <UserPicker
                     currentUserId={currentUser?.id}
@@ -4281,7 +4281,7 @@ export function ProgramDetailView() {
                     autoFocus
                     maxLength={120}
                     onChange={e => setCpForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="e.g. Pemetaan Struktur Utang & Audit Baseline"
+                    placeholder="e.g. Debt Structure Mapping & Baseline Audit"
                     required
                     type="text"
                     value={cpForm.name}
@@ -4335,7 +4335,7 @@ export function ProgramDetailView() {
                     autoFocus
                     maxLength={120}
                     onChange={e => setCstForm(f => ({ ...f, title: e.target.value }))}
-                    placeholder="e.g. Pemetaan struktur utang SGN per kreditur"
+                    placeholder="e.g. SGN debt structure mapping per creditor"
                     required
                     type="text"
                     value={cstForm.title}

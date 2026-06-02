@@ -63,8 +63,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/jadwal', fn () => Inertia::render('ScheduleView'))->name('jadwal');
     Route::get('/laporan-bulanan', fn () => Inertia::render('MonthlyReportView'))->name('laporan-bulanan');
     Route::get('/laporan-bulanan/{id}', [MonthlyReportController::class, 'show'])->name('laporan-bulanan.show');
-    Route::get('/laporan-risiko', fn () => Inertia::render('RiskReportView'))->name('laporan-risiko');
-    Route::get('/laporan-risiko/{id}', [RiskReportController::class, 'show'])->name('laporan-risiko.show');
+    // Halaman dashboard Risiko standalone DIHILANGKAN dari discovery (2026-06-02):
+    // ATLAS bukan app manajemen risiko. API /risk-reports/* (di bawah) tetap hidup
+    // untuk Monthly Report DIMR yang berformat risiko. Lihat feedback_atlas_not_risk_app.
     Route::get('/search', [WorkspaceController::class, 'search'])->name('search');
     Route::get('/presence', fn () => Inertia::render('PresenceView'))->name('presence');
     Route::get('/profile', [WorkspaceController::class, 'profile'])->name('profile');
