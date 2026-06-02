@@ -137,6 +137,29 @@ function activityText(a: { action: string; entityType: string; description?: str
   return `${a.action} ${ent}`.trim()
 }
 
+/* Activity feed marker — ikon JENIS aktivitas (bukan inisial nama yang
+ * menyamar jadi avatar orang; feed ini sintetis tanpa data aktor). */
+function activityTone(action: string): Tone {
+  return action === 'BLOCKER_ADDED' ? 'amber' : action === 'MEASURED' ? 'green' : 'neutral'
+}
+function ActivityGlyph({ action }: { action: string }) {
+  const p = {
+    width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none',
+    stroke: 'currentColor', strokeWidth: 1.9,
+    strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
+  }
+  switch (action) {
+    case 'MEASURED':       // KPI diukur — garis tren
+      return <svg {...p}><path d="M4 18 L9 12 L13 15 L20 6" /><polyline points="15 6 20 6 20 11" /></svg>
+    case 'BLOCKER_ADDED':  // hambatan — segitiga waspada
+      return <svg {...p}><path d="M12 3 L22 20 L2 20 Z" /><line x1="12" y1="10" x2="12" y2="14" /><circle cx="12" cy="17" r="0.6" fill="currentColor" /></svg>
+    case 'CREATED':        // program baru — dokumen
+      return <svg {...p}><rect x="4" y="3" width="16" height="18" rx="2" /><line x1="8" y1="9" x2="16" y2="9" /><line x1="8" y1="13" x2="14" y2="13" /></svg>
+    default:               // STATUS_CHANGED — diperbarui (refresh)
+      return <svg {...p}><path d="M21 12a9 9 0 1 1-2.6-6.4" /><polyline points="21 3 21 8 16 8" /></svg>
+  }
+}
+
 /* Status glyph — check (aman) / triangle (hati-hati) / cross (bahaya). Tone
  * carried by currentColor; neutral falls back to a dot. */
 function ToneGlyph({ tone }: { tone: Tone }) {
@@ -999,9 +1022,9 @@ export default function HomeView() {
                       const txt = activityText(a)
                       return (
                         <li key={a.id} className="hvc__act-row">
-                          <span className="hvc__act-avatar" aria-hidden>{initials(txt)}</span>
+                          <span className="hvc__act-icon" data-tone={activityTone(a.action)} aria-hidden><ActivityGlyph action={a.action} /></span>
                           <span className="hvc__act-text">{txt}</span>
-                          <span className="hvc__act-time">{relativeTime(a.changeTimestamp)}</span>
+                          <span className="hvc__act-time" title={new Date(a.changeTimestamp).toLocaleString('id-ID')}>{relativeTime(a.changeTimestamp)}</span>
                         </li>
                       )
                     })}

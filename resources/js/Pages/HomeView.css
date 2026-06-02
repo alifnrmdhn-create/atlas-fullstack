@@ -1685,10 +1685,13 @@
 .hv--cockpit .hvc__act-icon {
   flex-shrink: 0; width: 28px; height: 28px; border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
-  background: color-mix(in srgb, var(--ds-green-600) 14%, transparent);
-  color: var(--ds-green-600); position: relative; z-index: 1;
+  background: var(--ds-surface-sunken);
+  color: var(--ds-text-secondary); position: relative; z-index: 1;
 }
-[data-theme="dark"] .hv--cockpit .hvc__act-icon { color: #34D399; background: rgba(52,211,153,0.16); }
+.hv--cockpit .hvc__act-icon[data-tone="green"] { background: color-mix(in srgb, var(--ds-green-600) 14%, transparent); color: var(--ds-green-600); }
+.hv--cockpit .hvc__act-icon[data-tone="amber"] { background: color-mix(in srgb, var(--ds-amber-600) 15%, transparent); color: var(--ds-amber-600); }
+[data-theme="dark"] .hv--cockpit .hvc__act-icon[data-tone="green"] { color: #34D399; background: rgba(52,211,153,0.16); }
+[data-theme="dark"] .hv--cockpit .hvc__act-icon[data-tone="amber"] { color: #FBBF24; background: rgba(251,191,36,0.16); }
 /* connector line through the icons */
 .hv--cockpit .hvc__act-row:not(:last-child) .hvc__act-icon::after {
   content: ''; position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
