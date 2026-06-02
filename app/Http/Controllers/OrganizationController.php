@@ -83,7 +83,13 @@ class OrganizationController extends Controller
         }
 
         $payload = Cache::remember($cacheKey, now()->addMinutes(3), function () use ($user) {
-            return $this->buildProgramSummary($user);
+            // Normalisasi ke array murni sebelum di-cache. buildProgramSummary()
+            // mengembalikan objek Collection (byDivisi/programsForChart/controls/…);
+            // kalau itu yang disimpan, cache `file` men-`serialize()`-nya lalu
+            // membaca balik sebagai __PHP_Incomplete_Class → command center KOSONG
+            // pada tiap cache-hit (load pertama miss masih benar). json round-trip
+            // bikin struktur serialize-safe. (fix Jun 2026)
+            return json_decode(json_encode($this->buildProgramSummary($user)), true);
         });
 
         return response()->json($payload);
@@ -132,10 +138,14 @@ class OrganizationController extends Controller
 
         $now = Carbon::now();
 
-        // Classify each program into a health tone
+        // Classify each program into a health tone.
+        // setAppends([]) sebelum toArray() WAJIB: appends `readiness` menjalankan 4
+        // exists() query per program saat relasi belum eager-loaded (di sini memang
+        // tidak) → 4×N N+1 (≈388 query untuk 97 program, dominan di cold-load Home).
+        // Dashboard payload tak memakai picPersonIds/workstreamCount/readiness.
         $classified = $programs->map(function ($p) use ($now) {
             $tone = $this->classifyProgramHealth($p, $now);
-            return [...$p->toArray(), 'healthTone' => $tone, 'healthLabel' => $this->toneLabel($tone)];
+            return [...$p->setAppends([])->toArray(), 'healthTone' => $tone, 'healthLabel' => $this->toneLabel($tone)];
         });
 
         // Per-division breakdown

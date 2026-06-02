@@ -1077,7 +1077,7 @@
   --auth-panel-border: rgba(255,255,255,0.08);
   --auth-glow-accent: radial-gradient(circle, color-mix(in srgb, #34D399 20%, transparent), transparent 66%);
   --auth-glow-blue:   radial-gradient(circle, color-mix(in srgb, #10B981 13%, transparent), transparent 68%);
-  --auth-map-opacity: 0.16;
+  --auth-map-opacity: 0.11;
   --auth-map-blend: screen;
   --auth-mark-shadow: 0 16px 34px color-mix(in srgb, #10B981 28%, transparent);
   --auth-eyebrow: rgba(223,238,230,0.64);

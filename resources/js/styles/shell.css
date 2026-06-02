@@ -144,7 +144,15 @@
  * in light theme, dark navy in dark theme (token-driven). No radius / drop
  * shadow — it is no longer a floating panel. */
 .sidebar {
-  background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-end) 100%);
+  /* Base color via `background-color` (NOT a gradient) so the theme swap
+   * animates the SAME longhand as topbar/workspace (--app-bg). A gradient
+   * here animated `background-image` on a different track → sidebar snapped
+   * while topbar/main eased = "tidak berimbang" (fix 2026-06-02). Depth is
+   * a THEME-INDEPENDENT translucent overlay: identical in light & dark, so
+   * background-image never changes during the swap → zero snap; only the
+   * base color travels, in lockstep with the rest of the shell. */
+  background-color: var(--sidebar-bg);
+  background-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.16) 100%);
   color: var(--sidebar-text);
   display: flex;
   flex-direction: column;

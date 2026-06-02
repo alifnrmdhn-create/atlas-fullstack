@@ -245,15 +245,11 @@ function DivisiPanel({ rows, onRow }: { rows: DivRow[]; onRow: (code: string) =>
           const val = showKpi ? (r.kpi != null ? `${r.kpi.toFixed(1)}%` : '—') : String(r.overdue)
           const meterVal = showKpi ? (r.kpi ?? 0) : r.overdue
           const meterMax = showKpi ? 120 : Math.max(1, ...sorted.map(x => x.overdue))
-          // deterministic mini-trend from the row's figures (no backend series)
-          const base = showKpi ? (r.kpi ?? 100) : r.overdue
-          const spark = [base * 0.94, base * 1.03, base * 0.97, base * 1.05, base]
           return (
             <button key={r.code} type="button" className="hvc__divrow" onClick={() => onRow(r.code)}>
               <span className="hvc__divrow-dot" data-tone={t} aria-hidden />
               <span className="hvc__divrow-code" title={r.name}>{r.code}</span>
               <Meter className="hvc__divrow-meter" value={meterVal} max={meterMax} target={showKpi ? 100 : undefined} tone={t} height={10} aria-label={`${r.code}: ${val}`} />
-              <Sparkline values={spark} tone={t} width={60} height={26} smooth areaFill lastDot={false} className="hvc__divrow-spark" />
               <span className="hvc__divrow-val" data-tone={t}>{val}</span>
             </button>
           )
@@ -267,33 +263,97 @@ function DivisiPanel({ rows, onRow }: { rows: DivRow[]; onRow: (code: string) =>
  * "Timeline Deadline Kritis"). Programs plotted as nodes on a baseline,
  * spaced by sequence; each node = date + program label, colored by urgency. */
 type TLProg = { id: number; code: string; name: string; daysRemaining: number | null; targetEndDate?: string | null; divisi: string; healthTone: string }
+const TL_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (id: number) => void }) {
-  const items = programs.slice(0, 7)
+  const items = programs.slice(0, 8)
   if (items.length === 0) return <p className="hvc__empty">Tidak ada program aktif bertenggat.</p>
   const fmt = (iso?: string | null) => {
     if (!iso) return '—'
     const d = new Date(iso)
     if (Number.isNaN(d.getTime())) return iso
-    return `${d.getDate()} ${['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][d.getMonth()]}`
+    return `${d.getDate()} ${TL_MON[d.getMonth()]}`
   }
+  const toneOf = (days: number): Tone => days < 0 ? 'red' : days <= 14 ? 'red' : days <= 30 ? 'amber' : 'green'
+  const daysLabelOf = (days: number) => days < 0 ? `${Math.abs(days)} hr lewat` : days === 0 ? 'Hari ini' : `${days} hr lagi`
+
+  // Sumbu PROPORSIONAL: tiap penanda diposisikan menurut tanggal aslinya (bukan
+  // urutan), jadi tenggat yang berdempetan terbaca jujur sebagai tumpukan — bukan
+  // disamaratakan seolah jaraknya seragam. Butuh ≥2 tanggal valid; jika tidak,
+  // fallback ke spasi rata.
+  const stamped = items.map(p => ({ p, t: p.targetEndDate ? new Date(p.targetEndDate).getTime() : NaN }))
+  const valid = stamped.filter(s => !Number.isNaN(s.t)).map(s => s.t)
+  const scaled = valid.length >= 2
+  const min = scaled ? Math.min(...valid) : 0
+  const max = scaled ? Math.max(...valid) : 1
+  const span = Math.max(1, max - min)
+  const posOf = (t: number, i: number) =>
+    scaled && !Number.isNaN(t)
+      ? 4 + 92 * ((t - min) / span)
+      : (items.length === 1 ? 50 : 4 + 92 * (i / (items.length - 1)))
+  const positions = stamped.map(({ t }, i) => posOf(t, i))
+
+  // Stagger penanda yang berhimpit secara vertikal (lane) supaya klaster jadi
+  // tumpukan yang terbaca, bukan blob. Urut by posisi lalu beri lane bertingkat.
+  const lanes = new Array<number>(items.length).fill(0)
+  const order = positions.map((_, i) => i).sort((a, b) => positions[a] - positions[b])
+  let prevPos = -Infinity, prevLane = 0
+  for (const idx of order) {
+    prevLane = positions[idx] - prevPos < 4 ? Math.min(prevLane + 1, 3) : 0
+    lanes[idx] = prevLane
+    prevPos = positions[idx]
+  }
+
+  // Tick bulan sepanjang rentang — penambat skala nyata.
+  const ticks: Array<{ pos: number; label: string }> = []
+  if (scaled) {
+    const dMin = new Date(min)
+    let y = dMin.getFullYear(), m = dMin.getMonth()
+    for (let k = 0; k < 14; k++) {
+      const tt = new Date(y, m, 1).getTime()
+      if (tt > max) break
+      if (tt >= min) ticks.push({ pos: 4 + 92 * ((tt - min) / span), label: TL_MON[m] })
+      m++; if (m > 11) { m = 0; y++ }
+    }
+  }
+
   return (
-    <div className="hvc__tl">
-      <div className="hvc__tl-track" style={{ ['--n' as string]: items.length }}>
-        <span className="hvc__tl-line" aria-hidden />
-        {items.map(p => {
+    <div className="hvc__tl2">
+      <div className="hvc__tl2-axis" role="img" aria-label="Sebaran tenggat program">
+        <span className="hvc__tl2-line" aria-hidden />
+        {ticks.map((tk, i) => (
+          <span key={i} className="hvc__tl2-tick" style={{ left: `${tk.pos}%` } as CSSProperties}>{tk.label}</span>
+        ))}
+        {stamped.map(({ p, t }, i) => {
           const days = p.daysRemaining ?? 0
-          const urgency: Tone = days < 0 ? 'red' : days <= 14 ? 'red' : days <= 30 ? 'amber' : 'green'
-          const daysLabel = days < 0 ? `${Math.abs(days)} hr lewat` : days === 0 ? 'Hari ini' : `${days} hr lagi`
+          const tone = toneOf(days)
           return (
-            <button key={p.id} type="button" className="hvc__tl-stop" data-tone={urgency} onClick={() => onOpen(p.id)}>
-              <span className="hvc__tl-date" data-tone={urgency}>{fmt(p.targetEndDate)}</span>
-              <span className="hvc__tl-node" data-tone={urgency} aria-hidden />
-              <span className="hvc__tl-meta">{p.divisi || '—'} · {daysLabel}</span>
-              <span className="hvc__tl-name" title={p.name}>{p.name}</span>
+            <button key={p.id} type="button" className="hvc__tl2-dot" data-tone={tone}
+              style={{ left: `${positions[i]}%`, ['--lane' as string]: lanes[i] } as CSSProperties}
+              title={`${p.name} · ${fmt(p.targetEndDate)} · ${daysLabelOf(days)}`}
+              aria-label={`${p.name}, ${daysLabelOf(days)}`}
+              onClick={() => onOpen(p.id)}>
+              <span className="hvc__tl2-num">{i + 1}</span>
             </button>
           )
         })}
       </div>
+      <ol className="hvc__tl2-list">
+        {stamped.map(({ p }, i) => {
+          const days = p.daysRemaining ?? 0
+          const tone = toneOf(days)
+          return (
+            <li key={p.id}>
+              <button type="button" className="hvc__tl2-row" onClick={() => onOpen(p.id)}>
+                <span className="hvc__tl2-rnum" data-tone={tone}>{i + 1}</span>
+                <span className="hvc__tl2-rdate" data-tone={tone}>{fmt(p.targetEndDate)}</span>
+                <span className="hvc__tl2-rname" title={p.name}>{p.name}</span>
+                <span className="hvc__tl2-rmeta">{p.divisi || '—'}</span>
+                <span className="hvc__tl2-rdays" data-tone={tone}>{daysLabelOf(days)}</span>
+              </button>
+            </li>
+          )
+        })}
+      </ol>
     </div>
   )
 }
@@ -343,10 +403,17 @@ export default function HomeView() {
     )
   }
 
-  const {
-    summary, byDivisi, controls, needsAction, trendSeries, programsForChart,
-    velocity, momentum, recentActivity, deadlineClusters, scope,
-  } = programSummary
+  const { summary, velocity, momentum, scope } = programSummary
+  // Defensive: PHP json_encode men-serialize array KOSONG sebagai `{}` (objek), bukan
+  // `[]`. Kalau itu terjadi, `.filter`/`.map`/`[...spread]` di bawah meledak & Home
+  // white-screen lewat AppErrorBoundary (kena di user berdata-tipis). Paksa ke array.
+  const byDivisi = Array.isArray(programSummary.byDivisi) ? programSummary.byDivisi : []
+  const controls = Array.isArray(programSummary.controls) ? programSummary.controls : []
+  const needsAction = Array.isArray(programSummary.needsAction) ? programSummary.needsAction : []
+  const trendSeries = Array.isArray(programSummary.trendSeries) ? programSummary.trendSeries : []
+  const programsForChart = Array.isArray(programSummary.programsForChart) ? programSummary.programsForChart : []
+  const recentActivity = Array.isArray(programSummary.recentActivity) ? programSummary.recentActivity : []
+  const deadlineClusters = Array.isArray(programSummary.deadlineClusters) ? programSummary.deadlineClusters : []
   const now = new Date()
 
   /* ── Derived figures (all from existing payload) ─────────────── */
@@ -395,24 +462,22 @@ export default function HomeView() {
 
   /* ── Overall verdict (management by exception) ───────────────── */
   const exceptionCount = tlm + belowTargetCount + needsAction.length + criticalControlCount
+  // Decision inbox (kartu ④) = keputusan murni: approval/eskalasi + KPI di bawah
+  // target + kontrol kritis. Sengaja TANPA 'terlambat' — itu sudah punya kartu ③
+  // + disebut di verdict; ikut menghitungnya bikin badge inflate (mis. 43) & angka
+  // keterlambatan muncul ke-4 kalinya. (review redundansi Home, Jun 2026)
+  const decisionCount = belowTargetCount + needsAction.length + criticalControlCount
   const statusTone: Tone =
     (tlm > 0 || belowTargetCount > 0 || criticalControlCount > 0) ? 'red'
     : (summary.atRisk > 0 || needsAction.length > 0) ? 'amber'
     : 'green'
   const statusLabel = statusTone === 'green' ? 'Terkendali' : statusTone === 'amber' ? 'Perhatian' : 'Tindakan'
-  const aksiTone: Tone = exceptionCount === 0 ? 'green'
-    : (tlm > 0 || belowTargetCount > 0 || criticalControlCount > 0) ? 'red' : 'amber'
+  const aksiTone: Tone = decisionCount > 0 ? (belowTargetCount > 0 ? 'red' : 'amber')
+    : tlm > 0 ? 'amber' : 'green'
 
   /* ── Exception list (only what needs a decision) ─────────────── */
   type Exc = { id: string; tone: Tone; label: ReactNode; meta?: string; onClick: () => void }
   const exceptions: Exc[] = []
-  if (tlm > 0) {
-    exceptions.push({
-      id: 'tlm', tone: 'red',
-      label: <><strong>{tlm} program</strong> terlambat</>,
-      meta: 'Butuh intervensi', onClick: () => navigate('/programs'),
-    })
-  }
   if (canSeePerformance && belowTargetCount > 0) {
     const f = scorecard.belowTarget[0]
     exceptions.push({
@@ -437,7 +502,13 @@ export default function HomeView() {
   }
 
   /* ── Program trend sparkline (% on track, 14d) ───────────────── */
-  const trendValues = (trendSeries ?? []).slice(-14).map(t => t.pctOnTrack)
+  // Buang snapshot "bootstrap" — hari saat portfolio masih ~kosong (total ≪ sekarang,
+  // mis. baru 1 program di-snapshot, pctOnTrack=100) lalu terjun ke nilai riil. Tanpa
+  // filter ini, delta first→last jadi artefak seed (mis. −71 poin), bukan momentum
+  // nyata. Bandingkan hanya periode dengan skala portfolio sebanding. (Jun 2026)
+  const latestTotal = trendSeries.length ? trendSeries[trendSeries.length - 1].total : 0
+  const trendStable = trendSeries.filter(t => t.total >= Math.max(2, latestTotal * 0.5))
+  const trendValues = (trendStable.length >= 2 ? trendStable : trendSeries).slice(-14).map(t => t.pctOnTrack)
   const trendDelta = trendValues.length >= 2
     ? trendValues[trendValues.length - 1] - trendValues[0]
     : null
@@ -487,11 +558,14 @@ export default function HomeView() {
   /* ── Command-center: Momentum ────────────────────────────────── */
   const activeRatePct = momentum ? Math.round((momentum.activeRate ?? 0) * (momentum.activeRate <= 1 ? 100 : 1)) : 0
   const activeRateTone: Tone = activeRatePct >= 60 ? 'green' : activeRatePct >= 30 ? 'amber' : 'red'
+  // Stat pendukung kartu Momentum. Active-rate (dulu gauge dominan yang nyaris
+  // selalu 100% → low-signal) diturunkan jadi satu stat; kartu kini fokus ke
+  // tren On Track yang nyata. 'suffix' di semua entri agar tipe array seragam.
   const momentumStats = momentum ? [
-    { label: 'Program selesai · 30 hari', value: momentum.programsCompletedLast30d, tone: 'green' as Tone },
-    { label: 'Program baru · 30 hari', value: momentum.newProgramsLast30d, tone: 'neutral' as Tone },
-    { label: 'Task selesai · pekan ini', value: momentum.tasksCompletedThisWeek, tone: 'green' as Tone },
-    { label: 'Program tertahan', value: momentum.stagnantCount, tone: (momentum.stagnantCount > 0 ? 'red' : 'green') as Tone },
+    { label: 'Program bergerak', value: activeRatePct, suffix: '%', tone: activeRateTone },
+    { label: 'Selesai · 30 hari', value: momentum.programsCompletedLast30d, suffix: '', tone: 'green' as Tone },
+    { label: 'Task selesai · pekan ini', value: momentum.tasksCompletedThisWeek, suffix: '', tone: 'green' as Tone },
+    { label: 'Tertahan', value: momentum.stagnantCount, suffix: '', tone: (momentum.stagnantCount > 0 ? 'red' : 'green') as Tone },
   ] : []
 
   /* ── Mid: Heatmap rekap program (divisi × status) ────────────── */
@@ -738,7 +812,7 @@ export default function HomeView() {
                 <div className="hvc__hcard-body hvc__inbox-body">
                   <div className="hvc__inbox-head">
                     <span className="hvc__hcard-eyebrow">Butuh Keputusan Anda</span>
-                    <span className="hvc__count-badge" data-tone={aksiTone}>{exceptionCount}</span>
+                    {decisionCount > 0 && <span className="hvc__count-badge" data-tone={aksiTone}>{decisionCount}</span>}
                   </div>
                   {exceptions.length > 0 ? (
                     <div className="hvc__inbox-list">
@@ -750,6 +824,17 @@ export default function HomeView() {
                           <span className="hvc__inbox-arrow" aria-hidden>→</span>
                         </button>
                       ))}
+                    </div>
+                  ) : tlm > 0 ? (
+                    /* Tak ada keputusan diskret (approval/eskalasi/KPI/kontrol), tapi ada
+                       program terlambat → tunjuk ke intervensi; JANGAN "all-clear" hijau. */
+                    <div className="hvc__inbox-list">
+                      <button type="button" className="hvc__inbox-row" data-tone="red" onClick={() => navigate('/programs')}>
+                        <span className="hv__dot" data-tone="red" aria-hidden />
+                        <span className="hvc__inbox-label"><strong>{tlm} program</strong> terlambat</span>
+                        <span className="hvc__inbox-meta">Tinjau &amp; intervensi</span>
+                        <span className="hvc__inbox-arrow" aria-hidden>→</span>
+                      </button>
                     </div>
                   ) : (
                     <p className="hvc__inbox-empty"><ToneGlyph tone="green" /> Tidak ada keputusan tertunda.</p>
@@ -780,30 +865,41 @@ export default function HomeView() {
 
               {/* Execution Map — 3×3 progres × tekanan (digest peta) */}
               <Card padding="lg" className="hvc__panel">
-                <header className="hvc__panel-head"><span className="hvc__eyebrow">Peta Eksekusi</span></header>
+                <header className="hvc__panel-head">
+                  <span className="hvc__eyebrow">Peta Eksekusi</span>
+                  <span className="hvc__panel-hint">baris = tekanan tenggat · kolom = progres</span>
+                </header>
                 <ExecutionMap programs={programsForChart} onOpen={() => navigate('/programs')} />
               </Card>
 
-              {/* Momentum */}
+              {/* Momentum — fokus ke arah tren On Track 14 hari (sinyal leading nyata);
+                  gauge active-rate (dulu ~100% trivial) diturunkan jadi stat. */}
               <Card padding="lg" className="hvc__panel">
-                <header className="hvc__panel-head"><span className="hvc__eyebrow">Momentum</span></header>
-                <div className="hvc__mhead">
-                  <Gauge value={activeRatePct} max={100} tone={activeRateTone} size={76} thickness={8} valueText={`${activeRatePct}`} unit="%" rich className="hvc__mgauge" />
-                  <div className="hvc__mtrend">
-                    <span className="hvc__sub">program aktif bergerak</span>
-                    {(() => {
-                      const tv = (trendSeries ?? []).slice(-14).map(t => t.pctOnTrack)
-                      return tv.length >= 2
-                        ? <Sparkline values={tv} tone={activeRateTone} width={150} height={40} smooth />
-                        : null
-                    })()}
-                    <span className="hvc__mtrend-cap">tren On Track · 14 hari</span>
-                  </div>
+                <header className="hvc__panel-head">
+                  <span className="hvc__eyebrow">Momentum eksekusi</span>
+                  <span className="hvc__panel-hint">tren On Track</span>
+                </header>
+                <div className="hvc__mtrend hvc__mtrend--hero">
+                  {(() => {
+                    const tv = trendValues
+                    if (tv.length < 2) return <p className="hvc__empty">Tren belum cukup data.</p>
+                    return (
+                      <>
+                        <div className="hvc__mtrend-head">
+                          <span className="hvc__sub">Arah on-track</span>
+                          {trendDelta != null
+                            ? <Delta value={Math.round(trendDelta)} suffix=" poin" />
+                            : <span className="hvc__mtrend-flat">stabil</span>}
+                        </div>
+                        <Sparkline values={tv} tone={leadingTone} width={300} height={52} smooth areaFill lastDot className="hvc__mtrend-spark" />
+                      </>
+                    )
+                  })()}
                 </div>
                 <div className="hvc__mstats">
                   {momentumStats.map(s => (
                     <div key={s.label} className="hvc__mstat">
-                      <span className="hvc__mstat-val" data-tone={s.value === 0 ? 'neutral' : s.tone} data-zero={s.value === 0 ? '' : undefined}>{s.value}</span>
+                      <span className="hvc__mstat-val" data-tone={s.value === 0 ? 'neutral' : s.tone} data-zero={s.value === 0 ? '' : undefined}>{s.value}{s.suffix}</span>
                       <span className="hvc__mstat-label">{s.label}</span>
                     </div>
                   ))}

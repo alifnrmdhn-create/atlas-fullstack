@@ -686,39 +686,28 @@
  *
  * Skipped on initial hydration (no flash on page load). */
 @media (prefers-reduced-motion: no-preference) {
-  /* (A) Properti MURAH di semua elemen — color/bg/border/fill/stroke perlu
-   * sinkron & repaint-nya ringan. box-shadow SENGAJA tidak di sini: ia
-   * non-GPU + repaint penuh, jadi kalau dipasang di `*` (ratusan node: kartu,
-   * tiap <path> SVG donut/sparkline, ikon) → paint storm 160ms = frame drop.
-   * (2026-06-01: dipersempit, lihat rule B.) */
+  /* HANYA 3 properti MURAH di semua elemen — yang benar-benar bikin theme
+   * swap terasa "satu gerakan": warna teks, warna bg, warna border.
+   *
+   * SENGAJA TIDAK di-transisikan (sumber stutter, dibuang 2026-06-02):
+   *   - `fill`/`stroke` → memaksa SETIAP <path> SVG (donut, sparkline, meter,
+   *     ikon) re-raster tiap frame = paint storm. Ikon garis kita pakai
+   *     `currentColor`, jadi tetap ikut mulus lewat `color`. Chart ber-fill
+   *     token akan snap warnanya — tak kentara dibanding bg yang nge-fade.
+   *   - `box-shadow` → properti paling janky (repaint blur penuh, non-GPU);
+   *     dulu dipasang di [class*="card/panel"] (puluhan node di Home) = penyebab
+   *     utama tersendat. Shadow kini snap — perbedaan shadow light↔dark halus,
+   *     praktis tak terlihat.
+   *   - `background` shorthand → mendorong kerja background-image di tiap node;
+   *     redundan. Permukaan solid (topbar/workspace/app-shell/sidebar) tetap
+   *     animasi via longhand `background-color` di bawah ini. */
   .theme-transitioning,
   .theme-transitioning *,
   .theme-transitioning *::before,
   .theme-transitioning *::after {
     transition:
       background-color 160ms cubic-bezier(0.4, 0, 0.2, 1),
-      background 160ms cubic-bezier(0.4, 0, 0.2, 1),
       border-color 160ms cubic-bezier(0.4, 0, 0.2, 1),
-      color 160ms cubic-bezier(0.4, 0, 0.2, 1),
-      fill 160ms cubic-bezier(0.4, 0, 0.2, 1),
-      stroke 160ms cubic-bezier(0.4, 0, 0.2, 1) !important;
-  }
-  /* (B) box-shadow HANYA di permukaan besar (jumlahnya sedikit) — cukup untuk
-   * kesan kedalaman tanpa membebani repaint. Specificity kelas > universal,
-   * jadi rule ini menang & menambahkan box-shadow utk node-node ini saja. */
-  .theme-transitioning .app-shell,
-  .theme-transitioning .sidebar,
-  .theme-transitioning .topbar,
-  .theme-transitioning .page-shell,
-  .theme-transitioning [class*="card"],
-  .theme-transitioning [class*="Card"],
-  .theme-transitioning [class*="panel"],
-  .theme-transitioning [class*="Panel"] {
-    transition:
-      background-color 160ms cubic-bezier(0.4, 0, 0.2, 1),
-      background 160ms cubic-bezier(0.4, 0, 0.2, 1),
-      border-color 160ms cubic-bezier(0.4, 0, 0.2, 1),
-      color 160ms cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+      color 160ms cubic-bezier(0.4, 0, 0.2, 1) !important;
   }
 }
