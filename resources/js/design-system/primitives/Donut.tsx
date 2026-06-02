@@ -5,9 +5,9 @@ import './Donut.css'
 type Tone = 'green' | 'amber' | 'red' | 'neutral'
 
 const TONE: Record<Tone, string> = {
-  green: 'var(--ds-green-600)',
-  amber: 'var(--ds-amber-600)',
-  red: 'var(--ds-red-600)',
+  green: 'var(--tone-green)',
+  amber: 'var(--tone-amber)',
+  red: 'var(--tone-red)',
   neutral: 'var(--ds-border-strong)',
 }
 

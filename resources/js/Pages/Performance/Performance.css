@@ -115,9 +115,9 @@
   letter-spacing: -0.01em;
 }
 
-.perf__header-stat strong[data-tone="green"] { color: var(--ds-green-600); }
-.perf__header-stat strong[data-tone="amber"] { color: var(--ds-amber-600); }
-.perf__header-stat strong[data-tone="red"]   { color: var(--ds-red-600); }
+.perf__header-stat strong[data-tone="green"] { color: var(--tone-green); }
+.perf__header-stat strong[data-tone="amber"] { color: var(--tone-amber); }
+.perf__header-stat strong[data-tone="red"]   { color: var(--tone-red); }
 
 .perf__header-divider {
   width: 1px;
@@ -269,9 +269,9 @@
   .perf-subject__name { font-size: 16px; }
 }
 
-.perf-subject__score-value[data-tone="green"] { color: var(--ds-green-600); }
-.perf-subject__score-value[data-tone="amber"] { color: var(--ds-amber-600); }
-.perf-subject__score-value[data-tone="red"]   { color: var(--ds-red-600); }
+.perf-subject__score-value[data-tone="green"] { color: var(--tone-green); }
+.perf-subject__score-value[data-tone="amber"] { color: var(--tone-amber); }
+.perf-subject__score-value[data-tone="red"]   { color: var(--tone-red); }
 
 .perf-subject__score-label {
   font-size: var(--ds-text-13);
@@ -396,9 +396,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-.perf-rank__value[data-tone="green"] { color: var(--ds-green-600); }
-.perf-rank__value[data-tone="amber"] { color: var(--ds-amber-600); }
-.perf-rank__value[data-tone="red"]   { color: var(--ds-red-600); }
+.perf-rank__value[data-tone="green"] { color: var(--tone-green); }
+.perf-rank__value[data-tone="amber"] { color: var(--tone-amber); }
+.perf-rank__value[data-tone="red"]   { color: var(--tone-red); }
 
 /* Section heading inside cards */
 .perf-card-head {
@@ -478,9 +478,9 @@
   color: var(--ds-text-tertiary);
 }
 
-.perf-direktorat__total[data-tone="green"] { color: var(--ds-green-600); }
-.perf-direktorat__total[data-tone="amber"] { color: var(--ds-amber-600); }
-.perf-direktorat__total[data-tone="red"]   { color: var(--ds-red-600); }
+.perf-direktorat__total[data-tone="green"] { color: var(--tone-green); }
+.perf-direktorat__total[data-tone="amber"] { color: var(--tone-amber); }
+.perf-direktorat__total[data-tone="red"]   { color: var(--tone-red); }
 
 /* Overall achievement bar — visualizes direktorat total under the head,
  * before the divisi list. */
@@ -549,9 +549,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-.perf-divisi-row__value[data-tone="green"] { color: var(--ds-green-600); }
-.perf-divisi-row__value[data-tone="amber"] { color: var(--ds-amber-600); }
-.perf-divisi-row__value[data-tone="red"]   { color: var(--ds-red-600); }
+.perf-divisi-row__value[data-tone="green"] { color: var(--tone-green); }
+.perf-divisi-row__value[data-tone="amber"] { color: var(--tone-amber); }
+.perf-divisi-row__value[data-tone="red"]   { color: var(--tone-red); }
 
 /* ─── KPI row (compact, used in Detail views) ─────────────── */
 
@@ -615,8 +615,8 @@
   background: var(--ds-neutral-100);
 }
 
-.perf-kpi__meta-chip--max { color: var(--ds-green-600); background: var(--ds-green-50); }
-.perf-kpi__meta-chip--min { color: var(--ds-red-600); background: var(--ds-red-50); }
+.perf-kpi__meta-chip--max { color: var(--tone-green); background: var(--ds-green-50); }
+.perf-kpi__meta-chip--min { color: var(--tone-red); background: var(--ds-red-50); }
 
 .perf-kpi__realisasi {
   display: flex;
@@ -646,9 +646,9 @@
   color: var(--ds-text-primary);
 }
 
-.perf-kpi__realisasi-value[data-tone="green"] { color: var(--ds-green-600); }
-.perf-kpi__realisasi-value[data-tone="amber"] { color: var(--ds-amber-600); }
-.perf-kpi__realisasi-value[data-tone="red"]   { color: var(--ds-red-600); }
+.perf-kpi__realisasi-value[data-tone="green"] { color: var(--tone-green); }
+.perf-kpi__realisasi-value[data-tone="amber"] { color: var(--tone-amber); }
+.perf-kpi__realisasi-value[data-tone="red"]   { color: var(--tone-red); }
 
 .perf-kpi__realisasi-arrow {
   color: var(--ds-text-tertiary);
@@ -884,9 +884,9 @@
   text-align: right;
 }
 
-.perf-rank-bar__value[data-tone="green"] { color: var(--ds-green-600); }
-.perf-rank-bar__value[data-tone="amber"] { color: var(--ds-amber-600); }
-.perf-rank-bar__value[data-tone="red"]   { color: var(--ds-red-600); }
+.perf-rank-bar__value[data-tone="green"] { color: var(--tone-green); }
+.perf-rank-bar__value[data-tone="amber"] { color: var(--tone-amber); }
+.perf-rank-bar__value[data-tone="red"]   { color: var(--tone-red); }
 
 /* Phone (≤640): grid min ~372px (24 + 140 + 180 + gap) > lebar konten ~342px
  * → kolom bar viz overflow tepi kanan. Perkecil mins + gap supaya muat; nama
@@ -1025,9 +1025,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-.perf-compare__hero-score-val[data-tone="green"] { color: var(--ds-green-600); }
-.perf-compare__hero-score-val[data-tone="amber"] { color: var(--ds-amber-600); }
-.perf-compare__hero-score-val[data-tone="red"]   { color: var(--ds-red-600); }
+.perf-compare__hero-score-val[data-tone="green"] { color: var(--tone-green); }
+.perf-compare__hero-score-val[data-tone="amber"] { color: var(--tone-amber); }
+.perf-compare__hero-score-val[data-tone="red"]   { color: var(--tone-red); }
 
 .perf-compare__hero-score-lbl {
   font-size: 11px;
@@ -1148,9 +1148,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-.perf-compare-card__score[data-tone="green"] { color: var(--ds-green-600); }
-.perf-compare-card__score[data-tone="amber"] { color: var(--ds-amber-600); }
-.perf-compare-card__score[data-tone="red"]   { color: var(--ds-red-600); }
+.perf-compare-card__score[data-tone="green"] { color: var(--tone-green); }
+.perf-compare-card__score[data-tone="amber"] { color: var(--tone-amber); }
+.perf-compare-card__score[data-tone="red"]   { color: var(--tone-red); }
 
 .perf-compare-card__score-pct {
   font-size: 14px;
@@ -1165,9 +1165,9 @@
   color: var(--ds-text-secondary);
 }
 
-.perf-compare-card__status[data-tone="green"] { color: var(--ds-green-600); }
-.perf-compare-card__status[data-tone="amber"] { color: var(--ds-amber-600); }
-.perf-compare-card__status[data-tone="red"]   { color: var(--ds-red-600); }
+.perf-compare-card__status[data-tone="green"] { color: var(--tone-green); }
+.perf-compare-card__status[data-tone="amber"] { color: var(--tone-amber); }
+.perf-compare-card__status[data-tone="red"]   { color: var(--tone-red); }
 
 .perf-compare-card__divider {
   height: 0.5px;

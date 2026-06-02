@@ -212,6 +212,7 @@
 }
 
 .admin-v2 .btn--danger {
+  /* solid bg + teks putih → tetap --ds-red-600 (gelap) di kedua tema */
   background: var(--ds-red-600);
   color: var(--ds-text-on-brand);
   border-color: var(--ds-red-600);
@@ -474,8 +475,8 @@
   line-height: 1;
 }
 
-.admin-v2 .pilot-card__value--green { color: var(--ds-green-600); }
-.admin-v2 .pilot-card__value--red   { color: var(--ds-red-600); }
+.admin-v2 .pilot-card__value--green { color: var(--tone-green); }
+.admin-v2 .pilot-card__value--red   { color: var(--tone-red); }
 .admin-v2 .pilot-card__value--muted { color: var(--ds-text-secondary); }
 
 .admin-v2 .pilot-card__suffix {
@@ -511,12 +512,12 @@
   border: 1px solid var(--ds-amber-500);
   border-radius: var(--ds-radius-md);
   font-size: var(--ds-text-13);
-  color: var(--ds-amber-600);
+  color: var(--tone-amber);
   line-height: 1.5;
 }
 
 .admin-v2 .thresholds-banner strong {
-  color: var(--ds-amber-600);
+  color: var(--tone-amber);
   font-weight: var(--ds-weight-semibold);
 }
 
@@ -574,10 +575,10 @@
   color: var(--ds-text-secondary);
 }
 
-.admin-v2 [data-tone="green"]  { background: var(--ds-green-50); color: var(--ds-green-600); }
-.admin-v2 [data-tone="amber"]  { background: var(--ds-amber-50); color: var(--ds-amber-600); }
-.admin-v2 [data-tone="yellow"] { background: var(--ds-amber-50); color: var(--ds-amber-600); }
-.admin-v2 [data-tone="red"]    { background: var(--ds-red-50); color: var(--ds-red-600); }
+.admin-v2 [data-tone="green"]  { background: var(--ds-green-50); color: var(--tone-green); }
+.admin-v2 [data-tone="amber"]  { background: var(--ds-amber-50); color: var(--tone-amber); }
+.admin-v2 [data-tone="yellow"] { background: var(--ds-amber-50); color: var(--tone-amber); }
+.admin-v2 [data-tone="red"]    { background: var(--ds-red-50); color: var(--tone-red); }
 .admin-v2 [data-tone="blue"]   { background: #EEF2FF; color: #4338CA; }
 .admin-v2 [data-tone="purple"] { background: #FAF5FF; color: #7E22CE; }
 .admin-v2 [data-tone="gray"]   { background: var(--ds-neutral-100); color: var(--ds-text-secondary); }

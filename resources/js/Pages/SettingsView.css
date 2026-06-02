@@ -214,13 +214,13 @@
 
 .settings-v2 .settings-feedback--success {
   background: var(--ds-green-50);
-  color: var(--ds-green-600);
+  color: var(--tone-green);
   border: 1px solid var(--ds-green-500);
 }
 
 .settings-v2 .settings-feedback--error {
   background: var(--ds-red-50);
-  color: var(--ds-red-600);
+  color: var(--tone-red);
   border: 1px solid var(--ds-red-500);
 }
 

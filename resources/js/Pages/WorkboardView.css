@@ -167,7 +167,7 @@
 }
 
 .workboard-v2 .wb-stats__blocked {
-  color: var(--ds-red-600);
+  color: var(--tone-red);
 }
 
 /* Phone (≤640): stat-chip row tadinya inline-flex tanpa wrap → "0 sel…" clip
@@ -232,7 +232,7 @@
 }
 
 .workboard-v2 .board-status-msg--error {
-  color: var(--ds-red-600);
+  color: var(--tone-red);
 }
 
 .workboard-v2 .board-rollback-banner {
@@ -244,7 +244,7 @@
   background: var(--ds-red-50);
   border: 1px solid var(--ds-red-500);
   border-radius: var(--ds-radius-md);
-  color: var(--ds-red-600);
+  color: var(--tone-red);
   font-size: var(--ds-text-13);
 }
 
@@ -268,7 +268,7 @@
   background: transparent;
   border: 0;
   border-radius: var(--ds-radius-sm);
-  color: var(--ds-red-600);
+  color: var(--tone-red);
   font-size: 18px;
   cursor: pointer;
   line-height: 1;

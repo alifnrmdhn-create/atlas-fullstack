@@ -95,7 +95,7 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
       {loading && <div style={{ fontSize: 12, color: 'var(--ds-text-tertiary)', padding: '8px 0' }}>Memuat ledger…</div>}
       {error && (
         <Card padding="md" style={{ borderColor: 'var(--ds-red-500)' }}>
-          <div style={{ fontSize: 13, color: 'var(--ds-red-600)' }}>{error}</div>
+          <div style={{ fontSize: 13, color: 'var(--tone-red)' }}>{error}</div>
         </Card>
       )}
       {!loading && !error && data && (() => {

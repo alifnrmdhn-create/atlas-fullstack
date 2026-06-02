@@ -64,7 +64,7 @@
 }
 
 .programs-v2 .programs-v2__subtitle-warn {
-  color: var(--ds-red-600);
+  color: var(--tone-red);
   font-weight: 500;
 }
 
@@ -150,7 +150,7 @@
 .programs-v2 .programs-v2__stat--action:hover { opacity: 0.72; }
 .programs-v2 .programs-v2__stat--action:active { transform: scale(0.98); }
 .programs-v2 .programs-v2__stat--action .programs-v2__stat-num {
-  color: var(--ds-amber-600);
+  color: var(--tone-amber);
 }
 
 .programs-v2 .programs-v2__stat-num {
@@ -529,19 +529,19 @@
 .programs-v2 .programs-filter-chip--green.programs-filter-chip--active {
   background: color-mix(in srgb, var(--ds-green-500) 14%, transparent);
   border-color: color-mix(in srgb, var(--ds-green-500) 70%, transparent);
-  color: var(--ds-green-600);
+  color: var(--tone-green);
 }
 
 .programs-v2 .programs-filter-chip--amber.programs-filter-chip--active {
   background: color-mix(in srgb, var(--ds-amber-500) 16%, transparent);
   border-color: color-mix(in srgb, var(--ds-amber-500) 70%, transparent);
-  color: var(--ds-amber-600);
+  color: var(--tone-amber);
 }
 
 .programs-v2 .programs-filter-chip--red.programs-filter-chip--active {
   background: color-mix(in srgb, var(--ds-red-500) 14%, transparent);
   border-color: color-mix(in srgb, var(--ds-red-500) 70%, transparent);
-  color: var(--ds-red-600);
+  color: var(--tone-red);
 }
 
 .programs-v2 .programs-filter-chip--stale.programs-filter-chip--active {
@@ -673,17 +673,17 @@
 
 .programs-v2 .health-chip--green {
   background: var(--ds-green-50);
-  color: var(--ds-green-600);
+  color: var(--tone-green);
 }
 
 .programs-v2 .health-chip--yellow {
   background: var(--ds-amber-50);
-  color: var(--ds-amber-600);
+  color: var(--tone-amber);
 }
 
 .programs-v2 .health-chip--red {
   background: var(--ds-red-50);
-  color: var(--ds-red-600);
+  color: var(--tone-red);
 }
 
 /* ─── Stats inline ──────────────────────────────────────── */
@@ -707,7 +707,7 @@
 }
 
 .programs-v2 .view-toolbar__stats .text-red {
-  color: var(--ds-red-600);
+  color: var(--tone-red);
 }
 
 /* ─── Role badge ────────────────────────────────────────── */
@@ -783,12 +783,12 @@
 .programs-v2 .programs-approval-filter {
   border: 1px solid var(--ds-amber-500);
   background: var(--ds-amber-50);
-  color: var(--ds-amber-600);
+  color: var(--tone-amber);
 }
 
 .programs-v2 .programs-approval-filter:hover {
   background: var(--ds-amber-50);
-  color: var(--ds-amber-600);
+  color: var(--tone-amber);
 }
 
 .programs-v2 .programs-approval-filter.active {
@@ -900,7 +900,7 @@
 }
 
 .programs-v2 .section-badge--red {
-  color: var(--ds-red-600);
+  color: var(--tone-red);
 }
 
 /* ─── Risiko tab — gov-table editorial overrides ──────────────
@@ -1192,12 +1192,12 @@
 }
 
 .programs-v2 .program-deadline--warn {
-  color: var(--ds-amber-600);
+  color: var(--tone-amber);
 }
 
 .programs-v2 .program-deadline--danger,
 .programs-v2 .program-deadline--overdue {
-  color: var(--ds-red-600);
+  color: var(--tone-red);
 }
 
 .programs-v2 .program-row__badge--blocker {
@@ -1205,7 +1205,7 @@
   align-items: center;
   font-size: 11px;
   font-weight: var(--ds-weight-medium);
-  color: var(--ds-red-600);
+  color: var(--tone-red);
   padding: 0;
   background: transparent;
   border: 0;
@@ -1294,9 +1294,9 @@
   letter-spacing: 0;
 }
 
-.programs-v2 .program-row__approval-tag--yellow { color: var(--ds-amber-600); }
+.programs-v2 .program-row__approval-tag--yellow { color: var(--tone-amber); }
 .programs-v2 .program-row__approval-tag--blue   { color: var(--ds-text-secondary); }
-.programs-v2 .program-row__approval-tag--red    { color: var(--ds-red-600); }
+.programs-v2 .program-row__approval-tag--red    { color: var(--tone-red); }
 
 /* Progress column — bar+value cluster atau "Belum dimulai" text.
  * Konsisten LEFT-aligned: header "PROGRESS" sebar-data start di x yang

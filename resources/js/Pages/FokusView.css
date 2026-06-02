@@ -179,7 +179,7 @@
 }
 
 .fokus-v2 .fokus-bucket--now .fokus-bucket__label {
-  color: var(--ds-red-600);
+  color: var(--tone-red);
 }
 
 .fokus-v2 .fokus-bucket__count {
@@ -248,7 +248,7 @@
   height: 36px;
   border-radius: 50%;
   background: var(--ds-green-50);
-  color: var(--ds-green-600);
+  color: var(--tone-green);
   display: inline-flex;
   align-items: center;
   justify-content: center;

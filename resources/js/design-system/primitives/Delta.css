@@ -6,6 +6,6 @@
   white-space: nowrap;
 }
 
-.ds-delta--up   { color: var(--ds-green-600); }
-.ds-delta--down { color: var(--ds-red-600); }
+.ds-delta--up   { color: var(--tone-green); }
+.ds-delta--down { color: var(--tone-red); }
 .ds-delta--flat { color: var(--ds-text-tertiary); }

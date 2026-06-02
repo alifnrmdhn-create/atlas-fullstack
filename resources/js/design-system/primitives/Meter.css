@@ -19,9 +19,9 @@
   border-radius: var(--ds-radius-pill);
 }
 
-.ds-meter__fill--green   { background: var(--ds-green-600); }
-.ds-meter__fill--amber   { background: var(--ds-amber-600); }
-.ds-meter__fill--red     { background: var(--ds-red-600); }
+.ds-meter__fill--green   { background: var(--tone-green); }
+.ds-meter__fill--amber   { background: var(--tone-amber); }
+.ds-meter__fill--red     { background: var(--tone-red); }
 .ds-meter__fill--neutral { background: var(--ds-text-tertiary); }
 
 /* Target marker — a thin tick that overshoots the track slightly, per the

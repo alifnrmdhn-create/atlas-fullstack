@@ -89,7 +89,7 @@
   padding: 0 8px;
   border-radius: var(--ds-radius-pill);
   background: var(--ds-green-50);
-  color: var(--ds-green-600);
+  color: var(--tone-green);
   font-size: 10px;
   font-weight: var(--ds-weight-semibold);
   text-transform: uppercase;
@@ -130,7 +130,7 @@
 
 .task-detail-v2 .wid-iconbtn--danger:hover {
   background: var(--ds-red-50);
-  color: var(--ds-red-600);
+  color: var(--tone-red);
   border-color: var(--ds-red-500);
 }
 
@@ -170,7 +170,7 @@
 .task-detail-v2 .wid-confirm__label {
   font-size: 11px;
   font-weight: var(--ds-weight-semibold);
-  color: var(--ds-red-600);
+  color: var(--tone-red);
 }
 
 .task-detail-v2 .wid-confirm__btn {
@@ -191,6 +191,7 @@
 }
 
 .task-detail-v2 .wid-confirm__btn--danger {
+  /* solid bg + teks putih → tetap --ds-red-600 (gelap) di kedua tema; --tone (terang di dark) bikin teks putih jeblok */
   background: var(--ds-red-600);
   color: var(--ds-text-on-brand);
   border-color: var(--ds-red-600);

@@ -17,8 +17,8 @@ const RICH_GLOW: Record<Tone, string> = {
   neutral: 'rgba(148,163,184,0.35)',
 }
 const SOLID: Record<Tone, string> = {
-  green: 'var(--ds-green-600)', amber: 'var(--ds-amber-600)',
-  red: 'var(--ds-red-600)', neutral: 'var(--ds-border-strong)',
+  green: 'var(--tone-green)', amber: 'var(--tone-amber)',
+  red: 'var(--tone-red)', neutral: 'var(--ds-border-strong)',
 }
 
 export interface GaugeProps {

@@ -39,19 +39,19 @@
 
 .ds-pill--soft.ds-pill--red {
   background: var(--ds-red-50);
-  color: var(--ds-red-600);
+  color: var(--tone-red);
 }
 .ds-pill--soft.ds-pill--red .ds-pill__dot { background: var(--ds-red-500); }
 
 .ds-pill--soft.ds-pill--amber {
   background: var(--ds-amber-50);
-  color: var(--ds-amber-600);
+  color: var(--tone-amber);
 }
 .ds-pill--soft.ds-pill--amber .ds-pill__dot { background: var(--ds-amber-500); }
 
 .ds-pill--soft.ds-pill--green {
   background: var(--ds-green-50);
-  color: var(--ds-green-600);
+  color: var(--tone-green);
 }
 .ds-pill--soft.ds-pill--green .ds-pill__dot { background: var(--ds-green-500); }
 
@@ -74,19 +74,19 @@
 
 .ds-pill--outline.ds-pill--red {
   border-color: var(--ds-red-500);
-  color: var(--ds-red-600);
+  color: var(--tone-red);
 }
 .ds-pill--outline.ds-pill--red .ds-pill__dot { background: var(--ds-red-500); }
 
 .ds-pill--outline.ds-pill--amber {
   border-color: var(--ds-amber-500);
-  color: var(--ds-amber-600);
+  color: var(--tone-amber);
 }
 .ds-pill--outline.ds-pill--amber .ds-pill__dot { background: var(--ds-amber-500); }
 
 .ds-pill--outline.ds-pill--green {
   border-color: var(--ds-green-500);
-  color: var(--ds-green-600);
+  color: var(--tone-green);
 }
 .ds-pill--outline.ds-pill--green .ds-pill__dot { background: var(--ds-green-500); }
 

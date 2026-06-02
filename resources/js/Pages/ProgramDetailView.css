@@ -123,13 +123,13 @@
 }
 
 .program-detail-v2 .wi-detail-header__btn--danger {
-  color: var(--ds-red-600);
+  color: var(--tone-red);
   border-color: var(--ds-red-500);
 }
 
 .program-detail-v2 .wi-detail-header__btn--danger:hover:not(:disabled) {
   background: var(--ds-red-50);
-  border-color: var(--ds-red-600);
+  border-color: var(--tone-red);
 }
 
 /* Primary "Setujui" via .btn--primary */

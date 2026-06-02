@@ -137,9 +137,9 @@
   margin-left: 2px;
 }
 
-.assignments-v2 .text-yellow { color: var(--ds-amber-600); }
-.assignments-v2 .text-red    { color: var(--ds-red-600); }
-.assignments-v2 .text-green  { color: var(--ds-green-600); }
+.assignments-v2 .text-yellow { color: var(--tone-amber); }
+.assignments-v2 .text-red    { color: var(--tone-red); }
+.assignments-v2 .text-green  { color: var(--tone-green); }
 
 /* ─── Action button ─────────────────────────────────────── */
 
@@ -173,7 +173,7 @@
   background: var(--ds-red-50);
   border: 1px solid var(--ds-red-500);
   border-radius: var(--ds-radius-md);
-  color: var(--ds-red-600);
+  color: var(--tone-red);
   font-size: var(--ds-text-13);
 }
 
