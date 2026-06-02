@@ -5,7 +5,7 @@ import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useAuth } from '../hooks/useAuth'
 import { SkeletonBlock, SectionState } from '../components/ui'
-import { Card, Sparkline, Meter, Delta, Bars, Gauge } from '../design-system'
+import { Card, Sparkline, Meter, Delta, Bars, Gauge, Tooltip } from '../design-system'
 import { scoreTone, type Tone } from '../lib/tone'
 import { resolveMonthIndex } from '../lib/forecast'
 import './HomeView.css'
@@ -147,8 +147,10 @@ function ActivityGlyph({ action }: { action: string }) {
   }
 }
 
-/* Status glyph — check (aman) / triangle (hati-hati) / cross (bahaya). Tone
- * carried by currentColor; neutral falls back to a dot. */
+/* Status glyph — check (aman) / triangle-! (hati-hati) / circle-! (kritis). Tone
+ * carried by currentColor; neutral falls back to a dot.
+ * Merah PAKAI lingkaran-seru (alert), BUKAN silang "X" — "X" telanjang
+ * dibaca sbg tombol "close/tutup", bukan tanda bahaya. (fix Jun 2026) */
 function ToneGlyph({ tone }: { tone: Tone }) {
   const p = {
     width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none',
@@ -157,7 +159,7 @@ function ToneGlyph({ tone }: { tone: Tone }) {
   }
   if (tone === 'green') return <svg {...p}><polyline points="20 6 9 17 4 12" /></svg>
   if (tone === 'amber') return <svg {...p}><path d="M12 3 L22 20 L2 20 Z" /><line x1="12" y1="10" x2="12" y2="14" /><circle cx="12" cy="17" r="0.6" fill="currentColor" /></svg>
-  if (tone === 'red') return <svg {...p}><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
+  if (tone === 'red') return <svg {...p}><circle cx="12" cy="12" r="9" /><line x1="12" y1="7.5" x2="12" y2="13" /><circle cx="12" cy="16.5" r="0.6" fill="currentColor" /></svg>
   return <span className="hv__dot" data-tone="neutral" />
 }
 
@@ -175,6 +177,20 @@ function ShortcutIcon({ name }: { name: string }) {
     case 'performance': return <svg {...p}><path d="M4 19 L9 12 L13 15 L20 6" /><polyline points="15 6 20 6 20 11" /></svg>
     default: return <svg {...p}><circle cx="12" cy="12" r="8" /></svg>
   }
+}
+
+/* ─── InfoHint — ikon info kecil + tooltip; menggantikan legend inline yang
+ * memadati panel-head. Penjelasan simbol/sumbu muncul saat hover/focus. */
+function InfoHint({ content }: { content: string }) {
+  return (
+    <Tooltip content={content} className="hvc__infohint">
+      <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" focusable="false">
+        <circle cx="8" cy="8" r="6.75" fill="none" stroke="currentColor" strokeWidth="1.2" />
+        <circle cx="8" cy="4.7" r="0.95" fill="currentColor" />
+        <rect x="7.28" y="6.6" width="1.44" height="5" rx="0.72" fill="currentColor" />
+      </svg>
+    </Tooltip>
+  )
 }
 
 /* ─── Execution Map — compact 3×3 grid: progress band × time-pressure band,
@@ -198,6 +214,7 @@ function ExecutionMap({ programs, onOpen }: {
   }
   return (
     <div className="hvc__xmap">
+      <span className="hvc__xmap-yaxis">Deadline pressure</span>
       <div className="hvc__xmap-grid">
         {grid.map((row, r) => (
           <Fragment key={r}>
@@ -218,6 +235,7 @@ function ExecutionMap({ programs, onOpen }: {
         <span className="hvc__xmap-colh">Early</span>
         <span className="hvc__xmap-colh">Mid</span>
         <span className="hvc__xmap-colh">Final</span>
+        <span className="hvc__xmap-xaxis">Progress</span>
       </div>
     </div>
   )
@@ -635,16 +653,20 @@ export default function HomeView() {
 
   /* ── Verdict — editorial lead: the one-line state + WHY (reframes a green
    * lagging KPI against the leading execution risk). All from existing data. */
-  const verdictLabel = statusTone === 'red' ? 'Action Needed' : statusTone === 'amber' ? 'Attention' : 'Under Control'
-  const verdictSub: ReactNode = kpiDiverges
-    ? <>Result above target (<b>{kpiHeadline.toFixed(1)}%</b>), but execution lags (<b>{onTrackPct}%</b>) — <b>{tlm} programs delayed</b> risk pressuring next quarter's KPI.</>
-    : tlm > 0
-      ? <><b>{tlm} programs delayed</b>{belowTargetCount > 0 ? <> &amp; <b>{belowTargetCount} KPIs</b> below target</> : null} need attention — the rest are on plan.</>
-      : exceptionCount > 0
-        ? <><b>{exceptionCount} items</b> need your decision; the rest of the portfolio is under control.</>
-        : <>All indicators under control — nothing needs special action.</>
+  const verdictLabel = statusTone === 'red' ? 'Action needed' : statusTone === 'amber' ? 'Attention' : 'Under control'
+  // Compact metric-led layout (pilihan user 2026-06-02): judul ringkas + count,
+  // lalu baris metrik kontras (KPI lagging ⟷ eksekusi leading) menggantikan
+  // kalimat naratif panjang yang dulu sulit dibaca di layar sempit.
+  const verdictHeadDetail = tlm > 0
+    ? `${tlm} programs delayed`
+    : exceptionCount > 0
+      ? `${exceptionCount} items to decide`
+      : 'all on plan'
   const verdictCta = tlm > 0 ? `Review ${tlm} programs` : exceptionCount > 0 ? 'Open Focus' : 'View programs'
   const verdictHref = tlm > 0 ? '/programs' : exceptionCount > 0 ? '/fokus' : '/programs'
+  // Metric contrast signs — lagging (KPI result) vs leading (execution on-track%).
+  const kpiSign = kpiTone === 'green' ? '✓ above target' : kpiTone === 'amber' ? 'near target' : '↓ below target'
+  const execSign = leadingTone === 'green' ? '✓ on track' : leadingTone === 'amber' ? 'steady' : '↓ lagging'
 
   /* ── Portofolio scope — jawab "apa yang saya kelola & berapa" (data: scope+summary,
    * sebelumnya tak dirender). Active = berjalan (on-track+at-risk+telat), bukan selesai/draft. */
@@ -694,12 +716,28 @@ export default function HomeView() {
           <div className="hvc__verdict-card" data-tone={statusTone}>
           <button type="button" className="hvc__verdict-main" data-tone={statusTone} onClick={() => navigate(verdictHref)}>
             <span className="hvc__verdict-icon" data-tone={statusTone}><ToneGlyph tone={statusTone} /></span>
-            <span className="hvc__verdict-body">
+            <span className="hvc__verdict-headline">
               <span className="hvc__verdict-label" data-tone={statusTone}>{verdictLabel}</span>
-              <span className="hvc__verdict-sub">{verdictSub}</span>
+              <span className="hvc__verdict-detail">— {verdictHeadDetail}</span>
             </span>
             <span className="hvc__verdict-cta">{verdictCta}<span className="hvc__arrow" aria-hidden>→</span></span>
           </button>
+
+          {/* Metric contrast — lagging (KPI result) ⟷ leading (execution on-track%) */}
+          {(hasKpi || activeProgramCount > 0) && (
+            <div className="hvc__verdict-metrics">
+              {hasKpi && (
+                <span className="hvc__vmetric" data-tone={kpiTone}>
+                  <span className="hvc__vmetric-k">KPI</span> <b>{kpiHeadline.toFixed(1)}%</b> <span className="hvc__vmetric-s">{kpiSign}</span>
+                </span>
+              )}
+              {activeProgramCount > 0 && (
+                <span className="hvc__vmetric" data-tone={leadingTone}>
+                  <span className="hvc__vmetric-k">Execution</span> <b>{onTrackPct}%</b> <span className="hvc__vmetric-s">{execSign}</span>
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Intelligence row (di dalam banner): insight · forecast · delta */}
           {(insightText || forecast || hasDelta) && (
@@ -854,8 +892,10 @@ export default function HomeView() {
               {/* Horizon — workload by deadline window */}
               <Card padding="lg" className="hvc__panel">
                 <header className="hvc__panel-head">
-                  <span className="hvc__eyebrow">Deadlines</span>
-                  <span className="hvc__panel-hint">red bar = past due · rest = upcoming</span>
+                  <span className="hvc__panel-title">
+                    <span className="hvc__eyebrow">Deadlines</span>
+                    <InfoHint content="Red bar = past due · rest = upcoming" />
+                  </span>
                 </header>
                 {horizonBars.length > 0
                   ? <Bars bars={horizonBars} height={112} rich />
@@ -866,7 +906,6 @@ export default function HomeView() {
               <Card padding="lg" className="hvc__panel">
                 <header className="hvc__panel-head">
                   <span className="hvc__eyebrow">Execution Map</span>
-                  <span className="hvc__panel-hint">rows = deadline pressure · columns = progress</span>
                 </header>
                 <ExecutionMap programs={programsForChart} onOpen={() => navigate('/programs')} />
               </Card>
@@ -875,8 +914,10 @@ export default function HomeView() {
                   gauge active-rate (dulu ~100% trivial) diturunkan jadi stat. */}
               <Card padding="lg" className="hvc__panel">
                 <header className="hvc__panel-head">
-                  <span className="hvc__eyebrow">Momentum</span>
-                  <span className="hvc__panel-hint">On Track trend</span>
+                  <span className="hvc__panel-title">
+                    <span className="hvc__eyebrow">Momentum</span>
+                    <InfoHint content="On-track program trend over the last 14 days" />
+                  </span>
                 </header>
                 <div className="hvc__mtrend hvc__mtrend--hero">
                   {(() => {

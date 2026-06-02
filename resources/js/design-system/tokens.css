@@ -77,6 +77,14 @@
   --ds-green-500: #16A34A;
   --ds-green-600: #15803D;
 
+  /* Tone foreground — THEME-AWARE. Untuk teks/ikon/angka status agar kontras
+     benar di KEDUA tema. Light = nilai --ds-*-600 (mode terang TAK berubah);
+     dark di-override lebih terang di blok [data-theme="dark"]. */
+  --tone-red:     var(--ds-red-600);
+  --tone-amber:   var(--ds-amber-600);
+  --tone-green:   var(--ds-green-600);
+  --tone-neutral: #64748B;
+
   /* ─── Aliases: Surface / Text / Border ───────────────────── */
   --ds-surface-page:    var(--ds-neutral-50);
   --ds-surface-card:    var(--ds-neutral-0);
@@ -183,6 +191,12 @@
   --ds-red-50:    rgba(220,38,38,0.14);
   --ds-amber-50:  rgba(217,119,6,0.14);
   --ds-green-50:  rgba(22,163,74,0.14);
+
+  /* Tone foreground (dark) — lebih terang agar kontras di atas permukaan gelap. */
+  --tone-red:     #F87171;
+  --tone-amber:   #FBBF24;
+  --tone-green:   #34D399;
+  --tone-neutral: #94A3B8;
 
   /* Elevation — drop shadow opacities lifted (was tuned for light bg) */
   --ds-shadow-popover: 0 1px 2px rgba(0,0,0,0.32), 0 4px 12px rgba(0,0,0,0.40);

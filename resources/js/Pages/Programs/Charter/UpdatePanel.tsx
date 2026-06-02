@@ -18,7 +18,7 @@ export function UpdatePanel({ log }: Props) {
       {log.updateNote ? (
         <p className="cs-update__note">{log.updateNote}</p>
       ) : (
-        <p className="cs-update__empty">Belum ada update progress terbaru.</p>
+        <p className="cs-update__empty">No recent progress updates.</p>
       )}
     </div>
   )

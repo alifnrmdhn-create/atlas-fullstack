@@ -21,7 +21,7 @@ export function ActivityTimelineTable({ activities, period }: Props) {
   if (activities.length === 0) {
     return (
       <div className="atl-empty">
-        Belum ada aktivitas. Tambahkan task pada workstream untuk mengisi timeline.
+        No activities yet. Add tasks to a workstream to populate the timeline.
       </div>
     )
   }

@@ -81,15 +81,15 @@ function relativeTime(iso: string): string {
   if (isNaN(d)) return ''
   const diff = Date.now() - d
   const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'baru saja'
+  if (mins < 1) return 'just now'
   if (mins < 60) return `${mins}m`
   const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}j`
+  if (hrs < 24) return `${hrs}h`
   const days = Math.floor(hrs / 24)
-  if (days < 7) return `${days}h`
+  if (days < 7) return `${days}d`
   const weeks = Math.floor(days / 7)
-  if (weeks < 4) return `${weeks}mg`
-  return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+  if (weeks < 4) return `${weeks}w`
+  return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
 }
 
 function formatEstimate(hours: number): { primary: string; secondary?: string } {
@@ -165,7 +165,7 @@ function formatWeekLabel(isoWeek: string): string {
   try {
     const monday      = isoWeekToDate(isoWeek)
     const weekOfMonth = Math.ceil(monday.getDate() / 7)
-    const month = monday.toLocaleDateString('id-ID', { month: 'short' })
+    const month = monday.toLocaleDateString('en-US', { month: 'short' })
     const year  = String(monday.getFullYear()).slice(-2)
     return `W${weekOfMonth} ${month} ${year}`
   } catch { return isoWeek }
@@ -281,7 +281,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       await navigator.clipboard.writeText(window.location.href)
       showToast('Link task disalin', 'success')
     } catch {
-      showToast('Gagal salin link', 'error')
+      showToast('Failed to copy link', 'error')
     }
   }
 
@@ -308,7 +308,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menyimpan tenggat.'), 'error')
+      showToast(extractErr(err, 'Failed to save deadline.'), 'error')
     } finally {
       setTenggatSaving(false)
       setTenggatEditing(false)
@@ -344,7 +344,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       await loadDetail(true)
       setRenEditing(false)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menyimpan jadwal.'), 'error')
+      showToast(extractErr(err, 'Failed to save schedule.'), 'error')
     } finally {
       setRenSaving(false)
     }
@@ -358,7 +358,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       await loadDetail(true)
       setRenEditing(false)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menghapus jadwal.'), 'error')
+      showToast(extractErr(err, 'Failed to delete schedule.'), 'error')
     } finally {
       setRenSaving(false)
     }
@@ -388,7 +388,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       await api.patch(`/tasks/${id}`, { picUnitIds: ids })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menyimpan PIC unit.'), 'error')
+      showToast(extractErr(err, 'Failed to save unit PIC.'), 'error')
     } finally { setPicSaving(false) }
   }
 
@@ -399,7 +399,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       await api.patch(`/tasks/${id}`, { picPersonIds: ids })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menyimpan PIC person.'), 'error')
+      showToast(extractErr(err, 'Failed to save person PIC.'), 'error')
     } finally { setPicSaving(false) }
   }
 
@@ -450,7 +450,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
     } catch (err) {
       if (!silent) {
         const msg = err instanceof Error ? err.message : String(err)
-        setLoadError(msg || 'Work item tidak dapat dimuat.')
+        setLoadError(msg || 'Work item could not be loaded.')
       }
     } finally {
       if (!silent) setLoading(false)
@@ -511,8 +511,8 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
   // Tanpa ini slider di-disable agar task tanpa PIC tak bisa didorong "Berjalan".
   const canStart = !!detail?.assignee && !!detail?.targetCompletion
   const startBlockReason = !detail?.assignee && !detail?.targetCompletion
-    ? 'Tetapkan PIC & target selesai dulu'
-    : !detail?.assignee ? 'Tetapkan PIC dulu sebelum memulai task'
+    ? 'Set a PIC & target completion first'
+    : !detail?.assignee ? 'Set a PIC before starting the task'
     : !detail?.targetCompletion ? 'Isi target selesai dulu sebelum memulai task'
     : ''
 
@@ -521,7 +521,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
     if (actionStatus.saving) return // guard double-submit
     if (editDraft.percentComplete === detail.percentComplete) return // tidak berubah
     if (isRegressing && !regressNote.trim()) {
-      showToast('Isi alasan penurunan progres untuk audit log.', 'error')
+      showToast('Enter a reason for the progress decrease for the audit log.', 'error')
       return
     }
     setActionStatus({ saving: true, message: null })
@@ -534,11 +534,11 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       })
       await Promise.all([loadDetail(true), loadOverview('refresh')])
       setRegressNote('')
-      setActionStatus({ saving: false, message: 'Tersimpan.' })
+      setActionStatus({ saving: false, message: 'Saved.' })
       setTimeout(() => setActionStatus(s => ({ ...s, message: null })), 2500)
     } catch (err) {
       setActionStatus({ saving: false, message: null })
-      showToast(extractErr(err, 'Gagal menyimpan progres.'), 'error')
+      showToast(extractErr(err, 'Failed to save progress.'), 'error')
     }
   }
 
@@ -570,7 +570,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       const res = await api.get<{ data: DirectoryUser[] }>('/users/directory')
       setAssignUsers(res.data ?? [])
     } catch (err) {
-      showToast(extractErr(err, 'Gagal memuat user directory.'), 'error')
+      showToast(extractErr(err, 'Failed to load user directory.'), 'error')
     }
   }
 
@@ -582,7 +582,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       await loadDetail(true)
       setShowAssigneeEdit(false)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal mengubah assignee.'), 'error')
+      showToast(extractErr(err, 'Failed to change assignee.'), 'error')
     } finally { setAssignSaving(false) }
   }
 
@@ -607,7 +607,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       await api.patch(`/tasks/${id}`, { title: next })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menyimpan title.'), 'error')
+      showToast(extractErr(err, 'Failed to save title.'), 'error')
     } finally {
       setTitleSaving(false)
       setTitleEditing(false)
@@ -635,7 +635,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       await api.patch(`/tasks/${id}`, { description: next || undefined })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menyimpan deskripsi.'), 'error')
+      showToast(extractErr(err, 'Failed to save description.'), 'error')
     } finally {
       setDescSaving(false)
       setDescEditing(false)
@@ -657,7 +657,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       await api.patch(`/tasks/${id}`, { priority: newPriority })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menyimpan prioritas.'), 'error')
+      showToast(extractErr(err, 'Failed to save priority.'), 'error')
     } finally { setPrioritySaving(false) }
   }
 
@@ -673,7 +673,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       await loadOverview('refresh')
       navigate('/execution')
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menghapus task.'), 'error')
+      showToast(extractErr(err, 'Failed to delete task.'), 'error')
     } finally { setDeleting(false) }
   }
 
@@ -704,7 +704,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
         ...prev,
         subTasks: prev.subTasks.map(st => st.id === subtaskId ? { ...st, isCompleted: !st.isCompleted } : st),
       } : prev)
-      showToast(extractErr(err, 'Gagal mengubah subtask.'), 'error')
+      showToast(extractErr(err, 'Failed to update subtask.'), 'error')
     } finally { setTogglingSubtask(null) }
   }
 
@@ -714,7 +714,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       await api.delete(`/tasks/${id}/subtasks/${subtaskId}`)
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menghapus subtask.'), 'error')
+      showToast(extractErr(err, 'Failed to delete subtask.'), 'error')
     }
   }
 
@@ -728,7 +728,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       setShowAddSubtask(false)
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menambah subtask.'), 'error')
+      showToast(extractErr(err, 'Failed to add subtask.'), 'error')
     } finally { setStSaving(false) }
   }
 
@@ -747,7 +747,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
   // Helper: Escape boleh menutup edit mode hanya jika tidak ada perubahan,
   // atau user mengonfirmasi buang draft.
   const confirmDiscard = (): boolean =>
-    window.confirm('Buang perubahan yang belum disimpan?')
+    window.confirm('Discard unsaved changes?')
 
   useEscKey(() => setPriorityEditing(false), priorityEditing)
   useEscKey(() => {
@@ -938,7 +938,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       setShowCreateBlocker(false)
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err) {
-      setBlError((err as { message?: string })?.message ?? 'Gagal membuat blocker.')
+      setBlError((err as { message?: string })?.message ?? 'Failed to create blocker.')
     } finally { setBlSaving(false) }
   }
 
@@ -955,7 +955,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       setBlEditTarget(null)
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menyimpan blocker.'), 'error')
+      showToast(extractErr(err, 'Failed to save blocker.'), 'error')
     } finally { setBlEditSaving(false) }
   }
 
@@ -971,7 +971,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       setBlStatusTarget(null)
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err) {
-      showToast(extractErr(err, 'Gagal mengubah status blocker.'), 'error')
+      showToast(extractErr(err, 'Failed to change blocker status.'), 'error')
     } finally { setBlStatusSaving(false) }
   }
 
@@ -983,7 +983,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       setBlDeleteConfirmId(null)
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menghapus blocker.'), 'error')
+      showToast(extractErr(err, 'Failed to delete blocker.'), 'error')
     } finally { setBlDeleteSaving(false) }
   }
 
@@ -1016,7 +1016,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       setCommentValue(''); setReplyTargetId(null)
       await loadDetail(true)
     } catch (err) {
-      setCommentError(err instanceof Error ? err.message : 'Gagal mengirim komentar.')
+      setCommentError(err instanceof Error ? err.message : 'Failed to post comment.')
     } finally { setSending(false) }
   }
 
@@ -1025,7 +1025,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       await api.delete(`/comments/${commentId}`)
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menghapus komentar.'), 'error')
+      showToast(extractErr(err, 'Failed to delete comment.'), 'error')
     }
   }
   const reactToComment = async (commentId: number) => {
@@ -1033,7 +1033,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       await api.post(`/comments/${commentId}/reactions`, { emoji: ':thumbsup:' })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Gagal memberi reaksi.'), 'error')
+      showToast(extractErr(err, 'Failed to add reaction.'), 'error')
     }
   }
 
@@ -1118,10 +1118,10 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
           </button>
         </div>
         <div style={{ padding: '32px', maxWidth: 560 }}>
-          <InlineNotice tone="error">{loadError ?? 'Work item tidak ditemukan.'}</InlineNotice>
+          <InlineNotice tone="error">{loadError ?? 'Work item not found.'}</InlineNotice>
           <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
             <button className="wid-btn wid-btn--primary" onClick={() => void loadDetail()} type="button">Coba lagi</button>
-            <button className="wid-btn" onClick={() => navigate('/execution')} type="button">Kembali ke board</button>
+            <button className="wid-btn" onClick={() => navigate('/execution')} type="button">Back to board</button>
           </div>
         </div>
       </div>
@@ -1148,9 +1148,9 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
   if (isOverdue) {
     alert = {
       tone: 'danger', icon: Icon.alert,
-      title: `Lewat tenggat ${Math.abs(dueDays!)} hari`,
-      sub: dueDate ? dueDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : undefined,
-      actionLabel: !roleAccess.isMonitoringOnly ? 'Edit tenggat' : undefined,
+      title: `${Math.abs(dueDays!)} days overdue`,
+      sub: dueDate ? dueDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : undefined,
+      actionLabel: !roleAccess.isMonitoringOnly ? 'Edit deadline' : undefined,
       onAction: !roleAccess.isMonitoringOnly ? beginTenggatEdit : undefined,
     }
   } else if (detail.isBlocked && detail.blockedReason) {
@@ -1158,7 +1158,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       tone: 'danger', icon: Icon.blocker,
       title: 'Work item terblokir',
       sub: detail.blockedReason,
-      actionLabel: 'Lihat blocker',
+      actionLabel: 'View blocker',
       onAction: scrollToBlockers,
     }
   }
@@ -1203,7 +1203,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
             </span>
           )}
           <button
-            aria-label="Cari & pindah task lain"
+            aria-label="Search & switch to another task"
             className="wid-iconbtn"
             onClick={() => { setShowQuickSwitch(true); setQsQuery(''); setQsIndex(0) }}
             title="Quick switch (⌘P)"
@@ -1222,7 +1222,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
             {Icon.link}
           </button>
           <button
-            aria-label="Buka panduan keyboard shortcut"
+            aria-label="Open keyboard shortcut guide"
             className="wid-iconbtn"
             onClick={() => setShowHelp(true)}
             title="Keyboard shortcuts (?)"
@@ -1233,12 +1233,12 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
           {!roleAccess.isMonitoringOnly && !confirmDelete && (
             <>
               <span className="wid-topbar__sep" aria-hidden="true" />
-              <button className="wid-iconbtn" onClick={beginTitleEdit} title="Edit judul (E)" type="button">
+              <button className="wid-iconbtn" onClick={beginTitleEdit} title="Edit title (E)" type="button">
                 <svg aria-hidden="true" fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="12"><path d="M8.5 1.5a1.06 1.06 0 0 1 1.5 1.5L3.5 9.5l-3 1 1-3 6.5-6z"/></svg>
                 Edit
                 <kbd className="wid-kbd">E</kbd>
               </button>
-              <button aria-label="Hapus task" className="wid-iconbtn wid-iconbtn--danger" onClick={() => setConfirmDelete(true)} type="button">
+              <button aria-label="Delete task" className="wid-iconbtn wid-iconbtn--danger" onClick={() => setConfirmDelete(true)} type="button">
                 <svg aria-hidden="true" fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="12"><path d="M2 3h8M4 3V2h4v1M5 5.5v3M7 5.5v3M3 3l.5 7h5l.5-7"/></svg>
                 Hapus
               </button>
@@ -1246,11 +1246,11 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
           )}
           {confirmDelete && (
             <div className="wid-confirm">
-              <span className="wid-confirm__label">Hapus permanen?</span>
+              <span className="wid-confirm__label">Delete permanently?</span>
               <button className="wid-confirm__btn wid-confirm__btn--danger" disabled={deleting} onClick={() => void doDelete()} type="button">
-                {deleting ? '…' : 'Ya, Hapus'}
+                {deleting ? '…' : 'Yes, Delete'}
               </button>
-              <button className="wid-confirm__btn" disabled={deleting} onClick={() => setConfirmDelete(false)} type="button">Batal</button>
+              <button className="wid-confirm__btn" disabled={deleting} onClick={() => setConfirmDelete(false)} type="button">Cancel</button>
             </div>
           )}
         </div>
@@ -1293,7 +1293,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
           <h1
             className={`wid-hero__title${roleAccess.isMonitoringOnly ? '' : ' is-editable'}`}
             onClick={() => !roleAccess.isMonitoringOnly && beginTitleEdit()}
-            title={roleAccess.isMonitoringOnly ? undefined : 'Klik untuk edit (T)'}
+            title={roleAccess.isMonitoringOnly ? undefined : 'Click to edit (T)'}
           >
             {detail.title}
           </h1>
@@ -1315,7 +1315,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                 type="button"
                 className="wid-hero__assignee wid-hero__assignee--clickable"
                 onClick={() => { setShowAssigneeEdit(true); void loadAssignUsers() }}
-                title="Klik untuk ubah executor"
+                title="Click to change executor"
               >
                 <Avatar name={detail.assignee.name} />
                 <span className="wid-hero__assignee-name">{detail.assignee.name}</span>
@@ -1333,12 +1333,12 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
               onClick={() => { setShowAssigneeEdit(true); void loadAssignUsers() }}
             >
               {Icon.user}
-              <span>Belum ditugaskan</span>
+              <span>Unassigned</span>
             </button>
           ) : (
             <span className="wid-hero__assignee wid-hero__assignee--empty">
               {Icon.user}
-              <span>Belum ditugaskan</span>
+              <span>Unassigned</span>
             </span>
           )}
           {dueDate ? (
@@ -1361,15 +1361,15 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
               </span>
             ) : (
               <button
-                aria-label="Edit tenggat"
+                aria-label="Edit deadline"
                 className={`wid-hero__due wid-hero__due--btn${isOverdue ? ' wid-hero__due--overdue' : isDueSoon ? ' wid-hero__due--soon' : ''}${roleAccess.isMonitoringOnly ? '' : ' is-editable'}`}
                 disabled={roleAccess.isMonitoringOnly}
                 onClick={beginTenggatEdit}
-                title={roleAccess.isMonitoringOnly ? undefined : 'Klik untuk edit tenggat'}
+                title={roleAccess.isMonitoringOnly ? undefined : 'Click to edit deadline'}
                 type="button"
               >
                 {Icon.calendar}
-                <span>{dueDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                <span>{dueDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                 {dueDays !== null && detail.status !== 'COMPLETED' && (
                   <span className="wid-due-chip">
                     {isOverdue
@@ -1475,11 +1475,11 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
           )}
           {isRegressing && (
             <div className="wid-ms-field wid-ms-regress">
-              <span className="wid-ms-label">Alasan turun</span>
+              <span className="wid-ms-label">Decrease reason</span>
               <input
                 className="wid-ms-select"
                 type="text"
-                placeholder="mis. revisi scope, salah input"
+                placeholder="e.g. scope revision, wrong input"
                 value={regressNote}
                 onChange={e => setRegressNote(e.target.value)}
                 maxLength={2000}
@@ -1499,14 +1499,14 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                 disabled={actionStatus.saving}
                 type="submit"
               >
-                {actionStatus.saving ? '…' : 'Simpan'}
+                {actionStatus.saving ? '…' : 'Save'}
               </button>
             ) : (
               <span className="wid-ms-saved" aria-live="polite">
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M2 6.5 5 9.5l5-7" />
                 </svg>
-                Tersimpan
+                Saved
               </span>
             )}
           </div>
@@ -1548,7 +1548,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
               <div className="wid-panel__head">
                 <h3 className="wid-panel__title">
                   <span className="wid-panel__icon">{Icon.info}</span>
-                  Deskripsi
+                  Description
                 </h3>
                 {/* "Edit" button dihapus — text di body already click-to-edit
                     (.wid-desc.is-editable). Tombol di header = duplicate path. */}
@@ -1566,20 +1566,20 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); void commitDescEdit() }
                         if (e.key === 'Escape') { e.preventDefault(); setDescEditing(false) }
                       }}
-                      placeholder="Deskripsi task, konteks, atau lampiran yang perlu dibaca tim…"
+                      placeholder="Task description, context, or attachments the team should read…"
                       ref={descInputRef}
                       rows={Math.max(3, Math.min(10, descDraft.split('\n').length + 1))}
                       value={descDraft}
                     />
                     <p className="wid-desc-edit__hint">
-                      <kbd className="wid-kbd">⌘↵</kbd> simpan · <kbd className="wid-kbd">ESC</kbd> batal
+                      <kbd className="wid-kbd">⌘↵</kbd> save · <kbd className="wid-kbd">ESC</kbd> cancel
                     </p>
                   </div>
                 ) : detail.description ? (
                   <p
                     className={`wid-desc${roleAccess.isMonitoringOnly ? '' : ' is-editable'}`}
                     onClick={() => !roleAccess.isMonitoringOnly && beginDescEdit()}
-                    title={roleAccess.isMonitoringOnly ? undefined : 'Klik untuk edit'}
+                    title={roleAccess.isMonitoringOnly ? undefined : 'Click to edit'}
                   >
                     {detail.description}
                   </p>
@@ -1598,7 +1598,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
             <div className="wid-panel__head">
               <h3 className="wid-panel__title">
                 <span className="wid-panel__icon">{Icon.subtask}</span>
-                Subtask
+                Subtasks
                 {subtaskStats.total > 0 && (
                   <span className="wid-panel__count">{subtaskStats.done}/{subtaskStats.total}</span>
                 )}
@@ -1613,7 +1613,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
               )}
               {!roleAccess.isMonitoringOnly && (
                 <button className={`wid-panel__action${showAddSubtask ? ' is-cancel' : ''}`} onClick={() => setShowAddSubtask(v => !v)} type="button">
-                  {showAddSubtask ? 'Batal' : '+ Tambah'}
+                  {showAddSubtask ? 'Cancel' : '+ Add'}
                 </button>
               )}
             </div>
@@ -1643,7 +1643,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                       </button>
                       <span className={`wid-subtask-title${st.isCompleted ? ' is-done' : ''}`}>{st.title}</span>
                       {!roleAccess.isMonitoringOnly && (
-                        <button className="wid-subtask-del" onClick={() => void deleteSubtask(st.id)} type="button" title="Hapus">
+                        <button className="wid-subtask-del" onClick={() => void deleteSubtask(st.id)} type="button" title="Delete">
                           <svg fill="none" height="10" viewBox="0 0 10 10" width="10"><path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6"/></svg>
                         </button>
                       )}
@@ -1667,12 +1667,12 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                     disabled={stSaving}
                     maxLength={160}
                     onChange={e => setStTitle(e.target.value)}
-                    placeholder="Nama subtask baru…"
+                    placeholder="New subtask name…"
                     type="text"
                     value={stTitle}
                   />
                   <button className="wid-subtask-add__submit" disabled={stSaving || !stTitle.trim()} type="submit">
-                    {stSaving ? '…' : 'Simpan'}
+                    {stSaving ? '…' : 'Save'}
                   </button>
                   <button className="wid-subtask-add__cancel" onClick={() => { setShowAddSubtask(false); setStTitle('') }} type="button">
                     <svg fill="none" height="10" viewBox="0 0 10 10" width="10"><path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5"/></svg>
@@ -1700,7 +1700,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                   onClick={() => { setShowCreateBlocker(v => !v); setBlError(null); void loadAssignUsers() }}
                   type="button"
                 >
-                  {showCreateBlocker ? 'Batal' : '+ Blocker'}
+                  {showCreateBlocker ? 'Cancel' : '+ Blocker'}
                 </button>
               )}
             </div>
@@ -1721,13 +1721,13 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                       <option value="LOW">Low</option>
                     </select>
                   </div>
-                  <input className="wid-input" disabled={blSaving} maxLength={120} minLength={3} onChange={e => setBlForm(f => ({ ...f, title: e.target.value }))} placeholder="Judul blocker *" required type="text" value={blForm.title} />
-                  <textarea className="wid-input" disabled={blSaving} maxLength={400} onChange={e => setBlForm(f => ({ ...f, description: e.target.value }))} placeholder="Deskripsi (opsional)" rows={2} style={{ resize: 'vertical' }} value={blForm.description} />
+                  <input className="wid-input" disabled={blSaving} maxLength={120} minLength={3} onChange={e => setBlForm(f => ({ ...f, title: e.target.value }))} placeholder="Blocker title *" required type="text" value={blForm.title} />
+                  <textarea className="wid-input" disabled={blSaving} maxLength={400} onChange={e => setBlForm(f => ({ ...f, description: e.target.value }))} placeholder="Description (optional)" rows={2} style={{ resize: 'vertical' }} value={blForm.description} />
                   <div className="wid-form__row wid-form__row--baseline">
                     <div style={{ flex: 1 }}>
                       <UserPicker
                         allowClear
-                        clearLabel="— Hapus assignee —"
+                        clearLabel="— Remove assignee —"
                         disabled={blSaving}
                         inputClassName="wid-input"
                         onChange={id => setBlForm(f => ({ ...f, assignedTo: id ? String(id) : '' }))}
@@ -1738,7 +1738,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                     </div>
                     {blError && <span className="wid-form__error" style={{ margin: 0 }}>{blError}</span>}
                     <button className="wid-btn wid-btn--primary" disabled={blSaving} type="submit">
-                      {blSaving ? 'Menyimpan…' : 'Simpan'}
+                      {blSaving ? 'Saving…' : 'Save'}
                     </button>
                   </div>
                 </form>
@@ -1776,7 +1776,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                           <textarea className="wid-input" disabled={blEditSaving} onChange={e => setBlEditTarget(t => t ? { ...t, description: e.target.value } : t)} rows={2} style={{ resize: 'vertical' }} value={blEditTarget.description} />
                           <div className="wid-form__actions">
                             <button className="wid-btn wid-btn--primary" disabled={blEditSaving} type="submit">{blEditSaving ? '…' : 'Simpan'}</button>
-                            <button className="wid-btn" onClick={() => setBlEditTarget(null)} type="button">Batal</button>
+                            <button className="wid-btn" onClick={() => setBlEditTarget(null)} type="button">Cancel</button>
                           </div>
                         </form>
                       )}
@@ -1786,21 +1786,21 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                             <option value="OPEN">Open</option><option value="IN_PROGRESS">In Progress</option><option value="RESOLVED">Resolved</option>
                           </select>
                           {blStatusTarget.status === 'RESOLVED' && (
-                            <textarea className="wid-input" disabled={blStatusSaving} onChange={e => setBlStatusTarget(t => t ? { ...t, resolution: e.target.value } : t)} placeholder="Catatan resolusi (opsional)" rows={2} style={{ resize: 'vertical' }} value={blStatusTarget.resolution} />
+                            <textarea className="wid-input" disabled={blStatusSaving} onChange={e => setBlStatusTarget(t => t ? { ...t, resolution: e.target.value } : t)} placeholder="Resolution note (optional)" rows={2} style={{ resize: 'vertical' }} value={blStatusTarget.resolution} />
                           )}
                           <div className="wid-form__actions">
                             <button className="wid-btn wid-btn--primary" disabled={blStatusSaving} type="submit">{blStatusSaving ? '…' : 'Simpan'}</button>
-                            <button className="wid-btn" onClick={() => setBlStatusTarget(null)} type="button">Batal</button>
+                            <button className="wid-btn" onClick={() => setBlStatusTarget(null)} type="button">Cancel</button>
                           </div>
                         </form>
                       )}
                       {blDeleteConfirmId === bl.id && (
                         <div className="wid-bl-delete-confirm">
-                          <span>Hapus blocker ini?</span>
+                          <span>Delete this blocker?</span>
                           <button className="wid-btn wid-btn--danger" disabled={blDeleteSaving} onClick={() => void submitDeleteBlocker(bl.id)} type="button">
                             {blDeleteSaving ? '…' : 'Ya'}
                           </button>
-                          <button className="wid-btn" disabled={blDeleteSaving} onClick={() => setBlDeleteConfirmId(null)} type="button">Batal</button>
+                          <button className="wid-btn" disabled={blDeleteSaving} onClick={() => setBlDeleteConfirmId(null)} type="button">Cancel</button>
                         </div>
                       )}
                     </div>
@@ -1820,10 +1820,10 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                         <button className="wid-bl-actionbtn" onClick={() => setBlEditTarget(t => t?.id === bl.id ? null : { id: bl.id, title: bl.title, description: bl.description ?? '', severity: bl.severity })} title="Edit" type="button">
                           <svg fill="none" height="12" viewBox="0 0 12 12" width="12"><path d="M8.5 1.5a1.06 1.06 0 0 1 1.5 1.5L3.5 9.5l-3 1 1-3 6.5-6z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.3"/></svg>
                         </button>
-                        <button className="wid-bl-actionbtn" onClick={() => setBlStatusTarget(t => t?.id === bl.id ? null : { id: bl.id, status: bl.status, resolution: '' })} title="Ubah status" type="button">
+                        <button className="wid-bl-actionbtn" onClick={() => setBlStatusTarget(t => t?.id === bl.id ? null : { id: bl.id, status: bl.status, resolution: '' })} title="Change status" type="button">
                           <svg fill="none" height="12" viewBox="0 0 12 12" width="12"><path d="M10 2.5A4.5 4.5 0 1 1 2 6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3"/><path d="M2 2.5v4H6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.3"/></svg>
                         </button>
-                        <button className="wid-bl-actionbtn wid-bl-actionbtn--danger" onClick={() => setBlDeleteConfirmId(i => i === bl.id ? null : bl.id)} title="Hapus" type="button">
+                        <button className="wid-bl-actionbtn wid-bl-actionbtn--danger" onClick={() => setBlDeleteConfirmId(i => i === bl.id ? null : bl.id)} title="Delete" type="button">
                           <svg fill="none" height="12" viewBox="0 0 12 12" width="12"><path d="M2 3h8M4 3V2h4v1M5 5.5v3M7 5.5v3M3 3l.5 7h5l.5-7" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.3"/></svg>
                         </button>
                       </div>
@@ -1840,7 +1840,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
             <div className="wid-panel__head">
               <h3 className="wid-panel__title">
                 <span className="wid-panel__icon">{Icon.chat}</span>
-                Diskusi
+                Discussion
                 {(detail.comments ?? []).length > 0 && <span className="wid-panel__count">{detail.comments.length}</span>}
               </h3>
             </div>
@@ -1958,7 +1958,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                             if (commentValue.trim() && !sending) (e.currentTarget.form as HTMLFormElement)?.requestSubmit()
                           }
                         }}
-                        placeholder="Execution update, blocker context, next step…  (⌘↵ kirim · / fokus · @ mention)"
+                        placeholder="Execution update, blocker context, next step…  (⌘↵ send · / focus · @ mention)"
                         ref={composerRef}
                         rows={2}
                         value={commentValue}
@@ -2011,7 +2011,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                   {commentError && <p className="wid-form__error">{commentError}</p>}
                   <div className="wid-composer__actions">
                     {replyTargetId
-                      ? <button className="wid-btn" onClick={() => setReplyTargetId(null)} type="button">Batal reply</button>
+                      ? <button className="wid-btn" onClick={() => setReplyTargetId(null)} type="button">Cancel reply</button>
                       : <span className="wid-composer__hint">
                           <kbd className="wid-kbd">⌘↵</kbd> untuk kirim
                         </span>
@@ -2062,7 +2062,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
 
                 {/* Tim block */}
                 <div className="wid-info-footer__block">
-                  <p className="wid-info-footer__block-title">Tim</p>
+                  <p className="wid-info-footer__block-title">Team</p>
 
                   <div className={`wid-team-row wid-team-row--executor${showAssigneeEdit ? ' is-editing' : ''}`}>
                     <span className="wid-sp-label">Executor</span>
@@ -2071,15 +2071,15 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                         <UserPicker
                           allowClear
                           autoOpen
-                          clearLabel="— Hapus assignee —"
+                          clearLabel="— Remove assignee —"
                           disabled={assignSaving}
                           inputClassName="wid-input"
                           onChange={id => void handleAssign(id)}
                           options={assignUsers}
-                          placeholder="Pilih executor…"
+                          placeholder="Select executor…"
                           value={detail.assignee?.id ?? null}
                         />
-                        <button className="wid-btn" onClick={() => setShowAssigneeEdit(false)} type="button">Batal</button>
+                        <button className="wid-btn" onClick={() => setShowAssigneeEdit(false)} type="button">Cancel</button>
                       </div>
                     ) : detail.assignee ? (
                       <button
@@ -2119,7 +2119,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                                   {label}
                                   <button type="button" className="wid-pic-chip__remove"
                                     disabled={picSaving} onClick={() => savePicPersons([])}
-                                    aria-label={`Hapus PIC ${label}`}>×</button>
+                                    aria-label={`Remove PIC ${label}`}>×</button>
                                 </span>
                               )
                             }
@@ -2132,7 +2132,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                               onClick={() => { setShowPicAdder(true); void loadAssignUsers() }}
                               disabled={picSaving}
                             >
-                              {(detail?.picPersonIds ?? []).length > 0 ? 'Ganti' : '+ Pilih'}
+                              {(detail?.picPersonIds ?? []).length > 0 ? 'Change' : '+ Select'}
                             </button>
                           ) : (
                           <div className="wid-pic-adder">
@@ -2143,7 +2143,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                               onBlur={() => { if (picPersonSearch.length === 0) setShowPicAdder(false) }}
                               onChange={(e) => { setPicPersonSearch(e.target.value); void loadAssignUsers() }}
                               onKeyDown={(e) => { if (e.key === 'Escape') { setPicPersonSearch(''); setShowPicAdder(false) } }}
-                              placeholder={(detail?.picPersonIds ?? []).length > 0 ? 'Cari nama…' : 'Cari nama…'}
+                              placeholder={(detail?.picPersonIds ?? []).length > 0 ? 'Search name…' : 'Search name…'}
                               value={picPersonSearch}
                             />
                             {picPersonSearch.length > 0 && (() => {
@@ -2181,7 +2181,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                                 <button type="button" className="wid-pic-chip__remove"
                                   disabled={picSaving}
                                   onClick={() => savePicUnits((detail?.picUnitIds ?? []).filter((x) => x !== uid))}
-                                  aria-label={`Hapus ${label}`}>×</button>
+                                  aria-label={`Remove ${label}`}>×</button>
                               </span>
                             )
                           })}
@@ -2192,7 +2192,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                               onClick={() => { setShowUnitAdder(true); loadOrgUnits() }}
                               disabled={picSaving}
                             >
-                              + Tambah unit
+                              + Add unit
                             </button>
                           ) : (
                           <div className="wid-pic-adder">
@@ -2203,7 +2203,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                               onBlur={() => { if (picUnitSearch.length === 0) setShowUnitAdder(false) }}
                               onChange={(e) => { setPicUnitSearch(e.target.value); loadOrgUnits() }}
                               onKeyDown={(e) => { if (e.key === 'Escape') { setPicUnitSearch(''); setShowUnitAdder(false) } }}
-                              placeholder="Cari kode/nama unit…"
+                              placeholder="Search unit code/name…"
                               value={picUnitSearch}
                             />
                             {picUnitSearch.length > 0 && (() => {
@@ -2238,7 +2238,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                   <p className="wid-info-footer__block-title">Detail</p>
                   <div className="wid-sp-grid">
                     <div className="wid-sp-grid__cell">
-                      <span className="wid-sp-label">Prioritas</span>
+                      <span className="wid-sp-label">Priority</span>
                       {priorityEditing && !roleAccess.isMonitoringOnly ? (
                         <select
                           autoFocus
@@ -2259,7 +2259,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                           disabled={prioritySaving || roleAccess.isMonitoringOnly}
                           onClick={() => !roleAccess.isMonitoringOnly && setPriorityEditing(true)}
                           style={{ background: priorityTone.bg, color: priorityTone.fg, fontSize: 10.5, padding: '2px 8px', cursor: roleAccess.isMonitoringOnly ? 'default' : 'pointer', border: 'none' }}
-                          title={roleAccess.isMonitoringOnly ? undefined : 'Klik untuk ubah prioritas'}
+                          title={roleAccess.isMonitoringOnly ? undefined : 'Click to change priority'}
                           type="button"
                         >
                           <span className="wid-chip__dot" style={{ background: priorityTone.dot }} />
@@ -2269,9 +2269,9 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                     </div>
                     {dueDate && (
                       <div className="wid-sp-grid__cell">
-                        <span className="wid-sp-label">Tenggat</span>
+                        <span className="wid-sp-label">Deadline</span>
                         <span className={`wid-sp-val${isOverdue ? ' is-overdue' : isDueSoon ? ' is-soon' : ''}`}>
-                          {dueDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {dueDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       </div>
                     )}
@@ -2299,7 +2299,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                 {/* Ren block */}
                 {!roleAccess.isMonitoringOnly && (
                   <div className="wid-info-footer__block wid-info-footer__block--full">
-                    <p className="wid-info-footer__block-title">Plan Mingguan</p>
+                    <p className="wid-info-footer__block-title">Weekly Plan</p>
                     {!renEditing ? (
                       <div className="wid-ren-view">
                         {(detail?.plannedWeeks ?? []).length > 0 ? (
@@ -2319,11 +2319,11 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                       <div className="wid-ren-editor">
                         <div className="wid-ren-range">
                           <div className="form-field wid-ren-field">
-                            <label>Mulai minggu</label>
+                            <label>Start week</label>
                             <input onChange={e => setRenStart(e.target.value)} type="week" value={renStart} />
                           </div>
                           <div className="form-field wid-ren-field">
-                            <label>Selesai minggu</label>
+                            <label>End week</label>
                             <input min={renStart} onChange={e => setRenEnd(e.target.value)} type="week" value={renEnd} />
                           </div>
                         </div>
@@ -2332,12 +2332,12 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                         )}
                         <div className="wid-ren-actions">
                           <button className="profile-save-btn" disabled={renSaving || !renStart || !renEnd || renStart > renEnd} onClick={() => void saveRen()} type="button">
-                            {renSaving ? 'Menyimpan…' : 'Simpan'}
+                            {renSaving ? 'Saving…' : 'Save'}
                           </button>
                           {(detail?.plannedWeeks ?? []).length > 0 && (
-                            <button className="btn btn--ghost" disabled={renSaving} onClick={() => void clearRen()} type="button">Hapus</button>
+                            <button className="btn btn--ghost" disabled={renSaving} onClick={() => void clearRen()} type="button">Delete</button>
                           )}
-                          <button className="btn btn--ghost" disabled={renSaving} onClick={() => setRenEditing(false)} type="button">Batal</button>
+                          <button className="btn btn--ghost" disabled={renSaving} onClick={() => setRenEditing(false)} type="button">Cancel</button>
                         </div>
                       </div>
                     )}
@@ -2347,7 +2347,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                 {/* Program Induk block */}
                 {parentProgram && (
                   <div className="wid-info-footer__block">
-                    <p className="wid-info-footer__block-title">Program Induk</p>
+                    <p className="wid-info-footer__block-title">Parent Program</p>
                     <button className="wid-parent-card" onClick={() => navigate(`/programs/${parentProgram.id}`)} type="button">
                       <div className="wid-parent-card__head">
                         <span className="wid-parent-card__code">{parentProgram.code}</span>
@@ -2361,7 +2361,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                         <span className="wid-parent-card__pct">{parentProgram.progressPercent}%</span>
                       </div>
                       <div className="wid-parent-card__foot">
-                        <span>Buka program</span>
+                        <span>Open program</span>
                         {Icon.arrow}
                       </div>
                     </button>
@@ -2371,7 +2371,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                 {/* Recent activity block */}
                 {recentActivity.length > 0 && (
                   <div className="wid-info-footer__block wid-info-footer__block--full">
-                    <p className="wid-info-footer__block-title">Aktivitas Terakhir</p>
+                    <p className="wid-info-footer__block-title">Recent Activity</p>
                     <div className="wid-activity">
                       {recentActivity.map(c => (
                         <div className="wid-activity__row" key={c.id}>
@@ -2404,25 +2404,25 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
           <div className="wid-help__modal" onMouseDown={e => e.stopPropagation()}>
             <div className="wid-help__head">
               <h3 className="wid-help__title">Keyboard shortcuts</h3>
-              <button className="wid-help__close" onClick={() => setShowHelp(false)} type="button" aria-label="Tutup">
+              <button className="wid-help__close" onClick={() => setShowHelp(false)} type="button" aria-label="Close">
                 <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="14"><path d="M1 1l12 12M13 1L1 13"/></svg>
               </button>
             </div>
             <div className="wid-help__body">
               <section className="wid-help__group">
-                <h4>Navigasi</h4>
+                <h4>Navigation</h4>
                 <dl>
-                  <div><dt><kbd className="wid-kbd">E</kbd></dt><dd>Edit judul (inline)</dd></div>
-                  <div><dt><kbd className="wid-kbd">T</kbd></dt><dd>Edit judul (inline)</dd></div>
-                  <div><dt><kbd className="wid-kbd">/</kbd></dt><dd>Fokus composer</dd></div>
-                  <div><dt><kbd className="wid-kbd">?</kbd></dt><dd>Buka panduan ini</dd></div>
-                  <div><dt><kbd className="wid-kbd">ESC</kbd></dt><dd>Tutup modal / batal edit</dd></div>
+                  <div><dt><kbd className="wid-kbd">E</kbd></dt><dd>Edit title (inline)</dd></div>
+                  <div><dt><kbd className="wid-kbd">T</kbd></dt><dd>Edit title (inline)</dd></div>
+                  <div><dt><kbd className="wid-kbd">/</kbd></dt><dd>Focus composer</dd></div>
+                  <div><dt><kbd className="wid-kbd">?</kbd></dt><dd>Open this guide</dd></div>
+                  <div><dt><kbd className="wid-kbd">ESC</kbd></dt><dd>Close modal / cancel edit</dd></div>
                 </dl>
               </section>
               <section className="wid-help__group">
                 <h4>Composer</h4>
                 <dl>
-                  <div><dt><kbd className="wid-kbd">⌘</kbd>+<kbd className="wid-kbd">↵</kbd></dt><dd>Kirim komentar</dd></div>
+                  <div><dt><kbd className="wid-kbd">⌘</kbd>+<kbd className="wid-kbd">↵</kbd></dt><dd>Post comment</dd></div>
                 </dl>
               </section>
               <section className="wid-help__group">
@@ -2436,9 +2436,9 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
               <section className="wid-help__group">
                 <h4>Inline edit</h4>
                 <dl>
-                  <div><dt>Klik title / deskripsi</dt><dd>Masuk mode edit</dd></div>
-                  <div><dt><kbd className="wid-kbd">↵</kbd></dt><dd>Simpan title</dd></div>
-                  <div><dt><kbd className="wid-kbd">⌘</kbd>+<kbd className="wid-kbd">↵</kbd></dt><dd>Simpan deskripsi</dd></div>
+                  <div><dt>Click title / description</dt><dd>Enter edit mode</dd></div>
+                  <div><dt><kbd className="wid-kbd">↵</kbd></dt><dd>Save title</dd></div>
+                  <div><dt><kbd className="wid-kbd">⌘</kbd>+<kbd className="wid-kbd">↵</kbd></dt><dd>Save description</dd></div>
                 </dl>
               </section>
             </div>
@@ -2468,7 +2468,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                     if (target) { setShowQuickSwitch(false); navigate(`/execution/tasks/${target.id}`) }
                   }
                 }}
-                placeholder="Cari task berdasarkan kode atau judul…"
+                placeholder="Search tasks by code or title…"
                 type="text"
                 value={qsQuery}
               />
@@ -2476,10 +2476,10 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
             </div>
             <div className="wid-qs__body">
               {qsLoading && qsResults.length === 0 && (
-                <div className="wid-qs__empty">Memuat…</div>
+                <div className="wid-qs__empty">Loading…</div>
               )}
               {!qsLoading && qsResults.length === 0 && (
-                <div className="wid-qs__empty">{qsQuery.trim() ? 'Tidak ada hasil.' : 'Ketik untuk cari task.'}</div>
+                <div className="wid-qs__empty">{qsQuery.trim() ? 'No results.' : 'Type to search tasks.'}</div>
               )}
               {qsResults.map((r, i) => (
                 <button
@@ -2518,7 +2518,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
       {!kbdHintDismissed && !showHelp && !showQuickSwitch && (
         <div className="wid-kbd-hint">
           <button
-            aria-label="Buka panduan keyboard shortcut"
+            aria-label="Open keyboard shortcut guide"
             className="wid-kbd-hint__btn"
             onClick={() => setShowHelp(true)}
             type="button"
@@ -2527,10 +2527,10 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
             <span>Shortcut keyboard</span>
           </button>
           <button
-            aria-label="Tutup hint"
+            aria-label="Close hint"
             className="wid-kbd-hint__close"
             onClick={dismissKbdHint}
-            title="Jangan tampilkan lagi"
+            title="Don't show again"
             type="button"
           >
             <svg aria-hidden="true" fill="none" height="10" viewBox="0 0 10 10" width="10"><path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5"/></svg>

@@ -71,7 +71,7 @@ export function HeaderStrip({ program, status, kpi, actionSlot }: Props) {
         {kpi ? (
           <>
             <div className="cs-header__value">{kpi.name}</div>
-            <div className="cs-header__sub">Target {kpi.target.toLocaleString('id-ID')} {kpi.unit}</div>
+            <div className="cs-header__sub">Target {kpi.target.toLocaleString('en-US')} {kpi.unit}</div>
           </>
         ) : (
           <div className="cs-header__sub cs-header__sub--muted">Non-Scorecard</div>

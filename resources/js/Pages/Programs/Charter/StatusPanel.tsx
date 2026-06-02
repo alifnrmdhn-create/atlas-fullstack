@@ -7,7 +7,7 @@ type Props = {
 const HEALTH_LABEL: Record<CharterHealth, string> = {
   ON_TRACK:  'On Track',
   AT_RISK:   'At Risk',
-  TERLAMBAT: 'Terlambat',
+  TERLAMBAT: 'Delayed',
   COMPLETED: 'Completed',
 }
 
@@ -30,7 +30,7 @@ export function StatusPanel({ status }: Props) {
   const hasAchievement = status.achievementPct !== null
   const hasTasks = status.totalCount > 0
   const displayPct = hasAchievement ? status.achievementPct! : (hasTasks ? activityPct : null)
-  const displayLabel = hasAchievement ? '% Achievement' : (hasTasks ? '% Aktivitas Selesai' : '% Progres')
+  const displayLabel = hasAchievement ? '% Achievement' : (hasTasks ? '% Activities Done' : '% Progress')
   return (
     <div className="cs-status">
       <div className="cs-status__head">
@@ -57,7 +57,7 @@ export function StatusPanel({ status }: Props) {
           <span className="cs-status__breakdown-num">{status.completedCount}</span>
           <span className="cs-status__breakdown-sep">/</span>
           <span className="cs-status__breakdown-total">{status.totalCount}</span>
-          <span className="cs-status__breakdown-label">aktivitas selesai</span>
+          <span className="cs-status__breakdown-label">activities done</span>
           {/* Mini progress ratio activity completion — visual untuk tracking. */}
           <div className="cs-status__activity-track" role="presentation" aria-hidden="true">
             <div

@@ -36,7 +36,7 @@ function statusAria(status: CharterCellStatus): string {
  */
 export function KpiProgressTable({ history }: Props) {
   if (history.rows.length === 0) {
-    return <div className="kpt-empty">Belum ada riwayat KPI bulanan.</div>
+    return <div className="kpt-empty">No monthly KPI history yet.</div>
   }
 
   return (

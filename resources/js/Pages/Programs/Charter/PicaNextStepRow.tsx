@@ -16,20 +16,20 @@ export function PicaNextStepRow({ log }: Props) {
   return (
     <div className="cs-pica">
       <section className="cs-pica__card">
-        <div className="cs-pica__label">Identifikasi Masalah → Tindakan Korektif</div>
+        <div className="cs-pica__label">Problem Identification → Corrective Action</div>
         {noPica ? (
-          <p className="cs-pica__empty">Tidak ada masalah yang terdokumentasi.</p>
+          <p className="cs-pica__empty">No problems documented.</p>
         ) : (
           <div className="cs-pica__body">
             {log.problemIdentification && (
               <div className="cs-pica__block">
-                <span className="cs-pica__block-label">Masalah</span>
+                <span className="cs-pica__block-label">Problem</span>
                 <p className="cs-pica__block-text">{log.problemIdentification}</p>
               </div>
             )}
             {log.correctiveAction && (
               <div className="cs-pica__block">
-                <span className="cs-pica__block-label">Tindakan Korektif</span>
+                <span className="cs-pica__block-label">Corrective Action</span>
                 <p className="cs-pica__block-text">{log.correctiveAction}</p>
               </div>
             )}
@@ -38,9 +38,9 @@ export function PicaNextStepRow({ log }: Props) {
       </section>
 
       <section className="cs-pica__card">
-        <div className="cs-pica__label">Langkah Selanjutnya</div>
+        <div className="cs-pica__label">Next Steps</div>
         {noNext ? (
-          <p className="cs-pica__empty">Belum dirumuskan.</p>
+          <p className="cs-pica__empty">Not yet defined.</p>
         ) : (
           <div className="cs-pica__body">
             {log.nextStep && (

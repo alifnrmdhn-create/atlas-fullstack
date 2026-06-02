@@ -69,16 +69,16 @@ const daysUntil = (dateStr: string): number => {
 }
 
 const formatDaysLabel = (days: number): { label: string; color: string; tone: 'critical' | 'warning' | 'notice' | 'muted' } => {
-  if (days < 0) return { label: `${Math.abs(days)} hari overdue`, color: 'var(--red)', tone: 'critical' }
-  if (days === 0) return { label: 'Hari ini', color: 'var(--yellow)', tone: 'warning' }
-  if (days <= 7) return { label: `${days} hari lagi`, color: 'var(--yellow)', tone: 'warning' }
-  if (days <= 30) return { label: `${days} hari lagi`, color: 'var(--blue)', tone: 'notice' }
-  return { label: `${days} hari lagi`, color: 'var(--text-muted)', tone: 'muted' }
+  if (days < 0) return { label: `${Math.abs(days)} days overdue`, color: 'var(--red)', tone: 'critical' }
+  if (days === 0) return { label: 'Today', color: 'var(--yellow)', tone: 'warning' }
+  if (days <= 7) return { label: `${days} days left`, color: 'var(--yellow)', tone: 'warning' }
+  if (days <= 30) return { label: `${days} days left`, color: 'var(--blue)', tone: 'notice' }
+  return { label: `${days} days left`, color: 'var(--text-muted)', tone: 'muted' }
 }
 
 const fmtDateShort = (iso: string | null | undefined): string => {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+  return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
 }
 
 
@@ -136,12 +136,12 @@ function TaskPicChip({ picPersons }: { picPersons?: Array<{ id: number; name: st
   const list = picPersons ?? []
   if (list.length === 0) {
     return (
-      <span className="wi-row__pic wi-row__pic--empty" title="Belum ada penanggung jawab">
+      <span className="wi-row__pic wi-row__pic--empty" title="No owner assigned">
         <svg aria-hidden="true" fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 12 12" width="11">
           <circle cx="6" cy="4" r="2"/>
           <path d="M2.5 10c.6-1.8 2-2.6 3.5-2.6S9 8.2 9.5 10"/>
         </svg>
-        <span className="wi-row__pic-name">Belum ditugaskan</span>
+        <span className="wi-row__pic-name">Unassigned</span>
       </span>
     )
   }
@@ -705,7 +705,7 @@ export function ProgramDetailView() {
       // di ProgramsView/HomeFocus terupdate (dua-duanya kebutuhan terpisah).
       await Promise.all([loadKpiLinks(), loadDetail(true), loadOverview('refresh')])
     } catch (e: unknown) {
-      setKpiLinkError(extractErrorMessage(e, 'Gagal menambah link KPI.'))
+      setKpiLinkError(extractErrorMessage(e, 'Failed to add KPI link.'))
     } finally {
       setKpiLinkSaving(false)
     }
@@ -716,7 +716,7 @@ export function ProgramDetailView() {
       await api.delete(`/programs/${numId}/kpi-links/${code}`)
       await Promise.all([loadKpiLinks(), loadDetail(true), loadOverview('refresh')])
     } catch (err) {
-      showToast(extractErr(err, 'Gagal menghapus link KPI.'), 'error')
+      showToast(extractErr(err, 'Failed to remove KPI link.'), 'error')
     }
   }
 
@@ -756,7 +756,7 @@ export function ProgramDetailView() {
       // loadOverview → kpiCount di ProgramsView terupdate.
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (e: unknown) {
-      setKpiInternalError(extractErrorMessage(e, editingKpiId ? 'Gagal memperbarui KPI.' : 'Gagal membuat KPI internal.'))
+      setKpiInternalError(extractErrorMessage(e, editingKpiId ? 'Failed to update KPI.' : 'Failed to create internal KPI.'))
     } finally {
       setKpiInternalSaving(false)
     }
@@ -793,7 +793,7 @@ export function ProgramDetailView() {
       // recompute health via ProgramHealthService setelah simpan actual).
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (e: unknown) {
-      setKpiActualError(extractErrorMessage(e, 'Gagal menyimpan aktual KPI.'))
+      setKpiActualError(extractErrorMessage(e, 'Failed to save KPI actual.'))
     } finally {
       setKpiActualSaving(false)
     }
@@ -910,7 +910,7 @@ export function ProgramDetailView() {
       await loadDetail(true)
       return true
     } catch (err: unknown) {
-      setStrategicError(extractErrorMessage(err, 'Gagal menyimpan.'))
+      setStrategicError(extractErrorMessage(err, 'Failed to save.'))
       return false
     } finally {
       setStrategicSaving(false)
@@ -1049,7 +1049,7 @@ export function ProgramDetailView() {
       triggerEpClose()
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err: unknown) {
-      setEpError(extractErrorMessage(err, 'Gagal menyimpan.'))
+      setEpError(extractErrorMessage(err, 'Failed to save.'))
     } finally {
       setEpSaving(false)
     }
@@ -1107,7 +1107,7 @@ export function ProgramDetailView() {
       triggerCiClose()
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err: unknown) {
-      setCiError(extractErrorMessage(err, 'Gagal membuat workstream.'))
+      setCiError(extractErrorMessage(err, 'Failed to create workstream.'))
     } finally {
       setCiSaving(false)
     }
@@ -1179,7 +1179,7 @@ export function ProgramDetailView() {
       triggerEiClose()
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err: unknown) {
-      setEiError(extractErrorMessage(err, 'Gagal menyimpan.'))
+      setEiError(extractErrorMessage(err, 'Failed to save.'))
     } finally {
       setEiSaving(false)
     }
@@ -1199,7 +1199,7 @@ export function ProgramDetailView() {
       if (selectedIniId === iniId) setSelectedIniId(null)
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err) {
-      setDelIniError(extractErr(err, 'Gagal menghapus workstream.'))
+      setDelIniError(extractErr(err, 'Failed to delete workstream.'))
     } finally {
       setDelIniSaving(false)
     }
@@ -1248,7 +1248,7 @@ export function ProgramDetailView() {
       triggerEphClose()
       void reloadIniDetail(selectedIniId)
     } catch (err: unknown) {
-      setEphError(extractErrorMessage(err, 'Gagal menyimpan.'))
+      setEphError(extractErrorMessage(err, 'Failed to save.'))
     } finally {
       setEphSaving(false)
     }
@@ -1267,7 +1267,7 @@ export function ProgramDetailView() {
       setConfirmDelPhaseId(null)
       void reloadIniDetail(selectedIniId)
     } catch (err: unknown) {
-      setDelPhaseError(extractErrorMessage(err, 'Gagal menghapus task.'))
+      setDelPhaseError(extractErrorMessage(err, 'Failed to delete task.'))
     } finally {
       setDelPhaseSaving(false)
     }
@@ -1323,7 +1323,7 @@ export function ProgramDetailView() {
       triggerCpClose()
       void reloadIniDetail(cpWorkstreamId)
     } catch (err: unknown) {
-      setCpError(extractErrorMessage(err, 'Gagal membuat phase.'))
+      setCpError(extractErrorMessage(err, 'Failed to create phase.'))
     } finally {
       setCpSaving(false)
     }
@@ -1374,7 +1374,7 @@ export function ProgramDetailView() {
       triggerCstClose()
       void reloadIniDetail(cstWorkstreamId)
     } catch (err: unknown) {
-      setCstError(extractErrorMessage(err, 'Gagal membuat task.'))
+      setCstError(extractErrorMessage(err, 'Failed to create task.'))
     } finally {
       setCstSaving(false)
     }
@@ -1413,7 +1413,7 @@ export function ProgramDetailView() {
       setApprovalModal(null)
       await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
     } catch (e: unknown) {
-      setApprovalError(extractErrorMessage(e, 'Gagal mengajukan persetujuan.'))
+      setApprovalError(extractErrorMessage(e, 'Failed to submit for approval.'))
     } finally { setApprovalLoading(false) }
   }
 
@@ -1423,7 +1423,7 @@ export function ProgramDetailView() {
       await api.post(`/programs/${numId}/activate`, {})
       await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
     } catch (e: unknown) {
-      setApprovalError(extractErrorMessage(e, 'Gagal mengaktifkan program.'))
+      setApprovalError(extractErrorMessage(e, 'Failed to activate program.'))
     } finally { setApprovalLoading(false) }
   }
 
@@ -1450,7 +1450,7 @@ export function ProgramDetailView() {
       // Redirect ke /programs setelah 2.5 detik
       setTimeout(() => navigate('/programs'), 2500)
     } catch (e: unknown) {
-      setApprovalError(extractErrorMessage(e, 'Gagal menyetujui program.'))
+      setApprovalError(extractErrorMessage(e, 'Failed to approve program.'))
     } finally { setApprovalLoading(false) }
   }
 
@@ -1462,7 +1462,7 @@ export function ProgramDetailView() {
       setApprovalModal(null); setRejectNote('')
       await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
     } catch (e: unknown) {
-      setApprovalError(extractErrorMessage(e, 'Gagal menolak program.'))
+      setApprovalError(extractErrorMessage(e, 'Failed to reject program.'))
     } finally { setApprovalLoading(false) }
   }
 
@@ -1473,7 +1473,7 @@ export function ProgramDetailView() {
       setApprovalModal(null)
       await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
     } catch (e: unknown) {
-      setApprovalError(extractErrorMessage(e, 'Gagal menarik pengajuan.'))
+      setApprovalError(extractErrorMessage(e, 'Failed to withdraw submission.'))
     } finally { setApprovalLoading(false) }
   }
 
@@ -1499,10 +1499,10 @@ export function ProgramDetailView() {
     : false
 
   const tabDefs: [DetailTab, string][] = [
-    ['ringkasan',  'Ringkasan'],
-    ['workstream', 'Struktur'],
-    ['execution',  'Jadwal'],
-    ['blocker',    'Hambatan'],
+    ['ringkasan',  'Summary'],
+    ['workstream', 'Structure'],
+    ['execution',  'Schedule'],
+    ['blocker',    'Blockers'],
     ['kpi',        'KPI APMS'],
   ]
 
@@ -1515,7 +1515,7 @@ export function ProgramDetailView() {
     const actionLabel: Record<string, string> = {
       SUBMITTED: 'Diajukan', APPROVED: 'Disetujui',
       REJECTED: 'Ditolak', ACTIVATED: 'Diaktifkan', COMPLETED: 'Diselesaikan',
-      WITHDRAWN: 'Ditarik kembali',
+      WITHDRAWN: 'Withdrawn',
       COMMITMENT_CHANGED: 'Commitment diubah',
     }
     const actionTone: Record<string, string> = {
@@ -1527,10 +1527,10 @@ export function ProgramDetailView() {
     return (
       <div className="wi-section">
         <div className="wi-section__header">
-          <h3 className="wi-section__title">Riwayat persetujuan</h3>
+          <h3 className="wi-section__title">Approval history</h3>
         </div>
         {approvalLogLoading && approvalLog.length === 0 ? (
-          <div className="prog-approval-log-skeleton" aria-label="Memuat riwayat persetujuan">
+          <div className="prog-approval-log-skeleton" aria-label="Loading approval history">
             <div className="prog-approval-log-skeleton__entry">
               <SkeletonBlock width="55%" height={14} />
               <SkeletonBlock width="40%" height={11} />
@@ -1555,7 +1555,7 @@ export function ProgramDetailView() {
               {visible.map((entry) => {
                 const tone = actionTone[entry.action] ?? 'default'
                 const label = actionLabel[entry.action] ?? entry.action
-                const date = new Date(entry.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                const date = new Date(entry.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
                 return (
                   <div key={entry.id} className={`prog-approval-log__entry prog-approval-log__entry--${tone}`}>
                     <span className="prog-approval-log__dot" />
@@ -1647,7 +1647,7 @@ export function ProgramDetailView() {
                 {detail.priority}
               </span>
               {detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote && (
-                <span className="prog-approval-pill prog-approval-pill--danger">Ditolak</span>
+                <span className="prog-approval-pill prog-approval-pill--danger">Rejected</span>
               )}
             </div>
             {/* View switchers + lifecycle/approval actions — sebaris di title row.
@@ -1669,7 +1669,7 @@ export function ProgramDetailView() {
                   className="icon-btn wi-detail-header__board-btn charter-link"
                   onClick={() => navigate(`/programs/${numId}/charter`)}
                   type="button"
-                  title="Buka tampilan Charter (single-page, read-only)"
+                  title="Open Charter view (single-page, read-only)"
                 >
                   Charter
                   <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10">
@@ -1695,14 +1695,14 @@ export function ProgramDetailView() {
                   )}
                   {detail.approvalStatus === 'PENDING_KASUB' && roleAccess.canApproveAsKasub && (
                     <>
-                      <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Tolak</button>
-                      <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Setujui</button>
+                      <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Reject</button>
+                      <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Approve</button>
                     </>
                   )}
                   {detail.approvalStatus === 'PENDING_KADIV' && roleAccess.canApproveAsKadiv && (
                     <>
-                      <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Tolak</button>
-                      <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Setujui</button>
+                      <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Reject</button>
+                      <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Approve</button>
                     </>
                   )}
                   {['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') &&
@@ -1733,7 +1733,7 @@ export function ProgramDetailView() {
           {approvedSuccess && (
             <div className="prog-approval-success-banner">
               <span className="prog-approval-success-banner__icon">✓</span>
-              <span>Program disetujui! Mengalihkan ke daftar program…</span>
+              <span>Program approved! Redirecting to the program list…</span>
             </div>
           )}
 
@@ -1745,7 +1745,7 @@ export function ProgramDetailView() {
               ? detail.pilarStrategis.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
               : null
             const formatDateID = (s: string) =>
-              new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+              new Date(s).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
             const startStr = detail.startDate ? formatDateID(detail.startDate) : '—'
             const endStr = detail.targetEndDate ? formatDateID(detail.targetEndDate) : '—'
             const dlInfo = detail.targetEndDate
@@ -1761,14 +1761,14 @@ export function ProgramDetailView() {
                 <div className="prog-hero__col">
                   <div className="prog-hero__label-row">
                     <span className="prog-hero__label">Strategic Objective</span>
-                    {strategicSaving && <span className="prog-hero__edit-status">Menyimpan…</span>}
+                    {strategicSaving && <span className="prog-hero__edit-status">Saving…</span>}
                     {canEditStrategicHero && !strategicEditing && (
                       <button
                         type="button"
                         className="prog-hero__edit-btn"
                         onClick={() => setStrategicEditing(true)}
-                        title="Edit Strategic Objective &amp; Pilar Strategis"
-                        aria-label="Edit identitas strategis"
+                        title="Edit Strategic Objective &amp; Strategic Pillar"
+                        aria-label="Edit strategic identity"
                       >
                         <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="11" aria-hidden="true">
                           <path d="M8 2l2 2-6 6L2 10l0-2z"/>
@@ -1795,7 +1795,7 @@ export function ProgramDetailView() {
                             el.style.height = `${Math.min(el.scrollHeight, 200)}px`
                           }
                         }}
-                        placeholder="Contoh: Efektivitas Pengawasan Pendanaan Pemerintah"
+                        placeholder="e.g. Effectiveness of Government Funding Oversight"
                         disabled={strategicSaving}
                         autoFocus
                       />
@@ -1805,7 +1805,7 @@ export function ProgramDetailView() {
                           value={strategicForm.pilarStrategis}
                           onChange={e => setStrategicForm(f => ({ ...f, pilarStrategis: e.target.value }))}
                           disabled={strategicSaving}
-                          aria-label="Pilar Strategis"
+                          aria-label="Strategic Pillar"
                         >
                           <option value="">— Pilih pilar —</option>
                           {Object.entries(pillarOptions).map(([value, label]) => (
@@ -1828,7 +1828,7 @@ export function ProgramDetailView() {
                           }}
                           disabled={strategicSaving}
                         >
-                          {strategicSaving ? 'Menyimpan…' : 'Simpan'}
+                          {strategicSaving ? 'Saving…' : 'Save'}
                         </button>
                         <button
                           type="button"
@@ -1854,7 +1854,7 @@ export function ProgramDetailView() {
                           {detail.strategicObjective}
                         </div>
                       ) : (
-                        <div className="prog-hero__so prog-hero__so--empty">Belum diisi</div>
+                        <div className="prog-hero__so prog-hero__so--empty">Not set</div>
                       )}
                       {pillarLabel && (
                         <span className="prog-hero__pillar">{pillarLabel}</span>
@@ -1871,7 +1871,7 @@ export function ProgramDetailView() {
                     // detail kalau ada supaya subline jabatan · divisi tampil.
                     const owner = detail.owner ?? programSummary?.owner ?? null
                     if (!owner) {
-                      return <div className="prog-hero__value prog-hero__so--empty">Belum ditetapkan</div>
+                      return <div className="prog-hero__value prog-hero__so--empty">Not set</div>
                     }
                     const role = owner.positionTitle ?? null
                     const unit = owner.unit?.name ?? null
@@ -1899,7 +1899,7 @@ export function ProgramDetailView() {
                 </div>
 
                 <div className="prog-hero__col">
-                  <div className="prog-hero__label">Periode</div>
+                  <div className="prog-hero__label">Period</div>
                   <div className="prog-hero__value">
                     {startStr} → {endStr}
                   </div>
@@ -1916,7 +1916,7 @@ export function ProgramDetailView() {
                     <HealthPill
                       status={normalizeHealthStatus(detail.healthStatus)}
                       title={detail.autoHealthComputedAt
-                        ? `Auto-derived dari workstream + KPI + task overdue + open blockers. Last computed: ${new Date(detail.autoHealthComputedAt).toLocaleString('id-ID')}`
+                        ? `Auto-derived dari workstream + KPI + task overdue + open blockers. Last computed: ${new Date(detail.autoHealthComputedAt).toLocaleString('en-US')}`
                         : undefined}
                     />
                     {detail.kelompok && (
@@ -1932,7 +1932,7 @@ export function ProgramDetailView() {
         </>
       ) : (
         <div className="prog-title-row">
-          <p className="wi-detail-titlebar__empty">Program tidak ditemukan.</p>
+          <p className="wi-detail-titlebar__empty">Program not found.</p>
         </div>
       )}
 
@@ -1980,17 +1980,17 @@ export function ProgramDetailView() {
           else if (status === 'DRAFT') {
             hint = checklistDone
               ? 'Checklist lengkap — klik tombol di bawah untuk aktifkan / ajukan persetujuan.'
-              : 'Lengkapi persiapan di checklist, lalu aktifkan program.'
+              : 'Complete the prep checklist, then activate the program.'
           }
           else if (status === 'PENDING_KASUB') hint = 'Menunggu persetujuan KASUBDIV. Struktur & rencana masih bisa disempurnakan; eksekusi aktif setelah disetujui.'
           else if (status === 'PENDING_KADIV') hint = 'Menunggu persetujuan KADIV. Struktur & rencana masih bisa disempurnakan; eksekusi aktif setelah disetujui.'
         } else if (phase === 'execution') {
           const days = detail.targetEndDate ? daysUntil(detail.targetEndDate) : null
           const dl = days !== null ? formatDaysLabel(days) : null
-          hint = dl ? <>Target selesai <strong>{dl.label}</strong></> : 'Eksekusi berjalan.'
+          hint = dl ? <>Target completion <strong>{dl.label}</strong></> : 'Execution underway.'
         } else if (phase === 'done') {
           const endDate = detail.actualEndDate ?? detail.targetEndDate
-          hint = endDate ? <>Ditutup {new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</> : null
+          hint = endDate ? <>Ditutup {new Date(endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</> : null
         }
 
         // Variant menentukan warna banner. "planning" punya 4 sub-state:
@@ -2039,7 +2039,7 @@ export function ProgramDetailView() {
               <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="14"><path d="M4 3v8l7-4z"/></svg>
             </span>
             <div className="prog-activation-banner__body">
-              <strong className="prog-activation-banner__title">Program baru aktif · siap dieksekusi</strong>
+              <strong className="prog-activation-banner__title">New program active · ready to execute</strong>
               <span className="prog-activation-banner__hint">
                 Tarik task harian di Board, refleksi mingguan dari Ringkasan.
               </span>
@@ -2053,10 +2053,10 @@ export function ProgramDetailView() {
                 Buka Board →
               </button>
               <button
-                aria-label="Tutup hint"
+                aria-label="Close hint"
                 className="prog-activation-banner__dismiss"
                 onClick={dismissActivationBanner}
-                title="Tutup (muncul kembali di session baru)"
+                title="Close (reappears in a new session)"
                 type="button"
               >
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
@@ -2132,7 +2132,7 @@ export function ProgramDetailView() {
                   return (
                     <div className="wi-section">
                       <div className="wi-section__header">
-                        <h3 className="wi-section__title">Realisasi vs Plan</h3>
+                        <h3 className="wi-section__title">Actual vs Plan</h3>
                         {tone !== 'NONE' && (
                           <span className={`prog-section-status prog-section-status--${tone.toLowerCase()}`}>
                             <span className={`prog-section-status__dot prog-section-status__dot--${tone.toLowerCase()}`} aria-hidden="true" />
@@ -2243,7 +2243,7 @@ export function ProgramDetailView() {
                                     </span>
                                   </>
                                 ) : (
-                                  <span className="program-kpi-health__empty">Belum ada data</span>
+                                  <span className="program-kpi-health__empty">No data yet</span>
                                 )}
                               </div>
                             )
@@ -2278,8 +2278,8 @@ export function ProgramDetailView() {
                         </svg>
                       </span>
                       <div className="prog-ws-preview__empty-text">
-                        <p className="prog-ws-preview__empty-title">Belum ada workstream</p>
-                        <p className="prog-ws-preview__empty-hint">Pecah program menjadi workstream untuk mulai mendistribusikan task ke tim.</p>
+                        <p className="prog-ws-preview__empty-title">No workstreams yet</p>
+                        <p className="prog-ws-preview__empty-hint">Break the program into workstreams to start distributing tasks to the team.</p>
                       </div>
                       <button
                         type="button"
@@ -2296,7 +2296,7 @@ export function ProgramDetailView() {
                 ) : (
                   <div className="wi-section prog-ws-preview">
                     <div className="wi-section__header">
-                      <h3 className="wi-section__title">Struktur</h3>
+                      <h3 className="wi-section__title">Structure</h3>
                       <button
                         type="button"
                         className="prog-ws-preview__more"
@@ -2346,7 +2346,7 @@ export function ProgramDetailView() {
                   <div className="prog-blocker-callout prog-blocker-callout--error">
                     <div className="prog-blocker-callout__head">
                       <span className="prog-blocker-callout__icon">{PIcon.blocker}</span>
-                      <strong className="prog-blocker-callout__title">Gagal memuat data blocker</strong>
+                      <strong className="prog-blocker-callout__title">Failed to load blocker data</strong>
                       <button
                         type="button"
                         className="prog-blocker-callout__link"
@@ -2395,7 +2395,7 @@ export function ProgramDetailView() {
                 {detail.approvalStatus === 'ACTIVE' && progressLog.length > 0 && (
                   <div className="wi-section">
                     <div className="wi-section__header">
-                      <h3 className="wi-section__title">Riwayat refleksi</h3>
+                      <h3 className="wi-section__title">Reflection history</h3>
                       {/* Tombol hanya untuk owner/admin — match BE strict
                           owner-only restriction di storeProgressLog. Co-PIC
                           lihat history tapi tidak bisa write. */}
@@ -2419,7 +2419,7 @@ export function ProgramDetailView() {
                             on_track: 'positive', at_risk: 'warning', terlambat: 'danger', overdue: 'danger',
                           }
                           const tone = healthTone[entry.healthAtTime] ?? 'default'
-                          const date = new Date(entry.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                          const date = new Date(entry.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
                           return (
                             <div key={entry.id} className={`prog-progress-log__entry prog-progress-log__entry--${tone}`}>
                               <div className="prog-progress-log__header">
@@ -2428,7 +2428,7 @@ export function ProgramDetailView() {
                                   {healthLabel[entry.healthAtTime] ?? entry.healthAtTime}
                                 </span>
                                 {entry.isLate && (
-                                  <span className="prog-progress-log__late" title="Submit setelah deadline Sabtu 12:00">Telat</span>
+                                  <span className="prog-progress-log__late" title="Submitted after the Saturday 12:00 deadline">Late</span>
                                 )}
                                 <span className="prog-progress-log__meta">{entry.createdByName} · {date}</span>
                               </div>
@@ -2456,7 +2456,7 @@ export function ProgramDetailView() {
                                     )}
                                     {entry.dukunganDibutuhkan && (
                                       <div className="prog-progress-log__support">
-                                        <strong>Dukungan dibutuhkan:</strong> {entry.dukunganDibutuhkan}
+                                        <strong>Support needed:</strong> {entry.dukunganDibutuhkan}
                                         <div style={{ marginTop: 6 }}>
                                           <EscalationButton
                                             sourceType="PROGRESS_LOG"
@@ -2500,7 +2500,7 @@ export function ProgramDetailView() {
                   // hasKpi memuaskan baik via KPI APMS link maupun KPI internal (lihat
                   // Program::getReadinessAttribute), jadi label memakai "KPI" generik.
                   const checks = [
-                    { done: !!(detail.description?.trim()), label: 'Deskripsi program diisi', cta: openEdit },
+                    { done: !!(detail.description?.trim()), label: 'Program description filled', cta: openEdit },
                     { done: !!detail.readiness?.hasWorkstream && !!detail.readiness?.hasTask, label: 'Minimal 1 workstream dengan 1 task', cta: () => setActiveTab('workstream') },
                     { done: !!detail.readiness?.hasKpi, label: 'KPI ditautkan (APMS atau internal)', cta: () => setActiveTab('kpi') },
                   ]
@@ -2532,7 +2532,7 @@ export function ProgramDetailView() {
                           <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 14 14" width="14"><path d="m2.5 7 3 3 6-7"/></svg>
                         </span>
                         <span className="prog-checklist-ribbon__label">
-                          {isInRevision ? 'Siap diajukan ulang' : 'Program siap dieksekusi'}
+                          {isInRevision ? 'Ready to resubmit' : 'Program ready to execute'}
                         </span>
                         <span className="prog-checklist-ribbon__sep" aria-hidden="true">·</span>
                         <span className="prog-checklist-ribbon__hint">
@@ -2557,7 +2557,7 @@ export function ProgramDetailView() {
                   return (
                     <div className="prog-checklist">
                       <div className="prog-checklist__head">
-                        <span className="prog-checklist__title">Siapkan Program Agar Tim Bisa Mulai</span>
+                        <span className="prog-checklist__title">Prepare the Program So the Team Can Start</span>
                         <span className="prog-checklist__count">{doneCount}/{checks.length}</span>
                       </div>
                       <div className="prog-checklist__track">
@@ -2604,7 +2604,7 @@ export function ProgramDetailView() {
                     : progressLog[0]
                   const formatPeriod = (iso: string) => {
                     try {
-                      return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                      return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
                     } catch { return iso }
                   }
                   const isActive = detail.approvalStatus === 'ACTIVE'
@@ -2614,7 +2614,7 @@ export function ProgramDetailView() {
                     if (!isActive || !reflectionMeta) return null
                     const m = reflectionMeta
                     if (m.exempt) {
-                      return { tone: 'exempt', icon: '⓵', text: 'Mulai minggu depan' }
+                      return { tone: 'exempt', icon: '⓵', text: 'Starts next week' }
                     }
                     if (m.hasSubmitted) {
                       // Bedakan submitted on-time vs late — sebelumnya keduanya tampil
@@ -2627,8 +2627,8 @@ export function ProgramDetailView() {
                     const fmtShort = (iso: string | null) => {
                       if (!iso) return ''
                       const d = new Date(iso)
-                      return d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }) +
-                        ' jam ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })
+                      return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' }) +
+                        ' jam ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
                     }
                     const fmtCountdown = () => {
                       if (!m.deadline) return ''
@@ -2650,7 +2650,7 @@ export function ProgramDetailView() {
                       case 'LATE':
                         return { tone: 'late', icon: '⚠', text: 'Telat · masih bisa submit' }
                       case 'MISSED':
-                        return { tone: 'missed', icon: '✕', text: 'Refleksi minggu ini terlewat' }
+                        return { tone: 'missed', icon: '✕', text: 'Reflection missed this week' }
                       default:
                         return null
                     }
@@ -2658,7 +2658,7 @@ export function ProgramDetailView() {
                   return (
                     <div className="prog-update-panel prog-update-panel--flat">
                       <div className="prog-update-panel__head">
-                        <span className="prog-update-panel__label">Refleksi minggu ini</span>
+                        <span className="prog-update-panel__label">Reflection this week</span>
                         {latest && (
                           <span className="prog-update-panel__period">{formatPeriod(latest.createdAt)}</span>
                         )}
@@ -2688,7 +2688,7 @@ export function ProgramDetailView() {
                         </>
                       ) : isActive && !reflectionMeta?.exempt && canWriteReflection ? (
                         <div className="prog-update-panel__empty-state">
-                          <p className="prog-update-panel__empty">Belum ada refleksi minggu ini.</p>
+                          <p className="prog-update-panel__empty">No reflection this week yet.</p>
                           <button
                             type="button"
                             className="prog-update-panel__action prog-update-panel__action--primary"
@@ -2815,7 +2815,7 @@ export function ProgramDetailView() {
                       <rect x="14" y="14" width="7" height="7" rx="1" />
                     </svg>
                   }
-                  title="Belum ada workstream"
+                  title="No workstreams yet"
                   text="Pecah program menjadi workstream untuk mulai mendistribusikan task ke tim."
                 />
               ) : (
@@ -2928,8 +2928,8 @@ export function ProgramDetailView() {
                                   className={`ws-icon-btn ws-icon-btn--danger${isConfirmDel ? ' is-confirm' : ''}`}
                                   onClick={() => setConfirmDelIniId(isConfirmDel ? null : ini.id)}
                                   type="button"
-                                  title="Hapus workstream"
-                                  aria-label="Hapus workstream"
+                                  title="Delete workstream"
+                                  aria-label="Delete workstream"
                                 >
                                   <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="14"><path d="M3 4h8M5.5 4V2.5h3V4M4.5 4l.5 7.5h4l.5-7.5M6 6.5v3M8 6.5v3"/></svg>
                                 </button>
@@ -2938,7 +2938,7 @@ export function ProgramDetailView() {
                           </div>
                           {isConfirmDel && (
                             <div className="workstream-delete-confirm">
-                              <span className="workstream-delete-confirm__text">Hapus workstream ini?</span>
+                              <span className="workstream-delete-confirm__text">Delete this workstream?</span>
                               {confirmDelIniId === ini.id && delIniError && (
                                 <span className="wid-form__error">{delIniError}</span>
                               )}
@@ -3001,7 +3001,7 @@ export function ProgramDetailView() {
                                   {(iniDetail.phases ?? []).length === 0 && (iniDetail.tasks ?? []).length === 0 ? (
                                     <div className="workstream-empty-body">
                                       <p className="workstream-empty-body__text">
-                                        <strong>Belum ada phase &amp; task di workstream ini.</strong>
+                                        <strong>No phases &amp; tasks in this workstream yet.</strong>
                                         <span className="workstream-empty-body__hint">
                                           Mulai dengan menambahkan phase pertama untuk mengelompokkan tahapan,
                                           atau task langsung jika tidak butuh pengelompokan.
@@ -3036,7 +3036,7 @@ export function ProgramDetailView() {
                                             {roleAccess.canCreateWorkstream && confirmDelPhaseId !== phase.id && (
                                               <div className="phase-group__actions" onClick={e => e.stopPropagation()}>
                                                 <button className="phase-group__action-btn" onClick={() => openEditPhase(phase)} title="Edit phase" type="button">✎</button>
-                                                <button className="phase-group__action-btn phase-group__action-btn--del" onClick={() => setConfirmDelPhaseId(phase.id)} title="Hapus phase" type="button">×</button>
+                                                <button className="phase-group__action-btn phase-group__action-btn--del" onClick={() => setConfirmDelPhaseId(phase.id)} title="Delete phase" type="button">×</button>
                                               </div>
                                             )}
                                             {confirmDelPhaseId === phase.id && (
@@ -3046,13 +3046,13 @@ export function ProgramDetailView() {
                                                   Hapus phase ini{phase.tasks.length > 0 ? ` beserta ${phase.tasks.length} task di dalamnya` : ''}?
                                                 </span>
                                                 <button className="btn btn--danger phase-group__del-btn" disabled={delPhaseSaving} onClick={() => void submitDelPhase(phase.id)} type="button">{delPhaseSaving ? '…' : 'Hapus'}</button>
-                                                <button className="btn btn--ghost phase-group__del-btn" disabled={delPhaseSaving} onClick={() => { setConfirmDelPhaseId(null); setDelPhaseError(null) }} type="button">Batal</button>
+                                                <button className="btn btn--ghost phase-group__del-btn" disabled={delPhaseSaving} onClick={() => { setConfirmDelPhaseId(null); setDelPhaseError(null) }} type="button">Cancel</button>
                                               </div>
                                             )}
                                           </div>
                                           <div className="phase-group__tasks">
                                             {phase.tasks.length === 0 ? (
-                                              <p className="phase-group__empty">Belum ada task.</p>
+                                              <p className="phase-group__empty">No tasks yet.</p>
                                             ) : (
                                               phase.tasks.map(item => (
                                                 <button
@@ -3128,7 +3128,7 @@ export function ProgramDetailView() {
                                       {(iniDetail.tasks ?? []).filter(t => !t.phaseId).length > 0 && (
                                         <div className="phase-group">
                                           <div className="phase-group__header phase-group__header--unphased">
-                                            <span className="phase-group__name">Task tanpa phase</span>
+                                            <span className="phase-group__name">Tasks without a phase</span>
                                           </div>
                                           <div className="phase-group__tasks">
                                             {(iniDetail.tasks ?? []).filter(t => !t.phaseId).map(item => (
@@ -3265,7 +3265,7 @@ export function ProgramDetailView() {
                         <path d="M12 7v5l3 2" />
                       </svg>
                     }
-                    title="Belum ada hambatan dilaporkan"
+                    title="No blockers reported"
                     text="Tab ini aktif penuh setelah program masuk fase Eksekusi. Tim melaporkan blocker dari task yang sedang dikerjakan."
                   />
                 ) : (
@@ -3276,7 +3276,7 @@ export function ProgramDetailView() {
                         <path d="M5 12l5 5L20 7" />
                       </svg>
                     }
-                    title="Tidak ada hambatan aktif"
+                    title="No active blockers"
                     text="Program berjalan lancar tanpa blocker. Status auto-update saat tim melaporkan hambatan dari task."
                   />
                 )
@@ -3331,7 +3331,7 @@ export function ProgramDetailView() {
                     <span className="section-badge">{kpiLinks.length}</span>
                   )}
                   {detail?.hasNoApmsKpi && (
-                    <span className="prog-kpi-flag prog-kpi-flag--warning">Tidak ada KPI APMS</span>
+                    <span className="prog-kpi-flag prog-kpi-flag--warning">No APMS KPI</span>
                   )}
                   <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
                     {apmsLastFetchedAt && (() => {
@@ -3340,7 +3340,7 @@ export function ProgramDetailView() {
                       return (
                         <span
                           style={{ fontSize: 11.5, color: isStale ? 'var(--yellow)' : 'var(--text-muted)' }}
-                          title={`Data APMS diambil ${new Date(apmsLastFetchedAt).toLocaleTimeString('id-ID')}`}
+                          title={`Data APMS diambil ${new Date(apmsLastFetchedAt).toLocaleTimeString('en-US')}`}
                         >
                           Sinkron {minsAgo < 1 ? 'baru saja' : `${minsAgo} menit lalu`}
                         </span>
@@ -3372,7 +3372,7 @@ export function ProgramDetailView() {
                   <input
                     className="kpi-link-input"
                     type="text"
-                    placeholder="Cari KPI APMS berdasarkan kode atau nama…"
+                    placeholder="Search APMS KPI by code or name…"
                     value={kpiLinkSearch}
                     onChange={e => { setKpiLinkSearch(e.target.value); setKpiLinkDropdownOpen(true) }}
                     onFocus={() => setKpiLinkDropdownOpen(true)}
@@ -3413,7 +3413,7 @@ export function ProgramDetailView() {
                 <div className="prog-kpi-empty">
                   {detail?.hasNoApmsKpi
                     ? 'Program ini tidak dihubungkan ke KPI APMS. Lihat bagian Target KPI Internal di bawah untuk mendefinisikan metrik program.'
-                    : 'Cari kode atau nama KPI APMS di atas untuk menghubungkan program dengan target AGHRIS yang relevan.'}
+                    : 'Search APMS KPI by code or name above to link the program to relevant AGHRIS targets.'}
                 </div>
               ) : (
                 <div className="kpi-link-list prog-kpi-card-list">
@@ -3447,7 +3447,7 @@ export function ProgramDetailView() {
                           <button
                             className="kpi-link-remove prog-kpi-card__remove"
                             onClick={() => void removeKpiLink(link.apmsKpiCode)}
-                            title="Hapus link"
+                            title="Remove link"
                             type="button"
                           >
                             ×
@@ -3468,7 +3468,7 @@ export function ProgramDetailView() {
                           </div>
                         )}
                         {!meta && (
-                          <p className="prog-kpi-card__note">Data APMS tidak tersedia saat ini.</p>
+                          <p className="prog-kpi-card__note">APMS data unavailable right now.</p>
                         )}
                       </div>
                     )
@@ -3559,10 +3559,10 @@ export function ProgramDetailView() {
                         Pada edit mode, code tetap immutable (BE patch endpoint
                         tidak terima field code). */}
                     <div className="form-field prog-form-field">
-                      <label>Nama KPI <span className="form-field__required">*</span></label>
+                      <label>KPI Name <span className="form-field__required">*</span></label>
                       <input
                         required minLength={2} maxLength={120}
-                        placeholder="Nama metrik"
+                        placeholder="Metric name"
                         value={kpiInternal.name}
                         onChange={e => setKpiInternal(f => ({ ...f, name: e.target.value }))}
                       />
@@ -3579,7 +3579,7 @@ export function ProgramDetailView() {
                       <div className="form-field prog-form-field">
                         <label>Satuan</label>
                         <input
-                          maxLength={30} placeholder="%, unit, dsb"
+                          maxLength={30} placeholder="%, unit, etc."
                           value={kpiInternal.unitOfMeasure}
                           onChange={e => setKpiInternal(f => ({ ...f, unitOfMeasure: e.target.value }))}
                         />
@@ -3591,7 +3591,7 @@ export function ProgramDetailView() {
                           value={kpiInternal.reviewFrequency}
                           onChange={e => setKpiInternal(f => ({ ...f, reviewFrequency: e.target.value }))}
                         >
-                          <option value="WEEKLY">Mingguan</option>
+                          <option value="WEEKLY">Weekly</option>
                           <option value="MONTHLY">Bulanan</option>
                           <option value="QUARTERLY">Kuartalan</option>
                           <option value="ANNUALLY">Tahunan</option>
@@ -3604,7 +3604,7 @@ export function ProgramDetailView() {
                         type="submit"
                         disabled={kpiInternalSaving || !kpiInternal.name || !kpiInternal.targetValue}
                       >
-                        {kpiInternalSaving ? 'Menyimpan…' : (editingKpiId ? 'Simpan Perubahan' : 'Simpan KPI')}
+                        {kpiInternalSaving ? 'Saving…' : (editingKpiId ? 'Save Changes' : 'Save KPI')}
                       </button>
                     </div>
                   </form>
@@ -3668,7 +3668,7 @@ export function ProgramDetailView() {
                             ) : (
                               <span
                                 className="prog-kpi-card__action-locked"
-                                title="Nilai aktual KPI bisa diisi setelah program masuk fase Eksekusi"
+                                title="KPI actual values can be entered once the program enters the Execution phase"
                               >
                                 <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="11" aria-hidden="true">
                                   <rect height="6" rx="1" width="8" x="2" y="5"/>
@@ -3692,7 +3692,7 @@ export function ProgramDetailView() {
                           </div>
                           {kpi.lastMeasuredDate && (
                             <p className="prog-kpi-card__note">
-                              Terakhir diukur: {new Date(kpi.lastMeasuredDate).toLocaleDateString('id-ID')}
+                              Terakhir diukur: {new Date(kpi.lastMeasuredDate).toLocaleDateString('en-US')}
                             </p>
                           )}
                           {/* Inline record actual form */}
@@ -3701,21 +3701,21 @@ export function ProgramDetailView() {
                               {kpiActualError && <p className="prog-kpi-error prog-kpi-error--compact">{kpiActualError}</p>}
                               <div className="prog-form-grid prog-form-grid--equal prog-form-grid--compact">
                                 <div className="form-field prog-form-field prog-form-field--compact">
-                                  <label>Tanggal Ukur</label>
+                                  <label>Measurement Date</label>
                                   <input type="date" value={kpiActual.measurementDate} onChange={e => setKpiActual(f => ({ ...f, measurementDate: e.target.value }))} required />
                                 </div>
                                 <div className="form-field prog-form-field prog-form-field--compact">
-                                  <label>Nilai Aktual{kpi.unitOfMeasure ? ` (${kpi.unitOfMeasure})` : ''}</label>
+                                  <label>Actual Value{kpi.unitOfMeasure ? ` (${kpi.unitOfMeasure})` : ''}</label>
                                   <input type="number" step="any" value={kpiActual.actualValue} onChange={e => setKpiActual(f => ({ ...f, actualValue: e.target.value }))} required placeholder="0" />
                                 </div>
                               </div>
                               <div className="form-field prog-form-field prog-form-field--compact">
-                                <label>Catatan (opsional)</label>
-                                <input maxLength={200} value={kpiActual.statusNotes} onChange={e => setKpiActual(f => ({ ...f, statusNotes: e.target.value }))} placeholder="Penjelasan singkat…" />
+                                <label>Notes (optional)</label>
+                                <input maxLength={200} value={kpiActual.statusNotes} onChange={e => setKpiActual(f => ({ ...f, statusNotes: e.target.value }))} placeholder="Brief explanation…" />
                               </div>
                               <div className="prog-form-actions">
                                 <button className="profile-save-btn" type="submit" disabled={kpiActualSaving || !kpiActual.actualValue}>
-                                  {kpiActualSaving ? 'Menyimpan…' : 'Simpan'}
+                                  {kpiActualSaving ? 'Saving…' : 'Save'}
                                 </button>
                               </div>
                             </form>
@@ -3747,7 +3747,7 @@ export function ProgramDetailView() {
                   Perbarui identitas, status, dan target waktu program tanpa meninggalkan konteks detail yang sedang dibuka.
                 </p>
               </div>
-              <button aria-label="Tutup" className="modal__close" disabled={epSaving} onClick={triggerEpClose} type="button">
+              <button aria-label="Close" className="modal__close" disabled={epSaving} onClick={triggerEpClose} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -3763,9 +3763,9 @@ export function ProgramDetailView() {
                       <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="14"><circle cx="7" cy="7" r="5.5"/><path d="M7 4.5v3M7 9.5h.01"/></svg>
                     </span>
                     <div className="prog-edit-commitment-hint__body">
-                      <strong>Program sudah aktif</strong>
+                      <strong>Program is active</strong>
                       <span>
-                        Perubahan field <em>commitment</em> (target waktu, prioritas, anggaran, kelompok, pilar strategis) akan tercatat di Riwayat Persetujuan dan KADIV diberitahu otomatis. Detail field (deskripsi, PIC, narrative progress) free-edit tanpa notif.
+                        Changes to <em>commitment</em> fields (target date, priority, budget, group, strategic pillar) are logged in the Approval History and KADIV is notified automatically. Detail fields (description, PIC, progress narrative) are free-edit without notification.
                       </span>
                     </div>
                   </div>
@@ -3774,7 +3774,7 @@ export function ProgramDetailView() {
                 <section className="modal-section">
                   <div className="modal-section__intro">
                     <h4>Identitas Program</h4>
-                    <p>Rapikan kode, nama, dan ringkasan singkat agar roster dan laporan tetap mudah dipindai.</p>
+                    <p>Tidy up the code, name, and short summary so the roster and reports stay easy to scan.</p>
                   </div>
                   <div className="prog-form-grid prog-form-grid--wide">
                     <div className="form-field">
@@ -3782,19 +3782,19 @@ export function ProgramDetailView() {
                       <input maxLength={40} onChange={e => setEpForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} required type="text" value={epForm.code} />
                     </div>
                     <div className="form-field">
-                      <label>Nama Program <span className="form-field__required">*</span></label>
+                      <label>Program Name <span className="form-field__required">*</span></label>
                       <input maxLength={120} onChange={e => setEpForm(f => ({ ...f, name: e.target.value }))} required type="text" value={epForm.name} />
                     </div>
                   </div>
                   <div className="form-field">
-                    <label>Deskripsi</label>
+                    <label>Description</label>
                     <textarea className="composer__input prog-modal-textarea" maxLength={400} onChange={e => setEpForm(f => ({ ...f, description: e.target.value }))} rows={2} value={epForm.description} />
                   </div>
                 </section>
                 <section className="modal-section modal-section--soft">
                   <div className="modal-section__intro">
-                    <h4>Prioritas &amp; Jadwal</h4>
-                    <p>Selaraskan prioritas dan horizon waktu dengan kondisi terbaru.</p>
+                    <h4>Priority &amp; Schedule</h4>
+                    <p>Align priority and time horizon with the latest situation.</p>
                   </div>
                   {detail?.approvalStatus === 'ACTIVE' && (
                     <div className="form-field">
@@ -3808,7 +3808,7 @@ export function ProgramDetailView() {
                     </div>
                   )}
                   <div className="form-field">
-                    <label>Prioritas</label>
+                    <label>Priority</label>
                     <select className="form-input" onChange={e => setEpForm(f => ({ ...f, priority: e.target.value }))} value={epForm.priority}>
                       <option value="CRITICAL">Critical</option>
                       <option value="HIGH">High</option>
@@ -3818,11 +3818,11 @@ export function ProgramDetailView() {
                   </div>
                   <div className="prog-form-grid prog-form-grid--equal">
                     <div className="form-field">
-                      <label>Tanggal Mulai</label>
+                      <label>Start Date</label>
                       <input onChange={e => setEpForm(f => ({ ...f, startDate: e.target.value }))} type="date" value={epForm.startDate} />
                     </div>
                     <div className="form-field">
-                      <label>Target Selesai</label>
+                      <label>Target Completion</label>
                       <input onChange={e => setEpForm(f => ({ ...f, targetEndDate: e.target.value }))} type="date" value={epForm.targetEndDate} />
                     </div>
                   </div>
@@ -3853,7 +3853,7 @@ export function ProgramDetailView() {
                     <p>Tetapkan siapa yang bertanggung jawab atas program ini. PIC Utama memiliki hak penuh; Tim PIC dapat turut mengedit.</p>
                   </div>
                   {userDirectory.length === 0 ? (
-                    <p className="wi-sidebar-value" style={{ color: 'var(--text-muted)', fontSize: 12 }}>Memuat daftar pengguna…</p>
+                    <p className="wi-sidebar-value" style={{ color: 'var(--text-muted)', fontSize: 12 }}>Loading user list…</p>
                   ) : (
                     <>
                       {(() => {
@@ -3915,12 +3915,12 @@ export function ProgramDetailView() {
                                         setEpOwnerEditing(false); setEpOwnerQuery('')
                                       }
                                     }}
-                                    placeholder="Cari PIC Utama baru…"
+                                    placeholder="Search new lead PIC…"
                                     type="text"
                                     value={epOwnerQuery}
                                   />
                                   <button
-                                    aria-label="Batal ganti PIC Utama"
+                                    aria-label="Cancel change lead PIC"
                                     className="prog-pic-searchbox__cancel"
                                     onClick={() => { setEpOwnerEditing(false); setEpOwnerQuery('') }}
                                     type="button"
@@ -3929,7 +3929,7 @@ export function ProgramDetailView() {
                                   </button>
                                 </div>
                                 {ownerFiltered.length === 0 ? (
-                                  <p className="prog-pic-empty">Tidak ada nama yang cocok.</p>
+                                  <p className="prog-pic-empty">No matching names.</p>
                                 ) : (
                                   <ul className="prog-pic-results">
                                     {ownerFiltered.map(u => (
@@ -3972,9 +3972,9 @@ export function ProgramDetailView() {
                 </section>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" disabled={epSaving} onClick={triggerEpClose} type="button">Batal</button>
+                <button className="btn btn--ghost" disabled={epSaving} onClick={triggerEpClose} type="button">Cancel</button>
                 <button className="profile-save-btn" disabled={epSaving || !epForm.code.trim() || !epForm.name.trim()} type="submit">
-                  {epSaving ? 'Menyimpan…' : 'Simpan Perubahan'}
+                  {epSaving ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>
             </form>
@@ -3995,10 +3995,10 @@ export function ProgramDetailView() {
           >
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={createWorkstreamTitleId}>Workstream Baru</h3>
-                <p className="modal-subtitle">Tambahkan workstream dalam program ini.</p>
+                <h3 className="modal__title" id={createWorkstreamTitleId}>New Workstream</h3>
+                <p className="modal-subtitle">Add a workstream to this program.</p>
               </div>
-              <button aria-label="Tutup" className="modal__close" disabled={ciSaving} onClick={triggerCiClose} type="button">
+              <button aria-label="Close" className="modal__close" disabled={ciSaving} onClick={triggerCiClose} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -4006,20 +4006,20 @@ export function ProgramDetailView() {
               <div className="modal__body">
                 {ciError && <div className="prog-modal-error">{ciError}</div>}
                 <div className="form-field">
-                  <label>Nama <span className="form-field__required">*</span></label>
+                  <label>Name <span className="form-field__required">*</span></label>
                   <input autoFocus maxLength={120} onChange={e => setCiForm(f => ({ ...f, name: e.target.value }))} required type="text" value={ciForm.name} />
                 </div>
                 <div className="form-field">
-                  <label>Deskripsi</label>
+                  <label>Description</label>
                   <textarea className="composer__input prog-modal-textarea" maxLength={400} onChange={e => setCiForm(f => ({ ...f, description: e.target.value }))} rows={2} value={ciForm.description} />
                 </div>
                 <div className="prog-form-grid prog-form-grid--equal">
                   <div className="form-field">
-                    <label>Tanggal Mulai</label>
+                    <label>Start Date</label>
                     <input onChange={e => setCiForm(f => ({ ...f, startDate: e.target.value }))} type="date" value={ciForm.startDate} />
                   </div>
                   <div className="form-field">
-                    <label>Target Selesai <span className="form-field__required">*</span></label>
+                    <label>Target Completion <span className="form-field__required">*</span></label>
                     <input onChange={e => setCiForm(f => ({ ...f, targetCompletion: e.target.value }))} required type="date" value={ciForm.targetCompletion} />
                   </div>
                 </div>
@@ -4032,12 +4032,12 @@ export function ProgramDetailView() {
                     currentUserId={currentUser?.id}
                     onChange={id => setCiOwnerId(id ?? currentUser?.id ?? null)}
                     options={userDirectory.length > 0 ? userDirectory : (currentUser ? [{ id: currentUser.id, name: currentUser.name, positionTitle: null }] : [])}
-                    placeholder="Pilih owner workstream…"
+                    placeholder="Select workstream owner…"
                     value={ciOwnerId ?? currentUser?.id ?? null}
                   />
                 </div>
                 <div className="form-field">
-                  <label>Penanggung Jawab</label>
+                  <label>Assignee</label>
                   <div className="wid-pic-adder" style={{ position: 'relative' }}>
                     {ciPicIds.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
@@ -4060,7 +4060,7 @@ export function ProgramDetailView() {
                     <input
                       className="wid-pic-search"
                       onChange={e => setCiPicSearch(e.target.value)}
-                      placeholder="+ Cari nama..."
+                      placeholder="+ Search name..."
                       style={{ width: '100%' }}
                       type="text"
                       value={ciPicSearch}
@@ -4090,9 +4090,9 @@ export function ProgramDetailView() {
                 </div>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" disabled={ciSaving} onClick={triggerCiClose} type="button">Batal</button>
+                <button className="btn btn--ghost" disabled={ciSaving} onClick={triggerCiClose} type="button">Cancel</button>
                 <button className="profile-save-btn" disabled={ciSaving || ciForm.name.trim().length < 3 || !ciForm.targetCompletion} type="submit">
-                  {ciSaving ? 'Menyimpan…' : 'Buat Workstream'}
+                  {ciSaving ? 'Saving…' : 'Create Workstream'}
                 </button>
               </div>
             </form>
@@ -4116,7 +4116,7 @@ export function ProgramDetailView() {
                   Sesuaikan narasi, prioritas, dan tenggat workstream agar tetap sinkron dengan ritme eksekusi program.
                 </p>
               </div>
-              <button aria-label="Tutup" className="modal__close" disabled={eiSaving} onClick={triggerEiClose} type="button">
+              <button aria-label="Close" className="modal__close" disabled={eiSaving} onClick={triggerEiClose} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -4124,11 +4124,11 @@ export function ProgramDetailView() {
               <div className="modal__body modal__body--compact">
                 {eiError && <div className="prog-modal-error">{eiError}</div>}
                 <div className="form-field">
-                  <label>Nama <span className="form-field__required">*</span></label>
+                  <label>Name <span className="form-field__required">*</span></label>
                   <input maxLength={120} onChange={e => setEiForm(f => ({ ...f, name: e.target.value }))} required type="text" value={eiForm.name} />
                 </div>
                 <div className="form-field">
-                  <label>Deskripsi</label>
+                  <label>Description</label>
                   <textarea className="composer__input prog-modal-textarea" maxLength={400} onChange={e => setEiForm(f => ({ ...f, description: e.target.value }))} rows={2} value={eiForm.description} />
                 </div>
                 {detail?.approvalStatus === 'ACTIVE' && (
@@ -4146,21 +4146,21 @@ export function ProgramDetailView() {
                 )}
                 <div className="prog-form-grid prog-form-grid--equal">
                   <div className="form-field">
-                    <label>Tanggal Mulai</label>
+                    <label>Start Date</label>
                     <input onChange={e => setEiForm(f => ({ ...f, startDate: e.target.value }))} type="date" value={eiForm.startDate} />
                   </div>
                   <div className="form-field">
-                    <label>Target Selesai <span className="form-field__required">*</span></label>
+                    <label>Target Completion <span className="form-field__required">*</span></label>
                     <input onChange={e => setEiForm(f => ({ ...f, targetCompletion: e.target.value }))} required type="date" value={eiForm.targetCompletion} />
-                    {!eiForm.targetCompletion && <span className="form-field__hint form-field__hint--warn">Tanggal tidak valid atau belum diisi</span>}
+                    {!eiForm.targetCompletion && <span className="form-field__hint form-field__hint--warn">Date invalid or not set</span>}
                   </div>
                 </div>
                 <div className="ws-pic-section">
-                  <label className="ws-pic-section__label">Penanggung Jawab</label>
+                  <label className="ws-pic-section__label">Assignee</label>
                   <input
                     className="ws-pic-section__search"
                     onChange={e => setEiPicSearch(e.target.value)}
-                    placeholder="Cari nama..."
+                    placeholder="Search name..."
                     type="text"
                     value={eiPicSearch}
                   />
@@ -4206,9 +4206,9 @@ export function ProgramDetailView() {
                 </div>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" disabled={eiSaving} onClick={triggerEiClose} type="button">Batal</button>
+                <button className="btn btn--ghost" disabled={eiSaving} onClick={triggerEiClose} type="button">Cancel</button>
                 <button className="profile-save-btn" disabled={eiSaving || eiForm.name.trim().length < 3 || !eiForm.targetCompletion} type="submit">
-                  {eiSaving ? 'Menyimpan…' : 'Simpan Perubahan'}
+                  {eiSaving ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>
             </form>
@@ -4228,7 +4228,7 @@ export function ProgramDetailView() {
                 <h3 className="modal__title" id={editPhaseTitleId}>Edit Phase</h3>
                 <p className="modal-subtitle">{editPhase?.name}</p>
               </div>
-              <button aria-label="Tutup" className="modal__close" disabled={ephSaving} onClick={triggerEphClose} type="button">
+              <button aria-label="Close" className="modal__close" disabled={ephSaving} onClick={triggerEphClose} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -4236,18 +4236,18 @@ export function ProgramDetailView() {
               <div className="modal__body">
                 {ephError && <div className="prog-modal-error">{ephError}</div>}
                 <div className="form-field">
-                  <label>Nama Phase <span className="form-field__required">*</span></label>
+                  <label>Phase Name <span className="form-field__required">*</span></label>
                   <input autoFocus maxLength={120} onChange={e => setEphForm(f => ({ ...f, name: e.target.value }))} required type="text" value={ephForm.name} />
                 </div>
                 <div className="form-field">
-                  <label>Deskripsi</label>
+                  <label>Description</label>
                   <textarea className="composer__input prog-modal-textarea" maxLength={400} onChange={e => setEphForm(f => ({ ...f, description: e.target.value }))} rows={2} value={ephForm.description} />
                 </div>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" disabled={ephSaving} onClick={triggerEphClose} type="button">Batal</button>
+                <button className="btn btn--ghost" disabled={ephSaving} onClick={triggerEphClose} type="button">Cancel</button>
                 <button className="profile-save-btn" disabled={ephSaving || !ephForm.name.trim()} type="submit">
-                  {ephSaving ? 'Menyimpan…' : 'Simpan Perubahan'}
+                  {ephSaving ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>
             </form>
@@ -4265,10 +4265,10 @@ export function ProgramDetailView() {
           <div aria-labelledby={createPhaseTitleId} aria-modal="true" className="modal" ref={createPhaseDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={createPhaseTitleId}>Phase Baru</h3>
-                <p className="modal-subtitle">Tambahkan phase (tahapan utama) dalam workstream ini.</p>
+                <h3 className="modal__title" id={createPhaseTitleId}>New Phase</h3>
+                <p className="modal-subtitle">Add a phase (main stage) to this workstream.</p>
               </div>
-              <button aria-label="Tutup" className="modal__close" disabled={cpSaving} onClick={triggerCpClose} type="button">
+              <button aria-label="Close" className="modal__close" disabled={cpSaving} onClick={triggerCpClose} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -4276,7 +4276,7 @@ export function ProgramDetailView() {
               <div className="modal__body">
                 {cpError && <div className="prog-modal-error">{cpError}</div>}
                 <div className="form-field">
-                  <label>Nama Phase <span className="form-field__required">*</span></label>
+                  <label>Phase Name <span className="form-field__required">*</span></label>
                   <input
                     autoFocus
                     maxLength={120}
@@ -4288,7 +4288,7 @@ export function ProgramDetailView() {
                   />
                 </div>
                 <div className="form-field">
-                  <label>Deskripsi</label>
+                  <label>Description</label>
                   <textarea
                     className="composer__input prog-modal-textarea"
                     maxLength={400}
@@ -4299,9 +4299,9 @@ export function ProgramDetailView() {
                 </div>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" disabled={cpSaving} onClick={triggerCpClose} type="button">Batal</button>
+                <button className="btn btn--ghost" disabled={cpSaving} onClick={triggerCpClose} type="button">Cancel</button>
                 <button className="profile-save-btn" disabled={cpSaving || !cpForm.name.trim()} type="submit">
-                  {cpSaving ? 'Menyimpan…' : 'Buat Phase'}
+                  {cpSaving ? 'Saving…' : 'Create Phase'}
                 </button>
               </div>
             </form>
@@ -4319,10 +4319,10 @@ export function ProgramDetailView() {
           <div aria-labelledby={createSubTaskTitleId} aria-modal="true" className="modal" ref={createSubTaskDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={createSubTaskTitleId}>Task Baru</h3>
-                <p className="modal-subtitle">Tambahkan task di dalam phase ini.</p>
+                <h3 className="modal__title" id={createSubTaskTitleId}>New Task</h3>
+                <p className="modal-subtitle">Add a task to this phase.</p>
               </div>
-              <button aria-label="Tutup" className="modal__close" disabled={cstSaving} onClick={triggerCstClose} type="button">
+              <button aria-label="Close" className="modal__close" disabled={cstSaving} onClick={triggerCstClose} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -4330,7 +4330,7 @@ export function ProgramDetailView() {
               <div className="modal__body">
                 {cstError && <div className="prog-modal-error">{cstError}</div>}
                 <div className="form-field">
-                  <label>Judul <span className="form-field__required">*</span></label>
+                  <label>Title <span className="form-field__required">*</span></label>
                   <input
                     autoFocus
                     maxLength={120}
@@ -4342,7 +4342,7 @@ export function ProgramDetailView() {
                   />
                 </div>
                 <div className="form-field">
-                  <label>Deskripsi</label>
+                  <label>Description</label>
                   <textarea
                     className="composer__input prog-modal-textarea"
                     maxLength={400}
@@ -4353,11 +4353,11 @@ export function ProgramDetailView() {
                 </div>
                 <div className="prog-form-grid prog-form-grid--equal">
                   <div className="form-field">
-                    <label>Tanggal Mulai</label>
+                    <label>Start Date</label>
                     <input onChange={e => setCstForm(f => ({ ...f, startDate: e.target.value }))} type="date" value={cstForm.startDate} />
                   </div>
                   <div className="form-field">
-                    <label>Target Selesai</label>
+                    <label>Target Completion</label>
                     <input
                       min={cstForm.startDate || undefined}
                       onChange={e => setCstForm(f => ({ ...f, targetCompletion: e.target.value }))}
@@ -4367,14 +4367,14 @@ export function ProgramDetailView() {
                   </div>
                 </div>
                 <div className="form-field">
-                  <label>Penanggung Jawab (PIC)</label>
+                  <label>Assignee (PIC)</label>
                   <div className="wid-team-row__chips" style={{ paddingTop: 2 }}>
                     {cstForm.assignedTo ? (() => {
                       const person = cstDirectory.find(u => u.id === cstForm.assignedTo)
                       return (
                         <span className="wid-pic-chip">
                           {person?.name ?? `#${cstForm.assignedTo}`}
-                          <button aria-label="Hapus PIC" className="wid-pic-chip__remove"
+                          <button aria-label="Remove PIC" className="wid-pic-chip__remove"
                             disabled={cstSaving} onClick={() => setCstForm(f => ({ ...f, assignedTo: null }))} type="button">×</button>
                         </span>
                       )
@@ -4408,9 +4408,9 @@ export function ProgramDetailView() {
                 </div>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" disabled={cstSaving} onClick={triggerCstClose} type="button">Batal</button>
+                <button className="btn btn--ghost" disabled={cstSaving} onClick={triggerCstClose} type="button">Cancel</button>
                 <button className="profile-save-btn" disabled={cstSaving || !cstForm.title.trim()} type="submit">
-                  {cstSaving ? 'Menyimpan…' : 'Buat Task'}
+                  {cstSaving ? 'Saving…' : 'Create Task'}
                 </button>
               </div>
             </form>
@@ -4443,21 +4443,21 @@ export function ProgramDetailView() {
             <>
               <div className="modal-header">
                 <div className="modal-headcopy">
-                  <span className="modal-kicker">Persetujuan</span>
-                  <span className="modal-title">Ajukan ke {approverRole}?</span>
+                  <span className="modal-kicker">Approval</span>
+                  <span className="modal-title">Submit to {approverRole}?</span>
                   <p className="modal-subtitle">
-                    Program <strong>{detail?.name}</strong> akan dikirim ke {approverRole} untuk ditinjau. Konten program akan dikunci hingga ada keputusan.
+                    Program <strong>{detail?.name}</strong> will be sent to {approverRole} for review. Program content is locked until a decision is made.
                   </p>
                 </div>
-                <button aria-label="Tutup" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
+                <button aria-label="Close" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
                   <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
                 </button>
               </div>
               {approvalError && <div className="modal-body"><p className="approval-modal__error">{approvalError}</p></div>}
               <div className="modal-footer">
-                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Batal</button>
+                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Cancel</button>
                 <button className="btn btn--primary" disabled={approvalLoading} onClick={() => void submitForApproval()} type="button">
-                  {approvalLoading ? 'Mengirim…' : `Ajukan ke ${approverRole}`}
+                  {approvalLoading ? 'Submitting…' : `Submit to ${approverRole}`}
                 </button>
               </div>
             </>
@@ -4467,21 +4467,21 @@ export function ProgramDetailView() {
             <>
               <div className="modal-header">
                 <div className="modal-headcopy">
-                  <span className="modal-kicker">Konfirmasi</span>
-                  <span className="modal-title">Setujui program?</span>
+                  <span className="modal-kicker">Confirm</span>
+                  <span className="modal-title">Approve program?</span>
                   <p className="modal-subtitle">
-                    Program <strong>{detail?.name}</strong> akan diaktifkan dan masuk ke fase eksekusi. Tindakan ini tidak dapat dibatalkan.
+                    Program <strong>{detail?.name}</strong> will be activated and enter the execution phase. This action cannot be undone.
                   </p>
                 </div>
-                <button aria-label="Tutup" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
+                <button aria-label="Close" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
                   <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
                 </button>
               </div>
               {approvalError && <div className="modal-body"><p className="approval-modal__error">{approvalError}</p></div>}
               <div className="modal-footer">
-                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Batal</button>
+                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Cancel</button>
                 <button className="btn btn--primary" disabled={approvalLoading} onClick={() => void submitApprove()} type="button">
-                  {approvalLoading ? 'Menyetujui…' : 'Setujui & Aktifkan'}
+                  {approvalLoading ? 'Approving…' : 'Approve & Activate'}
                 </button>
               </div>
             </>
@@ -4491,25 +4491,25 @@ export function ProgramDetailView() {
             <>
               <div className="modal-header">
                 <div className="modal-headcopy">
-                  <span className="modal-kicker">Konfirmasi</span>
-                  <span className="modal-title">Tolak program?</span>
+                  <span className="modal-kicker">Confirm</span>
+                  <span className="modal-title">Reject program?</span>
                   <p className="modal-subtitle">
-                    PIC <strong>{detail?.name}</strong> akan menerima notifikasi dan dapat memperbaiki sebelum mengajukan ulang.
+                    The PIC of <strong>{detail?.name}</strong> will be notified and can fix it before resubmitting.
                   </p>
                 </div>
-                <button aria-label="Tutup" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
+                <button aria-label="Close" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
                   <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
                 </button>
               </div>
               <div className="modal-body">
                 <label className="approval-modal__field">
-                  <span className="approval-modal__field-label">Alasan penolakan <span className="approval-modal__field-required">*</span></span>
+                  <span className="approval-modal__field-label">Rejection reason <span className="approval-modal__field-required">*</span></span>
                   <textarea
                     autoFocus
                     className="approval-modal__textarea"
                     maxLength={500}
                     onChange={e => setRejectNote(e.target.value)}
-                    placeholder="Tuliskan apa yang perlu diperbaiki…"
+                    placeholder="Write what needs fixing…"
                     rows={4}
                     value={rejectNote}
                   />
@@ -4518,9 +4518,9 @@ export function ProgramDetailView() {
                 {approvalError && <p className="approval-modal__error">{approvalError}</p>}
               </div>
               <div className="modal-footer">
-                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Batal</button>
+                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Cancel</button>
                 <button className="btn btn--danger" disabled={approvalLoading || !rejectNote.trim()} onClick={() => void submitReject()} type="button">
-                  {approvalLoading ? 'Menolak…' : 'Tolak Program'}
+                  {approvalLoading ? 'Rejecting…' : 'Reject Program'}
                 </button>
               </div>
             </>
@@ -4530,23 +4530,23 @@ export function ProgramDetailView() {
             <>
               <div className="modal-header">
                 <div className="modal-headcopy">
-                  <span className="modal-kicker">Konfirmasi</span>
-                  <span className="modal-title">Tarik kembali pengajuan?</span>
+                  <span className="modal-kicker">Confirm</span>
+                  <span className="modal-title">Withdraw submission?</span>
                   <p className="modal-subtitle">
-                    Program <strong>{detail?.name}</strong> akan kembali ke status Draft.
-                    {detail?.pendingReviewer && <> {detail.pendingReviewer.name} akan menerima notifikasi bahwa tidak perlu lagi review.</>}
-                    {' '}Anda bisa ajukan ulang kapan saja setelah revisi selesai.
+                    Program <strong>{detail?.name}</strong> will return to Draft status.
+                    {detail?.pendingReviewer && <> {detail.pendingReviewer.name} will be notified that review is no longer needed.</>}
+                    {' '}You can resubmit anytime after the revision is done.
                   </p>
                 </div>
-                <button aria-label="Tutup" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
+                <button aria-label="Close" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
                   <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
                 </button>
               </div>
               {approvalError && <div className="modal-body"><p className="approval-modal__error">{approvalError}</p></div>}
               <div className="modal-footer">
-                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Batal</button>
+                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Cancel</button>
                 <button className="btn btn--primary" disabled={approvalLoading} onClick={() => void submitWithdraw()} type="button">
-                  {approvalLoading ? 'Menarik…' : 'Ya, tarik kembali'}
+                  {approvalLoading ? 'Withdrawing…' : 'Yes, withdraw'}
                 </button>
               </div>
             </>
@@ -4585,11 +4585,11 @@ export function ProgramDetailView() {
               <p className="modal-subtitle" id={reflectionDescId}>
                 {reflectionMeta?.hasSubmitted && reflectionMeta.existing ? (
                   // Edit mode subtitle — context kapan & oleh siapa submission asli
-                  `Mengubah refleksi ${reflectionMeta.existing.createdByName ?? 'PIC'} · ${new Date(reflectionMeta.existing.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}.`
+                  `Mengubah refleksi ${reflectionMeta.existing.createdByName ?? 'PIC'} · ${new Date(reflectionMeta.existing.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}.`
                 ) : reflectionMeta && !reflectionMeta.exempt && reflectionMeta.deadline ? (() => {
                   const d = new Date(reflectionMeta.deadline)
-                  const dateStr = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })
-                  const timeStr = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })
+                  const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short' })
+                  const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
                   return `Posisi s.d. Jumat · Deadline submit ${dateStr} jam ${timeStr} WIB.`
                 })() : 'Posisi s.d. Jumat · Catatan reflektif minggu ini.'}
               </p>
@@ -4600,7 +4600,7 @@ export function ProgramDetailView() {
                 lastSavedAt={progressDraft.lastSavedAt}
               />
               <button
-                aria-label="Tutup"
+                aria-label="Close"
                 className="modal__close"
                 disabled={progressFormSaving}
                 onClick={triggerProgressFormClose}
@@ -4625,8 +4625,8 @@ export function ProgramDetailView() {
                   </svg>
                 </div>
                 <div className="modal-success-overlay__text">
-                  <strong>Refleksi tersimpan</strong>
-                  <span>Posisi minggu ini sudah tercatat.</span>
+                  <strong>Reflection saved</strong>
+                  <span>Position for this week is recorded.</span>
                 </div>
               </div>
             )}
@@ -4674,12 +4674,12 @@ export function ProgramDetailView() {
                 {/* ── Section 1: Posisi Minggu Ini (primary, always visible) ── */}
                 <div className="reflection-form__section">
                   <div className="reflection-form__section-head">
-                    <span className="reflection-form__section-title">Posisi Minggu Ini</span>
-                    <span className="reflection-form__section-sub">Status & narasi singkat</span>
+                    <span className="reflection-form__section-title">Position This Week</span>
+                    <span className="reflection-form__section-sub">Status & short narrative</span>
                   </div>
 
                   <div className="reflection-form__row">
-                    <label className="reflection-form__label" htmlFor="reflection-health">Status Kesehatan</label>
+                    <label className="reflection-form__label" htmlFor="reflection-health">Health Status</label>
                     <select
                       id="reflection-health"
                       className="reflection-form__input"
@@ -4688,14 +4688,14 @@ export function ProgramDetailView() {
                     >
                       <option value="on_track">On Track</option>
                       <option value="at_risk">At Risk</option>
-                      <option value="terlambat">Terlambat</option>
-                      <option value="overdue">Lewat Tenggat</option>
+                      <option value="terlambat">Delayed</option>
+                      <option value="overdue">Overdue</option>
                     </select>
                   </div>
 
                   <div className="reflection-form__row">
                     <label className="reflection-form__label" htmlFor="reflection-narrative">
-                      Progres Terkini <span className="reflection-form__required">*</span>
+                      Current Progress <span className="reflection-form__required">*</span>
                     </label>
                     <textarea
                       id="reflection-narrative"
@@ -4703,7 +4703,7 @@ export function ProgramDetailView() {
                       rows={3}
                       value={progressForm.narrative}
                       onChange={e => setProgressForm(f => ({ ...f, narrative: e.target.value }))}
-                      placeholder="Contoh: Workshop framework BCMS selesai dengan 3 stakeholder. Draft dokumen 80% — review oleh Kadiv minggu depan."
+                      placeholder="e.g. BCMS framework workshop completed with 3 stakeholders. Document draft 80% — KADIV review next week."
                       required
                     />
                   </div>
@@ -4711,8 +4711,8 @@ export function ProgramDetailView() {
                   {(detail.kpis ?? []).length > 0 && (
                     <div className="reflection-form__row">
                       <label className="reflection-form__label">
-                        KPI Aktual Minggu Ini
-                        <span className="reflection-form__hint">opsional · isi yang berubah saja</span>
+                        KPI Actuals This Week
+                        <span className="reflection-form__hint">optional · fill only what changed</span>
                       </label>
                       <div className="reflection-form__kpis">
                         {(detail.kpis ?? []).map(kpi => {
@@ -4763,58 +4763,58 @@ export function ProgramDetailView() {
                     <span className="reflection-form__section-toggle-icon" aria-hidden="true">
                       {optionalExpanded ? '−' : '+'}
                     </span>
-                    <span className="reflection-form__section-title">Detail Tindak Lanjut</span>
-                    <span className="reflection-form__section-sub">Kendala, tindakan korektif, langkah berikutnya, dukungan</span>
+                    <span className="reflection-form__section-title">Follow-up Details</span>
+                    <span className="reflection-form__section-sub">Obstacles, corrective actions, next steps, support</span>
                   </button>
 
                   {optionalExpanded && (
                     <div className="reflection-form__section-body" id="reflection-optional-body">
                       <div className="reflection-form__grid">
                         <div className="reflection-form__row">
-                          <label className="reflection-form__label" htmlFor="reflection-kendala">Kendala</label>
+                          <label className="reflection-form__label" htmlFor="reflection-kendala">Obstacle</label>
                           <textarea
                             id="reflection-kendala"
                             className="reflection-form__input reflection-form__textarea"
                             rows={2}
                             value={progressForm.kendala}
                             onChange={e => setProgressForm(f => ({ ...f, kendala: e.target.value }))}
-                            placeholder="Contoh: Tim risk kekurangan data baseline dari unit Sumut."
+                            placeholder="e.g. The risk team lacks baseline data from the North Sumatra unit."
                           />
                         </div>
 
                         <div className="reflection-form__row">
-                          <label className="reflection-form__label" htmlFor="reflection-corrective">Tindakan Korektif</label>
+                          <label className="reflection-form__label" htmlFor="reflection-corrective">Corrective Action</label>
                           <textarea
                             id="reflection-corrective"
                             className="reflection-form__input reflection-form__textarea"
                             rows={2}
                             value={progressForm.correctiveAction}
                             onChange={e => setProgressForm(f => ({ ...f, correctiveAction: e.target.value }))}
-                            placeholder="Contoh: Eskalasi ke GM Sumut hari Senin untuk percepat data."
+                            placeholder="e.g. Escalate to the North Sumatra GM on Monday to speed up the data."
                           />
                         </div>
 
                         <div className="reflection-form__row">
-                          <label className="reflection-form__label" htmlFor="reflection-nextstep">Langkah Berikutnya</label>
+                          <label className="reflection-form__label" htmlFor="reflection-nextstep">Next Step</label>
                           <textarea
                             id="reflection-nextstep"
                             className="reflection-form__input reflection-form__textarea"
                             rows={2}
                             value={progressForm.nextStep}
                             onChange={e => setProgressForm(f => ({ ...f, nextStep: e.target.value }))}
-                            placeholder="Contoh: Finalisasi draft + presentasi ke Kadiv minggu depan."
+                            placeholder="e.g. Finalize the draft + present to KADIV next week."
                           />
                         </div>
 
                         <div className="reflection-form__row">
-                          <label className="reflection-form__label" htmlFor="reflection-dukungan">Dukungan Dibutuhkan</label>
+                          <label className="reflection-form__label" htmlFor="reflection-dukungan">Support Needed</label>
                           <textarea
                             id="reflection-dukungan"
                             className="reflection-form__input reflection-form__textarea"
                             rows={2}
                             value={progressForm.dukunganDibutuhkan}
                             onChange={e => setProgressForm(f => ({ ...f, dukunganDibutuhkan: e.target.value }))}
-                            placeholder="Contoh: Approval anggaran konsultan dari Direktur."
+                            placeholder="e.g. Budget approval for a consultant from the Director."
                           />
                         </div>
                       </div>
@@ -4857,14 +4857,14 @@ export function ProgramDetailView() {
                     >
                       <path d="M2.5 7.5l3 3 6-7" />
                     </svg>
-                    Tersimpan
+                    Saved
                   </>
                 ) : progressFormStatus === 'saving' ? (
-                  'Menyimpan…'
+                  'Saving…'
                 ) : reflectionMeta?.hasSubmitted ? (
-                  'Simpan Perubahan'
+                  'Save Changes'
                 ) : (
-                  'Simpan Refleksi'
+                  'Save Reflection'
                 )}
               </button>
             </div>

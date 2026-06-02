@@ -30,7 +30,7 @@ class AuthController extends Controller
 
         if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
             throw ValidationException::withMessages([
-                'identifier' => 'Gunakan NIK atau User ID, bukan email.',
+                'identifier' => 'Use your NIK or User ID, not an email.',
             ]);
         }
 
@@ -45,7 +45,7 @@ class AuthController extends Controller
 
         if (!$user || !$user->passwordHash || !Hash::check($request->input('password'), $user->passwordHash)) {
             throw ValidationException::withMessages([
-                'identifier' => 'NIK, User ID, atau password salah.',
+                'identifier' => 'Incorrect NIK, User ID, or password.',
             ]);
         }
 
