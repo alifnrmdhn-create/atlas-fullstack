@@ -22,7 +22,7 @@ export function RiskReportDetailView() {
     setError(null)
     api.get<{ data: RiskReport }>(`/risk-reports/${reportId}`)
       .then(j => setReport(j.data))
-      .catch(e => setError(e instanceof Error ? e.message : 'Gagal memuat laporan risiko.'))
+      .catch(e => setError(e instanceof Error ? e.message : 'Failed to load risk report.'))
       .finally(() => setLoading(false))
   }, [reportId])
 
@@ -32,7 +32,7 @@ export function RiskReportDetailView() {
     return (
       <div className="view-risk-report-detail">
         <div className="schedule-empty">
-          <span className="text-muted text-sm">Memuat laporan risiko…</span>
+          <span className="text-muted text-sm">Loading risk report…</span>
         </div>
       </div>
     )
@@ -43,10 +43,10 @@ export function RiskReportDetailView() {
       <div className="view-risk-report-detail">
         <div className="schedule-empty">
           <div className="schedule-empty__icon">⚠️</div>
-          <p className="schedule-empty__title">Report tidak ditemukan</p>
-          <p className="schedule-empty__sub">{error ?? 'Laporan risiko tidak tersedia.'}</p>
+          <p className="schedule-empty__title">Report not found</p>
+          <p className="schedule-empty__sub">{error ?? 'This risk report is not available.'}</p>
           <button className="btn btn--ghost schedule-empty__action" onClick={() => navigate('/laporan-risiko')}>
-            Kembali ke daftar
+            Back to list
           </button>
         </div>
       </div>

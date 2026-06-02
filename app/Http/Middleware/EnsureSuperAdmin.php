@@ -17,7 +17,7 @@ class EnsureSuperAdmin
         $role = strtoupper($request->user()?->roleType ?? '');
 
         if ($role !== 'SUPERADMIN') {
-            abort(403, 'Akses dibatasi untuk SUPERADMIN.');
+            abort(403, 'Access restricted to SUPERADMIN.');
         }
 
         return $next($request);

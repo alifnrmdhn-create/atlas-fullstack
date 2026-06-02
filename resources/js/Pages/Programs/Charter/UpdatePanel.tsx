@@ -12,7 +12,7 @@ export function UpdatePanel({ log }: Props) {
   return (
     <div className="cs-update">
       <div className="cs-update__head">
-        <span className="cs-update__label">Update Saat Ini</span>
+        <span className="cs-update__label">Current Update</span>
         {log.asOfMonth && <span className="cs-update__period">{log.asOfMonth}</span>}
       </div>
       {log.updateNote ? (

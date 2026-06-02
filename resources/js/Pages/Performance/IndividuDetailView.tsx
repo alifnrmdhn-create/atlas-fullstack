@@ -91,8 +91,8 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
 
   return (
     <section className="perf__section">
-      <span className="perf__section-label">Komitmen Saya</span>
-      {loading && <div style={{ fontSize: 12, color: 'var(--ds-text-tertiary)', padding: '8px 0' }}>Memuat ledger…</div>}
+      <span className="perf__section-label">My Commitments</span>
+      {loading && <div style={{ fontSize: 12, color: 'var(--ds-text-tertiary)', padding: '8px 0' }}>Loading ledger…</div>}
       {error && (
         <Card padding="md" style={{ borderColor: 'var(--ds-red-500)' }}>
           <div style={{ fontSize: 13, color: 'var(--tone-red)' }}>{error}</div>
@@ -115,7 +115,7 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
                 fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
                 letterSpacing: '0.06em', color: 'var(--ds-text-tertiary)', marginBottom: 4,
               }}>
-                Consistency ({data.lookbackWeeks} minggu)
+                Consistency ({data.lookbackWeeks} weeks)
               </div>
               <div style={{
                 fontSize: 24, fontWeight: 600,
@@ -126,7 +126,7 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
               </div>
               {sparseData && (
                 <div style={{ fontSize: 11, color: 'var(--ds-text-tertiary)', marginTop: 4 }}>
-                  Belum cukup data — {weeksWithData} dari {data.lookbackWeeks} minggu tercatat
+                  Not enough data — {weeksWithData} of {data.lookbackWeeks} weeks recorded
                 </div>
               )}
             </div>
@@ -141,7 +141,7 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
                 {data.streak > 0 ? `${data.streak}` : '—'}
                 {data.streak > 0 && (
                   <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--ds-text-tertiary)', marginLeft: 6 }}>
-                    minggu
+                    weeks
                   </span>
                 )}
               </div>
@@ -180,7 +180,7 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
             fontSize: 11, color: 'var(--ds-text-tertiary)',
             marginTop: 12, lineHeight: 1.5,
           }}>
-            Sumber: Tasks + Action Items + Assignment dengan dueDate dalam window. Hit = selesai sebelum due.
+            Source: Tasks + Action Items + Assignments with a due date within the window. Hit = completed before due.
           </div>
         </Card>
         )
@@ -206,7 +206,7 @@ export default function IndividuDetailView() {
             <div className="perf__header-left">
               <button className="perf__back" onClick={() => navigate('/performance/individu')} type="button">
                 <IconBack />
-                Kembali
+                Back
               </button>
               <h1 className="perf__title">{karyawan.nama}</h1>
             </div>
@@ -222,20 +222,20 @@ export default function IndividuDetailView() {
           <Card padding="lg" className="perf__section perf-subject">
             <div className="perf-subject__row">
               <div className="perf-subject__meta">
-                <span className="perf-subject__eyebrow">Individu</span>
+                <span className="perf-subject__eyebrow">Individual</span>
                 <div className="perf-subject__name">{karyawan.nama}</div>
                 <div className="perf-subject__jabatan">{karyawan.jabatan}</div>
                 <div className="perf-subject__chips">
                   <Pill variant="mono">{karyawan.unit}</Pill>
                   <Pill tone="neutral" variant="soft">{karyawan.jumlah_kpi} KPI items</Pill>
-                  <Pill tone="neutral" variant="soft">Bobot total 100%</Pill>
+                  <Pill tone="neutral" variant="soft">Total weight 100%</Pill>
                 </div>
               </div>
               <div className="perf-subject__score">
                 <span className="perf-subject__score-value" data-tone={tone}>
                   {karyawan.nilai.toFixed(2)}
                 </span>
-                <span className="perf-subject__score-label">Nilai {periode}</span>
+                <span className="perf-subject__score-label">Score {periode}</span>
               </div>
             </div>
             <div className="perf-subject__bar">
@@ -245,11 +245,11 @@ export default function IndividuDetailView() {
 
           {/* ─── KPI list ─────────────────────────── */}
           <section className="perf__section">
-            <span className="perf__section-label">Rincian KPI</span>
+            <span className="perf__section-label">KPI Breakdown</span>
             {kpiItems.length === 0 ? (
               <Card padding="md" className="perf-empty">
-                <div className="perf-empty__title">Belum ada KPI individu</div>
-                <div>KPI untuk karyawan ini belum terdaftar pada periode {periode}.</div>
+                <div className="perf-empty__title">No individual KPIs yet</div>
+                <div>KPIs for this employee are not registered for the {periode} period.</div>
               </Card>
             ) : (
             <div className="perf-kpi-list">
@@ -281,12 +281,12 @@ export default function IndividuDetailView() {
                       </div>
                       <div className="perf-kpi__realisasi">
                         <div className="perf-kpi__realisasi-block">
-                          <span className="perf-kpi__realisasi-label">Sasaran</span>
+                          <span className="perf-kpi__realisasi-label">Target</span>
                           <span className="perf-kpi__realisasi-value">{item.sasaran}</span>
                         </div>
                         <span className="perf-kpi__realisasi-arrow">→</span>
                         <div className="perf-kpi__realisasi-block">
-                          <span className="perf-kpi__realisasi-label">Realisasi</span>
+                          <span className="perf-kpi__realisasi-label">Realization</span>
                           <span className="perf-kpi__realisasi-value" data-tone={itemTone}>{item.realisasi}</span>
                         </div>
                       </div>
@@ -301,7 +301,7 @@ export default function IndividuDetailView() {
                       <span className="perf-kpi__skor" style={{ color: `var(--ds-${itemTone}-600)` }}>
                         {item.skor.toFixed(2)}
                       </span>
-                      <span className="perf-kpi__bobot">Bobot {item.bobot}%</span>
+                      <span className="perf-kpi__bobot">Weight {item.bobot}%</span>
                     </div>
                   </article>
                 )

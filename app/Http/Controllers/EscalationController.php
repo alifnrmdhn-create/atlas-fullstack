@@ -34,7 +34,7 @@ class EscalationController extends Controller
     private function ensureFeatureEnabled(Request $request): void
     {
         if (!FeatureFlagService::isEnabled('clear-the-path', $request->user())) {
-            abort(403, 'Fitur Clear the Path belum aktif untuk akun Anda.');
+            abort(403, 'The Clear the Path feature is not active for your account yet.');
         }
     }
 
@@ -119,8 +119,8 @@ class EscalationController extends Controller
             $data['sourceId'] = null;
         } elseif (empty($data['sourceId'])) {
             return response()->json([
-                'message' => 'sourceId wajib untuk sourceType ' . $data['sourceType'],
-                'errors' => ['sourceId' => ['Wajib diisi.']],
+                'message' => 'sourceId is required for sourceType ' . $data['sourceType'],
+                'errors' => ['sourceId' => ['This field is required.']],
             ], 422);
         }
 
@@ -130,24 +130,24 @@ class EscalationController extends Controller
             $supervisor = $this->orgChain->getDirectSupervisor($user);
             if (!$supervisor) {
                 return response()->json([
-                    'message' => 'Tidak ada atasan langsung untuk eskalasi. Hubungi admin.',
+                    'message' => 'No direct supervisor available for escalation. Please contact an admin.',
                 ], 422);
             }
             $targetId = $supervisor->id;
         } else {
             $target = User::find($targetId);
             if (!$target) {
-                return response()->json(['message' => 'User target tidak ditemukan.'], 422);
+                return response()->json(['message' => 'Target user not found.'], 422);
             }
             if (!$this->orgChain->canEscalateAcrossDirectorate($user, $target)) {
                 return response()->json([
-                    'message' => 'Tidak diizinkan eskalasi lintas direktorat. Pilih atasan dalam direktorat Anda.',
+                    'message' => 'Cross-directorate escalation is not allowed. Select a supervisor within your directorate.',
                 ], 422);
             }
         }
 
         if ($targetId === $user->id) {
-            return response()->json(['message' => 'Tidak bisa eskalasi ke diri sendiri.'], 422);
+            return response()->json(['message' => 'You cannot escalate to yourself.'], 422);
         }
 
         $req = DB::transaction(function () use ($data, $user, $targetId) {
@@ -160,7 +160,7 @@ class EscalationController extends Controller
             ]);
 
             $this->createNotification($targetId, 'CLEAR_PATH_REQUESTED', $r,
-                "{$user->name} meminta dukungan: {$r->title}");
+                "{$user->name} requested support: {$r->title}");
 
             return $r;
         });
@@ -182,8 +182,8 @@ class EscalationController extends Controller
         $user = $request->user();
         $req = EscalationRequest::findOrFail($id);
 
-        if ($req->escalatedToId !== $user->id) abort(403, 'Hanya target eskalasi yang dapat reroute.');
-        if ($req->isTerminal()) return response()->json(['message' => 'Status sudah final.'], 422);
+        if ($req->escalatedToId !== $user->id) abort(403, 'Only the escalation target can reroute.');
+        if ($req->isTerminal()) return response()->json(['message' => 'Status is already final.'], 422);
 
         $data = $request->validate([
             'reroutedToId' => 'required|integer|different:escalatedToId',
@@ -192,7 +192,7 @@ class EscalationController extends Controller
 
         $newTarget = User::find($data['reroutedToId']);
         if (!$newTarget) {
-            return response()->json(['message' => 'User target reroute tidak ditemukan.'], 422);
+            return response()->json(['message' => 'Reroute target user not found.'], 422);
         }
 
         // Apply same cross-direktorat policy yang dipakai store() — requester
@@ -200,7 +200,7 @@ class EscalationController extends Controller
         $requester = User::find($req->requestedById);
         if ($requester && !$this->orgChain->canEscalateAcrossDirectorate($requester, $newTarget)) {
             return response()->json([
-                'message' => 'Tidak diizinkan reroute lintas direktorat untuk requester awal.',
+                'message' => 'Cross-directorate reroute is not allowed for the original requester.',
             ], 422);
         }
 
@@ -219,7 +219,7 @@ class EscalationController extends Controller
                 'sourceId' => $req->sourceId,
                 'requestedById' => $req->requestedById,
                 'escalatedToId' => $newTarget->id,
-                'title' => "[Reroute dari {$user->name}] {$req->title}",
+                'title' => "[Rerouted from {$user->name}] {$req->title}",
                 'description' => $req->description,
                 'linkedProgramId' => $req->linkedProgramId,
                 'status' => 'REQUESTED',
@@ -231,9 +231,9 @@ class EscalationController extends Controller
                 : $newTarget->name;
 
             $this->createNotification($newTarget->id, 'CLEAR_PATH_REQUESTED', $newReq,
-                "Eskalasi di-reroute ke Anda dari {$user->name}: {$newReq->title}");
+                "An escalation was rerouted to you from {$user->name}: {$newReq->title}");
             $this->createNotification($req->requestedById, 'CLEAR_PATH_REQUESTED', $newReq,
-                "Eskalasi \"{$req->title}\" di-reroute ke {$newTargetLabel}. Klik untuk lihat tracking baru.");
+                "Escalation \"{$req->title}\" was rerouted to {$newTargetLabel}. Click to view the new tracking.");
         });
 
         return response()->json(['data' => $req->fresh()]);
@@ -245,8 +245,8 @@ class EscalationController extends Controller
         $user = $request->user();
         $req = EscalationRequest::findOrFail($id);
 
-        if ($req->escalatedToId !== $user->id) abort(403, 'Hanya target eskalasi yang dapat decline.');
-        if ($req->isTerminal()) return response()->json(['message' => 'Status sudah final.'], 422);
+        if ($req->escalatedToId !== $user->id) abort(403, 'Only the escalation target can decline.');
+        if ($req->isTerminal()) return response()->json(['message' => 'Status is already final.'], 422);
 
         $data = $request->validate(['declinedReason' => 'required|string|min:5|max:1000']);
 
@@ -257,7 +257,7 @@ class EscalationController extends Controller
         ]);
 
         $this->createNotification($req->requestedById, 'CLEAR_PATH_CLEARED', $req,
-            "Eskalasi Anda ditolak oleh {$user->name}: {$data['declinedReason']}");
+            "Your escalation was declined by {$user->name}: {$data['declinedReason']}");
 
         return response()->json(['data' => $req->fresh()]);
     }
@@ -268,9 +268,9 @@ class EscalationController extends Controller
         $user = $request->user();
         $req = EscalationRequest::findOrFail($id);
 
-        if ($req->escalatedToId !== $user->id) abort(403, 'Hanya target eskalasi yang dapat resolve.');
+        if ($req->escalatedToId !== $user->id) abort(403, 'Only the escalation target can resolve.');
         if (!in_array($req->status, ['COMMITTED', 'IN_PROGRESS'], true)) {
-            return response()->json(['message' => 'Resolve hanya untuk request status COMMITTED/IN_PROGRESS.'], 422);
+            return response()->json(['message' => 'Resolve is only available for requests with status COMMITTED/IN_PROGRESS.'], 422);
         }
 
         $data = $request->validate(['resolutionNote' => 'required|string|min:5|max:1000']);
@@ -282,7 +282,7 @@ class EscalationController extends Controller
         ]);
 
         $this->createNotification($req->requestedById, 'CLEAR_PATH_CLEARED', $req,
-            "Hambatan dibersihkan oleh {$user->name}: {$req->title}");
+            "Blocker cleared by {$user->name}: {$req->title}");
 
         return response()->json(['data' => $req->fresh()]);
     }
@@ -295,10 +295,10 @@ class EscalationController extends Controller
         $user = $request->user();
         $req = EscalationRequest::findOrFail($id);
 
-        if ($req->escalatedToId !== $user->id) abort(403, 'Hanya target eskalasi yang dapat disposition.');
-        if ($req->isTerminal()) return response()->json(['message' => 'Status sudah final.'], 422);
+        if ($req->escalatedToId !== $user->id) abort(403, 'Only the escalation target can change the disposition.');
+        if ($req->isTerminal()) return response()->json(['message' => 'Status is already final.'], 422);
         if ($req->status !== 'REQUESTED') {
-            return response()->json(['message' => "Status saat ini ({$req->status}) tidak dapat di-{$newStatus}."], 422);
+            return response()->json(['message' => "The current status ({$req->status}) cannot be changed to {$newStatus}."], 422);
         }
 
         $data = $request->validate($extraRules);
@@ -311,7 +311,7 @@ class EscalationController extends Controller
         ]);
 
         $this->createNotification($req->requestedById, 'CLEAR_PATH_COMMITTED', $req,
-            "{$user->name} commit untuk membersihkan: {$req->title}");
+            "{$user->name} committed to clearing: {$req->title}");
 
         return response()->json(['data' => $req->fresh()]);
     }
@@ -321,7 +321,7 @@ class EscalationController extends Controller
         if ($req->requestedById === $user->id) return;
         if ($req->escalatedToId === $user->id) return;
         if (in_array(strtoupper($user->roleType), ['BOD', 'ADMIN', 'SUPERADMIN'], true)) return;
-        abort(403, 'Anda tidak punya akses ke escalation ini.');
+        abort(403, 'You do not have access to this escalation.');
     }
 
     private function createNotification(int $userId, string $type, EscalationRequest $req, string $message): void

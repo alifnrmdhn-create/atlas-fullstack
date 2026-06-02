@@ -31,7 +31,7 @@ class PilotMetricsController extends Controller
     {
         $role = strtoupper($request->user()->roleType ?? '');
         if (!in_array($role, ['BOD', 'ADMIN', 'SUPERADMIN'], true)) {
-            abort(403, 'Halaman ini hanya untuk admin/BOD.');
+            abort(403, 'This page is only for admin/BOD.');
         }
     }
 
@@ -58,7 +58,7 @@ class PilotMetricsController extends Controller
         // Resolve DKM users
         $dkmDirektorat = Directorate::where('code', 'DKM')->first();
         if (!$dkmDirektorat) {
-            return $this->emptyMetrics('Direktorat DKM tidak ditemukan.');
+            return $this->emptyMetrics('The DKM directorate was not found.');
         }
 
         $dkmUserIds = User::where('directorateId', $dkmDirektorat->id)
@@ -66,7 +66,7 @@ class PilotMetricsController extends Controller
             ->pluck('id');
 
         if ($dkmUserIds->isEmpty()) {
-            return $this->emptyMetrics('Tidak ada user aktif di direktorat DKM.');
+            return $this->emptyMetrics('No active users in the DKM directorate.');
         }
 
         // 1. Avg time-to-disposition (committed/declined items only).

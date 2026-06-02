@@ -35,17 +35,17 @@ export default function Charter() {
       <div className="page-shell">
         <div className="page-shell__inner">
           <div className="charter-page" data-charter-root>
-            <nav className="charter-back" aria-label="Navigasi kembali">
+            <nav className="charter-back" aria-label="Back navigation">
               <button
                 type="button"
                 className="charter-back__link"
                 onClick={() => navigate(`/programs/${program.id}`)}
-                title="Kembali ke detail program"
+                title="Back to program detail"
               >
                 <svg aria-hidden="true" fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12">
                   <path d="M9 6H3M6 3 3 6l3 3" />
                 </svg>
-                <span>Kembali ke {program.code}</span>
+                <span>Back to {program.code}</span>
               </button>
             </nav>
 
@@ -58,7 +58,7 @@ export default function Charter() {
 
             <div className="charter-grid">
               <section className="charter-grid__main">
-                <h2 className="charter-section-title">Aktivitas &amp; Timeline</h2>
+                <h2 className="charter-section-title">Activities &amp; Timeline</h2>
                 <ActivityTimelineTable activities={activities} period={program.period} />
               </section>
               <aside className="charter-grid__side">
@@ -68,13 +68,13 @@ export default function Charter() {
             </div>
 
             <section className="charter-section">
-              <h2 className="charter-section-title">PICA &amp; Langkah Selanjutnya</h2>
+              <h2 className="charter-section-title">PICA &amp; Next Steps</h2>
               <PicaNextStepRow log={latestProgressLog} />
             </section>
 
             {kpi && (
               <section className="charter-section">
-                <h2 className="charter-section-title">Progress KPI Bulanan</h2>
+                <h2 className="charter-section-title">Monthly KPI Progress</h2>
                 <KpiProgressTable history={kpiHistory} />
               </section>
             )}

@@ -54,14 +54,14 @@ export default function KolegialView() {
 
   return (
     <>
-      <Head title="KPI Kolegial" />
+      <Head title="KPI Collegial" />
       <div className="ds perf view-performance">
         <div className="perf__inner ds-stagger">
           {/* ─── Header ──────────────────────────── */}
           <header className="perf__header">
             <div className="perf__header-left">
-              <h1 className="perf__title">KPI Kolegial</h1>
-              <span className="perf__subtitle">Capaian bersama jajaran direksi</span>
+              <h1 className="perf__title">KPI Collegial</h1>
+              <span className="perf__subtitle">Shared achievement of the board of directors</span>
             </div>
             <div className="perf__header-actions">
               <span className="perf__period-pill">
@@ -73,8 +73,8 @@ export default function KolegialView() {
 
           {isEmpty && (
             <Card padding="lg" className="perf__section perf-empty">
-              <div className="perf-empty__title">Belum ada data KPI Kolegial</div>
-              <div>Skor direktorat belum tersedia untuk periode {periode}. Data akan muncul setelah modul KPI direksi terisi.</div>
+              <div className="perf-empty__title">No KPI Collegial data yet</div>
+              <div>Directorate scores are not available for the {periode} period. Data will appear once the directors' KPI module is populated.</div>
             </Card>
           )}
 
@@ -144,7 +144,7 @@ export default function KolegialView() {
                 <span className="perf-subject__score-value" data-tone={dirutTone}>
                   {dirut.nilai.toFixed(2)}<span style={{ fontSize: 14, color: 'var(--ds-text-tertiary)', marginLeft: 3, fontWeight: 500 }}>%</span>
                 </span>
-                <span className="perf-subject__score-label">Lihat detail →</span>
+                <span className="perf-subject__score-label">View details →</span>
               </div>
             </div>
             <div className="perf-subject__bar">
@@ -155,7 +155,7 @@ export default function KolegialView() {
 
           {/* ─── 5 Direktur grid ──────────────────── */}
           <section className="perf__section">
-            <span className="perf__section-label">KPI Individu Direktur</span>
+            <span className="perf__section-label">Directors' Individual KPI</span>
             <div className="perf-direktur-grid">
               {direktur.map(d => {
                 const tone = scoreTone(d.nilai)

@@ -70,7 +70,7 @@ export default function KolegialDetailView() {
 
   return (
     <>
-      <Head title={`KPI Kolegial — ${direktur.jabatan}`} />
+      <Head title={`KPI Collegial — ${direktur.jabatan}`} />
       <div className="ds perf view-performance">
         <div className="perf__inner ds-stagger">
           {/* ─── Header ──────────────────────────── */}
@@ -78,9 +78,9 @@ export default function KolegialDetailView() {
             <div className="perf__header-left">
               <button className="perf__back" onClick={() => navigate('/performance/kolegial')} type="button">
                 <IconBack />
-                Kembali
+                Back
               </button>
-              <h1 className="perf__title">KPI Kolegial — {direktur.jabatan}</h1>
+              <h1 className="perf__title">KPI Collegial — {direktur.jabatan}</h1>
             </div>
             <div className="perf__header-actions">
               <span className="perf__period-pill">
@@ -106,7 +106,7 @@ export default function KolegialDetailView() {
                 <span className="perf-subject__score-value" data-tone={totalTone}>
                   {totalSkor.toFixed(2)}<span style={{ fontSize: 18, color: 'var(--ds-text-tertiary)', marginLeft: 4 }}>%</span>
                 </span>
-                <span className="perf-subject__score-label">Total nilai</span>
+                <span className="perf-subject__score-label">Total score</span>
               </div>
             </div>
             <div className="perf-subject__bar">
@@ -121,8 +121,8 @@ export default function KolegialDetailView() {
 
           {kpiGroups.length === 0 ? (
             <Card padding="lg" className="perf__section perf-empty">
-              <div className="perf-empty__title">Belum ada rincian KPI</div>
-              <div>KPI breakdown untuk {direktur.jabatan} belum terdaftar pada periode {periode}.</div>
+              <div className="perf-empty__title">No KPI breakdown yet</div>
+              <div>The KPI breakdown for {direktur.jabatan} is not registered for the {periode} period.</div>
             </Card>
           ) : (
           <>
@@ -134,7 +134,7 @@ export default function KolegialDetailView() {
               data-active={activeFilter === 'all'}
               onClick={() => setActiveFilter('all')}
             >
-              Semua perspektif
+              All perspectives
             </button>
             {kpiGroups.map(g => (
               <button
@@ -197,12 +197,12 @@ export default function KolegialDetailView() {
                         </div>
                         <div className="perf-kpi__realisasi">
                           <div className="perf-kpi__realisasi-block">
-                            <span className="perf-kpi__realisasi-label">Sasaran</span>
+                            <span className="perf-kpi__realisasi-label">Target</span>
                             <span className="perf-kpi__realisasi-value">{formatVal(item.target, item.satuan)}</span>
                           </div>
                           <span className="perf-kpi__realisasi-arrow">→</span>
                           <div className="perf-kpi__realisasi-block">
-                            <span className="perf-kpi__realisasi-label">Realisasi</span>
+                            <span className="perf-kpi__realisasi-label">Realization</span>
                             <span className="perf-kpi__realisasi-value" data-tone={itemTone}>
                               {formatVal(item.realisasi, item.satuan)}
                             </span>
@@ -216,7 +216,7 @@ export default function KolegialDetailView() {
                         <span className="perf-kpi__skor" data-tone={itemTone} style={{ color: `var(--ds-${itemTone}-600)` }}>
                           {item.skor.toFixed(1)}
                         </span>
-                        <span className="perf-kpi__bobot">Bobot {item.bobot}%</span>
+                        <span className="perf-kpi__bobot">Weight {item.bobot}%</span>
                       </div>
                     </article>
                   )

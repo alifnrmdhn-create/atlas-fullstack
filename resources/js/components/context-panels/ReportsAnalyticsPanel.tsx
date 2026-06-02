@@ -33,7 +33,7 @@ export function ReportsAnalyticsPanel() {
           <span className="context-panel__section-icon" aria-hidden="true">
             <Activity size={13} />
           </span>
-          <h3 className="context-panel__section-title">Sumber data</h3>
+          <h3 className="context-panel__section-title">Data source</h3>
         </header>
         <div className="context-panel__section-body">
           <div

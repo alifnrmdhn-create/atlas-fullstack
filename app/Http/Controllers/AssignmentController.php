@@ -84,7 +84,7 @@ class AssignmentController extends Controller
         $notif = Notification::create([
             'userId' => $assignment->assigneeId,
             'type' => 'TASK_ASSIGNED',
-            'message' => "Tugas baru: {$assignment->title}",
+            'message' => "New assignment: {$assignment->title}",
             'source' => "assignment:{$assignment->id}",
             'state' => 'UNREAD',
             'createdAt' => now(),
@@ -98,7 +98,7 @@ class AssignmentController extends Controller
         }
 
         return redirect()->route('assignments.show', $assignment->id)
-            ->with('success', 'Penugasan berhasil dibuat.');
+            ->with('success', 'Assignment created.');
     }
 
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
@@ -121,7 +121,7 @@ class AssignmentController extends Controller
             return response()->json(['data' => $assignment]);
         }
 
-        return back()->with('success', 'Penugasan diperbarui.');
+        return back()->with('success', 'Assignment updated.');
     }
 
     public function transition(Request $request, int $id): JsonResponse|RedirectResponse
@@ -140,7 +140,7 @@ class AssignmentController extends Controller
             return response()->json(['data' => $a]);
         }
 
-        return back()->with('success', "Aksi {$data['action']} berhasil.");
+        return back()->with('success', "Action {$data['action']} completed.");
     }
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
@@ -152,7 +152,7 @@ class AssignmentController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return redirect()->route('assignments.index')->with('success', 'Penugasan dihapus.');
+        return redirect()->route('assignments.index')->with('success', 'Assignment deleted.');
     }
 
     // ── Evidence (attachments) ───────────────────────────────────────────────
@@ -176,7 +176,7 @@ class AssignmentController extends Controller
         $isAdmin = RolePolicy::isAdminOrAbove($user->roleType);
 
         if (!$this->service->canUploadEvidence($a, $user->id, $isAdmin)) {
-            abort(403, 'Hanya PIC yang boleh mengunggah evidence, dan hanya sebelum tugas selesai.');
+            abort(403, 'Only the PIC may upload evidence, and only before the assignment is completed.');
         }
 
         $request->validate([
@@ -185,7 +185,7 @@ class AssignmentController extends Controller
                 'max:' . self::MAX_FILE_SIZE_KB,
                 function ($attribute, $value, $fail) {
                     if (!$this->isMimeAllowed($value->getMimeType())) {
-                        $fail("Tipe file tidak diizinkan: {$value->getMimeType()}");
+                        $fail("File type is not allowed: {$value->getMimeType()}");
                     }
                 },
             ],
@@ -216,7 +216,7 @@ class AssignmentController extends Controller
             return response()->json(['data' => $attachment], 201);
         }
 
-        return back()->with('success', 'File evidence diunggah.');
+        return back()->with('success', 'Evidence file uploaded.');
     }
 
     public function addLinkOrNote(Request $request, int $id): JsonResponse|RedirectResponse
@@ -226,7 +226,7 @@ class AssignmentController extends Controller
         $isAdmin = RolePolicy::isAdminOrAbove($user->roleType);
 
         if (!$this->service->canUploadEvidence($a, $user->id, $isAdmin)) {
-            abort(403, 'Hanya PIC yang boleh menambah evidence, sebelum tugas selesai.');
+            abort(403, 'Only the PIC may add evidence, before the assignment is completed.');
         }
 
         $data = $request->validate([
@@ -247,7 +247,7 @@ class AssignmentController extends Controller
             return response()->json(['data' => $attachment], 201);
         }
 
-        return back()->with('success', 'Evidence ditambahkan.');
+        return back()->with('success', 'Evidence added.');
     }
 
     public function downloadAttachment(Request $request, int $id, int $attId)
@@ -256,7 +256,7 @@ class AssignmentController extends Controller
         $att = AssignmentAttachment::where('assignmentId', $a->id)->findOrFail($attId);
 
         if ($att->type !== 'FILE' || !$att->filepath) {
-            abort(400, 'Lampiran ini bukan file.');
+            abort(400, 'This attachment is not a file.');
         }
 
         return Storage::disk('local')->download($att->filepath, $att->originalName ?? $att->filename);
@@ -269,7 +269,7 @@ class AssignmentController extends Controller
         $isAdmin = RolePolicy::isAdminOrAbove($user->roleType);
 
         if (!$isAdmin && $att->uploadedBy !== $user->id) {
-            abort(403, 'Hanya pengunggah yang dapat menghapus lampiran ini.');
+            abort(403, 'Only the uploader can delete this attachment.');
         }
 
         // Best effort: hapus file fisik
@@ -283,7 +283,7 @@ class AssignmentController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('success', 'Lampiran dihapus.');
+        return back()->with('success', 'Attachment deleted.');
     }
 
     private function isMimeAllowed(?string $mime): bool

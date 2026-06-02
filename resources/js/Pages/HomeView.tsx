@@ -765,7 +765,7 @@ export default function HomeView() {
           </div>
 
           {/* ═══════════════ HERO — KPI dominan · Eksekusi · Tertinggal · Keputusan ═══════════════ */}
-          <section className="hvc__maphero" aria-label="Ringkasan">
+          <section className="hvc__maphero" aria-label="Summary">
             <div className="hvc__hud">
               {/* ① KPI achievement — big number + delta + embedded flowing trend */}
               {canSeePerformance && hasKpi && (

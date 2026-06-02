@@ -23,7 +23,7 @@ class AdminThresholdsController extends Controller
     {
         $role = strtoupper($request->user()->roleType ?? '');
         if ($role !== 'SUPERADMIN') {
-            abort(403, 'Hanya superadmin yang dapat mengubah threshold sistem.');
+            abort(403, 'Only a superadmin can change system thresholds.');
         }
     }
 
@@ -61,7 +61,7 @@ class AdminThresholdsController extends Controller
         $schema = $this->getSchema();
         $validKeys = collect($schema)->flatMap(fn ($cat) => array_keys($cat['fields']))->all();
         if (!in_array($data['key'], $validKeys, true)) {
-            return response()->json(['message' => 'Key tidak dikenal: ' . $data['key']], 422);
+            return response()->json(['message' => 'Unknown key: ' . $data['key']], 422);
         }
 
         $row = $this->svc->set(
@@ -93,75 +93,75 @@ class AdminThresholdsController extends Controller
             [
                 'category' => 'escalation_aging',
                 'title' => 'Escalation Aging',
-                'helper' => 'Berapa hari menunggu sebelum indicator visual berubah warna. Bukan deadline disposition — hanya signal aging.',
+                'helper' => 'How many days of waiting before the visual indicator changes color. Not a disposition deadline — only an aging signal.',
                 'fields' => [
-                    'escalation_aging.yellow_after_days' => ['label' => 'Berubah kuning setelah', 'type' => 'int', 'unit' => 'hari'],
-                    'escalation_aging.orange_after_days' => ['label' => 'Berubah oranye setelah', 'type' => 'int', 'unit' => 'hari'],
-                    'escalation_aging.red_after_days' => ['label' => 'Berubah merah setelah', 'type' => 'int', 'unit' => 'hari'],
+                    'escalation_aging.yellow_after_days' => ['label' => 'Turns yellow after', 'type' => 'int', 'unit' => 'days'],
+                    'escalation_aging.orange_after_days' => ['label' => 'Turns orange after', 'type' => 'int', 'unit' => 'days'],
+                    'escalation_aging.red_after_days' => ['label' => 'Turns red after', 'type' => 'int', 'unit' => 'days'],
                 ],
             ],
             [
                 'category' => 'carryover',
                 'title' => 'Action Item Carryover',
-                'helper' => 'Berapa kali action item rapat boleh "carry over" sebelum sistem nudge atau auto-eskalasi.',
+                'helper' => 'How many times a meeting action item may "carry over" before the system nudges or auto-escalates.',
                 'fields' => [
-                    'carryover.nudge_threshold' => ['label' => 'Soft nudge (prompt: apa yang stuck?)', 'type' => 'int', 'unit' => 'kali'],
-                    'carryover.auto_clearpath_threshold' => ['label' => 'Auto-suggest Clear the Path', 'type' => 'int', 'unit' => 'kali'],
-                    'carryover.force_disposition_threshold' => ['label' => 'Force atasan disposition', 'type' => 'int', 'unit' => 'kali'],
+                    'carryover.nudge_threshold' => ['label' => 'Soft nudge (prompt: what is stuck?)', 'type' => 'int', 'unit' => 'times'],
+                    'carryover.auto_clearpath_threshold' => ['label' => 'Auto-suggest Clear the Path', 'type' => 'int', 'unit' => 'times'],
+                    'carryover.force_disposition_threshold' => ['label' => 'Force supervisor disposition', 'type' => 'int', 'unit' => 'times'],
                 ],
             ],
             [
                 'category' => 'progress_log',
                 'title' => 'Progress Log Freshness',
-                'helper' => 'Cadence pelaporan progres program.',
+                'helper' => 'Cadence for program progress reporting.',
                 'fields' => [
-                    'progress_log.stale_after_days' => ['label' => 'Stale setelah', 'type' => 'int', 'unit' => 'hari'],
+                    'progress_log.stale_after_days' => ['label' => 'Stale after', 'type' => 'int', 'unit' => 'days'],
                 ],
             ],
             [
                 'category' => 'auto_health',
                 'title' => 'Auto-Health Derivation',
-                'helper' => 'Threshold untuk derive program health (RED/YELLOW) dari signal aktual.',
+                'helper' => 'Thresholds for deriving program health (RED/YELLOW) from actual signals.',
                 'fields' => [
-                    'auto_health.red_overdue_ratio' => ['label' => '% task overdue → RED', 'type' => 'float', 'unit' => '0–1'],
-                    'auto_health.yellow_overdue_ratio' => ['label' => '% task overdue → YELLOW', 'type' => 'float', 'unit' => '0–1'],
-                    'auto_health.red_blocker_count' => ['label' => 'Open blocker count → RED', 'type' => 'int', 'unit' => 'jumlah'],
-                    'auto_health.yellow_blocker_count' => ['label' => 'Open blocker count → YELLOW', 'type' => 'int', 'unit' => 'jumlah'],
+                    'auto_health.red_overdue_ratio' => ['label' => '% tasks overdue → RED', 'type' => 'float', 'unit' => '0–1'],
+                    'auto_health.yellow_overdue_ratio' => ['label' => '% tasks overdue → YELLOW', 'type' => 'float', 'unit' => '0–1'],
+                    'auto_health.red_blocker_count' => ['label' => 'Open blocker count → RED', 'type' => 'int', 'unit' => 'count'],
+                    'auto_health.yellow_blocker_count' => ['label' => 'Open blocker count → YELLOW', 'type' => 'int', 'unit' => 'count'],
                     'auto_health.red_kpi_deviation' => ['label' => '% KPI deviation → RED', 'type' => 'int', 'unit' => '%'],
                     'auto_health.yellow_kpi_deviation' => ['label' => '% KPI deviation → YELLOW', 'type' => 'int', 'unit' => '%'],
-                    'auto_health.discrepancy_level_threshold' => ['label' => 'Discrepancy level threshold', 'type' => 'int', 'unit' => 'level'],
+                    'auto_health.discrepancy_level_threshold' => ['label' => 'Discrepancy level threshold', 'type' => 'int', 'unit' => 'levels'],
                 ],
             ],
             [
                 'category' => 'commitment_ledger',
                 'title' => 'Commitment Ledger',
-                'helper' => 'Setting untuk halaman "Komitmen Saya".',
+                'helper' => 'Settings for the "My Commitments" page.',
                 'fields' => [
-                    'commitment_ledger.lookback_weeks' => ['label' => 'Lookback periode', 'type' => 'int', 'unit' => 'minggu'],
-                    'commitment_ledger.streak_min_hit_rate_pct' => ['label' => 'Min hit rate untuk streak', 'type' => 'int', 'unit' => '%'],
-                    'commitment_ledger.low_consistency_alert_pct' => ['label' => 'Alert atasan kalau hit rate ≤', 'type' => 'int', 'unit' => '%'],
-                    'commitment_ledger.low_consistency_alert_weeks' => ['label' => 'Selama berapa minggu', 'type' => 'int', 'unit' => 'minggu'],
+                    'commitment_ledger.lookback_weeks' => ['label' => 'Lookback period', 'type' => 'int', 'unit' => 'weeks'],
+                    'commitment_ledger.streak_min_hit_rate_pct' => ['label' => 'Min hit rate for a streak', 'type' => 'int', 'unit' => '%'],
+                    'commitment_ledger.low_consistency_alert_pct' => ['label' => 'Alert supervisor if hit rate ≤', 'type' => 'int', 'unit' => '%'],
+                    'commitment_ledger.low_consistency_alert_weeks' => ['label' => 'For how many weeks', 'type' => 'int', 'unit' => 'weeks'],
                 ],
             ],
             [
                 'category' => 'pilot_dkm_success_criteria',
                 'title' => 'Pilot DKM Success Criteria',
-                'helper' => 'Target metric untuk evaluasi pilot Sprint 4 di direktorat DKM.',
+                'helper' => 'Target metrics for evaluating the Sprint 4 pilot in the DKM directorate.',
                 'fields' => [
-                    'pilot_dkm_success_criteria.avg_time_to_disposition_days' => ['label' => 'Avg waktu disposition', 'type' => 'int', 'unit' => 'hari'],
+                    'pilot_dkm_success_criteria.avg_time_to_disposition_days' => ['label' => 'Avg time to disposition', 'type' => 'int', 'unit' => 'days'],
                     'pilot_dkm_success_criteria.min_hit_rate_aggregate_pct' => ['label' => 'Min hit rate aggregate', 'type' => 'int', 'unit' => '%'],
                     'pilot_dkm_success_criteria.min_user_satisfaction_score' => ['label' => 'Min user satisfaction', 'type' => 'int', 'unit' => '1–10'],
                     'pilot_dkm_success_criteria.min_active_users_pct' => ['label' => 'Min active users', 'type' => 'int', 'unit' => '%'],
-                    'pilot_dkm_success_criteria.evaluation_period_weeks' => ['label' => 'Periode evaluasi', 'type' => 'int', 'unit' => 'minggu'],
+                    'pilot_dkm_success_criteria.evaluation_period_weeks' => ['label' => 'Evaluation period', 'type' => 'int', 'unit' => 'weeks'],
                 ],
             ],
             [
                 'category' => 'monthly_report',
                 'title' => 'Monthly Report',
-                'helper' => 'Anti-ABS signal untuk reviewer.',
+                'helper' => 'Anti-ABS signal for reviewers.',
                 'fields' => [
-                    'monthly_report.suspicious_clean_min_kendala' => ['label' => 'Min kendala untuk dianggap normal', 'type' => 'int', 'unit' => 'jumlah'],
-                    'monthly_report.suspicious_lookback_periods' => ['label' => 'Lookback historis', 'type' => 'int', 'unit' => 'bulan'],
+                    'monthly_report.suspicious_clean_min_kendala' => ['label' => 'Min blockers to be considered normal', 'type' => 'int', 'unit' => 'count'],
+                    'monthly_report.suspicious_lookback_periods' => ['label' => 'Historical lookback', 'type' => 'int', 'unit' => 'months'],
                 ],
             ],
             [
@@ -169,7 +169,7 @@ class AdminThresholdsController extends Controller
                 'title' => 'Inbox Today',
                 'helper' => 'Cache TTL untuk endpoint /inbox/today.',
                 'fields' => [
-                    'inbox_today.cache_ttl_seconds' => ['label' => 'Cache TTL', 'type' => 'int', 'unit' => 'detik'],
+                    'inbox_today.cache_ttl_seconds' => ['label' => 'Cache TTL', 'type' => 'int', 'unit' => 'seconds'],
                 ],
             ],
         ];

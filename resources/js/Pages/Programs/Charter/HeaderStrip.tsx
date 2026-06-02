@@ -12,12 +12,12 @@ type Props = {
 const HEALTH_LABEL: Record<CharterHealth, string> = {
   ON_TRACK:  'On Track',
   AT_RISK:   'At Risk',
-  TERLAMBAT: 'Terlambat',
+  TERLAMBAT: 'Delayed',
   COMPLETED: 'Completed',
 }
 
-/** Format "YYYY-MM" → "Mei 2026" natural Indonesian month. */
-const MONTH_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+/** Format "YYYY-MM" → "May 2026". */
+const MONTH_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 function formatYearMonth(ym: string): string {
   const [y, m] = ym.split('-')
   const mi = parseInt(m, 10) - 1
@@ -48,7 +48,7 @@ export function HeaderStrip({ program, status, kpi, actionSlot }: Props) {
               type="button"
               className="charter-export-button cs-export"
               disabled
-              title="Tersedia di Phase 3"
+              title="Available in Phase 3"
             >
               Export PPTX
             </button>
@@ -67,7 +67,7 @@ export function HeaderStrip({ program, status, kpi, actionSlot }: Props) {
       </div>
 
       <div className="cs-header__col">
-        <div className="cs-header__label">KPI Utama</div>
+        <div className="cs-header__label">Primary KPI</div>
         {kpi ? (
           <>
             <div className="cs-header__value">{kpi.name}</div>
@@ -85,7 +85,7 @@ export function HeaderStrip({ program, status, kpi, actionSlot }: Props) {
       </div>
 
       <div className="cs-header__col">
-        <div className="cs-header__label">Periode</div>
+        <div className="cs-header__label">Period</div>
         <div className="cs-header__value">
           {formatYearMonth(program.period.from)} → {formatYearMonth(program.period.to)}
         </div>

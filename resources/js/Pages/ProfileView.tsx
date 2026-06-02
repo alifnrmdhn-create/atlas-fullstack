@@ -108,7 +108,7 @@ function fmtDuration(ms: number): string {
   if (ms === 0) return '0m'
   const h = Math.floor(ms / 3600000)
   const m = Math.floor((ms % 3600000) / 60000)
-  if (h >= 1) return `${h}j ${m}m`
+  if (h >= 1) return `${h}h ${m}m`
   return `${m}m`
 }
 
@@ -135,7 +135,7 @@ function OrgNode({ person, positionName, isSelf = false }:
       </div>
       <div className="org-node__info">
         <div className="org-node__name">
-          {person ? name : <em className="org-node__empty-name">Lowongan</em>}
+          {person ? name : <em className="org-node__empty-name">Vacant</em>}
         </div>
         <div className="org-node__pos">{positionName}</div>
         {role && (
@@ -192,7 +192,7 @@ export function ProfileView() {
       await api.put('/profile', { name: formName, email: formEmail })
       setProfileData(prev => prev ? { ...prev, user: { ...prev.user, name: formName, email: formEmail } } : prev)
       setSaved(true); setTimeout(() => setSaved(false), 2000)
-    } catch (err) { setSaveError(err instanceof Error ? err.message : 'Gagal menyimpan') }
+    } catch (err) { setSaveError(err instanceof Error ? err.message : 'Failed to save') }
     finally { setSaving(false) }
   }
 
@@ -218,7 +218,7 @@ export function ProfileView() {
   if (loading) return (
     <div className="ds profile-v2 view-profile">
       <div className="section-block profile-loading">
-        <span className="profile-empty-note">Memuat profil…</span>
+        <span className="profile-empty-note">Loading profile…</span>
       </div>
     </div>
   )
@@ -233,8 +233,8 @@ export function ProfileView() {
     } catch { /* ignore */ }
   }
   const atasanEmptyText = user?.position?.levelCode === 'BOD' || user?.position?.levelCode === 'BOD-1'
-    ? 'Melapor langsung ke Direksi.'
-    : 'Tidak ada atasan terdaftar.'
+    ? 'Reports directly to the Board of Directors.'
+    : 'No supervisor on record.'
 
   return (
     <div className="ds profile-v2 view-profile">
@@ -244,19 +244,19 @@ export function ProfileView() {
           — column children muncul bersamaan dengan parent column. */}
       <div className="profile-v2__inner ds-stagger">
         <div className="view-toolbar">
-          <h2 className="view-toolbar__title">Profil Saya</h2>
+          <h2 className="view-toolbar__title">My Profile</h2>
           <div className="view-toolbar__sep" />
-          <span className="view-toolbar__subtitle">Lihat dan perbarui informasi akun serta preferensi Anda.</span>
+          <span className="view-toolbar__subtitle">View and update your account information and preferences.</span>
         </div>
 
         {/* ─── HERO BAND ─────────────────────────────────────── */}
-        <section className="pv-hero" aria-label="Identitas">
+        <section className="pv-hero" aria-label="Identity">
           <div className={`pv-hero__avatar`} data-tone={userRoleTone}>
             {user ? initials(user.name) : '?'}
           </div>
           <div className="pv-hero__body">
             <h2 className="pv-hero__name">{user?.name ?? '—'}</h2>
-            <p className="pv-hero__pos">{user?.position?.name ?? user?.positionTitle ?? 'Jabatan belum ditetapkan'}</p>
+            <p className="pv-hero__pos">{user?.position?.name ?? user?.positionTitle ?? 'Position not assigned'}</p>
             <div className="pv-hero__badges">
               {user?.roleType && (
                 <span className="profile-role-badge" data-tone={userRoleTone}>{formatRoleLabel(user.roleType)}</span>
@@ -265,7 +265,7 @@ export function ProfileView() {
                 <span className="profile-role-badge profile-role-badge--level" data-tone="gray">{user.position.levelCode}</span>
               )}
               <span className="profile-role-badge profile-role-badge--completeness" data-tone={profileCompleteness === 100 ? 'green' : 'yellow'}>
-                {profileCompleteness === 100 ? '✓ Lengkap' : `${profileCompleteness}%`}
+                {profileCompleteness === 100 ? '✓ Complete' : `${profileCompleteness}%`}
               </span>
             </div>
           </div>
@@ -274,17 +274,17 @@ export function ProfileView() {
             onClick={() => setShowEditForm(v => !v)}
             type="button"
           >
-            {showEditForm ? 'Tutup editor' : '✏ Edit profil'}
+            {showEditForm ? 'Close editor' : '✏ Edit profile'}
           </button>
         </section>
 
         {/* ─── EDIT FORM (collapsible) ────────────────────────── */}
         {showEditForm && (
-          <section className="pv-section pv-form-section" aria-label="Edit profil">
+          <section className="pv-section pv-form-section" aria-label="Edit profile">
             <form className="pv-form" onSubmit={handleSave}>
               <div className="pv-form__row">
                 <div className="pv-form__field">
-                  <label className="pv-form__label" htmlFor="p-name">Nama</label>
+                  <label className="pv-form__label" htmlFor="p-name">Name</label>
                   <input
                     className="pv-input"
                     disabled={saving}
@@ -306,10 +306,10 @@ export function ProfileView() {
                       value={formEmail}
                     />
                     <button
-                      aria-label="Salin email"
+                      aria-label="Copy email"
                       className="pv-input-action"
                       onClick={copyEmail}
-                      title={emailCopied ? 'Tersalin!' : 'Salin email'}
+                      title={emailCopied ? 'Copied!' : 'Copy email'}
                       type="button"
                     >
                       {emailCopied ? (
@@ -328,10 +328,10 @@ export function ProfileView() {
               </div>
               <div className="pv-form__actions">
                 <span className={`pv-form__state${hasDirtyProfile ? ' is-dirty' : ''}`}>
-                  {saved ? '✓ Tersimpan' : saveError ? saveError : hasDirtyProfile ? 'Ada perubahan belum disimpan' : 'Data tersinkron'}
+                  {saved ? '✓ Saved' : saveError ? saveError : hasDirtyProfile ? 'You have unsaved changes' : 'Data in sync'}
                 </span>
                 <button className="pv-form__save" disabled={saving || !hasDirtyProfile} type="submit">
-                  {saving ? 'Menyimpan…' : 'Simpan perubahan'}
+                  {saving ? 'Saving…' : 'Save changes'}
                 </button>
               </div>
             </form>
@@ -345,31 +345,31 @@ export function ProfileView() {
         <div className="pv-body__col pv-body__col--main">
 
         {/* ─── IDENTITAS ORGANISASI ──────────────────────────── */}
-        <section className="pv-section" aria-label="Identitas organisasi">
-          <h3 className="pv-section__title">Identitas Organisasi</h3>
+        <section className="pv-section" aria-label="Organization identity">
+          <h3 className="pv-section__title">Organization Identity</h3>
           <dl className="pv-data-list">
             <div className="pv-data-row">
               <dt>NIK</dt>
-              <dd>{user?.nik ?? <span className="pv-empty-inline">— Belum tersedia</span>}</dd>
+              <dd>{user?.nik ?? <span className="pv-empty-inline">— Not available</span>}</dd>
             </div>
             <div className="pv-data-row">
               <dt>Email</dt>
-              <dd>{user?.email ?? <span className="pv-empty-inline">— Belum tersedia</span>}</dd>
+              <dd>{user?.email ?? <span className="pv-empty-inline">— Not available</span>}</dd>
             </div>
             <div className="pv-data-row">
               <dt>Unit</dt>
               <dd>{user?.unit?.code ?? <span className="pv-empty-inline">—</span>}</dd>
             </div>
             <div className="pv-data-row">
-              <dt>Direktorat</dt>
+              <dt>Directorate</dt>
               <dd>{user?.directorate?.name ?? <span className="pv-empty-inline">—</span>}</dd>
             </div>
             <div className="pv-data-row">
-              <dt>Divisi</dt>
+              <dt>Division</dt>
               <dd>{user?.unit?.name ?? <span className="pv-empty-inline">—</span>}</dd>
             </div>
             <div className="pv-data-row">
-              <dt>Atasan langsung</dt>
+              <dt>Direct supervisor</dt>
               <dd>
                 {supervisorChain[0]?.name
                   ? <>{supervisorChain[0].name} <span className="pv-data-row__sub">· {supervisorChain[0].positionTitle ?? formatRoleLabel(supervisorChain[0].roleType)}</span></>
@@ -377,11 +377,11 @@ export function ProfileView() {
               </dd>
             </div>
             <div className="pv-data-row">
-              <dt>Tim langsung</dt>
+              <dt>Direct team</dt>
               <dd>
                 {directReportsCount > 0
-                  ? <>{directReportsCount} orang melapor langsung</>
-                  : <span className="pv-empty-inline">Tidak ada bawahan langsung</span>}
+                  ? <>{directReportsCount} {directReportsCount === 1 ? 'person reports' : 'people report'} directly</>
+                  : <span className="pv-empty-inline">No direct reports</span>}
               </dd>
             </div>
           </dl>
@@ -389,14 +389,14 @@ export function ProfileView() {
 
         {/* ─── HIERARKI ──────────────────────────────────────── */}
         {user?.position && (
-          <section className="pv-section" aria-label="Hierarki jabatan">
+          <section className="pv-section" aria-label="Position hierarchy">
             <div className="pv-section__head">
-              <h3 className="pv-section__title">Hierarki Jabatan</h3>
-              <span className="pv-section__meta">{supervisorChain.length} atasan · {directReportsCount} bawahan</span>
+              <h3 className="pv-section__title">Position Hierarchy</h3>
+              <span className="pv-section__meta">{supervisorChain.length} supervisors · {directReportsCount} reports</span>
             </div>
             <div className="pv-org-map">
               <div className="pv-org-lane">
-                <div className="pv-org-lane__head">Atasan</div>
+                <div className="pv-org-lane__head">Supervisors</div>
                 <div className="pv-org-lane__nodes">
                   {supervisorChain.length > 0 ? (
                     [...supervisorChain].reverse().map(person => (
@@ -406,19 +406,19 @@ export function ProfileView() {
                 </div>
               </div>
               <div className="pv-org-lane pv-org-lane--self">
-                <div className="pv-org-lane__head">Posisi saya</div>
+                <div className="pv-org-lane__head">My position</div>
                 <div className="pv-org-lane__nodes">
                   <OrgNode person={user as PersonNode} positionName={user.position.name} isSelf />
                 </div>
               </div>
               <div className="pv-org-lane">
-                <div className="pv-org-lane__head">Bawahan</div>
+                <div className="pv-org-lane__head">Direct reports</div>
                 <div className="pv-org-lane__nodes">
                   {subordinates.length > 0 ? (
                     subordinates.map(person => (
                       <OrgNode key={person.id} person={person} positionName={person.positionTitle ?? formatRoleLabel(person.roleType)} />
                     ))
-                  ) : <span className="pv-empty-inline">Tidak ada bawahan langsung</span>}
+                  ) : <span className="pv-empty-inline">No direct reports</span>}
                 </div>
               </div>
             </div>
@@ -431,13 +431,13 @@ export function ProfileView() {
         <div className="pv-body__col pv-body__col--rail">
 
         {/* ─── AKTIVITAS ─────────────────────────────────────── */}
-        <section className="pv-section" aria-label="Aktivitas">
+        <section className="pv-section" aria-label="Activity">
           <div className="pv-section__head">
             <div>
-              <h3 className="pv-section__title">Aktivitas Saya</h3>
+              <h3 className="pv-section__title">My Activity</h3>
               <p className="pv-section__sub">
-                Terakhir aktif: {activityLast}
-                {activityData?.dailyBreakdown.length ? ` · ${activeDaysCount}/${activityData.dailyBreakdown.length} hari aktif` : ''}
+                Last active: {activityLast}
+                {activityData?.dailyBreakdown.length ? ` · ${activeDaysCount}/${activityData.dailyBreakdown.length} active days` : ''}
               </p>
             </div>
             <div className="pv-range-toggle">
@@ -452,27 +452,27 @@ export function ProfileView() {
             </div>
           </div>
           {activityLoading ? (
-            <p className="pv-empty-inline">Memuat data aktivitas…</p>
+            <p className="pv-empty-inline">Loading activity data…</p>
           ) : !activityData ? (
-            <p className="pv-empty-inline">Data aktivitas tidak tersedia.</p>
+            <p className="pv-empty-inline">Activity data not available.</p>
           ) : (
             <>
               <div className="pv-kpi-row">
                 <div className="pv-kpi">
                   <span className="pv-kpi__value">{fmtDuration(activityData.totalDurationMs)}</span>
-                  <span className="pv-kpi__label">Total aktif</span>
+                  <span className="pv-kpi__label">Total active</span>
                 </div>
                 <div className="pv-kpi">
                   <span className="pv-kpi__value">{activityData.sessionCount}</span>
-                  <span className="pv-kpi__label">Sesi</span>
+                  <span className="pv-kpi__label">Sessions</span>
                 </div>
                 <div className="pv-kpi">
                   <span className="pv-kpi__value">{fmtDuration(activityData.avgSessionDurationMs)}</span>
-                  <span className="pv-kpi__label">Rata-rata sesi</span>
+                  <span className="pv-kpi__label">Avg. session</span>
                 </div>
                 <div className="pv-kpi">
                   <span className="pv-kpi__value">{activeDaysCount}</span>
-                  <span className="pv-kpi__label">Hari aktif</span>
+                  <span className="pv-kpi__label">Active days</span>
                 </div>
               </div>
               {activityData.dailyBreakdown.length > 0 && (() => {
@@ -481,7 +481,7 @@ export function ProfileView() {
                 return (
                   <div className="pv-chart-wrap">
                     <div className="pv-chart-meta">
-                      <span className="pv-chart-meta__label">Puncak</span>
+                      <span className="pv-chart-meta__label">Peak</span>
                       <span className="pv-chart-meta__value">
                         {fmtDuration(peakDay.durationMs)} · {fmtDayLabel(peakDay.date)}
                       </span>
@@ -503,12 +503,12 @@ export function ProfileView() {
         </section>
 
         {/* ─── RIWAYAT JABATAN (timeline) ──────────────────── */}
-        <section className="pv-section" aria-label="Riwayat jabatan">
+        <section className="pv-section" aria-label="Position history">
           <div className="pv-section__head">
             <div>
-              <h3 className="pv-section__title">Riwayat Jabatan</h3>
+              <h3 className="pv-section__title">Position History</h3>
               <p className="pv-section__sub">
-                {latestHistoryEntry ? `Perubahan terakhir ${fmtDate(latestHistoryEntry.startDate)}.` : 'Linimasa perubahan posisi dan mutasi.'}
+                {latestHistoryEntry ? `Last change ${fmtDate(latestHistoryEntry.startDate)}.` : 'Timeline of position changes and transfers.'}
               </p>
             </div>
             {positionHistory.length > 0 && <span className="pv-section__badge">{positionHistory.length}</span>}
@@ -523,11 +523,11 @@ export function ProfileView() {
                       {entry.position?.code && <span className="code-badge">{entry.position.code}</span>}
                       <span className="pv-timeline__title">{entry.position?.name ?? '—'}</span>
                       <span className="code-badge">{entry.mutationType}</span>
-                      {!entry.endDate && <span className="pv-timeline__active">Aktif</span>}
+                      {!entry.endDate && <span className="pv-timeline__active">Active</span>}
                     </div>
                     <div className="pv-timeline__date">
                       {fmtDate(entry.startDate)}
-                      {entry.endDate ? ` — ${fmtDate(entry.endDate)}` : ' — sekarang'}
+                      {entry.endDate ? ` — ${fmtDate(entry.endDate)}` : ' — present'}
                     </div>
                     {entry.mutationReason && <div className="pv-timeline__note">{entry.mutationReason}</div>}
                     {entry.skNumber && <div className="pv-timeline__sk">SK: <span className="code-badge">{entry.skNumber}</span></div>}
@@ -536,7 +536,7 @@ export function ProfileView() {
               ))}
             </ul>
           ) : (
-            <p className="pv-empty-inline">Belum ada mutasi tercatat. Riwayat jabatan akan muncul di sini setelah ada perubahan posisi.</p>
+            <p className="pv-empty-inline">No transfers recorded yet. Position history will appear here after a position change.</p>
           )}
         </section>
 

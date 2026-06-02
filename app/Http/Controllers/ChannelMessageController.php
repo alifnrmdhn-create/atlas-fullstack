@@ -128,7 +128,7 @@ class ChannelMessageController extends Controller
 
         $isAdmin = RolePolicy::isAdminOrAbove($request->user()->roleType);
         if (!$isAdmin && $msg->userId !== $request->user()->id) {
-            abort(403, 'Hanya pengirim yang dapat mengedit pesan ini.');
+            abort(403, 'Only the sender can edit this message.');
         }
 
         $msg->update([
@@ -149,7 +149,7 @@ class ChannelMessageController extends Controller
             return response()->json(['data' => $fresh]);
         }
 
-        return back()->with('success', 'Pesan diedit.');
+        return back()->with('success', 'Message edited.');
     }
 
     // DELETE /channels/:channelId/messages/:messageId
@@ -170,12 +170,12 @@ class ChannelMessageController extends Controller
         } else {
             // Delete for everyone — hanya pengirim atau admin
             if (!$isAdmin && $msg->userId !== $userId) {
-                abort(403, 'Hanya pengirim atau admin yang dapat menghapus pesan untuk semua.');
+                abort(403, 'Only the sender or an admin can delete a message for everyone.');
             }
             $msg->update([
                 'deletedForEveryoneAt' => now(),
                 'deletedForEveryoneBy' => $userId,
-                'content' => '[Pesan dihapus]',
+                'content' => '[Message deleted]',
             ]);
 
             BroadcastService::toUsers('channel:message:deleted', [
@@ -189,7 +189,7 @@ class ChannelMessageController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('success', 'Pesan dihapus.');
+        return back()->with('success', 'Message deleted.');
     }
 
     // GET /channels/:channelId/messages/:messageId/thread
@@ -281,12 +281,12 @@ class ChannelMessageController extends Controller
             ->exists();
 
         if ($write) {
-            if (!$isMember) abort(403, 'Hanya anggota channel yang dapat melakukan aksi ini.');
+            if (!$isMember) abort(403, 'Only channel members can perform this action.');
             return;
         }
         if ($isMember) return;
         if ($channel->type === 'PUBLIC' && !$channel->isArchived) return;
-        abort(403, 'Anda tidak memiliki akses ke channel ini.');
+        abort(403, 'You do not have access to this channel.');
     }
 
     private function toggleReaction(int $channelId, int $messageId, int $userId, string $emoji, bool $remove): void
@@ -352,7 +352,7 @@ class ChannelMessageController extends Controller
 
         $content = (string) ($message->content ?? '');
         $preview = mb_strlen($content) > 100 ? mb_substr($content, 0, 100) . '…' : $content;
-        $msg = "{$sender->name} mengirim pesan: \"{$preview}\"";
+        $msg = "{$sender->name} sent a message: \"{$preview}\"";
         $source = "{$sender->name}·channel:{$channelId}";
 
         foreach ($recipientIds as $uid) {
@@ -401,7 +401,7 @@ class ChannelMessageController extends Controller
         $channel = Channel::find($channelId);
         $sender = User::find($senderId);
         $preview = mb_strlen($content) > 100 ? mb_substr($content, 0, 100) . '…' : $content;
-        $msg = "{$sender->name} menyebut Anda di #{$channel->name}: \"{$preview}\"";
+        $msg = "{$sender->name} mentioned you in #{$channel->name}: \"{$preview}\"";
         $source = "{$sender->name}·channel:{$channelId}";
 
         foreach ($mentioned as $uid) {

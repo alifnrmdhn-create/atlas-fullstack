@@ -58,7 +58,7 @@ export function AdminOrgsView() {
           domain: editingDir.domain ?? '', isActive: editingDir.isActive ?? true }
       : emptyDirForm()
     const dirty = (Object.keys(baseline) as Array<keyof typeof baseline>).some(k => dirForm[k] !== baseline[k])
-    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (dirty && !window.confirm('Discard unsaved changes?')) return
     setDirModal(null); setEditingDir(null); setDirError(null)
   }, dirModal !== null)
   const [deleteDirId, setDeleteDirId] = useState<number | null>(null)
@@ -85,7 +85,7 @@ export function AdminOrgsView() {
           isActive: editingUnit.isActive ?? true }
       : emptyUnitForm()
     const dirty = (Object.keys(baseline) as Array<keyof typeof baseline>).some(k => unitForm[k] !== baseline[k])
-    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (dirty && !window.confirm('Discard unsaved changes?')) return
     setUnitModal(null); setEditingUnit(null); setUnitError(null)
   }, unitModal !== null)
   const [deleteUnitId, setDeleteUnitId] = useState<number | null>(null)
@@ -132,7 +132,7 @@ export function AdminOrgsView() {
 
   async function submitDirForm(e: FormEvent) {
     e.preventDefault()
-    if (!dirForm.code.trim() || !dirForm.name.trim()) { setDirError('Kode dan nama wajib diisi.'); return }
+    if (!dirForm.code.trim() || !dirForm.name.trim()) { setDirError('Code and name are required.'); return }
     setDirSaving(true)
     setDirError(null)
     try {
@@ -151,7 +151,7 @@ export function AdminOrgsView() {
       setDirModal(null)
       reload()
     } catch (err) {
-      setDirError(err instanceof Error ? err.message : 'Gagal menyimpan.')
+      setDirError(err instanceof Error ? err.message : 'Failed to save.')
     } finally {
       setDirSaving(false)
     }
@@ -165,7 +165,7 @@ export function AdminOrgsView() {
       setDeleteDirId(null)
       reload()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Gagal menghapus direktorat.')
+      alert(err instanceof Error ? err.message : 'Failed to delete directorate.')
     } finally {
       setDeleteDirSaving(false)
     }
@@ -196,7 +196,7 @@ export function AdminOrgsView() {
 
   async function submitUnitForm(e: FormEvent) {
     e.preventDefault()
-    if (!unitForm.code.trim() || !unitForm.name.trim()) { setUnitError('Kode dan nama wajib diisi.'); return }
+    if (!unitForm.code.trim() || !unitForm.name.trim()) { setUnitError('Code and name are required.'); return }
     setUnitSaving(true)
     setUnitError(null)
     try {
@@ -216,7 +216,7 @@ export function AdminOrgsView() {
       setUnitModal(null)
       reload()
     } catch (err) {
-      setUnitError(err instanceof Error ? err.message : 'Gagal menyimpan.')
+      setUnitError(err instanceof Error ? err.message : 'Failed to save.')
     } finally {
       setUnitSaving(false)
     }
@@ -230,7 +230,7 @@ export function AdminOrgsView() {
       setDeleteUnitId(null)
       reload()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Gagal menghapus unit.')
+      alert(err instanceof Error ? err.message : 'Failed to delete unit.')
     } finally {
       setDeleteUnitSaving(false)
     }
@@ -241,7 +241,7 @@ export function AdminOrgsView() {
       <div className="ds admin-v2 view-admin-orgs ds-stagger">
         <div className="panel">
           <p className="text-muted text-sm admin-state-copy admin-state-copy--center">
-            Akses ditolak. Halaman ini hanya untuk admin dan superadmin.
+            Access denied. This page is for admins and superadmins only.
           </p>
         </div>
       </div>
@@ -251,16 +251,16 @@ export function AdminOrgsView() {
   return (
     <div className="ds admin-v2 view-admin-orgs ds-stagger">
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Perusahaan &amp; Entitas Organisasi</h2>
+        <h2 className="view-toolbar__title">Company &amp; Organization Entities</h2>
         <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Kelola struktur direktif dan unit organisasi.</span>
+        <span className="view-toolbar__subtitle">Manage the directorate structure and organization units.</span>
         {!loading && (
           <>
             <div className="view-toolbar__sep" />
             <div className="view-toolbar__right">
               <div className="view-toolbar__stats">
-                <span>{directorates.length} <em>direktorat</em></span>
-                <span>{units.length} <em>unit</em></span>
+                <span>{directorates.length} <em>directorates</em></span>
+                <span>{units.length} <em>units</em></span>
               </div>
             </div>
           </>
@@ -272,20 +272,20 @@ export function AdminOrgsView() {
           {/* ── Directorates column ── */}
           <div className="admin-orgs-col">
             <div className="panel__header">
-              <h3 className="panel__title">Direktorat</h3>
+              <h3 className="panel__title">Directorates</h3>
               {!directoratesError && <span className="badge badge--blue">{directorates.length}</span>}
               <div className="admin-header-actions">
-                <button className="btn-create" onClick={openCreateDir} type="button">+ Baru</button>
+                <button className="btn-create" onClick={openCreateDir} type="button">+ New</button>
               </div>
             </div>
 
             {directoratesError ? (
               <div className="panel">
-                <p className="text-muted text-sm admin-state-copy admin-state-copy--center">Data belum tersedia</p>
+                <p className="text-muted text-sm admin-state-copy admin-state-copy--center">Data not available yet</p>
               </div>
             ) : directorates.length === 0 ? (
               <div className="panel">
-                <p className="text-muted text-sm admin-state-copy admin-state-copy--center">Tidak ada data direktorat.</p>
+                <p className="text-muted text-sm admin-state-copy admin-state-copy--center">No directorate data.</p>
               </div>
             ) : (
               <div className="admin-card-stack">
@@ -306,12 +306,12 @@ export function AdminOrgsView() {
                             className="icon-btn icon-btn--danger admin-inline-action-btn"
                             onClick={() => setDeleteDirId(dir.id)}
                             type="button"
-                          >Hapus</button>
+                          >Delete</button>
                         </div>
                       </div>
                       <div className="directorate-card__meta admin-card-meta">
                         {dir.domain && <span className="text-xs text-muted">{dir.domain}</span>}
-                        <span className="text-xs text-muted">{childUnits.length} unit</span>
+                        <span className="text-xs text-muted">{childUnits.length} units</span>
                       </div>
                     </div>
                   )
@@ -323,30 +323,30 @@ export function AdminOrgsView() {
           {/* ── Units column ── */}
           <div className="admin-orgs-col admin-orgs-col--wide">
             <div className="panel__header">
-              <h3 className="panel__title">Unit Organisasi</h3>
+              <h3 className="panel__title">Organization Units</h3>
               {!unitsError && <span className="badge badge--blue">{units.length}</span>}
               <div className="admin-header-actions">
-                <button className="btn-create" onClick={openCreateUnit} type="button">+ Baru</button>
+                <button className="btn-create" onClick={openCreateUnit} type="button">+ New</button>
               </div>
             </div>
 
             {unitsError ? (
               <div className="panel">
-                <p className="text-muted text-sm admin-state-copy admin-state-copy--center">Data belum tersedia</p>
+                <p className="text-muted text-sm admin-state-copy admin-state-copy--center">Data not available yet</p>
               </div>
             ) : units.length === 0 ? (
               <div className="panel">
-                <p className="text-muted text-sm admin-state-copy admin-state-copy--center">Tidak ada data unit.</p>
+                <p className="text-muted text-sm admin-state-copy admin-state-copy--center">No unit data.</p>
               </div>
             ) : (
               <div className="panel">
                 <table className="reports-table">
                   <thead>
                     <tr>
-                      <th>Kode</th>
-                      <th>Nama Unit</th>
-                      <th>Direktorat</th>
-                      <th>Tipe</th>
+                      <th>Code</th>
+                      <th>Unit Name</th>
+                      <th>Directorate</th>
+                      <th>Type</th>
                       <th className="admin-table-actions-col"></th>
                     </tr>
                   </thead>
@@ -368,7 +368,7 @@ export function AdminOrgsView() {
                               className="icon-btn icon-btn--danger admin-inline-action-btn"
                               onClick={() => setDeleteUnitId(unit.id)}
                               type="button"
-                            >Hapus</button>
+                            >Delete</button>
                           </div>
                         </td>
                       </tr>
@@ -383,7 +383,7 @@ export function AdminOrgsView() {
 
       {loading && (
         <div className="panel admin-panel-state">
-          <span className="text-muted text-sm">Memuat data organisasi…</span>
+          <span className="text-muted text-sm">Loading organization data…</span>
         </div>
       )}
 
@@ -394,12 +394,12 @@ export function AdminOrgsView() {
             <div className="modal-header">
               <div className="modal-headcopy">
                 <span className="modal-kicker">Organization</span>
-                <h3 className="modal-title" id={directorateTitleId}>{dirModal === 'create' ? 'Tambah Direktorat' : 'Edit Direktorat'}</h3>
+                <h3 className="modal-title" id={directorateTitleId}>{dirModal === 'create' ? 'Add Directorate' : 'Edit Directorate'}</h3>
                 <p className="modal-subtitle" id={directorateDescId}>
-                  Kelola identitas direktorat agar unit, jabatan, dan struktur organisasi punya referensi induk yang rapi.
+                  Manage the directorate identity so units, positions, and the organization structure have a clean parent reference.
                 </p>
               </div>
-              <button aria-label="Tutup" className="modal__close" onClick={() => setDirModal(null)} type="button">
+              <button aria-label="Close" className="modal__close" onClick={() => setDirModal(null)} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -407,25 +407,25 @@ export function AdminOrgsView() {
               <div className="modal-body">
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>Identitas Direktorat</h4>
-                    <p>Gunakan kode dan nama yang stabil karena keduanya akan menjadi referensi utama di banyak layar admin.</p>
+                    <h4>Directorate Identity</h4>
+                    <p>Use a stable code and name, since both serve as the primary reference across many admin screens.</p>
                   </div>
                   <div className="profile-form__field">
-                    <label className="profile-form__label">Kode *</label>
+                    <label className="profile-form__label">Code *</label>
                     <input
                       className="profile-input"
                       onChange={e => setDirForm(f => ({ ...f, code: e.target.value }))}
-                      placeholder="cth. DIR-KMR"
+                      placeholder="e.g. DIR-KMR"
                       type="text"
                       value={dirForm.code}
                     />
                   </div>
                   <div className="profile-form__field">
-                    <label className="profile-form__label">Nama *</label>
+                    <label className="profile-form__label">Name *</label>
                     <input
                       className="profile-input"
                       onChange={e => setDirForm(f => ({ ...f, name: e.target.value }))}
-                      placeholder="cth. Direktorat Keuangan"
+                      placeholder="e.g. Finance Directorate"
                       type="text"
                       value={dirForm.name}
                     />
@@ -433,25 +433,25 @@ export function AdminOrgsView() {
                 </section>
                 <section className="modal-section modal-section--soft">
                   <div className="modal-section__intro">
-                    <h4>Metadata Tambahan</h4>
-                    <p>Nama singkat dan domain akan membantu pelabelan singkat di tampilan organisasi dan analitik.</p>
+                    <h4>Additional Metadata</h4>
+                    <p>Short name and domain help with concise labeling in organization views and analytics.</p>
                   </div>
                   <div className="profile-form__field">
-                    <label className="profile-form__label">Nama Singkat</label>
+                    <label className="profile-form__label">Short Name</label>
                     <input
                       className="profile-input"
                       onChange={e => setDirForm(f => ({ ...f, shortName: e.target.value }))}
-                      placeholder="cth. KMR"
+                      placeholder="e.g. KMR"
                       type="text"
                       value={dirForm.shortName}
                     />
                   </div>
                   <div className="profile-form__field">
-                    <label className="profile-form__label">Domain / Bidang</label>
+                    <label className="profile-form__label">Domain / Field</label>
                     <input
                       className="profile-input"
                       onChange={e => setDirForm(f => ({ ...f, domain: e.target.value }))}
-                      placeholder="cth. Keuangan & Manajemen Risiko"
+                      placeholder="e.g. Finance & Risk Management"
                       type="text"
                       value={dirForm.domain}
                     />
@@ -462,15 +462,15 @@ export function AdminOrgsView() {
                       onChange={e => setDirForm(f => ({ ...f, isActive: e.target.checked }))}
                       type="checkbox"
                     />
-                    Aktif
+                    Active
                   </label>
                 </section>
                 {dirError && <p className="admin-message admin-message--error">{dirError}</p>}
               </div>
               <div className="modal-footer admin-modal-actions">
-                <button className="btn btn--ghost" onClick={() => setDirModal(null)} type="button">Batal</button>
+                <button className="btn btn--ghost" onClick={() => setDirModal(null)} type="button">Cancel</button>
                 <button className="profile-save-btn" disabled={dirSaving} type="submit">
-                  {dirSaving ? 'Menyimpan…' : 'Simpan'}
+                  {dirSaving ? 'Saving…' : 'Save'}
                 </button>
               </div>
             </form>
@@ -485,12 +485,12 @@ export function AdminOrgsView() {
             <div className="modal-header">
               <div className="modal-headcopy">
                 <span className="modal-kicker">Organization</span>
-                <h3 className="modal-title" id={unitTitleId}>{unitModal === 'create' ? 'Tambah Unit' : 'Edit Unit'}</h3>
+                <h3 className="modal-title" id={unitTitleId}>{unitModal === 'create' ? 'Add Unit' : 'Edit Unit'}</h3>
                 <p className="modal-subtitle" id={unitDescId}>
-                  Atur unit atau divisi agar hierarki organisasi tetap terbaca, termasuk kaitannya ke direktorat induk.
+                  Set up the unit or division so the organization hierarchy stays clear, including its link to the parent directorate.
                 </p>
               </div>
-              <button aria-label="Tutup" className="modal__close" onClick={() => setUnitModal(null)} type="button">
+              <button aria-label="Close" className="modal__close" onClick={() => setUnitModal(null)} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -498,22 +498,22 @@ export function AdminOrgsView() {
               <div className="modal-body">
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>Identitas Unit</h4>
-                    <p>Tentukan kode, tipe, dan nama unit agar strukturnya konsisten di seluruh layar organisasi.</p>
+                    <h4>Unit Identity</h4>
+                    <p>Set the code, type, and unit name so its structure stays consistent across all organization screens.</p>
                   </div>
                   <div className="admin-form-grid admin-form-grid--2">
                     <div className="profile-form__field">
-                      <label className="profile-form__label">Kode *</label>
+                      <label className="profile-form__label">Code *</label>
                       <input
                         className="profile-input"
                         onChange={e => setUnitForm(f => ({ ...f, code: e.target.value }))}
-                        placeholder="cth. KMR-01"
+                        placeholder="e.g. KMR-01"
                         type="text"
                         value={unitForm.code}
                       />
                     </div>
                     <div className="profile-form__field">
-                      <label className="profile-form__label">Tipe Unit</label>
+                      <label className="profile-form__label">Unit Type</label>
                       <select
                         className="profile-input"
                         onChange={e => setUnitForm(f => ({ ...f, unitType: e.target.value }))}
@@ -527,11 +527,11 @@ export function AdminOrgsView() {
                     </div>
                   </div>
                   <div className="profile-form__field">
-                    <label className="profile-form__label">Nama *</label>
+                    <label className="profile-form__label">Name *</label>
                     <input
                       className="profile-input"
                       onChange={e => setUnitForm(f => ({ ...f, name: e.target.value }))}
-                      placeholder="cth. Divisi Akuntansi"
+                      placeholder="e.g. Accounting Division"
                       type="text"
                       value={unitForm.name}
                     />
@@ -539,24 +539,24 @@ export function AdminOrgsView() {
                 </section>
                 <section className="modal-section modal-section--soft">
                   <div className="modal-section__intro">
-                    <h4>Keterkaitan Struktur</h4>
-                    <p>Gunakan bagian ini untuk menghubungkan unit ke direktorat dan menambahkan deskripsi singkat bila perlu.</p>
+                    <h4>Structure Links</h4>
+                    <p>Use this section to link the unit to a directorate and add a brief description if needed.</p>
                   </div>
                   <div className="profile-form__field">
-                    <label className="profile-form__label">Direktorat</label>
+                    <label className="profile-form__label">Directorate</label>
                     <select
                       className="profile-input"
                       onChange={e => setUnitForm(f => ({ ...f, directorateId: e.target.value }))}
                       value={unitForm.directorateId}
                     >
-                      <option value="">— Tidak ada —</option>
+                      <option value="">— None —</option>
                       {directorates.map(d => (
                         <option key={d.id} value={String(d.id)}>{d.code} — {d.name}</option>
                       ))}
                     </select>
                   </div>
                   <div className="profile-form__field">
-                    <label className="profile-form__label">Deskripsi</label>
+                    <label className="profile-form__label">Description</label>
                     <input
                       className="profile-input"
                       onChange={e => setUnitForm(f => ({ ...f, description: e.target.value }))}
@@ -570,15 +570,15 @@ export function AdminOrgsView() {
                       onChange={e => setUnitForm(f => ({ ...f, isActive: e.target.checked }))}
                       type="checkbox"
                     />
-                    Aktif
+                    Active
                   </label>
                 </section>
                 {unitError && <p className="admin-message admin-message--error">{unitError}</p>}
               </div>
               <div className="modal-footer admin-modal-actions">
-                <button className="btn btn--ghost" onClick={() => setUnitModal(null)} type="button">Batal</button>
+                <button className="btn btn--ghost" onClick={() => setUnitModal(null)} type="button">Cancel</button>
                 <button className="profile-save-btn" disabled={unitSaving} type="submit">
-                  {unitSaving ? 'Menyimpan…' : 'Simpan'}
+                  {unitSaving ? 'Saving…' : 'Save'}
                 </button>
               </div>
             </form>
@@ -592,21 +592,21 @@ export function AdminOrgsView() {
           <div aria-describedby={deleteDirectorateDescId} aria-labelledby={deleteDirectorateTitleId} aria-modal="true" className="modal-panel admin-modal-panel admin-modal-panel--compact" ref={deleteDirectorateDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-headcopy">
-                <h3 className="modal-title admin-modal-title--danger" id={deleteDirectorateTitleId}>Hapus Direktorat?</h3>
-                <p className="modal-subtitle" id={deleteDirectorateDescId}>Aksi ini akan memengaruhi seluruh referensi struktur yang berada di bawah direktorat tersebut.</p>
+                <h3 className="modal-title admin-modal-title--danger" id={deleteDirectorateTitleId}>Delete Directorate?</h3>
+                <p className="modal-subtitle" id={deleteDirectorateDescId}>This action affects all structure references under this directorate.</p>
               </div>
-              <button aria-label="Tutup" className="modal__close" onClick={() => setDeleteDirId(null)} type="button">
+              <button aria-label="Close" className="modal__close" onClick={() => setDeleteDirId(null)} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
             <div className="admin-confirm-body">
               <div className="modal-helper-note modal-helper-note--danger">
-                Tindakan ini tidak dapat diurungkan. Semua unit yang terhubung akan kehilangan referensi direktorat.
+                This action cannot be undone. All linked units will lose their directorate reference.
               </div>
               <div className="admin-modal-actions">
-                <button className="btn btn--ghost" onClick={() => setDeleteDirId(null)} type="button">Batal</button>
+                <button className="btn btn--ghost" onClick={() => setDeleteDirId(null)} type="button">Cancel</button>
                 <button className="settings-danger-btn" disabled={deleteDirSaving} onClick={() => void doDeleteDir()} type="button">
-                  {deleteDirSaving ? 'Menghapus…' : 'Hapus'}
+                  {deleteDirSaving ? 'Deleting…' : 'Delete'}
                 </button>
               </div>
             </div>
@@ -620,21 +620,21 @@ export function AdminOrgsView() {
           <div aria-describedby={deleteUnitDescId} aria-labelledby={deleteUnitTitleId} aria-modal="true" className="modal-panel admin-modal-panel admin-modal-panel--compact" ref={deleteUnitDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-headcopy">
-                <h3 className="modal-title admin-modal-title--danger" id={deleteUnitTitleId}>Hapus Unit?</h3>
-                <p className="modal-subtitle" id={deleteUnitDescId}>Penghapusan unit akan berdampak pada jabatan, user, dan referensi struktur turunannya.</p>
+                <h3 className="modal-title admin-modal-title--danger" id={deleteUnitTitleId}>Delete Unit?</h3>
+                <p className="modal-subtitle" id={deleteUnitDescId}>Deleting this unit affects positions, users, and downstream structure references.</p>
               </div>
-              <button aria-label="Tutup" className="modal__close" onClick={() => setDeleteUnitId(null)} type="button">
+              <button aria-label="Close" className="modal__close" onClick={() => setDeleteUnitId(null)} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
             <div className="admin-confirm-body">
               <div className="modal-helper-note modal-helper-note--danger">
-                Tindakan ini tidak dapat diurungkan. Semua jabatan dan pengguna yang terhubung ke unit ini akan kehilangan referensi unit.
+                This action cannot be undone. All positions and users linked to this unit will lose their unit reference.
               </div>
               <div className="admin-modal-actions">
-                <button className="btn btn--ghost" onClick={() => setDeleteUnitId(null)} type="button">Batal</button>
+                <button className="btn btn--ghost" onClick={() => setDeleteUnitId(null)} type="button">Cancel</button>
                 <button className="settings-danger-btn" disabled={deleteUnitSaving} onClick={() => void doDeleteUnit()} type="button">
-                  {deleteUnitSaving ? 'Menghapus…' : 'Hapus'}
+                  {deleteUnitSaving ? 'Deleting…' : 'Delete'}
                 </button>
               </div>
             </div>

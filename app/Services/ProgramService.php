@@ -284,7 +284,7 @@ class ProgramService
             ->exists();
 
         if (!$hit) {
-            abort(403, 'Tidak memiliki akses ke program ini');
+            abort(403, 'You do not have access to this program');
         }
     }
 

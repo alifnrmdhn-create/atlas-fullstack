@@ -79,24 +79,24 @@ export default function ScorecardView() {
           <header className="perf__header">
             <div className="perf__header-left">
               <h1 className="perf__title">Scorecard</h1>
-              <span className="perf__subtitle">Ranking direktorat &amp; divisi</span>
+              <span className="perf__subtitle">Directorate &amp; division ranking</span>
             </div>
             <div className="perf__header-summary">
               <span className="perf__header-stat">
                 <strong data-tone={scoreTone(avgScore)} data-num>{avgScore.toFixed(1)}%</strong>
-                <span>rata-rata</span>
+                <span>average</span>
               </span>
               <span className="perf__header-divider" aria-hidden />
               <span className="perf__header-stat">
                 <strong data-num>{totalDirektorat}</strong>
-                <span>direktorat</span>
+                <span>directorates</span>
               </span>
               {belowTargetCount > 0 && (
                 <>
                   <span className="perf__header-divider" aria-hidden />
                   <span className="perf__header-stat">
                     <strong data-tone="red" data-num>{belowTargetCount}</strong>
-                    <span>di bawah target</span>
+                    <span>below target</span>
                   </span>
                 </>
               )}
@@ -111,8 +111,8 @@ export default function ScorecardView() {
 
           {direktoratGrid.length === 0 && (
             <Card padding="lg" className="perf__section perf-empty">
-              <div className="perf-empty__title">Belum ada data scorecard</div>
-              <div>Skor direktorat dan divisi belum tersedia untuk periode {periodeLabel}.</div>
+              <div className="perf-empty__title">No scorecard data yet</div>
+              <div>Directorate and division scores are not available for the {periodeLabel} period.</div>
             </Card>
           )}
 
@@ -121,7 +121,7 @@ export default function ScorecardView() {
           <div className="perf__cols-2 perf__section">
             <Card padding="md">
               <div className="perf-card-head">
-                <h2 className="perf-card-head__title">Top 3 Direktorat</h2>
+                <h2 className="perf-card-head__title">Top 3 Directorates</h2>
                 <Pill tone="neutral" variant="soft">{periodeLabel}</Pill>
               </div>
               <div className="perf-rank-bar-list">
@@ -133,7 +133,7 @@ export default function ScorecardView() {
 
             <Card padding="md">
               <div className="perf-card-head">
-                <h2 className="perf-card-head__title">Top 3 Divisi</h2>
+                <h2 className="perf-card-head__title">Top 3 Divisions</h2>
                 <Pill tone="neutral" variant="soft">{periodeLabel}</Pill>
               </div>
               <div className="perf-rank-bar-list">
@@ -153,9 +153,9 @@ export default function ScorecardView() {
           {trend && trend.series.length > 0 && (
             <section className="perf__section">
               <div className="perf-section-head">
-                <span className="perf__section-label">Tren Skor KPI</span>
+                <span className="perf__section-label">KPI Score Trend</span>
                 <span className="perf-section-meta">
-                  {trend.periodes[0]?.label} – {trend.periodes[trend.periodes.length - 1]?.label} · per direktorat
+                  {trend.periodes[0]?.label} – {trend.periodes[trend.periodes.length - 1]?.label} · by directorate
                 </span>
               </div>
               <Card padding="md">
@@ -168,8 +168,8 @@ export default function ScorecardView() {
           {direktoratGrid.length > 0 && (
           <section className="perf__section">
             <div className="perf-section-head">
-              <span className="perf__section-label">Semua Direktorat</span>
-              <span className="perf-section-meta">{totalDirektorat} direktorat · ranking turun ke detail</span>
+              <span className="perf__section-label">All Directorates</span>
+              <span className="perf-section-meta">{totalDirektorat} directorates · drill down for details</span>
             </div>
             <div className="perf-direktorat-grid">
               {direktoratGrid.map(d => {
@@ -224,18 +224,18 @@ export default function ScorecardView() {
           <div className="perf-legend" role="note">
             <span className="perf-legend__item">
               <span className="perf-legend__dot" data-tone="red" />
-              &lt; 80% di bawah target
+              &lt; 80% below target
             </span>
             <span className="perf-legend__item">
               <span className="perf-legend__dot" data-tone="amber" />
-              80–99% perlu perhatian
+              80–99% needs attention
             </span>
             <span className="perf-legend__item">
               <span className="perf-legend__dot" data-tone="green" />
-              ≥ 100% memenuhi target
+              ≥ 100% meets target
             </span>
             <span className="perf-legend__item perf-legend__item--muted">
-              Skala maksimum 110%
+              Maximum scale 110%
             </span>
           </div>
         </div>

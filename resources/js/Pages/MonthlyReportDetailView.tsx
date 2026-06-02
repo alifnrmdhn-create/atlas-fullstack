@@ -189,7 +189,7 @@ function OpsKategoryCard({ kategori, items }: { kategori: string; items: Metric[
         })}
         {!expanded && items.length > 4 && (
           <button type="button" className="mrd-ops-more" onClick={() => setExpanded(true)}>
-            +{items.length - 4} indikator lainnya
+            +{items.length - 4} more indicators
           </button>
         )}
       </div>
@@ -200,19 +200,19 @@ function OpsKategoryCard({ kategori, items }: { kategori: string; items: Metric[
 // ── Full data table ───────────────────────────────────────────────────────────
 
 function FullDataTable({ metrics, month, year }: { metrics: Metric[]; month: number; year: number }) {
-  const categories = [...new Set(metrics.map(m => m.kategori || 'Lainnya'))]
+  const categories = [...new Set(metrics.map(m => m.kategori || 'Other'))]
   return (
     <div className="mrd-full-table">
       {categories.map(kat => {
-        const items = metrics.filter(m => (m.kategori || 'Lainnya') === kat)
+        const items = metrics.filter(m => (m.kategori || 'Other') === kat)
         return (
           <div key={kat} className="mrd-full-table__group">
             <div className="mrd-full-table__group-head">{kat}</div>
             <table className="mrd-table">
               <thead>
                 <tr>
-                  <th>Uraian</th>
-                  <th>Satuan</th>
+                  <th>Description</th>
+                  <th>Unit</th>
                   <th className="mrd-table__th--right">{prevYrLabel(year)}</th>
                   <th className="mrd-table__th--right">RKAP</th>
                   <th className="mrd-table__th--right">{periodLabel(month, year)}</th>
@@ -327,7 +327,7 @@ function KeuanganDashboard({ metrics, report }: { metrics: Metric[]; report: Rep
       <div className="mrd-section-header">
         <div className="mrd-section-title">
           <span className="mrd-section-icon">💰</span>
-          <span>Kinerja Keuangan</span>
+          <span>Financial Performance</span>
         </div>
         <div className="mrd-section-meta">
           <OnTrackPill metrics={allFinMetrics} />
@@ -350,10 +350,10 @@ function KeuanganDashboard({ metrics, report }: { metrics: Metric[]; report: Rep
           <div className="mrd-col-main">
             <div className="mrd-chart-box">
               <div className="mrd-chart-box-header">
-                <span className="mrd-chart-lbl">Laba Rugi — Realisasi vs RKAP</span>
+                <span className="mrd-chart-lbl">Laba Rugi — Actual vs RKAP</span>
                 {bulletData.length > 0
-                  ? <span className="mrd-chart-unit">% pencapaian RKAP</span>
-                  : <span className="mrd-chart-unit">Rp Miliar</span>
+                  ? <span className="mrd-chart-unit">% of RKAP achieved</span>
+                  : <span className="mrd-chart-unit">Rp Billion</span>
                 }
               </div>
 
@@ -394,7 +394,7 @@ function KeuanganDashboard({ metrics, report }: { metrics: Metric[]; report: Rep
                         }}
                         formatter={((v: number, _name: string, props: { payload: typeof bulletData[0] }) => {
                           const d = props.payload
-                          return [`${Math.round(v)}% RKAP · ${d.realLabel}`, 'Realisasi']
+                          return [`${Math.round(v)}% RKAP · ${d.realLabel}`, 'Actual']
                         }) as never}
                       />
                       <Bar dataKey="pct" radius={[0, 5, 5, 0]} barSize={16} minPointSize={3}>
@@ -407,7 +407,7 @@ function KeuanganDashboard({ metrics, report }: { metrics: Metric[]; report: Rep
                     <span className="mrd-chart-legend__item"><span className="mrd-legend-dot mrd-legend-dot--green" />≥ 100% RKAP</span>
                     <span className="mrd-chart-legend__item"><span className="mrd-legend-dot mrd-legend-dot--yellow" />85–99%</span>
                     <span className="mrd-chart-legend__item"><span className="mrd-legend-dot mrd-legend-dot--red" />{'< 85%'}</span>
-                    <span className="mrd-chart-legend__note">Garis putus-putus = target 100%</span>
+                    <span className="mrd-chart-legend__note">Dashed line = 100% target</span>
                   </div>
                 </>
               ) : (
@@ -425,7 +425,7 @@ function KeuanganDashboard({ metrics, report }: { metrics: Metric[]; report: Rep
                         background: 'var(--panel)',
                         color: 'var(--text-strong)',
                       }}
-                      formatter={((v: number) => [`Rp ${v.toLocaleString('id-ID')} M`, 'Realisasi']) as never}
+                      formatter={((v: number) => [`Rp ${v.toLocaleString('id-ID')} B`, 'Actual']) as never}
                     />
                     <Bar dataKey="Realisasi" radius={[0, 5, 5, 0]}>
                       {absData.map((d, i) => <Cell key={i} fill={d.color} />)}
@@ -482,7 +482,7 @@ function KeuanganDashboard({ metrics, report }: { metrics: Metric[]; report: Rep
       })}
 
       <button className="mrd-table-toggle" onClick={() => setShowTable(s => !s)}>
-        {showTable ? '▲ Sembunyikan Tabel' : '▼ Lihat Data Lengkap Keuangan'}
+        {showTable ? '▲ Hide Table' : '▼ View Full Financial Data'}
       </button>
       {showTable && <FullDataTable metrics={metrics} month={report.month} year={report.year} />}
     </section>
@@ -493,14 +493,14 @@ function KeuanganDashboard({ metrics, report }: { metrics: Metric[]; report: Rep
 
 function OperasionalDashboard({ metrics, report }: { metrics: Metric[]; report: Report }) {
   const [showTable, setShowTable] = useState(false)
-  const categories = [...new Set(metrics.map(m => m.kategori || 'Lainnya'))]
+  const categories = [...new Set(metrics.map(m => m.kategori || 'Other'))]
 
   return (
     <section id="section-operasional" className="mrd-section">
       <div className="mrd-section-header">
         <div className="mrd-section-title">
           <span className="mrd-section-icon">⚙️</span>
-          <span>Kinerja Operasional</span>
+          <span>Operational Performance</span>
         </div>
         <div className="mrd-section-meta">
           <OnTrackPill metrics={metrics} />
@@ -510,11 +510,11 @@ function OperasionalDashboard({ metrics, report }: { metrics: Metric[]; report: 
       <div className="mrd-ops-grid">
         {categories.map(kat => (
           <OpsKategoryCard key={kat} kategori={kat}
-            items={metrics.filter(m => (m.kategori || 'Lainnya') === kat)} />
+            items={metrics.filter(m => (m.kategori || 'Other') === kat)} />
         ))}
       </div>
       <button className="mrd-table-toggle" onClick={() => setShowTable(s => !s)}>
-        {showTable ? '▲ Sembunyikan Tabel' : '▼ Lihat Data Lengkap Operasional'}
+        {showTable ? '▲ Hide Table' : '▼ View Full Operational Data'}
       </button>
       {showTable && <FullDataTable metrics={metrics} month={report.month} year={report.year} />}
     </section>
@@ -531,7 +531,7 @@ function NarrativeSection({ report }: { report: Report }) {
     <section id="section-narasi" className={`mrd-narrative ${open ? 'open' : ''}`}>
       <button className="mrd-narrative__toggle" onClick={() => setOpen(o => !o)}>
         <span className="mrd-narrative__icon">📝</span>
-        <span className="mrd-narrative__title">Ringkasan Eksekutif &amp; Highlights</span>
+        <span className="mrd-narrative__title">Executive Summary &amp; Highlights</span>
         <span className="mrd-narrative__chevron">{open ? '▲' : '▼'}</span>
       </button>
       {!open && (
@@ -541,7 +541,7 @@ function NarrativeSection({ report }: { report: Report }) {
         <div className="mrd-narrative__body">
           {report.narrativeSummary && (
             <div className="mrd-narrative__block">
-              <span className="mrd-slabel">Ringkasan Eksekutif</span>
+              <span className="mrd-slabel">Executive Summary</span>
               <p className="mrd-narrative__text">{report.narrativeSummary}</p>
             </div>
           )}
@@ -568,11 +568,11 @@ function AuditTrail({ report }: { report: Report }) {
   return (
     <section className="mrd-audit">
       <button className="mrd-audit__toggle" onClick={() => setOpen(o => !o)}>
-        <span>Riwayat &amp; File</span>
+        <span>History &amp; Files</span>
         <span className="mrd-audit__meta">
-          {fileCount > 0 && `${fileCount} file`}
+          {fileCount > 0 && `${fileCount} file${fileCount > 1 ? 's' : ''}`}
           {fileCount > 0 && approvalCount > 0 && ' · '}
-          {approvalCount > 0 && `${approvalCount} approval`}
+          {approvalCount > 0 && `${approvalCount} approval${approvalCount > 1 ? 's' : ''}`}
         </span>
         <span className="mrd-audit__chevron">{open ? '▲' : '▼'}</span>
       </button>
@@ -580,7 +580,7 @@ function AuditTrail({ report }: { report: Report }) {
         <div className="mrd-audit__body">
           {fileCount > 0 && (
             <div>
-              <span className="mrd-slabel">File Terupload</span>
+              <span className="mrd-slabel">Uploaded Files</span>
               <div className="mrd-files">
                 {report.files!.map(f => (
                   <div className="mrd-file-row" key={f.id}>
@@ -596,7 +596,7 @@ function AuditTrail({ report }: { report: Report }) {
           )}
           {approvalCount > 0 && (
             <div className={`mrd-audit__approval-block${fileCount > 0 ? ' mrd-audit__approval-block--offset' : ''}`}>
-              <span className="mrd-slabel">Riwayat Approval</span>
+              <span className="mrd-slabel">Approval History</span>
               <div className="mrd-timeline">
                 {report.approvals!.map(a => {
                   const ap = APPROVAL_ACTION[a.action]
@@ -655,7 +655,7 @@ function LinkedProgramsSection({
       await api.put(`/monthly-reports/${report.id}`, { linkedProgramIds: selected })
       setEditing(false)
       onSaved()
-    } catch (e) { alert(e instanceof Error ? e.message : 'Gagal') }
+    } catch (e) { alert(e instanceof Error ? e.message : 'Failed') }
     finally { setBusy(false) }
   }
 
@@ -665,8 +665,8 @@ function LinkedProgramsSection({
   return (
     <section className="mrd-audit mrd-linked-programs">
       <button className="mrd-audit__toggle" onClick={() => setOpen(o => !o)}>
-        <span>Program Terkait</span>
-        <span className="mrd-audit__meta">{linked.length > 0 ? `${linked.length} program` : 'Belum ada'}</span>
+        <span>Linked Programs</span>
+        <span className="mrd-audit__meta">{linked.length > 0 ? `${linked.length} program${linked.length > 1 ? 's' : ''}` : 'None yet'}</span>
         <span className="mrd-audit__chevron">{open ? '▲' : '▼'}</span>
       </button>
       {open && (
@@ -674,7 +674,7 @@ function LinkedProgramsSection({
           {!editing && (
             <>
               {linked.length === 0 ? (
-                <span className="mrd-linked-programs__empty">Belum ada program yang dikaitkan dengan laporan ini.</span>
+                <span className="mrd-linked-programs__empty">No programs are linked to this report yet.</span>
               ) : (
                 <div className="mrd-linked-programs__chips">
                   {linked.map(p => (
@@ -689,7 +689,7 @@ function LinkedProgramsSection({
                   className="mrd-linked-programs__edit-btn"
                   onClick={() => { setSelected(linked.map(p => p.id)); setSearch(''); setEditing(true) }}
                 >
-                  ✏ Ubah tautan program
+                  ✏ Edit linked programs
                 </button>
               )}
             </>
@@ -698,7 +698,7 @@ function LinkedProgramsSection({
             <div className="mrd-linked-programs__editor">
               <input
                 className="form-input mrd-linked-programs__search"
-                placeholder="Cari program…"
+                placeholder="Search programs…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 autoFocus
@@ -710,12 +710,12 @@ function LinkedProgramsSection({
                     <span><strong>{p.code}</strong> — {p.name}</span>
                   </label>
                 ))}
-                {results.length === 0 && <span className="mrd-linked-programs__no-results">Tidak ada hasil</span>}
+                {results.length === 0 && <span className="mrd-linked-programs__no-results">No results</span>}
               </div>
               <div className="mrd-linked-programs__actions">
-                <button className="btn mrd-linked-programs__action" onClick={() => setEditing(false)}>Batal</button>
+                <button className="btn mrd-linked-programs__action" onClick={() => setEditing(false)}>Cancel</button>
                 <button className="btn btn--primary mrd-linked-programs__action" disabled={busy} onClick={() => void save()}>
-                  {busy ? 'Menyimpan…' : 'Simpan'}
+                  {busy ? 'Saving…' : 'Save'}
                 </button>
               </div>
             </div>
@@ -744,7 +744,7 @@ function Modal({ title, subtitle, onClose, children, footer, isDirty = false, bu
   const dialogRef = useDialogFocus<HTMLDivElement>(true)
   const safeClose = () => {
     if (busy) return
-    if (isDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (isDirty && !window.confirm('Discard unsaved changes?')) return
     onClose()
   }
   useEscKey(safeClose, true)
@@ -760,7 +760,7 @@ function Modal({ title, subtitle, onClose, children, footer, isDirty = false, bu
             <span className="modal-title" id={titleId}>{title}</span>
             {subtitle ? <p className="modal-subtitle" id={subtitleId}>{subtitle}</p> : null}
           </div>
-          <button aria-label="Tutup" className="modal__close" onClick={safeClose} type="button">
+          <button aria-label="Close" className="modal__close" onClick={safeClose} type="button">
             <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
           </button>
         </div>
@@ -807,7 +807,7 @@ export function MonthlyReportDetailView() {
         setReport(r.data)
         setNarrativeForm({ narrativeSummary: r.data.narrativeSummary ?? '', highlights: r.data.highlights ?? '' })
       })
-      .catch(e => setError(e instanceof Error ? e.message : 'Gagal memuat laporan'))
+      .catch(e => setError(e instanceof Error ? e.message : 'Failed to load report'))
       .finally(() => setLoading(false))
   }, [reportId])
 
@@ -881,15 +881,15 @@ export function MonthlyReportDetailView() {
       const fd = new FormData(); fd.append('file', file)
       await api.upload<{ data: Report }>(`/monthly-reports/${report.id}/upload`, fd)
       setModal(null); loadReport()
-    } catch (e) { alert(e instanceof Error ? e.message : 'Upload gagal') }
+    } catch (e) { alert(e instanceof Error ? e.message : 'Upload failed') }
     finally { setUploading(false) }
   }
 
   async function doSubmit() {
-    if (!report || !confirm('Submit laporan ini untuk direview?')) return
+    if (!report || !confirm('Submit this report for review?')) return
     setBusy(true)
     try { await api.post(`/monthly-reports/${report.id}/submit`, {}); loadReport() }
-    catch (e) { alert(e instanceof Error ? e.message : 'Gagal') }
+    catch (e) { alert(e instanceof Error ? e.message : 'Failed') }
     finally { setBusy(false) }
   }
 
@@ -899,7 +899,7 @@ export function MonthlyReportDetailView() {
     try {
       await api.post(`/monthly-reports/${report.id}/approve`, approveForm)
       setModal(null); setApproveForm({ action: 'APPROVED', note: '' }); loadReport()
-    } catch (e) { alert(e instanceof Error ? e.message : 'Gagal') }
+    } catch (e) { alert(e instanceof Error ? e.message : 'Failed') }
     finally { setBusy(false) }
   }
 
@@ -907,7 +907,7 @@ export function MonthlyReportDetailView() {
     if (!report) return
     setBusy(true)
     try { await api.put(`/monthly-reports/${report.id}`, narrativeForm); setModal(null); loadReport() }
-    catch (e) { alert(e instanceof Error ? e.message : 'Gagal') }
+    catch (e) { alert(e instanceof Error ? e.message : 'Failed') }
     finally { setBusy(false) }
   }
 
@@ -932,12 +932,12 @@ export function MonthlyReportDetailView() {
     const lines: string[] = []
     autoDraftData.forEach(p => {
       const taskLine = p.totalTasks > 0
-        ? `${p.completedTasks}/${p.totalTasks} task selesai (${Math.round(p.completedTasks / p.totalTasks * 100)}%)`
-        : 'Belum ada task'
-      const blockerLine = p.activeBlockers > 0 ? `, ${p.activeBlockers} blocker aktif` : ''
+        ? `${p.completedTasks}/${p.totalTasks} tasks completed (${Math.round(p.completedTasks / p.totalTasks * 100)}%)`
+        : 'No tasks yet'
+      const blockerLine = p.activeBlockers > 0 ? `, ${p.activeBlockers} active blocker${p.activeBlockers > 1 ? 's' : ''}` : ''
       lines.push(`[${p.code}] ${p.name}: ${p.progressPercent}% progress, ${p.healthLabel} — ${taskLine}${blockerLine}.`)
       if (p.latestLog?.narrative) {
-        lines.push(`  Update terakhir (${p.latestLog.period}): ${p.latestLog.narrative}`)
+        lines.push(`  Latest update (${p.latestLog.period}): ${p.latestLog.narrative}`)
       }
     })
 
@@ -945,10 +945,10 @@ export function MonthlyReportDetailView() {
     const highlightLines: string[] = []
     autoDraftData.forEach(p => {
       if (p.latestLog?.kendala) {
-        highlightLines.push(`[${p.code}] Kendala: ${p.latestLog.kendala}`)
+        highlightLines.push(`[${p.code}] Issue: ${p.latestLog.kendala}`)
       }
       if (p.latestLog?.dukunganDibutuhkan) {
-        highlightLines.push(`[${p.code}] Dukungan: ${p.latestLog.dukunganDibutuhkan}`)
+        highlightLines.push(`[${p.code}] Support needed: ${p.latestLog.dukunganDibutuhkan}`)
       }
     })
 
@@ -969,15 +969,15 @@ export function MonthlyReportDetailView() {
   if (loading) return (
     <div className="mrd-state">
       <div className="mrd-state__spinner" />
-      <span className="mrd-state__copy">Memuat laporan…</span>
+      <span className="mrd-state__copy">Loading report…</span>
     </div>
   )
 
   if (error || !report) return (
     <div className="mrd-state">
       <span className="mrd-state__icon">⚠️</span>
-      <span className="mrd-state__copy mrd-state__copy--error">{error ?? 'Laporan tidak ditemukan'}</span>
-      <button className="mrd-back-btn" onClick={() => navigate('/laporan-bulanan')}>← Kembali ke daftar</button>
+      <span className="mrd-state__copy mrd-state__copy--error">{error ?? 'Report not found'}</span>
+      <button className="mrd-back-btn" onClick={() => navigate('/laporan-bulanan')}>← Back to list</button>
     </div>
   )
 
@@ -986,7 +986,7 @@ export function MonthlyReportDetailView() {
     if (riskLoading) return (
       <div className="mrd-state">
         <div className="mrd-state__spinner" />
-        <span className="mrd-state__copy">Memuat laporan risiko…</span>
+        <span className="mrd-state__copy">Loading risk report…</span>
       </div>
     )
     if (riskReport) return (
@@ -1002,8 +1002,8 @@ export function MonthlyReportDetailView() {
     return (
       <div className="mrd-state">
         <span className="mrd-state__icon">📋</span>
-        <span className="mrd-state__copy">Risk report DIMR untuk periode ini belum dibuat.</span>
-        <button className="mrd-back-btn" onClick={() => navigate('/laporan-bulanan')}>← Kembali</button>
+        <span className="mrd-state__copy">The DIMR risk report for this period has not been created yet.</span>
+        <button className="mrd-back-btn" onClick={() => navigate('/laporan-bulanan')}>← Back</button>
       </div>
     )
   }
@@ -1035,10 +1035,10 @@ export function MonthlyReportDetailView() {
           {report.status === 'DRAFT' && (
             <>
               <button className="mrd-btn" onClick={() => setModal('upload')}>↑ Upload Excel</button>
-              <button className="mrd-btn" onClick={() => setModal('narrative')}>✏ Narasi</button>
+              <button className="mrd-btn" onClick={() => setModal('narrative')}>✏ Narrative</button>
               {(report.linkedPrograms ?? []).length > 0 && (
                 <button className="mrd-btn" disabled={autoDraftLoading} onClick={() => void loadAutoDraft()}>
-                  {autoDraftLoading ? '⟳ Memuat…' : '⬇ Import Atlas'}
+                  {autoDraftLoading ? '⟳ Loading…' : '⬇ Import from Atlas'}
                 </button>
               )}
               {(finMetrics.length + opsMetrics.length) > 0 && (
@@ -1053,8 +1053,8 @@ export function MonthlyReportDetailView() {
               ✓ Review &amp; Approve
             </button>
           )}
-          <button className="mrd-btn" title="Cetak / Export PDF" onClick={() => window.print()}>
-            ⎙ Cetak
+          <button className="mrd-btn" title="Print / Export PDF" onClick={() => window.print()}>
+            ⎙ Print
           </button>
         </div>
       </div>
@@ -1067,14 +1067,14 @@ export function MonthlyReportDetailView() {
           <div className="mrd-cover__band" />
           <div className="mrd-cover__content">
             <div className="mrd-cover__left">
-              <div className="mrd-cover__eyebrow">Laporan Manajemen</div>
+              <div className="mrd-cover__eyebrow">Management Report</div>
               <div className="mrd-cover__period">{periodLabel(report.month, report.year)}</div>
               <div className="mrd-cover__unit">{report.unit.name}</div>
               <div className="mrd-cover__meta">
                 <span className={`mrd-badge ${st.cls}`}>{st.label}</span>
                 {report.submittedBy && (
                   <span className="mrd-cover__submitted">
-                    Diajukan oleh <strong>{report.submittedBy.name}</strong>
+                    Submitted by <strong>{report.submittedBy.name}</strong>
                     {report.submittedAt && (
                       <> · {new Date(report.submittedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</>
                     )}
@@ -1082,11 +1082,11 @@ export function MonthlyReportDetailView() {
                 )}
                 {lastApproval && lastApproval.action === 'APPROVED' && (
                   <span className="mrd-cover__approved-on">
-                    ✓ Disetujui {new Date(lastApproval.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    ✓ Approved {new Date(lastApproval.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </span>
                 )}
                 {(report._count?.metrics ?? 0) > 0 && (
-                  <span className="mrd-cover__count">{report._count!.metrics} indikator</span>
+                  <span className="mrd-cover__count">{report._count!.metrics} indicators</span>
                 )}
               </div>
             </div>
@@ -1094,9 +1094,9 @@ export function MonthlyReportDetailView() {
             {/* Approval stepper */}
             <div className="mrd-stepper">
               {([
-                { key: 'SUBMITTED', label: 'Diajukan',  done: ['SUBMITTED','REVIEWED','APPROVED'].includes(report.status) },
-                { key: 'REVIEWED',  label: 'Direview',  done: ['REVIEWED','APPROVED'].includes(report.status) },
-                { key: 'APPROVED',  label: 'Disetujui', done: report.status === 'APPROVED' },
+                { key: 'SUBMITTED', label: 'Submitted', done: ['SUBMITTED','REVIEWED','APPROVED'].includes(report.status) },
+                { key: 'REVIEWED',  label: 'Reviewed',  done: ['REVIEWED','APPROVED'].includes(report.status) },
+                { key: 'APPROVED',  label: 'Approved',  done: report.status === 'APPROVED' },
               ] as const).map((step, i) => (
                 <div className="mrd-stepper__step" key={step.key}>
                   {i > 0 && <div className={`mrd-stepper__line ${step.done ? 'done' : ''}`} />}
@@ -1123,21 +1123,21 @@ export function MonthlyReportDetailView() {
               <button
                 className={`mrd-jumpnav__btn ${activeSection === 'keuangan' ? 'active' : ''}`}
                 onClick={() => scrollTo('keuangan', 'keuangan')}>
-                💰 Keuangan
+                💰 Financial
               </button>
             )}
             {opsMetrics.length > 0 && (
               <button
                 className={`mrd-jumpnav__btn ${activeSection === 'operasional' ? 'active' : ''}`}
                 onClick={() => scrollTo('operasional', 'operasional')}>
-                ⚙️ Operasional
+                ⚙️ Operational
               </button>
             )}
             {hasNarasi && (
               <button
                 className={`mrd-jumpnav__btn ${activeSection === 'narasi' ? 'active' : ''}`}
                 onClick={() => scrollTo('narasi', 'narasi')}>
-                📝 Narasi
+                📝 Narrative
               </button>
             )}
           </div>
@@ -1147,7 +1147,7 @@ export function MonthlyReportDetailView() {
         {finMetrics.length === 0 && opsMetrics.length === 0 && (
           <div className="mrd-empty">
             <span className="mrd-empty__icon">📂</span>
-            <span>Belum ada data — upload file Excel untuk mengisi laporan ini</span>
+            <span>No data yet — upload an Excel file to populate this report</span>
             <button className="mrd-btn primary" onClick={() => setModal('upload')}>↑ Upload Excel</button>
           </div>
         )}
@@ -1174,25 +1174,25 @@ export function MonthlyReportDetailView() {
       {/* ── Modal: Upload ── */}
       {modal === 'upload' && (
         <Modal
-          title="Upload Data Excel"
-          subtitle="Perbarui isi laporan detail ini dengan import indikator dari template Excel yang sesuai."
+          title="Upload Excel Data"
+          subtitle="Update this report's contents by importing indicators from the matching Excel template."
           onClose={() => setModal(null)}
           busy={uploading}
         >
           <section className="modal-section modal-section--soft">
             <div className="modal-section__intro">
-              <h4>Template file</h4>
-              <p>Gunakan susunan kolom yang sama agar data keuangan dan operasional bisa dipetakan dengan benar.</p>
+              <h4>File template</h4>
+              <p>Use the same column layout so financial and operational data can be mapped correctly.</p>
             </div>
             <div className="mrd-upload-template">
-              <div className="mrd-upload-template__title">Format Template Excel — 7 Kolom</div>
+              <div className="mrd-upload-template__title">Excel Template Format — 7 Columns</div>
               <div className="mrd-upload-template__cols">
-                {['A: Section','B: Kategori','C: Label','D: Satuan','E: RKAP','F: Realisasi','G: Tahun Lalu'].map(c => (
+                {['A: Section','B: Category','C: Label','D: Unit','E: RKAP','F: Actual','G: Prior Year'].map(c => (
                   <span className="mrd-upload-template__col" key={c}>{c}</span>
                 ))}
               </div>
               <div className="mrd-upload-template__note">
-                Section: OPERASIONAL atau KEUANGAN. Baris 1 adalah header dan akan dilewati.
+                Section: OPERASIONAL or KEUANGAN. Row 1 is the header and will be skipped.
               </div>
             </div>
           </section>
@@ -1204,8 +1204,8 @@ export function MonthlyReportDetailView() {
               onDragOver={e => e.preventDefault()}
               onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) void doUpload(f) }}>
               <span className="mrd-upload-drop__icon">{uploading ? '⏳' : '📂'}</span>
-              <span className="mrd-upload-drop__text">{uploading ? 'Mengupload…' : 'Klik atau drag file Excel ke sini'}</span>
-              <span className="mrd-upload-drop__sub">.xlsx atau .xls · Maks 10 MB</span>
+              <span className="mrd-upload-drop__text">{uploading ? 'Uploading…' : 'Click or drag an Excel file here'}</span>
+              <span className="mrd-upload-drop__sub">.xlsx or .xls · Max 10 MB</span>
             </button>
           </section>
           <input ref={fileRef} className="mrd-file-input-hidden" type="file" accept=".xlsx,.xls"
@@ -1217,38 +1217,38 @@ export function MonthlyReportDetailView() {
       {modal === 'approve' && (
         <Modal
           title="Review & Approval"
-          subtitle="Pilih keputusan review dan tambahkan konteks singkat bila laporan perlu revisi atau penolakan."
+          subtitle="Choose a review decision and add brief context if the report needs revision or rejection."
           onClose={() => setModal(null)}
           busy={busy}
           isDirty={approveForm.action !== 'APPROVED' || approveForm.note !== ''}
           footer={(
             <>
-              <button className="btn" onClick={() => setModal(null)} type="button">Batal</button>
+              <button className="btn" onClick={() => setModal(null)} type="button">Cancel</button>
               <button className="btn btn--primary" disabled={busy} onClick={() => void doApprove()} type="button">
-                {busy ? 'Menyimpan…' : 'Konfirmasi'}
+                {busy ? 'Saving…' : 'Confirm'}
               </button>
             </>
           )}
         >
           <section className="modal-section">
             <div className="modal-section__intro">
-              <h4>Keputusan review</h4>
-              <p>Pilih hasil review final lalu tambahkan catatan agar pengaju memahami tindak lanjut berikutnya.</p>
+              <h4>Review decision</h4>
+              <p>Select the final review outcome, then add a note so the submitter understands the next steps.</p>
             </div>
             <div className="form-group">
-              <label className="form-label">Keputusan</label>
+              <label className="form-label">Decision</label>
               <select className="form-select" value={approveForm.action}
                 onChange={e => setApproveForm(f => ({ ...f, action: e.target.value }))}>
-                <option value="APPROVED">Setujui</option>
-                <option value="REVISION_REQUESTED">Minta Revisi</option>
-                <option value="REJECTED">Tolak</option>
+                <option value="APPROVED">Approve</option>
+                <option value="REVISION_REQUESTED">Request Revision</option>
+                <option value="REJECTED">Reject</option>
               </select>
             </div>
             <div className="form-group mrd-form-group--spaced">
-              <label className="form-label">Catatan (opsional)</label>
+              <label className="form-label">Note (optional)</label>
               <textarea className="form-textarea" rows={3} value={approveForm.note}
                 onChange={e => setApproveForm(f => ({ ...f, note: e.target.value }))}
-                placeholder="Tambahkan catatan untuk pengaju…" />
+                placeholder="Add a note for the submitter…" />
             </div>
           </section>
         </Modal>
@@ -1257,8 +1257,8 @@ export function MonthlyReportDetailView() {
       {/* ── Modal: Narrative ── */}
       {modal === 'narrative' && (
         <Modal
-          title="Edit Ringkasan Eksekutif"
-          subtitle="Rapikan narasi utama laporan agar pembaca eksekutif bisa memahami capaian dan isu penting dengan cepat."
+          title="Edit Executive Summary"
+          subtitle="Refine the report's main narrative so executive readers can quickly grasp the achievements and key issues."
           onClose={() => setModal(null)}
           busy={busy}
           isDirty={
@@ -1269,29 +1269,29 @@ export function MonthlyReportDetailView() {
           }
           footer={(
             <>
-              <button className="btn" onClick={() => setModal(null)} type="button">Batal</button>
+              <button className="btn" onClick={() => setModal(null)} type="button">Cancel</button>
               <button className="btn btn--primary" disabled={busy} onClick={() => void doSaveNarrative()} type="button">
-                {busy ? 'Menyimpan…' : 'Simpan'}
+                {busy ? 'Saving…' : 'Save'}
               </button>
             </>
           )}
         >
           <section className="modal-section">
             <div className="modal-section__intro">
-              <h4>Narasi eksekutif</h4>
-              <p>Fokus pada gambaran besar kinerja bulanan, lalu sorot capaian dan isu yang paling penting.</p>
+              <h4>Executive narrative</h4>
+              <p>Focus on the big picture of monthly performance, then highlight the most important achievements and issues.</p>
             </div>
             <div className="form-group">
-              <label className="form-label">Ringkasan Eksekutif</label>
+              <label className="form-label">Executive Summary</label>
               <textarea className="form-textarea" rows={4} value={narrativeForm.narrativeSummary}
                 onChange={e => setNarrativeForm(f => ({ ...f, narrativeSummary: e.target.value }))}
-                placeholder="Tuliskan ringkasan kinerja bulan ini…" />
+                placeholder="Write a summary of this month's performance…" />
             </div>
             <div className="form-group mrd-form-group--spaced">
               <label className="form-label">Highlights</label>
               <textarea className="form-textarea" rows={3} value={narrativeForm.highlights}
                 onChange={e => setNarrativeForm(f => ({ ...f, highlights: e.target.value }))}
-                placeholder="Capaian dan catatan penting…" />
+                placeholder="Key achievements and notes…" />
             </div>
           </section>
         </Modal>
@@ -1299,23 +1299,23 @@ export function MonthlyReportDetailView() {
 
       {modal === 'auto-draft' && autoDraftData && (
         <Modal
-          title="Preview Import dari Atlas"
+          title="Preview Import from Atlas"
           onClose={() => setModal(null)}
           busy={busy}
           footer={
             <>
-              <button className="btn" onClick={() => setModal(null)} type="button">Batal</button>
+              <button className="btn" onClick={() => setModal(null)} type="button">Cancel</button>
               <button className="btn btn--primary" onClick={applyAutoDraft} type="button">
-                Gunakan sebagai Draft Narasi
+                Use as Narrative Draft
               </button>
             </>
           }
         >
           {autoDraftData.length === 0 ? (
-            <p className="mrd-auto-draft__empty">Tidak ada data program yang bisa diimport. Pastikan program sudah dikaitkan ke laporan ini.</p>
+            <p className="mrd-auto-draft__empty">No program data available to import. Make sure programs are linked to this report.</p>
           ) : (
             <div className="mrd-auto-draft">
-              <p className="mrd-auto-draft__intro">Data berikut akan digunakan sebagai draft narasi laporan. Anda masih bisa mengedit sebelum menyimpan.</p>
+              <p className="mrd-auto-draft__intro">The following data will be used as the report's narrative draft. You can still edit it before saving.</p>
               {autoDraftData.map(p => (
                 <div key={p.programId} className="mrd-auto-draft__card">
                   <div className="mrd-auto-draft__card-header">
@@ -1327,14 +1327,14 @@ export function MonthlyReportDetailView() {
                     <span className="mrd-auto-draft__pct">{p.progressPercent}%</span>
                   </div>
                   <div className="mrd-auto-draft__stats">
-                    <span>Task: {p.completedTasks}/{p.totalTasks} selesai</span>
-                    {p.activeBlockers > 0 && <span className="mrd-auto-draft__blocker">{p.activeBlockers} blocker aktif</span>}
+                    <span>Tasks: {p.completedTasks}/{p.totalTasks} completed</span>
+                    {p.activeBlockers > 0 && <span className="mrd-auto-draft__blocker">{p.activeBlockers} active blocker{p.activeBlockers > 1 ? 's' : ''}</span>}
                   </div>
                   {p.latestLog && (
                     <div className="mrd-auto-draft__log">
                       <span className="mrd-auto-draft__log-period">{p.latestLog.period}</span>
                       <p className="mrd-auto-draft__log-text">{p.latestLog.narrative}</p>
-                      {p.latestLog.kendala && <p className="mrd-auto-draft__kendala"><strong>Kendala:</strong> {p.latestLog.kendala}</p>}
+                      {p.latestLog.kendala && <p className="mrd-auto-draft__kendala"><strong>Issue:</strong> {p.latestLog.kendala}</p>}
                     </div>
                   )}
                   {p.kpis.length > 0 && (

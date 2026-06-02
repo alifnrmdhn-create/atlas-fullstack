@@ -75,16 +75,16 @@ function FieldRow({
     let parsed: number | string = draft
     if (def.type === 'int') {
       const n = parseInt(draft, 10)
-      if (isNaN(n)) { setError('Harus angka bulat'); return }
+      if (isNaN(n)) { setError('Must be a whole number'); return }
       parsed = n
     } else if (def.type === 'float') {
       const n = parseFloat(draft)
-      if (isNaN(n)) { setError('Harus angka'); return }
+      if (isNaN(n)) { setError('Must be a number'); return }
       parsed = n
     }
     setSaving(true)
     try { await onSave(parsed) }
-    catch (e) { setError((e as Error).message || 'Gagal menyimpan') }
+    catch (e) { setError((e as Error).message || 'Failed to save') }
     finally { setSaving(false) }
   }
 
@@ -95,7 +95,7 @@ function FieldRow({
       await onReset()
       setDraft(formatValue(defaultValue))
     } catch (e) {
-      setError((e as Error).message || 'Gagal reset')
+      setError((e as Error).message || 'Failed to reset')
     } finally {
       setSaving(false)
     }
@@ -106,7 +106,7 @@ function FieldRow({
       <div className="threshold-row__main">
         <label className="threshold-row__label">
           {def.label}
-          {isCustomized && <span className="threshold-row__customized" title="Custom override aktif">●</span>}
+          {isCustomized && <span className="threshold-row__customized" title="Custom override active">●</span>}
         </label>
         <span className="threshold-row__key">{fullKey}</span>
       </div>
@@ -136,7 +136,7 @@ function FieldRow({
             className="btn btn--ghost btn--sm"
             onClick={() => void handleReset()}
             disabled={saving}
-            title={`Reset ke default: ${formatValue(defaultValue)}`}
+            title={`Reset to default: ${formatValue(defaultValue)}`}
           >
             Reset
           </button>
@@ -178,15 +178,15 @@ export default function AdminThresholdsView() {
         <span className="perf-toolbar__title">Threshold Settings</span>
         <div className="perf-toolbar__sep" />
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          Konfigurasi dinamis perilaku sistem PDCA. Live — tanpa restart.
+          Dynamic configuration of PDCA system behavior. Live — no restart needed.
         </span>
       </div>
 
       <div className="thresholds-page">
         <div className="thresholds-banner">
-          <strong>⚠ Hati-hati</strong> — angka di sini mempengaruhi perilaku sistem yang dirasakan
-          semua user. Ubah satu setting pada satu waktu, observasi efek 1–2 hari, lalu adjust lagi
-          jika perlu. Cache TTL 60 detik — efek terlihat dalam 1 menit.
+          <strong>⚠ Caution</strong> — the values here affect system behavior experienced by
+          all users. Change one setting at a time, observe the effect for 1–2 days, then adjust
+          again if needed. Cache TTL is 60 seconds — effects appear within 1 minute.
         </div>
 
         {initial.schema.map(section => (

@@ -24,7 +24,7 @@ class EnsurePerformanceAccess
     public function handle(Request $request, Closure $next): Response
     {
         if (! self::allows($request->user())) {
-            abort(403, 'Akses Performance dibatasi untuk direktorat dengan data KPI.');
+            abort(403, 'Performance access is restricted to directorates with KPI data.');
         }
 
         return $next($request);

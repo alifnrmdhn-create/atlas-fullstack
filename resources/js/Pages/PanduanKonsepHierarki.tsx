@@ -26,14 +26,14 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
     <div className="panduan">
       <div className="panduan__inner phx-page ds-stagger" key="panduan-konsep">
         <button type="button" className="panduan__back" onClick={onBack}>
-          ← Kembali ke Pusat Bantuan
+          ← Back to Help Center
         </button>
 
         {/* ── Hero ──────────────────────────────────────────────── */}
         <header className="phx-hero">
           <span className="phx-hero-icon" aria-hidden="true">📚</span>
           <div>
-            <h1 className="phx-hero-title">Memahami Hierarki Kerja ATLAS</h1>
+            <h1 className="phx-hero-title">Understanding the ATLAS Work Hierarchy</h1>
             <p className="phx-hero-trail">
               <span className="phx-trail-item">Program</span>
               <span aria-hidden="true">→</span>
@@ -46,21 +46,21 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
               <span className="phx-trail-item phx-trail-item--muted">Subtask</span>
             </p>
             <p className="phx-hero-sub">
-              ATLAS pakai 4 level untuk struktur kerja. Kalau pertama kali pakai mungkin
-              terdengar ribet — tapi sekali Anda paham bedanya, semua jadi masuk akal.
-              Mari kita bedah satu per satu, dengan contoh nyata.
+              ATLAS uses these levels to structure work. It may sound complicated the first
+              time you see it — but once you understand the differences, it all clicks into
+              place. Let’s break it down one level at a time, with real examples.
             </p>
           </div>
         </header>
 
         {/* ── Visual tree ───────────────────────────────────────── */}
         <section className="phx-section">
-          <h2 className="phx-sec-title">📊 Visual Hierarki</h2>
+          <h2 className="phx-sec-title">📊 Visual Hierarchy</h2>
           <p className="phx-sec-sub">
-            Bayangkan kotak yang berisi kotak. Yang terbesar adalah Program; di dalamnya
-            ada Workstream (jalur kerja paralel); di dalam workstream ada Phase
-            (tahapan urutan); dan di dalam phase ada Task (pekerjaan konkret yang
-            ditugaskan ke orang). Subtask adalah checklist langkah dalam Task.
+            Picture boxes nested inside boxes. The largest is the Program; inside it are
+            Workstreams (parallel work tracks); inside a workstream are Phases (ordered
+            stages); and inside a phase are Tasks (concrete work assigned to a person). A
+            Subtask is a step-by-step checklist within a Task.
           </p>
 
           <div className="phx-tree">
@@ -69,8 +69,8 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
                 <span className="phx-node-icon" aria-hidden="true">🏛</span>
                 <div>
                   <span className="phx-node-tag">PROGRAM</span>
-                  <h3 className="phx-node-title">Audit Internal Tahun 2026</h3>
-                  <p className="phx-node-meta">PIC: KADIV Audit · Periode: Jan–Des 2026</p>
+                  <h3 className="phx-node-title">2026 Internal Audit</h3>
+                  <p className="phx-node-meta">PIC: KADIV Audit · Period: Jan–Dec 2026</p>
                 </div>
               </div>
 
@@ -79,8 +79,8 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
                   <span className="phx-node-icon" aria-hidden="true">📂</span>
                   <div>
                     <span className="phx-node-tag">WORKSTREAM A</span>
-                    <h4 className="phx-node-title">Audit Divisi Keuangan</h4>
-                    <p className="phx-node-meta">PIC: KASUBDIV Audit Keuangan · Mar–Apr</p>
+                    <h4 className="phx-node-title">Finance Division Audit</h4>
+                    <p className="phx-node-meta">PIC: KASUBDIV Finance Audit · Mar–Apr</p>
                   </div>
                 </div>
 
@@ -89,14 +89,14 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
                     <span className="phx-node-icon" aria-hidden="true">🪜</span>
                     <div>
                       <span className="phx-node-tag">PHASE 1</span>
-                      <h5 className="phx-node-title">Pengumpulan Dokumen</h5>
-                      <p className="phx-node-meta">1–15 Maret</p>
+                      <h5 className="phx-node-title">Document Collection</h5>
+                      <p className="phx-node-meta">1–15 March</p>
                     </div>
                   </div>
                   <ul className="phx-task-list">
-                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Kumpulkan laporan arus kas Q1 <em>· Pak Andi · 1–7 Mar</em></li>
-                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Kumpulkan neraca per divisi Q1 <em>· Bu Rina · 1–10 Mar</em></li>
-                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Email treasury minta data Januari <em>· Pak Andi · 1–3 Mar</em></li>
+                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Collect Q1 cash flow statements <em>· Andi · 1–7 Mar</em></li>
+                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Collect Q1 balance sheets by division <em>· Rina · 1–10 Mar</em></li>
+                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Email treasury for January data <em>· Andi · 1–3 Mar</em></li>
                   </ul>
                 </div>
 
@@ -105,13 +105,13 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
                     <span className="phx-node-icon" aria-hidden="true">🪜</span>
                     <div>
                       <span className="phx-node-tag">PHASE 2</span>
-                      <h5 className="phx-node-title">Analisis Temuan</h5>
-                      <p className="phx-node-meta">16–31 Maret</p>
+                      <h5 className="phx-node-title">Findings Analysis</h5>
+                      <p className="phx-node-meta">16–31 March</p>
                     </div>
                   </div>
                   <ul className="phx-task-list">
-                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Review variance arus kas vs anggaran <em>· Pak Andi</em></li>
-                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Compile temuan signifikan <em>· Bu Rina</em></li>
+                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Review cash flow variance vs budget <em>· Andi</em></li>
+                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Compile significant findings <em>· Rina</em></li>
                   </ul>
                 </div>
 
@@ -120,13 +120,13 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
                     <span className="phx-node-icon" aria-hidden="true">🪜</span>
                     <div>
                       <span className="phx-node-tag">PHASE 3</span>
-                      <h5 className="phx-node-title">Penyusunan Laporan</h5>
+                      <h5 className="phx-node-title">Report Drafting</h5>
                       <p className="phx-node-meta">1–15 April</p>
                     </div>
                   </div>
                   <ul className="phx-task-list">
-                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Draft laporan audit divisi keuangan</li>
-                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Review draft oleh KASUBDIV</li>
+                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Draft the finance division audit report</li>
+                    <li><span className="phx-task-icon" aria-hidden="true">●</span> Review the draft with the KASUBDIV</li>
                   </ul>
                 </div>
               </div>
@@ -136,11 +136,11 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
                   <span className="phx-node-icon" aria-hidden="true">📂</span>
                   <div>
                     <span className="phx-node-tag">WORKSTREAM B</span>
-                    <h4 className="phx-node-title">Audit Divisi Produksi</h4>
-                    <p className="phx-node-meta">PIC: KASUBDIV Audit Produksi · Apr–Mei (paralel dengan A)</p>
+                    <h4 className="phx-node-title">Production Division Audit</h4>
+                    <p className="phx-node-meta">PIC: KASUBDIV Production Audit · Apr–May (parallel with A)</p>
                   </div>
                 </div>
-                <p className="phx-node-collapsed">+ 3 Phase, 8 Task <span>(struktur mirip Workstream A)</span></p>
+                <p className="phx-node-collapsed">+ 3 Phases, 8 Tasks <span>(structure similar to Workstream A)</span></p>
               </div>
 
               <div className="phx-node phx-node--workstream">
@@ -148,72 +148,72 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
                   <span className="phx-node-icon" aria-hidden="true">📂</span>
                   <div>
                     <span className="phx-node-tag">WORKSTREAM C</span>
-                    <h4 className="phx-node-title">Konsolidasi & Pelaporan Final</h4>
-                    <p className="phx-node-meta">PIC: KADIV Audit · Mei–Jun (sesudah A & B)</p>
+                    <h4 className="phx-node-title">Consolidation & Final Reporting</h4>
+                    <p className="phx-node-meta">PIC: KADIV Audit · May–Jun (after A & B)</p>
                   </div>
                 </div>
-                <p className="phx-node-collapsed">+ 2 Phase, 5 Task</p>
+                <p className="phx-node-collapsed">+ 2 Phases, 5 Tasks</p>
               </div>
             </div>
           </div>
 
           <div className="phx-callout">
-            <strong>Bacaan dari diagram di atas:</strong> Satu Program ("Audit Internal 2026")
-            punya 3 Workstream paralel. Workstream A punya 3 Phase berurutan (Pengumpulan →
-            Analisis → Penyusunan). Phase 1 dari Workstream A punya 3 Task konkret yang
-            di-assign ke orang tertentu dengan tanggal.
+            <strong>How to read the diagram above:</strong> One Program ("2026 Internal Audit")
+            has 3 parallel Workstreams. Workstream A has 3 sequential Phases (Collection →
+            Analysis → Drafting). Phase 1 of Workstream A has 3 concrete Tasks assigned to
+            specific people with dates.
           </div>
         </section>
 
         {/* ── Comparison table ──────────────────────────────────── */}
         <section className="phx-section">
-          <h2 className="phx-sec-title">🆚 Tabel Perbandingan Cepat</h2>
+          <h2 className="phx-sec-title">🆚 Quick Comparison Table</h2>
           <div className="phx-table-wrap">
             <table className="phx-table">
               <thead>
                 <tr>
                   <th>Level</th>
-                  <th>Skala</th>
-                  <th>Durasi tipikal</th>
-                  <th>PIC tipikal</th>
-                  <th>Terlihat di</th>
+                  <th>Scale</th>
+                  <th>Typical duration</th>
+                  <th>Typical PIC</th>
+                  <th>Visible in</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td><strong>Program</strong></td>
-                  <td>Strategi</td>
-                  <td>6–12 bulan</td>
+                  <td>Strategy</td>
+                  <td>6–12 months</td>
                   <td>KADIV / KASUBDIV / ASISTEN</td>
-                  <td>Menu Programs</td>
+                  <td>Programs menu</td>
                 </tr>
                 <tr>
                   <td><strong>Workstream</strong></td>
-                  <td>Bidang / Tim</td>
-                  <td>2–4 bulan</td>
+                  <td>Area / Team</td>
+                  <td>2–4 months</td>
                   <td>KASUBDIV</td>
-                  <td>Tab Struktur (di detail Program)</td>
+                  <td>Structure tab (in the Program detail)</td>
                 </tr>
                 <tr>
                   <td><strong>Phase</strong></td>
-                  <td>Tahapan</td>
-                  <td>2–4 minggu</td>
-                  <td>Sama dengan owner Workstream</td>
-                  <td>Tab Struktur (nested)</td>
+                  <td>Stage</td>
+                  <td>2–4 weeks</td>
+                  <td>Same as the Workstream owner</td>
+                  <td>Structure tab (nested)</td>
                 </tr>
                 <tr>
                   <td><strong>Task</strong></td>
-                  <td>Eksekusi</td>
-                  <td>Hari – minggu</td>
+                  <td>Execution</td>
+                  <td>Days – weeks</td>
                   <td>OFFICER / ASISTEN</td>
-                  <td>Papan Kerja (Execution)</td>
+                  <td>Workboard (Execution)</td>
                 </tr>
                 <tr>
                   <td><strong>Subtask</strong></td>
-                  <td>Langkah kecil</td>
-                  <td>Jam</td>
-                  <td>(sama dengan task assignee)</td>
-                  <td>Hanya di detail Task</td>
+                  <td>Small step</td>
+                  <td>Hours</td>
+                  <td>(same as the task assignee)</td>
+                  <td>Only in the Task detail</td>
                 </tr>
               </tbody>
             </table>
@@ -222,34 +222,35 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
 
         {/* ── Per-level deep dive ──────────────────────────────── */}
         <section className="phx-section">
-          <h2 className="phx-sec-title">🔍 Penjelasan Per Level</h2>
+          <h2 className="phx-sec-title">🔍 Explained Level by Level</h2>
 
           {/* Program */}
           <article className="phx-level">
             <header className="phx-level-head">
               <span className="phx-level-num">1</span>
               <div>
-                <h3 className="phx-level-title">Program — Wadah Strategis</h3>
-                <p className="phx-level-tagline">Tujuan besar yang akan dikejar 6–12 bulan</p>
+                <h3 className="phx-level-title">Program — The Strategic Container</h3>
+                <p className="phx-level-tagline">A big goal to pursue over 6–12 months</p>
               </div>
             </header>
             <p className="phx-level-body">
-              <strong>Program adalah unit perencanaan terbesar di ATLAS.</strong> Satu Program
-              merepresentasikan satu inisiatif strategis dengan tujuan jelas, deadline besar
-              (biasanya akhir tahun fiskal), dan PIC tingkat manajerial. Program butuh
-              approval atasan sebelum aktif (kecuali yang dibuat KADIV).
+              <strong>A Program is the largest planning unit in ATLAS.</strong> One Program
+              represents a single strategic initiative with a clear goal, a major deadline
+              (usually the end of the fiscal year), and a managerial-level PIC. A Program
+              needs approval from a superior before it goes active (except those created by
+              a KADIV).
             </p>
             <div className="phx-example">
-              <span className="phx-example-label">Contoh:</span>
+              <span className="phx-example-label">Example:</span>
               <span className="phx-example-body">
-                <strong>Program: "Audit Internal Tahun 2026"</strong> — sasaran strategis:
-                memastikan kepatuhan SOP & temuan-temuan tahun lalu sudah di-closing,
-                deadline 31 Des 2026, PIC KADIV Audit.
+                <strong>Program: "2026 Internal Audit"</strong> — strategic objective:
+                ensure SOP compliance and that last year’s findings have been closed out;
+                deadline 31 Dec 2026; PIC KADIV Audit.
               </span>
             </div>
             <p className="phx-level-rule">
-              <strong>Aturan praktis:</strong> kalau pekerjaan Anda butuh lebih dari 1 orang,
-              lebih dari 1 bulan, dan punya deliverable besar — itu Program.
+              <strong>Rule of thumb:</strong> if the work needs more than one person, more
+              than one month, and has a major deliverable — it’s a Program.
             </p>
           </article>
 
@@ -258,33 +259,33 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
             <header className="phx-level-head">
               <span className="phx-level-num">2</span>
               <div>
-                <h3 className="phx-level-title">Workstream — Jalur Kerja Paralel</h3>
-                <p className="phx-level-tagline">Membagi Program ke bidang / tim yang bisa jalan bersamaan</p>
+                <h3 className="phx-level-title">Workstream — A Parallel Work Track</h3>
+                <p className="phx-level-tagline">Splits a Program into areas / teams that can run at the same time</p>
               </div>
             </header>
             <p className="phx-level-body">
-              <strong>Workstream membagi Program menjadi jalur paralel.</strong> Setiap
-              Workstream biasanya pegang satu bidang (mis. Audit Keuangan vs Audit Produksi)
-              dan punya PIC sendiri (umumnya KASUBDIV). Workstream <em>tidak menunggu</em>
-              workstream lain selesai — keduanya jalan bersamaan, kecuali ada dependency
-              eksplisit.
+              <strong>A Workstream splits a Program into parallel tracks.</strong> Each
+              Workstream usually owns one area (e.g. Finance Audit vs Production Audit) and
+              has its own PIC (typically a KASUBDIV). A Workstream <em>does not wait</em> for
+              another to finish — they run at the same time, unless there is an explicit
+              dependency.
             </p>
             <div className="phx-example">
-              <span className="phx-example-label">Contoh:</span>
+              <span className="phx-example-label">Example:</span>
               <span className="phx-example-body">
-                Program "Audit Internal 2026" punya 3 Workstream:
+                The "2026 Internal Audit" Program has 3 Workstreams:
                 <ol className="phx-inline-list">
-                  <li><strong>Workstream A:</strong> Audit Divisi Keuangan (Mar–Apr)</li>
-                  <li><strong>Workstream B:</strong> Audit Divisi Produksi (Apr–Mei, paralel)</li>
-                  <li><strong>Workstream C:</strong> Konsolidasi & Pelaporan Final (Mei–Jun, sesudah A & B)</li>
+                  <li><strong>Workstream A:</strong> Finance Division Audit (Mar–Apr)</li>
+                  <li><strong>Workstream B:</strong> Production Division Audit (Apr–May, parallel)</li>
+                  <li><strong>Workstream C:</strong> Consolidation & Final Reporting (May–Jun, after A & B)</li>
                 </ol>
               </span>
             </div>
             <p className="phx-level-rule">
-              <strong>Aturan praktis:</strong> kalau dua bagian Program bisa dikerjakan
-              dua tim berbeda, secara paralel — pisah jadi 2 Workstream. Jumlah ideal:
-              2–5 Workstream per Program. Lebih dari itu, mungkin saatnya pertimbangkan
-              dipecah jadi Program terpisah.
+              <strong>Rule of thumb:</strong> if two parts of a Program can be worked on by
+              two different teams in parallel — split them into 2 Workstreams. The ideal
+              count is 2–5 Workstreams per Program. More than that, and it may be time to
+              consider splitting it into separate Programs.
             </p>
           </article>
 
@@ -293,31 +294,31 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
             <header className="phx-level-head">
               <span className="phx-level-num">3</span>
               <div>
-                <h3 className="phx-level-title">Phase — Tahapan Berurutan</h3>
-                <p className="phx-level-tagline">Apa duluan, apa kemudian dalam satu Workstream</p>
+                <h3 className="phx-level-title">Phase — Sequential Stages</h3>
+                <p className="phx-level-tagline">What comes first and what comes next within one Workstream</p>
               </div>
             </header>
             <p className="phx-level-body">
-              <strong>Phase mengelompokkan Task berdasarkan urutan logis.</strong> Beda
-              dengan Workstream (yang paralel), Phase biasanya <em>berurutan</em> —
-              Phase 1 selesai dulu, baru Phase 2 mulai. Phase tidak punya assignee terpisah;
-              dia hanya wadah pengelompokan.
+              <strong>A Phase groups Tasks by logical order.</strong> Unlike a Workstream
+              (which is parallel), Phases are usually <em>sequential</em> — Phase 1 finishes
+              first, then Phase 2 begins. A Phase has no separate assignee; it is purely a
+              grouping container.
             </p>
             <div className="phx-example">
-              <span className="phx-example-label">Contoh:</span>
+              <span className="phx-example-label">Example:</span>
               <span className="phx-example-body">
-                Workstream A ("Audit Divisi Keuangan") punya 3 Phase berurutan:
+                Workstream A ("Finance Division Audit") has 3 sequential Phases:
                 <ol className="phx-inline-list">
-                  <li><strong>Phase 1:</strong> Pengumpulan Dokumen (1–15 Mar)</li>
-                  <li><strong>Phase 2:</strong> Analisis Temuan (16–31 Mar, butuh hasil Phase 1)</li>
-                  <li><strong>Phase 3:</strong> Penyusunan Laporan (1–15 Apr, butuh hasil Phase 2)</li>
+                  <li><strong>Phase 1:</strong> Document Collection (1–15 Mar)</li>
+                  <li><strong>Phase 2:</strong> Findings Analysis (16–31 Mar, needs Phase 1 output)</li>
+                  <li><strong>Phase 3:</strong> Report Drafting (1–15 Apr, needs Phase 2 output)</li>
                 </ol>
               </span>
             </div>
             <p className="phx-level-rule">
-              <strong>Aturan praktis:</strong> kalau Anda akan bilang "abis ini, baru itu" —
-              itu sinyal pakai Phase. Phase juga berguna untuk milestone bulanan
-              (mis. tutup buku akhir Maret = akhir Phase 1).
+              <strong>Rule of thumb:</strong> if you find yourself saying "after this, then
+              that" — that’s a signal to use a Phase. Phases are also useful for monthly
+              milestones (e.g. end-of-March closing = the end of Phase 1).
             </p>
           </article>
 
@@ -326,32 +327,32 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
             <header className="phx-level-head">
               <span className="phx-level-num">4</span>
               <div>
-                <h3 className="phx-level-title">Task — Pekerjaan Konkret</h3>
-                <p className="phx-level-tagline">Yang sebenarnya dikerjakan orang per orang</p>
+                <h3 className="phx-level-title">Task — Concrete Work</h3>
+                <p className="phx-level-tagline">What individual people actually do</p>
               </div>
             </header>
             <p className="phx-level-body">
-              <strong>Task adalah unit pekerjaan terkecil yang bisa di-track.</strong>
-              Setiap Task harus punya: judul jelas, assignee (1 orang), tanggal mulai &
-              target selesai, prioritas. Task muncul di Papan Kerja (Execution) dan
-              statusnya bisa diubah dari Belum Direncanakan → Siap → Sedang Berjalan →
-              Menunggu Review → Selesai.
+              <strong>A Task is the smallest unit of work that can be tracked.</strong>
+              Every Task must have: a clear title, an assignee (one person), a start date and
+              target completion date, and a priority. Tasks appear on the Workboard
+              (Execution) and their status can move from Backlog → Ready → In Progress →
+              In Review → Done.
             </p>
             <div className="phx-example">
-              <span className="phx-example-label">Contoh:</span>
+              <span className="phx-example-label">Example:</span>
               <span className="phx-example-body">
-                Phase 1 ("Pengumpulan Dokumen") punya 3 Task:
+                Phase 1 ("Document Collection") has 3 Tasks:
                 <ol className="phx-inline-list">
-                  <li><strong>Task:</strong> Kumpulkan laporan arus kas Q1 <em>(Pak Andi · 1–7 Mar · HIGH)</em></li>
-                  <li><strong>Task:</strong> Kumpulkan neraca per divisi Q1 <em>(Bu Rina · 1–10 Mar · MEDIUM)</em></li>
-                  <li><strong>Task:</strong> Email treasury minta data Januari <em>(Pak Andi · 1–3 Mar · LOW)</em></li>
+                  <li><strong>Task:</strong> Collect Q1 cash flow statements <em>(Andi · 1–7 Mar · HIGH)</em></li>
+                  <li><strong>Task:</strong> Collect Q1 balance sheets by division <em>(Rina · 1–10 Mar · MEDIUM)</em></li>
+                  <li><strong>Task:</strong> Email treasury for January data <em>(Andi · 1–3 Mar · LOW)</em></li>
                 </ol>
               </span>
             </div>
             <p className="phx-level-rule">
-              <strong>Aturan praktis:</strong> kalau Anda bisa bilang "saya akan kerjakan
-              ini dalam X hari, dan saat selesai outputnya jelas" — itu Task. Kalau lebih
-              kompleks, mungkin sebenarnya Phase (yang berisi beberapa Task).
+              <strong>Rule of thumb:</strong> if you can say "I will do this in X days, and
+              when it’s done the output is clear" — it’s a Task. If it’s more complex, it may
+              actually be a Phase (containing several Tasks).
             </p>
           </article>
 
@@ -360,25 +361,25 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
             <header className="phx-level-head">
               <span className="phx-level-num phx-level-num--mini">5</span>
               <div>
-                <h3 className="phx-level-title">Subtask — Checklist dalam Task</h3>
-                <p className="phx-level-tagline">Langkah-langkah kecil yang tidak perlu di-track terpisah</p>
+                <h3 className="phx-level-title">Subtask — A Checklist Within a Task</h3>
+                <p className="phx-level-tagline">Small steps that don’t need to be tracked separately</p>
               </div>
             </header>
             <p className="phx-level-body">
-              <strong>Subtask adalah checklist langkah dalam satu Task.</strong> Tidak punya
-              status, tidak punya assignee terpisah, tidak muncul di Papan Kerja. Hanya
-              kelihatan saat Anda buka detail Task. Gunakan saat Task punya beberapa
-              langkah kecil yang ingin di-tick satu per satu.
+              <strong>A Subtask is a step-by-step checklist within a single Task.</strong> It
+              has no status, no separate assignee, and does not appear on the Workboard. It is
+              only visible when you open the Task detail. Use it when a Task has a few small
+              steps you want to tick off one by one.
             </p>
             <div className="phx-example">
-              <span className="phx-example-label">Contoh:</span>
+              <span className="phx-example-label">Example:</span>
               <span className="phx-example-body">
-                Task "Email treasury minta data Januari" bisa punya Subtask:
+                The Task "Email treasury for January data" might have Subtasks:
                 <ol className="phx-inline-list phx-inline-list--simple">
-                  <li>☐ Draft email</li>
-                  <li>☐ Kirim ke Pak Hendro</li>
-                  <li>☐ Konfirmasi diterima</li>
-                  <li>☐ Tindak lanjut kalau belum direspons dalam 2 hari</li>
+                  <li>☐ Draft the email</li>
+                  <li>☐ Send it to Hendro</li>
+                  <li>☐ Confirm receipt</li>
+                  <li>☐ Follow up if there’s no response within 2 days</li>
                 </ol>
               </span>
             </div>
@@ -387,109 +388,109 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
 
         {/* ── FAQ ───────────────────────────────────────────────── */}
         <section className="phx-section">
-          <h2 className="phx-sec-title">❓ Yang Sering Bikin Bingung</h2>
+          <h2 className="phx-sec-title">❓ Common Points of Confusion</h2>
 
           <details className="phx-faq">
-            <summary>Kapan saya pakai Workstream vs Phase?</summary>
+            <summary>When do I use a Workstream vs a Phase?</summary>
             <div className="phx-faq-body">
               <p>
-                <strong>Workstream = paralel</strong>, <strong>Phase = sekuensial</strong>.
-                Kalau dua bagian Program bisa dikerjakan dua tim berbeda secara bersamaan
-                (mis. Audit Divisi Keuangan + Audit Divisi Produksi), pisah jadi 2 Workstream.
-                Kalau dua bagian harus dikerjakan berurutan oleh tim yang sama (mis.
-                Kumpulkan dokumen → baru bisa Analisis), pakai 2 Phase di satu Workstream.
+                <strong>Workstream = parallel</strong>, <strong>Phase = sequential</strong>.
+                If two parts of a Program can be worked on by two different teams at the same
+                time (e.g. Finance Division Audit + Production Division Audit), split them into
+                2 Workstreams. If two parts must be done in sequence by the same team (e.g.
+                collect documents → only then analyze), use 2 Phases within one Workstream.
               </p>
               <p className="phx-faq-tip">
-                💡 Tes cepat: bisakah saya kerjakan dua bagian ini di hari yang sama dengan
-                tim berbeda? Kalau ya → Workstream. Kalau yang satu blok yang lain → Phase.
+                💡 Quick test: could I work on these two parts on the same day with different
+                teams? If yes → Workstream. If one blocks the other → Phase.
               </p>
             </div>
           </details>
 
           <details className="phx-faq">
-            <summary>Bisakah Task tanpa Phase?</summary>
+            <summary>Can a Task exist without a Phase?</summary>
             <div className="phx-faq-body">
               <p>
-                Secara teknis bisa — ATLAS membolehkan task langsung di bawah Workstream
-                tanpa Phase. Berguna untuk task ad-hoc cepat yang tidak butuh konteks
-                tahapan. Tapi untuk struktur kerja yang rapi (audit, riset, proyek
-                terjadwal), <strong>sebaiknya selalu pakai Phase</strong> — biar saat
-                bulan depan ada yang nanya "kemajuan kita di mana?", Anda bisa jawab
-                pakai Phase ("kita di Phase 2 dari 4").
+                Technically yes — ATLAS allows a task directly under a Workstream without a
+                Phase. This is handy for quick, ad-hoc tasks that don’t need stage context.
+                But for well-structured work (audits, research, scheduled projects),
+                <strong> it’s best to always use a Phase</strong> — so that when someone asks
+                next month "where are we?", you can answer in terms of Phases ("we’re on
+                Phase 2 of 4").
               </p>
             </div>
           </details>
 
           <details className="phx-faq">
-            <summary>Berapa banyak Workstream yang ideal per Program?</summary>
+            <summary>How many Workstreams are ideal per Program?</summary>
             <div className="phx-faq-body">
               <p>
-                <strong>2–5 Workstream</strong> adalah rentang sehat. 1 Workstream =
-                Program tidak perlu dipecah, jadi langsung Phase-Task saja. Lebih dari
-                5 = Program kemungkinan terlalu besar; pertimbangkan dipecah jadi 2 Program
-                terpisah dengan ikatan via KPI bersama atau referensi cross-program.
+                <strong>2–5 Workstreams</strong> is the healthy range. 1 Workstream means the
+                Program doesn’t need splitting, so just go straight to Phases and Tasks. More
+                than 5 means the Program is probably too big; consider splitting it into 2
+                separate Programs tied together via a shared KPI or a cross-program reference.
               </p>
             </div>
           </details>
 
           <details className="phx-faq">
-            <summary>Apa beda Phase dengan Milestone?</summary>
+            <summary>What’s the difference between a Phase and a Milestone?</summary>
             <div className="phx-faq-body">
               <p>
-                <strong>ATLAS tidak punya entitas terpisah bernama "Milestone".</strong>
-                Milestone (momen pencapaian / deliverable besar) tercermin di
-                completion Phase atau penyelesaian Task tertentu. Mis. "tutup buku akhir
-                Q1" = milestone yang sekaligus jadi akhir Phase "Penutupan Q1".
+                <strong>ATLAS does not have a separate entity called a "Milestone".</strong>
+                A milestone (a moment of achievement or a major deliverable) is reflected by
+                the completion of a Phase or of a specific Task. For example, "Q1 closing" is
+                a milestone that also marks the end of the "Q1 Closing" Phase.
               </p>
               <p>
-                Kalau Anda perlu menandai milestone secara eksplisit, Anda bisa:
+                If you need to mark a milestone explicitly, you can:
               </p>
               <ul className="phx-faq-list">
-                <li>Buat Task khusus berjudul "Milestone: …" yang menandai pencapaian</li>
-                <li>Atau atur deadline akhir Phase = tanggal milestone</li>
+                <li>Create a dedicated Task titled "Milestone: …" that marks the achievement</li>
+                <li>Or set the Phase’s end deadline to the milestone date</li>
               </ul>
             </div>
           </details>
 
           <details className="phx-faq">
-            <summary>Workstream itu paralel atau sekuensial?</summary>
+            <summary>Are Workstreams parallel or sequential?</summary>
             <div className="phx-faq-body">
               <p>
-                <strong>Paralel by default.</strong> ATLAS tidak punya konsep "Workstream
-                B menunggu A". Kalau Anda butuh dependency antar Workstream, atur lewat
-                Task khusus di Workstream B yang menunggu output Workstream A
-                (mis. blocker dengan referensi ke Task Workstream A, atau cukup atur
-                tanggal mulai Workstream B setelah tanggal selesai Workstream A).
+                <strong>Parallel by default.</strong> ATLAS has no concept of "Workstream B
+                waits for A". If you need a dependency between Workstreams, handle it through a
+                specific Task in Workstream B that waits for Workstream A’s output (e.g. a
+                blocker referencing a Workstream A Task, or simply set Workstream B’s start
+                date after Workstream A’s end date).
               </p>
             </div>
           </details>
 
           <details className="phx-faq">
-            <summary>Apakah Assignment termasuk dalam hierarki ini?</summary>
+            <summary>Is an Assignment part of this hierarchy?</summary>
             <div className="phx-faq-body">
               <p>
-                <strong>Tidak.</strong> Assignment adalah <em>track terpisah</em> di luar
-                Program. Assignment = tugas ad-hoc dari atasan ke bawahan yang tidak
-                terkait struktur Program. Assignment punya lifecycle status sendiri
-                (Siap Dikerjakan → Sedang Berjalan → Menunggu Review → Selesai), board
-                sendiri di menu Assignment, dan tidak mempengaruhi Health Program.
-                Assignment masuk ke <strong>Commitment Ledger</strong> personal (hit-rate
-                komitmen) tapi tidak ke metrik Program.
+                <strong>No.</strong> An Assignment is a <em>separate track</em> outside the
+                Program. An Assignment is an ad-hoc task from a superior to a team member,
+                unrelated to the Program structure. It has its own status lifecycle (Ready →
+                In Progress → In Review → Done), its own board in the Assignment menu, and it
+                does not affect Program Health. An Assignment is recorded in the personal
+                <strong> Commitment Ledger</strong> (commitment hit-rate) but not in Program
+                metrics.
               </p>
             </div>
           </details>
 
           <details className="phx-faq">
-            <summary>Apa hubungan KPI dengan hierarki ini?</summary>
+            <summary>How do KPIs relate to this hierarchy?</summary>
             <div className="phx-faq-body">
               <p>
-                <strong>KPI dilink ke Program</strong> (bukan ke Workstream/Phase/Task).
-                Saat Anda hubungkan KPI ke Program, ATLAS hitung kontribusi capaian Program
-                tersebut ke KPI itu. Task tidak punya KPI sendiri — kontribusinya
-                tercermin di progress Program-nya.
+                <strong>KPIs are linked to a Program</strong> (not to a Workstream, Phase, or
+                Task). When you link a KPI to a Program, ATLAS calculates that Program’s
+                contribution toward the KPI. Tasks have no KPIs of their own — their
+                contribution is reflected in the Program’s progress.
               </p>
               <p>
-                Untuk lihat KPI per program: detail Program → tab <strong>KPI APMS</strong>.
+                To view KPIs per program: Program detail → the <strong>KPI APMS</strong> tab.
               </p>
             </div>
           </details>
@@ -497,17 +498,17 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
 
         {/* ── Mini-recap ────────────────────────────────────────── */}
         <section className="phx-section phx-recap">
-          <h2 className="phx-sec-title">📝 Ringkasan 30 Detik</h2>
+          <h2 className="phx-sec-title">📝 30-Second Recap</h2>
           <ul className="phx-recap-list">
-            <li><strong>Program</strong> — inisiatif strategis 6–12 bulan dengan deliverable besar</li>
-            <li><strong>Workstream</strong> — jalur kerja paralel di dalam Program (per bidang/tim)</li>
-            <li><strong>Phase</strong> — tahapan berurutan di dalam Workstream (apa duluan, apa kemudian)</li>
-            <li><strong>Task</strong> — pekerjaan konkret yang di-assign ke 1 orang dengan deadline</li>
-            <li><strong>Subtask</strong> — checklist langkah kecil dalam Task (tidak standalone)</li>
+            <li><strong>Program</strong> — a 6–12 month strategic initiative with a major deliverable</li>
+            <li><strong>Workstream</strong> — a parallel work track within a Program (per area/team)</li>
+            <li><strong>Phase</strong> — sequential stages within a Workstream (what comes first, what comes next)</li>
+            <li><strong>Task</strong> — concrete work assigned to one person with a deadline</li>
+            <li><strong>Subtask</strong> — a small step checklist within a Task (not standalone)</li>
           </ul>
           <p className="phx-recap-note">
-            <strong>Saat ragu:</strong> tanya "berapa lama ini akan dikerjakan?" Kalau bulanan
-            = Program. Mingguan = Phase. Harian = Task. Per jam = Subtask.
+            <strong>When in doubt:</strong> ask "how long will this take?" Months = Program.
+            Weeks = Phase. Days = Task. Hours = Subtask.
           </p>
         </section>
 
@@ -515,15 +516,15 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
         <section className="phx-playbook-link">
           <span className="panduan__playbook-link-icon" aria-hidden="true">📖</span>
           <div>
-            <strong>Butuh detail teknis?</strong>{' '}
+            <strong>Need the technical detail?</strong>{' '}
             <a
               href="/playbook#5-perencanaan--program--workstream"
               onClick={e => { e.preventDefault(); navigate('/playbook#5-perencanaan--program--workstream') }}
               className="panduan__playbook-link-anchor"
             >
-              Buka Playbook §5 — Perencanaan: Program & Workstream
+              Open Playbook §5 — Planning: Program & Workstream
             </a>
-            {' '}untuk aturan approval, edit, dan health score.
+            {' '}for the approval, editing, and health score rules.
           </div>
         </section>
       </div>

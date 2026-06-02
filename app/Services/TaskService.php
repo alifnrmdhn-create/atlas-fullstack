@@ -150,7 +150,7 @@ class TaskService
 
         $allowed = self::TRANSITIONS[$task->status] ?? [];
         if (!in_array($newStatus, $allowed, true)) {
-            abort(400, "Tidak bisa pindah dari status {$task->status} ke {$newStatus}.");
+            abort(400, "Cannot move from status {$task->status} to {$newStatus}.");
         }
 
         // Prereq check: non-Backlog status butuh PIC + targetCompletion minimum.
@@ -158,14 +158,14 @@ class TaskService
         // di-bypass, jadi server jadi source of truth.
         $missing = [];
         if (in_array($newStatus, ['READY', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'], true)) {
-            if (! $task->assignedTo) $missing[] = 'PIC belum ditetapkan';
-            if (! $task->targetCompletion) $missing[] = 'Target selesai belum diisi';
+            if (! $task->assignedTo) $missing[] = 'PIC not assigned';
+            if (! $task->targetCompletion) $missing[] = 'Target completion date not set';
             if ($newStatus === 'READY' && ! $task->startDate) {
-                $missing[] = 'Tanggal mulai belum diisi';
+                $missing[] = 'Start date not set';
             }
         }
         if (! empty($missing)) {
-            abort(422, 'Belum bisa pindah status — lengkapi prasyarat: ' . implode(', ', $missing));
+            abort(422, 'Cannot change status yet — complete the prerequisites: ' . implode(', ', $missing));
         }
 
         // Backward transition: target_order < current_order → wajib alasan
@@ -175,7 +175,7 @@ class TaskService
         $toOrder = self::STATUS_ORDER[$newStatus] ?? null;
         $isBackward = $fromOrder !== null && $toOrder !== null && $toOrder < $fromOrder;
         if ($isBackward && (! $note || trim($note) === '')) {
-            abort(422, "Mengembalikan status dari {$task->status} ke {$newStatus} memerlukan alasan untuk audit log.");
+            abort(422, "Reverting the status from {$task->status} to {$newStatus} requires a reason for the audit log.");
         }
 
         // Cek lifecycle phase
@@ -183,7 +183,7 @@ class TaskService
         if (in_array($approvalStatus, ['DRAFT', 'PENDING_KASUB', 'PENDING_KADIV'], true)) {
             $planningAllowed = ['BACKLOG', 'READY'];
             if (!in_array($newStatus, $planningAllowed, true)) {
-                abort(409, 'Program masih dalam fase Perencanaan. Status task hanya bisa BACKLOG atau READY.');
+                abort(409, 'The program is still in the Planning phase. Task status can only be BACKLOG or READY.');
             }
         }
 
@@ -196,7 +196,7 @@ class TaskService
                 ->where('id', '!=', $task->id)
                 ->count();
             if ($current >= $limit) {
-                abort(409, "WIP limit tercapai: assignee sudah punya {$current} task IN_PROGRESS (limit {$limit}). Selesaikan task lain dulu sebelum mulai yang baru.");
+                abort(409, "WIP limit reached: the assignee already has {$current} IN_PROGRESS tasks (limit {$limit}). Complete other tasks before starting a new one.");
             }
         }
 
@@ -251,10 +251,10 @@ class TaskService
         // Tanpa ini, slider bisa mendorong task tanpa PIC ke IN_PROGRESS/COMPLETED.
         if ($percent > 0) {
             $missing = [];
-            if (! $task->assignedTo) $missing[] = 'PIC';
-            if (! $task->targetCompletion) $missing[] = 'target selesai';
+            if (! $task->assignedTo) $missing[] = 'a PIC';
+            if (! $task->targetCompletion) $missing[] = 'a target completion date';
             if (! empty($missing)) {
-                abort(422, 'Tetapkan ' . implode(' & ', $missing) . ' dulu sebelum memulai task (progres > 0%).');
+                abort(422, 'Set ' . implode(' & ', $missing) . ' before starting the task (progress > 0%).');
             }
         }
 
@@ -269,7 +269,7 @@ class TaskService
             $toOrder = self::STATUS_ORDER[$newStatus] ?? null;
             $isBackward = $fromOrder !== null && $toOrder !== null && $toOrder < $fromOrder;
             if ($isBackward && ($note === null || trim($note) === '')) {
-                abort(422, "Menurunkan progres yang mengembalikan status dari {$fromStatus} ke {$newStatus} memerlukan alasan untuk audit log.");
+                abort(422, "Lowering progress that reverts the status from {$fromStatus} to {$newStatus} requires a reason for the audit log.");
             }
 
             // WIP limit saat masuk IN_PROGRESS (mirror transitionStatus).
@@ -281,7 +281,7 @@ class TaskService
                     ->where('id', '!=', $task->id)
                     ->count();
                 if ($current >= $limit) {
-                    abort(409, "WIP limit tercapai: assignee sudah punya {$current} task IN_PROGRESS (limit {$limit}). Selesaikan task lain dulu sebelum mengisi progres yang baru.");
+                    abort(409, "WIP limit reached: the assignee already has {$current} IN_PROGRESS tasks (limit {$limit}). Complete other tasks before logging new progress.");
                 }
             }
 

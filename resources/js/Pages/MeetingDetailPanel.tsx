@@ -110,7 +110,7 @@ const MEETING_TYPE_LABEL: Record<MeetingType, string> = {
 }
 
 const ACTION_STATUS_LABEL: Record<string, string> = {
-  OPEN: 'Belum', IN_PROGRESS: 'Proses', COMPLETED: 'Selesai',
+  OPEN: 'Open', IN_PROGRESS: 'In Progress', COMPLETED: 'Completed',
 }
 
 type MeetingTone = 'gray' | 'red' | 'yellow' | 'green' | 'blue' | 'purple' | 'cyan' | 'pink' | 'orange'
@@ -196,10 +196,10 @@ function getInitials(name: string) {
 
 function rsvpLabel(status: string) {
   return RSVP_STATUS_TONE[status] ? (
-    status === 'HADIR' || status === 'ACCEPTED' ? 'Hadir'
-      : status === 'TIDAK_HADIR' || status === 'DECLINED' ? 'Tidak Hadir'
-      : status === 'DELEGASI' ? 'Delegasi'
-      : status === 'TENTATIVE' ? 'Tentatif'
+    status === 'HADIR' || status === 'ACCEPTED' ? 'Present'
+      : status === 'TIDAK_HADIR' || status === 'DECLINED' ? 'Absent'
+      : status === 'DELEGASI' ? 'Delegated'
+      : status === 'TENTATIVE' ? 'Tentative'
       : 'Pending'
   ) : status
 }
@@ -299,7 +299,7 @@ export function MeetingDetailPanel({
       editForm.description !== (meeting.description ?? '') ||
       editForm.meetingType !== meeting.meetingType ||
       editForm.location !== (meeting.location ?? '')
-    if (editDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (editDirty && !window.confirm('Discard unsaved changes?')) return
     setShowEdit(false); setEditError(null)
   }, showEdit)
 
@@ -313,7 +313,7 @@ export function MeetingDetailPanel({
   const [postponeError, setPostponeError] = useState<string | null>(null)
   useEscKey(() => {
     if (postponeSaving) return
-    if (postponeReason !== '' && !window.confirm('Buang alasan yang sudah diketik?')) return
+    if (postponeReason !== '' && !window.confirm('Discard the reason you typed?')) return
     setShowPostpone(false); setPostponeReason(''); setPostponeError(null)
   }, showPostpone)
 
@@ -329,7 +329,7 @@ export function MeetingDetailPanel({
   useEscKey(() => {
     if (pushSaving) return
     const pushDirty = pushForm.workstreamId !== '' || pushForm.targetCompletion !== ''
-    if (pushDirty && !window.confirm('Buang pilihan yang sudah diisi?')) return
+    if (pushDirty && !window.confirm('Discard the selections you made?')) return
     setPushItem(null); setPushError(null)
   }, pushItem !== null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -438,10 +438,10 @@ export function MeetingDetailPanel({
     try {
       await api.patch(`/meetings/${meeting.id}`, { notes })
       onUpdate()
-      setSuccessMsg('Notulen berhasil disimpan.')
+      setSuccessMsg('Minutes saved successfully.')
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch (err) {
-      setNotesError(err instanceof Error ? err.message : 'Gagal menyimpan.')
+      setNotesError(err instanceof Error ? err.message : 'Failed to save.')
     } finally {
       setNotesSaving(false)
     }
@@ -457,7 +457,7 @@ export function MeetingDetailPanel({
       setNewDecision('')
       void loadData()
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Gagal menambah keputusan.')
+      showError(err instanceof Error ? err.message : 'Failed to add decision.')
     } finally { setDecisionSaving(false) }
   }
 
@@ -473,7 +473,7 @@ export function MeetingDetailPanel({
       setConfirmDeleteDecision(null)
       void loadData()
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Gagal menghapus keputusan.')
+      showError(err instanceof Error ? err.message : 'Failed to delete decision.')
       setConfirmDeleteDecision(null)
     } finally {
       setDecisionDeleteSaving(false)
@@ -483,8 +483,8 @@ export function MeetingDetailPanel({
   // ── Action item actions ───────────────────────────────────────────────────
 
   const addActionItem = async () => {
-    if (!aiForm.title.trim()) { setAiError('Judul wajib diisi.'); return }
-    if (aiForm.title.trim().length < 3) { setAiError('Judul minimal 3 karakter.'); return }
+    if (!aiForm.title.trim()) { setAiError('Title is required.'); return }
+    if (aiForm.title.trim().length < 3) { setAiError('Title must be at least 3 characters.'); return }
     setAiSaving(true)
     setAiError(null)
     try {
@@ -497,7 +497,7 @@ export function MeetingDetailPanel({
       setShowAIForm(false)
       void loadData()
     } catch (err) {
-      setAiError(err instanceof Error ? err.message : 'Gagal menambah.')
+      setAiError(err instanceof Error ? err.message : 'Failed to add.')
     } finally {
       setAiSaving(false) }
   }
@@ -510,7 +510,7 @@ export function MeetingDetailPanel({
       await api.patch(`/meetings/${meeting.id}/action-items/${item.id}`, { status: next })
       void loadData()
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Gagal mengubah status tindak lanjut.')
+      showError(err instanceof Error ? err.message : 'Failed to update action item status.')
     } finally {
       setToggleLoading(null)
     }
@@ -528,7 +528,7 @@ export function MeetingDetailPanel({
       setConfirmDeleteActionItem(null)
       void loadData()
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Gagal menghapus tindak lanjut.')
+      showError(err instanceof Error ? err.message : 'Failed to delete action item.')
       setConfirmDeleteActionItem(null)
     } finally {
       setActionItemDeleteSaving(false)
@@ -547,7 +547,7 @@ export function MeetingDetailPanel({
       onUpdate()
       void loadData()
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Gagal memulai meeting.')
+      showError(err instanceof Error ? err.message : 'Failed to start meeting.')
     } finally {
       setStartLoading(false)
     }
@@ -563,14 +563,14 @@ export function MeetingDetailPanel({
       onUpdate()
       void loadData()
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Gagal menyelesaikan meeting.')
+      showError(err instanceof Error ? err.message : 'Failed to complete meeting.')
     } finally {
       setCompleteLoading(false)
     }
   }
 
   const postponeMeeting = async () => {
-    if (!postponeReason.trim()) { setPostponeError('Alasan penundaan wajib diisi.'); return }
+    if (!postponeReason.trim()) { setPostponeError('A postponement reason is required.'); return }
     setPostponeSaving(true)
     setPostponeError(null)
     try {
@@ -580,7 +580,7 @@ export function MeetingDetailPanel({
       onUpdate()
       void loadData()
     } catch (err) {
-      setPostponeError(err instanceof Error ? err.message : 'Gagal menunda meeting.')
+      setPostponeError(err instanceof Error ? err.message : 'Failed to postpone meeting.')
     } finally {
       setPostponeSaving(false)
     }
@@ -618,12 +618,12 @@ export function MeetingDetailPanel({
   }
 
   const submitEdit = async () => {
-    if (!editForm.title.trim()) { setEditError('Judul wajib diisi.'); return }
-    if (editForm.title.trim().length < 3) { setEditError('Judul minimal 3 karakter.'); return }
-    if (!editForm.date || !editForm.startTime || !editForm.endTime) { setEditError('Tanggal dan waktu wajib diisi.'); return }
+    if (!editForm.title.trim()) { setEditError('Title is required.'); return }
+    if (editForm.title.trim().length < 3) { setEditError('Title must be at least 3 characters.'); return }
+    if (!editForm.date || !editForm.startTime || !editForm.endTime) { setEditError('Date and time are required.'); return }
     const startAt = new Date(`${editForm.date}T${editForm.startTime}:00`).toISOString()
     const endAt   = new Date(`${editForm.date}T${editForm.endTime}:00`).toISOString()
-    if (new Date(endAt) <= new Date(startAt)) { setEditError('Waktu selesai harus setelah waktu mulai.'); return }
+    if (new Date(endAt) <= new Date(startAt)) { setEditError('End time must be after start time.'); return }
     setEditSaving(true)
     setEditError(null)
     try {
@@ -640,7 +640,7 @@ export function MeetingDetailPanel({
       setShowEdit(false)
       onUpdate()
     } catch (err) {
-      setEditError(err instanceof Error ? err.message : 'Gagal menyimpan.')
+      setEditError(err instanceof Error ? err.message : 'Failed to save.')
     } finally {
       setEditSaving(false)
     }
@@ -661,7 +661,7 @@ export function MeetingDetailPanel({
 
   const submitPush = async () => {
     if (!pushItem) return
-    if (!pushForm.workstreamId) { setPushError('Pilih workstream terlebih dahulu.'); return }
+    if (!pushForm.workstreamId) { setPushError('Select a workstream first.'); return }
     setPushSaving(true)
     setPushError(null)
     try {
@@ -675,10 +675,10 @@ export function MeetingDetailPanel({
       setPushItem(null)
       void loadData()
       setErrorMsg(null)
-      setSuccessMsg(`Tugas ${res.data.taskCode} berhasil dibuat di Workboard.`)
+      setSuccessMsg(`Task ${res.data.taskCode} created in Workboard.`)
       setTimeout(() => setSuccessMsg(null), 5000)
     } catch (err) {
-      setPushError(err instanceof Error ? err.message : 'Gagal push ke Workboard.')
+      setPushError(err instanceof Error ? err.message : 'Failed to push to Workboard.')
     } finally {
       setPushSaving(false)
     }
@@ -707,18 +707,18 @@ export function MeetingDetailPanel({
             </span>
             {meeting.status === 'ONGOING' && (
               <span className="meeting-detail__status-badge meeting-detail__status-badge--ongoing">
-                <span className="schedule-card__ongoing-dot" /> Berlangsung
+                <span className="schedule-card__ongoing-dot" /> Ongoing
               </span>
             )}
             {meeting.status === 'COMPLETED' && (
-              <span className="meeting-detail__status-badge meeting-detail__status-badge--done">✓ Selesai</span>
+              <span className="meeting-detail__status-badge meeting-detail__status-badge--done">✓ Completed</span>
             )}
             {isCancelled && (
-              <span className="meeting-detail__status-badge meeting-detail__status-badge--cancel">Dibatalkan</span>
+              <span className="meeting-detail__status-badge meeting-detail__status-badge--cancel">Cancelled</span>
             )}
             {isPostponed && (
               <span className="meeting-detail__status-badge meeting-detail__status-badge--postponed">
-                ⏸ Ditunda
+                ⏸ Postponed
               </span>
             )}
           </div>
@@ -728,14 +728,14 @@ export function MeetingDetailPanel({
           {/* Postponed reason banner */}
           {isPostponed && meeting.postponedReason && (
             <div className="meeting-detail__postpone-banner">
-              <strong>Alasan penundaan:</strong> {meeting.postponedReason}
+              <strong>Postponement reason:</strong> {meeting.postponedReason}
             </div>
           )}
 
           {/* Rescheduled indicator */}
           {meeting.rescheduledFromAt && meeting.status !== 'POSTPONED' && (
             <div className="meeting-detail__reschedule-note">
-              Dijadwalkan ulang dari {formatDatetime(meeting.rescheduledFromAt)}
+              Rescheduled from {formatDatetime(meeting.rescheduledFromAt)}
             </div>
           )}
 
@@ -757,7 +757,7 @@ export function MeetingDetailPanel({
           {/* Person-hours */}
           <div className="meeting-detail__stats">
             <span className="meeting-detail__stats-muted">
-              {meeting.attendees.length} peserta · {durationMins < 60 ? `${durationMins} mnt` : `${Math.round(durationHrs * 10) / 10} jam`}
+              {meeting.attendees.length} attendees · {durationMins < 60 ? `${durationMins} min` : `${Math.round(durationHrs * 10) / 10} hr`}
             </span>
             <span className="meeting-detail__stats-dot">·</span>
             <span className="meeting-detail__stats-strong">{personHours} person-hours</span>
@@ -771,22 +771,22 @@ export function MeetingDetailPanel({
           )}
           {isOrganizer && meeting.status === 'SCHEDULED' && (
             <button className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--info" onClick={startMeeting} disabled={startLoading}>
-              {startLoading ? '…' : '▶ Mulai'}
+              {startLoading ? '…' : '▶ Start'}
             </button>
           )}
           {isOrganizer && (meeting.status === 'SCHEDULED' || meeting.status === 'ONGOING') && (
             <button className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--success" onClick={completeMeeting} disabled={completeLoading}>
-              {completeLoading ? '…' : '✓ Selesai'}
+              {completeLoading ? '…' : '✓ Complete'}
             </button>
           )}
           {isOrganizer && (meeting.status === 'SCHEDULED' || meeting.status === 'ONGOING') && (
             <button className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--warn" onClick={() => setShowPostpone(true)}>
-              ⏸ Tunda
+              ⏸ Postpone
             </button>
           )}
           {isOrganizer && isPostponed && (
             <button className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--info" onClick={openReschedule}>
-              Jadwalkan Ulang
+              Reschedule
             </button>
           )}
           {/* Sprint 5 — Check→Act bridge: post-meeting → ProgressLog */}
@@ -794,31 +794,31 @@ export function MeetingDetailPanel({
             <button
               className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--info"
               onClick={() => {
-                const decisionsList = decisions.length > 0 ? '\n\nKeputusan:\n' + decisions.map(d => `- ${d.decision}`).join('\n') : ''
+                const decisionsList = decisions.length > 0 ? '\n\nDecisions:\n' + decisions.map(d => `- ${d.decision}`).join('\n') : ''
                 const actionList = actionItems.length > 0 ? '\n\nAction Items:\n' + actionItems.map(a => `- ${a.title}`).join('\n') : ''
                 const meetingDate = new Date(meeting.startAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
                 const ctx = {
-                  narrative: `Hasil rapat koordinasi "${meeting.title}" (${meetingDate}).${decisionsList}${actionList}`,
+                  narrative: `Outcome of coordination meeting "${meeting.title}" (${meetingDate}).${decisionsList}${actionList}`,
                   meetingTitle: meeting.title,
                   meetingDate: meeting.startAt,
                 }
                 sessionStorage.setItem(`atlas:progress-log-prefill.${meeting.linkedProgramId}`, JSON.stringify(ctx))
                 window.location.href = `/programs/${meeting.linkedProgramId}`
               }}
-              title="Catat ringkasan rapat ini sebagai ProgressLog program"
+              title="Record this meeting summary as a program ProgressLog"
             >
               → ProgressLog
             </button>
           )}
           {!isOrganizer && !isCancelled && !isPostponed && !isCompleted && (
-            <span className="meeting-detail__readonly-hint" title="Hanya organizer yang dapat mengubah rapat ini">
-              Hanya baca
+            <span className="meeting-detail__readonly-hint" title="Only the organizer can edit this meeting">
+              Read only
             </span>
           )}
           <button
             className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--ics"
             onClick={() => exportIcs(meeting)}
-            title="Export ke Google Calendar / Apple Calendar (.ics)"
+            title="Export to Google Calendar / Apple Calendar (.ics)"
             type="button"
           >
             <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="12">
@@ -827,7 +827,7 @@ export function MeetingDetailPanel({
             </svg>
             .ics
           </button>
-          <button className="meeting-detail__close-btn panel-close-btn" onClick={onClose} title="Tutup (Esc)" type="button">
+          <button className="meeting-detail__close-btn panel-close-btn" onClick={onClose} title="Close (Esc)" type="button">
             <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg>
             <kbd>Esc</kbd>
           </button>
@@ -860,7 +860,7 @@ export function MeetingDetailPanel({
         {prepUnavailable && !prep && (
           <div className="meeting-prep-unavailable">
             <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3"/><circle cx="8" cy="11" r="0.5" fill="currentColor"/></svg>
-            Briefing rapat tidak tersedia saat ini.
+            Meeting briefing is currently unavailable.
           </div>
         )}
         {prep && (prep.programContext || prep.continuity) && (
@@ -870,19 +870,19 @@ export function MeetingDetailPanel({
               onClick={() => setPrepExpanded(e => !e)}
             >
               <span className="prep-packet__icon">📋</span>
-              <span className="prep-packet__title">Briefing Rapat</span>
+              <span className="prep-packet__title">Meeting Briefing</span>
               <div className="prep-packet__badges">
                 {prep.rsvpSummary.pending > 0 && (
                   <span className="prep-packet__badge prep-packet__badge--warn">
-                    ○ {prep.rsvpSummary.pending} belum konfirmasi
+                    ○ {prep.rsvpSummary.pending} not confirmed
                   </span>
                 )}
                 {prep.programContext?.healthStatus === 'RED' && (
-                  <span className="prep-packet__badge prep-packet__badge--danger">🔴 Program kritis</span>
+                  <span className="prep-packet__badge prep-packet__badge--danger">🔴 Critical program</span>
                 )}
                 {prep.continuity && prep.continuity.unresolvedCount > 0 && (
                   <span className="prep-packet__badge prep-packet__badge--warn">
-                    ⚠ {prep.continuity.unresolvedCount} item tertunda
+                    ⚠ {prep.continuity.unresolvedCount} pending items
                   </span>
                 )}
               </div>
@@ -900,11 +900,11 @@ export function MeetingDetailPanel({
 
                 {/* RSVP Summary */}
                 <div className="prep-packet__row">
-                  <span className="prep-packet__label">Konfirmasi Kehadiran</span>
+                  <span className="prep-packet__label">Attendance Confirmation</span>
                   <div className="meeting-prep-rsvp">
-                    <span className="meeting-prep-rsvp__item" data-tone="green">✓ {prep.rsvpSummary.hadir} hadir</span>
-                    {prep.rsvpSummary.tidakHadir > 0 && <span className="meeting-prep-rsvp__item" data-tone="red">✗ {prep.rsvpSummary.tidakHadir} tidak hadir</span>}
-                    {prep.rsvpSummary.delegasi > 0 && <span className="meeting-prep-rsvp__item" data-tone="yellow">↪ {prep.rsvpSummary.delegasi} delegasi</span>}
+                    <span className="meeting-prep-rsvp__item" data-tone="green">✓ {prep.rsvpSummary.hadir} present</span>
+                    {prep.rsvpSummary.tidakHadir > 0 && <span className="meeting-prep-rsvp__item" data-tone="red">✗ {prep.rsvpSummary.tidakHadir} absent</span>}
+                    {prep.rsvpSummary.delegasi > 0 && <span className="meeting-prep-rsvp__item" data-tone="yellow">↪ {prep.rsvpSummary.delegasi} delegated</span>}
                     {prep.rsvpSummary.pending > 0 && <span className="meeting-prep-rsvp__item" data-tone="gray">○ {prep.rsvpSummary.pending} pending</span>}
                   </div>
                 </div>
@@ -914,14 +914,14 @@ export function MeetingDetailPanel({
                   <>
                     <div className="prep-packet__divider" />
                     <div className="prep-packet__row">
-                      <span className="prep-packet__label">Status Program</span>
+                      <span className="prep-packet__label">Program Status</span>
                       <div className="meeting-prep-program">
                         <div className="meeting-prep-program__header">
                           <span className="meeting-prep-program__name">
                             [{prep.programContext.code}] {prep.programContext.name}
                           </span>
                           <span className="meeting-prep-program__badge" data-tone={HEALTH_STATUS_TONE[prep.programContext.healthStatus as 'RED' | 'YELLOW' | 'GREEN'] ?? 'gray'}>
-                            {prep.programContext.healthStatus === 'RED' ? '🔴 Kritis' : prep.programContext.healthStatus === 'YELLOW' ? '🟡 Berisiko' : '🟢 Sehat'}
+                            {prep.programContext.healthStatus === 'RED' ? '🔴 Critical' : prep.programContext.healthStatus === 'YELLOW' ? '🟡 At Risk' : '🟢 Healthy'}
                           </span>
                         </div>
                         <div className="meeting-prep-program__progress">
@@ -936,7 +936,7 @@ export function MeetingDetailPanel({
                     {/* Blockers */}
                     {prep.programContext.activeBlockers.length > 0 && (
                       <div className="prep-packet__row">
-                        <span className="prep-packet__label">Blocker Aktif</span>
+                        <span className="prep-packet__label">Active Blockers</span>
                         <div className="meeting-prep-stack">
                           {prep.programContext.activeBlockers.map(b => (
                             <div key={b.id} className="meeting-prep-inline-row">
@@ -953,7 +953,7 @@ export function MeetingDetailPanel({
                     {/* KPIs */}
                     {prep.programContext.kpis.length > 0 && (
                       <div className="prep-packet__row">
-                        <span className="prep-packet__label">KPI Terkait</span>
+                        <span className="prep-packet__label">Related KPIs</span>
                         <div className="meeting-prep-stack">
                           {prep.programContext.kpis.map(k => {
                             const pct = k.actualValue && k.targetValue ? Math.round((k.actualValue / k.targetValue) * 100) : null
@@ -979,11 +979,11 @@ export function MeetingDetailPanel({
                   <>
                     <div className="prep-packet__divider" />
                     <div className="prep-packet__row">
-                      <span className="prep-packet__label">Rapat Sebelumnya</span>
+                      <span className="prep-packet__label">Previous Meeting</span>
                       <div className="meeting-prep-continuity">
                         <span className="meeting-prep-continuity__headline">
-                          ⚠ {prep.continuity.unresolvedCount} dari {prep.continuity.totalCount} action items belum selesai
-                          {prep.continuity.completionRate !== null && ` (${prep.continuity.completionRate}% selesai)`}
+                          ⚠ {prep.continuity.unresolvedCount} of {prep.continuity.totalCount} action items unresolved
+                          {prep.continuity.completionRate !== null && ` (${prep.continuity.completionRate}% complete)`}
                         </span>
                         <span className="meeting-prep-continuity__meta">
                           {prep.continuity.previousMeeting.title} · {formatDate(prep.continuity.previousMeeting.startAt)}
@@ -999,18 +999,18 @@ export function MeetingDetailPanel({
         )}
 
         {loadingData && (
-          <p className="text-muted text-sm meeting-detail__loading-note">Memuat data…</p>
+          <p className="text-muted text-sm meeting-detail__loading-note">Loading data…</p>
         )}
 
         {/* ── Attendees ── */}
         <div className="meeting-detail__section">
           <div className="meeting-detail__section-header">
-            <span className="meeting-detail__section-title">Peserta</span>
+            <span className="meeting-detail__section-title">Attendees</span>
             <span className="meeting-detail__section-count">{meeting.attendees.length}</span>
           </div>
           <div className="meeting-detail__attendees">
             {meeting.attendees.length === 0 && (
-              <p className="meeting-detail__empty-note">Belum ada peserta.</p>
+              <p className="meeting-detail__empty-note">No attendees yet.</p>
             )}
             {meeting.attendees.map(a => {
               const name = a.user?.name ?? `User ${a.userId}`
@@ -1023,7 +1023,7 @@ export function MeetingDetailPanel({
                     <span
                       className={presenceDotPulse ? 'attendee-presence-dot attendee-presence-dot--pulse' : 'attendee-presence-dot'}
                       data-tone={PRESENCE_STATUS_TONE[pStatus]}
-                      title={pStatus === 'ONLINE' ? 'Online' : pStatus === 'AWAY' ? 'Away' : pStatus === 'DO_NOT_DISTURB' ? 'Jangan Ganggu' : 'Offline'}
+                      title={pStatus === 'ONLINE' ? 'Online' : pStatus === 'AWAY' ? 'Away' : pStatus === 'DO_NOT_DISTURB' ? 'Do Not Disturb' : 'Offline'}
                     />
                   </div>
                   <div className="meeting-detail__attendee-info">
@@ -1045,14 +1045,14 @@ export function MeetingDetailPanel({
         {/* ── Notulen ── */}
         <div className="meeting-detail__section">
           <div className="meeting-detail__section-header">
-            <span className="meeting-detail__section-title">Notulen</span>
+            <span className="meeting-detail__section-title">Minutes</span>
           </div>
           {isOrganizer && !isCancelled && !isPostponed ? (
             <div className="meeting-detail__editor">
               <textarea
                 className="form-input meeting-detail__textarea"
                 rows={5}
-                placeholder="Tulis catatan rapat, rangkuman diskusi, poin penting…"
+                placeholder="Write meeting notes, discussion summary, key points…"
                 value={notes}
                 maxLength={8000}
                 onChange={e => setNotes(e.target.value)}
@@ -1069,13 +1069,13 @@ export function MeetingDetailPanel({
                   onClick={saveNotes}
                   disabled={notesSaving}
                 >
-                  {notesSaving ? 'Menyimpan…' : 'Simpan Notulen'}
+                  {notesSaving ? 'Saving…' : 'Save Minutes'}
                 </button>
               </div>
             </div>
           ) : (
             <p className={`text-sm meeting-detail__notes-readonly${notes ? '' : ' meeting-detail__notes-readonly--empty'}`}>
-              {notes || 'Belum ada notulen.'}
+              {notes || 'No minutes yet.'}
             </p>
           )}
         </div>
@@ -1083,12 +1083,12 @@ export function MeetingDetailPanel({
         {/* ── Keputusan ── */}
         <div className="meeting-detail__section">
           <div className="meeting-detail__section-header">
-            <span className="meeting-detail__section-title">Keputusan</span>
+            <span className="meeting-detail__section-title">Decisions</span>
             <span className="meeting-detail__section-count">{decisions.length}</span>
           </div>
 
           {!loadingData && decisions.length === 0 && (
-            <p className="meeting-detail__empty-note">Belum ada keputusan yang dicatat.</p>
+            <p className="meeting-detail__empty-note">No decisions recorded yet.</p>
           )}
 
           {decisions.length > 0 && (
@@ -1100,7 +1100,7 @@ export function MeetingDetailPanel({
                     <p className="text-sm meeting-decision-item__text">{d.decision}</p>
                     {d.decidedByUser && (
                       <span className="text-xs text-muted">
-                        oleh {d.decidedByUser.name} · {formatDatetime(d.createdAt)}
+                        by {d.decidedByUser.name} · {formatDatetime(d.createdAt)}
                       </span>
                     )}
                   </div>
@@ -1109,7 +1109,7 @@ export function MeetingDetailPanel({
                       type="button"
                       className="meeting-detail__icon-btn"
                       onClick={() => void deleteDecision(d.id)}
-                      aria-label="Hapus keputusan"
+                      aria-label="Delete decision"
                     >
                       <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg>
                     </button>
@@ -1125,7 +1125,7 @@ export function MeetingDetailPanel({
                 <input
                   className="form-input meeting-decision-add__input"
                   type="text"
-                  placeholder="Tambah keputusan yang diambil…"
+                  placeholder="Add a decision that was made…"
                   value={newDecision}
                   maxLength={600}
                   onChange={e => setNewDecision(e.target.value)}
@@ -1141,9 +1141,9 @@ export function MeetingDetailPanel({
                 className="btn btn--sm btn--primary"
                 onClick={addDecision}
                 disabled={decisionSaving || newDecision.trim().length < 3 || newDecision.length >= 600}
-                title={newDecision.trim().length > 0 && newDecision.trim().length < 3 ? 'Minimal 3 karakter' : undefined}
+                title={newDecision.trim().length > 0 && newDecision.trim().length < 3 ? 'At least 3 characters' : undefined}
               >
-                {decisionSaving ? '…' : '+ Tambah'}
+                {decisionSaving ? '…' : '+ Add'}
               </button>
             </div>
           )}
@@ -1175,10 +1175,10 @@ export function MeetingDetailPanel({
         {/* ── Action Items ── */}
         <div className="meeting-detail__section">
           <div className="meeting-detail__section-header">
-            <span className="meeting-detail__section-title">Tindak Lanjut</span>
+            <span className="meeting-detail__section-title">Action Items</span>
             {totalAI > 0 && (
               <span className="meeting-detail__section-count">
-                {completedAI}/{totalAI} selesai
+                {completedAI}/{totalAI} completed
               </span>
             )}
           </div>
@@ -1187,8 +1187,8 @@ export function MeetingDetailPanel({
               revert. Mencegah user surprise saat unmark accidentally. */}
           {actionItems.some(ai => ai.linkedTaskId) && (
             <p className="meeting-detail__hint">
-              💡 Action item yang tertaut ke task akan otomatis menutup task saat ditandai selesai.
-              Reopen action item TIDAK mengembalikan task — buka task untuk reopen manual bila perlu.
+              💡 Action items linked to a task will automatically close the task when marked complete.
+              Reopening an action item does NOT revert the task — open the task to reopen it manually if needed.
             </p>
           )}
 
@@ -1201,12 +1201,12 @@ export function MeetingDetailPanel({
           {totalAI > 0 && completedAI === totalAI && (
             <div className="meeting-action-progress__done">
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6"/><path d="m5 8 2 2 4-4"/></svg>
-              Semua tindak lanjut selesai!
+              All action items completed!
             </div>
           )}
 
           {!loadingData && actionItems.length === 0 && (
-            <p className="meeting-detail__empty-note">Belum ada tindak lanjut.</p>
+            <p className="meeting-detail__empty-note">No action items yet.</p>
           )}
 
           {actionItems.length > 0 && (
@@ -1217,7 +1217,7 @@ export function MeetingDetailPanel({
                     className="meeting-action-item__check"
                     onClick={() => void toggleActionStatus(item)}
                     disabled={toggleLoading === item.id || (item.assignedTo?.id !== currentUser?.id && !isOrganizer)}
-                    title={item.status === 'COMPLETED' ? 'Tandai belum selesai' : 'Tandai selesai'}
+                    title={item.status === 'COMPLETED' ? 'Mark as not completed' : 'Mark as completed'}
                   >
                     {item.status === 'COMPLETED'
                       ? <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6" /><path d="m5 8 2 2 4-4" /></svg>
@@ -1251,13 +1251,13 @@ export function MeetingDetailPanel({
                       <button
                         className="btn btn--xs btn--ghost meeting-action-item__wb-btn"
                         onClick={() => openPush(item)}
-                        title="Push ke Workboard sebagai Tugas"
+                        title="Push to Workboard as a Task"
                       >
                         → WB
                       </button>
                     )}
                     {isOrganizer && !isCancelled && !isPostponed && (
-                      <button type="button" className="meeting-detail__icon-btn" onClick={() => void deleteActionItem(item.id)} aria-label="Hapus tindak lanjut">
+                      <button type="button" className="meeting-detail__icon-btn" onClick={() => void deleteActionItem(item.id)} aria-label="Delete action item">
                         <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg>
                       </button>
                     )}
@@ -1274,14 +1274,14 @@ export function MeetingDetailPanel({
                   className="meeting-add-item-btn"
                   onClick={() => setShowAIForm(true)}
                 >
-                  + Tambah action item
+                  + Add action item
                 </button>
               ) : (
                 <div className="meeting-ai-form">
                   <input
                     className="form-input meeting-ai-form__title"
                     type="text"
-                    placeholder="Judul action item… (min. 3 karakter)"
+                    placeholder="Action item title… (min. 3 characters)"
                     value={aiForm.title}
                     minLength={3}
                     maxLength={200}
@@ -1292,7 +1292,7 @@ export function MeetingDetailPanel({
                     <div className="meeting-ai-form__field">
                       <UserPicker
                         allowClear
-                        clearLabel="— Hapus assignee —"
+                        clearLabel="— Clear assignee —"
                         inputClassName="form-input meeting-ai-form__input"
                         onChange={id => setAiForm(f => ({ ...f, assignedToId: id ?? '' }))}
                         options={aiUsers.map(u => ({
@@ -1300,7 +1300,7 @@ export function MeetingDetailPanel({
                           name: u.name,
                           positionTitle: u.positionTitle ?? formatRoleLabel(u.roleType),
                         }))}
-                        placeholder="Assign ke…"
+                        placeholder="Assign to…"
                         value={typeof aiForm.assignedToId === 'number' ? aiForm.assignedToId : (aiForm.assignedToId ? Number(aiForm.assignedToId) : null)}
                       />
                     </div>
@@ -1314,9 +1314,9 @@ export function MeetingDetailPanel({
                   </div>
                   {aiError && <p className="text-sm schedule-feedback schedule-feedback--danger">{aiError}</p>}
                   <div className="meeting-ai-form__actions">
-                    <button className="btn btn--sm btn--ghost" onClick={() => { setShowAIForm(false); setAiError(null); setAiForm({ title: '', assignedToId: '', dueDate: '' }) }}>Batal</button>
+                    <button className="btn btn--sm btn--ghost" onClick={() => { setShowAIForm(false); setAiError(null); setAiForm({ title: '', assignedToId: '', dueDate: '' }) }}>Cancel</button>
                     <button className="btn btn--sm btn--primary" onClick={addActionItem} disabled={aiSaving}>
-                      {aiSaving ? '…' : 'Tambah'}
+                      {aiSaving ? '…' : 'Add'}
                     </button>
                   </div>
                 </div>
@@ -1339,7 +1339,7 @@ export function MeetingDetailPanel({
                 <span className="modal-kicker">Meeting Setup</span>
                 <h3 className="modal__title" id={editMeetingTitleId}>Edit Meeting</h3>
                 <p className="modal-subtitle" id={editMeetingDescId}>
-                  Perbarui agenda, waktu, dan konteks meeting agar peserta menerima informasi yang paling akurat.
+                  Update the agenda, time, and meeting context so attendees receive the most accurate information.
                 </p>
               </div>
               <button className="modal__close" type="button" onClick={() => setShowEdit(false)}>
@@ -1349,17 +1349,17 @@ export function MeetingDetailPanel({
             <div className="modal__body schedule-modal__body">
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Informasi Utama</h4>
-                  <p>Rapikan judul dan tipe meeting agar peserta langsung memahami forum yang sedang mereka hadiri.</p>
+                  <h4>Main Information</h4>
+                  <p>Tidy up the meeting title and type so attendees immediately understand the forum they are attending.</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Judul <span className="schedule-modal__required">*</span></label>
+                  <label className="modal-label">Title <span className="schedule-modal__required">*</span></label>
                   <input className="form-input" type="text" value={editForm.title}
                     minLength={3} maxLength={120} disabled={editSaving}
                     onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} autoFocus />
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Tipe Meeting</label>
+                  <label className="modal-label">Meeting Type</label>
                   <select className="form-input" value={editForm.meetingType} disabled={editSaving}
                     onChange={e => setEditForm(f => ({ ...f, meetingType: e.target.value as MeetingType }))}>
                     {(['RAPAT_DIREKSI','RAPAT_KOORDINASI','RAPAT_DIVISI','RAPAT_TIM','ONE_ON_ONE'] as MeetingType[]).map(t => (
@@ -1370,11 +1370,11 @@ export function MeetingDetailPanel({
               </section>
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Waktu & Lokasi</h4>
-                  <p>Pastikan jadwal, lokasi, dan catatan tambahan sudah siap sebelum perubahan disimpan ke peserta.</p>
+                  <h4>Time & Location</h4>
+                  <p>Make sure the schedule, location, and additional notes are ready before changes are saved for attendees.</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Tanggal & Waktu <span className="schedule-modal__required">*</span></label>
+                  <label className="modal-label">Date & Time <span className="schedule-modal__required">*</span></label>
                   <div className="schedule-modal__datetime-grid">
                     <input className="form-input" type="date" value={editForm.date} required disabled={editSaving}
                       onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} />
@@ -1383,16 +1383,16 @@ export function MeetingDetailPanel({
                     <input className="form-input" type="time" value={editForm.endTime} required disabled={editSaving}
                       onChange={e => setEditForm(f => ({ ...f, endTime: e.target.value }))} />
                   </div>
-                  <span className="text-xs text-muted schedule-modal__hint">Tanggal · Mulai · Selesai</span>
+                  <span className="text-xs text-muted schedule-modal__hint">Date · Start · End</span>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Lokasi</label>
-                  <input className="form-input" type="text" placeholder="Ruang rapat atau link…" value={editForm.location}
+                  <label className="modal-label">Location</label>
+                  <input className="form-input" type="text" placeholder="Meeting room or link…" value={editForm.location}
                     maxLength={200} disabled={editSaving}
                     onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))} />
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Deskripsi</label>
+                  <label className="modal-label">Description</label>
                   <textarea className="form-input schedule-modal__textarea" rows={2} value={editForm.description}
                     maxLength={400} disabled={editSaving}
                     onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} />
@@ -1401,9 +1401,9 @@ export function MeetingDetailPanel({
               {editError && <p className="text-sm schedule-feedback schedule-feedback--danger">{editError}</p>}
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => { setShowEdit(false); setEditError(null) }} disabled={editSaving}>Batal</button>
+              <button className="btn btn--ghost" onClick={() => { setShowEdit(false); setEditError(null) }} disabled={editSaving}>Cancel</button>
               <button className="btn btn--primary" onClick={submitEdit} disabled={editSaving}>
-                {editSaving ? 'Menyimpan…' : 'Simpan Perubahan'}
+                {editSaving ? 'Saving…' : 'Save Changes'}
               </button>
             </div>
           </div>
@@ -1417,8 +1417,8 @@ export function MeetingDetailPanel({
           <div aria-describedby={deleteDecisionDescId} aria-labelledby={deleteDecisionTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--confirm meeting-modal-surface meeting-modal-surface--confirm" ref={deleteDecisionDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={deleteDecisionTitleId}>Hapus Keputusan?</h3>
-                <p className="modal-subtitle" id={deleteDecisionDescId}>Keputusan rapat yang dihapus tidak bisa dipulihkan dan akan hilang dari jejak notulens.</p>
+                <h3 className="modal__title" id={deleteDecisionTitleId}>Delete Decision?</h3>
+                <p className="modal-subtitle" id={deleteDecisionDescId}>A deleted meeting decision cannot be restored and will be lost from the minutes trail.</p>
               </div>
               <button className="modal__close" type="button" onClick={() => setConfirmDeleteDecision(null)}>
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
@@ -1426,13 +1426,13 @@ export function MeetingDetailPanel({
             </div>
             <div className="modal__body">
               <div className="modal-helper-note modal-helper-note--danger">
-                Keputusan ini akan dihapus permanen dan tidak dapat dikembalikan.
+                This decision will be permanently deleted and cannot be recovered.
               </div>
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => setConfirmDeleteDecision(null)} disabled={decisionDeleteSaving}>Batal</button>
+              <button className="btn btn--ghost" onClick={() => setConfirmDeleteDecision(null)} disabled={decisionDeleteSaving}>Cancel</button>
               <button className="btn btn--danger" onClick={() => void doDeleteDecision()} disabled={decisionDeleteSaving}>
-                {decisionDeleteSaving ? 'Menghapus…' : 'Hapus'}
+                {decisionDeleteSaving ? 'Deleting…' : 'Delete'}
               </button>
             </div>
           </div>
@@ -1446,8 +1446,8 @@ export function MeetingDetailPanel({
           <div aria-describedby={deleteActionItemDescId} aria-labelledby={deleteActionItemTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--confirm meeting-modal-surface meeting-modal-surface--confirm" ref={deleteActionItemDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={deleteActionItemTitleId}>Hapus Tindak Lanjut?</h3>
-                <p className="modal-subtitle" id={deleteActionItemDescId}>Menghapus tindak lanjut akan memutus jejak eksekusi yang berasal dari forum rapat ini.</p>
+                <h3 className="modal__title" id={deleteActionItemTitleId}>Delete Action Item?</h3>
+                <p className="modal-subtitle" id={deleteActionItemDescId}>Deleting an action item breaks the execution trail originating from this meeting forum.</p>
               </div>
               <button className="modal__close" type="button" onClick={() => setConfirmDeleteActionItem(null)}>
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
@@ -1455,13 +1455,13 @@ export function MeetingDetailPanel({
             </div>
             <div className="modal__body">
               <div className="modal-helper-note modal-helper-note--danger">
-                Tindak lanjut ini akan dihapus permanen dan tidak dapat dikembalikan.
+                This action item will be permanently deleted and cannot be recovered.
               </div>
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => setConfirmDeleteActionItem(null)} disabled={actionItemDeleteSaving}>Batal</button>
+              <button className="btn btn--ghost" onClick={() => setConfirmDeleteActionItem(null)} disabled={actionItemDeleteSaving}>Cancel</button>
               <button className="btn btn--danger" onClick={() => void doDeleteActionItem()} disabled={actionItemDeleteSaving}>
-                {actionItemDeleteSaving ? 'Menghapus…' : 'Hapus'}
+                {actionItemDeleteSaving ? 'Deleting…' : 'Delete'}
               </button>
             </div>
           </div>
@@ -1476,9 +1476,9 @@ export function MeetingDetailPanel({
             <div className="modal__header">
               <div className="modal-headcopy">
                 <span className="modal-kicker">Meeting to Workboard</span>
-                <h3 className="modal__title" id={pushTaskTitleId}>Push ke Workboard</h3>
+                <h3 className="modal__title" id={pushTaskTitleId}>Push to Workboard</h3>
                 <p className="modal-subtitle" id={pushTaskDescId}>
-                  Ubah tindak lanjut rapat menjadi task yang bisa dipantau progres, owner, dan deadline-nya.
+                  Turn a meeting action item into a task whose progress, owner, and deadline can be tracked.
                 </p>
               </div>
               <button className="modal__close" type="button" onClick={() => setPushItem(null)}>
@@ -1488,8 +1488,8 @@ export function MeetingDetailPanel({
             <div className="modal__body schedule-modal__body">
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Action Item Sumber</h4>
-                  <p>Item di bawah ini akan dipakai sebagai basis task baru di workboard.</p>
+                  <h4>Source Action Item</h4>
+                  <p>The item below will be used as the basis for a new task in the workboard.</p>
                 </div>
                 <div className="meeting-push-preview">
                   <span className="meeting-push-preview__label">Action item</span>
@@ -1498,17 +1498,17 @@ export function MeetingDetailPanel({
               </section>
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Tujuan Eksekusi</h4>
-                  <p>Pilih workstream tujuan dan tambahkan target selesai bila Anda ingin ritme follow-up lebih terukur.</p>
+                  <h4>Execution Target</h4>
+                  <p>Choose the destination workstream and add a target completion date if you want a more measurable follow-up rhythm.</p>
                 </div>
                 <div className="modal-field">
                   <label className="modal-label">Workstream <span className="schedule-modal__required">*</span></label>
                   {workstreams.length === 0 ? (
-                    <p className="text-sm text-muted">Memuat…</p>
+                    <p className="text-sm text-muted">Loading…</p>
                   ) : (
                     <select className="form-input" value={pushForm.workstreamId}
                       onChange={e => setPushForm(f => ({ ...f, workstreamId: e.target.value }))}>
-                      <option value="">— Pilih workstream —</option>
+                      <option value="">— Select a workstream —</option>
                       {workstreams.map(i => (
                         <option key={i.id} value={i.id}>[{i.code}] {i.name}</option>
                       ))}
@@ -1516,7 +1516,7 @@ export function MeetingDetailPanel({
                   )}
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Target Selesai</label>
+                  <label className="modal-label">Target Completion</label>
                   <input className="form-input" type="date" value={pushForm.targetCompletion}
                     onChange={e => setPushForm(f => ({ ...f, targetCompletion: e.target.value }))} />
                 </div>
@@ -1524,9 +1524,9 @@ export function MeetingDetailPanel({
               {pushError && <p className="text-sm schedule-feedback schedule-feedback--danger">{pushError}</p>}
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => setPushItem(null)} disabled={pushSaving}>Batal</button>
+              <button className="btn btn--ghost" onClick={() => setPushItem(null)} disabled={pushSaving}>Cancel</button>
               <button className="btn btn--primary" onClick={submitPush} disabled={pushSaving}>
-                {pushSaving ? 'Membuat…' : '→ Buat Tugas'}
+                {pushSaving ? 'Creating…' : '→ Create Task'}
               </button>
             </div>
           </div>
@@ -1541,9 +1541,9 @@ export function MeetingDetailPanel({
             <div className="modal__header">
               <div className="modal-headcopy">
                 <span className="modal-kicker">Meeting Status</span>
-                <h3 className="modal__title" id={postponeMeetingTitleId}>Tunda Meeting</h3>
+                <h3 className="modal__title" id={postponeMeetingTitleId}>Postpone Meeting</h3>
                 <p className="modal-subtitle" id={postponeMeetingDescId}>
-                  Tunda rapat dengan alasan yang jelas supaya peserta memahami konteks dan organizer mudah menjadwalkan ulang.
+                  Postpone the meeting with a clear reason so attendees understand the context and the organizer can reschedule easily.
                 </p>
               </div>
               <button className="modal__close" type="button" onClick={() => { setShowPostpone(false); setPostponeReason(''); setPostponeError(null) }}>
@@ -1553,24 +1553,24 @@ export function MeetingDetailPanel({
             <div className="modal__body schedule-modal__body">
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Dampak Penundaan</h4>
-                  <p>Meeting akan berstatus <strong>Ditunda</strong>. Organizer dapat menjadwalkan ulang kapan saja.</p>
+                  <h4>Postponement Impact</h4>
+                  <p>The meeting status will become <strong>Postponed</strong>. The organizer can reschedule at any time.</p>
                 </div>
                 <div className="modal-helper-note">
-                  Gunakan alasan yang cukup informatif agar peserta memahami apakah rapat perlu disiapkan ulang atau hanya digeser waktunya.
+                  Use a sufficiently informative reason so attendees understand whether the meeting needs to be re-prepared or is simply being moved.
                 </div>
               </section>
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Alasan Penundaan</h4>
-                  <p>Catatan ini akan membantu menjaga konteks saat meeting dijadwalkan ulang nanti.</p>
+                  <h4>Postponement Reason</h4>
+                  <p>This note helps preserve context when the meeting is rescheduled later.</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Alasan Penundaan <span className="schedule-modal__required">*</span></label>
+                  <label className="modal-label">Postponement Reason <span className="schedule-modal__required">*</span></label>
                   <textarea
                     className="form-input schedule-modal__textarea"
                     rows={3}
-                    placeholder="misal: Direktur berhalangan hadir, akan dijadwal ulang"
+                    placeholder="e.g. Director unavailable, will be rescheduled"
                     value={postponeReason}
                     maxLength={300}
                     onChange={e => setPostponeReason(e.target.value)}
@@ -1584,9 +1584,9 @@ export function MeetingDetailPanel({
               {postponeError && <p className="text-sm schedule-feedback schedule-feedback--danger">{postponeError}</p>}
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" type="button" onClick={() => { setShowPostpone(false); setPostponeReason(''); setPostponeError(null) }} disabled={postponeSaving}>Batal</button>
+              <button className="btn btn--ghost" type="button" onClick={() => { setShowPostpone(false); setPostponeReason(''); setPostponeError(null) }} disabled={postponeSaving}>Cancel</button>
               <button className="btn btn--primary meeting-btn--warn" type="button" onClick={postponeMeeting} disabled={postponeSaving || !postponeReason.trim()}>
-                {postponeSaving ? 'Menyimpan…' : '⏸ Konfirmasi Tunda'}
+                {postponeSaving ? 'Saving…' : '⏸ Confirm Postpone'}
               </button>
             </div>
           </div>

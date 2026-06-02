@@ -93,16 +93,16 @@ function relativeTime(iso: string): string {
 }
 
 function formatEstimate(hours: number): { primary: string; secondary?: string } {
-  if (hours <= 0) return { primary: `${hours} jam` }
-  if (hours < 8) return { primary: `${hours} jam` }
+  if (hours <= 0) return { primary: `${hours} hrs` }
+  if (hours < 8) return { primary: `${hours} hrs` }
   const days = hours / 8
   if (days < 5) {
     const pretty = days % 1 === 0 ? days.toFixed(0) : days.toFixed(1)
-    return { primary: `${hours} jam`, secondary: `≈ ${pretty} hari kerja` }
+    return { primary: `${hours} hrs`, secondary: `≈ ${pretty} work days` }
   }
   const weeks = days / 5
   const pretty = weeks % 1 === 0 ? weeks.toFixed(0) : weeks.toFixed(1)
-  return { primary: `${hours} jam`, secondary: `≈ ${pretty} minggu kerja` }
+  return { primary: `${hours} hrs`, secondary: `≈ ${pretty} work weeks` }
 }
 
 function autoResize(el: HTMLTextAreaElement | null) {
@@ -279,7 +279,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
   const copyWILink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href)
-      showToast('Link task disalin', 'success')
+      showToast('Task link copied', 'success')
     } catch {
       showToast('Failed to copy link', 'error')
     }
@@ -513,7 +513,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
   const startBlockReason = !detail?.assignee && !detail?.targetCompletion
     ? 'Set a PIC & target completion first'
     : !detail?.assignee ? 'Set a PIC before starting the task'
-    : !detail?.targetCompletion ? 'Isi target selesai dulu sebelum memulai task'
+    : !detail?.targetCompletion ? 'Set a target completion before starting the task'
     : ''
 
   const commitProgress = async () => {
@@ -1120,7 +1120,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
         <div style={{ padding: '32px', maxWidth: 560 }}>
           <InlineNotice tone="error">{loadError ?? 'Work item not found.'}</InlineNotice>
           <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
-            <button className="wid-btn wid-btn--primary" onClick={() => void loadDetail()} type="button">Coba lagi</button>
+            <button className="wid-btn wid-btn--primary" onClick={() => void loadDetail()} type="button">Try again</button>
             <button className="wid-btn" onClick={() => navigate('/execution')} type="button">Back to board</button>
           </div>
         </div>
@@ -1156,7 +1156,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
   } else if (detail.isBlocked && detail.blockedReason) {
     alert = {
       tone: 'danger', icon: Icon.blocker,
-      title: 'Work item terblokir',
+      title: 'Work item blocked',
       sub: detail.blockedReason,
       actionLabel: 'View blocker',
       onAction: scrollToBlockers,
@@ -1197,7 +1197,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
         />
         <div className="wid-topbar__actions">
           {liveFlash && (
-            <span className="wid-live-badge" title="Data diperbarui oleh sinkronisasi real-time">
+            <span className="wid-live-badge" title="Data updated by real-time sync">
               {Icon.wifi}
               <span>Live</span>
             </span>
@@ -1213,10 +1213,10 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
             <kbd className="wid-kbd">⌘P</kbd>
           </button>
           <button
-            aria-label="Salin link ke task ini"
+            aria-label="Copy link to this task"
             className="wid-iconbtn"
             onClick={() => void copyWILink()}
-            title="Salin link (⌘⇧C)"
+            title="Copy link (⌘⇧C)"
             type="button"
           >
             {Icon.link}
@@ -1240,7 +1240,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
               </button>
               <button aria-label="Delete task" className="wid-iconbtn wid-iconbtn--danger" onClick={() => setConfirmDelete(true)} type="button">
                 <svg aria-hidden="true" fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="12"><path d="M2 3h8M4 3V2h4v1M5 5.5v3M7 5.5v3M3 3l.5 7h5l.5-7"/></svg>
-                Hapus
+                Delete
               </button>
             </>
           )}
@@ -1373,9 +1373,9 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                 {dueDays !== null && detail.status !== 'COMPLETED' && (
                   <span className="wid-due-chip">
                     {isOverdue
-                      ? `lewat ${Math.abs(dueDays)}h`
-                      : dueDays === 0 ? 'hari ini'
-                      : `${dueDays}h lagi`}
+                      ? `${Math.abs(dueDays)}d overdue`
+                      : dueDays === 0 ? 'today'
+                      : `${dueDays}d left`}
                   </span>
                 )}
               </button>
@@ -1401,7 +1401,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                 type="button"
               >
                 {Icon.calendar}
-                <span>+ Set tenggat</span>
+                <span>+ Set deadline</span>
               </button>
             )
           ) : null}
@@ -1530,7 +1530,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
           </div>
           {inPlanning && (
             <span className="wid-ms-lock-hint">
-              Program masih Perencanaan — status &amp; progress tersedia saat Eksekusi dimulai.
+              Program is still in Planning — status &amp; progress become available once Execution begins.
             </span>
           )}
         </div>
@@ -1586,7 +1586,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                 ) : (
                   <button className="wid-desc-add" onClick={beginDescEdit} type="button">
                     <span className="wid-desc-add__icon">+</span>
-                    Tambah deskripsi task
+                    Add task description
                   </button>
                 )}
               </div>
@@ -1627,7 +1627,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                         className={`wid-subtask-check${st.isCompleted ? ' is-done' : ''}${celebrateIds.has(st.id) ? ' is-celebrating' : ''}`}
                         disabled={togglingSubtask === st.id || roleAccess.isMonitoringOnly || inPlanning}
                         onClick={() => void toggleSubtask(st.id)}
-                        title={inPlanning ? 'Sub-task bisa diceklis setelah program masuk Eksekusi' : undefined}
+                        title={inPlanning ? 'Subtasks can be checked off once the program enters Execution' : undefined}
                         type="button"
                       >
                         {st.isCompleted ? (
@@ -1707,7 +1707,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
             <div className="wid-panel__body">
               {inPlanning && (detail.blockers ?? []).length === 0 && (
                 <p className="wid-bl-locked">
-                  Blocker hanya bisa dibuat setelah program masuk fase Eksekusi.
+                  Blockers can only be created once the program enters the Execution phase.
                 </p>
               )}
               {showCreateBlocker && !inPlanning && (
@@ -1732,7 +1732,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                         inputClassName="wid-input"
                         onChange={id => setBlForm(f => ({ ...f, assignedTo: id ? String(id) : '' }))}
                         options={assignUsers}
-                        placeholder="Assignee (opsional)"
+                        placeholder="Assignee (optional)"
                         value={blForm.assignedTo ? Number(blForm.assignedTo) : null}
                       />
                     </div>
@@ -1775,7 +1775,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                           </select>
                           <textarea className="wid-input" disabled={blEditSaving} onChange={e => setBlEditTarget(t => t ? { ...t, description: e.target.value } : t)} rows={2} style={{ resize: 'vertical' }} value={blEditTarget.description} />
                           <div className="wid-form__actions">
-                            <button className="wid-btn wid-btn--primary" disabled={blEditSaving} type="submit">{blEditSaving ? '…' : 'Simpan'}</button>
+                            <button className="wid-btn wid-btn--primary" disabled={blEditSaving} type="submit">{blEditSaving ? '…' : 'Save'}</button>
                             <button className="wid-btn" onClick={() => setBlEditTarget(null)} type="button">Cancel</button>
                           </div>
                         </form>
@@ -1789,7 +1789,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                             <textarea className="wid-input" disabled={blStatusSaving} onChange={e => setBlStatusTarget(t => t ? { ...t, resolution: e.target.value } : t)} placeholder="Resolution note (optional)" rows={2} style={{ resize: 'vertical' }} value={blStatusTarget.resolution} />
                           )}
                           <div className="wid-form__actions">
-                            <button className="wid-btn wid-btn--primary" disabled={blStatusSaving} type="submit">{blStatusSaving ? '…' : 'Simpan'}</button>
+                            <button className="wid-btn wid-btn--primary" disabled={blStatusSaving} type="submit">{blStatusSaving ? '…' : 'Save'}</button>
                             <button className="wid-btn" onClick={() => setBlStatusTarget(null)} type="button">Cancel</button>
                           </div>
                         </form>
@@ -1798,7 +1798,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                         <div className="wid-bl-delete-confirm">
                           <span>Delete this blocker?</span>
                           <button className="wid-btn wid-btn--danger" disabled={blDeleteSaving} onClick={() => void submitDeleteBlocker(bl.id)} type="button">
-                            {blDeleteSaving ? '…' : 'Ya'}
+                            {blDeleteSaving ? '…' : 'Yes'}
                           </button>
                           <button className="wid-btn" disabled={blDeleteSaving} onClick={() => setBlDeleteConfirmId(null)} type="button">Cancel</button>
                         </div>
@@ -1809,7 +1809,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                         <EscalationButton
                           sourceType="BLOCKER"
                           sourceId={bl.id}
-                          prefillTitle={`Butuh dukungan: ${bl.title}`}
+                          prefillTitle={`Support needed: ${bl.title}`}
                           prefillDescription={bl.description ?? undefined}
                           size="sm"
                         />
@@ -2013,11 +2013,11 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                     {replyTargetId
                       ? <button className="wid-btn" onClick={() => setReplyTargetId(null)} type="button">Cancel reply</button>
                       : <span className="wid-composer__hint">
-                          <kbd className="wid-kbd">⌘↵</kbd> untuk kirim
+                          <kbd className="wid-kbd">⌘↵</kbd> to send
                         </span>
                     }
                     <button className="wid-btn wid-btn--primary" disabled={sending || !commentValue.trim()} type="submit">
-                      {sending ? 'Mengirim…' : 'Kirim'}
+                      {sending ? 'Sending…' : 'Send'}
                     </button>
                   </div>
                 </div>
@@ -2053,7 +2053,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                 >
                   <path d="M1 1l4 4 4-4"/>
                 </svg>
-                Konteks & Tim
+                Context & Team
               </button>
             )}
 
@@ -2099,7 +2099,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                         onClick={() => { setShowAssigneeEdit(true); void loadAssignUsers() }}
                         type="button"
                       >
-                        + Tugaskan{currentUser && <span className="wid-flat-add__kbd"><kbd className="wid-kbd">A</kbd></span>}
+                        + Assign{currentUser && <span className="wid-flat-add__kbd"><kbd className="wid-kbd">A</kbd></span>}
                       </button>
                     ) : <span className="wid-sp-val">—</span>}
                   </div>
@@ -2279,7 +2279,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                       const est = formatEstimate(detail.estimatedHours!)
                       return (
                         <div className="wid-sp-grid__cell">
-                          <span className="wid-sp-label">Estimasi</span>
+                          <span className="wid-sp-label">Estimate</span>
                           <span className="wid-sp-val">
                             {est.primary}
                             {est.secondary && <span className="wid-sp-sub"> · {est.secondary}</span>}
@@ -2309,10 +2309,10 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                                 <span className="wid-ren-week-chip" key={w}>{formatWeekLabel(w)}</span>
                               ))}
                             </div>
-                            <button className="btn btn--ghost wid-ren-edit-btn" onClick={openRenEditor} type="button">Edit jadwal</button>
+                            <button className="btn btn--ghost wid-ren-edit-btn" onClick={openRenEditor} type="button">Edit schedule</button>
                           </>
                         ) : (
-                          <button className="wid-flat-add" onClick={openRenEditor} type="button">+ + Atur Plan</button>
+                          <button className="wid-flat-add" onClick={openRenEditor} type="button">+ Set up Plan</button>
                         )}
                       </div>
                     ) : (
@@ -2328,7 +2328,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                           </div>
                         </div>
                         {renStart && renEnd && renStart <= renEnd && (
-                          <p className="wid-ren-preview">{weeksInRange(renStart, renEnd).length} minggu dipilih</p>
+                          <p className="wid-ren-preview">{weeksInRange(renStart, renEnd).length} weeks selected</p>
                         )}
                         <div className="wid-ren-actions">
                           <button className="profile-save-btn" disabled={renSaving || !renStart || !renEnd || renStart > renEnd} onClick={() => void saveRen()} type="button">
@@ -2380,7 +2380,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                           </div>
                           <div className="wid-activity__body">
                             <div className="wid-activity__top">
-                              <span className="wid-activity__author">{c.authorName ?? 'Anonim'}</span>
+                              <span className="wid-activity__author">{c.authorName ?? 'Anonymous'}</span>
                               <time className="wid-activity__time">{relativeTime(c.createdAt)}</time>
                             </div>
                             <p className="wid-activity__msg">{c.commentText.length > 100 ? c.commentText.slice(0, 100) + '…' : c.commentText}</p>
@@ -2400,7 +2400,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
 
       {/* ── Help overlay (press ? to toggle) ────────────────── */}
       {showHelp && (
-        <div aria-label="Panduan pintasan keyboard" className="wid-help" onMouseDown={() => setShowHelp(false)} role="dialog" aria-modal="true">
+        <div aria-label="Keyboard shortcut guide" className="wid-help" onMouseDown={() => setShowHelp(false)} role="dialog" aria-modal="true">
           <div className="wid-help__modal" onMouseDown={e => e.stopPropagation()}>
             <div className="wid-help__head">
               <h3 className="wid-help__title">Keyboard shortcuts</h3>
@@ -2443,7 +2443,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
               </section>
             </div>
             <div className="wid-help__foot">
-              Tekan <kbd className="wid-kbd">ESC</kbd> atau klik di luar untuk tutup
+              Press <kbd className="wid-kbd">ESC</kbd> or click outside to close
             </div>
           </div>
         </div>
@@ -2451,7 +2451,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
 
       {/* ── Quick-switch modal (⌘P) ──────────────────────── */}
       {showQuickSwitch && (
-        <div aria-label="Pindah cepat ke task" className="wid-qs" onMouseDown={() => setShowQuickSwitch(false)} role="dialog" aria-modal="true">
+        <div aria-label="Quick switch to another task" className="wid-qs" onMouseDown={() => setShowQuickSwitch(false)} role="dialog" aria-modal="true">
           <div className="wid-qs__modal" onMouseDown={e => e.stopPropagation()}>
             <div className="wid-qs__head">
               <span className="wid-qs__icon" aria-hidden="true">{Icon.search}</span>
@@ -2491,14 +2491,14 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
                 >
                   <span className="wid-qs__item-code">{r.code}</span>
                   <span className="wid-qs__item-title">{r.title}</span>
-                  {r.id === Number(id) && <span className="wid-qs__item-tag">sekarang</span>}
+                  {r.id === Number(id) && <span className="wid-qs__item-tag">current</span>}
                 </button>
               ))}
             </div>
             <div className="wid-qs__foot">
-              <span><kbd className="wid-kbd">↑</kbd><kbd className="wid-kbd">↓</kbd> navigasi</span>
-              <span><kbd className="wid-kbd">↵</kbd> buka</span>
-              <span><kbd className="wid-kbd">ESC</kbd> tutup</span>
+              <span><kbd className="wid-kbd">↑</kbd><kbd className="wid-kbd">↓</kbd> navigate</span>
+              <span><kbd className="wid-kbd">↵</kbd> open</span>
+              <span><kbd className="wid-kbd">ESC</kbd> close</span>
             </div>
           </div>
         </div>
@@ -2524,7 +2524,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailVie
             type="button"
           >
             <kbd className="wid-kbd">?</kbd>
-            <span>Shortcut keyboard</span>
+            <span>Keyboard shortcuts</span>
           </button>
           <button
             aria-label="Close hint"

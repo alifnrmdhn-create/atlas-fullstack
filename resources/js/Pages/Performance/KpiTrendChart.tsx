@@ -53,7 +53,7 @@ export function KpiTrendChart({ trend, height = 260 }: Props) {
   if (data.length === 0) {
     return (
       <div className="kpi-trend-empty">
-        Belum ada data scorecard untuk periode ini.
+        No scorecard data for this period yet.
       </div>
     )
   }

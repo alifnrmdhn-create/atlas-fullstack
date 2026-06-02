@@ -32,10 +32,10 @@ const TONE_COLOR: Record<string, string> = {
 }
 
 const TONE_LABEL: Record<string, string> = {
-  done:    'Ada aktivitas aktual',
-  planned: 'Direncanakan, belum terlaksana',
-  gap:     'Seharusnya ada, tapi kosong',
-  empty:   'Tidak ada rencana',
+  done:    'Actual activity recorded',
+  planned: 'Planned, not yet done',
+  gap:     'Expected, but empty',
+  empty:   'No plan',
 }
 
 export function MonitoringMatrix() {
@@ -51,18 +51,18 @@ export function MonitoringMatrix() {
         if (res && Array.isArray(res.data)) {
           setData({ data: res.data, weeks: res.weeks ?? [], currentWeek: res.currentWeek ?? '' })
         } else {
-          setError('Format respons tidak valid')
+          setError('Invalid response format')
         }
       })
-      .catch(err => setError(err instanceof Error ? err.message : 'Gagal memuat matrix'))
+      .catch(err => setError(err instanceof Error ? err.message : 'Failed to load matrix'))
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="monitoring-matrix__loading">Memuat monitoring matrix…</div>
+  if (loading) return <div className="monitoring-matrix__loading">Loading monitoring matrix…</div>
   if (error)   return <div className="monitoring-matrix__error">{error}</div>
   if (!data?.data?.length) return (
     <div className="monitoring-matrix__empty">
-      <p>Tidak ada program aktif untuk ditampilkan.</p>
+      <p>No active programs to display.</p>
     </div>
   )
 

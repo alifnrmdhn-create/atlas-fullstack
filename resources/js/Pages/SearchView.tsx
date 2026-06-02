@@ -86,7 +86,7 @@ export function SearchView() {
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Search & Discovery</h2>
         <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Temukan program, pesan, dan dokumen di seluruh workspace.</span>
+        <span className="view-toolbar__subtitle">Find programs, messages, and documents across the workspace.</span>
         {searchTotal > 0 && (
           <>
             <div className="view-toolbar__sep" />
@@ -119,7 +119,7 @@ export function SearchView() {
                     autoFocus
                     className="search-form__input"
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Cari pesan, task, komentar…"
+                    placeholder="Search messages, tasks, comments…"
                     value={query}
                   />
                 </div>
@@ -128,14 +128,14 @@ export function SearchView() {
                   onChange={(e) => setSearchType(e.target.value)}
                   value={searchType}
                 >
-                  <option value="ALL">Semua</option>
+                  <option value="ALL">All</option>
                   <option value="CHANNEL_MESSAGES">Messages</option>
                   <option value="COMMENTS">Comments</option>
-                  <option value="TASKS">Tugas</option>
-                  <option value="PROGRAMS">Program</option>
-                  <option value="MEETINGS">Meeting</option>
+                  <option value="TASKS">Tasks</option>
+                  <option value="PROGRAMS">Programs</option>
+                  <option value="MEETINGS">Meetings</option>
                 </select>
-                <button className="search-form__submit" type="submit">Cari</button>
+                <button className="search-form__submit" type="submit">Search</button>
               </div>
             </form>
 
@@ -157,7 +157,7 @@ export function SearchView() {
             {/* Hint / result meta */}
             <div className="search-meta">
               {searching ? (
-                <span className="search-hint">Mencari…</span>
+                <span className="search-hint">Searching…</span>
               ) : searchResults.length > 0 ? (
                 <div className="search-mix">
                   <span className="search-hint">{searchTotal} results</span>
@@ -168,9 +168,9 @@ export function SearchView() {
                   <span className="search-mix__stat">{resultMix.messages} messages</span>
                 </div>
               ) : query ? (
-                <span className="search-hint">Tidak ada hasil untuk "{query}"</span>
+                <span className="search-hint">No results for "{query}"</span>
               ) : (
-                <span className="search-hint">Ketik dan tekan Enter untuk mencari</span>
+                <span className="search-hint">Type and press Enter to search</span>
               )}
             </div>
 
@@ -189,8 +189,8 @@ export function SearchView() {
                   <circle cx="10.5" cy="10.5" r="6.5" />
                   <path strokeLinecap="round" d="m15.5 15.5 5 5" />
                 </svg>
-                <div className="empty-state-title">Cari di seluruh ATLAS</div>
-                <div className="empty-state-desc">Program, task, pesan, blockers — semua bisa ditemukan di sini.</div>
+                <div className="empty-state-title">Search across ATLAS</div>
+                <div className="empty-state-desc">Programs, tasks, messages, blockers — find it all here.</div>
               </div>
             )}
 
@@ -263,7 +263,7 @@ export function SearchView() {
                 ))}
               </div>
             ) : (
-              <SectionState title="Belum ada saved searches" text="Simpan pencarian yang sering digunakan." compact />
+              <SectionState title="No saved searches yet" text="Save searches you use often." compact />
             )}
           </div>
 

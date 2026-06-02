@@ -127,7 +127,7 @@ class AssignmentService
 
         $isAdmin = RolePolicy::isAdminOrAbove($user->roleType);
         if (!$this->canSeeAssignment($a, $user->id, $isAdmin)) {
-            abort(403, 'Anda tidak memiliki akses ke penugasan ini.');
+            abort(403, 'You do not have access to this assignment.');
         }
         return $a;
     }
@@ -151,13 +151,13 @@ class AssignmentService
     public function create(User $user, array $payload): Assignment
     {
         if (!$this->authService->canCreateAssignment($user->roleType)) {
-            abort(403, 'Role Anda tidak diizinkan memberikan tugas.');
+            abort(403, 'Your role is not allowed to create assignments.');
         }
         if (!$this->authService->canAssignTo($user, $payload['assigneeId'])) {
-            abort(403, 'Anda hanya dapat menugaskan ke bawahan langsung atau tim dalam unit Anda.');
+            abort(403, 'You can only assign to direct reports or team members within your unit.');
         }
         if (!empty($payload['isPrivate']) && !$this->authService->canSetPrivate($user->roleType)) {
-            abort(403, 'Hanya BOD atau Kepala Divisi yang dapat menandai tugas sebagai private.');
+            abort(403, 'Only BOD or a Division Head can mark an assignment as private.');
         }
 
         $chain = $this->chainService->resolve($payload['assigneeId'], $user->id);
@@ -198,10 +198,10 @@ class AssignmentService
 
         $isAdmin = RolePolicy::isAdminOrAbove($user->roleType);
         if (!$isAdmin && $existing->assignerId !== $user->id) {
-            abort(403, 'Hanya pemberi tugas yang dapat mengubah metadata penugasan.');
+            abort(403, 'Only the assigner can change assignment metadata.');
         }
         if ($existing->isTerminal()) {
-            abort(400, 'Penugasan terminal tidak dapat diedit. Gunakan REOPEN dulu.');
+            abort(400, 'A terminal assignment cannot be edited. Use REOPEN first.');
         }
 
         return DB::transaction(function () use ($existing, $payload, $user, $id) {
@@ -221,7 +221,7 @@ class AssignmentService
                 && $payload['assigneeId'] !== $existing->assigneeId
             ) {
                 if (!$this->authService->canAssignTo($user, $payload['assigneeId'])) {
-                    abort(403, 'Assignee baru di luar kewenangan Anda.');
+                    abort(403, 'The new assignee is outside your authority.');
                 }
                 $data['assigneeId'] = $payload['assigneeId'];
                 $data['currentReviewerIdx'] = null;
@@ -267,9 +267,9 @@ class AssignmentService
 
             switch ($action) {
                 case 'ACKNOWLEDGE':
-                    if (!$isAssignee && !$isAdmin) abort(403, 'Hanya PIC yang dapat menerima tugas.');
+                    if (!$isAssignee && !$isAdmin) abort(403, 'Only the PIC can accept the assignment.');
                     if ($existing->status !== self::STATUS_DITUGASKAN) {
-                        abort(400, 'Tugas tidak berada di status DITUGASKAN.');
+                        abort(400, 'The assignment is not in the DITUGASKAN status.');
                     }
                     $nextStatus = self::STATUS_DIKERJAKAN;
                     $data['acknowledgedAt'] = $now;
@@ -279,18 +279,18 @@ class AssignmentService
                     break;
 
                 case 'CLARIFY':
-                    if (!$isAssignee && !$isAdmin) abort(403, 'Hanya PIC yang dapat meminta klarifikasi.');
+                    if (!$isAssignee && !$isAdmin) abort(403, 'Only the PIC can request clarification.');
                     if ($existing->status !== self::STATUS_DITUGASKAN) {
-                        abort(400, 'Klarifikasi hanya bisa diajukan saat DITUGASKAN.');
+                        abort(400, 'Clarification can only be requested while in DITUGASKAN.');
                     }
                     $data['needsClarification'] = true;
                     $data['clarificationNote'] = $note;
                     break;
 
                 case 'SUBMIT':
-                    if (!$isAssignee && !$isAdmin) abort(403, 'Hanya PIC yang dapat submit.');
+                    if (!$isAssignee && !$isAdmin) abort(403, 'Only the PIC can submit.');
                     if ($existing->status !== self::STATUS_DIKERJAKAN) {
-                        abort(400, 'Hanya tugas DIKERJAKAN yang bisa di-submit.');
+                        abort(400, 'Only DIKERJAKAN assignments can be submitted.');
                     }
                     $this->assertEvidenceIfRequired($existing);
 
@@ -321,12 +321,12 @@ class AssignmentService
                     }
 
                     if ($existing->status !== self::STATUS_IN_REVIEW) {
-                        abort(400, 'Tugas tidak dalam status review.');
+                        abort(400, 'The assignment is not in review status.');
                     }
                     if (!$isCurrentReviewer && !$isAdmin) {
-                        abort(403, 'Hanya reviewer giliran saat ini yang dapat approve.');
+                        abort(403, 'Only the current reviewer in turn can approve.');
                     }
-                    if ($currentIdx === null) abort(500, 'State approval chain tidak valid.');
+                    if ($currentIdx === null) abort(500, 'The approval chain state is not valid.');
 
                     // Mark entry APPROVED
                     $this->chainService->markEntry(
@@ -348,12 +348,12 @@ class AssignmentService
 
                 case 'RETURN':
                     if ($existing->status !== self::STATUS_IN_REVIEW) {
-                        abort(400, 'Return hanya untuk tugas IN_REVIEW.');
+                        abort(400, 'Return is only available for IN_REVIEW assignments.');
                     }
                     if (!$isCurrentReviewer && !$isAdmin) {
-                        abort(403, 'Hanya reviewer giliran saat ini yang dapat return.');
+                        abort(403, 'Only the current reviewer in turn can return.');
                     }
-                    if ($currentIdx === null) abort(500, 'State approval chain tidak valid.');
+                    if ($currentIdx === null) abort(500, 'The approval chain state is not valid.');
 
                     $this->chainService->markEntry(
                         $id, $currentIdx,
@@ -368,12 +368,12 @@ class AssignmentService
 
                 case 'REJECT':
                     if ($existing->status !== self::STATUS_IN_REVIEW) {
-                        abort(400, 'Reject hanya untuk tugas IN_REVIEW.');
+                        abort(400, 'Reject is only available for IN_REVIEW assignments.');
                     }
                     if (!$isCurrentReviewer && !$isAdmin) {
-                        abort(403, 'Hanya reviewer giliran saat ini yang dapat reject.');
+                        abort(403, 'Only the current reviewer in turn can reject.');
                     }
-                    if ($currentIdx === null) abort(500, 'State approval chain tidak valid.');
+                    if ($currentIdx === null) abort(500, 'The approval chain state is not valid.');
 
                     $this->chainService->markEntry(
                         $id, $currentIdx,
@@ -388,8 +388,8 @@ class AssignmentService
                     break;
 
                 case 'CANCEL':
-                    if (!$isAssigner && !$isAdmin) abort(403, 'Hanya pemberi tugas yang dapat membatalkan.');
-                    if ($existing->isTerminal()) abort(400, 'Tugas sudah dalam status terminal.');
+                    if (!$isAssigner && !$isAdmin) abort(403, 'Only the assigner can cancel.');
+                    if ($existing->isTerminal()) abort(400, 'The assignment is already in a terminal status.');
                     $nextStatus = self::STATUS_DIBATALKAN;
                     $data['cancelledAt'] = $now;
                     $data['cancelReason'] = $note;
@@ -397,8 +397,8 @@ class AssignmentService
                     break;
 
                 case 'REOPEN':
-                    if (!$isAssigner && !$isAdmin) abort(403, 'Hanya pemberi tugas yang dapat membuka kembali.');
-                    if (!$existing->isTerminal()) abort(400, 'Hanya tugas terminal yang dapat dibuka kembali.');
+                    if (!$isAssigner && !$isAdmin) abort(403, 'Only the assigner can reopen.');
+                    if (!$existing->isTerminal()) abort(400, 'Only terminal assignments can be reopened.');
                     $nextStatus = self::STATUS_DIKERJAKAN;
                     $data['completedAt']     = null;
                     $data['cancelledAt']     = null;
@@ -413,7 +413,7 @@ class AssignmentService
                     break;
 
                 default:
-                    abort(400, "Action tidak dikenali: {$action}");
+                    abort(400, "Unrecognized action: {$action}");
             }
 
             $data['status'] = $nextStatus;
@@ -454,7 +454,7 @@ class AssignmentService
         $existing = Assignment::findOrFail($id);
         $isAdmin = RolePolicy::isAdminOrAbove($user->roleType);
         if (!$isAdmin && $existing->assignerId !== $user->id) {
-            abort(403, 'Hanya pemberi tugas yang dapat menghapus.');
+            abort(403, 'Only the assigner can delete.');
         }
         $existing->delete();
     }
@@ -466,7 +466,7 @@ class AssignmentService
         if (!$a->evidenceRequired) return;
         $count = AssignmentAttachment::query()->where('assignmentId', $a->id)->count();
         if ($count === 0) {
-            abort(400, 'Tugas ini mewajibkan lampiran evidence. Unggah minimal 1 file / link / catatan dulu.');
+            abort(400, 'This assignment requires evidence attachments. Upload at least 1 file / link / note first.');
         }
     }
 

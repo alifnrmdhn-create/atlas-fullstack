@@ -29,7 +29,7 @@ export function ScorecardInsightPanel() {
   if (topDirektorat.length === 0) {
     return (
       <section className="context-panel__section">
-        <p className="context-panel__empty">Memuat data scorecard…</p>
+        <p className="context-panel__empty">Loading scorecard data…</p>
       </section>
     )
   }

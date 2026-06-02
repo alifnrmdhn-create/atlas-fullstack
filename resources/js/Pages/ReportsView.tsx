@@ -4,7 +4,7 @@ import { HealthPill, SectionState } from '../components/ui'
 
 type ReportTab = 'kpi' | 'leaderboard'
 
-const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const MONTH_OPTIONS = MONTHS.map((m, i) => ({ value: i + 1, label: m }))
 const CURRENT_YEAR = new Date().getFullYear()
 const YEAR_OPTIONS = [CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1]
@@ -52,7 +52,7 @@ export function ReportsView() {
         <h2 className="view-toolbar__title">Analytics</h2>
         <div className="view-toolbar__sep" />
         <span className="view-toolbar__subtitle">
-          {isStrategic ? 'Capaian KPI APMS dan skor kinerja tim.' : 'Capaian KPI dan skor kinerja individu.'}
+          {isStrategic ? 'APMS KPI achievement and team performance scores.' : 'Individual KPI achievement and performance scores.'}
         </span>
         <div className="view-toggle">
           {([
@@ -76,7 +76,7 @@ export function ReportsView() {
             <span
               className={`text-xs reports-live-state ${apmsConnected ? 'reports-live-state--connected' : ''}`}
             >
-              {apmsConnected ? '● Live AGHRIS' : '○ Belum terhubung AGHRIS'}
+              {apmsConnected ? '● Live AGHRIS' : '○ Not connected to AGHRIS'}
             </span>
           </div>
         </div>
@@ -142,15 +142,15 @@ export function ReportsView() {
             {/* KPI table */}
             <div className="panel">
               <div className="panel__header">
-                <h3 className="panel__title">KPI Individu — {MONTHS[filterBulan - 1]} {filterTahun}</h3>
-                <span className="text-xs text-muted">Sumber: AGHRIS / APMS</span>
+                <h3 className="panel__title">KPI Individual — {MONTHS[filterBulan - 1]} {filterTahun}</h3>
+                <span className="text-xs text-muted">Source: AGHRIS / APMS</span>
               </div>
 
               {apmsKpis.length === 0 ? (
                 <SectionState
                   icon="🔗"
-                  title="Belum terhubung ke AGHRIS"
-                  text="Data KPI individu akan tampil di sini setelah integrasi AGHRIS dikonfigurasi (APMS_BASE_URL + APMS_API_KEY)."
+                  title="Not connected to AGHRIS"
+                  text="Individual KPI data will appear here once the AGHRIS integration is configured (APMS_BASE_URL + APMS_API_KEY)."
                 />
               ) : (
                 <table className="apms-kpi-table">
@@ -226,7 +226,7 @@ export function ReportsView() {
                 <span className="text-muted text-xs">Berdasarkan skor ownership & delivery program</span>
               </div>
               {leaderboard.length === 0 ? (
-                <SectionState title="Data leaderboard belum tersedia" text="Skor akan muncul setelah data dimuat dari backend." compact />
+                <SectionState title="No leaderboard data yet" text="Scores will appear once data is loaded from the backend." compact />
               ) : (
                 <div className="leaderboard-list">
                   {[...leaderboard]

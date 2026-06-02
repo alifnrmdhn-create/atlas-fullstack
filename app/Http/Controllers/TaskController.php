@@ -65,10 +65,10 @@ class TaskController extends Controller
     public function store(Request $request): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+            abort(403, 'Your role is not allowed to perform this action.');
         }
         if (!RolePolicy::canCreateProgram($request->user()->roleType)) {
-            abort(403, 'Tidak memiliki izin membuat work item.');
+            abort(403, 'You do not have permission to create a work item.');
         }
 
         $data = $request->validate([
@@ -99,13 +99,13 @@ class TaskController extends Controller
             return response()->json(['data' => $task], 201);
         }
 
-        return back()->with('success', 'Task berhasil dibuat.');
+        return back()->with('success', 'Task created.');
     }
 
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+            abort(403, 'Your role is not allowed to perform this action.');
         }
 
         $data = $request->validate([
@@ -130,13 +130,13 @@ class TaskController extends Controller
             return response()->json(['data' => $task]);
         }
 
-        return back()->with('success', 'Task diperbarui.');
+        return back()->with('success', 'Task updated.');
     }
 
     public function updateStatus(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+            abort(403, 'Your role is not allowed to perform this action.');
         }
 
         $data = $request->validate([
@@ -161,7 +161,7 @@ class TaskController extends Controller
             return response()->json(['data' => Task::findOrFail($id)]);
         }
 
-        return back()->with('success', 'Status task diperbarui.');
+        return back()->with('success', 'Task status updated.');
     }
 
     public function statusLog(Request $request, int $id): JsonResponse
@@ -179,7 +179,7 @@ class TaskController extends Controller
     public function updateProgress(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+            abort(403, 'Your role is not allowed to perform this action.');
         }
 
         $data = $request->validate([
@@ -200,13 +200,13 @@ class TaskController extends Controller
             return response()->json(['data' => Task::findOrFail($id)]);
         }
 
-        return back()->with('success', 'Progress task diperbarui.');
+        return back()->with('success', 'Task progress updated.');
     }
 
     public function assign(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+            abort(403, 'Your role is not allowed to perform this action.');
         }
 
         $data = $request->validate(['assignedTo' => 'nullable|integer']);
@@ -216,7 +216,7 @@ class TaskController extends Controller
             return response()->json(['data' => Task::findOrFail($id)]);
         }
 
-        return back()->with('success', 'Task di-assign.');
+        return back()->with('success', 'Task assigned.');
     }
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
@@ -228,7 +228,7 @@ class TaskController extends Controller
             || $task->createdBy === $user->id
             || $task->assignedTo === $user->id;
 
-        if (!$canDelete) abort(403, 'Tidak memiliki akses untuk menghapus work item ini.');
+        if (!$canDelete) abort(403, 'You do not have access to delete this work item.');
 
         $workstreamId = $task->initiativeId;
         $this->taskService->delete($id, $user->id);
@@ -238,7 +238,7 @@ class TaskController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('success', 'Task dihapus.');
+        return back()->with('success', 'Task deleted.');
     }
 
     // ── SubTask ───────────────────────────────────────────────────────────────
@@ -246,7 +246,7 @@ class TaskController extends Controller
     public function storeSubTask(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+            abort(403, 'Your role is not allowed to perform this action.');
         }
 
         $data = $request->validate([
@@ -262,7 +262,7 @@ class TaskController extends Controller
             return response()->json(['data' => $subTask], 201);
         }
 
-        return back()->with('success', 'Sub-task ditambahkan.');
+        return back()->with('success', 'Sub-task added.');
     }
 
     public function destroySubTask(Request $request, int $id, int $subTaskId): JsonResponse|RedirectResponse
@@ -274,7 +274,7 @@ class TaskController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('success', 'Sub-task dihapus.');
+        return back()->with('success', 'Sub-task deleted.');
     }
 
     public function toggleSubTask(Request $request, int $id, int $subTaskId): JsonResponse|RedirectResponse

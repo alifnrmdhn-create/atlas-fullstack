@@ -718,7 +718,7 @@ export function WorkboardView() {
                       <span className="code-badge">{item.code}</span>
                       <div>
                         <strong>{item.title}</strong>
-                        <span className="text-muted text-sm">{item.workstream?.name ?? 'Belum ada workstream'}</span>
+                        <span className="text-muted text-sm">{item.workstream?.name ?? 'No workstream yet'}</span>
                       </div>
                     </div>
                     <div className="wi-list-row__right">

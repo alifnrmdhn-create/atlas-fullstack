@@ -143,7 +143,7 @@ function ComparisonView({ direktorat, divisiList, periode }: ComparisonProps) {
 
   return (
     <>
-      <Head title={`KPI Divisi · ${direktorat.nama}`} />
+      <Head title={`KPI Division · ${direktorat.nama}`} />
       <div className="ds perf view-performance">
         <div className="perf__inner ds-stagger">
           <header className="perf__header">
@@ -152,7 +152,7 @@ function ComparisonView({ direktorat, divisiList, periode }: ComparisonProps) {
                 <IconBack />
                 Scorecard
               </button>
-              <h1 className="perf__title">KPI Divisi</h1>
+              <h1 className="perf__title">KPI Division</h1>
               <span className="perf__subtitle">{direktorat.nama}</span>
             </div>
             <div className="perf__header-actions">
@@ -166,28 +166,28 @@ function ComparisonView({ direktorat, divisiList, periode }: ComparisonProps) {
           {/* Direktorat overview — flat inline header, no nested card (Pattern A) */}
           <section className="perf-compare__hero">
             <div className="perf-compare__hero-meta">
-              <span className="perf-compare__hero-eyebrow">Direktorat</span>
+              <span className="perf-compare__hero-eyebrow">Directorate</span>
               <h2 className="perf-compare__hero-name">{direktorat.nama}</h2>
               <div className="perf-compare__hero-sub">
                 <span className="perf-compare__hero-code">{direktorat.kode}</span>
                 <span>·</span>
-                <span>{divisiList.length} divisi</span>
+                <span>{divisiList.length} divisions</span>
                 <span>·</span>
-                <span>rata-rata divisi {avgNilai.toFixed(2)}%</span>
+                <span>division average {avgNilai.toFixed(2)}%</span>
               </div>
             </div>
             <div className="perf-compare__hero-score">
               <span className="perf-compare__hero-score-val" data-tone={tone}>
                 {direktorat.nilai.toFixed(2)}%
               </span>
-              <span className="perf-compare__hero-score-lbl">Nilai direktorat · {periode}</span>
+              <span className="perf-compare__hero-score-lbl">Directorate score · {periode}</span>
             </div>
           </section>
 
           {divisiList.length === 0 ? (
             <Card padding="md" className="perf-empty">
-              <div className="perf-empty__title">Belum ada divisi</div>
-              <div>Direktorat ini belum punya data divisi di periode {periode}.</div>
+              <div className="perf-empty__title">No divisions yet</div>
+              <div>This directorate has no division data for the {periode} period.</div>
             </Card>
           ) : (
             <div className="perf-compare-grid">
@@ -197,7 +197,7 @@ function ComparisonView({ direktorat, divisiList, periode }: ComparisonProps) {
             </div>
           )}
 
-          <p className="perf-footnote">Capaian KPI Divisi maksimal: 110%</p>
+          <p className="perf-footnote">Maximum KPI Division achievement: 110%</p>
         </div>
       </div>
     </>
@@ -234,7 +234,7 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
           </span>
           <span className="perf-compare-card__status" data-tone={statusTone}>
             {allOnTarget
-              ? `Semua ${div.kpiCount} KPI on target`
+              ? `All ${div.kpiCount} KPIs on target`
               : `${div.onTarget}/${div.kpiCount} on target`}
           </span>
         </div>
@@ -243,9 +243,9 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
       <div className="perf-compare-card__divider" />
 
       <div className="perf-compare-card__kpis">
-        <span className="perf-compare-card__kpis-label">Kontribusi terbesar · bobot</span>
+        <span className="perf-compare-card__kpis-label">Largest contribution · weight</span>
         {div.keyKpis.length === 0 ? (
-          <span className="perf-compare-card__kpi-empty">Belum ada KPI</span>
+          <span className="perf-compare-card__kpi-empty">No KPIs yet</span>
         ) : (
           div.keyKpis.map(k => {
             const pct = realisasiPercent(k.sasaran, k.realisasi, k.polaritas)
@@ -281,7 +281,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
 
   return (
     <>
-      <Head title={`KPI Divisi — ${divisi.nama}`} />
+      <Head title={`KPI Division — ${divisi.nama}`} />
       <div className="ds perf view-performance">
         <div className="perf__inner ds-stagger">
           {/* ─── Header ──────────────────────────── */}
@@ -289,7 +289,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
             <div className="perf__header-left">
               <button className="perf__back" onClick={() => navigate('/performance/divisi')} type="button">
                 <IconBack />
-                Divisi
+                Divisions
               </button>
               <h1 className="perf__title">{divisi.nama}</h1>
             </div>
@@ -305,10 +305,10 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
           <Card padding="lg" className="perf__section perf-subject">
             <div className="perf-subject__row">
               <div className="perf-subject__meta">
-                <span className="perf-subject__eyebrow">Divisi</span>
+                <span className="perf-subject__eyebrow">Division</span>
                 <div className="perf-subject__name">{divisi.nama}</div>
                 <div className="perf-subject__jabatan">
-                  Bagian dari{' '}
+                  Part of{' '}
                   <Link
                     href={`/performance/kolegial/${direktorat.kode.toLowerCase()}`}
                     style={{ color: 'inherit', textDecoration: 'underline' }}
@@ -319,15 +319,15 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                 <div className="perf-subject__chips">
                   <Pill variant="mono">{divisi.kode}</Pill>
                   <Pill tone="neutral" variant="soft">{kpiItems.length} KPI items</Pill>
-                  <Pill tone="neutral" variant="soft">Ranking #{divisi.rank} dari {divisi.totalDivisi} divisi</Pill>
-                  <Pill tone="neutral" variant="soft">Direktorat {direktorat.nilai.toFixed(2)}%</Pill>
+                  <Pill tone="neutral" variant="soft">Rank #{divisi.rank} of {divisi.totalDivisi} divisions</Pill>
+                  <Pill tone="neutral" variant="soft">Directorate {direktorat.nilai.toFixed(2)}%</Pill>
                 </div>
               </div>
               <div className="perf-subject__score">
                 <span className="perf-subject__score-value" data-tone={tone}>
                   {divisi.nilai.toFixed(2)}<span style={{ fontSize: 18, color: 'var(--ds-text-tertiary)', marginLeft: 4 }}>%</span>
                 </span>
-                <span className="perf-subject__score-label">Nilai {periode}</span>
+                <span className="perf-subject__score-label">Score {periode}</span>
               </div>
             </div>
             <div className="perf-subject__bar">
@@ -342,11 +342,11 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
 
           {/* ─── KPI list ─────────────────────────── */}
           <section className="perf__section">
-            <span className="perf__section-label">Rincian KPI Divisi</span>
+            <span className="perf__section-label">KPI Division Breakdown</span>
             {kpiItems.length === 0 ? (
               <Card padding="md" className="perf-empty">
-                <div className="perf-empty__title">Belum ada KPI</div>
-                <div>Tidak ada KPI terdaftar untuk divisi ini di periode {periode}.</div>
+                <div className="perf-empty__title">No KPIs yet</div>
+                <div>No KPIs are registered for this division in the {periode} period.</div>
               </Card>
             ) : (
               groupByPerspektif(kpiItems).map(group => (
@@ -358,7 +358,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                     }} />
                     <span className="perf__section-label" style={{ margin: 0 }}>{group.perspektif}</span>
                     <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ds-text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
-                      Bobot {group.bobot.toFixed(0)}%
+                      Weight {group.bobot.toFixed(0)}%
                     </span>
                     <span style={{
                       fontSize: 11, fontWeight: 600, fontVariantNumeric: 'tabular-nums',
@@ -393,12 +393,12 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                             </div>
                             <div className="perf-kpi__realisasi">
                               <div className="perf-kpi__realisasi-block">
-                                <span className="perf-kpi__realisasi-label">Sasaran</span>
+                                <span className="perf-kpi__realisasi-label">Target</span>
                                 <span className="perf-kpi__realisasi-value">{item.sasaran}</span>
                               </div>
                               <span className="perf-kpi__realisasi-arrow">→</span>
                               <div className="perf-kpi__realisasi-block">
-                                <span className="perf-kpi__realisasi-label">Realisasi</span>
+                                <span className="perf-kpi__realisasi-label">Realization</span>
                                 <span className="perf-kpi__realisasi-value" data-tone={itemTone}>{item.realisasi}</span>
                               </div>
                             </div>
@@ -413,7 +413,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                             <span className="perf-kpi__skor" style={{ color: `var(--ds-${itemTone}-600)` }}>
                               {item.skor.toFixed(2)}
                             </span>
-                            <span className="perf-kpi__bobot">Bobot {item.bobot}%</span>
+                            <span className="perf-kpi__bobot">Weight {item.bobot}%</span>
                           </div>
                         </article>
                       )
@@ -428,10 +428,10 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
           <div className="perf__cols-2 perf__section">
             <Card padding="md">
               <div className="perf-card-head">
-                <h2 className="perf-card-head__title">Divisi lain di {direktorat.nama}</h2>
+                <h2 className="perf-card-head__title">Other divisions in {direktorat.nama}</h2>
               </div>
               {peers.length === 0 ? (
-                <div className="perf-empty">Tidak ada divisi peer.</div>
+                <div className="perf-empty">No peer divisions.</div>
               ) : (
                 peers.map(p => {
                   const pt = scoreTone(p.nilai)
@@ -453,10 +453,10 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
 
             <Card padding="md">
               <div className="perf-card-head">
-                <h2 className="perf-card-head__title">Top performer di divisi</h2>
+                <h2 className="perf-card-head__title">Top performers in the division</h2>
               </div>
               {topPerformers.length === 0 ? (
-                <div className="perf-empty">Belum ada data performer.</div>
+                <div className="perf-empty">No performer data yet.</div>
               ) : (
                 topPerformers.map(p => {
                   const pt = scoreTone(p.nilai)
@@ -477,7 +477,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
             </Card>
           </div>
 
-          <p className="perf-footnote">Capaian KPI Divisi maksimal: 110%</p>
+          <p className="perf-footnote">Maximum KPI Division achievement: 110%</p>
         </div>
       </div>
     </>

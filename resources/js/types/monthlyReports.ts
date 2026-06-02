@@ -23,8 +23,8 @@ export type Report = {
 }
 
 // Shared helpers
-export const MON      = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
-export const MON_FULL = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
+export const MON      = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+export const MON_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December']
 export const CY       = new Date().getFullYear()
 export const YEARS    = [CY, CY - 1, CY - 2]
 

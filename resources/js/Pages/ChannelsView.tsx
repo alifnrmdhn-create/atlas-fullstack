@@ -26,28 +26,28 @@ import {
 
 // ── Emoji picker categories ───────────────────────────────────────────────────
 const PICKER_CATS: { id: string; icon: string; label: string; emojis: string[] }[] = [
-  { id: 'smileys', icon: '😊', label: 'Ekspresi',
+  { id: 'smileys', icon: '😊', label: 'Smileys',
     emojis: ['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥸','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖'],
   },
-  { id: 'gestures', icon: '👋', label: 'Gestur',
+  { id: 'gestures', icon: '👋', label: 'Gestures',
     emojis: ['👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','🧠','👀','👁️','👅','👄','💋','🦷','🦴'],
   },
-  { id: 'people', icon: '👤', label: 'Orang',
+  { id: 'people', icon: '👤', label: 'People',
     emojis: ['👶','🧒','👦','👧','🧑','👱','👨','🧔','👩','🧓','👴','👵','🙍','🙎','🙅','🙆','💁','🙋','🧏','🙇','🤦','🤷','💆','💇','🚶','🧍','🧎','👮','🕵️','💂','👷','🎅','🤶','🧙','🧚','🧛','🧜','🧝','🧞','🧟','💃','🕺','🫂','🧑‍💻','🧑‍🎤','🧑‍🏫','🧑‍⚕️','🧑‍🍳','🧑‍🔧','🧑‍🏭','🧑‍💼','🧑‍🌾','🧑‍🚒','🧑‍🚀'],
   },
-  { id: 'nature', icon: '🌿', label: 'Alam',
+  { id: 'nature', icon: '🌿', label: 'Nature',
     emojis: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🦆','🦅','🦉','🦇','🐺','🐴','🦄','🐝','🦋','🐌','🐞','🐜','🐢','🐍','🦎','🐙','🦑','🐠','🐟','🐬','🐳','🦈','🌿','🍀','🌱','🌲','🌳','🌴','🌵','🍃','🍂','🍁','🌾','🌺','🌸','🌼','🌻','🌹','🌷','☀️','🌤️','⛅','🌧️','⛈️','❄️','🌈','🌊','🌙','⭐','🌟','✨'],
   },
-  { id: 'food', icon: '🍕', label: 'Makanan',
+  { id: 'food', icon: '🍕', label: 'Food',
     emojis: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🥑','🥦','🌶️','🧄','🧅','🥔','🌽','🥐','🍞','🥖','🧀','🥚','🍳','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🌮','🌯','🥗','🍜','🍝','🍛','🍣','🥟','🍤','🍱','🍚','🍙','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🍯','🧃','🥤','🧋','☕','🍵','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧊'],
   },
-  { id: 'travel', icon: '✈️', label: 'Perjalanan',
+  { id: 'travel', icon: '✈️', label: 'Travel',
     emojis: ['🚗','🚕','🚙','🚌','🏎️','🚑','🚒','🚚','🚛','🚜','🏍️','🛵','🚲','🛴','🚀','✈️','🛸','🚁','🛶','⛵','🚤','🚢','⚓','🏠','🏢','🏣','🏥','🏦','🏨','🏩','🏪','🏫','🏭','🏰','🗼','🗽','🏟️','🏛️','⛩️','🕌','🕍','⛪','🗺️','🌍','🌎','🌏','🧭','🏔️','⛰️','🌋','🏕️','🏖️','🏜️','🏝️','🏞️','🏙️','🌅','🌄','🌠','🎆','🎇','🌌','🌃','🌉','🌁'],
   },
-  { id: 'objects', icon: '💡', label: 'Objek',
+  { id: 'objects', icon: '💡', label: 'Objects',
     emojis: ['⌚','📱','💻','⌨️','🖥️','🖱️','💾','💿','📀','📷','📸','📹','🎥','📞','☎️','📺','📻','⏰','⏱️','⏲️','⏳','📡','🔋','🔌','💡','🔦','🕯️','🔮','📿','🧲','🪜','🧰','🔧','🔨','⚙️','🔩','🪛','🔑','🗝️','🔐','🔒','🔓','🚪','🛋️','🛁','🚿','🧹','🧺','🧻','🧼','🧴','🧽','📝','✏️','🖊️','📖','📚','📋','📌','📍','📎','📐','📏','✂️','💼','📁','📂','📊','📈','📉','📅','📆','📦','📫','📬','📮','📄','📃','📑','🗒️','🗓️','🗃️','🗄️','🗑️'],
   },
-  { id: 'symbols', icon: '♾️', label: 'Simbol',
+  { id: 'symbols', icon: '♾️', label: 'Symbols',
     emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❤️‍🔥','💕','💞','💓','💗','💖','💘','💝','💟','✅','❌','⭕','🛑','⛔','📛','🚫','💯','⚠️','♻️','✔️','🔰','♾️','🔃','🔄','🔙','🔚','🔛','🔜','🔝','❇️','✳️','❓','❗','ℹ️','⬆️','⬇️','⬅️','➡️','↗️','↘️','↙️','↖️','↕️','↔️','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔺','🔻','🔷','🔶','🔹','🔸','🔳','🔲','🏆','🏅','🥇','🥈','🥉','👑','🎯','🎮','🎨','🎭','🎤','🎧','🎼','🎹','🎸','🎺','🎻','🎁','🎊','🎉','🎈','✨','⭐','🌟','💫','🔥','💧','🌊','💥','🌈'],
   },
 ]
@@ -75,7 +75,7 @@ function EmojiPickerPanel({ onSelect }: { onSelect: (emoji: string) => void }) {
     onSelect(emoji)
   }
 
-  const cats = [{ id: 'recent', icon: '🕐', label: 'Terbaru' }, ...PICKER_CATS]
+  const cats = [{ id: 'recent', icon: '🕐', label: 'Recent' }, ...PICKER_CATS]
   const q = query.trim().toLowerCase()
   const displayEmojis = q
     ? PICKER_SEARCH_INDEX.filter(e => e.name.includes(q)).map(e => e.emoji)
@@ -94,7 +94,7 @@ function EmojiPickerPanel({ onSelect }: { onSelect: (emoji: string) => void }) {
           autoFocus
           className="emoji-picker-panel__search-input"
           onChange={e => setQuery(e.target.value)}
-          placeholder="Cari emoji…"
+          placeholder="Search emoji…"
           type="text"
           value={query}
         />
@@ -119,7 +119,7 @@ function EmojiPickerPanel({ onSelect }: { onSelect: (emoji: string) => void }) {
       <div className="emoji-picker-panel__grid">
         {displayEmojis.length === 0 ? (
           <div className="emoji-picker-panel__empty">
-            {q ? 'Tidak ditemukan 🔍' : 'Belum ada emoji terbaru'}
+            {q ? 'No results 🔍' : 'No recent emoji yet'}
           </div>
         ) : displayEmojis.map((emoji, i) => (
           <button
@@ -267,7 +267,7 @@ const IcoDecision = () => (
 )
 
 function DeletedMessageNotice({ content, isOwnMessage }: { content: string; isOwnMessage: boolean }) {
-  const label = isOwnMessage ? 'Anda menghapus pesan ini.' : content.trim() || 'Pesan ini telah dihapus.'
+  const label = isOwnMessage ? 'You deleted this message.' : content.trim() || 'This message was deleted.'
 
   return (
     <div className={`message-card__deleted ${isOwnMessage ? 'message-card__deleted--own' : ''}`}>
@@ -361,7 +361,7 @@ function ImageLightbox({ url, name, onClose }: { url: string; name: string; onCl
       className="lightbox-overlay"
       onClick={onClose}
     >
-      <button aria-label="Tutup" className="lightbox-close" onClick={onClose} type="button">
+      <button aria-label="Close" className="lightbox-close" onClick={onClose} type="button">
         <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeWidth="2" viewBox="0 0 24 24" width="18">
           <path d="M18 6 6 18M6 6l12 12"/>
         </svg>
@@ -381,7 +381,7 @@ function ImageLightbox({ url, name, onClose }: { url: string; name: string; onCl
         <svg fill="none" height="15" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="15">
           <path d="M12 3v13M5 16l7 7 7-7"/><path d="M3 21h18"/>
         </svg>
-        Unduh
+        Download
       </a>
     </div>,
     document.body,
@@ -454,7 +454,7 @@ function channelKind(name: string): 'program' | 'blocker' | 'control' | 'knowled
   return 'general'
 }
 
-const DELETED_MESSAGE_PLACEHOLDER = 'Pesan ini telah dihapus.'
+const DELETED_MESSAGE_PLACEHOLDER = 'This message was deleted.'
 
 function getChannelPreview(
   lastMessage: ChannelSummary['lastMessage'],
@@ -470,19 +470,19 @@ function getChannelPreview(
     return {
       isDeleted: true,
       isOwn,
-      text: isOwn ? 'Anda menghapus pesan ini.' : DELETED_MESSAGE_PLACEHOLDER,
+      text: isOwn ? 'You deleted this message.' : DELETED_MESSAGE_PLACEHOLDER,
     }
   }
 
   const tag = raw.match(/^\[(Decision|Blocker|Update)\]\s*/i)?.[1]
   const content = raw.replace(/^\[(Decision|Blocker|Update)\]\s*/i, '')
   const normalized = tag ? `${tag}: ${content}` : content
-  const text = normalized.trim() || 'Lampiran'
+  const text = normalized.trim() || 'Attachment'
 
   return {
     isDeleted: false,
     isOwn,
-    text: isOwn ? `Anda: ${text}` : text,
+    text: isOwn ? `You: ${text}` : text,
   }
 }
 
@@ -1605,7 +1605,7 @@ export function ChannelsView({
       <PageHeader
         className="ds-page-header--inset"
         title="Channels"
-        subtitle="Komunikasi tim, diskusi, dan pembaruan proyek."
+        subtitle="Team communication, discussions, and project updates."
         actions={
           <div className="view-toolbar__stats">
             <span>{channels.length} <em>channels</em></span>
@@ -1869,10 +1869,10 @@ export function ChannelsView({
                     const msSince = Date.now() - new Date(dmPartnerPresence.lastActivityAt).getTime()
                     const isReallyOnline = dmPartnerPresence.status === 'ONLINE' && msSince < 3 * 60_000
                     const label = dmPartnerPresence.status === 'DO_NOT_DISTURB'
-                      ? 'Jangan ganggu'
+                      ? 'Do not disturb'
                       : isReallyOnline
-                        ? 'Online sekarang'
-                        : `Terakhir aktif ${formatRelativeTime(dmPartnerPresence.lastActivityAt).text}`
+                        ? 'Online now'
+                        : `Last active ${formatRelativeTime(dmPartnerPresence.lastActivityAt).text}`
                     const tone = isReallyOnline ? 'online' : dmPartnerPresence.status === 'DO_NOT_DISTURB' ? 'do_not_disturb' : 'offline'
                     return <span className={`dm-last-seen dm-last-seen--${tone}`}>{label}</span>
                   })()}
@@ -2044,10 +2044,10 @@ export function ChannelsView({
                               const channelName = selectedChannel?.name ?? 'channel'
                               try {
                                 await onArchiveChannel(selectedChannelId)
-                                toast.show(`Channel #${channelName} diarsipkan`, 'success')
+                                toast.show(`Channel #${channelName} archived`, 'success')
                               } catch (err) {
                                 toast.show(
-                                  err instanceof Error ? err.message : 'Gagal mengarsipkan channel',
+                                  err instanceof Error ? err.message : 'Failed to archive channel',
                                   'error',
                                 )
                               }
@@ -2074,7 +2074,7 @@ export function ChannelsView({
           <button
             className="channel-context-banner channel-context-banner--clickable"
             onClick={() => navigate(`/programs/${linkedProgram.id}`)}
-            title={`Buka program: ${linkedProgram.name}`}
+            title={`Open program: ${linkedProgram.name}`}
             type="button"
           >
             <div className="channel-context-banner__icon"><IcoTarget /></div>
@@ -2146,8 +2146,8 @@ export function ChannelsView({
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
               </svg>
             </div>
-            <h3 className="channel-stream-empty__title">Pilih channel untuk mulai</h3>
-            <p className="channel-stream-empty__text">Pilih channel atau DM dari panel kiri untuk membuka percakapan.</p>
+            <h3 className="channel-stream-empty__title">Select a channel to start</h3>
+            <p className="channel-stream-empty__text">Choose a channel or DM from the left panel to open a conversation.</p>
           </div>
         ) : channelStatus.loading ? (
           <div className="detail-skeleton">
@@ -2172,7 +2172,7 @@ export function ChannelsView({
             {!isAtBottom && (
               <button className="jump-to-bottom" onClick={scrollToBottom} type="button">
                 {floatingNewCount > 0
-                  ? <><span className="jump-to-bottom__count">{floatingNewCount} baru</span> ↓</>
+                  ? <><span className="jump-to-bottom__count">{floatingNewCount} new</span> ↓</>
                   : '↓'}
               </button>
             )}
@@ -2240,7 +2240,7 @@ export function ChannelsView({
                     <React.Fragment key={message.id}>
                     {showUnreadDivider && (
                       <div className="new-messages-divider">
-                        <span>Pesan baru</span>
+                        <span>New messages</span>
                       </div>
                     )}
                     <article className={`message-card message-card--slackish ${isSelectedDirectMessage ? 'message-card--dm' : ''} ${isOwnMessage ? 'message-card--own' : ''} ${isGrouped ? 'message-card--grouped' : ''} ${clusterClass} ${isDeletedMessage ? 'message-card--deleted-state' : ''} ${isAttachmentOnly ? 'message-card--attachment-only' : ''} ${tag ? `message-card--tagged message-card--tag-${tag}` : ''}`} key={message.id}>
@@ -2428,9 +2428,9 @@ export function ChannelsView({
                               ))}
                             </div>
                             <span className="thread-footer__count">
-                              <strong>{message.replyCount}</strong> {message.replyCount === 1 ? 'balasan' : 'balasan'}
+                              <strong>{message.replyCount}</strong> {message.replyCount === 1 ? 'reply' : 'replies'}
                             </span>
-                            <span className="thread-footer__cta">Lihat thread →</span>
+                            <span className="thread-footer__cta">View thread →</span>
                           </button>
                         )}
 
@@ -2454,7 +2454,7 @@ export function ChannelsView({
                                 aria-controls={`message-reactions-${message.id}`}
                                 aria-expanded={emojiPickerFor === message.id}
                                 aria-haspopup="dialog"
-                                aria-label="Tambahkan reaksi"
+                                aria-label="Add reaction"
                                 className="message-action-bar__btn"
                                 onClick={(e) => {
                                   const isOpen = emojiPickerFor === message.id
@@ -2470,7 +2470,7 @@ export function ChannelsView({
                                 <IcoSmile />
                               </button>
                               <button
-                                aria-label="Balas di thread"
+                                aria-label="Reply in thread"
                                 className="message-action-bar__btn"
                                 onClick={() => {
                                   setEmojiPickerFor(null)
@@ -2488,7 +2488,7 @@ export function ChannelsView({
                                 aria-controls={messageMenuId}
                                 aria-expanded={messageMenuFor === message.id}
                                 aria-haspopup="menu"
-                                aria-label="Aksi pesan lainnya"
+                                aria-label="More message actions"
                                 className={`message-action-bar__btn ${messageMenuFor === message.id ? 'is-active' : ''}`}
                                 onClick={(e) => {
                                   const isOpen = messageMenuFor === message.id
@@ -2507,7 +2507,7 @@ export function ChannelsView({
                           )}
                           {isDeletedMessage && (
                             <button
-                              aria-label="Hapus dari tampilan saya"
+                              aria-label="Delete from my view"
                               className="message-action-bar__btn message-action-bar__btn--danger"
                               onClick={() => {
                                 setDeleteMessageError(null)
@@ -2515,12 +2515,12 @@ export function ChannelsView({
                                 setDeleteTarget({
                                   id: message.id,
                                   content: message.content,
-                                  authorName: message.authorName ?? 'Pengguna',
+                                  authorName: message.authorName ?? 'User',
                                   canDeleteForAll: message.userId === currentUserId && !message.isDeletedForEveryone,
                                   isDeletedForEveryone: Boolean(message.isDeletedForEveryone),
                                 })
                               }}
-                              title="Hapus dari tampilan saya"
+                              title="Delete from my view"
                               type="button"
                             >
                               <IcoTrash />
@@ -2530,7 +2530,7 @@ export function ChannelsView({
 
                         {/* Secondary actions */}
                         {!isDeletedMessage && messageMenuFor === message.id && (
-                          <div aria-label="Aksi pesan" className="message-action-menu" id={messageMenuId} role="menu">
+                          <div aria-label="Message actions" className="message-action-menu" id={messageMenuId} role="menu">
                             {message.userId === currentUserId && (
                               <button
                                 className="message-action-menu__item"
@@ -2605,7 +2605,7 @@ export function ChannelsView({
                                 setDeleteTarget({
                                   id: message.id,
                                   content: message.content,
-                                  authorName: message.authorName ?? 'Pengguna',
+                                  authorName: message.authorName ?? 'User',
                                   canDeleteForAll: message.userId === currentUserId && !message.isDeletedForEveryone,
                                   isDeletedForEveryone: Boolean(message.isDeletedForEveryone),
                                 })
@@ -2621,7 +2621,7 @@ export function ChannelsView({
 
                         {/* Emoji picker */}
                         {!isDeletedMessage && emojiPickerFor === message.id && (
-                          <div aria-label="Pilih reaksi" className="message-reaction-picker" id={`message-reactions-${message.id}`} role="dialog">
+                          <div aria-label="Select reaction" className="message-reaction-picker" id={`message-reactions-${message.id}`} role="dialog">
                             <EmojiPickerPanel
                               onSelect={(emoji) => {
                                 onReactEmoji(message.id, emoji)
@@ -2654,7 +2654,7 @@ export function ChannelsView({
               if (new Date(partner.lastViewedAt) >= new Date(lastMine.createdAt)) {
                 return (
                   <div className="dm-seen-receipt">
-                    <span>Dilihat</span>
+                    <span>Seen</span>
                   </div>
                 )
               }
@@ -2670,21 +2670,21 @@ export function ChannelsView({
             </div>
             <p className="channel-empty-state__title">
               {streamMode === 'all'
-                ? `Belum ada pesan${selectedDmPartner ? ` dengan ${selectedDmPartner.name}` : ` di #${selectedChannel?.name ?? 'channel ini'}`}`
+                ? `No messages yet${selectedDmPartner ? ` with ${selectedDmPartner.name}` : ` in #${selectedChannel?.name ?? 'this channel'}`}`
                 : streamMode === 'threads'
-                  ? 'Belum ada thread'
+                  ? 'No threads yet'
                   : streamMode === 'pinned'
-                    ? 'Belum ada pesan yang di-pin'
-                    : 'Belum ada pesan tersimpan'}
+                    ? 'No pinned messages yet'
+                    : 'No saved messages yet'}
             </p>
             <p className="channel-empty-state__sub">
               {streamMode === 'all'
-                ? 'Mulai percakapan dan bangun konteks kolaborasi tim di sini.'
+                ? 'Start a conversation and build team collaboration context here.'
                 : streamMode === 'threads'
-                  ? 'Thread akan muncul saat anggota memulai reply dalam konteks pesan.'
+                  ? 'Threads appear when members start replying in the context of a message.'
                   : streamMode === 'pinned'
-                    ? 'Pin pesan penting agar mudah ditemukan kembali oleh semua anggota.'
-                    : 'Simpan pesan yang ingin kamu referensi kembali nanti.'}
+                    ? 'Pin important messages so everyone can find them again easily.'
+                    : 'Save messages you want to reference again later.'}
             </p>
           </div>
         )}
@@ -2759,7 +2759,7 @@ export function ChannelsView({
           {selectedThreadId && threadParent && (
             <div className="composer-slim__context">
               <span>↩</span>
-              <span>Membalas <strong>{threadParent.authorName ?? 'thread'}</strong></span>
+              <span>Replying to <strong>{threadParent.authorName ?? 'thread'}</strong></span>
             </div>
           )}
 
@@ -2873,7 +2873,7 @@ export function ChannelsView({
                   )}
                   {filteredSpecialMentions.length === 0 && filteredMentionMembers.length === 0 && (
                     <div className="mention-dropdown__empty">
-                      Tidak ada mention yang cocok.
+                      No matching mentions.
                     </div>
                   )}
                 </div>
@@ -2912,7 +2912,7 @@ export function ChannelsView({
                     </>
                   ) : (
                     <div className="mention-dropdown__empty">
-                      Tidak ada work item yang cocok.
+                      No matching work items.
                     </div>
                   )}
                 </div>
@@ -2951,7 +2951,7 @@ export function ChannelsView({
                       }
                       setShowComposerEmoji(true)
                     }}
-                    title="Tambah emoji"
+                    title="Add emoji"
                     type="button"
                   >
                     <IcoSmile />
@@ -2966,7 +2966,7 @@ export function ChannelsView({
                   <span className="composer-slim__at">@</span>
                 </button>
               </div>
-              <span className="composer-slim__helper">Enter kirim · Shift+Enter baris baru</span>
+              <span className="composer-slim__helper">Enter to send · Shift+Enter for a new line</span>
               <button
                 className="composer-slim__send"
                 disabled={!selectedChannelId || sending || (!composerValue.trim() && pendingAttachments.length === 0)}
@@ -3040,14 +3040,14 @@ export function ChannelsView({
                 <span className="eyebrow">Thread</span>
                 <strong>{selectedDmPartner ? selectedDmPartner.name : `#${selectedChannel?.name ?? 'channel'}`}</strong>
                 <div className="thread-panel-header__meta">
-                  <span>{threadReplies.length > 0 ? `${threadReplies.length} balasan` : 'Belum ada balasan'}</span>
-                  <span>{isSelectedDirectMessage ? 'Percakapan privat' : 'Konteks channel'}</span>
+                  <span>{threadReplies.length > 0 ? `${threadReplies.length} ${threadReplies.length === 1 ? 'reply' : 'replies'}` : 'No replies yet'}</span>
+                  <span>{isSelectedDirectMessage ? 'Private conversation' : 'Channel context'}</span>
                 </div>
               </div>
               <button
                 className="panel-close-btn"
                 onClick={() => { onSelectThread(null); setThreadReplyValue('') }}
-                title="Tutup thread (Esc)"
+                title="Close thread (Esc)"
                 type="button"
               >
                 <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg>
@@ -3080,7 +3080,7 @@ export function ChannelsView({
               {/* Reply count divider */}
               {threadReplies.length > 0 && (
                 <div className="thread-replies-divider">
-                  <span>{threadReplies.length} balasan</span>
+                  <span>{threadReplies.length} {threadReplies.length === 1 ? 'reply' : 'replies'}</span>
                 </div>
               )}
 
@@ -3107,7 +3107,7 @@ export function ChannelsView({
                   </article>
                 ))
               ) : (
-                <SectionState icon="↩️" title="Belum ada balasan" text="Jadilah yang pertama membalas di thread ini." compact />
+                <SectionState icon="↩️" title="No replies yet" text="Be the first to reply in this thread." compact />
               )}
             </div>
 
@@ -3115,7 +3115,7 @@ export function ChannelsView({
             <div className="thread-composer">
               <div className="thread-composer__meta">
                 <span className="subtle">
-                  Membalas <strong>{threadParent.authorName ?? 'pesan ini'}</strong>
+                  Replying to <strong>{threadParent.authorName ?? 'this message'}</strong>
                 </span>
               </div>
               <textarea
@@ -3137,7 +3137,7 @@ export function ChannelsView({
                     }
                   }
                 }}
-                placeholder="Tulis balasan di thread…"
+                placeholder="Write a reply in the thread…"
                 ref={threadReplyRef}
                 rows={3}
                 value={threadReplyValue}
@@ -3148,10 +3148,10 @@ export function ChannelsView({
                   onChange={(e) => setAlsoToChannel(e.target.checked)}
                   type="checkbox"
                 />
-                <span>Kirim juga ke <strong>#{selectedChannel?.name}</strong></span>
+                <span>Also send to <strong>#{selectedChannel?.name}</strong></span>
               </label>
               <div className="thread-composer__actions">
-                <span className="subtle">Cmd/Ctrl+Enter untuk kirim</span>
+                <span className="subtle">Cmd/Ctrl+Enter to send</span>
                 <button
                   className="btn btn--primary btn--sm"
                   disabled={sendingThreadReply || !threadReplyValue.trim()}
@@ -3170,7 +3170,7 @@ export function ChannelsView({
                   }}
                   type="button"
                 >
-                  {sendingThreadReply ? 'Mengirim…' : 'Balas'}
+                  {sendingThreadReply ? 'Sending…' : 'Reply'}
                 </button>
               </div>
             </div>
@@ -3224,10 +3224,10 @@ export function ChannelsView({
               </div>
             )}
             {selectedChannelId && isSelectedDirectMessage && (
-              <p className="member-add-section__empty subtle">Direct message hanya bisa dikelola oleh masing-masing peserta untuk dirinya sendiri.</p>
+              <p className="member-add-section__empty subtle">Direct messages can only be managed by each participant for themselves.</p>
             )}
             {selectedChannelId && !isSelectedDirectMessage && !canManageChannelMembers && (
-              <p className="member-add-section__empty subtle">Hanya pembuat channel atau admin yang dapat menambah atau menghapus anggota.</p>
+              <p className="member-add-section__empty subtle">Only the channel creator or an admin can add or remove members.</p>
             )}
 
             {/* Current member list */}
@@ -3251,7 +3251,7 @@ export function ChannelsView({
                           setRemoveMemberError(null)
                           setConfirmRemoveMember({ userId: member.userId, name: member.name })
                         }}
-                        title={`Hapus ${member.name} dari channel`}
+                        title={`Remove ${member.name} from channel`}
                         type="button"
                       >
                         {removingMemberId === member.userId ? '…' : <IcoClose />}
@@ -3273,7 +3273,7 @@ export function ChannelsView({
           dapat ds-stagger transform). Sekarang modal escape ke viewport. */}
       {showSwitcher && createPortal(
         <div className="modal-backdrop modal-backdrop--top" onClick={(e) => { if (e.target === e.currentTarget) setShowSwitcher(false) }}>
-          <div aria-label="Pindah cepat" aria-modal="true" className="switcher" ref={switcherDialogRef} role="dialog" tabIndex={-1}>
+          <div aria-label="Quick switcher" aria-modal="true" className="switcher" ref={switcherDialogRef} role="dialog" tabIndex={-1}>
             <div className="switcher__input-wrap">
               <span className="switcher__icon">⌘</span>
               <input
@@ -3290,13 +3290,13 @@ export function ChannelsView({
                     }
                   }
                 }}
-                placeholder="Pindah ke channel atau DM…"
+                placeholder="Jump to a channel or DM…"
                 value={switcherQuery}
               />
               <span className="switcher__hint">ESC</span>
             </div>
             <div className="switcher__list">
-              {switcherItems.length === 0 && <p className="subtle" style={{ padding: '12px', margin: 0 }}>Tidak ada hasil yang cocok.</p>}
+              {switcherItems.length === 0 && <p className="subtle" style={{ padding: '12px', margin: 0 }}>No matching results.</p>}
               {switcherItems.map((it, idx) => (
                 <button
                   className={`switcher__item ${idx === switcherIdx ? 'is-active' : ''}`}
@@ -3326,33 +3326,33 @@ export function ChannelsView({
             <div className="modal__header">
               <div className="modal-headcopy">
                 <span className="modal-kicker">Channels</span>
-                <h3 className="modal__title" id={browseTitleId}>Jelajahi Channel</h3>
-                <p className="modal-subtitle" id={browseDescId}>Jelajahi channel yang tersedia, cek aktivitasnya, lalu buka atau join dari satu tempat.</p>
+                <h3 className="modal__title" id={browseTitleId}>Browse Channels</h3>
+                <p className="modal-subtitle" id={browseDescId}>Explore available channels, check their activity, then open or join them from one place.</p>
               </div>
               <button className="modal__close" onClick={() => setShowBrowse(false)} type="button"><IcoClose /></button>
             </div>
             <div className="modal__body">
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Cari channel</h4>
-                  <p>Gunakan nama atau deskripsi untuk menemukan ruang diskusi yang paling relevan.</p>
+                  <h4>Search channels</h4>
+                  <p>Use a name or description to find the most relevant discussion space.</p>
                 </div>
                 <input
                   autoFocus
                   onChange={(e) => setBrowseQuery(e.target.value)}
-                  placeholder="Cari channel berdasarkan nama atau deskripsi…"
+                  placeholder="Search channels by name or description…"
                   value={browseQuery}
                 />
               </section>
               <section className="modal-section">
                 <div className="modal-keyline">
-                  <span>{filteredBrowseList.length} channel terlihat</span>
-                  <span>{browseLoading ? 'Memuat daftar…' : 'Pilih channel untuk bergabung atau langsung membuka.'}</span>
+                  <span>{filteredBrowseList.length} channels shown</span>
+                  <span>{browseLoading ? 'Loading list…' : 'Select a channel to join or open directly.'}</span>
                 </div>
                 <div className="browse-list">
-                {browseLoading && <p className="subtle">Memuat…</p>}
+                {browseLoading && <p className="subtle">Loading…</p>}
                 {!browseLoading && filteredBrowseList.length === 0 && (
-                  <div className="modal-empty">Tidak ada channel yang cocok.</div>
+                  <div className="modal-empty">No matching channels.</div>
                 )}
                 {filteredBrowseList.map((c) => (
                   <div className="browse-row" key={c.id}>
@@ -3360,11 +3360,11 @@ export function ChannelsView({
                       <div className="browse-row__title">
                         <span className="browse-row__hash">#</span>
                         <strong>{c.name}</strong>
-                        {c.isMember && <span className="badge badge--soft">Sudah gabung</span>}
+                        {c.isMember && <span className="badge badge--soft">Joined</span>}
                       </div>
                       {c.description && <p>{c.description}</p>}
                       <div className="browse-row__meta subtle">
-                        {c.memberCount} anggota · {c.messageCount} pesan
+                        {c.memberCount} members · {c.messageCount} messages
                       </div>
                     </div>
                     {c.isMember ? (
@@ -3373,7 +3373,7 @@ export function ChannelsView({
                         onClick={() => { onSelectChannel(c.id); setShowBrowse(false) }}
                         type="button"
                       >
-                        Buka
+                        Open
                       </button>
                     ) : (
                       <button
@@ -3390,7 +3390,7 @@ export function ChannelsView({
                         }}
                         type="button"
                       >
-                        {joiningId === c.id ? 'Bergabung…' : 'Gabung'}
+                        {joiningId === c.id ? 'Joining…' : 'Join'}
                       </button>
                     )}
                   </div>
@@ -3410,35 +3410,35 @@ export function ChannelsView({
             <div className="modal__header">
               <div className="modal-headcopy">
                 <span className="modal-kicker">Channels</span>
-                <h3 className="modal__title" id={directMessageTitleId}>Pesan Langsung Baru</h3>
-                <p className="modal-subtitle" id={directMessageDescId}>Mulai percakapan privat dengan mencari nama atau peran rekan kerja.</p>
+                <h3 className="modal__title" id={directMessageTitleId}>New Direct Message</h3>
+                <p className="modal-subtitle" id={directMessageDescId}>Start a private conversation by searching for a teammate's name or role.</p>
               </div>
               <button className="modal__close" onClick={() => setShowDmModal(false)} type="button"><IcoClose /></button>
             </div>
             <div className="modal__body">
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Pilih penerima</h4>
-                  <p>Cari orang berdasarkan nama atau peran untuk langsung membuka direct message baru.</p>
+                  <h4>Select recipient</h4>
+                  <p>Search for a person by name or role to open a new direct message right away.</p>
                 </div>
                 <div className="form-field">
-                  <label>Kepada</label>
+                  <label>To</label>
                   <input
                     autoFocus
                     onChange={(e) => setDmQuery(e.target.value)}
-                    placeholder="Cari berdasarkan nama atau peran…"
+                    placeholder="Search by name or role…"
                     value={dmQuery}
                   />
                 </div>
               </section>
               <section className="modal-section">
                 <div className="modal-keyline">
-                  <span>{dmCandidates.length} kandidat</span>
-                  <span>{openingDm ? 'Membuka percakapan…' : 'Pilih satu orang untuk lanjut.'}</span>
+                  <span>{dmCandidates.length} candidates</span>
+                  <span>{openingDm ? 'Opening conversation…' : 'Select a person to continue.'}</span>
                 </div>
                 <div className="dm-candidates">
                 {dmCandidates.length === 0 ? (
-                  <div className="modal-empty">Tidak ada pengguna yang cocok.</div>
+                  <div className="modal-empty">No matching users.</div>
                 ) : (
                   dmCandidates.map((u) => (
                     <button
@@ -3480,19 +3480,19 @@ export function ChannelsView({
             <div className="modal__header">
               <div className="modal-headcopy">
                 <span className="modal-kicker">Channels</span>
-                <h3 className="modal__title" id={createChannelTitleId}>Buat Channel</h3>
-                <p className="modal-subtitle" id={createChannelDescId}>Buat ruang diskusi baru dengan nama yang jelas, deskripsi singkat, dan visibilitas yang tepat.</p>
+                <h3 className="modal__title" id={createChannelTitleId}>Create Channel</h3>
+                <p className="modal-subtitle" id={createChannelDescId}>Create a new discussion space with a clear name, a short description, and the right visibility.</p>
               </div>
               <button className="modal__close" onClick={() => setShowCreateModal(false)} type="button"><IcoClose /></button>
             </div>
             <div className="modal__body">
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Identitas channel</h4>
-                  <p>Nama dan deskripsi sebaiknya cukup spesifik agar anggota langsung tahu fungsi channel ini.</p>
+                  <h4>Channel identity</h4>
+                  <p>The name and description should be specific enough that members immediately know what this channel is for.</p>
                 </div>
                 <div className="form-field">
-                  <label>Nama channel <span className="form-field__required">*</span></label>
+                  <label>Channel name <span className="form-field__required">*</span></label>
                   <input
                     autoFocus
                     maxLength={80}
@@ -3500,25 +3500,25 @@ export function ChannelsView({
                     placeholder="e.g. sgn-penyehatan"
                     value={createForm.name}
                   />
-                  <p className="form-field__hint">Huruf kapital dan spasi otomatis dikonversi — ketik saja dengan natural.</p>
+                  <p className="form-field__hint">Capital letters and spaces are converted automatically — just type naturally.</p>
                 </div>
                 <div className="form-field">
-                  <label>Deskripsi</label>
+                  <label>Description</label>
                   <input
                     maxLength={280}
                     onChange={(e) => setCreateForm((f) => ({ ...f, description: e.target.value }))}
-                    placeholder="Channel ini untuk apa?"
+                    placeholder="What's this channel about?"
                     value={createForm.description}
                   />
                 </div>
               </section>
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Visibilitas</h4>
-                  <p>Tentukan apakah channel ini terbuka untuk seluruh workspace atau hanya anggota yang diundang.</p>
+                  <h4>Visibility</h4>
+                  <p>Decide whether this channel is open to the entire workspace or only to invited members.</p>
                 </div>
                 <div className="form-field">
-                  <label>Visibilitas</label>
+                  <label>Visibility</label>
                   <div className="channel-type-toggle">
                     {(['PUBLIC', 'PRIVATE'] as const).map((t) => (
                       <button
@@ -3532,13 +3532,13 @@ export function ChannelsView({
                     ))}
                   </div>
                   <p className="form-field__hint">
-                    {createForm.type === 'PUBLIC' ? 'Semua orang di workspace bisa bergabung.' : 'Hanya anggota yang diundang yang bisa melihat channel ini.'}
+                    {createForm.type === 'PUBLIC' ? 'Everyone in the workspace can join.' : 'Only invited members can see this channel.'}
                   </p>
                 </div>
               </section>
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => setShowCreateModal(false)} type="button">Batal</button>
+              <button className="btn btn--ghost" onClick={() => setShowCreateModal(false)} type="button">Cancel</button>
               <button
                 className="btn btn--primary"
                 disabled={creatingChannel || !createForm.name.trim()}
@@ -3558,7 +3558,7 @@ export function ChannelsView({
                 }}
                 type="button"
               >
-                {creatingChannel ? 'Membuat…' : 'Buat channel'}
+                {creatingChannel ? 'Creating…' : 'Create channel'}
               </button>
             </div>
           </div>
@@ -3654,21 +3654,21 @@ export function ChannelsView({
           <div className="modal-box__header">
             <div className="modal-headcopy">
               <span className="modal-kicker">Channels</span>
-              <strong className="modal-title" id={reminderTitleId}>Ingatkan Saya Soal Pesan Ini</strong>
-              <p className="modal-subtitle" id={reminderDescId}>Pilih waktu pengingat sekarang dan tambahkan catatan singkat bila perlu.</p>
+              <strong className="modal-title" id={reminderTitleId}>Remind Me About This Message</strong>
+              <p className="modal-subtitle" id={reminderDescId}>Pick a reminder time now and add a short note if needed.</p>
             </div>
             <button className="modal-box__close" onClick={() => setReminderTarget(null)} type="button"><IcoClose /></button>
           </div>
           <div className="modal-body">
             <div className="remind-modal__options">
               {[
-                { label: 'Dalam 20 menit', ms: 20 * 60_000 },
-                { label: 'Dalam 1 jam', ms: 60 * 60_000 },
-                { label: 'Dalam 3 jam', ms: 3 * 60 * 60_000 },
-                { label: 'Besok pagi (09.00)', ms: (() => {
+                { label: 'In 20 minutes', ms: 20 * 60_000 },
+                { label: 'In 1 hour', ms: 60 * 60_000 },
+                { label: 'In 3 hours', ms: 3 * 60 * 60_000 },
+                { label: 'Tomorrow morning (09:00)', ms: (() => {
                   const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(9, 0, 0, 0); return t.getTime() - Date.now()
                 })() },
-                { label: 'Senin depan (09.00)', ms: (() => {
+                { label: 'Next Monday (09:00)', ms: (() => {
                   const t = new Date(); const dow = t.getDay(); const daysUntilMon = (8 - dow) % 7 || 7
                   t.setDate(t.getDate() + daysUntilMon); t.setHours(9, 0, 0, 0); return t.getTime() - Date.now()
                 })() },
@@ -3692,11 +3692,11 @@ export function ChannelsView({
             </div>
           </div>
           <div className="modal-footer remind-modal__note">
-            <p className="remind-modal__note-copy">Catatan opsional membantu Anda mengingat kenapa pesan ini penting saat pengingat muncul nanti.</p>
+            <p className="remind-modal__note-copy">An optional note helps you remember why this message matters when the reminder appears later.</p>
             <input
               maxLength={160}
               onChange={(e) => setReminderNote(e.target.value)}
-              placeholder="Catatan opsional..."
+              placeholder="Optional note..."
               type="text"
               value={reminderNote}
             />
@@ -3720,11 +3720,11 @@ export function ChannelsView({
         >
           <div className="modal__header">
             <div className="modal-headcopy">
-              <h3 className="modal__title" id={deleteConfirmTitleId}>Hapus Pesan?</h3>
+              <h3 className="modal__title" id={deleteConfirmTitleId}>Delete Message?</h3>
               <p className="modal-subtitle" id={deleteConfirmDescId}>
                 {deleteTarget.canDeleteForAll
-                  ? `Pilih apakah pesan hanya hilang dari tampilan Anda atau berubah menjadi jejak "Pesan ini telah dihapus." untuk ${isSelectedDirectMessage ? 'semua peserta percakapan' : 'semua anggota channel'}.`
-                  : `Pesan dari ${deleteTarget.authorName} ini hanya akan hilang dari tampilan Anda.`}
+                  ? `Choose whether the message only disappears from your view or is replaced with a "This message was deleted." trace for ${isSelectedDirectMessage ? 'everyone in the conversation' : 'all channel members'}.`
+                  : `This message from ${deleteTarget.authorName} will only disappear from your view.`}
               </p>
             </div>
             <button className="modal__close" onClick={() => { setDeleteTarget(null); setDeleteMessageError(null); setDeletingMessageScope(null) }} type="button">
@@ -3734,8 +3734,8 @@ export function ChannelsView({
           <div className="modal__body">
             <div className="modal-helper-note modal-helper-note--danger">
               {deleteTarget.canDeleteForAll
-                ? 'Jika Anda memilih "Hapus untuk Semua", isi pesan akan diganti menjadi jejak penghapusan dan tidak hilang begitu saja dari percakapan.'
-                : 'Jika Anda memilih "Hapus untuk Saya", pesan ini hanya disembunyikan dari tampilan akun Anda.'} {deleteTarget.content.trim() ? `Cuplikan: "${deleteTarget.content.trim().slice(0, 140)}${deleteTarget.content.trim().length > 140 ? '…' : ''}"` : deleteTarget.isDeletedForEveryone ? 'Pesan ini sudah menjadi jejak penghapusan untuk semua peserta.' : 'Pesan ini tidak memiliki teks, hanya lampiran atau konten kosong.'}
+                ? 'If you choose "Delete for Everyone", the message content is replaced with a deletion trace and does not simply vanish from the conversation.'
+                : 'If you choose "Delete for Me", this message is only hidden from your account\'s view.'} {deleteTarget.content.trim() ? `Preview: "${deleteTarget.content.trim().slice(0, 140)}${deleteTarget.content.trim().length > 140 ? '…' : ''}"` : deleteTarget.isDeletedForEveryone ? 'This message is already a deletion trace for all participants.' : 'This message has no text, only an attachment or empty content.'}
             </div>
             {deleteMessageError && <InlineNotice tone="error">{deleteMessageError}</InlineNotice>}
           </div>
@@ -3746,7 +3746,7 @@ export function ChannelsView({
               onClick={() => { setDeleteTarget(null); setDeleteMessageError(null); setDeletingMessageScope(null) }}
               type="button"
             >
-              Batal
+              Cancel
             </button>
             <button
               className="btn btn--ghost"
@@ -3759,7 +3759,7 @@ export function ChannelsView({
                   await onDeleteMessage(deleteTarget.id, 'self')
                   setDeleteTarget(null)
                 } catch (err) {
-                  setDeleteMessageError(extractErrorMessage(err, 'Pesan gagal dihapus dari tampilan Anda.'))
+                  setDeleteMessageError(extractErrorMessage(err, 'Failed to delete the message from your view.'))
                 } finally {
                   setDeletingMessageId(null)
                   setDeletingMessageScope(null)
@@ -3767,7 +3767,7 @@ export function ChannelsView({
               }}
               type="button"
             >
-              {deletingMessageId === deleteTarget.id && deletingMessageScope === 'self' ? 'Menyembunyikan…' : 'Hapus untuk Saya'}
+              {deletingMessageId === deleteTarget.id && deletingMessageScope === 'self' ? 'Hiding…' : 'Delete for Me'}
             </button>
             {deleteTarget.canDeleteForAll && (
               <button
@@ -3781,7 +3781,7 @@ export function ChannelsView({
                     await onDeleteMessage(deleteTarget.id, 'all')
                     setDeleteTarget(null)
                   } catch (err) {
-                    setDeleteMessageError(extractErrorMessage(err, 'Pesan gagal dihapus untuk semua anggota.'))
+                    setDeleteMessageError(extractErrorMessage(err, 'Failed to delete the message for all members.'))
                   } finally {
                     setDeletingMessageId(null)
                     setDeletingMessageScope(null)
@@ -3789,7 +3789,7 @@ export function ChannelsView({
                 }}
                 type="button"
               >
-                {deletingMessageId === deleteTarget.id && deletingMessageScope === 'all' ? 'Menghapus…' : 'Hapus untuk Semua'}
+                {deletingMessageId === deleteTarget.id && deletingMessageScope === 'all' ? 'Deleting…' : 'Delete for Everyone'}
               </button>
             )}
           </div>
@@ -3812,9 +3812,9 @@ export function ChannelsView({
         >
           <div className="modal__header">
             <div className="modal-headcopy">
-              <h3 className="modal__title" id={confirmRemoveTitleId}>Hapus Anggota?</h3>
+              <h3 className="modal__title" id={confirmRemoveTitleId}>Remove Member?</h3>
               <p className="modal-subtitle" id={confirmRemoveDescId}>
-                <strong>{confirmRemoveMember.name}</strong> akan dikeluarkan dari channel ini dan tidak lagi bisa membaca atau mengirim pesan.
+                <strong>{confirmRemoveMember.name}</strong> will be removed from this channel and can no longer read or send messages.
               </p>
             </div>
             <button className="modal__close" onClick={() => { setConfirmRemoveMember(null); setRemoveMemberError(null) }} type="button">
@@ -3823,12 +3823,12 @@ export function ChannelsView({
           </div>
           <div className="modal__body">
             <div className="modal-helper-note modal-helper-note--danger">
-              Tindakan ini tidak dapat dibatalkan. Anggota harus ditambahkan ulang secara manual jika diperlukan.
+              This action cannot be undone. The member must be added back manually if needed.
             </div>
             {removeMemberError && <InlineNotice tone="error">{removeMemberError}</InlineNotice>}
           </div>
           <div className="modal__footer">
-            <button className="btn btn--ghost" disabled={removingMemberId === confirmRemoveMember.userId} onClick={() => { setConfirmRemoveMember(null); setRemoveMemberError(null) }} type="button">Batal</button>
+            <button className="btn btn--ghost" disabled={removingMemberId === confirmRemoveMember.userId} onClick={() => { setConfirmRemoveMember(null); setRemoveMemberError(null) }} type="button">Cancel</button>
             <button
               className="btn btn--danger"
               disabled={removingMemberId === confirmRemoveMember.userId}
@@ -3841,14 +3841,14 @@ export function ChannelsView({
                   await onRemoveMember(selectedChannelId, userId)
                   setConfirmRemoveMember(null)
                 } catch (err) {
-                  setRemoveMemberError(extractErrorMessage(err, 'Anggota gagal dihapus dari channel.'))
+                  setRemoveMemberError(extractErrorMessage(err, 'Failed to remove the member from the channel.'))
                 } finally {
                   setRemovingMemberId(null)
                 }
               }}
               type="button"
             >
-              {removingMemberId === confirmRemoveMember.userId ? 'Menghapus…' : 'Hapus dari Channel'}
+              {removingMemberId === confirmRemoveMember.userId ? 'Removing…' : 'Remove from Channel'}
             </button>
           </div>
         </div>

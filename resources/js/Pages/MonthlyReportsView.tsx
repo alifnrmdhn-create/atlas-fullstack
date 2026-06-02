@@ -34,7 +34,7 @@ function Modal({ title, subtitle, onClose, children, footer }: {
             <span className="modal-title" id={titleId}>{title}</span>
             {subtitle ? <p className="modal-subtitle" id={subtitleId}>{subtitle}</p> : null}
           </div>
-          <button aria-label="Tutup" className="modal__close" onClick={onClose} type="button">
+          <button aria-label="Close" className="modal__close" onClick={onClose} type="button">
             <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
           </button>
         </div>
@@ -95,7 +95,7 @@ export function MonthlyReportsView() {
       if (!canSeeAll && myUnit?.id) q.set('unitId', String(myUnit.id))
       const res = await api.get<{ data: Report[] }>(`/monthly-reports?${q}`)
       setReports(res.data)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Gagal memuat') }
+    } catch (e) { setError(e instanceof Error ? e.message : 'Failed to load') }
     finally { setLoading(false) }
   }, [year, canSeeAll, myUnit?.id])
 
@@ -104,7 +104,7 @@ export function MonthlyReportsView() {
   async function doCreate() {
     setBusy(true)
     try { await api.post('/monthly-reports', createForm); setModal(null); await load() }
-    catch (e) { alert(e instanceof Error ? e.message : 'Gagal') }
+    catch (e) { alert(e instanceof Error ? e.message : 'Failed') }
     finally { setBusy(false) }
   }
 
@@ -114,22 +114,22 @@ export function MonthlyReportsView() {
       const fd = new FormData(); fd.append('file', file)
       await api.upload<{ data: Report }>(`/monthly-reports/${id}/upload`, fd)
       setModal(null); await load()
-    } catch (e) { alert(e instanceof Error ? e.message : 'Upload gagal') }
+    } catch (e) { alert(e instanceof Error ? e.message : 'Upload failed') }
     finally { setUploading(false) }
   }
 
   async function doSubmit(id: number) {
-    if (!confirm('Submit laporan ini untuk direview?')) return
+    if (!confirm('Submit this report for review?')) return
     setBusy(true)
     try { await api.post(`/monthly-reports/${id}/submit`, {}); await load() }
-    catch (e) { alert(e instanceof Error ? e.message : 'Gagal') }
+    catch (e) { alert(e instanceof Error ? e.message : 'Failed') }
     finally { setBusy(false) }
   }
 
   async function doDelete(id: number) {
-    if (!confirm('Hapus laporan draft ini?')) return
+    if (!confirm('Delete this draft report?')) return
     try { await api.delete(`/monthly-reports/${id}`); await load() }
-    catch (e) { alert(e instanceof Error ? e.message : 'Gagal') }
+    catch (e) { alert(e instanceof Error ? e.message : 'Failed') }
   }
 
   function openReport(id: number) {
@@ -163,7 +163,7 @@ export function MonthlyReportsView() {
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Monthly Reports</h2>
         <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Output bulanan divisi — upload, review, approval berjenjang</span>
+        <span className="view-toolbar__subtitle">Monthly division output — upload, review, tiered approval</span>
         <div className="mr-toolbar-controls">
           <select className="form-select mr-toolbar-year"
             value={year} onChange={e => { setYear(Number(e.target.value)) }}>
@@ -171,7 +171,7 @@ export function MonthlyReportsView() {
           </select>
           {canCreate && (
             <button className="btn btn--primary btn--sm" onClick={() => setModal('create')}>
-              + Buat Report
+              + New Report
             </button>
           )}
         </div>
@@ -183,7 +183,7 @@ export function MonthlyReportsView() {
           <div className="mr-strip__icon-wrap neutral"><span className="mr-strip__icon">📋</span></div>
           <div className="mr-strip__content">
             <span className="mr-strip__val">{total}</span>
-            <span className="mr-strip__lbl">Total Report</span>
+            <span className="mr-strip__lbl">Total Reports</span>
           </div>
           {total > 0 && <div className="mr-strip__progress"><div className="mr-strip__progress-fill neutral" style={{ width: '100%' }} /></div>}
         </div>
@@ -191,7 +191,7 @@ export function MonthlyReportsView() {
           <div className="mr-strip__icon-wrap green"><span className="mr-strip__icon">✓</span></div>
           <div className="mr-strip__content">
             <span className="mr-strip__val green">{approved}</span>
-            <span className="mr-strip__lbl">Disetujui</span>
+            <span className="mr-strip__lbl">Approved</span>
           </div>
           {total > 0 && <div className="mr-strip__progress"><div className="mr-strip__progress-fill green" style={{ width: `${(approved / total) * 100}%` }} /></div>}
         </div>
@@ -199,7 +199,7 @@ export function MonthlyReportsView() {
           <div className="mr-strip__icon-wrap amber"><span className="mr-strip__icon">⏳</span></div>
           <div className="mr-strip__content">
             <span className="mr-strip__val amber">{pending}</span>
-            <span className="mr-strip__lbl">Menunggu Review</span>
+            <span className="mr-strip__lbl">Awaiting Review</span>
           </div>
           {total > 0 && <div className="mr-strip__progress"><div className="mr-strip__progress-fill amber" style={{ width: `${(pending / total) * 100}%` }} /></div>}
         </div>
@@ -216,7 +216,7 @@ export function MonthlyReportsView() {
             <div className="mr-strip__icon-wrap red"><span className="mr-strip__icon">✕</span></div>
             <div className="mr-strip__content">
               <span className="mr-strip__val red">{rejected}</span>
-              <span className="mr-strip__lbl">Ditolak</span>
+              <span className="mr-strip__lbl">Rejected</span>
             </div>
             {total > 0 && <div className="mr-strip__progress"><div className="mr-strip__progress-fill red" style={{ width: `${(rejected / total) * 100}%` }} /></div>}
           </div>
@@ -226,7 +226,7 @@ export function MonthlyReportsView() {
       {/* ── Report list ── */}
       {loading ? (
         <div className="mr-state">
-          <span className="mr-state__copy">Memuat laporan…</span>
+          <span className="mr-state__copy">Loading reports…</span>
         </div>
       ) : error ? (
         <div className="mr-state mr-state--error">
@@ -237,10 +237,10 @@ export function MonthlyReportsView() {
           {total === 0 && (
             <div className="mr-index__empty">
               <span className="mr-index__empty-icon">📋</span>
-              <span>Tidak ada laporan untuk tahun {year}</span>
+              <span>No reports for {year}</span>
               {canCreate && (
                 <button className="mr-btn primary" onClick={() => setModal('create')}>
-                  + Buat Report Pertama
+                  + Create First Report
                 </button>
               )}
             </div>
@@ -251,7 +251,7 @@ export function MonthlyReportsView() {
               {canSeeAll && (
                 <div className="mr-index__group-header">
                   <span className="mr-index__group-name">{unit.name}</span>
-                  <span className="mr-index__group-count">{rows.length} laporan</span>
+                  <span className="mr-index__group-count">{rows.length} report{rows.length !== 1 ? 's' : ''}</span>
                 </div>
               )}
               <div className="mr-index__cards">
@@ -268,7 +268,7 @@ export function MonthlyReportsView() {
                         type="button"
                         className="mr-card__main"
                         onClick={() => openReport(r.id)}
-                        aria-label={`Buka dashboard laporan ${MON[r.month - 1]} ${r.year}${r.unit.name ? ` ${r.unit.name}` : ''}`}
+                        aria-label={`Open report dashboard for ${MON[r.month - 1]} ${r.year}${r.unit.name ? ` ${r.unit.name}` : ''}`}
                       >
                         {/* Period block */}
                         <span className="mr-card__period">
@@ -281,7 +281,7 @@ export function MonthlyReportsView() {
                           <span className="mr-card__row1">
                             <span className={`mr-badge ${st.cls}`}>{st.label}</span>
                             {approvable && (
-                              <span className="mr-card__action-pill">Perlu tindakan Anda</span>
+                              <span className="mr-card__action-pill">Needs your action</span>
                             )}
                           </span>
                           {!canSeeAll && r.unit.name && (
@@ -289,8 +289,8 @@ export function MonthlyReportsView() {
                           )}
                           <span className="mr-card__meta">
                             {cnt > 0
-                              ? <span>{cnt} indikator</span>
-                              : <span className="mr-card__no-data">Belum ada data</span>
+                              ? <span>{cnt} indicators</span>
+                              : <span className="mr-card__no-data">No data yet</span>
                             }
                             {r.submittedBy && (
                               <span>· {r.submittedBy.name}</span>
@@ -314,7 +314,7 @@ export function MonthlyReportsView() {
                           </button>
                         )}
                         {r.status === 'DRAFT' && (
-                          <button type="button" className="mr-btn danger" title="Hapus"
+                          <button type="button" className="mr-btn danger" title="Delete"
                             onClick={() => void doDelete(r.id)}>
                             ✕
                           </button>
@@ -323,7 +323,7 @@ export function MonthlyReportsView() {
                           type="button"
                           className="mr-card__open-btn"
                           onClick={() => openReport(r.id)}>
-                          Buka Dashboard →
+                          Open Dashboard →
                         </button>
                       </div>
                     </div>
@@ -338,32 +338,32 @@ export function MonthlyReportsView() {
       {/* ── Modal: Create ── */}
       {modal === 'create' && (
         <Modal
-          title="Buat Report Baru"
-          subtitle="Pilih periode laporan yang akan dibuka sebagai draft, lalu lanjutkan pengisian indikatornya."
+          title="New Report"
+          subtitle="Pick the reporting period to open as a draft, then continue filling in its indicators."
           onClose={() => setModal(null)}
           footer={(
             <>
-              <button className="btn" onClick={() => setModal(null)} type="button">Batal</button>
+              <button className="btn" onClick={() => setModal(null)} type="button">Cancel</button>
               <button className="btn btn--primary" disabled={busy} onClick={doCreate} type="button">
-                {busy ? 'Membuat…' : 'Buat Draft'}
+                {busy ? 'Creating…' : 'Create Draft'}
               </button>
             </>
           )}
         >
           <section className="modal-section">
             <div className="modal-section__intro">
-              <h4>Periode laporan</h4>
-              <p>Tentukan bulan dan tahun agar draft baru langsung terikat ke siklus pelaporan yang benar.</p>
+              <h4>Reporting period</h4>
+              <p>Set the month and year so the new draft is tied directly to the correct reporting cycle.</p>
             </div>
             <div className="form-group">
-              <label className="form-label">Bulan</label>
+              <label className="form-label">Month</label>
               <select className="form-select" value={createForm.month}
                 onChange={e => setCreateForm(f => ({ ...f, month: Number(e.target.value) }))}>
                 {MON.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
               </select>
             </div>
             <div className="form-group mr-form-group--spaced">
-              <label className="form-label">Tahun</label>
+              <label className="form-label">Year</label>
               <select className="form-select" value={createForm.year}
                 onChange={e => setCreateForm(f => ({ ...f, year: Number(e.target.value) }))}>
                 {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
@@ -376,24 +376,24 @@ export function MonthlyReportsView() {
       {/* ── Modal: Upload ── */}
       {modal === 'upload' && uploadId !== null && (
         <Modal
-          title="Upload Data Excel"
-          subtitle="Masukkan data indikator dari template Excel agar draft bisa diproses sekaligus."
+          title="Upload Excel Data"
+          subtitle="Import indicator data from the Excel template so the draft can be processed at once."
           onClose={() => setModal(null)}
         >
           <section className="modal-section modal-section--soft">
             <div className="modal-section__intro">
-              <h4>Template file</h4>
-              <p>Pastikan urutan kolom tetap sesuai template agar proses import berjalan mulus.</p>
+              <h4>File template</h4>
+              <p>Keep the column order matching the template so the import runs smoothly.</p>
             </div>
             <div className="mr-template-box">
-              <div className="mr-template-box__title">Format Template Excel — 7 Kolom</div>
+              <div className="mr-template-box__title">Excel Template Format — 7 Columns</div>
               <div className="mr-template-box__cols">
-                {['A: Section','B: Kategori','C: Label','D: Satuan','E: RKAP','F: Realisasi','G: Tahun Lalu'].map(c => (
+                {['A: Section','B: Category','C: Label','D: Unit','E: RKAP','F: Actual','G: Prior Year'].map(c => (
                   <span className="mr-template-box__col" key={c}>{c}</span>
                 ))}
               </div>
               <div className="mr-template-box__note">
-                Section: OPERASIONAL atau KEUANGAN. Baris 1 adalah header dan akan dilewati.
+                Section: OPERASIONAL or KEUANGAN. Row 1 is the header and will be skipped.
               </div>
             </div>
           </section>
@@ -406,9 +406,9 @@ export function MonthlyReportsView() {
               onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) void doUpload(uploadId, f) }}>
               <span className="mr-drop__icon">{uploading ? '⏳' : '📂'}</span>
               <span className="mr-drop__text">
-                {uploading ? 'Mengupload dan memproses…' : 'Klik atau drag file Excel ke sini'}
+                {uploading ? 'Uploading and processing…' : 'Click or drag an Excel file here'}
               </span>
-              <span className="mr-drop__sub">.xlsx atau .xls · Maks 10 MB</span>
+              <span className="mr-drop__sub">.xlsx or .xls · Max 10 MB</span>
             </button>
           </section>
           <input ref={fileRef} className="mr-file-input-hidden" type="file" accept=".xlsx,.xls"

@@ -44,7 +44,7 @@ export function ActivityTimelineTable({ activities, period }: Props) {
         <thead>
           {year && (
             <tr>
-              <th className="atl-head atl-head--name" rowSpan={2}>Aktivitas</th>
+              <th className="atl-head atl-head--name" rowSpan={2}>Activity</th>
               <th className="atl-head atl-head--workstream" rowSpan={2}>Workstream</th>
               <th className="atl-head atl-head--deliverable" rowSpan={2}>Deliverable</th>
               <th className="atl-head atl-head--label" rowSpan={2} />
@@ -54,7 +54,7 @@ export function ActivityTimelineTable({ activities, period }: Props) {
           <tr>
             {!year && (
               <>
-                <th className="atl-head atl-head--name">Aktivitas</th>
+                <th className="atl-head atl-head--name">Activity</th>
                 <th className="atl-head atl-head--workstream">Workstream</th>
                 <th className="atl-head atl-head--deliverable">Deliverable</th>
                 <th className="atl-head atl-head--label" />

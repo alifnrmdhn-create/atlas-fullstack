@@ -217,8 +217,8 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                 // continuity dengan month-spanning header di weeks pane.
                 return (
                   <Fragment key={`info-${idx}`}>
-                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-fase`}>Fase</div>
-                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-uraian`}>Uraian Tahapan</div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-fase`}>Phase</div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-uraian`}>Step Description</div>
                     <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-person`}>Person</div>
                     <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-status`}>Status</div>
                   </Fragment>
@@ -281,7 +281,7 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                           {personExtra > 0 && <span className="exec-grid-pic__extra">+{personExtra}</span>}
                         </span>
                       ) : (
-                        <span className="exec-grid-pic exec-grid-pic--empty">Belum ditugaskan</span>
+                        <span className="exec-grid-pic exec-grid-pic--empty">Not assigned</span>
                       )}
                     </div>
                     <div className={`${cls} execution-grid__info-cell execution-grid__col-status execution-grid__status-pill execution-grid__status-pill--plan`}>Plan</div>

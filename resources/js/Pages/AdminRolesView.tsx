@@ -107,7 +107,7 @@ export function AdminRolesView() {
       setTimeout(() => setSavedRole(null), 2000)
       setActiveRole(null)
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Gagal menyimpan')
+      setSaveError(err instanceof Error ? err.message : 'Failed to save')
     } finally {
       setSavingRole(null)
     }
@@ -118,22 +118,22 @@ export function AdminRolesView() {
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Roles &amp; Permissions</h2>
         <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Kelola konfigurasi peran dan lihat matriks izin sistem.</span>
+        <span className="view-toolbar__subtitle">Manage role configurations and view the system permission matrix.</span>
       </div>
 
       <div className="admin-roles-layout">
         {/* Left — Role List */}
         <div className="panel">
           <div className="panel__header">
-            <span className="panel__title text-sm">Daftar Peran</span>
+            <span className="panel__title text-sm">Role List</span>
           </div>
           {loading ? (
             <div className="panel__body">
-              <span className="text-muted text-sm">Memuat…</span>
+              <span className="text-muted text-sm">Loading…</span>
             </div>
           ) : roleConfigs.length === 0 ? (
             <div className="panel__body">
-              <span className="text-muted text-sm">Tidak ada data peran.</span>
+              <span className="text-muted text-sm">No role data.</span>
             </div>
           ) : (
             <ul className="roles-list">
@@ -179,7 +179,7 @@ export function AdminRolesView() {
                               onClick={() => handleDescSave(config.role)}
                               disabled={savingRole === config.role}
                             >
-                              {savingRole === config.role ? 'Menyimpan…' : 'Simpan'}
+                              {savingRole === config.role ? 'Saving…' : 'Save'}
                             </button>
                             <button
                               className="btn btn--sm"
@@ -190,10 +190,10 @@ export function AdminRolesView() {
                               }}
                               disabled={savingRole === config.role}
                             >
-                              Batal
+                              Cancel
                             </button>
                             {savedRole === config.role && (
-                              <span className="badge badge--green text-xs">Tersimpan</span>
+                              <span className="badge badge--green text-xs">Saved</span>
                             )}
                             {saveError && activeRole === config.role && (
                               <span className="badge badge--red text-xs">{saveError}</span>
@@ -216,14 +216,14 @@ export function AdminRolesView() {
         {/* Right — Permission Matrix */}
         <div className="panel">
           <div className="panel__header">
-            <span className="panel__title text-sm">Matriks Izin</span>
+            <span className="panel__title text-sm">Permission Matrix</span>
           </div>
           <div className="panel__body perm-matrix-wrap">
             <table className="perm-matrix">
               <thead>
                 <tr>
                   <th className="text-sm text-muted perm-matrix__header-cell perm-matrix__header-cell--role">
-                    Peran
+                    Role
                   </th>
                   {PERM_COLUMNS.map((col) => (
                     <th

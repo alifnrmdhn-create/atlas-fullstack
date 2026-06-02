@@ -58,17 +58,17 @@ export function formatDuration(ms: number, level: 'full' | 'compact' = 'full'): 
   const d = Math.floor(totalMin / 60 / 24)
 
   if (level === 'compact') {
-    if (d > 0) return `${d}h ${h}j`
-    if (h > 0) return `${h}j ${m}m`
-    if (m > 0) return `${m}m ${s}d`
-    return `${s}d`
+    if (d > 0) return `${d}d ${h}h`
+    if (h > 0) return `${h}h ${m}m`
+    if (m > 0) return `${m}m ${s}s`
+    return `${s}s`
   }
 
   const parts: string[] = []
-  if (d > 0) parts.push(`${d}h`)
-  if (h > 0) parts.push(`${h}j`)
+  if (d > 0) parts.push(`${d}d`)
+  if (h > 0) parts.push(`${h}h`)
   if (m > 0) parts.push(`${m}m`)
-  if (s > 0 || parts.length === 0) parts.push(`${s}d`)
+  if (s > 0 || parts.length === 0) parts.push(`${s}s`)
   return parts.join(' ')
 }
 
@@ -86,7 +86,7 @@ function formatDateShort(isoDate: string): string {
 
 function endReasonLabel(reason: string | null): string {
   if (reason === 'logout')         return 'Logout'
-  if (reason === 'disconnect')     return 'Tutup tab'
+  if (reason === 'disconnect')     return 'Tab closed'
   if (reason === 'idle')           return 'Idle'
   if (reason === 'server_restart') return 'Server restart'
   return reason ?? '—'
@@ -94,7 +94,7 @@ function endReasonLabel(reason: string | null): string {
 
 // ── Daily bar chart ───────────────────────────────────────────
 function DailyBars({ data, maxMs }: { data: DailyEntry[]; maxMs: number }) {
-  if (data.length === 0) return <div className="activity-daily-empty">Belum ada data harian</div>
+  if (data.length === 0) return <div className="activity-daily-empty">No daily data yet</div>
   return (
     <div className="activity-daily-bars">
       {data.map(entry => {
@@ -135,7 +135,7 @@ function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) 
 
   if (!detail) return (
     <div className="activity-detail-panel activity-detail-panel--empty">
-      <span>Gagal memuat data</span>
+      <span>Failed to load data</span>
     </div>
   )
 
@@ -161,21 +161,21 @@ function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) 
       {/* Stats grid */}
       <div className="activity-detail-stats">
         <div className="activity-detail-stat">
-          <div className="activity-detail-stat__label">Total aktif</div>
+          <div className="activity-detail-stat__label">Total active</div>
           <div className="activity-detail-stat__value activity-detail-stat__value--primary">
             {formatDuration(detail.totalDurationMs)}
           </div>
         </div>
         <div className="activity-detail-stat">
-          <div className="activity-detail-stat__label">Jumlah sesi</div>
+          <div className="activity-detail-stat__label">Session count</div>
           <div className="activity-detail-stat__value">{detail.sessionCount}</div>
         </div>
         <div className="activity-detail-stat">
-          <div className="activity-detail-stat__label">Rata-rata sesi</div>
+          <div className="activity-detail-stat__label">Avg. session</div>
           <div className="activity-detail-stat__value">{formatDuration(detail.avgSessionDurationMs)}</div>
         </div>
         <div className="activity-detail-stat">
-          <div className="activity-detail-stat__label">Terakhir aktif</div>
+          <div className="activity-detail-stat__label">Last active</div>
           <div className="activity-detail-stat__value">{lastActiveText}</div>
         </div>
       </div>
@@ -183,7 +183,7 @@ function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) 
       {/* Daily breakdown */}
       {detail.dailyBreakdown.length > 0 && (
         <div className="activity-detail-section">
-          <div className="activity-detail-section__title">Aktivitas harian</div>
+          <div className="activity-detail-section__title">Daily activity</div>
           <DailyBars data={detail.dailyBreakdown} maxMs={maxDailyMs} />
         </div>
       )}
@@ -191,7 +191,7 @@ function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) 
       {/* Recent sessions */}
       {detail.sessions.length > 0 && (
         <div className="activity-detail-section">
-          <div className="activity-detail-section__title">Riwayat sesi</div>
+          <div className="activity-detail-section__title">Session history</div>
           <div className="activity-sessions-list">
             {detail.sessions.slice(0, 20).map(s => (
               <div className="activity-session-row" key={s.id}>
@@ -200,7 +200,7 @@ function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) 
                   <span className="activity-session-row__range">
                     {formatTime(s.startedAt)}
                     {' → '}
-                    {s.endedAt ? formatTime(s.endedAt) : <em>aktif</em>}
+                    {s.endedAt ? formatTime(s.endedAt) : <em>active</em>}
                   </span>
                 </div>
                 <div className="activity-session-row__right">
@@ -259,7 +259,7 @@ function LeaderRow({
         </span>
       </span>
       <span className="activity-leader-row__dur">
-        {user.totalDurationMs > 0 ? formatDuration(user.totalDurationMs, 'compact') : <em className="activity-leader-row__no-data">Baru online</em>}
+        {user.totalDurationMs > 0 ? formatDuration(user.totalDurationMs, 'compact') : <em className="activity-leader-row__no-data">Just online</em>}
       </span>
       <span className="activity-leader-row__bar-wrap">
         <span className="activity-leader-row__bar" style={{ width: `${barPct}%` }} />
@@ -333,7 +333,7 @@ export function ActivityView() {
 
   const maxMs = Math.max(...users.map(u => u.totalDurationMs), 1)
 
-  const rangeLabels: Record<RangeOption, string> = { '7d': '7 Hari', '30d': '30 Hari', '90d': '90 Hari' }
+  const rangeLabels: Record<RangeOption, string> = { '7d': '7 Days', '30d': '30 Days', '90d': '90 Days' }
 
   return (
     // Phase 6 motion consistency: tambah ds + view-* + ds-stagger ke wrapper
@@ -357,7 +357,7 @@ export function ActivityView() {
         <div className="activity-controls__right">
           {lastFetched && (
             <span className="activity-controls__updated">
-              Diperbarui {lastFetched.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+              Updated {lastFetched.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
           <button
@@ -381,11 +381,11 @@ export function ActivityView() {
           <div className="activity-leader-header">
             <span className="activity-leader-header__rank">#</span>
             <span className="activity-leader-header__avatar" />
-            <span className="activity-leader-header__info">Pengguna</span>
-            <span className="activity-leader-header__dur">Durasi aktif</span>
+            <span className="activity-leader-header__info">User</span>
+            <span className="activity-leader-header__dur">Active duration</span>
             <span className="activity-leader-header__bar-wrap" />
-            <span className="activity-leader-header__sessions">Sesi</span>
-            <span className="activity-leader-header__last">Terakhir aktif</span>
+            <span className="activity-leader-header__sessions">Sessions</span>
+            <span className="activity-leader-header__last">Last active</span>
           </div>
 
           {loading && (
@@ -411,8 +411,8 @@ export function ActivityView() {
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 6v6l4 2" strokeLinecap="round" />
               </svg>
-              <p>Belum ada data aktivitas untuk periode ini.</p>
-              <span>Data mulai terekam setelah pengguna aktif menggunakan ATLAS.</span>
+              <p>No activity data for this period yet.</p>
+              <span>Data starts recording once users actively use ATLAS.</span>
             </div>
           )}
 
@@ -440,7 +440,7 @@ export function ActivityView() {
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
-              <p>Klik nama pengguna<br />untuk melihat detail aktivitas</p>
+              <p>Click a user's name<br />to view activity details</p>
             </div>
           )}
         </aside>

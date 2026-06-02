@@ -109,15 +109,15 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
     e.preventDefault()
     setError(null)
     setSuccess(false)
-    if (next !== confirm) { setError('Konfirmasi kata sandi tidak cocok.'); return }
-    if (next.length < 6) { setError('Kata sandi baru minimal 6 karakter.'); return }
+    if (next !== confirm) { setError('Password confirmation does not match.'); return }
+    if (next.length < 6) { setError('New password must be at least 6 characters.'); return }
     setSaving(true)
     try {
       await api.post('/auth/change-password', { currentPassword: current, newPassword: next })
       setSuccess(true)
       setCurrent(''); setNext(''); setConfirm('')
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Gagal mengubah kata sandi.')
+      setError(err instanceof Error ? err.message : 'Failed to change password.')
     } finally {
       setSaving(false)
     }
@@ -131,10 +131,10 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
   })()
 
   const infoRows = [
-    { label: 'Metode Autentikasi', value: 'Kata Sandi Workspace' },
-    { label: 'Autentikasi 2 Faktor', value: 'Belum aktif' },
-    { label: 'Perangkat Saat Ini', value: uaDevice },
-    { label: 'Login Terakhir', value: new Date().toLocaleString('id-ID') },
+    { label: 'Authentication Method', value: 'Workspace Password' },
+    { label: 'Two-Factor Authentication', value: 'Not active' },
+    { label: 'Current Device', value: uaDevice },
+    { label: 'Last Login', value: new Date().toLocaleString('id-ID') },
   ]
 
   // Password strength heuristic (0–4)
@@ -147,14 +147,14 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
     if (/\d/.test(next) && /[^A-Za-z0-9]/.test(next)) score += 1
     return Math.min(4, score)
   })()
-  const pwLabel = ['—', 'Lemah', 'Cukup', 'Baik', 'Kuat'][pwStrength]
+  const pwLabel = ['—', 'Weak', 'Fair', 'Good', 'Strong'][pwStrength]
 
   return (
     <div className="section-block">
       <div className="section-header">
         <div>
           <h3 className="section-title">Security</h3>
-          <p className="section-subtitle">Informasi sesi dan keamanan akun.</p>
+          <p className="section-subtitle">Session information and account security.</p>
         </div>
       </div>
 
@@ -168,14 +168,14 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
       </div>
 
       <div className="settings-security-card">
-        <div className="settings-security-card__title">Ganti Kata Sandi</div>
+        <div className="settings-security-card__title">Change Password</div>
         <p className="settings-security-card__subtitle">
-          Gunakan kata sandi unik yang belum dipakai di tempat lain.
+          Use a unique password that you haven't used elsewhere.
         </p>
 
         {success && (
           <div className="settings-feedback settings-feedback--success">
-            ✓ Kata sandi berhasil diubah.
+            ✓ Password changed successfully.
           </div>
         )}
         {error && (
@@ -187,20 +187,20 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
         <form className="settings-password-form" onSubmit={handleSubmit}>
           <div className="settings-password-field">
             <label className="settings-password-label">
-              Kata Sandi Saat Ini
+              Current Password
             </label>
             <div className="settings-password-input-wrap">
               <input
                 autoComplete="current-password"
                 className="profile-input settings-password-input settings-password-input--with-toggle"
                 onChange={e => setCurrent(e.target.value)}
-                placeholder="Masukkan kata sandi saat ini"
+                placeholder="Enter your current password"
                 required
                 type={showCurrent ? 'text' : 'password'}
                 value={current}
               />
               <button
-                aria-label={showCurrent ? 'Sembunyikan kata sandi saat ini' : 'Tampilkan kata sandi saat ini'}
+                aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
                 className="settings-password-toggle"
                 onClick={() => setShowCurrent(v => !v)}
                 type="button"
@@ -212,20 +212,20 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
 
           <div className="settings-password-field">
             <label className="settings-password-label">
-              Kata Sandi Baru
+              New Password
             </label>
             <div className="settings-password-input-wrap">
               <input
                 autoComplete="new-password"
                 className="profile-input settings-password-input settings-password-input--with-toggle"
                 onChange={e => setNext(e.target.value)}
-                placeholder="Minimal 6 karakter"
+                placeholder="At least 6 characters"
                 required
                 type={showNext ? 'text' : 'password'}
                 value={next}
               />
               <button
-                aria-label={showNext ? 'Sembunyikan kata sandi baru' : 'Tampilkan kata sandi baru'}
+                aria-label={showNext ? 'Hide new password' : 'Show new password'}
                 className="settings-password-toggle"
                 onClick={() => setShowNext(v => !v)}
                 type="button"
@@ -248,19 +248,19 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
 
           <div className="settings-password-field">
             <label className="settings-password-label">
-              Konfirmasi Kata Sandi Baru
+              Confirm New Password
             </label>
             <input
               autoComplete="new-password"
               className={`profile-input settings-password-input${confirm && confirm !== next ? ' settings-password-input--error' : ''}`}
               onChange={e => setConfirm(e.target.value)}
-              placeholder="Ulangi kata sandi baru"
+              placeholder="Repeat the new password"
               required
               type="password"
               value={confirm}
             />
             {confirm && confirm !== next && (
-              <span className="settings-password-hint settings-password-hint--error">Kata sandi tidak cocok.</span>
+              <span className="settings-password-hint settings-password-hint--error">Passwords do not match.</span>
             )}
           </div>
 
@@ -270,14 +270,14 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
               disabled={saving || !current || !next || !confirm}
               type="submit"
             >
-              {saving ? 'Menyimpan…' : 'Simpan Kata Sandi'}
+              {saving ? 'Saving…' : 'Save Password'}
             </button>
             <button
               className="btn btn--ghost"
               onClick={onLogout}
               type="button"
             >
-              Keluar &amp; Login Ulang
+              Sign out &amp; Sign in Again
             </button>
           </div>
         </form>
@@ -352,7 +352,7 @@ export function SettingsView() {
 
   const workspaceRows = [
     { label: 'Workspace', value: 'PTPN III · KMR Directorate' },
-    { label: 'Peran Anda', value: currentUser?.positionTitle ?? currentUser?.roleType ?? '—' },
+    { label: 'Your Role', value: currentUser?.positionTitle ?? currentUser?.roleType ?? '—' },
     { label: 'Environment', value: 'Production' },
     { label: 'Database', value: systemStatus?.persistence.mode === 'database' ? 'PostgreSQL ✓' : 'Fallback Mode' },
     { label: 'API Service', value: systemStatus?.service ?? 'ATLAS Backend' },
@@ -369,7 +369,7 @@ export function SettingsView() {
       <div className="view-toolbar">
         <h2 className="view-toolbar__title">Settings</h2>
         <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Kelola profil, preferensi, dan pengaturan workspace.</span>
+        <span className="view-toolbar__subtitle">Manage your profile, preferences, and workspace settings.</span>
       </div>
 
       <div className="settings-workspace">
@@ -399,28 +399,28 @@ export function SettingsView() {
             }
             const NOTIF_GROUPS = [
               {
-                title: 'Umum',
+                title: 'General',
                 items: [
-                  { key: 'inApp', label: 'Notifikasi In-App', desc: 'Tampilkan badge dan panel notifikasi' },
+                  { key: 'inApp', label: 'In-App Notifications', desc: 'Show notification badge and panel' },
                 ],
               },
               {
-                title: 'Komunikasi',
+                title: 'Communication',
                 items: [
-                  { key: 'mentions', label: 'Mention & Balasan', desc: 'Saat seseorang menyebut nama Anda di pesan' },
+                  { key: 'mentions', label: 'Mentions & Replies', desc: 'When someone mentions you in a message' },
                 ],
               },
               {
-                title: 'Program & Approval',
+                title: 'Programs & Approvals',
                 items: [
-                  { key: 'approvals', label: 'Permintaan Approval', desc: 'Persetujuan laporan dan tindak lanjut' },
-                  { key: 'statusUpdates', label: 'Update Status Program', desc: 'Perubahan status program yang Anda ikuti' },
+                  { key: 'approvals', label: 'Approval Requests', desc: 'Report approvals and follow-ups' },
+                  { key: 'statusUpdates', label: 'Program Status Updates', desc: 'Status changes on programs you follow' },
                 ],
               },
               {
-                title: 'Meeting',
+                title: 'Meetings',
                 items: [
-                  { key: 'meetingReminders', label: 'Pengingat Meeting', desc: 'Reminder 15 menit sebelum meeting' },
+                  { key: 'meetingReminders', label: 'Meeting Reminders', desc: 'Reminder 15 minutes before a meeting' },
                 ],
               },
             ]
@@ -434,7 +434,7 @@ export function SettingsView() {
                 <div className="section-header">
                   <div>
                     <h3 className="section-title">Notifications</h3>
-                    <p className="section-subtitle">Atur preferensi notifikasi dan alerts per kategori.</p>
+                    <p className="section-subtitle">Manage notification and alert preferences by category.</p>
                   </div>
                   <button
                     className="btn btn--ghost"
@@ -442,7 +442,7 @@ export function SettingsView() {
                     onClick={resetDefaults}
                     type="button"
                   >
-                    Reset default
+                    Reset to default
                   </button>
                 </div>
                 <div className="settings-notif-groups">
@@ -476,25 +476,25 @@ export function SettingsView() {
               <div className="section-header">
                 <div>
                   <h3 className="section-title">Appearance</h3>
-                  <p className="section-subtitle">Tampilan dan kenyamanan ATLAS workspace.</p>
+                  <p className="section-subtitle">Display and comfort settings for the ATLAS workspace.</p>
                 </div>
               </div>
               <div className="settings-list settings-list--spaced">
 
                 <div className="list-row settings-list-row settings-list-row--stacked">
                   <div className="settings-list-row__meta">
-                    <div className="settings-list-row__title">Tema</div>
+                    <div className="settings-list-row__title">Theme</div>
                     <div className="settings-list-row__desc">
                       {themePreference === 'system'
-                        ? `Ikuti pengaturan sistem. Tema aktif saat ini: ${resolvedTheme === 'dark' ? 'Gelap' : 'Terang'}.`
-                        : `Tema aktif ditetapkan ke mode ${themePreference === 'dark' ? 'gelap' : 'terang'}.`}
+                        ? `Follow system settings. Current active theme: ${resolvedTheme === 'dark' ? 'Dark' : 'Light'}.`
+                        : `Active theme set to ${themePreference === 'dark' ? 'dark' : 'light'} mode.`}
                     </div>
                   </div>
-                  <div className="settings-theme-cards" role="radiogroup" aria-label="Tema">
+                  <div className="settings-theme-cards" role="radiogroup" aria-label="Theme">
                     {([
                       {
                         key: 'light',
-                        label: 'Terang',
+                        label: 'Light',
                         hint: 'Default',
                         preview: 'light',
                         icon: (
@@ -506,7 +506,7 @@ export function SettingsView() {
                       },
                       {
                         key: 'dark',
-                        label: 'Gelap',
+                        label: 'Dark',
                         hint: 'Low-light',
                         preview: 'dark',
                         icon: (
@@ -517,7 +517,7 @@ export function SettingsView() {
                       },
                       {
                         key: 'system',
-                        label: 'Sistem',
+                        label: 'System',
                         hint: 'Auto',
                         preview: 'system',
                         icon: (
@@ -547,10 +547,10 @@ export function SettingsView() {
 
                 <div className="list-row settings-list-row">
                   <div className="settings-list-row__meta">
-                    <div className="settings-list-row__title">Ukuran Teks</div>
-                    <div className="settings-list-row__desc">Sesuaikan ukuran teks antarmuka</div>
+                    <div className="settings-list-row__title">Text Size</div>
+                    <div className="settings-list-row__desc">Adjust the interface text size</div>
                   </div>
-                  <div className="settings-segmented" role="radiogroup" aria-label="Ukuran Teks">
+                  <div className="settings-segmented" role="radiogroup" aria-label="Text Size">
                     {(['small','normal','large'] as const).map(sz => (
                       <button
                         aria-checked={fontSize === sz}
@@ -560,7 +560,7 @@ export function SettingsView() {
                         role="radio"
                         type="button"
                       >
-                        {sz === 'small' ? 'Kecil' : sz === 'large' ? 'Besar' : 'Normal'}
+                        {sz === 'small' ? 'Small' : sz === 'large' ? 'Large' : 'Normal'}
                       </button>
                     ))}
                   </div>
@@ -568,8 +568,8 @@ export function SettingsView() {
 
                 <div className="list-row settings-list-row">
                   <div className="settings-list-row__meta">
-                    <div className="settings-list-row__title">Sidebar Kompak</div>
-                    <div className="settings-list-row__desc">Tampilkan sidebar dengan lebih padat</div>
+                    <div className="settings-list-row__title">Compact Sidebar</div>
+                    <div className="settings-list-row__desc">Display the sidebar more densely</div>
                   </div>
                   <ToggleSwitch checked={sidebarCompact} onChange={applySidebarCompact} />
                 </div>
@@ -577,7 +577,7 @@ export function SettingsView() {
               </div>
 
               <div className="settings-footnote">
-                <strong>Pintasan:</strong> Tekan <kbd>⌘K</kbd> untuk membuka command palette. Perubahan tampilan tersimpan otomatis di perangkat ini.
+                <strong>Shortcut:</strong> Press <kbd>⌘K</kbd> to open the command palette. Appearance changes are saved automatically on this device.
               </div>
             </div>
           )}
@@ -587,7 +587,7 @@ export function SettingsView() {
             <>
               <SecuritySection onLogout={requestLogout} />
               <div className="settings-footnote">
-                <strong>Tips keamanan:</strong> Gunakan kata sandi minimal 12 karakter dengan kombinasi huruf, angka, dan simbol. Jangan gunakan ulang kata sandi yang sudah dipakai di layanan lain.
+                <strong>Security tip:</strong> Use a password of at least 12 characters combining letters, numbers, and symbols. Do not reuse a password from another service.
               </div>
             </>
           )}
@@ -599,7 +599,7 @@ export function SettingsView() {
                 <div className="section-header">
                   <div>
                   <h3 className="section-title">Workspace Info</h3>
-                  <p className="section-subtitle">Informasi teknis ATLAS workspace.</p>
+                  <p className="section-subtitle">Technical information about the ATLAS workspace.</p>
                 </div>
               </div>
                 <div className="settings-list settings-list--compact">
@@ -619,9 +619,9 @@ export function SettingsView() {
                 </div>
                 <div className="settings-danger-row">
                   <div className="settings-list-row__meta">
-                    <div className="settings-list-row__title">Keluar dari workspace</div>
+                    <div className="settings-list-row__title">Sign out of workspace</div>
                     <div className="settings-list-row__desc">
-                      Sesi Anda akan diakhiri dan token dihapus.
+                      Your session will end and your token will be cleared.
                     </div>
                   </div>
                   <button
@@ -629,7 +629,7 @@ export function SettingsView() {
                     onClick={() => requestLogout()}
                     type="button"
                   >
-                    Keluar
+                    Sign out
                   </button>
                 </div>
               </div>

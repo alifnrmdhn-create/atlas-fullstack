@@ -113,7 +113,7 @@ export function PicaCompositePanel({
       })
       .catch(err => {
         if (cancelled) return
-        setError(err?.message || 'Gagal memuat konteks PICA')
+        setError(err?.message || 'Failed to load PICA context')
         setLoading(false)
       })
     return () => { cancelled = true }
@@ -142,7 +142,7 @@ export function PicaCompositePanel({
   // Section header tetap visible meskipun collapsed (dari CollapsibleSection primitive)
   return (
     <CollapsibleSection
-      title="PICA — Bahan Diskusi Meeting"
+      title="PICA — Meeting Discussion Material"
       count={data ? data.openBlockers.length + data.continuity.unresolvedItems.length : undefined}
       summary={summary}
       defaultOpen={isRelevant}
@@ -150,7 +150,7 @@ export function PicaCompositePanel({
     >
       {loading && (
         <div style={{ padding: '12px 0', fontSize: 12, color: 'var(--text-muted)' }}>
-          Memuat konteks PICA…
+          Loading PICA context…
         </div>
       )}
 
@@ -162,7 +162,7 @@ export function PicaCompositePanel({
             onClick={() => setRefreshTick(t => t + 1)}
             style={{ marginLeft: 8, fontSize: 11, textDecoration: 'underline', background: 'none', border: 0, color: 'inherit', cursor: 'pointer' }}
           >
-            Coba lagi
+            Try again
           </button>
         </div>
       )}
@@ -183,7 +183,7 @@ export function PicaCompositePanel({
             <div className="pica-grid">
               <div className="pica-grid__head">
                 <div>Problem</div>
-                <div>Issue / Akar Masalah</div>
+                <div>Issue / Root Cause</div>
                 <div>Countermeasure</div>
                 <div>Action</div>
               </div>
@@ -216,7 +216,7 @@ function ContinuitySection({ continuity }: { continuity: Continuity }) {
     return (
       <div className="pica-continuity pica-continuity--empty">
         <span className="pica-continuity__label">Continuity</span>
-        <span className="pica-continuity__text">Ini rapat koordinasi pertama untuk program ini.</span>
+        <span className="pica-continuity__text">This is the first coordination meeting for this program.</span>
       </div>
     )
   }
@@ -225,11 +225,11 @@ function ContinuitySection({ continuity }: { continuity: Continuity }) {
   return (
     <div className="pica-continuity">
       <div className="pica-continuity__head">
-        <span className="pica-continuity__label">Continuity dari rapat sebelumnya</span>
+        <span className="pica-continuity__label">Continuity from previous meeting</span>
         <span className="pica-continuity__meeting">{continuity.previousMeeting.title}</span>
         {rate !== null && (
           <span className={`pica-continuity__rate pica-continuity__rate--${rateColor}`}>
-            {rate}% selesai ({continuity.totalItems - continuity.unresolvedItems.length}/{continuity.totalItems})
+            {rate}% complete ({continuity.totalItems - continuity.unresolvedItems.length}/{continuity.totalItems})
           </span>
         )}
       </div>
@@ -251,11 +251,11 @@ function ContinuitySection({ continuity }: { continuity: Continuity }) {
 function EmptyPicaState({ hasContinuity }: { hasContinuity: boolean }) {
   return (
     <div className="pica-empty">
-      <strong>Tidak ada problem terbuka di program ini.</strong>
+      <strong>No open problems in this program.</strong>
       <p>
         {hasContinuity
-          ? 'Agenda rapat bisa fokus ke continuity items dan diskusi strategis.'
-          : 'Bagus — ini momen tepat untuk strategic discussion atau preview risiko ke depan.'}
+          ? 'The meeting agenda can focus on continuity items and strategic discussion.'
+          : 'Great — this is a good moment for strategic discussion or a preview of upcoming risks.'}
       </p>
     </div>
   )
@@ -266,18 +266,18 @@ function ProgressLogContext({ log }: { log: ProgressLog }) {
   return (
     <div className="pica-progress-log">
       <div className="pica-progress-log__head">
-        <span className="pica-progress-log__label">Konteks dari ProgressLog terbaru</span>
-        <span className="pica-progress-log__period">Periode {log.period}</span>
+        <span className="pica-progress-log__label">Context from latest Progress Log</span>
+        <span className="pica-progress-log__period">Period {log.period}</span>
       </div>
       {log.kendala && (
         <div className="pica-progress-log__row">
-          <span className="pica-progress-log__row-label">Kendala</span>
+          <span className="pica-progress-log__row-label">Obstacle</span>
           <span>{log.kendala}</span>
         </div>
       )}
       {log.dukunganDibutuhkan && (
         <div className="pica-progress-log__row">
-          <span className="pica-progress-log__row-label">Dukungan dibutuhkan</span>
+          <span className="pica-progress-log__row-label">Support needed</span>
           <span>{log.dukunganDibutuhkan}</span>
         </div>
       )}
@@ -318,9 +318,9 @@ function PicaRow({
     } catch (err) {
       const e = err as { status?: number; message?: string; data?: { currentResolution?: string } }
       if (e.status === 409) {
-        setConflictMsg(e.message || 'Versi terbaru dari rekan kerja masuk lebih dulu.')
+        setConflictMsg(e.message || 'A newer version from a colleague was saved first.')
       } else {
-        setConflictMsg(e.message || 'Gagal menyimpan')
+        setConflictMsg(e.message || 'Failed to save')
       }
     } finally {
       setSaving(false)
@@ -360,14 +360,14 @@ function PicaRow({
         {!editing ? (
           <>
             <div className="pica-cell__text">
-              {blocker.resolution || <em style={{ color: 'var(--text-muted)' }}>Belum ada countermeasure</em>}
+              {blocker.resolution || <em style={{ color: 'var(--text-muted)' }}>No countermeasure yet</em>}
             </div>
             <button
               type="button"
               className="pica-cell__edit-btn"
               onClick={() => setEditing(true)}
             >
-              {blocker.resolution ? 'Edit' : 'Tulis countermeasure'}
+              {blocker.resolution ? 'Edit' : 'Write countermeasure'}
             </button>
           </>
         ) : (
@@ -377,7 +377,7 @@ function PicaRow({
               onChange={e => setDraft(e.target.value)}
               maxLength={2000}
               rows={4}
-              placeholder="Tulis langkah perbaikan…"
+              placeholder="Write the corrective action…"
               className="pica-cell__textarea"
             />
             {conflictMsg && (
@@ -385,7 +385,7 @@ function PicaRow({
             )}
             <div className="pica-cell__editor-actions">
               <button type="button" onClick={handleCancel} disabled={saving} className="btn btn--ghost btn--sm">
-                Batal
+                Cancel
               </button>
               <button
                 type="button"
@@ -393,7 +393,7 @@ function PicaRow({
                 disabled={saving || draft.trim().length === 0}
                 className="btn btn--primary btn--sm"
               >
-                {saving ? 'Menyimpan…' : 'Simpan'}
+                {saving ? 'Saving…' : 'Save'}
               </button>
             </div>
           </div>
@@ -407,16 +407,16 @@ function PicaRow({
             type="button"
             className="pica-cell__action-btn"
             onClick={() => onCreateAction?.({
-              title: `Tindak lanjut: ${blocker.title}`,
+              title: `Follow-up: ${blocker.title}`,
               description: blocker.resolution || blocker.description || undefined,
               linkedWorkItemId: blocker.workItemId,
             })}
           >
-            + Buat Action Item
+            + Create Action Item
           </button>
         ) : (
           <span className="pica-cell__hint">
-            {isOrganizer ? '—' : 'Hanya organizer'}
+            {isOrganizer ? '—' : 'Organizer only'}
           </span>
         )}
         {blocker.assignee && (

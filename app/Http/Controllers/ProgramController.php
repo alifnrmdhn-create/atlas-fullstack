@@ -305,7 +305,7 @@ class ProgramController extends Controller
         }
 
         return redirect()->route('programs.show', $program->id)
-            ->with('success', 'Program berhasil dibuat.');
+            ->with('success', 'Program created.');
     }
 
     /**
@@ -327,7 +327,7 @@ class ProgramController extends Controller
 
         $isAdmin = RolePolicy::isAdminOrAbove($request->user()->roleType);
         if (!$isAdmin && in_array($program->approvalStatus, ['PENDING_KASUB', 'PENDING_KADIV'], true)) {
-            return $this->validationError($request, 'Program sedang dalam proses persetujuan dan tidak dapat diubah.');
+            return $this->validationError($request, 'The program is currently under approval and cannot be modified.');
         }
 
         // Inject existing startDate so targetEndDate can be validated against it even when not in request
@@ -370,7 +370,7 @@ class ProgramController extends Controller
             return response()->json(['data' => $program]);
         }
 
-        return back()->with('success', 'Program diperbarui.');
+        return back()->with('success', 'Program updated.');
     }
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
@@ -384,7 +384,7 @@ class ProgramController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return redirect()->route('programs.index')->with('success', 'Program dihapus.');
+        return redirect()->route('programs.index')->with('success', 'Program deleted.');
     }
 
     public function submit(Request $request, int $id): JsonResponse|RedirectResponse
@@ -395,13 +395,13 @@ class ProgramController extends Controller
 
         if (!in_array($user->id, [$program->submittedById, $program->ownerId], true)
             && !in_array($role, ['SUPERADMIN', 'ADMIN'], true)) {
-            abort(403, 'Hanya PIC atau pembuat program yang dapat mengajukan persetujuan');
+            abort(403, 'Only the program PIC or creator can submit it for approval');
         }
         if ($program->approvalStatus !== 'DRAFT') {
-            return $this->validationError($request, 'Hanya program berstatus DRAFT yang dapat disubmit.');
+            return $this->validationError($request, 'Only programs with the DRAFT status can be submitted.');
         }
         if (in_array($role, ['KADIV', 'SUPERADMIN', 'ADMIN'], true)) {
-            return $this->validationError($request, 'KADIV/Admin gunakan tombol "Mulai Eksekusi" untuk mengaktifkan program.');
+            return $this->validationError($request, 'KADIV/Admin should use the "Start Execution" button to activate the program.');
         }
 
         $prevStatus = $program->approvalStatus;
@@ -415,7 +415,7 @@ class ProgramController extends Controller
             program: $program,
             recipientIds: $this->resolveReviewerIds($user, $targetRole),
             type: 'PROGRAM_NEEDS_APPROVAL',
-            message: "Program \"{$program->name}\" menunggu persetujuan Anda.",
+            message: "Program \"{$program->name}\" is awaiting your approval.",
             excludeUserId: $user->id,
         );
 
@@ -423,24 +423,24 @@ class ProgramController extends Controller
             return response()->json(['data' => $program->fresh()]);
         }
 
-        return back()->with('success', "Program diajukan untuk persetujuan.");
+        return back()->with('success', "Program submitted for approval.");
     }
 
     public function activate(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $role = strtoupper($request->user()->roleType);
         if (!in_array($role, ['KADIV', 'SUPERADMIN', 'ADMIN'], true)) {
-            abort(403, 'Hanya KADIV/Admin yang dapat mengaktifkan program langsung.');
+            abort(403, 'Only KADIV/Admin can activate a program directly.');
         }
         $program = Program::findOrFail($id);
         if ($program->approvalStatus !== 'DRAFT') {
-            return $this->validationError($request, 'Hanya program DRAFT yang dapat diaktifkan.');
+            return $this->validationError($request, 'Only DRAFT programs can be activated.');
         }
         // Block direct activation while program is in revision (just rejected).
         // PIC harus memperbaiki & resubmit dulu — KADIV tidak boleh mem-bypass
         // koreksi yang baru saja diminta sendiri lewat tombol "Mulai Eksekusi".
         if (!empty($program->rejectionNote) && !RolePolicy::isAdminOrAbove($request->user()->roleType)) {
-            return $this->validationError($request, 'Program baru ditolak — PIC perlu memperbaiki dan mengajukan ulang sebelum diaktifkan.');
+            return $this->validationError($request, 'The program was just rejected — the PIC must revise and resubmit it before activation.');
         }
         $prevStatus = $program->approvalStatus;
         $program->update(['approvalStatus' => 'ACTIVE', 'rejectionNote' => null]);
@@ -454,7 +454,7 @@ class ProgramController extends Controller
             return response()->json(['data' => $program->fresh()]);
         }
 
-        return back()->with('success', 'Program diaktifkan — eksekusi dimulai.');
+        return back()->with('success', 'Program activated — execution has started.');
     }
 
     /**
@@ -509,8 +509,8 @@ class ProgramController extends Controller
             foreach ($allRecipients as $userId) {
                 $taskCount = (int) ($taskCountByUser[$userId] ?? 0);
                 $message = $taskCount > 0
-                    ? "Program {$program->name} aktif. {$taskCount} tugas di pipeline Anda."
-                    : "Program {$program->name} aktif — eksekusi dimulai.";
+                    ? "Program {$program->name} is active. {$taskCount} tasks in your pipeline."
+                    : "Program {$program->name} is active — execution has started.";
 
                 $notif = Notification::create([
                     'userId' => $userId,
@@ -536,9 +536,9 @@ class ProgramController extends Controller
                     ->count();
 
                 $tail = $taskCount > 0
-                    ? "{$taskCount} task siap di-eksekusi tim."
-                    : 'Tim bisa mulai menambah task ke workstream.';
-                $content = "🚀 Program *{$program->name}* aktif — eksekusi dimulai. {$tail}";
+                    ? "{$taskCount} tasks are ready for the team to execute."
+                    : 'The team can start adding tasks to the workstream.';
+                $content = "🚀 Program *{$program->name}* is active — execution has started. {$tail}";
 
                 $msg = ChannelMessage::create([
                     'channelId' => $program->linkedChannelId,
@@ -682,7 +682,7 @@ class ProgramController extends Controller
             program: $program,
             recipientIds: $reviewerIds,
             type: 'PROGRAM_COMMITMENT_CHANGED',
-            message: "Program \"{$program->name}\" diubah {$editor->name} (field: {$fieldList}).",
+            message: "Program \"{$program->name}\" was modified by {$editor->name} (field: {$fieldList}).",
             excludeUserId: $editor->id,
         );
     }
@@ -787,7 +787,7 @@ class ProgramController extends Controller
                 program: $program,
                 recipientIds: $this->resolveReviewerIds($submitter ?? $user, 'KADIV'),
                 type: 'PROGRAM_NEEDS_APPROVAL',
-                message: "Program \"{$program->name}\" siap untuk persetujuan KADIV.",
+                message: "Program \"{$program->name}\" is ready for KADIV approval.",
                 excludeUserId: $user->id,
             );
         } elseif ($prevStatus === 'PENDING_KADIV' && in_array($role, ['KADIV', 'ADMIN', 'SUPERADMIN'], true)) {
@@ -796,7 +796,7 @@ class ProgramController extends Controller
             // Sprint 5 — Plan→Do handoff (KADIV approval triggers ACTIVE)
             $this->notifyProgramActivation($program, $user);
         } else {
-            abort(403, 'Anda tidak memiliki izin untuk menyetujui program ini pada tahap ini');
+            abort(403, 'You do not have permission to approve this program at this stage');
         }
 
         BroadcastService::program($id, 'approved');
@@ -805,7 +805,7 @@ class ProgramController extends Controller
             return response()->json(['data' => $program->fresh()]);
         }
 
-        return back()->with('success', 'Program disetujui.');
+        return back()->with('success', 'Program approved.');
     }
 
     public function reject(Request $request, int $id): JsonResponse|RedirectResponse
@@ -819,7 +819,7 @@ class ProgramController extends Controller
             ($program->approvalStatus === 'PENDING_KASUB' && $role === 'KASUBDIV') ||
             ($program->approvalStatus === 'PENDING_KADIV' && in_array($role, ['KADIV', 'ADMIN', 'SUPERADMIN'], true));
 
-        if (!$canReject) abort(403, 'Anda tidak memiliki izin untuk menolak program ini');
+        if (!$canReject) abort(403, 'You do not have permission to reject this program');
 
         $prevStatus = $program->approvalStatus;
         $program->update(['approvalStatus' => 'DRAFT', 'rejectionNote' => $data['note']]);
@@ -840,7 +840,7 @@ class ProgramController extends Controller
             program: $program,
             recipientIds: $recipientIds,
             type: 'PROGRAM_REJECTED',
-            message: "Program \"{$program->name}\" ditolak {$rejecter->name}: {$noteSnippet}",
+            message: "Program \"{$program->name}\" was rejected by {$rejecter->name}: {$noteSnippet}",
             excludeUserId: $rejecter->id,
         );
 
@@ -848,7 +848,7 @@ class ProgramController extends Controller
             return response()->json(['data' => $program->fresh()]);
         }
 
-        return back()->with('success', 'Program ditolak dan dikembalikan ke Draft.');
+        return back()->with('success', 'Program rejected and returned to Draft.');
     }
 
     /**
@@ -866,10 +866,10 @@ class ProgramController extends Controller
         $isOwnerOrSubmitter = in_array($user->id, [$program->submittedById, $program->ownerId], true);
         $isAdmin = in_array($role, ['SUPERADMIN', 'ADMIN'], true);
         if (!$isOwnerOrSubmitter && !$isAdmin) {
-            abort(403, 'Hanya PIC/pembuat program yang dapat menarik kembali pengajuan.');
+            abort(403, 'Only the program PIC/creator can withdraw the submission.');
         }
         if (!in_array($program->approvalStatus, ['PENDING_KASUB', 'PENDING_KADIV'], true)) {
-            return $this->validationError($request, 'Hanya program yang sedang menunggu persetujuan yang dapat ditarik kembali.');
+            return $this->validationError($request, 'Only programs awaiting approval can be withdrawn.');
         }
 
         // Snapshot reviewer SEBELUM status berubah supaya notifikasi-nya tepat.
@@ -887,42 +887,42 @@ class ProgramController extends Controller
             program: $program,
             recipientIds: $reviewerIds,
             type: 'PROGRAM_WITHDRAWN',
-            message: "Pengajuan program \"{$program->name}\" ditarik kembali oleh {$user->name}.",
+            message: "The submission for program \"{$program->name}\" was withdrawn by {$user->name}.",
             excludeUserId: $user->id,
         );
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $program->fresh()]);
         }
-        return back()->with('success', 'Pengajuan ditarik kembali — program kembali ke Draft.');
+        return back()->with('success', 'Submission withdrawn — the program returned to Draft.');
     }
 
     public function archive(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $program = Program::findOrFail($id);
         Gate::authorize('archive-program', $program);
-        if ($program->archivedAt) return $this->validationError($request, 'Program sudah diarsipkan.');
+        if ($program->archivedAt) return $this->validationError($request, 'The program is already archived.');
         $this->programService->archive($id, $request->user()->id);
 
         if ($request->expectsJson()) {
             return response()->json(['data' => Program::findOrFail($id)]);
         }
 
-        return back()->with('success', 'Program diarsipkan.');
+        return back()->with('success', 'Program archived.');
     }
 
     public function restore(Request $request, int $id): JsonResponse|RedirectResponse
     {
         Gate::authorize('view-archive');
         $program = Program::findOrFail($id);
-        if (!$program->archivedAt) return $this->validationError($request, 'Program tidak dalam status arsip.');
+        if (!$program->archivedAt) return $this->validationError($request, 'The program is not archived.');
         $this->programService->restore($id);
 
         if ($request->expectsJson()) {
             return response()->json(['data' => Program::findOrFail($id)]);
         }
 
-        return back()->with('success', 'Program dipulihkan.');
+        return back()->with('success', 'Program restored.');
     }
 
     public function addKpiLink(Request $request, int $id): JsonResponse|RedirectResponse
@@ -939,7 +939,7 @@ class ProgramController extends Controller
             ->where('apmsKpiCode', $data['apmsKpiCode'])
             ->exists();
 
-        if ($exists) return $this->validationError($request, "KPI {$data['apmsKpiCode']} sudah terhubung ke program ini.");
+        if ($exists) return $this->validationError($request, "KPI {$data['apmsKpiCode']} is already linked to this program.");
 
         $link = ProgramKpiLink::create([...$data, 'programId' => $id]);
 
@@ -947,7 +947,7 @@ class ProgramController extends Controller
             return response()->json(['data' => $link], 201);
         }
 
-        return back()->with('success', 'KPI dihubungkan.');
+        return back()->with('success', 'KPI linked.');
     }
 
     public function removeKpiLink(Request $request, int $id, string $code): JsonResponse|RedirectResponse
@@ -961,7 +961,7 @@ class ProgramController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('success', 'Link KPI dihapus.');
+        return back()->with('success', 'KPI link deleted.');
     }
 
     public function approvalLog(Request $request, int $id): JsonResponse
@@ -1001,7 +1001,7 @@ class ProgramController extends Controller
         $isOwner = $program->ownerId === $user->id;
         if (! $isAdmin && ! $isOwner) {
             return response()->json([
-                'message' => 'Hanya PIC program (owner) yang dapat menulis refleksi mingguan.',
+                'message' => 'Only the program PIC (owner) can write the weekly reflection.',
             ], 403);
         }
 
@@ -1023,8 +1023,8 @@ class ProgramController extends Controller
         $currentWeek = $this->weeklyDeadline->currentWeekIso();
         if (strcmp($data['period'], $currentWeek) > 0) {
             return response()->json([
-                'message' => "Period {$data['period']} di masa depan. Hanya refleksi minggu berjalan atau sebelumnya yang diizinkan.",
-                'errors'  => ['period' => ['Period tidak boleh di masa depan.']],
+                'message' => "Period {$data['period']} is in the future. Only reflections for the current week or earlier are allowed.",
+                'errors'  => ['period' => ['Period cannot be in the future.']],
             ], 422);
         }
 
@@ -1140,8 +1140,8 @@ class ProgramController extends Controller
         $healthLabelMap = [
             'GREEN'   => 'On Track',
             'YELLOW'  => 'At Risk',
-            'RED'     => 'Terlambat',
-            'OVERDUE' => 'Lewat Tenggat',
+            'RED'     => 'Delayed',
+            'OVERDUE' => 'Overdue',
         ];
         $statusRaw  = strtoupper((string) ($program->healthStatus ?? 'GREEN'));
         $health     = $healthMap[$statusRaw] ?? 'on_track';
@@ -1207,6 +1207,6 @@ class ProgramController extends Controller
             return response()->json(['data' => $kpi], 201);
         }
 
-        return back()->with('success', 'KPI internal dibuat.');
+        return back()->with('success', 'Internal KPI created.');
     }
 }

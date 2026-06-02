@@ -88,7 +88,7 @@ class CommentController extends Controller
             return response()->json(['data' => $comment->load('author:id,name,avatarUrl,roleType,positionTitle')], 201);
         }
 
-        return back()->with('success', 'Komentar ditambahkan.');
+        return back()->with('success', 'Comment added.');
     }
 
     // GET /comments/:commentId/thread
@@ -110,7 +110,7 @@ class CommentController extends Controller
         $comment = Comment::findOrFail($commentId);
         $isAdmin = RolePolicy::isAdminOrAbove($request->user()->roleType);
         if (!$isAdmin && $comment->createdBy !== $request->user()->id) {
-            abort(403, 'Hanya penulis yang dapat mengedit komentar ini.');
+            abort(403, 'Only the author can edit this comment.');
         }
 
         $data = $request->validate(['commentText' => 'required|string|min:1|max:5000']);
@@ -125,7 +125,7 @@ class CommentController extends Controller
             return response()->json(['data' => $comment->fresh('author:id,name,avatarUrl,roleType,positionTitle')]);
         }
 
-        return back()->with('success', 'Komentar diperbarui.');
+        return back()->with('success', 'Comment updated.');
     }
 
     // DELETE /comments/:commentId
@@ -134,7 +134,7 @@ class CommentController extends Controller
         $comment = Comment::findOrFail($commentId);
         $isAdmin = RolePolicy::isAdminOrAbove($request->user()->roleType);
         if (!$isAdmin && $comment->createdBy !== $request->user()->id) {
-            abort(403, 'Hanya penulis yang dapat menghapus komentar ini.');
+            abort(403, 'Only the author can delete this comment.');
         }
 
         // Decrement parent replyCount
@@ -150,7 +150,7 @@ class CommentController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('success', 'Komentar dihapus.');
+        return back()->with('success', 'Comment deleted.');
     }
 
     // POST /comments/:commentId/reactions

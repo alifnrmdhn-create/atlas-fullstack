@@ -25,10 +25,10 @@ export function UserPicker({
   value,
   onChange,
   options,
-  placeholder = 'Pilih pengguna…',
+  placeholder = 'Select a user…',
   disabled,
   allowClear,
-  clearLabel = '— Hapus pilihan —',
+  clearLabel = '— Clear selection —',
   currentUserId,
   autoOpen,
   inputClassName = 'form-input',
@@ -103,7 +103,7 @@ export function UserPicker({
   }
 
   const displayLabel = selected
-    ? `${selected.name}${selected.id === currentUserId ? ' (Anda)' : ''}${selected.positionTitle ? ` — ${selected.positionTitle}` : ''}`
+    ? `${selected.name}${selected.id === currentUserId ? ' (You)' : ''}${selected.positionTitle ? ` — ${selected.positionTitle}` : ''}`
     : ''
 
   return (
@@ -133,14 +133,14 @@ export function UserPicker({
             <input
               onChange={e => setQuery(e.target.value)}
               onKeyDown={onKey}
-              placeholder="Cari nama atau jabatan…"
+              placeholder="Search by name or position…"
               ref={inputRef}
               type="text"
               value={query}
             />
           </div>
           {filtered.length === 0 ? (
-            <p className="user-picker__empty">Tidak ada nama yang cocok.</p>
+            <p className="user-picker__empty">No matching names.</p>
           ) : (
             <ul className="user-picker__results" ref={listRef} role="listbox">
               {filtered.map((u, idx) => (
@@ -153,7 +153,7 @@ export function UserPicker({
                     type="button"
                   >
                     <span className="user-picker-item__name">
-                      {u.name}{u.id === currentUserId ? ' (Anda)' : ''}
+                      {u.name}{u.id === currentUserId ? ' (You)' : ''}
                     </span>
                     {u.positionTitle && (
                       <span className="user-picker-item__meta">{u.positionTitle}</span>
@@ -195,8 +195,8 @@ export function UserPickerMulti({
   options,
   excludeIds = [],
   maxSuggestions = 6,
-  searchPlaceholder = 'Cari nama atau jabatan…',
-  emptyAllPickedLabel = 'Semua pengguna sudah dipilih.',
+  searchPlaceholder = 'Search by name or position…',
+  emptyAllPickedLabel = 'All users are already selected.',
   className,
 }: MultiProps) {
   const [query, setQuery] = useState('')
@@ -234,7 +234,7 @@ export function UserPickerMulti({
             <span className="user-picker__chip" key={u.id}>
               <span className="user-picker__chip-name">{u.name}</span>
               <button
-                aria-label={`Hapus ${u.name}`}
+                aria-label={`Remove ${u.name}`}
                 className="user-picker__chip-remove"
                 onClick={() => remove(u.id)}
                 type="button"
@@ -267,7 +267,7 @@ export function UserPickerMulti({
       </div>
       {filtered.length === 0 ? (
         <p className="user-picker__empty">
-          {query ? 'Tidak ada nama yang cocok.' : emptyAllPickedLabel}
+          {query ? 'No matching names.' : emptyAllPickedLabel}
         </p>
       ) : (
         <ul className="user-picker__results user-picker__results--inline">

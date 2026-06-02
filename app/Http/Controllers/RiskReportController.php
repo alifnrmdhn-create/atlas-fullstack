@@ -161,9 +161,9 @@ class RiskReportController extends Controller
 
         if ($existing) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Laporan risiko untuk periode ini sudah ada.'], 422);
+                return response()->json(['message' => 'A risk report for this period already exists.'], 422);
             }
-            return back()->withErrors(['Laporan risiko untuk periode ini sudah ada.']);
+            return back()->withErrors(['A risk report for this period already exists.']);
         }
 
         $report = RiskMonthlyReport::create([
@@ -176,7 +176,7 @@ class RiskReportController extends Controller
             return response()->json(['data' => $report], 201);
         }
 
-        return redirect()->route('risk-reports.show', $report->id)->with('success', 'Laporan risiko dibuat.');
+        return redirect()->route('risk-reports.show', $report->id)->with('success', 'Risk report created.');
     }
 
     /**
@@ -188,9 +188,9 @@ class RiskReportController extends Controller
         $existing = RiskMonthlyReport::findOrFail($id);
         if ($existing->status === 'APPROVED') {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Laporan yang sudah disetujui tidak dapat diubah.'], 422);
+                return response()->json(['message' => 'An approved report cannot be modified.'], 422);
             }
-            return back()->withErrors(['Laporan yang sudah disetujui tidak dapat diubah.']);
+            return back()->withErrors(['An approved report cannot be modified.']);
         }
 
         $body = $request->only([
@@ -363,7 +363,7 @@ class RiskReportController extends Controller
             return response()->json(['data' => RiskMonthlyReport::with($this->baseWith())->findOrFail($id)]);
         }
 
-        return back()->with('success', 'Laporan risiko disimpan.');
+        return back()->with('success', 'Risk report saved.');
     }
 
     public function submit(Request $request, int $id): JsonResponse|RedirectResponse
@@ -371,9 +371,9 @@ class RiskReportController extends Controller
         $report = RiskMonthlyReport::findOrFail($id);
         if ($report->status !== 'DRAFT') {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Hanya laporan DRAFT yang dapat disubmit.'], 422);
+                return response()->json(['message' => 'Only DRAFT reports can be submitted.'], 422);
             }
-            return back()->withErrors(['Hanya laporan DRAFT yang dapat disubmit.']);
+            return back()->withErrors(['Only DRAFT reports can be submitted.']);
         }
 
         $userId = $request->user()->id;
@@ -396,7 +396,7 @@ class RiskReportController extends Controller
             return response()->json(['data' => $report->fresh()]);
         }
 
-        return back()->with('success', 'Laporan risiko disubmit.');
+        return back()->with('success', 'Risk report submitted.');
     }
 
     public function approve(Request $request, int $id): JsonResponse|RedirectResponse
@@ -431,14 +431,14 @@ class RiskReportController extends Controller
             return response()->json(['data' => $report->fresh()]);
         }
 
-        return back()->with('success', "Laporan risiko {$data['action']}D.");
+        return back()->with('success', "Risk report {$data['action']}D.");
     }
 
     public function destroy(Request $request, int $id): JsonResponse
     {
         $report = RiskMonthlyReport::findOrFail($id);
         if ($report->status !== 'DRAFT') {
-            return response()->json(['message' => 'Hanya laporan DRAFT yang dapat dihapus.'], 422);
+            return response()->json(['message' => 'Only DRAFT reports can be deleted.'], 422);
         }
 
         $report->delete();

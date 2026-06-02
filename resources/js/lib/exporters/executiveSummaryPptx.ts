@@ -35,7 +35,7 @@ type PerhatianItem = {
   id: number
   code: string
   name: string
-  status: 'At Risk' | 'Terlambat'
+  status: 'At Risk' | 'Delayed'
   deadline: string | null
   daysLeft: number | null
   dukungan: string | null
@@ -205,7 +205,7 @@ function buildSlideStatus(pres: pptxgen, data: ExecutiveSummaryPayload): void {
     { label: 'On Track',  count: data.programStatusBreakdown.onTrack,   pct: data.programStatusBreakdown.pctOnTrack,   color: COLORS.PRIMARY },
     { label: 'Completed', count: data.programStatusBreakdown.completed, pct: data.programStatusBreakdown.pctCompleted, color: '2563EB' },
     { label: 'At Risk',   count: data.programStatusBreakdown.atRisk,    pct: data.programStatusBreakdown.pctAtRisk,    color: COLORS.AT_RISK },
-    { label: 'Terlambat', count: data.programStatusBreakdown.terlambat, pct: data.programStatusBreakdown.pctTerlambat, color: COLORS.DELAYED },
+    { label: 'Delayed', count: data.programStatusBreakdown.terlambat, pct: data.programStatusBreakdown.pctTerlambat, color: COLORS.DELAYED },
   ]
 
   statuses.forEach((s, i) => {
@@ -335,7 +335,7 @@ function buildSlideAttention(pres: pptxgen, data: ExecutiveSummaryPayload): void
           text: p.status,
           options: {
             color: 'FFFFFF',
-            fill: { color: p.status === 'Terlambat' ? COLORS.DELAYED : COLORS.AT_RISK },
+            fill: { color: p.status === 'Delayed' ? COLORS.DELAYED : COLORS.AT_RISK },
             fontSize: 9, bold: true, align: 'center' as const, valign: 'middle' as const,
           },
         },

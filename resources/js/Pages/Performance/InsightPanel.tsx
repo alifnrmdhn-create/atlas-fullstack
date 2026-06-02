@@ -23,7 +23,7 @@ function pctLabel(ratio: number): string {
 
 function bulletPhrase(b: InsightBullet): string {
   const unit = b.satuan && b.satuan !== '-' ? ` ${b.satuan}` : ''
-  return `${b.kpi}: realisasi ${b.realisasi}${unit} (target ${b.sasaran}${unit}, ${pctLabel(b.ratio)})`
+  return `${b.kpi}: realization ${b.realisasi}${unit} (target ${b.sasaran}${unit}, ${pctLabel(b.ratio)})`
 }
 
 /**
@@ -40,18 +40,18 @@ export function InsightPanel({ insight }: Props) {
   return (
     <Card padding="md" className="perf-insight">
       <div className="perf-insight__head">
-        <h3 className="perf-insight__title">Insight Utama</h3>
-        <span className="perf-insight__sub">Auto-derived dari capaian KPI · ±5% toleransi</span>
+        <h3 className="perf-insight__title">Key Insights</h3>
+        <span className="perf-insight__sub">Auto-derived from KPI achievement · ±5% tolerance</span>
       </div>
       <div className="perf-insight__cols">
         <div className="perf-insight__col" data-tone="green">
           <div className="perf-insight__col-head">
             <span className="perf-insight__col-icon" aria-hidden>✓</span>
-            <span className="perf-insight__col-title">Capaian Positif</span>
+            <span className="perf-insight__col-title">Positive Achievement</span>
             <span className="perf-insight__col-count">{positif.length}</span>
           </div>
           {positif.length === 0 ? (
-            <p className="perf-insight__empty">Belum ada KPI yang melampaui target ≥+5%.</p>
+            <p className="perf-insight__empty">No KPIs have exceeded the target by ≥+5% yet.</p>
           ) : (
             <ul className="perf-insight__list">
               {positif.map((b) => (
@@ -65,11 +65,11 @@ export function InsightPanel({ insight }: Props) {
         <div className="perf-insight__col" data-tone="amber">
           <div className="perf-insight__col-head">
             <span className="perf-insight__col-icon" aria-hidden>!</span>
-            <span className="perf-insight__col-title">Perlu Perhatian</span>
+            <span className="perf-insight__col-title">Needs Attention</span>
             <span className="perf-insight__col-count">{perhatian.length}</span>
           </div>
           {perhatian.length === 0 ? (
-            <p className="perf-insight__empty">Semua KPI dalam toleransi ±5% target.</p>
+            <p className="perf-insight__empty">All KPIs are within ±5% of target.</p>
           ) : (
             <ul className="perf-insight__list">
               {perhatian.map((b) => (

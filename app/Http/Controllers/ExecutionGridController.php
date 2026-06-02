@@ -107,7 +107,7 @@ class ExecutionGridController extends Controller
 
         $workstreamId = (int) $request->query('workstreamId');
         if (!$workstreamId) {
-            return response()->json(['message' => 'workstreamId diperlukan.'], 422);
+            return response()->json(['message' => 'workstreamId is required.'], 422);
         }
 
         $program = Program::query()
@@ -122,7 +122,7 @@ class ExecutionGridController extends Controller
             ->with(['owner:id,name'])
             ->first();
 
-        if (!$workstream) abort(404, 'Workstream tidak ditemukan di program ini.');
+        if (!$workstream) abort(404, 'Workstream not found in this program.');
 
         // Load phases ordered
         $phases = Phase::query()
@@ -247,7 +247,7 @@ class ExecutionGridController extends Controller
         $this->programService->assertAccess($request->user(), $programId);
 
         $workstreamId = (int) $request->query('workstreamId');
-        if (!$workstreamId) abort(422, 'workstreamId diperlukan.');
+        if (!$workstreamId) abort(422, 'workstreamId is required.');
 
         // Reuse grid logic
         $gridResponse = $this->executionGrid($request, $programId);

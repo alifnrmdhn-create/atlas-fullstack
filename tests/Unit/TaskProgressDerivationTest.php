@@ -105,7 +105,7 @@ class TaskProgressDerivationTest extends TestCase
         $task = $this->makeTask('ACTIVE', 'BACKLOG', 0);
         $task->update(['assignedTo' => null]);
         $this->expectException(HttpException::class);
-        $this->expectExceptionMessage('Tetapkan PIC');
+        $this->expectExceptionMessage('a PIC');
         $this->service->updateProgress($task->id, 50, $this->user->id);
     }
 
@@ -113,7 +113,7 @@ class TaskProgressDerivationTest extends TestCase
     {
         $task = $this->makeTask('ACTIVE', 'IN_PROGRESS', 60);
         $this->expectException(HttpException::class);
-        $this->expectExceptionMessage('memerlukan alasan');
+        $this->expectExceptionMessage('requires a reason');
         // 60% → 0% mengembalikan status IN_PROGRESS → READY (mundur) tanpa note.
         $this->service->updateProgress($task->id, 0, $this->user->id);
     }

@@ -72,7 +72,7 @@ class MonthlyReportController extends Controller
         $role = strtoupper($user->roleType ?? '');
         if (RolePolicy::isAdminOrAbove($role) || $role === 'KADIV') return;
         if ($user->unitId && $user->unitId === $report->unitId) return;
-        abort(403, 'Anda tidak memiliki akses ke laporan ini.');
+        abort(403, 'You do not have access to this report.');
     }
 
     public function show(Request $request, int $id)
@@ -110,12 +110,12 @@ class MonthlyReportController extends Controller
         $this->assertReportAccess($request->user(), $report);
 
         if (empty($report->linkedProgramIds)) {
-            return response()->json(['data' => [], 'note' => 'Tidak ada program yang terhubung ke laporan ini.']);
+            return response()->json(['data' => [], 'note' => 'No programs are linked to this report.']);
         }
 
         $linkedIds = is_array($report->linkedProgramIds) ? $report->linkedProgramIds : [];
         if (empty($linkedIds)) {
-            return response()->json(['data' => [], 'note' => 'Tidak ada program yang terhubung ke laporan ini.']);
+            return response()->json(['data' => [], 'note' => 'No programs are linked to this report.']);
         }
 
         $programs = Program::whereIn('id', $linkedIds)
@@ -205,8 +205,8 @@ class MonthlyReportController extends Controller
             $healthLabel = match($program->healthStatus) {
                 'GREEN'  => 'On Track',
                 'YELLOW' => 'At Risk',
-                'RED'    => 'Terlambat',
-                default  => $program->healthStatus ?? 'Tidak diketahui',
+                'RED'    => 'Delayed',
+                default  => $program->healthStatus ?? 'Unknown',
             };
 
             $drafts[] = [
@@ -240,9 +240,9 @@ class MonthlyReportController extends Controller
         $user = $request->user();
         if (!$user->unitId) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'User tidak terdaftar di unit manapun.'], 422);
+                return response()->json(['message' => 'You are not registered to any unit.'], 422);
             }
-            return back()->withErrors(['User tidak terdaftar di unit manapun.']);
+            return back()->withErrors(['You are not registered to any unit.']);
         }
 
         $data = $request->validate([
@@ -261,9 +261,9 @@ class MonthlyReportController extends Controller
             ->first();
         if ($existing) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => "Laporan {$data['month']}/{$data['year']} untuk divisi ini sudah ada (status: {$existing->status})."], 422);
+                return response()->json(['message' => "A report for {$data['month']}/{$data['year']} already exists for this division (status: {$existing->status})."], 422);
             }
-            return back()->withErrors(["Laporan {$data['month']}/{$data['year']} untuk divisi ini sudah ada (status: {$existing->status})."]);
+            return back()->withErrors(["A report for {$data['month']}/{$data['year']} already exists for this division (status: {$existing->status})."]);
         }
 
         $linkedIds = $data['linkedProgramIds'] ?? [];
@@ -274,9 +274,9 @@ class MonthlyReportController extends Controller
             if ($planning->isNotEmpty()) {
                 $codes = $planning->pluck('code')->join(', ');
                 if ($request->expectsJson()) {
-                    return response()->json(['message' => "Program berikut masih dalam fase Perencanaan: {$codes}"], 422);
+                    return response()->json(['message' => "The following programs are still in the Planning phase: {$codes}"], 422);
                 }
-                return back()->withErrors(["Program berikut masih dalam fase Perencanaan: {$codes}"]);
+                return back()->withErrors(["The following programs are still in the Planning phase: {$codes}"]);
             }
         }
 
@@ -294,7 +294,7 @@ class MonthlyReportController extends Controller
             return response()->json(['data' => $report], 201);
         }
 
-        return redirect()->route('monthly-reports.show', $report->id)->with('success', 'Laporan dibuat.');
+        return redirect()->route('monthly-reports.show', $report->id)->with('success', 'Report created.');
     }
 
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
@@ -302,9 +302,9 @@ class MonthlyReportController extends Controller
         $report = MonthlyReport::findOrFail($id);
         if ($report->status !== 'DRAFT') {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Hanya laporan DRAFT yang bisa diedit.'], 422);
+                return response()->json(['message' => 'Only DRAFT reports can be edited.'], 422);
             }
-            return back()->withErrors(['Hanya laporan DRAFT yang bisa diedit.']);
+            return back()->withErrors(['Only DRAFT reports can be edited.']);
         }
 
         $data = $request->validate([
@@ -318,7 +318,7 @@ class MonthlyReportController extends Controller
             return response()->json(['data' => $report->fresh()]);
         }
 
-        return back()->with('success', 'Laporan diperbarui.');
+        return back()->with('success', 'Report updated.');
     }
 
     /**
@@ -330,9 +330,9 @@ class MonthlyReportController extends Controller
         $report = MonthlyReport::findOrFail($id);
         if ($report->status !== 'DRAFT') {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Hanya laporan DRAFT yang bisa diupdate.'], 422);
+                return response()->json(['message' => 'Only DRAFT reports can be updated.'], 422);
             }
-            return back()->withErrors(['Hanya laporan DRAFT yang bisa diupdate.']);
+            return back()->withErrors(['Only DRAFT reports can be updated.']);
         }
 
         $request->validate([
@@ -376,7 +376,7 @@ class MonthlyReportController extends Controller
             return response()->json(['data' => $report]);
         }
 
-        return back()->with('success', 'Data Excel berhasil diimport (' . count($metrics) . ' baris).');
+        return back()->with('success', 'Excel data imported successfully (' . count($metrics) . ' rows).');
     }
 
     public function submit(Request $request, int $id): JsonResponse|RedirectResponse
@@ -384,15 +384,15 @@ class MonthlyReportController extends Controller
         $report = MonthlyReport::withCount('metrics')->findOrFail($id);
         if ($report->status !== 'DRAFT') {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Hanya laporan DRAFT yang bisa disubmit.'], 422);
+                return response()->json(['message' => 'Only DRAFT reports can be submitted.'], 422);
             }
-            return back()->withErrors(['Hanya laporan DRAFT yang bisa disubmit.']);
+            return back()->withErrors(['Only DRAFT reports can be submitted.']);
         }
         if ($report->metrics_count === 0) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Upload data Excel terlebih dahulu sebelum submit.'], 422);
+                return response()->json(['message' => 'Upload the Excel data before submitting.'], 422);
             }
-            return back()->withErrors(['Upload data Excel terlebih dahulu sebelum submit.']);
+            return back()->withErrors(['Upload the Excel data before submitting.']);
         }
 
         $report->update([
@@ -405,7 +405,7 @@ class MonthlyReportController extends Controller
             return response()->json(['data' => $report->fresh()]);
         }
 
-        return back()->with('success', 'Laporan disubmit.');
+        return back()->with('success', 'Report submitted.');
     }
 
     public function approve(Request $request, int $id): JsonResponse|RedirectResponse
@@ -425,17 +425,17 @@ class MonthlyReportController extends Controller
 
         if (!$canApprove) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => "Role {$roleType} tidak bisa melakukan approval pada laporan dengan status {$report->status}."], 422);
+                return response()->json(['message' => "Role {$roleType} cannot approve a report with status {$report->status}."], 422);
             }
-            return back()->withErrors(["Role {$roleType} tidak bisa melakukan approval pada laporan dengan status {$report->status}."]);
+            return back()->withErrors(["Role {$roleType} cannot approve a report with status {$report->status}."]);
         }
 
         $nextStatus = self::STATUS_AFTER[$data['action']][$roleType] ?? null;
         if (!$nextStatus) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Kombinasi action dan role tidak valid.'], 422);
+                return response()->json(['message' => 'The combination of action and role is not valid.'], 422);
             }
-            return back()->withErrors(['Kombinasi action dan role tidak valid.']);
+            return back()->withErrors(['The combination of action and role is not valid.']);
         }
 
         DB::transaction(function () use ($report, $user, $roleType, $data, $nextStatus) {
@@ -453,7 +453,7 @@ class MonthlyReportController extends Controller
             return response()->json(['data' => $report->fresh()]);
         }
 
-        return back()->with('success', "Laporan {$data['action']}.");
+        return back()->with('success', "Report {$data['action']}.");
     }
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
@@ -463,12 +463,12 @@ class MonthlyReportController extends Controller
 
         if ($report->status !== 'DRAFT') {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Hanya laporan DRAFT yang bisa dihapus.'], 422);
+                return response()->json(['message' => 'Only DRAFT reports can be deleted.'], 422);
             }
-            return back()->withErrors(['Hanya laporan DRAFT yang bisa dihapus.']);
+            return back()->withErrors(['Only DRAFT reports can be deleted.']);
         }
         if ($report->unitId !== $user->unitId && strtoupper($user->roleType) !== 'KADIV') {
-            abort(403, 'Tidak bisa menghapus laporan divisi lain.');
+            abort(403, "You cannot delete another division's report.");
         }
 
         $report->delete();
@@ -476,7 +476,7 @@ class MonthlyReportController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return redirect()->route('monthly-reports.index')->with('success', 'Laporan dihapus.');
+        return redirect()->route('monthly-reports.index')->with('success', 'Report deleted.');
     }
 
     // ── Excel Parser ──────────────────────────────────────────────────────────
@@ -496,7 +496,7 @@ class MonthlyReportController extends Controller
             ?? $spreadsheet->getSheetByName('laporan')
             ?? $spreadsheet->getActiveSheet();
 
-        if (!$sheet) throw new \Exception('Tidak ditemukan sheet di file Excel.');
+        if (!$sheet) throw new \Exception('No sheet was found in the Excel file.');
 
         $validSections = ['OPERASIONAL', 'KEUANGAN'];
         $rows = [];
@@ -529,7 +529,7 @@ class MonthlyReportController extends Controller
         }
 
         if (empty($rows)) {
-            throw new \Exception('File Excel tidak mengandung data. Pastikan format sesuai template.');
+            throw new \Exception('The Excel file contains no data. Make sure the format matches the template.');
         }
 
         return $rows;

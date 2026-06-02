@@ -14,7 +14,7 @@ class PhaseController extends Controller
     public function storeForWorkstream(Request $request, int $id): JsonResponse
     {
         if (!RolePolicy::canCreateProgram($request->user()->roleType)) {
-            abort(403, 'Tidak memiliki izin membuat fase.');
+            abort(403, 'You do not have permission to create a phase.');
         }
 
         $data = $request->validate([
@@ -53,7 +53,7 @@ class PhaseController extends Controller
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (!RolePolicy::canCreateProgram($request->user()->roleType)) {
-            abort(403, 'Tidak memiliki izin mengubah fase.');
+            abort(403, 'You do not have permission to update a phase.');
         }
 
         $data = $request->validate([
@@ -81,13 +81,13 @@ class PhaseController extends Controller
             return response()->json(['data' => Phase::with('entityPics')->findOrFail($id)]);
         }
 
-        return back()->with('success', 'Fase diperbarui.');
+        return back()->with('success', 'Phase updated.');
     }
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (!RolePolicy::canCreateProgram($request->user()->roleType)) {
-            abort(403, 'Tidak memiliki izin menghapus fase.');
+            abort(403, 'You do not have permission to delete a phase.');
         }
 
         Phase::destroy($id);
@@ -96,6 +96,6 @@ class PhaseController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('success', 'Fase dihapus.');
+        return back()->with('success', 'Phase deleted.');
     }
 }

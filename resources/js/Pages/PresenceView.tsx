@@ -14,23 +14,23 @@ type PresenceTab = 'kehadiran' | 'aktivitas'
 
 // ── Emoji groups & presets ───────────────────────────────────
 const EMOJI_GROUPS: Array<{ label: string; emojis: string[] }> = [
-  { label: 'Kerja',     emojis: ['💻', '📊', '📈', '📋', '📝', '🗂️', '📌', '🔍', '⚙️', '🏗️'] },
-  { label: 'Meeting',   emojis: ['🎙️', '📞', '🤝', '👥', '🗣️', '📡', '🖥️', '📺'] },
-  { label: 'Mood',      emojis: ['😊', '🙂', '😄', '🤔', '😴', '😤', '🧐', '🫡', '💪', '🎯'] },
-  { label: 'Aktivitas', emojis: ['☕', '🍵', '🚶', '🏃', '✈️', '🏠', '🌿', '📖', '🎧', '🔕'] },
-  { label: 'Status',    emojis: ['✅', '⏳', '🔄', '⚡', '🚀', '🛑', '⚠️', '📢', '🔔', '💡'] },
+  { label: 'Work',     emojis: ['💻', '📊', '📈', '📋', '📝', '🗂️', '📌', '🔍', '⚙️', '🏗️'] },
+  { label: 'Meeting',  emojis: ['🎙️', '📞', '🤝', '👥', '🗣️', '📡', '🖥️', '📺'] },
+  { label: 'Mood',     emojis: ['😊', '🙂', '😄', '🤔', '😴', '😤', '🧐', '🫡', '💪', '🎯'] },
+  { label: 'Activity', emojis: ['☕', '🍵', '🚶', '🏃', '✈️', '🏠', '🌿', '📖', '🎧', '🔕'] },
+  { label: 'Status',   emojis: ['✅', '⏳', '🔄', '⚡', '🚀', '🛑', '⚠️', '📢', '🔔', '💡'] },
 ]
 
 const PRESETS: Array<{ emoji: string; message: string; status: PresenceStatus; isOoo?: boolean }> = [
-  { emoji: '💻', message: 'Sedang bekerja',      status: 'ONLINE' },
-  { emoji: '🎙️', message: 'Dalam meeting',        status: 'DO_NOT_DISTURB' },
-  { emoji: '☕',  message: 'Istirahat sebentar',   status: 'AWAY' },
-  { emoji: '📊', message: 'Koordinasi portfolio', status: 'ONLINE' },
-  { emoji: '🔍', message: 'Deep work — fokus',    status: 'DO_NOT_DISTURB' },
-  { emoji: '✈️', message: 'Perjalanan dinas',      status: 'AWAY' },
+  { emoji: '💻', message: 'Working',              status: 'ONLINE' },
+  { emoji: '🎙️', message: 'In a meeting',         status: 'DO_NOT_DISTURB' },
+  { emoji: '☕',  message: 'On a short break',     status: 'AWAY' },
+  { emoji: '📊', message: 'Portfolio coordination', status: 'ONLINE' },
+  { emoji: '🔍', message: 'Deep work — focused',  status: 'DO_NOT_DISTURB' },
+  { emoji: '✈️', message: 'Business trip',         status: 'AWAY' },
   { emoji: '🏠', message: 'Work from home',       status: 'ONLINE' },
-  { emoji: '🔕', message: 'Jangan diganggu',      status: 'DO_NOT_DISTURB' },
-  { emoji: '🏖️', message: 'OOO — s/d …',          status: 'OFFLINE', isOoo: true },
+  { emoji: '🔕', message: 'Do not disturb',       status: 'DO_NOT_DISTURB' },
+  { emoji: '🏖️', message: 'OOO — until …',         status: 'OFFLINE', isOoo: true },
 ]
 
 const STATUS_ORDER: Record<PresenceStatus, number> = { ONLINE: 0, AWAY: 1, DO_NOT_DISTURB: 2, OFFLINE: 3 }
@@ -79,8 +79,8 @@ function UnitStatBar({ users }: { users: PresenceUser[] }) {
   const active = users.filter(isActive).length
   return (
     <span className="unit-stat-bar">
-      {active > 0 && <><span className="unit-stat-bar__active">{active} aktif</span><span className="unit-stat-bar__sep">·</span></>}
-      <span className="unit-stat-bar__total">{users.length} anggota</span>
+      {active > 0 && <><span className="unit-stat-bar__active">{active} active</span><span className="unit-stat-bar__sep">·</span></>}
+      <span className="unit-stat-bar__total">{users.length} members</span>
     </span>
   )
 }
@@ -98,7 +98,7 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
   }, [open])
   return (
     <div className="emoji-picker-field" ref={ref}>
-      <button className="emoji-picker-field__trigger" onClick={() => setOpen(!open)} title="Pilih emoji" type="button">
+      <button className="emoji-picker-field__trigger" onClick={() => setOpen(!open)} title="Select emoji" type="button">
         <span className="emoji-picker-field__display">
           {value ? resolveEmoji(value) : <span className="emoji-picker-field__placeholder">😊</span>}
         </span>
@@ -199,12 +199,12 @@ function HoverCard({
           <button
             className={`presence-hover-card__email-btn${copied ? ' is-copied' : ''}`}
             onClick={copyEmail}
-            title="Klik untuk menyalin email"
+            title="Click to copy email"
             type="button"
           >
             <span>{presence.user.email}</span>
             <span className="presence-hover-card__copy-hint">
-              {copied ? '✓ Disalin!' : 'Salin'}
+              {copied ? '✓ Copied!' : 'Copy'}
             </span>
           </button>
         )}
@@ -216,7 +216,7 @@ function HoverCard({
             </span>
           )}
         </div>
-        <div className="presence-hover-card__time">Aktif {timeText}</div>
+        <div className="presence-hover-card__time">Active {timeText}</div>
       </div>
 
       {presence.userId && (
@@ -229,7 +229,7 @@ function HoverCard({
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
               <path d="M14 2H2C1.45 2 1 2.45 1 3v9c0 .55.45 1 1 1h2v2.5l3.5-2.5H14c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
             </svg>
-            Kirim DM
+            Send DM
           </button>
         </div>
       )}
@@ -251,7 +251,7 @@ function buildGroups(presence: PresenceUser[], sortMap: Map<string, SortMode>): 
 
   for (const u of presence) {
     const dirId   = u.user?.directorate?.id ?? null
-    const dirName = u.user?.directorate?.name ?? 'Lainnya'
+    const dirName = u.user?.directorate?.name ?? 'Other'
     const dirKey  = dirId != null ? String(dirId) : '__none__'
     const unitId  = u.user?.unit?.id ?? null
 
@@ -264,7 +264,7 @@ function buildGroups(presence: PresenceUser[], sortMap: Map<string, SortMode>): 
       continue
     }
 
-    const unitName = u.user?.unit?.name ?? 'Tanpa Unit'
+    const unitName = u.user?.unit?.name ?? 'No Unit'
     const unitKey  = String(unitId)
     if (!dir.unitMap.has(unitKey)) dir.unitMap.set(unitKey, { unitId, unitName, users: [] })
     dir.unitMap.get(unitKey)!.users.push(u)
@@ -401,7 +401,7 @@ export function PresenceView() {
     e.preventDefault()
     if (isSubmitting) return
     if (isOooMissingDate) {
-      setToast({ msg: 'Isi dulu tanggal kembali untuk Out of office', error: true })
+      setToast({ msg: 'Enter a return date for Out of office first', error: true })
       return
     }
     setIsSubmitting(true)
@@ -418,9 +418,9 @@ export function PresenceView() {
             : p
         ))
       }
-      setToast({ msg: 'Status berhasil diperbarui ✓', error: false })
+      setToast({ msg: 'Status updated successfully ✓', error: false })
     } catch {
-      setToast({ msg: 'Gagal memperbarui status — coba lagi', error: true })
+      setToast({ msg: 'Failed to update status — try again', error: true })
     } finally {
       setIsSubmitting(false)
     }
@@ -443,7 +443,7 @@ export function PresenceView() {
     if (!oooDate || !isOooActive) return
     const d = new Date(oooDate)
     const formatted = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-    setPresenceDraft(cur => ({ ...cur, statusMessage: `OOO — s/d ${formatted}` }))
+    setPresenceDraft(cur => ({ ...cur, statusMessage: `OOO — until ${formatted}` }))
   }, [oooDate, isOooActive])
 
   // ── Filter ────────────────────────────────────────────────
@@ -556,7 +556,7 @@ export function PresenceView() {
   }
 
   const filterLabels: Record<FilterMode, string> = {
-    all: 'Semua', active: 'Aktif saja', available: 'Tersedia', mine: 'Unit saya',
+    all: 'All', active: 'Active only', available: 'Available', mine: 'My unit',
   }
 
   return (
@@ -569,8 +569,8 @@ export function PresenceView() {
         title="Presence"
         subtitle={
           activeTab === 'kehadiran'
-            ? 'Status kehadiran dan aktivitas tim secara real-time.'
-            : 'Durasi aktif pengguna berdasarkan waktu penggunaan nyata.'
+            ? 'Team presence status and activity in real time.'
+            : 'Active duration per user based on actual usage time.'
         }
         actions={
           activeTab === 'kehadiran' ? (
@@ -598,7 +598,7 @@ export function PresenceView() {
             <circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.4"/>
             <path d="M2 14c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
           </svg>
-          Kehadiran
+          Presence
         </button>
         <button
           className={`presence-tab-btn${activeTab === 'aktivitas' ? ' is-active' : ''}`}
@@ -608,7 +608,7 @@ export function PresenceView() {
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
             <path d="M2 12l3-4 3 2 3-5 3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Aktivitas
+          Activity
         </button>
       </div>
 
@@ -626,7 +626,7 @@ export function PresenceView() {
           <input
             ref={searchRef}
             className="presence-search-wrap__input"
-            placeholder="Cari nama, unit, jabatan… [/]"
+            placeholder="Search name, unit, position… [/]"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
@@ -652,7 +652,7 @@ export function PresenceView() {
           <button
             className={`presence-density-btn${density === 'compact' ? ' is-active' : ''}`}
             onClick={() => setDensity(d => d === 'comfortable' ? 'compact' : 'comfortable')}
-            title={density === 'comfortable' ? 'Tampilan ringkas' : 'Tampilan normal'}
+            title={density === 'comfortable' ? 'Compact view' : 'Normal view'}
             type="button"
           >
             {density === 'comfortable'
@@ -683,7 +683,7 @@ export function PresenceView() {
 
           {!isLoadingPresence && filtered.length === 0 && presence.length > 0 && (
             <div className="section-block">
-              <SectionState title="Tidak ada hasil" text="Coba ubah filter atau kata kunci pencarian." />
+              <SectionState title="No results" text="Try adjusting the filter or search query." />
             </div>
           )}
 
@@ -701,8 +701,8 @@ export function PresenceView() {
                   <span className="presence-directorate__chevron">{isDirCollapsed ? '▸' : '▾'}</span>
                   <span className="presence-directorate__name">{dir.dirName}</span>
                   <span className="presence-directorate__stats">
-                    {dirActiveCount > 0 && <span className="presence-dir-badge presence-dir-badge--active">{dirActiveCount} aktif</span>}
-                    <span className="presence-dir-badge">{dirTotalCount} anggota</span>
+                    {dirActiveCount > 0 && <span className="presence-dir-badge presence-dir-badge--active">{dirActiveCount} active</span>}
+                    <span className="presence-dir-badge">{dirTotalCount} members</span>
                   </span>
                 </button>
 
@@ -746,7 +746,7 @@ export function PresenceView() {
                             <button
                               className={`presence-unit__sort-btn${sortMode === 'name' ? ' is-active' : ''}`}
                               onClick={() => toggleUnitSort(uKey)}
-                              title={sortMode === 'status' ? 'Urutkan A→Z' : 'Urutkan by status'}
+                              title={sortMode === 'status' ? 'Sort A→Z' : 'Sort by status'}
                               type="button"
                             >
                               {sortMode === 'status'
@@ -781,12 +781,12 @@ export function PresenceView() {
                                     ))}
                                     {hiddenCount > 0 && !isOfflineExpanded && (
                                       <button className="presence-show-more" onClick={() => toggleExpandOffline(uKey)} type="button">
-                                        Tampilkan {hiddenCount} lagi offline
+                                        Show {hiddenCount} more offline
                                       </button>
                                     )}
                                     {isOfflineExpanded && offlineUsers.length > OFFLINE_SHOW_DEFAULT && (
                                       <button className="presence-show-more" onClick={() => toggleExpandOffline(uKey)} type="button">
-                                        Sembunyikan
+                                        Show less
                                       </button>
                                     )}
                                   </>
@@ -819,7 +819,7 @@ export function PresenceView() {
           <div className="status-panel">
             {/* Header */}
             <div className="status-panel__header">
-              <span className="status-panel__title">Status Saya</span>
+              <span className="status-panel__title">My Status</span>
               <span className={`status-panel__dot status-panel__dot--${presenceDraft.status.toLowerCase().replace('_', '-')}`} />
             </div>
 
@@ -830,7 +830,7 @@ export function PresenceView() {
               </span>
               <div className="status-panel__preview-text">
                 <span className="status-panel__preview-msg">
-                  {presenceDraft.statusMessage || <em className="status-panel__preview-empty">Tidak ada pesan</em>}
+                  {presenceDraft.statusMessage || <em className="status-panel__preview-empty">No message</em>}
                 </span>
                 {statusBadge(presenceDraft.status)}
               </div>
@@ -859,7 +859,7 @@ export function PresenceView() {
             {/* OOO date picker */}
             {isOooActive && (
               <div className="ooo-date-wrap">
-                <label className="ooo-date-wrap__label">Tanggal kembali</label>
+                <label className="ooo-date-wrap__label">Return date</label>
                 <input
                   className="ooo-date-wrap__input"
                   type="date"
@@ -880,7 +880,7 @@ export function PresenceView() {
                 <label className="status-form__label status-form__label--grow">
                   Status
                   {isOooActive ? (
-                    <div className="status-form__ooo-indicator" title="Status diatur oleh preset Out of office. Pilih status lain di Quick Set untuk keluar dari OOO.">
+                    <div className="status-form__ooo-indicator" title="Status is set by the Out of office preset. Choose another status in Quick Set to exit OOO.">
                       <span className="status-form__ooo-indicator-emoji">🏖️</span>
                       <span className="status-form__ooo-indicator-label">Out of office</span>
                     </div>
@@ -903,19 +903,19 @@ export function PresenceView() {
               </div>
 
               <label className="status-form__label">
-                Pesan status
+                Status message
                 <input
                   className="status-form__input"
                   maxLength={120}
                   onChange={e => setPresenceDraft(cur => ({ ...cur, statusMessage: e.target.value }))}
-                  placeholder="Sedang ngapain?"
+                  placeholder="What are you up to?"
                   value={presenceDraft.statusMessage}
                 />
               </label>
 
               <button className="presence-update-btn" disabled={isSubmitting || isOooMissingDate} type="submit">
                 {isSubmitting && <span className="presence-update-btn__spinner" />}
-                {isSubmitting ? 'Menyimpan…' : isOooMissingDate ? 'Isi tanggal kembali dulu' : 'Update Status'}
+                {isSubmitting ? 'Saving…' : isOooMissingDate ? 'Enter a return date first' : 'Update Status'}
               </button>
             </form>
           </div>

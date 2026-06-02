@@ -33,7 +33,7 @@ export function LeaderboardSection({ topPerformers, onSelect, periode }: Props) 
           <div className="perf-card-head">
             <h2 className="perf-card-head__title">{bodLabel}</h2>
             <span className="perf-rank__sub">
-              {periode ? `Nilai ${periode}` : 'Nilai bulan ini'}
+              {periode ? `Score ${periode}` : 'Score this month'}
             </span>
           </div>
           <div className="perf-leaderboard__list">

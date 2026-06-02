@@ -65,7 +65,7 @@ class KpiController extends Controller
         if (!RolePolicy::canManageUsers($request->user()->roleType)) {
             if (empty($data['programId'])) abort(403, 'Forbidden');
             $prog = Program::query()->where('id', $data['programId'])->value('ownerId');
-            if ($prog !== $request->user()->id) abort(403, 'Hanya owner program yang dapat menambah KPI internal.');
+            if ($prog !== $request->user()->id) abort(403, 'Only the program owner can add an internal KPI.');
         }
 
         $kpi = KpiDefinition::create([
@@ -77,7 +77,7 @@ class KpiController extends Controller
             return response()->json(['data' => $kpi], 201);
         }
 
-        return back()->with('success', 'KPI dibuat.');
+        return back()->with('success', 'KPI created.');
     }
 
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
@@ -88,7 +88,7 @@ class KpiController extends Controller
         if (!RolePolicy::canManageUsers($user->roleType)) {
             if ($kpi->programId) {
                 $ownerId = Program::query()->where('id', $kpi->programId)->value('ownerId');
-                if ($ownerId !== $user->id) abort(403, 'Hanya owner program atau admin yang dapat mengubah KPI ini.');
+                if ($ownerId !== $user->id) abort(403, 'Only the program owner or an admin can edit this KPI.');
             } else {
                 abort(403, 'Forbidden');
             }
@@ -111,7 +111,7 @@ class KpiController extends Controller
             return response()->json(['data' => $kpi->fresh()]);
         }
 
-        return back()->with('success', 'KPI diperbarui.');
+        return back()->with('success', 'KPI updated.');
     }
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
@@ -123,7 +123,7 @@ class KpiController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('success', 'KPI dihapus.');
+        return back()->with('success', 'KPI deleted.');
     }
 
     public function storeValue(Request $request, int $id): JsonResponse|RedirectResponse
@@ -135,9 +135,9 @@ class KpiController extends Controller
             $approvalStatus = Program::query()->where('id', $kpi->programId)->value('approvalStatus');
             if (!in_array($approvalStatus, ['ACTIVE'], true)) {
                 if ($request->expectsJson()) {
-                    return response()->json(['message' => 'Program belum aktif — KPI belum bisa diukur.'], 422);
+                    return response()->json(['message' => 'The program is not active yet — KPIs cannot be measured.'], 422);
                 }
-                return back()->withErrors(['Program belum aktif — KPI belum bisa diukur.']);
+                return back()->withErrors(['The program is not active yet — KPIs cannot be measured.']);
             }
         }
 
@@ -203,6 +203,6 @@ class KpiController extends Controller
             return response()->json(['data' => $value], 201);
         }
 
-        return back()->with('success', 'Nilai KPI disimpan.');
+        return back()->with('success', 'KPI value saved.');
     }
 }

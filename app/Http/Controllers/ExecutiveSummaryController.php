@@ -142,7 +142,7 @@ class ExecutiveSummaryController extends Controller
             ->get(['id', 'code', 'name', 'healthStatus', 'targetEndDate', 'dukunganDibutuhkan', 'progresTerkini'])
             ->map(function (Program $p) use ($now) {
                 $days = $p->targetEndDate ? $now->diffInDays($p->targetEndDate, false) : null;
-                $status = $p->healthStatus === 'RED' ? 'Terlambat' : 'At Risk';
+                $status = $p->healthStatus === 'RED' ? 'Delayed' : 'At Risk';
                 return [
                     'id'         => $p->id,
                     'code'       => $p->code,

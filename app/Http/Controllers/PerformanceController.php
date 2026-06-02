@@ -260,7 +260,7 @@ class PerformanceController extends Controller
                 'mode' => 'comparison',
                 'direktorat' => $directorate
                     ? ['kode' => $directorate->code, 'nama' => $directorate->name, 'nilai' => 0.0]
-                    : ['kode' => '—', 'nama' => 'Direktorat tidak terdeteksi', 'nilai' => 0.0],
+                    : ['kode' => '—', 'nama' => 'Directorate not detected', 'nilai' => 0.0],
                 'divisiList' => [],
                 'periode' => $periode,
             ]);
@@ -350,8 +350,8 @@ class PerformanceController extends Controller
         // Grid kosong / kode tidak match → safe placeholder (mencegah infinite
         // recursion ke lookupDivisi('DKSA') ketika source data sudah dibersihkan).
         return [
-            'divisi'     => ['kode' => $kode, 'nama' => 'Divisi tidak tersedia', 'nilai' => 0.0, 'rank' => 0, 'totalDivisi' => 0],
-            'direktorat' => ['kode' => '—', 'nama' => 'Belum ada data scorecard', 'nilai' => 0.0],
+            'divisi'     => ['kode' => $kode, 'nama' => 'Division not available', 'nilai' => 0.0, 'rank' => 0, 'totalDivisi' => 0],
+            'direktorat' => ['kode' => '—', 'nama' => 'No scorecard data yet', 'nilai' => 0.0],
             'peers'      => [],
         ];
     }
@@ -606,7 +606,7 @@ class PerformanceController extends Controller
         $isSupervisor = app(\App\Services\OrgChainService::class)->isSupervisorOf($viewer, $target);
         $isAdmin = in_array(strtoupper($viewer->roleType), ['BOD', 'ADMIN', 'SUPERADMIN'], true);
         if (!$isSelf && !$isSupervisor && !$isAdmin) {
-            abort(403, 'Anda tidak punya akses ke commitment ledger user ini.');
+            abort(403, "You do not have access to this user's commitment ledger.");
         }
 
         $lookbackWeeks = (int) setting('commitment_ledger.lookback_weeks', 12);
@@ -722,7 +722,7 @@ class PerformanceController extends Controller
             'jumlah_kpi' => 0,
         ] : [
             'id'         => $id,
-            'nama'       => 'Karyawan tidak ditemukan',
+            'nama'       => 'Employee not found',
             'jabatan'    => '—',
             'unit'       => '—',
             'nilai'      => 0.0,

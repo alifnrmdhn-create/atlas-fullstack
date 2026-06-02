@@ -24,17 +24,17 @@ export default function DesignSystemView() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button variant="secondary" size="sm">Dokumentasi</Button>
-            <Button variant="primary" size="sm">Adopt di halaman</Button>
+            <Button variant="secondary" size="sm">Documentation</Button>
+            <Button variant="primary" size="sm">Adopt in Pages</Button>
           </div>
         </header>
 
-        <Section title="Typography" description="7 ukuran. Tidak ada nilai di antaranya.">
+        <Section title="Typography" description="7 sizes. Nothing in between.">
           <Card padding="lg">
             <div style={typeRowStyle}>
               <span style={typeMetaStyle}>40 / 600</span>
               <span style={{ fontSize: 'var(--ds-text-40)', fontWeight: 600, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
-                3 program terlambat
+                3 programs delayed
               </span>
             </div>
             <div style={typeRowStyle}>
@@ -54,13 +54,13 @@ export default function DesignSystemView() {
             <div style={typeRowStyle}>
               <span style={typeMetaStyle}>14 / 400</span>
               <span style={{ fontSize: 'var(--ds-text-14)' }}>
-                Body — Direktorat Keuangan dan Manajemen Risiko menyusun RKAP 2027.
+                Body — Direktorat Keuangan dan Manajemen Risiko is preparing the 2027 RKAP.
               </span>
             </div>
             <div style={typeRowStyle}>
               <span style={typeMetaStyle}>13 / 400</span>
               <span style={{ fontSize: 'var(--ds-text-13)', color: 'var(--ds-text-secondary)' }}>
-                Secondary — 12 workstream · 237 hari lagi · 2 blocker aktif
+                Secondary — 12 workstreams · 237 days left · 2 active blockers
               </span>
             </div>
             <div style={typeRowStyle}>
@@ -78,7 +78,7 @@ export default function DesignSystemView() {
           </Card>
         </Section>
 
-        <Section title="Color" description="Neutral-led. Brand untuk active state. Semantik hanya untuk status.">
+        <Section title="Color" description="Neutral-led. Brand for active state. Semantics only for status.">
           <Card padding="lg">
             <SwatchRow label="Neutral" tokens={['neutral-0','neutral-50','neutral-100','neutral-200','neutral-300','neutral-400','neutral-500','neutral-600','neutral-700','neutral-800','neutral-900']} />
             <SwatchRow label="Brand" tokens={['brand-50','brand-100','brand-500','brand-600','brand-700']} />
@@ -88,27 +88,27 @@ export default function DesignSystemView() {
           </Card>
         </Section>
 
-        <Section title="Button" description="4 variant · 2 size. Primary dipakai max 1 per halaman.">
+        <Section title="Button" description="4 variants · 2 sizes. Primary used max 1 per page.">
           <Card padding="lg">
             <Group label="Variants (size md)">
-              <Button variant="primary">Buat Program</Button>
+              <Button variant="primary">Create Program</Button>
               <Button variant="secondary">Filter</Button>
-              <Button variant="ghost">Batal</Button>
-              <Button variant="danger">Hapus</Button>
+              <Button variant="ghost">Cancel</Button>
+              <Button variant="danger">Delete</Button>
               <Button variant="secondary" disabled>Disabled</Button>
             </Group>
             <Group label="Size sm">
-              <Button variant="primary" size="sm">Simpan</Button>
+              <Button variant="primary" size="sm">Save</Button>
               <Button variant="secondary" size="sm">Edit</Button>
-              <Button variant="ghost" size="sm">Tutup</Button>
+              <Button variant="ghost" size="sm">Close</Button>
             </Group>
           </Card>
         </Section>
 
-        <Section title="Pill" description="Satu primitif menggantikan 6+ variasi badge legacy.">
+        <Section title="Pill" description="One primitive replaces 6+ legacy badge variants.">
           <Card padding="lg">
             <Group label="Outline + dot (status)">
-              <Pill tone="red" variant="outline" dot>Terlambat</Pill>
+              <Pill tone="red" variant="outline" dot>Delayed</Pill>
               <Pill tone="amber" variant="outline" dot>At Risk</Pill>
               <Pill tone="green" variant="outline" dot>On Track</Pill>
               <Pill tone="neutral" variant="outline" dot>Draft</Pill>
@@ -116,10 +116,10 @@ export default function DesignSystemView() {
             <Group label="Soft (count, label, secondary)">
               <Pill tone="brand" variant="soft">12 channels</Pill>
               <Pill tone="neutral" variant="soft">26</Pill>
-              <Pill tone="green" variant="soft">Disetujui</Pill>
-              <Pill tone="amber" variant="soft">Menunggu Review</Pill>
+              <Pill tone="green" variant="soft">Approved</Pill>
+              <Pill tone="amber" variant="soft">Pending Review</Pill>
             </Group>
-            <Group label="Mono (kode, ID, token)">
+            <Group label="Mono (code, ID, token)">
               <Pill variant="mono">DKSA-PSG-001</Pill>
               <Pill variant="mono">WI-SGN-072</Pill>
               <Pill variant="mono">DIMR-HLD010301</Pill>
@@ -127,15 +127,15 @@ export default function DesignSystemView() {
           </Card>
         </Section>
 
-        <Section title="Stat" description="Hero number tanpa box. Wrap dengan Card kalau butuh container.">
+        <Section title="Stat" description="Hero number without a box. Wrap with a Card if you need a container.">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--ds-space-4)' }}>
             <Card padding="lg">
               <Stat
                 size="hero"
                 tone="red"
                 value="3"
-                label="program butuh keputusan"
-                caption="+2 vs 9 jam lalu · DAPN, DKSA, DIMR"
+                label="programs need a decision"
+                caption="+2 vs 9 hours ago · DAPN, DKSA, DIMR"
               />
             </Card>
             <Card padding="lg">
@@ -143,7 +143,7 @@ export default function DesignSystemView() {
                 size="lg"
                 value="102.27"
                 unit="%"
-                label="Pencapaian DKSA Mar 2026"
+                label="DKSA Achievement Mar 2026"
                 tone="green"
               />
             </Card>
@@ -151,7 +151,7 @@ export default function DesignSystemView() {
               <Stat
                 size="md"
                 value="7"
-                label="Total Program"
+                label="Total Programs"
                 caption="4 pipeline"
               />
             </Card>
@@ -161,43 +161,43 @@ export default function DesignSystemView() {
               <CardHeader>
                 <div>
                   <CardTitle>Summary inline</CardTitle>
-                  <CardDescription>Banyak Stat dalam satu card — gunakan grid, bukan border per item.</CardDescription>
+                  <CardDescription>Many Stats in one card — use a grid, not a border per item.</CardDescription>
                 </div>
               </CardHeader>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--ds-space-6)' }}>
-                <Stat size="lg" value="7" label="Program" />
-                <Stat size="lg" value="0" label="Selesai" tone="neutral" />
+                <Stat size="lg" value="7" label="Programs" />
+                <Stat size="lg" value="0" label="Completed" tone="neutral" />
                 <Stat size="lg" value="0" label="On Track" tone="green" />
-                <Stat size="lg" value="3" label="Terlambat" tone="red" />
+                <Stat size="lg" value="3" label="Delayed" tone="red" />
               </div>
             </Card>
           </div>
         </Section>
 
-        <Section title="ListRow" description="Density tinggi. 48px row, hairline divider, no decoration.">
+        <Section title="ListRow" description="High density. 48px row, hairline divider, no decoration.">
           <Card padding="none">
             <ListRow
               leading={<Pill variant="mono">DKSA-PSG-001</Pill>}
               primary="Penyehatan PT Sinergi Gula Nusantara 2026"
-              secondary="12 workstream · 237 hari lagi · 2 blocker aktif"
+              secondary="12 workstreams · 237 days left · 2 active blockers"
               middle={<MockProgress value={57} tone="red" />}
-              trailing={<><Pill tone="red" variant="outline" dot>Terlambat</Pill><span>57%</span></>}
+              trailing={<><Pill tone="red" variant="outline" dot>Delayed</Pill><span>57%</span></>}
               emphasis="danger"
               onClick={() => {}}
             />
             <ListRow
               leading={<Pill variant="mono">DAPN-KPK-002</Pill>}
               primary="Konsolidasi Pelaporan Keuangan SGN ke Holding"
-              secondary="2 workstream · 237 hari lagi"
+              secondary="2 workstreams · 237 days left"
               middle={<MockProgress value={75} tone="red" />}
-              trailing={<><Pill tone="red" variant="outline" dot>Terlambat</Pill><span>75%</span></>}
+              trailing={<><Pill tone="red" variant="outline" dot>Delayed</Pill><span>75%</span></>}
               emphasis="danger"
               onClick={() => {}}
             />
             <ListRow
               leading={<Pill variant="mono">DIMR-GMR-002</Pill>}
               primary="Governance Manajemen Risiko MKSO SGN"
-              secondary="1 workstream · 206 hari lagi"
+              secondary="1 workstream · 206 days left"
               middle={<MockProgress value={54} tone="amber" />}
               trailing={<><Pill tone="amber" variant="outline" dot>At Risk</Pill><span>54%</span></>}
               emphasis="warning"
@@ -206,7 +206,7 @@ export default function DesignSystemView() {
             <ListRow
               leading={<Pill variant="mono">DKSA-PRK-004</Pill>}
               primary="Penyusunan RKO"
-              secondary="1 workstream · 53 hari lagi"
+              secondary="1 workstream · 53 days left"
               middle={<MockProgress value={0} tone="neutral" />}
               trailing={<><Pill tone="neutral" variant="outline" dot>Draft</Pill><span>0%</span></>}
               onClick={() => {}}
@@ -214,7 +214,7 @@ export default function DesignSystemView() {
           </Card>
         </Section>
 
-        <Section title="Card" description="Default + sunken. Pilih padding via prop, jangan hardcode.">
+        <Section title="Card" description="Default + sunken. Choose padding via prop, do not hardcode.">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             <Card padding="md">
               <CardHeader>
@@ -222,7 +222,7 @@ export default function DesignSystemView() {
                   <CardTitle>Default Card</CardTitle>
                   <CardDescription>1px hairline border, no shadow.</CardDescription>
                 </div>
-                <Pill tone="green" variant="soft">aktif</Pill>
+                <Pill tone="green" variant="soft">active</Pill>
               </CardHeader>
               <p style={{ margin: 0, fontSize: 'var(--ds-text-14)', color: 'var(--ds-text-secondary)' }}>
                 Body content sits in default surface. Use sunken sibling for nested density.

@@ -37,7 +37,7 @@ class BlockerController extends Controller
     public function store(Request $request): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+            abort(403, 'Your role is not allowed to perform this action.');
         }
 
         $data = $request->validate([
@@ -64,13 +64,13 @@ class BlockerController extends Controller
             return response()->json(['data' => $blocker], 201);
         }
 
-        return back()->with('success', 'Blocker ditambahkan.');
+        return back()->with('success', 'Blocker added.');
     }
 
     public function updateStatus(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+            abort(403, 'Your role is not allowed to perform this action.');
         }
 
         $data = $request->validate([
@@ -109,13 +109,13 @@ class BlockerController extends Controller
             return response()->json(['data' => $blocker->fresh()]);
         }
 
-        return back()->with('success', 'Status blocker diperbarui.');
+        return back()->with('success', 'Blocker status updated.');
     }
 
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+            abort(403, 'Your role is not allowed to perform this action.');
         }
 
         $blocker = Blocker::findOrFail($id);
@@ -125,7 +125,7 @@ class BlockerController extends Controller
             || $blocker->createdBy === $user->id
             || $blocker->assignedTo === $user->id;
 
-        if (!$canEdit) abort(403, 'Hanya pembuat atau assignee blocker yang dapat mengubah ini.');
+        if (!$canEdit) abort(403, 'Only the blocker creator or assignee can edit this.');
 
         $data = $request->validate([
             'title' => 'sometimes|string|min:3|max:120',
@@ -140,7 +140,7 @@ class BlockerController extends Controller
             return response()->json(['data' => $blocker->fresh()]);
         }
 
-        return back()->with('success', 'Blocker diperbarui.');
+        return back()->with('success', 'Blocker updated.');
     }
 
     /**
@@ -157,7 +157,7 @@ class BlockerController extends Controller
     {
         $user = $request->user();
         if (RolePolicy::isReadOnly($user->roleType)) {
-            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+            abort(403, 'Your role is not allowed to perform this action.');
         }
 
         $blocker = Blocker::findOrFail($id);
@@ -168,7 +168,7 @@ class BlockerController extends Controller
             || $blocker->assignedTo === $user->id;
 
         if (!$canEdit) {
-            abort(403, 'Hanya pembuat, assignee, atau KADIV+ yang dapat mengubah countermeasure.');
+            abort(403, 'Only the creator, assignee, or KADIV+ can change the countermeasure.');
         }
 
         $data = $request->validate([
@@ -182,7 +182,7 @@ class BlockerController extends Controller
             $clientIso = (new \DateTimeImmutable($data['expectedUpdatedAt']))->format(\DateTimeInterface::ATOM);
             if ($serverIso && $serverIso !== $clientIso) {
                 return response()->json([
-                    'message' => 'Perubahan rekan kerja masuk lebih dulu. Refresh untuk lihat versi terbaru.',
+                    'message' => "A colleague's change was saved first. Refresh to see the latest version.",
                     'currentResolution' => $blocker->resolution,
                     'currentUpdatedAt'  => $serverIso,
                 ], 409);
@@ -204,7 +204,7 @@ class BlockerController extends Controller
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Role Anda tidak diizinkan melakukan aksi ini.');
+            abort(403, 'Your role is not allowed to perform this action.');
         }
 
         $blocker = Blocker::findOrFail($id);
@@ -224,6 +224,6 @@ class BlockerController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('success', 'Blocker dihapus.');
+        return back()->with('success', 'Blocker deleted.');
     }
 }

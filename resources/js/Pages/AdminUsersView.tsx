@@ -136,7 +136,7 @@ export function AdminUsersView() {
       closeCreateUser()
       loadUsers()
     } catch (err) {
-      setCuError(err instanceof Error ? err.message : 'Gagal membuat pengguna.')
+      setCuError(err instanceof Error ? err.message : 'Failed to create user.')
     } finally {
       setCuSaving(false)
     }
@@ -161,7 +161,7 @@ export function AdminUsersView() {
     setError(null)
     api.get<UsersResponse>(`/users${query ? `?${query}` : ''}`)
       .then(res => { setUsers(res.data); setTotal(res.total) })
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Gagal memuat data pengguna.'))
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load user data.'))
       .finally(() => setLoading(false))
   }, [search, roleFilter, activeFilter, isAuthorized])
 
@@ -226,7 +226,7 @@ export function AdminUsersView() {
       loadUsers()
       closeMutasi()
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Gagal menyimpan mutasi.')
+      setSaveError(err instanceof Error ? err.message : 'Failed to save transfer.')
     } finally {
       setSaving(false)
     }
@@ -237,7 +237,7 @@ export function AdminUsersView() {
       <div className="ds admin-v2 view-admin-users ds-stagger">
         <div className="panel">
           <p className="text-muted text-sm admin-state-copy admin-state-copy--center">
-            Akses ditolak. Halaman ini hanya untuk admin dan superadmin.
+            Access denied. This page is for admins and superadmins only.
           </p>
         </div>
       </div>
@@ -247,13 +247,13 @@ export function AdminUsersView() {
   return (
     <div className="ds admin-v2 view-admin-users">
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Manajemen Pengguna</h2>
+        <h2 className="view-toolbar__title">User Management</h2>
         <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Kelola akun, peran, dan akses pengguna workspace.</span>
+        <span className="view-toolbar__subtitle">Manage workspace user accounts, roles, and access.</span>
         <input
           className="view-toolbar__search"
           type="text"
-          placeholder="Cari nama, email, atau NIK…"
+          placeholder="Search name, email, or NIK…"
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
@@ -263,7 +263,7 @@ export function AdminUsersView() {
           onChange={e => setRoleFilter(e.target.value)}
         >
           {ROLE_OPTIONS.map(r => (
-            <option key={r} value={r}>{r === 'all' ? 'Semua Role' : formatRoleLabel(r)}</option>
+            <option key={r} value={r}>{r === 'all' ? 'All Roles' : formatRoleLabel(r)}</option>
           ))}
         </select>
         <div className="view-toggle admin-toolbar-toggle">
@@ -273,17 +273,17 @@ export function AdminUsersView() {
               className={`view-toggle-btn${activeFilter === val ? ' active' : ''}`}
               onClick={() => setActiveFilter(val)}
             >
-              {val === 'all' ? 'Semua' : val === 'active' ? 'Aktif' : 'Nonaktif'}
+              {val === 'all' ? 'All' : val === 'active' ? 'Active' : 'Inactive'}
             </button>
           ))}
         </div>
         <div className="view-toolbar__right">
           {!loading && (
             <div className="view-toolbar__stats">
-              <span>{total} <em>pengguna</em></span>
+              <span>{total} <em>users</em></span>
             </div>
           )}
-          <button className="toolbar-action-btn" onClick={openCreateUser}>+ Buat Pengguna</button>
+          <button className="toolbar-action-btn" onClick={openCreateUser}>+ Add User</button>
         </div>
       </div>
 
@@ -293,18 +293,18 @@ export function AdminUsersView() {
         )}
         {!error && !loading && users.length === 0 && (
           <p className="text-muted text-sm admin-state-copy admin-state-copy--center">
-            Tidak ada pengguna yang sesuai dengan filter.
+            No users match the current filter.
           </p>
         )}
         {!error && (loading || users.length > 0) && (
           <table className="reports-table">
             <thead>
               <tr>
-                <th>Nama / ID</th>
+                <th>Name / ID</th>
                 <th>Role</th>
-                <th>Jabatan</th>
+                <th>Position</th>
                 <th>Unit</th>
-                <th>Direktorat</th>
+                <th>Directorate</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -313,7 +313,7 @@ export function AdminUsersView() {
               {loading ? (
                 <tr>
                   <td colSpan={7} className="admin-table-placeholder">
-                    <span className="text-muted text-sm">Memuat data…</span>
+                    <span className="text-muted text-sm">Loading data…</span>
                   </td>
                 </tr>
               ) : users.map(user => (
@@ -351,20 +351,20 @@ export function AdminUsersView() {
                   </td>
                   <td>
                     <span className={`badge ${user.isActive ? 'badge--green' : 'badge--red'}`}>
-                      {user.isActive ? 'Aktif' : 'Nonaktif'}
+                      {user.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td>
                     <div className="admin-row-actions">
                       <button className="btn btn--sm btn--ghost" onClick={() => openMutasi(user)}>
-                        Mutasi
+                        Transfer
                       </button>
                       <button
                         className={`btn btn--sm btn--ghost admin-row-status-btn ${user.isActive ? 'admin-row-status-btn--danger' : 'admin-row-status-btn--success'}`}
                         onClick={() => void handleToggleActive(user)}
-                        title={user.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                        title={user.isActive ? 'Deactivate' : 'Activate'}
                       >
-                        {user.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                        {user.isActive ? 'Deactivate' : 'Activate'}
                       </button>
                     </div>
                   </td>
@@ -382,9 +382,9 @@ export function AdminUsersView() {
             <div className="modal__header">
               <div className="modal-headcopy">
                 <span className="modal-kicker">User Management</span>
-                <h3 className="modal__title" id={createUserTitleId}>Buat Pengguna Baru</h3>
+                <h3 className="modal__title" id={createUserTitleId}>Add New User</h3>
                 <p className="modal-subtitle" id={createUserDescId}>
-                  Lengkapi identitas dasar, lalu hubungkan pengguna ke role dan jabatan yang tepat agar provisioning lebih konsisten.
+                  Fill in the basic identity, then link the user to the right role and position for more consistent provisioning.
                 </p>
               </div>
               <button className="modal__close" onClick={closeCreateUser} type="button">
@@ -398,13 +398,13 @@ export function AdminUsersView() {
                 )}
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>Identitas Pengguna</h4>
-                    <p>Masukkan data dasar karyawan yang akan dipakai di direktori, assignment, dan berbagai picker lintas modul.</p>
+                    <h4>User Identity</h4>
+                    <p>Enter the employee's basic details used across the directory, assignments, and pickers throughout the app.</p>
                   </div>
                   <div className="admin-form-grid admin-form-grid--2">
                     <div className="modal-field">
-                      <label className="modal-label">Nama Lengkap <span className="admin-required">*</span></label>
-                      <input className="form-input" required minLength={1} type="text" placeholder="Nama lengkap karyawan" value={cuForm.name} onChange={e => setCuForm(f => ({ ...f, name: e.target.value }))} />
+                      <label className="modal-label">Full Name <span className="admin-required">*</span></label>
+                      <input className="form-input" required minLength={1} type="text" placeholder="Employee's full name" value={cuForm.name} onChange={e => setCuForm(f => ({ ...f, name: e.target.value }))} />
                     </div>
                     <div className="modal-field">
                       <label className="modal-label">Email <span className="admin-required">*</span></label>
@@ -413,30 +413,30 @@ export function AdminUsersView() {
                   </div>
                   <div className="admin-form-grid admin-form-grid--3">
                     <div className="modal-field">
-                      <label className="modal-label">ID Karyawan</label>
+                      <label className="modal-label">Employee ID</label>
                       <input className="form-input" type="text" placeholder="e.g. EMP-001" value={cuForm.userId} onChange={e => setCuForm(f => ({ ...f, userId: e.target.value }))} />
                     </div>
                     <div className="modal-field">
                       <label className="modal-label">NIK</label>
-                      <input className="form-input" type="text" placeholder="Nomor Induk Karyawan" value={cuForm.nik} onChange={e => setCuForm(f => ({ ...f, nik: e.target.value }))} />
+                      <input className="form-input" type="text" placeholder="Employee identification number" value={cuForm.nik} onChange={e => setCuForm(f => ({ ...f, nik: e.target.value }))} />
                     </div>
                     <div className="modal-field">
-                      <label className="modal-label">Telepon</label>
+                      <label className="modal-label">Phone</label>
                       <input className="form-input" type="text" placeholder="+62…" value={cuForm.phone} onChange={e => setCuForm(f => ({ ...f, phone: e.target.value }))} />
                     </div>
                   </div>
                 </section>
                 <section className="modal-section modal-section--soft">
                   <div className="modal-section__intro">
-                    <h4>Role & Jabatan</h4>
-                    <p>Gunakan role untuk hak akses, lalu tautkan jabatan bila Anda ingin unit dan struktur organisasi ikut terbaca.</p>
+                    <h4>Role & Position</h4>
+                    <p>Use role for access rights, then link a position if you want the unit and organization structure to be resolved too.</p>
                   </div>
                   <div className="modal-field">
                     <label className="modal-label">Role <span className="admin-required">*</span></label>
                     {cuSelectedPos ? (
                       <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span className={`badge ${ROLE_BADGE[cuForm.roleType] ?? ''}`}>{formatRoleLabel(cuForm.roleType)}</span>
-                        <span className="text-xs text-muted">mengikuti jabatan terpilih</span>
+                        <span className="text-xs text-muted">follows the selected position</span>
                       </div>
                     ) : (
                       <select className="form-input" value={cuForm.roleType} onChange={e => setCuForm(f => ({ ...f, roleType: e.target.value }))}>
@@ -447,11 +447,11 @@ export function AdminUsersView() {
                     )}
                   </div>
                   <div className="modal-field">
-                    <label className="modal-label">Jabatan (opsional)</label>
+                    <label className="modal-label">Position (optional)</label>
                     <input
                       className="form-input"
                       type="text"
-                      placeholder="Ketik nama atau kode jabatan…"
+                      placeholder="Type a position name or code…"
                       value={cuPosSearch}
                       onChange={e => { setCuPosSearch(e.target.value); setCuSelectedPos(null) }}
                     />
@@ -479,14 +479,14 @@ export function AdminUsersView() {
                     )}
                   </div>
                   <div className="modal-helper-note">
-                    Jika jabatan dipilih, role dan unit akan disesuaikan otomatis. Password awal akun: <strong>DKMR2026</strong>.
+                    If a position is selected, role and unit are adjusted automatically. Default account password: <strong>DKMR2026</strong>.
                   </div>
                 </section>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" type="button" onClick={closeCreateUser} disabled={cuSaving}>Batal</button>
+                <button className="btn btn--ghost" type="button" onClick={closeCreateUser} disabled={cuSaving}>Cancel</button>
                 <button className="profile-save-btn" type="submit" disabled={cuSaving || !cuForm.name.trim() || !cuForm.email.trim()}>
-                  {cuSaving ? 'Membuat…' : 'Buat Pengguna'}
+                  {cuSaving ? 'Creating…' : 'Add User'}
                 </button>
               </div>
             </form>
@@ -502,9 +502,9 @@ export function AdminUsersView() {
             <div className="modal__header">
               <div className="modal-headcopy">
                 <span className="modal-kicker">Organization Move</span>
-                <h3 className="modal__title" id={mutasiTitleId}>Mutasi Jabatan</h3>
+                <h3 className="modal__title" id={mutasiTitleId}>Position Transfer</h3>
                 <p className="modal-subtitle" id={mutasiDescId}>
-                  Pindahkan pengguna ke jabatan baru sambil menyimpan alasan administratif dan referensi SK bila diperlukan.
+                  Move the user to a new position while recording the administrative reason and decree reference if needed.
                 </p>
               </div>
               <button className="modal__close" onClick={closeMutasi} type="button"><svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg></button>
@@ -513,37 +513,37 @@ export function AdminUsersView() {
             <div className="modal__body">
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Subjek Mutasi</h4>
-                  <p>Pastikan orang yang dipindahkan dan jabatan asalnya sudah benar sebelum menentukan tujuan baru.</p>
+                  <h4>Transfer Subject</h4>
+                  <p>Confirm the person being moved and their current position are correct before choosing the new destination.</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Karyawan</label>
+                  <label className="modal-label">Employee</label>
                   <div className="admin-cell-stack">
                     <span className="text-sm text-strong">{mutasiTarget.name}</span>
                     <span className="text-xs text-muted">{mutasiTarget.nik ?? mutasiTarget.userId}</span>
                   </div>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Jabatan Saat Ini</label>
+                  <label className="modal-label">Current Position</label>
                   {mutasiTarget.position
                     ? <div className="admin-cell-inline">
                         <span className="code-badge">{mutasiTarget.position.code}</span>
                         <span className="text-sm">{mutasiTarget.position.name}</span>
                       </div>
-                    : <span className="text-muted text-xs">{mutasiTarget.positionTitle ?? 'Belum ada jabatan'}</span>}
+                    : <span className="text-muted text-xs">{mutasiTarget.positionTitle ?? 'No position yet'}</span>}
                 </div>
               </section>
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Jabatan Tujuan</h4>
-                  <p>Cari jabatan berdasarkan nama, kode, atau unit. Jika sudah terisi pemegang lain, peringatan akan muncul di hasil pencarian.</p>
+                  <h4>Destination Position</h4>
+                  <p>Search positions by name, code, or unit. If already held by someone else, a warning appears in the search results.</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Jabatan Baru</label>
+                  <label className="modal-label">New Position</label>
                   <input
                     className="form-input"
                     type="text"
-                    placeholder="Ketik untuk cari jabatan (nama, kode, atau unit)…"
+                    placeholder="Type to search positions (name, code, or unit)…"
                     value={posSearch}
                     onChange={e => setPosSearch(e.target.value)}
                     autoFocus
@@ -581,25 +581,25 @@ export function AdminUsersView() {
               </section>
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Catatan Administratif</h4>
-                  <p>Lengkapi nomor SK dan alasan mutasi agar jejak perubahan posisi tetap terdokumentasi.</p>
+                  <h4>Administrative Notes</h4>
+                  <p>Add the decree number and transfer reason so the position-change trail stays documented.</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Nomor SK <span className="text-muted">(opsional)</span></label>
+                  <label className="modal-label">Decree Number <span className="text-muted">(optional)</span></label>
                   <input
                     className="form-input"
                     type="text"
-                    placeholder="misal: SK-001/DIR/2026"
+                    placeholder="e.g. SK-001/DIR/2026"
                     value={skNumber}
                     onChange={e => setSkNumber(e.target.value)}
                   />
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Alasan Mutasi <span className="text-muted">(opsional)</span></label>
+                  <label className="modal-label">Transfer Reason <span className="text-muted">(optional)</span></label>
                   <textarea
                     className="form-input admin-textarea-vertical"
                     rows={2}
-                    placeholder="misal: Mutasi reguler Q1 2026, promosi jabatan, dll."
+                    placeholder="e.g. Regular Q1 2026 transfer, promotion, etc."
                     value={mutationReason}
                     onChange={e => setMutationReason(e.target.value)}
                   />
@@ -611,13 +611,13 @@ export function AdminUsersView() {
             </div>
 
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={closeMutasi} disabled={saving}>Batal</button>
+              <button className="btn btn--ghost" onClick={closeMutasi} disabled={saving}>Cancel</button>
               <button
                 className="btn btn--primary"
                 onClick={handleMutasi}
                 disabled={saving || !selectedPos}
               >
-                {saving ? 'Menyimpan…' : 'Simpan Mutasi'}
+                {saving ? 'Saving…' : 'Save Transfer'}
               </button>
             </div>
           </div>

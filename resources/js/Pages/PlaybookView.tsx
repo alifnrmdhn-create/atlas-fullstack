@@ -457,19 +457,19 @@ export function PlaybookView() {
               ref={searchRef}
               type="search"
               className="pb-search__input"
-              placeholder="Cari bagian…"
+              placeholder="Search sections…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Escape') setQuery('') }}
-              aria-label="Cari bagian playbook"
+              aria-label="Search the playbook"
             />
             {query && (
               <button
                 type="button"
                 className="pb-search__clear"
                 onClick={() => { setQuery(''); searchRef.current?.focus() }}
-                aria-label="Bersihkan pencarian"
-                title="Bersihkan"
+                aria-label="Clear search"
+                title="Clear"
               >
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
                   <path d="m2 2 6 6M8 2l-6 6" />
@@ -479,7 +479,7 @@ export function PlaybookView() {
           </div>
 
           {filteredGroups.length === 0 ? (
-            <p className="pb-nav__empty">Tidak ada bagian yang cocok dengan "{query}".</p>
+            <p className="pb-nav__empty">No sections match "{query}".</p>
           ) : (
             filteredGroups.map((group) => (
               <div key={group.label} className="pb-nav__group">
@@ -504,12 +504,12 @@ export function PlaybookView() {
             type="button"
             className={`pb-nav__top${showTop ? ' pb-nav__top--visible' : ''}`}
             onClick={scrollToTop}
-            title="Kembali ke atas"
+            title="Back to top"
           >
             <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M5.5 9V2M2 5l3.5-3L9 5" />
             </svg>
-            Ke atas
+            To top
           </button>
         </nav>
 

@@ -62,7 +62,7 @@ export function RiskReportsView() {
     if (statusFilter !== 'all') params.set('status', statusFilter)
     api.get<{ data: RiskReportSummary[] }>(`/risk-reports?${params}`)
       .then(j => setReports(j.data ?? []))
-      .catch(e => setError(e instanceof Error ? e.message : 'Gagal memuat laporan risiko.'))
+      .catch(e => setError(e instanceof Error ? e.message : 'Failed to load risk reports.'))
       .finally(() => setLoading(false))
   }
 
@@ -74,7 +74,7 @@ export function RiskReportsView() {
     if (statusFilter !== 'all') params.set('status', statusFilter)
     api.get<{ data: RiskReportSummary[] }>(`/risk-reports?${params}`)
       .then(j => { if (!cancelled) setReports(j.data ?? []) })
-      .catch(e => { if (!cancelled) setError(e instanceof Error ? e.message : 'Gagal memuat laporan risiko.') })
+      .catch(e => { if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load risk reports.') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [yearFilter, statusFilter])
@@ -110,19 +110,19 @@ export function RiskReportsView() {
               className={`view-toggle-btn${statusFilter === s ? ' active' : ''}`}
               onClick={() => setStatusFilter(s)}
             >
-              {s === 'all' ? 'Semua' : STATUS[s]?.label ?? s}
+              {s === 'all' ? 'All' : STATUS[s]?.label ?? s}
             </button>
           ))}
         </div>
         <button className="view-toggle-btn" style={{ marginLeft: 'auto' }} onClick={() => setShowCreate(true)}>
-          + Buat Report
+          + New Report
         </button>
       </div>
 
       <div className="risk-reports-body">
         {loading && (
           <div className="schedule-empty">
-            <span className="text-muted text-sm">Memuat laporan risiko…</span>
+            <span className="text-muted text-sm">Loading risk reports…</span>
           </div>
         )}
 
@@ -135,8 +135,8 @@ export function RiskReportsView() {
         {!loading && !error && reports.length === 0 && (
           <div className="schedule-empty">
             <div className="schedule-empty__icon">🛡</div>
-            <p className="schedule-empty__title">Belum ada risk report</p>
-            <p className="schedule-empty__sub">Risk report DIMR untuk tahun {yearFilter} belum tersedia.</p>
+            <p className="schedule-empty__title">No risk reports yet</p>
+            <p className="schedule-empty__sub">No DIMR risk reports are available for {yearFilter} yet.</p>
           </div>
         )}
 
@@ -144,15 +144,15 @@ export function RiskReportsView() {
           <div key={unitName} className="risk-reports-group">
             <div className="risk-reports-group__header">
               <span className="risk-reports-group__name">{unitName}</span>
-              <span className="risk-reports-group__count">{unitReports.length} laporan</span>
+              <span className="risk-reports-group__count">{unitReports.length} report{unitReports.length !== 1 ? 's' : ''}</span>
             </div>
             <div className="risk-reports-table">
               <div className="risk-reports-table__head">
-                <span>Periode</span>
+                <span>Period</span>
                 <span>Status</span>
                 <span>Composite Rating</span>
                 <span>RMI Score</span>
-                <span>Risiko</span>
+                <span>Risks</span>
                 <span>Loss Events</span>
                 <span>Submitted</span>
               </div>
@@ -191,15 +191,15 @@ export function RiskReportsView() {
                         {r.rmiScore != null ? Number(r.rmiScore).toFixed(2) : '—'}
                       </span>
                       <span className="risk-reports-table__count">
-                        {riskCount > 0 ? `${riskCount} risiko` : '—'}
+                        {riskCount > 0 ? `${riskCount} risk${riskCount !== 1 ? 's' : ''}` : '—'}
                       </span>
                       <span className="risk-reports-table__count">
-                        {lossEventCount > 0 ? `${lossEventCount} kejadian` : '—'}
+                        {lossEventCount > 0 ? `${lossEventCount} event${lossEventCount !== 1 ? 's' : ''}` : '—'}
                       </span>
                       <span className="risk-reports-table__submitted text-muted">
                         {r.submittedBy
                           ? r.submittedBy.name.split(' ')[0]
-                          : r.status === 'DRAFT' ? 'Belum' : '—'}
+                          : r.status === 'DRAFT' ? 'Not yet' : '—'}
                       </span>
                     </button>
                   )
@@ -242,7 +242,7 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
     if (saving) return
     // Dirty: user sudah memilih unit atau mengubah bulan/tahun dari default
     const dirty = unitId !== '' || month !== now.getMonth() + 1 || year !== now.getFullYear()
-    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (dirty && !window.confirm('Discard unsaved changes?')) return
     onClose()
   }, true)
 
@@ -253,7 +253,7 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
   }, [])
 
   const save = async () => {
-    if (!unitId) { setErr('Pilih unit terlebih dahulu.'); return }
+    if (!unitId) { setErr('Select a unit first.'); return }
     setSaving(true); setErr(null)
     try {
       const res = await api.post<{ data: { id: number } }>('/risk-reports', {
@@ -263,11 +263,11 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
         createdById: userId,
       })
       onCreated(res.data.id)
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Gagal membuat laporan') }
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed to create report') }
     finally { setSaving(false) }
   }
 
-  const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
   const YEARS  = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1]
 
   // Phase 5B: portal-mount ke document.body — modal-safe walaupun parent
@@ -277,25 +277,25 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
     <div className="dimr-modal-backdrop" onClick={onClose}>
       <div className="dimr-modal" onClick={e => e.stopPropagation()}>
         <div className="dimr-modal__header">
-          <span className="dimr-modal__title">Buat Risk Report Baru</span>
+          <span className="dimr-modal__title">New Risk Report</span>
           <button className="dimr-modal__close" onClick={onClose}>✕</button>
         </div>
         <div className="dimr-modal__body">
-          <label className="dimr-form-label">Unit / Divisi</label>
+          <label className="dimr-form-label">Unit / Division</label>
           <select className="dimr-form-select" value={unitId} onChange={e => setUnitId(e.target.value)}>
-            <option value="">— Pilih unit —</option>
+            <option value="">— Select a unit —</option>
             {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
             <div>
-              <label className="dimr-form-label">Bulan</label>
+              <label className="dimr-form-label">Month</label>
               <select className="dimr-form-select" value={month} onChange={e => setMonth(Number(e.target.value))}>
                 {MONTHS.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
               </select>
             </div>
             <div>
-              <label className="dimr-form-label">Tahun</label>
+              <label className="dimr-form-label">Year</label>
               <select className="dimr-form-select" value={year} onChange={e => setYear(Number(e.target.value))}>
                 {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
@@ -304,9 +304,9 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
           {err && <p className="dimr-form-error">{err}</p>}
         </div>
         <div className="dimr-modal__footer">
-          <button className="mrd-btn" onClick={onClose} disabled={saving}>Batal</button>
+          <button className="mrd-btn" onClick={onClose} disabled={saving}>Cancel</button>
           <button className="mrd-btn primary" onClick={save} disabled={saving}>
-            {saving ? 'Membuat…' : 'Buat Report'}
+            {saving ? 'Creating…' : 'Create Report'}
           </button>
         </div>
       </div>

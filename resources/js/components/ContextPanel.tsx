@@ -65,8 +65,8 @@ export function ContextPanel() {
             type="button"
             className="context-panel__expand-btn"
             onClick={toggle}
-            aria-label="Buka panel"
-            title="Buka panel"
+            aria-label="Open panel"
+            title="Open panel"
           >
             <ChevronRight size={14} />
           </button>
@@ -77,8 +77,8 @@ export function ContextPanel() {
               type="button"
               className="context-panel__collapse-btn"
               onClick={toggle}
-              aria-label="Tutup panel"
-              title="Tutup panel"
+              aria-label="Close panel"
+              title="Close panel"
             >
               <ChevronLeft size={14} />
             </button>

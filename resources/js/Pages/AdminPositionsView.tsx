@@ -94,7 +94,7 @@ export function AdminPositionsView() {
       closeCreatePos()
       loadPositions()
     } catch (err) {
-      setCpPosError(err instanceof Error ? err.message : 'Gagal membuat jabatan.')
+      setCpPosError(err instanceof Error ? err.message : 'Failed to create position.')
     } finally {
       setCpPosSaving(false)
     }
@@ -143,7 +143,7 @@ export function AdminPositionsView() {
       closeEditPos()
       loadPositions()
     } catch (err) {
-      setEpPosError(err instanceof Error ? err.message : 'Gagal menyimpan.')
+      setEpPosError(err instanceof Error ? err.message : 'Failed to save.')
     } finally {
       setEpPosSaving(false)
     }
@@ -189,7 +189,7 @@ export function AdminPositionsView() {
         setPositions(sorted)
         setTotal(res.total)
       })
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Gagal memuat data jabatan.'))
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load position data.'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -237,7 +237,7 @@ export function AdminPositionsView() {
       loadPositions()
       closeAssign()
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Gagal menyimpan.')
+      setSaveError(err instanceof Error ? err.message : 'Failed to save.')
     } finally {
       setSaving(false)
     }
@@ -255,7 +255,7 @@ export function AdminPositionsView() {
       <div className="ds admin-v2 view-admin-positions ds-stagger">
         <div className="panel">
           <p className="text-muted text-sm admin-state-copy admin-state-copy--center">
-            Akses ditolak. Halaman ini hanya untuk admin dan superadmin.
+            Access denied. This page is for admins and superadmins only.
           </p>
         </div>
       </div>
@@ -265,16 +265,16 @@ export function AdminPositionsView() {
   return (
     <div className="ds admin-v2 view-admin-positions ds-stagger">
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Manajemen Jabatan</h2>
+        <h2 className="view-toolbar__title">Position Management</h2>
         <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Kelola struktur jabatan dan posisi dalam organisasi.</span>
+        <span className="view-toolbar__subtitle">Manage the position and role structure within the organization.</span>
         <div className="view-toolbar__right">
           {!loading && (
             <div className="view-toolbar__stats">
-              <span>{total} <em>jabatan</em></span>
+              <span>{total} <em>positions</em></span>
             </div>
           )}
-          <button className="toolbar-action-btn" onClick={openCreatePos}>+ Buat Jabatan</button>
+          <button className="toolbar-action-btn" onClick={openCreatePos}>+ Add Position</button>
         </div>
       </div>
 
@@ -282,19 +282,19 @@ export function AdminPositionsView() {
         <div className="admin-positions-stats">
           <div className="admin-positions-stat-card">
             <span className="text-strong admin-positions-stat-card__val">{total}</span>
-            <span className="text-muted text-xs">Total Jabatan</span>
+            <span className="text-muted text-xs">Total Positions</span>
           </div>
           <div className="admin-positions-stat-card">
             <span className="text-strong admin-positions-stat-card__val admin-positions-stat-card__val--success">{activeCount}</span>
-            <span className="text-muted text-xs">Aktif</span>
+            <span className="text-muted text-xs">Active</span>
           </div>
           <div className="admin-positions-stat-card">
             <span className="text-strong admin-positions-stat-card__val admin-positions-stat-card__val--warning">{vacantCount}</span>
-            <span className="text-muted text-xs">Kosong</span>
+            <span className="text-muted text-xs">Vacant</span>
           </div>
           <div className="admin-positions-stat-card">
             <span className="text-strong admin-positions-stat-card__val">{avgLevel}</span>
-            <span className="text-muted text-xs">Rata-rata Level</span>
+            <span className="text-muted text-xs">Average Level</span>
           </div>
         </div>
       )}
@@ -304,18 +304,18 @@ export function AdminPositionsView() {
           <p className="text-sm admin-message admin-message--error">{error}</p>
         )}
         {!error && !loading && positions.length === 0 && (
-          <p className="text-muted text-sm admin-state-copy admin-state-copy--center">Tidak ada data jabatan.</p>
+          <p className="text-muted text-sm admin-state-copy admin-state-copy--center">No position data.</p>
         )}
         {!error && (loading || positions.length > 0) && (
           <table className="reports-table">
             <thead>
               <tr>
-                <th>Kode</th>
-                <th>Jabatan</th>
+                <th>Code</th>
+                <th>Position</th>
                 <th>Level</th>
                 <th>Unit</th>
-                <th>Direktorat</th>
-                <th>Pemegang</th>
+                <th>Directorate</th>
+                <th>Holder</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -324,7 +324,7 @@ export function AdminPositionsView() {
               {loading ? (
                 <tr>
                   <td colSpan={8} className="admin-table-placeholder">
-                    <span className="text-muted text-sm">Memuat data…</span>
+                    <span className="text-muted text-sm">Loading data…</span>
                   </td>
                 </tr>
               ) : positions.map(pos => (
@@ -364,42 +364,42 @@ export function AdminPositionsView() {
                           <span className="text-sm admin-cell-name">{pos.currentHolder.name}</span>
                           <span className="text-xs text-muted">{formatRoleLabel(pos.currentHolder.roleType)}</span>
                         </div>
-                      : <span className="badge badge--yellow">Kosong</span>}
+                      : <span className="badge badge--yellow">Vacant</span>}
                   </td>
                   <td>
                     <span className={`badge ${pos.isActive ? 'badge--green' : 'badge--red'}`}>
-                      {pos.isActive ? 'Aktif' : 'Nonaktif'}
+                      {pos.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td>
                     <div className="admin-row-actions">
                       <button className="btn btn--sm btn--ghost" onClick={() => openAssign(pos)}>
-                        {pos.currentHolder ? 'Ganti' : 'Assign'}
+                        {pos.currentHolder ? 'Replace' : 'Assign'}
                       </button>
                       <button className="btn btn--sm btn--ghost" onClick={() => openEditPos(pos)}>Edit</button>
                       <button
                         className="btn btn--sm btn--ghost admin-row-status-btn admin-row-status-btn--danger"
                         onClick={() => setConfirmDeletePosId(confirmDeletePosId === pos.id ? null : pos.id)}
                       >
-                        Hapus
+                        Delete
                       </button>
                     </div>
                     {confirmDeletePosId === pos.id && (
                       <div className="admin-inline-confirm">
-                        <span className="admin-inline-confirm__label">Yakin hapus?</span>
+                        <span className="admin-inline-confirm__label">Delete this?</span>
                         <button
                           className="btn btn--sm btn--danger admin-inline-confirm__btn"
                           disabled={deletePosSaving}
                           onClick={() => void handleDeletePos(pos.id)}
                         >
-                          {deletePosSaving ? '…' : 'Ya'}
+                          {deletePosSaving ? '…' : 'Yes'}
                         </button>
                         <button
                           className="btn btn--sm btn--ghost admin-inline-confirm__btn"
                           disabled={deletePosSaving}
                           onClick={() => setConfirmDeletePosId(null)}
                         >
-                          Batal
+                          Cancel
                         </button>
                       </div>
                     )}
@@ -430,9 +430,9 @@ export function AdminPositionsView() {
               <div className="modal__header">
                 <div className="modal-headcopy">
                   <span className="modal-kicker">Position Setup</span>
-                  <h3 className="modal__title" id={positionFormTitleId}>{isEdit ? 'Edit Jabatan' : 'Buat Jabatan Baru'}</h3>
+                  <h3 className="modal__title" id={positionFormTitleId}>{isEdit ? 'Edit Position' : 'Add New Position'}</h3>
                   <p className="modal-subtitle" id={positionFormDescId}>
-                    Definisikan identitas jabatan, pemetaan struktur organisasi, dan status aktifnya dalam satu form yang lebih terarah.
+                    Define the position identity, organization-structure mapping, and active status in one focused form.
                   </p>
                 </div>
                 <button className="modal__close" onClick={closeModal} type="button">
@@ -446,17 +446,17 @@ export function AdminPositionsView() {
                   )}
                   <section className="modal-section">
                     <div className="modal-section__intro">
-                      <h4>Identitas Jabatan</h4>
-                      <p>Tentukan kode, nama, level, dan role dasar yang akan dipakai lintas struktur organisasi dan assignment user.</p>
+                      <h4>Position Identity</h4>
+                      <p>Set the code, name, level, and base role used across the organization structure and user assignments.</p>
                     </div>
                     <div className="admin-form-grid admin-form-grid--name">
                       <div className="modal-field">
-                        <label className="modal-label">Kode <span className="admin-required">*</span></label>
+                        <label className="modal-label">Code <span className="admin-required">*</span></label>
                         <input className="form-input" required minLength={2} maxLength={40} type="text" placeholder="e.g. DIR-001" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} />
                       </div>
                       <div className="modal-field">
-                        <label className="modal-label">Nama Jabatan <span className="admin-required">*</span></label>
-                        <input className="form-input" required minLength={2} maxLength={120} type="text" placeholder="Nama jabatan" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                        <label className="modal-label">Position Name <span className="admin-required">*</span></label>
+                        <input className="form-input" required minLength={2} maxLength={120} type="text" placeholder="Position name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
                       </div>
                     </div>
                     <div className="admin-form-grid admin-form-grid--2">
@@ -476,35 +476,35 @@ export function AdminPositionsView() {
                   </section>
                   <section className="modal-section modal-section--soft">
                     <div className="modal-section__intro">
-                      <h4>Struktur Organisasi</h4>
-                      <p>Hubungkan jabatan ke direktorat dan unit yang relevan agar filter struktur serta mutasi bekerja lebih presisi.</p>
+                      <h4>Organization Structure</h4>
+                      <p>Link the position to the relevant directorate and unit so structure filters and transfers work more precisely.</p>
                     </div>
                     <div className="admin-form-grid admin-form-grid--2">
                       <div className="modal-field">
-                        <label className="modal-label">Direktorat</label>
+                        <label className="modal-label">Directorate</label>
                         <select className="form-input" value={form.directorateId} onChange={e => setForm(f => ({ ...f, directorateId: e.target.value, divisionId: '' }))}>
-                          <option value="">— Tidak Ditentukan —</option>
+                          <option value="">— Not Specified —</option>
                           {directorates.map(d => <option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}
                         </select>
                       </div>
                       <div className="modal-field">
-                        <label className="modal-label">Unit / Divisi</label>
+                        <label className="modal-label">Unit / Division</label>
                         <select className="form-input" value={form.divisionId} onChange={e => setForm(f => ({ ...f, divisionId: e.target.value }))}>
-                          <option value="">— Tidak Ditentukan —</option>
+                          <option value="">— Not Specified —</option>
                           {filteredUnits.map(u => <option key={u.id} value={u.id}>{u.code} — {u.name}</option>)}
                         </select>
                       </div>
                     </div>
                     <label className="admin-checkbox-row">
                       <input type="checkbox" checked={form.isActive} onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))} />
-                      Jabatan Aktif
+                      Active Position
                     </label>
                   </section>
                 </div>
                 <div className="modal__footer">
-                  <button className="btn btn--ghost" type="button" onClick={closeModal} disabled={saving}>Batal</button>
+                  <button className="btn btn--ghost" type="button" onClick={closeModal} disabled={saving}>Cancel</button>
                   <button className="profile-save-btn" type="submit" disabled={saving || !form.code.trim() || !form.name.trim()}>
-                    {saving ? 'Menyimpan…' : isEdit ? 'Simpan Perubahan' : 'Buat Jabatan'}
+                    {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Position'}
                   </button>
                 </div>
               </form>
@@ -521,9 +521,9 @@ export function AdminPositionsView() {
             <div className="modal__header">
               <div className="modal-headcopy">
                 <span className="modal-kicker">Role Assignment</span>
-                <h3 className="modal__title" id={assignDialogTitleId}>Assign Pemegang Jabatan</h3>
+                <h3 className="modal__title" id={assignDialogTitleId}>Assign Position Holder</h3>
                 <p className="modal-subtitle" id={assignDialogDescId}>
-                  Pilih pengguna yang paling tepat untuk menduduki jabatan ini atau kosongkan posisinya bila sedang transisi.
+                  Choose the most suitable user to hold this position, or leave it vacant during a transition.
                 </p>
               </div>
               <button className="modal__close" onClick={closeAssign} type="button"><svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg></button>
@@ -532,11 +532,11 @@ export function AdminPositionsView() {
             <div className="modal__body">
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Konteks Jabatan</h4>
-                  <p>Tinjau dulu posisi yang akan diisi, unitnya, dan siapa pemegang saat ini sebelum mengganti assignment.</p>
+                  <h4>Position Context</h4>
+                  <p>Review the position to be filled, its unit, and the current holder before changing the assignment.</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Jabatan</label>
+                  <label className="modal-label">Position</label>
                   <div className="admin-cell-inline admin-cell-inline--gap-md">
                     {assignTarget.code && <span className="code-badge">{assignTarget.code}</span>}
                     <span className="text-sm text-strong">{assignTarget.title}</span>
@@ -548,23 +548,23 @@ export function AdminPositionsView() {
                   )}
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Pemegang Saat Ini</label>
+                  <label className="modal-label">Current Holder</label>
                   {assignTarget.currentHolder
                     ? <span className="text-sm">{assignTarget.currentHolder.name}</span>
-                    : <span className="badge badge--yellow admin-badge--fit">Kosong</span>}
+                    : <span className="badge badge--yellow admin-badge--fit">Vacant</span>}
                 </div>
               </section>
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Pilih Pemegang Baru</h4>
-                  <p>Cari nama, NIK, atau email. Anda juga bisa membiarkan jabatan kosong untuk sementara selama masa transisi.</p>
+                  <h4>Select New Holder</h4>
+                  <p>Search by name, NIK, or email. You can also leave the position vacant during a transition period.</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Cari & Pilih Pengguna Baru</label>
+                  <label className="modal-label">Search & Select New User</label>
                   <input
                     className="form-input"
                     type="text"
-                    placeholder="Cari nama, NIK, atau email…"
+                    placeholder="Search name, NIK, or email…"
                     value={userSearch}
                     onChange={e => setUserSearch(e.target.value)}
                   />
@@ -592,31 +592,31 @@ export function AdminPositionsView() {
                 </div>
                 {assignTarget.currentHolder && !selectedUser && (
                   <div className="modal-helper-note">
-                    Kosongkan pilihan untuk mencabut pemegang jabatan saat ini tanpa langsung menetapkan pengganti.
+                    Clear the selection to remove the current holder without immediately assigning a replacement.
                   </div>
                 )}
               </section>
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Catatan Administratif</h4>
-                  <p>Simpan referensi SK atau alasan singkat supaya histori assignment mudah ditelusuri kembali.</p>
+                  <h4>Administrative Notes</h4>
+                  <p>Record the decree reference or a brief reason so the assignment history is easy to trace later.</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Nomor SK <span className="text-muted">(opsional)</span></label>
+                  <label className="modal-label">Decree Number <span className="text-muted">(optional)</span></label>
                   <input
                     className="form-input"
                     type="text"
-                    placeholder="misal: SK-001/2026"
+                    placeholder="e.g. SK-001/2026"
                     value={skNumber}
                     onChange={e => setSkNumber(e.target.value)}
                   />
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Alasan / Keterangan <span className="text-muted">(opsional)</span></label>
+                  <label className="modal-label">Reason / Notes <span className="text-muted">(optional)</span></label>
                   <textarea
                     className="form-input admin-textarea-vertical"
                     rows={2}
-                    placeholder="misal: Mutasi reguler, promosi, dll."
+                    placeholder="e.g. Regular transfer, promotion, etc."
                     value={mutationReason}
                     onChange={e => setMutationReason(e.target.value)}
                   />
@@ -628,13 +628,13 @@ export function AdminPositionsView() {
             </div>
 
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={closeAssign} disabled={saving}>Batal</button>
+              <button className="btn btn--ghost" onClick={closeAssign} disabled={saving}>Cancel</button>
               <button
                 className="btn btn--primary"
                 onClick={handleAssign}
                 disabled={saving || (!selectedUser && !assignTarget.currentHolder)}
               >
-                {saving ? 'Menyimpan…' : selectedUser ? 'Assign Pemegang' : 'Kosongkan Jabatan'}
+                {saving ? 'Saving…' : selectedUser ? 'Assign Holder' : 'Vacate Position'}
               </button>
             </div>
           </div>

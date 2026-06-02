@@ -386,7 +386,7 @@ class WorkspaceEndpointSmokeTest extends TestCase
         $this->postJson('/auth/change-password', [
             'currentPassword' => 'old-password-123',
             'newPassword' => 'new-password-123',
-        ])->assertOk()->assertJson(['message' => 'Password berhasil diperbarui.']);
+        ])->assertOk()->assertJson(['message' => 'Password updated successfully.']);
 
         $this->postJson('/focus-blocks', [
             'title' => 'Deep Work',

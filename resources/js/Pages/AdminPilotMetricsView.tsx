@@ -114,7 +114,7 @@ export default function AdminPilotMetricsView() {
             onClick={() => void refresh()}
             disabled={refreshing}
           >
-            {refreshing ? 'Memuat…' : '↻ Refresh'}
+            {refreshing ? 'Loading…' : '↻ Refresh'}
           </button>
         </div>
       </div>
@@ -127,9 +127,9 @@ export default function AdminPilotMetricsView() {
         {/* Summary banner */}
         <div className="pilot-banner">
           <div>
-            <span className="pilot-banner__label">Status pilot</span>
+            <span className="pilot-banner__label">Pilot status</span>
             <span className="pilot-banner__value">
-              {evalTotal === 0 ? 'Belum ada data' : `${passCount}/${evalTotal} kriteria terpenuhi`}
+              {evalTotal === 0 ? 'No data yet' : `${passCount}/${evalTotal} criteria met`}
             </span>
           </div>
           {metrics.directorate && (
@@ -138,7 +138,7 @@ export default function AdminPilotMetricsView() {
             </span>
           )}
           <span className="pilot-banner__users">
-            {metrics.totalUsers} user aktif · {metrics.totalEscalations} total eskalasi
+            {metrics.totalUsers} active users · {metrics.totalEscalations} total escalations
           </span>
         </div>
 
@@ -149,8 +149,8 @@ export default function AdminPilotMetricsView() {
             value={metrics.avgDispositionDays}
             target={criteria.avg_time_to_disposition_days}
             comparison={dispositionCmp}
-            suffix="hari"
-            helper="REQUESTED → COMMITTED/DECLINED. Lebih cepat = lebih baik."
+            suffix="days"
+            helper="REQUESTED → COMMITTED/DECLINED. Faster is better."
           />
           <MetricCard
             label="Hit Rate (CLEARED)"
@@ -158,7 +158,7 @@ export default function AdminPilotMetricsView() {
             target={criteria.min_hit_rate_aggregate_pct}
             comparison={hitRateCmp}
             suffix="%"
-            helper="% eskalasi yang berhasil dibersihkan dari total."
+            helper="% of escalations successfully cleared out of the total."
           />
           <MetricCard
             label="Active Users"
@@ -166,14 +166,14 @@ export default function AdminPilotMetricsView() {
             target={criteria.min_active_users_pct}
             comparison={activeUsersCmp}
             suffix="%"
-            helper="% DKM users yang pernah create atau disposition eskalasi."
+            helper="% of DKM users who have created or dispositioned an escalation."
           />
         </div>
 
         {/* Status breakdown */}
         {Object.keys(metrics.statusBreakdown).length > 0 && (
           <div className="pilot-section">
-            <h3 className="pilot-section__title">Distribusi Status Eskalasi</h3>
+            <h3 className="pilot-section__title">Escalation Status Distribution</h3>
             <div className="pilot-status-grid">
               {Object.entries(metrics.statusBreakdown).map(([status, count]) => (
                 <div key={status} className="pilot-status-item">
@@ -187,8 +187,8 @@ export default function AdminPilotMetricsView() {
 
         {criteria.evaluation_period_weeks && (
           <p className="pilot-footer-note">
-            Evaluation window: {criteria.evaluation_period_weeks} minggu sejak rilis pilot.
-            Kriteria sukses dikonfigurasi di <code>config/atlas-thresholds.php</code>.
+            Evaluation window: {criteria.evaluation_period_weeks} weeks since pilot release.
+            Success criteria are configured in <code>config/atlas-thresholds.php</code>.
           </p>
         )}
       </div>

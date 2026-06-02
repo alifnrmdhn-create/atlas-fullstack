@@ -21,19 +21,19 @@ export default function IndividuView() {
 
   return (
     <>
-      <Head title="KPI Individu" />
+      <Head title="KPI Individual" />
       <div className="ds perf view-performance">
         <div className="perf__inner ds-stagger">
           {/* ─── Header ──────────────────────────── */}
           <header className="perf__header">
             <div className="perf__header-left">
-              <h1 className="perf__title">KPI Individu</h1>
-              <span className="perf__subtitle">Sumber data dari APMS per {periode}</span>
+              <h1 className="perf__title">KPI Individual</h1>
+              <span className="perf__subtitle">Data sourced from APMS as of {periode}</span>
             </div>
             <div className="perf__header-actions">
               <Link href="/performance/me">
                 <Button variant="primary" size="sm" iconLeft={<IconUser />}>
-                  KPI Saya
+                  My KPI
                 </Button>
               </Link>
               <span className="perf__period-pill">
@@ -46,13 +46,13 @@ export default function IndividuView() {
           {/* ─── Leaderboard BOD-1/-2/-3 ─────────── */}
           <section className="perf__section">
             <div className="perf-section-head">
-              <span className="perf__section-label">Leaderboard KPI</span>
-              <span className="perf-section-meta">Top 3 per level · medal styling untuk #1–#3</span>
+              <span className="perf__section-label">KPI Leaderboard</span>
+              <span className="perf-section-meta">Top 3 per level · medal styling for #1–#3</span>
             </div>
             {Object.keys(topPerformers).length === 0 ? (
               <Card padding="lg" className="perf-empty">
-                <div className="perf-empty__title">Belum ada data leaderboard</div>
-                <div>KPI individual belum tersedia. Gunakan navigasi divisi di bawah untuk membuka detail karyawan.</div>
+                <div className="perf-empty__title">No leaderboard data yet</div>
+                <div>Individual KPIs are not available yet. Use the division navigation below to open employee details.</div>
               </Card>
             ) : (
               <LeaderboardSection
@@ -65,7 +65,7 @@ export default function IndividuView() {
 
           {/* ─── Org navigation ──────────────────── */}
           <section className="perf__section">
-            <span className="perf__section-label">Navigasi per Divisi</span>
+            <span className="perf__section-label">Navigation by Division</span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {orgNav.map(org => {
                 const isOpen = openOrg === org.kode || openOrg === null
@@ -112,7 +112,7 @@ export default function IndividuView() {
                         fontSize: 11,
                         color: 'var(--ds-text-tertiary)',
                       }}>
-                        {org.divisi.length} divisi
+                        {org.divisi.length} divisions
                       </span>
                     </button>
                     {isOpen && (

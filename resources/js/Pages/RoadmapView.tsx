@@ -121,7 +121,7 @@ export function RoadmapView() {
             <span>{total} <em>programs</em></span>
             <span>{inProgress} <em>active</em></span>
             <span>{avgProgress}% <em>avg</em></span>
-            {atRiskOrOff > 0 && <span className="roadmap-stat-alert">{atRiskOrOff} <em>perlu perhatian</em></span>}
+            {atRiskOrOff > 0 && <span className="roadmap-stat-alert">{atRiskOrOff} <em>need attention</em></span>}
           </div>
         </div>
       </div>
@@ -141,7 +141,7 @@ export function RoadmapView() {
       ) : (
         <div className="roadmap-body">
           {overviewStatus.loading ? (
-            <p className="text-sm text-muted roadmap-empty">Memuat roadmap…</p>
+            <p className="text-sm text-muted roadmap-empty">Loading roadmap…</p>
           ) : groups.length === 0 ? (
             <p className="text-sm text-muted roadmap-empty">No matching programs.</p>
           ) : (

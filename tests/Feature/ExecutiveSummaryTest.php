@@ -133,7 +133,7 @@ class ExecutiveSummaryTest extends TestCase
             ->get('/executive')
             ->assertInertia(fn ($page) => $page
                 ->has('perhatianKhusus', 1)
-                ->where('perhatianKhusus.0.status', 'Terlambat')
+                ->where('perhatianKhusus.0.status', 'Delayed')
                 ->where('perhatianKhusus.0.name', 'Red Prog')
                 ->where('perhatianKhusus.0.dukungan', 'Persetujuan Direksi')
             );

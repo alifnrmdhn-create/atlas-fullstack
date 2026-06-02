@@ -67,8 +67,8 @@ const PRIORITY_LABELS: Record<string, string> = {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  BACKLOG: 'Backlog', READY: 'Ready', IN_PROGRESS: 'Berjalan',
-  IN_REVIEW: 'Review', BLOCKED: 'Blocked', COMPLETED: 'Selesai',
+  BACKLOG: 'Backlog', READY: 'Ready', IN_PROGRESS: 'In Progress',
+  IN_REVIEW: 'Review', BLOCKED: 'Blocked', COMPLETED: 'Completed',
 }
 
 type StatusLogEntry = {
@@ -180,7 +180,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
       onRefresh?.()
       onClose()
     } catch (err) {
-      setDeleteErr(extractErrorMessage(err, 'Gagal menghapus task.'))
+      setDeleteErr(extractErrorMessage(err, 'Failed to delete task.'))
       setDeleting(false)
     }
   }
@@ -207,7 +207,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
       await loadDetail(true); onRefresh?.()
       setSaved(true); setTimeout(() => setSaved(false), 2200)
     } catch (err) {
-      setSaveErr(extractErrorMessage(err, 'Gagal menyimpan.'))
+      setSaveErr(extractErrorMessage(err, 'Failed to save.'))
     } finally { setSaving(false) }
   }
 
@@ -240,7 +240,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
   // Dipakai bareng Escape, backdrop click, dan tombol Tutup di header.
   const safeClose = () => {
     if (saving) return
-    if (isDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (isDirty && !window.confirm('Discard unsaved changes?')) return
     onClose()
   }
   useEscKey(() => {
@@ -263,14 +263,14 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
       )}
 
       <div
-        aria-label="Detail Task — Perencanaan"
+        aria-label="Task Detail — Planning"
         className={`tpp-panel${mode === 'overlay' && closing ? ' tpp-panel--closing' : ''}`}
         role="dialog"
       >
         {/* ── Header ───────────────────────────────────────────────────── */}
         <div className="panel-header">
           <div>
-            <p className="panel-header__title" style={{ margin: 0 }}>Perencanaan Task</p>
+            <p className="panel-header__title" style={{ margin: 0 }}>Task Planning</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             {detail && detail.workstream?.program?.approvalStatus === 'ACTIVE' && (
@@ -279,7 +279,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                 <svg fill="none" height="9" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 16 16" width="9"><path d="m6 3 5 5-5 5"/></svg>
               </button>
             )}
-            <button className="panel-close-btn tpp-close-btn" onClick={safeClose} title="Tutup (Esc)" type="button">
+            <button className="panel-close-btn tpp-close-btn" onClick={safeClose} title="Close (Esc)" type="button">
               <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" viewBox="0 0 14 14" width="11"><path d="M1 1l12 12M13 1L1 13"/></svg>
             </button>
           </div>
@@ -331,7 +331,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                 <h2
                   className={`tpp-title${roleAccess.isMonitoringOnly ? '' : ' is-editable'}`}
                   onClick={() => { if (!roleAccess.isMonitoringOnly) { setTitleEditing(true); setTimeout(() => titleRef.current?.focus(), 10) } }}
-                  title={roleAccess.isMonitoringOnly ? undefined : 'Klik untuk edit'}
+                  title={roleAccess.isMonitoringOnly ? undefined : 'Click to edit'}
                 >
                   {draft.title || detail.title}
                   {isDirty && draft.title !== detail.title && <span className="tpp-dirty-dot" />}
@@ -340,11 +340,11 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
 
               {/* ── Jadwal ───────────────────────────────────────────────── */}
               <div className="tpp-section">
-                <p className="tpp-section-label">Jadwal</p>
+                <p className="tpp-section-label">Schedule</p>
                 <div className="tpp-date-row">
                   {/* Mulai */}
                   <div className="tpp-date-field">
-                    <span className="tpp-date-field__label">Mulai</span>
+                    <span className="tpp-date-field__label">Start</span>
                     {startEditing && !roleAccess.isMonitoringOnly ? (
                       <input
                         autoFocus
@@ -364,7 +364,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                       >
                         {draft.startDate
                           ? new Date(draft.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-                          : '+ Set tanggal mulai'}
+                          : '+ Set start date'}
                         {isDirty && draft.startDate !== (detail.startDate?.slice(0, 10) ?? '') && <span className="tpp-dirty-dot" />}
                       </button>
                     )}
@@ -374,7 +374,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
 
                   {/* Selesai */}
                   <div className="tpp-date-field">
-                    <span className="tpp-date-field__label">Selesai</span>
+                    <span className="tpp-date-field__label">End</span>
                     {tenggatEditing && !roleAccess.isMonitoringOnly ? (
                       <input
                         autoFocus
@@ -395,7 +395,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                       >
                         {draft.targetCompletion
                           ? new Date(draft.targetCompletion).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-                          : '+ Set target selesai'}
+                          : '+ Set target end'}
                         {isDirty && draft.targetCompletion !== (detail.targetCompletion?.slice(0, 10) ?? '') && <span className="tpp-dirty-dot" />}
                       </button>
                     )}
@@ -407,14 +407,14 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                   <div className="tpp-plan-row">
                     <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="10"><rect height="10" rx="1.5" width="10" x="2" y="2"/><path d="M2 5.5h10M5 2v3.5M9 2v3.5"/></svg>
                     <span className="tpp-plan-row__label">{planSummary}</span>
-                    <span className="tpp-plan-row__hint">· Jadwal Mingguan</span>
+                    <span className="tpp-plan-row__hint">· Weekly Schedule</span>
                   </div>
                 )}
               </div>
 
               {/* ── Penanggung Jawab — sync dengan task row (picPersonIds[0]) ── */}
               <div className="tpp-section">
-                <p className="tpp-section-label">Penanggung Jawab</p>
+                <p className="tpp-section-label">Person in Charge</p>
                 <div className="wid-team-row__chips" style={{ paddingTop: 2 }}>
                   {(() => {
                     const currentId = (detail.picPersonIds ?? [])[0] ?? null
@@ -424,12 +424,12 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                       <span className="wid-pic-chip">
                         {label}
                         {!roleAccess.isMonitoringOnly && (
-                          <button aria-label={`Hapus ${label}`} className="wid-pic-chip__remove"
+                          <button aria-label={`Remove ${label}`} className="wid-pic-chip__remove"
                             disabled={personSaving} onClick={() => savePerson(null)} type="button">×</button>
                         )}
                       </span>
                     ) : roleAccess.isMonitoringOnly ? (
-                      <span className="tpp-empty-val">Belum ditugaskan</span>
+                      <span className="tpp-empty-val">Not assigned</span>
                     ) : null
                   })()}
                   {!roleAccess.isMonitoringOnly && (
@@ -438,7 +438,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                         className="wid-pic-search"
                         disabled={personSaving}
                         onChange={e => setPersonSearch(e.target.value)}
-                        placeholder={(detail.picPersonIds ?? []).length > 0 ? 'Ganti…' : '+ Tugaskan…'}
+                        placeholder={(detail.picPersonIds ?? []).length > 0 ? 'Change…' : '+ Assign…'}
                         value={personSearch}
                       />
                       {personSearch.length > 0 && (() => {
@@ -465,7 +465,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
 
               {/* ── Deskripsi ─────────────────────────────────────────────── */}
               <div className="tpp-section">
-                <p className="tpp-section-label">Deskripsi</p>
+                <p className="tpp-section-label">Description</p>
                 {descEditing ? (
                   <div className="tpp-desc-edit">
                     <textarea
@@ -474,12 +474,12 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                       onBlur={() => setDescEditing(false)}
                       onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
                       onKeyDown={e => { if (e.key === 'Escape') setDescEditing(false) }}
-                      placeholder="Konteks, referensi, atau kriteria selesai…"
+                      placeholder="Context, references, or completion criteria…"
                       ref={descRef}
                       rows={3}
                       value={draft.description}
                     />
-                    <p className="tpp-desc-hint">Klik <strong>Simpan</strong> di bawah untuk menyimpan</p>
+                    <p className="tpp-desc-hint">Click <strong>Save</strong> below to save</p>
                   </div>
                 ) : draft.description ? (
                   <p
@@ -493,7 +493,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                   <button className="tpp-add-placeholder"
                     onClick={() => { setDescEditing(true); setTimeout(() => descRef.current?.focus(), 10) }}
                     type="button">
-                    + Tambah deskripsi
+                    + Add description
                   </button>
                 ) : (
                   <span className="tpp-empty-val">—</span>
@@ -503,7 +503,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
               {/* ── Riwayat Status ────────────────────────────────────────── */}
               {statusLog.length > 0 && (
                 <div className="tpp-section">
-                  <p className="tpp-section-label">Riwayat Status</p>
+                  <p className="tpp-section-label">Status History</p>
                   <ul className="tpp-status-log">
                     {statusLog.map((log) => {
                       const fromLabel = log.fromStatus
@@ -518,7 +518,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                               <strong>{toLabel}</strong>
                             </span>
                             <span className="tpp-status-log__meta">
-                              {log.byUserName ?? 'Sistem'} · {formatLogTimestamp(log.createdAt)}
+                              {log.byUserName ?? 'System'} · {formatLogTimestamp(log.createdAt)}
                             </span>
                           </div>
                           {log.note && <p className="tpp-status-log__note">{log.note}</p>}
@@ -537,7 +537,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                 {confirmDelete ? (
                   <>
                     <span className="tpp-footer__delete-prompt">
-                      {deleteErr ? deleteErr : 'Hapus task ini?'}
+                      {deleteErr ? deleteErr : 'Delete this task?'}
                     </span>
                     <button
                       className="tpp-footer__delete-cancel"
@@ -545,7 +545,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                       onClick={() => { setConfirmDelete(false); setDeleteErr(null) }}
                       type="button"
                     >
-                      Batal
+                      Cancel
                     </button>
                     <button
                       className="tpp-footer__delete-confirm"
@@ -553,17 +553,17 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                       onClick={() => void deleteTask()}
                       type="button"
                     >
-                      {deleting ? '…' : 'Hapus'}
+                      {deleting ? '…' : 'Delete'}
                     </button>
                   </>
                 ) : (
                   <>
                     <button
-                      aria-label="Hapus task"
+                      aria-label="Delete task"
                       className="tpp-footer__delete-btn"
                       disabled={saving}
                       onClick={() => setConfirmDelete(true)}
-                      title="Hapus task"
+                      title="Delete task"
                       type="button"
                     >
                       <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="12"><path d="M2 3.5h10M5.5 3.5V2.5c0-.3.2-.5.5-.5h2c.3 0 .5.2.5.5v1M3.5 3.5l.5 8c0 .3.2.5.5.5h5c.3 0 .5-.2.5-.5l.5-8"/></svg>
@@ -571,12 +571,12 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                     {saved ? (
                       <span className="tpp-footer__saved">
                         <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" viewBox="0 0 14 14" width="11"><path d="m2 7 4 4 6-7"/></svg>
-                        Tersimpan
+                        Saved
                       </span>
                     ) : saveErr ? (
                       <span className="tpp-footer__err">{saveErr}</span>
                     ) : (
-                      <span className="tpp-footer__hint">{isDirty ? 'Ada perubahan' : ''}</span>
+                      <span className="tpp-footer__hint">{isDirty ? 'Unsaved changes' : ''}</span>
                     )}
                     <button
                       className={`tpp-footer__save${isDirty ? ' tpp-footer__save--active' : ''}`}
@@ -584,7 +584,7 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                       onClick={() => void save()}
                       type="button"
                     >
-                      {saving ? '…' : 'Simpan'}
+                      {saving ? '…' : 'Save'}
                     </button>
                   </>
                 )}

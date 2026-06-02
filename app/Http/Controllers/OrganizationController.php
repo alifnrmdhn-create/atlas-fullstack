@@ -157,7 +157,7 @@ class OrganizationController extends Controller
         // Programs not assigned to any known unit — grouped under "Unassigned"
         $unassigned = $classified->whereNotIn('ownerUnitId', $unitIds);
         if ($unassigned->isNotEmpty()) {
-            $byDivisi->push([...$this->buildCounts($unassigned), 'unit' => ['id' => null, 'name' => 'Belum Ditetapkan', 'code' => '-']]);
+            $byDivisi->push([...$this->buildCounts($unassigned), 'unit' => ['id' => null, 'name' => 'Unassigned', 'code' => '-']]);
         }
 
         // Overall summary
@@ -267,7 +267,7 @@ class OrganizationController extends Controller
                 'id'     => $p->id,
                 'code'   => $p->code,
                 'name'   => $p->name,
-                'reason' => 'Ada blocker kritis yang perlu eskalasi',
+                'reason' => 'Critical blockers need escalation',
                 'tag'    => 'blocker',
                 'divisi' => $units->firstWhere('id', $p->ownerUnitId)?->code ?? '-',
             ]);
@@ -917,7 +917,7 @@ class OrganizationController extends Controller
             ->groupBy('createdBy')
             ->map(fn ($group, $assignerId) => [
                 'id'    => (int) $assignerId,
-                'name'  => $assignerMap[(int) $assignerId]['name'] ?? 'Tidak diketahui',
+                'name'  => $assignerMap[(int) $assignerId]['name'] ?? 'Unknown',
                 'count' => $group->count(),
             ])
             ->sortByDesc('count')
@@ -940,9 +940,9 @@ class OrganizationController extends Controller
     private function toneLabel(string $tone): string
     {
         return match ($tone) {
-            'selesai'   => 'Selesai',
-            'overdue'   => 'Lewat Tenggat',
-            'terlambat' => 'Terlambat',
+            'selesai'   => 'Completed',
+            'overdue'   => 'Overdue',
+            'terlambat' => 'Delayed',
             'on_track'  => 'On Track',
             default     => 'At Risk',
         };
@@ -1027,7 +1027,7 @@ class OrganizationController extends Controller
             return response()->json(['data' => $dir->fresh()]);
         }
 
-        return back()->with('success', 'Direktorat diperbarui.');
+        return back()->with('success', 'Directorate updated.');
     }
 
     public function destroyDirectorate(Request $request, int $id): JsonResponse|RedirectResponse
@@ -1039,7 +1039,7 @@ class OrganizationController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('success', 'Direktorat dihapus.');
+        return back()->with('success', 'Directorate deleted.');
     }
 
     // ── Units ─────────────────────────────────────────────────────────────────
@@ -1090,7 +1090,7 @@ class OrganizationController extends Controller
             return response()->json(['data' => $unit->fresh()]);
         }
 
-        return back()->with('success', 'Unit diperbarui.');
+        return back()->with('success', 'Unit updated.');
     }
 
     public function destroyUnit(Request $request, int $id): JsonResponse|RedirectResponse
@@ -1102,7 +1102,7 @@ class OrganizationController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('success', 'Unit dihapus.');
+        return back()->with('success', 'Unit deleted.');
     }
 
     // ── Positions ─────────────────────────────────────────────────────────────
@@ -1168,7 +1168,7 @@ class OrganizationController extends Controller
             return response()->json(['data' => $position->fresh()]);
         }
 
-        return back()->with('success', 'Jabatan diperbarui.');
+        return back()->with('success', 'Position updated.');
     }
 
     public function destroyPosition(Request $request, int $id): JsonResponse|RedirectResponse
@@ -1182,7 +1182,7 @@ class OrganizationController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('success', 'Jabatan dihapus.');
+        return back()->with('success', 'Position deleted.');
     }
 
     public function assignPosition(Request $request, int $id): JsonResponse|RedirectResponse

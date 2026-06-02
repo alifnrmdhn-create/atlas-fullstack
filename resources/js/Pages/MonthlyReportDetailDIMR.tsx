@@ -94,7 +94,7 @@ function RiskHeatmap({ snapshots }: { snapshots: RiskSnapshot[] }) {
 
   return (
     <div className="dimr-heatmap">
-      <div className="dimr-heatmap__y-label">Probabilitas ↑</div>
+      <div className="dimr-heatmap__y-label">Probability ↑</div>
       <div className="dimr-heatmap__main">
         <div className="dimr-heatmap__grid-wrap">
           <div className="dimr-heatmap__y-axis">
@@ -127,7 +127,7 @@ function RiskHeatmap({ snapshots }: { snapshots: RiskSnapshot[] }) {
             <div className="dimr-heatmap__x-axis">
               {D_COLS.map(d => <div key={d} className="dimr-heatmap__x-tick">{d}</div>)}
             </div>
-            <div className="dimr-heatmap__x-label">Dampak →</div>
+            <div className="dimr-heatmap__x-label">Impact →</div>
           </div>
         </div>
         <div className="dimr-heatmap__legend">
@@ -170,7 +170,7 @@ function RasPanel({ strategy }: { strategy: RiskStrategy }) {
       <div className="dimr-ras__gauge-wrap">
         <div className="dimr-ras__gauge-labels">
           <span>0</span>
-          <span>Eksposur: {(exposurePct).toFixed(0)}% dari Kapasitas</span>
+          <span>Exposure: {(exposurePct).toFixed(0)}% of Capacity</span>
         </div>
         <div className="dimr-ras__gauge-track">
           <div
@@ -184,7 +184,7 @@ function RasPanel({ strategy }: { strategy: RiskStrategy }) {
           />
           <div
             className="dimr-ras__gauge-marker tolerance"
-            data-label="Toleransi"
+            data-label="Tolerance"
             style={{ left: `${toBarPct(tolerance)}%` }}
           />
         </div>
@@ -192,10 +192,10 @@ function RasPanel({ strategy }: { strategy: RiskStrategy }) {
 
       <div className="dimr-ras__nums">
         {[
-          { label: 'Kapasitas',  val: fmtMoney(strategy.riskCapacity) },
+          { label: 'Capacity',   val: fmtMoney(strategy.riskCapacity) },
           { label: 'Appetite',   val: fmtMoney(strategy.riskAppetite) },
-          { label: 'Toleransi',  val: fmtMoney(strategy.riskTolerance) },
-          { label: 'Eksposur',   val: fmtMoney(strategy.totalExposure) },
+          { label: 'Tolerance',  val: fmtMoney(strategy.riskTolerance) },
+          { label: 'Exposure',   val: fmtMoney(strategy.totalExposure) },
         ].map(({ label, val }) => (
           <div key={label} className="dimr-ras__num">
             <div className="dimr-ras__num-label">{label}</div>
@@ -324,16 +324,16 @@ function MitigationCard({ snapshot }: { snapshot: RiskSnapshot }) {
           </div>
           {m.isOverdue && (
             <span className="dimr-mitig-card__overdue">
-              ⚠ Overdue{m.overdueDays ? ` ${m.overdueDays}h` : ''}
+              ⚠ Overdue{m.overdueDays ? ` ${m.overdueDays}d` : ''}
             </span>
           )}
         </div>
 
         <div className="dimr-mitig-card__progress">
           <div className="dimr-mitig-card__prog-row">
-            <span>Aksi Mitigasi</span>
+            <span>Mitigation Actions</span>
             <span className="dimr-mitig-card__prog-count">
-              {m.completedActions}/{m.plannedActions} selesai &middot; {pct}%
+              {m.completedActions}/{m.plannedActions} completed &middot; {pct}%
             </span>
           </div>
           <div className="dimr-mitig-card__prog-track">
@@ -346,18 +346,18 @@ function MitigationCard({ snapshot }: { snapshot: RiskSnapshot }) {
         {m.budgetAllocated && (
           <div className="dimr-mitig-card__budget">
             <div className="dimr-mitig-card__budget-item">
-              <span className="dimr-mitig-card__budget-label">Anggaran</span>
+              <span className="dimr-mitig-card__budget-label">Budget</span>
               <span className="dimr-mitig-card__budget-val">{fmtMoney(m.budgetAllocated)}</span>
             </div>
             {m.budgetRealized && (
               <div className="dimr-mitig-card__budget-item">
-                <span className="dimr-mitig-card__budget-label">Realisasi</span>
+                <span className="dimr-mitig-card__budget-label">Realized</span>
                 <span className="dimr-mitig-card__budget-val">{fmtMoney(m.budgetRealized)}</span>
               </div>
             )}
             {absRate !== null && (
               <div className="dimr-mitig-card__budget-item">
-                <span className="dimr-mitig-card__budget-label">Serapan</span>
+                <span className="dimr-mitig-card__budget-label">Absorption</span>
                 <span className="dimr-mitig-card__budget-val">{absRate}%</span>
               </div>
             )}
@@ -377,7 +377,7 @@ function LossEventsTable({ events }: { events: RiskLossEvent[] }) {
     return (
       <div className="dimr-empty">
         <span className="dimr-empty__icon">✓</span>
-        <span className="dimr-empty__text">Tidak ada loss event pada periode ini.</span>
+        <span className="dimr-empty__text">No loss events in this period.</span>
       </div>
     )
   }
@@ -389,9 +389,9 @@ function LossEventsTable({ events }: { events: RiskLossEvent[] }) {
     <div>
       <div className="dimr-loss__summary-row">
         {[
-          { label: 'Total Dampak',    val: fmtMoney(String(totalImpact)),               cls: 'red'   },
-          { label: 'Total Dipulihkan', val: fmtMoney(String(totalRecovered)),            cls: 'green' },
-          { label: 'Net Kerugian',    val: fmtMoney(String(totalImpact - totalRecovered)), cls: ''    },
+          { label: 'Total Impact',     val: fmtMoney(String(totalImpact)),               cls: 'red'   },
+          { label: 'Total Recovered',  val: fmtMoney(String(totalRecovered)),            cls: 'green' },
+          { label: 'Net Loss',         val: fmtMoney(String(totalImpact - totalRecovered)), cls: ''    },
         ].map(({ label, val, cls }) => (
           <div key={label} className="dimr-loss__summary-card">
             <div className="dimr-loss__summary-label">{label}</div>
@@ -404,10 +404,10 @@ function LossEventsTable({ events }: { events: RiskLossEvent[] }) {
         <table className="dimr-loss__table">
           <thead>
             <tr>
-              <th>Tanggal</th>
-              <th>Kategori</th>
-              <th>Deskripsi</th>
-              <th>Dampak</th>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Impact</th>
               <th>Status</th>
               <th>PIC</th>
             </tr>
@@ -443,15 +443,15 @@ function LossEventsTable({ events }: { events: RiskLossEvent[] }) {
 
 function GovernanceScorecard({ gov }: { gov: RiskGovernance }) {
   const items = [
-    { label: 'Cakupan Risk Register',    val: fmtPct(gov.riskRegisterCoverage),   ok: Number(gov.riskRegisterCoverage) >= 0.9 },
-    { label: 'Risiko Tanpa PIC',         val: String(gov.risksWithoutOwner),       ok: gov.risksWithoutOwner === 0 },
-    { label: 'Tingkat Pelaporan',        val: fmtPct(gov.reportSubmissionRate),    ok: Number(gov.reportSubmissionRate) >= 0.9 },
-    { label: 'Kelengkapan Organ',        val: fmtPct(gov.organCompletenessRate),   ok: Number(gov.organCompletenessRate) >= 0.9 },
-    { label: 'Realisasi Program Kerja',  val: fmtPct(gov.workProgramRealization),  ok: Number(gov.workProgramRealization) >= 0.8 },
-    { label: 'Tindak Lanjut Audit',      val: fmtPct(gov.auditFollowUpRate),       ok: Number(gov.auditFollowUpRate) >= 0.8 },
-    { label: 'Pemutakhiran ERIN',        val: fmtPct(gov.erinUpdateRate),          ok: Number(gov.erinUpdateRate) >= 0.9 },
-    { label: 'Temuan Internal Control',  val: String(gov.internalControlFindings), ok: gov.internalControlFindings < 5 },
-    { label: 'Temuan Kritis Terbuka',    val: String(gov.criticalFindingsOpen),    ok: gov.criticalFindingsOpen === 0 },
+    { label: 'Risk Register Coverage',   val: fmtPct(gov.riskRegisterCoverage),   ok: Number(gov.riskRegisterCoverage) >= 0.9 },
+    { label: 'Risks Without PIC',        val: String(gov.risksWithoutOwner),       ok: gov.risksWithoutOwner === 0 },
+    { label: 'Reporting Rate',           val: fmtPct(gov.reportSubmissionRate),    ok: Number(gov.reportSubmissionRate) >= 0.9 },
+    { label: 'Organ Completeness',       val: fmtPct(gov.organCompletenessRate),   ok: Number(gov.organCompletenessRate) >= 0.9 },
+    { label: 'Work Program Realization', val: fmtPct(gov.workProgramRealization),  ok: Number(gov.workProgramRealization) >= 0.8 },
+    { label: 'Audit Follow-Up',          val: fmtPct(gov.auditFollowUpRate),       ok: Number(gov.auditFollowUpRate) >= 0.8 },
+    { label: 'ERIN Update Rate',         val: fmtPct(gov.erinUpdateRate),          ok: Number(gov.erinUpdateRate) >= 0.9 },
+    { label: 'Internal Control Findings', val: String(gov.internalControlFindings), ok: gov.internalControlFindings < 5 },
+    { label: 'Open Critical Findings',   val: String(gov.criticalFindingsOpen),    ok: gov.criticalFindingsOpen === 0 },
   ]
 
   return (
@@ -472,12 +472,12 @@ type Section = 'top-risks' | 'exposure' | 'kri' | 'mitigasi' | 'led' | 'governan
 
 const SECTIONS: { id: Section; label: string }[] = [
   { id: 'top-risks',  label: 'Top Risks' },
-  { id: 'exposure',   label: 'Eksposur & RAS' },
+  { id: 'exposure',   label: 'Exposure & RAS' },
   { id: 'kri',        label: 'KRI' },
-  { id: 'mitigasi',   label: 'Mitigasi' },
+  { id: 'mitigasi',   label: 'Mitigation' },
   { id: 'led',        label: 'Loss Events' },
   { id: 'governance', label: 'Governance' },
-  { id: 'narasi',     label: 'Narasi' },
+  { id: 'narasi',     label: 'Narrative' },
 ]
 
 interface Props {
@@ -563,7 +563,7 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
         </button>
         <div className="mrd-topbar__divider" />
         <div className="mrd-topbar__title">
-          <span className="mrd-topbar__period">Laporan Risiko — {MON_FULL[report.month - 1]} {report.year}</span>
+          <span className="mrd-topbar__period">Risk Report — {MON_FULL[report.month - 1]} {report.year}</span>
           <span className="mrd-topbar__unit">{report.unit.name}</span>
         </div>
         <span className={`mrd-topbar__badge ${st.cls}`}>{st.label}</span>
@@ -583,12 +583,12 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
                 className="mrd-btn primary"
                 disabled={busy}
                 onClick={async () => {
-                  if (!confirm('Submit laporan ini untuk direview?')) return
+                  if (!confirm('Submit this report for review?')) return
                   setBusy(true)
                   try {
                     await api.post(`/risk-reports/${report.id}/submit`, {})
                     onRefresh()
-                  } catch (e) { alert(e instanceof Error ? e.message : 'Gagal submit') }
+                  } catch (e) { alert(e instanceof Error ? e.message : 'Failed to submit') }
                   finally { setBusy(false) }
                 }}
               >
@@ -601,19 +601,19 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
               className="mrd-btn green"
               disabled={busy}
               onClick={async () => {
-                if (!confirm('Setujui laporan risiko ini?')) return
+                if (!confirm('Approve this risk report?')) return
                 setBusy(true)
                 try {
                   await api.post(`/risk-reports/${report.id}/approve`, { action: 'APPROVED' })
                   onRefresh()
-                } catch (e) { alert(e instanceof Error ? e.message : 'Gagal approve') }
+                } catch (e) { alert(e instanceof Error ? e.message : 'Failed to approve') }
                 finally { setBusy(false) }
               }}
             >
               {busy ? '…' : '✓ Approve'}
             </button>
           )}
-          <button className="mrd-btn" onClick={() => window.print()}>⎙ Cetak</button>
+          <button className="mrd-btn" onClick={() => window.print()}>⎙ Print</button>
         </div>
       </div>
 
@@ -623,7 +623,7 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
           <div className="dimr-header__left">
             {report.submittedBy && (
               <span className="dimr-header__meta-item">
-                Diajukan oleh <strong>{report.submittedBy.name}</strong>
+                Submitted by <strong>{report.submittedBy.name}</strong>
                 {report.submittedAt && (
                   <> · {new Date(report.submittedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</>
                 )}
@@ -631,7 +631,7 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
             )}
             {report.approvedAt && (
               <span className="dimr-header__meta-green">
-                · Disetujui {new Date(report.approvedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                · Approved {new Date(report.approvedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
               </span>
             )}
           </div>
@@ -639,7 +639,7 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
           <div className="dimr-header__right">
             {report.compositeRating && (
               <div className="dimr-header__stat">
-                <div className="dimr-header__stat-label">Peringkat Komposit</div>
+                <div className="dimr-header__stat-label">Composite Rating</div>
                 <div className={`dimr-header__stat-val ${compositeRatingClass(report.compositeRating)}`}>{report.compositeRating}</div>
               </div>
             )}
@@ -669,8 +669,8 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
             <div className="dimr-strip__num">
               {highCritCount}
             </div>
-            <div className="dimr-strip__label">Risiko High / Critical</div>
-            <div className="dimr-strip__sub">{openCount} risiko aktif total</div>
+            <div className="dimr-strip__label">High / Critical Risks</div>
+            <div className="dimr-strip__sub">{openCount} active risks total</div>
           </div>
         </div>
 
@@ -685,7 +685,7 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
               {kriBreachCount}
             </div>
             <div className="dimr-strip__label">KRI Breach</div>
-            <div className="dimr-strip__sub">Warning + Critical dari {allKri.length} KRI</div>
+            <div className="dimr-strip__sub">Warning + Critical of {allKri.length} KRI</div>
           </div>
         </div>
 
@@ -700,9 +700,9 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
               <div className="dimr-strip__num">
                 {exposurePct.toFixed(1)}%
               </div>
-              <div className="dimr-strip__label">Eksposur vs Appetite</div>
+              <div className="dimr-strip__label">Exposure vs Appetite</div>
               <div className="dimr-strip__sub">
-                {report.strategy?.rasCompliant ? 'Dalam batas risk appetite' : 'Melampaui risk appetite'}
+                {report.strategy?.rasCompliant ? 'Within risk appetite' : 'Exceeds risk appetite'}
               </div>
             </div>
           </div>
@@ -715,8 +715,8 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
                 </svg>
               </div>
               <div className="dimr-strip__num">—</div>
-              <div className="dimr-strip__label">Eksposur vs Appetite</div>
-              <div className="dimr-strip__sub">Data RAS belum tersedia</div>
+              <div className="dimr-strip__label">Exposure vs Appetite</div>
+              <div className="dimr-strip__sub">RAS data not available</div>
             </div>
           </div>
         )}
@@ -733,7 +733,7 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
             </div>
             <div className="dimr-strip__label">Loss Events</div>
             <div className="dimr-strip__sub">
-              {lossCount > 0 ? `Total dampak ${fmtMoney(String(totalLoss))}` : 'Nihil pada periode ini'}
+              {lossCount > 0 ? `Total impact ${fmtMoney(String(totalLoss))}` : 'None in this period'}
             </div>
           </div>
         </div>
@@ -762,8 +762,8 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
         {/* ─ Section 1: Top Risks ─ */}
         <div id="top-risks" className="dimr-section">
           <div className="dimr-section-header">
-            <h2 className="dimr-section-header__title">Top Risks Perusahaan</h2>
-            <span className="dimr-section-header__count">{snapshots.length} risiko</span>
+            <h2 className="dimr-section-header__title">Top Company Risks</h2>
+            <span className="dimr-section-header__count">{snapshots.length} risks</span>
           </div>
           <div className="dimr-risk-list">
             {snapshots.map(snap => {
@@ -797,7 +797,7 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
                     <div className="dimr-risk-card__pd">K{snap.probabilitas}×D{snap.dampak}</div>
                     {cm && snap.prevMonthScore != null && (
                       <div className="dimr-risk-card__change" data-change={scoreChangeTone(snap.scoreChange)}>
-                        {cm.icon} dari {snap.prevMonthScore}
+                        {cm.icon} from {snap.prevMonthScore}
                       </div>
                     )}
                   </div>
@@ -826,7 +826,7 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
               <div className="dimr-panel">
                 <div className="dimr-panel__title">Risk Appetite Statement</div>
                 <div className="dimr-empty">
-                  <span className="dimr-empty__text">Data RAS belum tersedia.</span>
+                  <span className="dimr-empty__text">RAS data not available.</span>
                 </div>
               </div>
             )}
@@ -875,7 +875,7 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
         {/* ─ Section 4: Mitigasi ─ */}
         <div id="mitigasi" className="dimr-section">
           <div className="dimr-section-header">
-            <h2 className="dimr-section-header__title">Perlakuan Risiko &amp; Mitigasi</h2>
+            <h2 className="dimr-section-header__title">Risk Treatment &amp; Mitigation</h2>
           </div>
           <div className="dimr-mitig-list">
             {snapshots.map(snap => <MitigationCard key={snap.id} snapshot={snap} />)}
@@ -886,7 +886,7 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
         <div id="led" className="dimr-section">
           <div className="dimr-section-header">
             <h2 className="dimr-section-header__title">Loss Event Database</h2>
-            <span className="dimr-section-header__count">{lossEvents.length} event</span>
+            <span className="dimr-section-header__count">{lossEvents.length} events</span>
           </div>
           <LossEventsTable events={lossEvents} />
         </div>
@@ -898,17 +898,17 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
           </div>
           {report.governance
             ? <GovernanceScorecard gov={report.governance} />
-            : <div className="dimr-empty"><span className="dimr-empty__text">Data governance belum tersedia.</span></div>
+            : <div className="dimr-empty"><span className="dimr-empty__text">Governance data not available.</span></div>
           }
         </div>
 
         {/* ─ Section 7: Narasi ─ */}
         <div id="narasi" className="dimr-section">
           <div className="dimr-section-header">
-            <h2 className="dimr-section-header__title">Narasi Eksekutif</h2>
+            <h2 className="dimr-section-header__title">Executive Narrative</h2>
           </div>
           {narratives.length === 0
-            ? <div className="dimr-empty"><span className="dimr-empty__text">Belum ada narasi.</span></div>
+            ? <div className="dimr-empty"><span className="dimr-empty__text">No narrative yet.</span></div>
             : (
               <div className="dimr-narratives">
                 {narratives.map(n => (
@@ -971,7 +971,7 @@ function RatingModal({ report, onClose, onSaved }: {
     if (saving) return
     const dirty = compositeRating !== (report.compositeRating ?? '') ||
       rmiScore !== (report.rmiScore ? String(report.rmiScore) : '')
-    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (dirty && !window.confirm('Discard unsaved changes?')) return
     onClose()
   }, true)
 
@@ -983,7 +983,7 @@ function RatingModal({ report, onClose, onSaved }: {
         rmiScore: rmiScore ? Number(rmiScore) : undefined,
       })
       onSaved()
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Gagal menyimpan') }
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed to save') }
     finally { setSaving(false) }
   }
 
@@ -994,13 +994,13 @@ function RatingModal({ report, onClose, onSaved }: {
     <div className="dimr-modal-backdrop" onClick={onClose}>
       <div className="dimr-modal" onClick={e => e.stopPropagation()}>
         <div className="dimr-modal__header">
-          <span className="dimr-modal__title">Edit Rating Komposit</span>
+          <span className="dimr-modal__title">Edit Composite Rating</span>
           <button className="dimr-modal__close" onClick={onClose}>✕</button>
         </div>
         <div className="dimr-modal__body">
-          <label className="dimr-form-label">Peringkat Komposit</label>
+          <label className="dimr-form-label">Composite Rating</label>
           <select className="dimr-form-select" value={compositeRating} onChange={e => setCompositeRating(e.target.value)}>
-            <option value="">— Pilih —</option>
+            <option value="">— Select —</option>
             {COMPOSITE_OPTS.map(o => (
               <option key={o} value={o}>{COMPOSITE_LABELS[o]}</option>
             ))}
@@ -1012,14 +1012,14 @@ function RatingModal({ report, onClose, onSaved }: {
             type="number" min="0" max="5" step="0.1"
             value={rmiScore}
             onChange={e => setRmiScore(e.target.value)}
-            placeholder="mis. 3.5"
+            placeholder="e.g. 3.5"
           />
           {err && <p className="dimr-form-error">{err}</p>}
         </div>
         <div className="dimr-modal__footer">
-          <button className="mrd-btn" onClick={onClose} disabled={saving}>Batal</button>
+          <button className="mrd-btn" onClick={onClose} disabled={saving}>Cancel</button>
           <button className="mrd-btn primary" onClick={save} disabled={saving}>
-            {saving ? '…' : 'Simpan'}
+            {saving ? '…' : 'Save'}
           </button>
         </div>
       </div>
@@ -1081,7 +1081,7 @@ function KriEditModal({ report, onClose, onSaved }: {
   useEscKey(() => {
     if (saving) return
     const dirty = initialDraftsRef.current !== '' && JSON.stringify(drafts) !== initialDraftsRef.current
-    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (dirty && !window.confirm('Discard unsaved changes?')) return
     onClose()
   }, true)
 
@@ -1130,7 +1130,7 @@ function KriEditModal({ report, onClose, onSaved }: {
       }))
       await api.put(`/risk-reports/${report.id}`, { riskSnapshots })
       onSaved()
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Gagal menyimpan') }
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed to save') }
     finally { setSaving(false) }
   }
 
@@ -1139,12 +1139,12 @@ function KriEditModal({ report, onClose, onSaved }: {
     <div className="dimr-modal-backdrop" onClick={onClose}>
       <div className="dimr-modal dimr-modal--wide" onClick={e => e.stopPropagation()}>
         <div className="dimr-modal__header">
-          <span className="dimr-modal__title">Edit KRI Aktual</span>
+          <span className="dimr-modal__title">Edit KRI Actuals</span>
           <button className="dimr-modal__close" onClick={onClose}>✕</button>
         </div>
         <div className="dimr-modal__body dimr-modal__body--scroll">
           {drafts.length === 0 && (
-            <p className="dimr-form-hint">Belum ada risk snapshot. Data risiko ditetapkan via template import.</p>
+            <p className="dimr-form-hint">No risk snapshots yet. Risk data is set via the import template.</p>
           )}
           {drafts.map((d, si) => (
             <div key={d.riskCode} className="dimr-kri-edit-group">
@@ -1154,11 +1154,11 @@ function KriEditModal({ report, onClose, onSaved }: {
                 <span className="dimr-kri-edit-group__matrix">K{d.probabilitas}×D{d.dampak}</span>
               </div>
               {d.kris.length === 0 ? (
-                <p className="dimr-form-hint" style={{ margin: '6px 0' }}>Tidak ada KRI untuk risiko ini.</p>
+                <p className="dimr-form-hint" style={{ margin: '6px 0' }}>No KRI for this risk.</p>
               ) : (
                 <div className="dimr-kri-edit-table">
                   <div className="dimr-kri-edit-table__head">
-                    <span>Kode</span><span>Nama KRI</span><span>Aktual</span>
+                    <span>Code</span><span>KRI Name</span><span>Actual</span>
                     <span>Target</span><span>Warning</span><span>Critical</span>
                   </div>
                   {d.kris.map((k, ki) => (
@@ -1200,9 +1200,9 @@ function KriEditModal({ report, onClose, onSaved }: {
           {err && <p className="dimr-form-error">{err}</p>}
         </div>
         <div className="dimr-modal__footer">
-          <button className="mrd-btn" onClick={onClose} disabled={saving}>Batal</button>
+          <button className="mrd-btn" onClick={onClose} disabled={saving}>Cancel</button>
           <button className="mrd-btn primary" onClick={save} disabled={saving}>
-            {saving ? 'Menyimpan…' : 'Simpan Semua KRI'}
+            {saving ? 'Saving…' : 'Save All KRI'}
           </button>
         </div>
       </div>
@@ -1258,7 +1258,7 @@ function LossEventModal({ report, onClose, onSaved }: {
   useEscKey(() => {
     if (saving) return
     const dirty = initialEventsRef.current !== '' && JSON.stringify(events) !== initialEventsRef.current
-    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (dirty && !window.confirm('Discard unsaved changes?')) return
     onClose()
   }, true)
 
@@ -1286,7 +1286,7 @@ function LossEventModal({ report, onClose, onSaved }: {
         }))
       await api.put(`/risk-reports/${report.id}`, { lossEvents })
       onSaved()
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Gagal menyimpan') }
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed to save') }
     finally { setSaving(false) }
   }
 
@@ -1303,32 +1303,32 @@ function LossEventModal({ report, onClose, onSaved }: {
             <div key={idx} className="dimr-loss-edit-row">
               <div className="dimr-loss-edit-row__grid">
                 <div>
-                  <label className="dimr-form-label">Tanggal</label>
+                  <label className="dimr-form-label">Date</label>
                   <input className="dimr-form-input" type="date" value={ev.eventDate}
                     onChange={e => update(idx, 'eventDate', e.target.value)} />
                 </div>
                 <div>
-                  <label className="dimr-form-label">Kategori</label>
+                  <label className="dimr-form-label">Category</label>
                   <select className="dimr-form-select" value={ev.category}
                     onChange={e => update(idx, 'category', e.target.value)}>
                     {LOSS_CATEGORIES.map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="dimr-form-label">Status Pemulihan</label>
+                  <label className="dimr-form-label">Recovery Status</label>
                   <select className="dimr-form-select" value={ev.recoveryStatus}
                     onChange={e => update(idx, 'recoveryStatus', e.target.value)}>
                     {RECOVERY_STATUSES.map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="dimr-form-label">Dampak (IDR)</label>
+                  <label className="dimr-form-label">Impact (IDR)</label>
                   <input className="dimr-form-input" type="number" step="any" value={ev.impactAmount}
                     onChange={e => update(idx, 'impactAmount', e.target.value)}
-                    placeholder="mis. 500000000" />
+                    placeholder="e.g. 500000000" />
                 </div>
                 <div>
-                  <label className="dimr-form-label">Jumlah Pulih (IDR)</label>
+                  <label className="dimr-form-label">Recovered Amount (IDR)</label>
                   <input className="dimr-form-input" type="number" step="any" value={ev.recoveredAmount}
                     onChange={e => update(idx, 'recoveredAmount', e.target.value)} />
                 </div>
@@ -1339,26 +1339,26 @@ function LossEventModal({ report, onClose, onSaved }: {
                 </div>
               </div>
               <div>
-                <label className="dimr-form-label">Deskripsi</label>
+                <label className="dimr-form-label">Description</label>
                 <input className="dimr-form-input" type="text" value={ev.description}
                   onChange={e => update(idx, 'description', e.target.value)}
-                  placeholder="Deskripsi singkat kejadian…" />
+                  placeholder="Brief description of the event…" />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
                 <button className="mrd-btn" style={{ color: 'var(--red)' }} onClick={() => removeRow(idx)}>
-                  Hapus baris ini
+                  Remove this row
                 </button>
               </div>
               {idx < events.length - 1 && <hr className="dimr-loss-edit-divider" />}
             </div>
           ))}
-          <button className="mrd-btn" style={{ marginTop: 8 }} onClick={addRow}>+ Tambah Loss Event</button>
+          <button className="mrd-btn" style={{ marginTop: 8 }} onClick={addRow}>+ Add Loss Event</button>
           {err && <p className="dimr-form-error">{err}</p>}
         </div>
         <div className="dimr-modal__footer">
-          <button className="mrd-btn" onClick={onClose} disabled={saving}>Batal</button>
+          <button className="mrd-btn" onClick={onClose} disabled={saving}>Cancel</button>
           <button className="mrd-btn primary" onClick={save} disabled={saving}>
-            {saving ? 'Menyimpan…' : `Simpan ${events.length} Event`}
+            {saving ? 'Saving…' : `Save ${events.length} ${events.length === 1 ? 'Event' : 'Events'}`}
           </button>
         </div>
       </div>

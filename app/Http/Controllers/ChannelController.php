@@ -138,7 +138,7 @@ class ChannelController extends Controller
             return response()->json(['data' => $channel], 201);
         }
 
-        return redirect()->route('channels.show', $channel->id)->with('success', 'Channel dibuat.');
+        return redirect()->route('channels.show', $channel->id)->with('success', 'Channel created.');
     }
 
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
@@ -163,7 +163,7 @@ class ChannelController extends Controller
             return response()->json(['data' => $updated]);
         }
 
-        return back()->with('success', 'Channel diperbarui.');
+        return back()->with('success', 'Channel updated.');
     }
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
@@ -180,7 +180,7 @@ class ChannelController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return redirect()->route('channels.index')->with('success', 'Channel diarsipkan.');
+        return redirect()->route('channels.index')->with('success', 'Channel archived.');
     }
 
     // ── Member management ─────────────────────────────────────────────────────
@@ -194,15 +194,15 @@ class ChannelController extends Controller
 
         // Check: actor must be member or admin
         $isMember = ChannelMember::where('channelId', $id)->where('userId', $user->id)->exists();
-        if (!$isMember && !$isAdmin) return $this->validationError($request, 'Anda bukan anggota channel ini.');
+        if (!$isMember && !$isAdmin) return $this->validationError($request, 'You are not a member of this channel.');
 
         // DM guard
         if ($channel->type === 'PRIVATE' && preg_match('/^dm-\d+-\d+$/', $channel->name)) {
-            return $this->validationError($request, 'Direct message tidak mendukung penambahan peserta baru.');
+            return $this->validationError($request, 'Direct messages do not support adding new participants.');
         }
 
         if (!$isAdmin && $channel->createdBy !== $user->id) {
-            return $this->validationError($request, 'Hanya pembuat channel atau admin yang dapat menambah anggota.');
+            return $this->validationError($request, 'Only the channel creator or an admin can add members.');
         }
 
         $member = ChannelMember::updateOrCreate(
@@ -214,7 +214,7 @@ class ChannelController extends Controller
             return response()->json(['data' => $member], 201);
         }
 
-        return back()->with('success', 'Anggota ditambahkan.');
+        return back()->with('success', 'Member added.');
     }
 
     public function removeMember(Request $request, int $id, int $userId): JsonResponse|RedirectResponse
@@ -225,17 +225,17 @@ class ChannelController extends Controller
         $isSelf = $user->id === $userId;
 
         if (!ChannelMember::where('channelId', $id)->where('userId', $userId)->exists()) {
-            return $this->validationError($request, 'Member tidak ditemukan di channel ini.');
+            return $this->validationError($request, 'Member not found in this channel.');
         }
 
         if (!$isSelf) {
             if ($channel->type === 'PRIVATE' && preg_match('/^dm-\d+-\d+$/', $channel->name)) {
-                return $this->validationError($request, 'DM hanya bisa ditutup oleh masing-masing peserta.');
+                return $this->validationError($request, 'A DM can only be closed by each participant individually.');
             }
             $canManage = $isAdmin || $channel->createdBy === $user->id;
-            if (!$canManage) return $this->validationError($request, 'Hanya pembuat channel atau admin yang dapat menghapus anggota.');
+            if (!$canManage) return $this->validationError($request, 'Only the channel creator or an admin can remove members.');
             if ($userId === $channel->createdBy && !$isAdmin) {
-                return $this->validationError($request, 'Pembuat channel hanya dapat keluar sendiri atau dikeluarkan oleh admin.');
+                return $this->validationError($request, 'The channel creator can only leave on their own or be removed by an admin.');
             }
         }
 
@@ -245,7 +245,7 @@ class ChannelController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('success', 'Anggota dikeluarkan.');
+        return back()->with('success', 'Member removed.');
     }
 
     public function join(Request $request, int $id): JsonResponse|RedirectResponse
@@ -254,14 +254,14 @@ class ChannelController extends Controller
         $isAdmin = RolePolicy::isAdminOrAbove($request->user()->roleType);
 
         if ($channel->isArchived) {
-            return $this->validationError($request, 'Channel sudah diarsipkan.');
+            return $this->validationError($request, 'This channel is already archived.');
         }
         if (!$isAdmin) {
             if ($channel->type !== 'PUBLIC') {
-                abort(403, 'Channel privat hanya bisa diakses melalui undangan.');
+                abort(403, 'Private channels can only be accessed by invitation.');
             }
             if (preg_match('/^dm-\d+-\d+$/', (string) $channel->name)) {
-                abort(403, 'Direct message tidak mendukung join terbuka.');
+                abort(403, 'Direct messages do not support open join.');
             }
         }
 
@@ -320,7 +320,7 @@ class ChannelController extends Controller
     {
         $data = $request->validate(['messageId' => 'required|integer']);
         $msg = ChannelMessage::find($data['messageId']);
-        if (!$msg) return $this->validationError($request, 'Pesan tidak ditemukan.');
+        if (!$msg) return $this->validationError($request, 'Message not found.');
 
         $markAt = $msg->createdAt->subSecond();
         ChannelMember::where('channelId', $id)
@@ -340,7 +340,7 @@ class ChannelController extends Controller
         $actor = $request->user();
         $isAdmin = RolePolicy::isAdminOrAbove($actor->roleType);
         if (!$isAdmin && $actor->id !== $userId) {
-            abort(403, 'Anda hanya dapat mengubah notifikasi channel milik sendiri.');
+            abort(403, 'You can only change notification settings for your own channels.');
         }
 
         ChannelMember::where('channelId', $id)
@@ -361,7 +361,7 @@ class ChannelController extends Controller
         $user = $request->user();
         if (RolePolicy::isAdminOrAbove($user->roleType)) return;
         if ($channel->createdBy === $user->id) return;
-        abort(403, 'Hanya pembuat channel atau admin yang dapat melakukan aksi ini.');
+        abort(403, 'Only the channel creator or an admin can perform this action.');
     }
 
     private function requireChannelReadAccess(Request $request, Channel $channel): void
@@ -373,7 +373,7 @@ class ChannelController extends Controller
             ->where('userId', $user->id)
             ->exists();
         if (!$isMember) {
-            abort(403, 'Anda tidak memiliki akses ke channel ini.');
+            abort(403, 'You do not have access to this channel.');
         }
     }
 

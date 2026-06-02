@@ -151,7 +151,7 @@ function TaskPicChip({ picPersons }: { picPersons?: Array<{ id: number; name: st
   return (
     <span
       className="wi-row__pic"
-      title={`Penanggung jawab: ${list.map(p => p.name).join(', ')}`}
+      title={`Person in charge: ${list.map(p => p.name).join(', ')}`}
     >
       <span className="wi-row__pic-avatar" aria-hidden="true">{initials}</span>
       <span className="wi-row__pic-name">{primary.name}</span>
@@ -620,7 +620,7 @@ export function ProgramDetailView() {
             const label = kpi?.name ?? `KPI #${kpiId}`
             const msg = (r as PromiseRejectedResult).reason instanceof Error
               ? (r as PromiseRejectedResult).reason.message
-              : 'gagal menyimpan'
+              : 'failed to save'
             return `${label}: ${msg}`
           })
         if (failed.length > 0) {
@@ -999,7 +999,7 @@ export function ProgramDetailView() {
       epPicIds.some(id => !(detail.picPersonIds ?? []).includes(id)) ||
       epOwnerId !== detail.ownerId
     )
-    if (epDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (epDirty && !window.confirm('Discard unsaved changes?')) return
     triggerEpClose()
   }, showEdit || epClosing)
 
@@ -1085,7 +1085,7 @@ export function ProgramDetailView() {
       ciForm.startDate !== '' || ciForm.targetCompletion !== '' ||
       ciForm.status !== 'BACKLOG' || ciForm.priority !== 'MEDIUM' ||
       ciPicIds.length > 0 || ciOwnerId !== null
-    if (ciDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (ciDirty && !window.confirm('Discard unsaved changes?')) return
     triggerCiClose()
   }, showCreateIni || ciClosing)
 
@@ -1140,7 +1140,7 @@ export function ProgramDetailView() {
       eiPicIds.some(id => !(editIni.picPersonIds ?? []).includes(id)) ||
       eiPrimaryPicId !== (editIni.primaryPicPersonId ?? null)
     )
-    if (eiDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (eiDirty && !window.confirm('Discard unsaved changes?')) return
     triggerEiClose()
   }, showEditIni || eiClosing)
 
@@ -1225,7 +1225,7 @@ export function ProgramDetailView() {
       ephForm.status !== editPhase.status ||
       ephForm.description !== ''
     )
-    if (ephDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (ephDirty && !window.confirm('Discard unsaved changes?')) return
     triggerEphClose()
   }, showEditPhase || ephClosing)
 
@@ -1289,7 +1289,7 @@ export function ProgramDetailView() {
   useEscKey(() => {
     if (cpSaving) return
     const cpDirty = cpForm.name !== '' || cpForm.description !== '' || cpForm.status !== 'PLANNING'
-    if (cpDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (cpDirty && !window.confirm('Discard unsaved changes?')) return
     triggerCpClose()
   }, showCreatePhase || cpClosing)
 
@@ -1351,7 +1351,7 @@ export function ProgramDetailView() {
     const cstDirty = cstForm.title !== '' || cstForm.description !== '' ||
       cstForm.priority !== 'MEDIUM' || cstForm.startDate !== '' ||
       cstForm.targetCompletion !== '' || cstForm.assignedTo !== null
-    if (cstDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (cstDirty && !window.confirm('Discard unsaved changes?')) return
     triggerCstClose()
   }, showCreateSubTask || cstClosing)
 
@@ -1402,7 +1402,7 @@ export function ProgramDetailView() {
 
   useEscKey(() => {
     if (approvalLoading) return
-    if (approvalModal === 'reject' && rejectNote !== '' && !window.confirm('Buang catatan yang sudah diketik?')) return
+    if (approvalModal === 'reject' && rejectNote !== '' && !window.confirm('Discard the note you have typed?')) return
     setApprovalModal(null); setRejectNote(''); setApprovalError(null)
   }, approvalModal !== null)
 
@@ -1513,10 +1513,10 @@ export function ProgramDetailView() {
   const renderApprovalLogSection = () => {
     if (!(approvalLog.length > 0 || approvalLogLoading)) return null
     const actionLabel: Record<string, string> = {
-      SUBMITTED: 'Diajukan', APPROVED: 'Disetujui',
-      REJECTED: 'Ditolak', ACTIVATED: 'Diaktifkan', COMPLETED: 'Diselesaikan',
+      SUBMITTED: 'Submitted', APPROVED: 'Approved',
+      REJECTED: 'Rejected', ACTIVATED: 'Activated', COMPLETED: 'Completed',
       WITHDRAWN: 'Withdrawn',
-      COMMITMENT_CHANGED: 'Commitment diubah',
+      COMMITMENT_CHANGED: 'Commitment changed',
     }
     const actionTone: Record<string, string> = {
       SUBMITTED: 'info', APPROVED: 'positive',
@@ -1728,7 +1728,7 @@ export function ProgramDetailView() {
             <p className="prog-hero__subtitle">{detail.description}</p>
           )}
           {detail.approvalStatus === 'DRAFT' && detail.rejectionNote && (
-            <p className="prog-approval-note">Catatan penolakan: {detail.rejectionNote}</p>
+            <p className="prog-approval-note">Rejection note: {detail.rejectionNote}</p>
           )}
           {approvedSuccess && (
             <div className="prog-approval-success-banner">
@@ -1807,7 +1807,7 @@ export function ProgramDetailView() {
                           disabled={strategicSaving}
                           aria-label="Strategic Pillar"
                         >
-                          <option value="">— Pilih pilar —</option>
+                          <option value="">— Select pillar —</option>
                           {Object.entries(pillarOptions).map(([value, label]) => (
                             <option key={value} value={value}>{label}</option>
                           ))}
@@ -1843,7 +1843,7 @@ export function ProgramDetailView() {
                           }}
                           disabled={strategicSaving}
                         >
-                          Batal
+                          Cancel
                         </button>
                       </div>
                     </div>
@@ -1950,7 +1950,7 @@ export function ProgramDetailView() {
         else if (inDone) phase = 'done'
         else if (!inPlanning) return null
 
-        const label = phase === 'planning' ? 'Fase Perencanaan' : phase === 'execution' ? 'Fase Eksekusi' : 'Selesai'
+        const label = phase === 'planning' ? 'Planning Phase' : phase === 'execution' ? 'Execution Phase' : 'Completed'
         // Icon set: planning (file), planning-ready (check), pending (clock),
         // rejected (alert), execution (play), done (check).
         const planningIcon = phase === 'planning'
@@ -1976,21 +1976,21 @@ export function ProgramDetailView() {
         let hint: React.ReactNode = null
         if (phase === 'planning') {
           // isRejected dicek FIRST — DRAFT-with-note adalah special case dari DRAFT.
-          if (isRejected) hint = 'Perlu revisi — lihat catatan penolakan di atas.'
+          if (isRejected) hint = 'Needs revision — see the rejection note above.'
           else if (status === 'DRAFT') {
             hint = checklistDone
-              ? 'Checklist lengkap — klik tombol di bawah untuk aktifkan / ajukan persetujuan.'
+              ? 'Checklist complete — click the button below to activate / submit for approval.'
               : 'Complete the prep checklist, then activate the program.'
           }
-          else if (status === 'PENDING_KASUB') hint = 'Menunggu persetujuan KASUBDIV. Struktur & rencana masih bisa disempurnakan; eksekusi aktif setelah disetujui.'
-          else if (status === 'PENDING_KADIV') hint = 'Menunggu persetujuan KADIV. Struktur & rencana masih bisa disempurnakan; eksekusi aktif setelah disetujui.'
+          else if (status === 'PENDING_KASUB') hint = 'Awaiting KASUBDIV approval. Structure & plan can still be refined; execution becomes active once approved.'
+          else if (status === 'PENDING_KADIV') hint = 'Awaiting KADIV approval. Structure & plan can still be refined; execution becomes active once approved.'
         } else if (phase === 'execution') {
           const days = detail.targetEndDate ? daysUntil(detail.targetEndDate) : null
           const dl = days !== null ? formatDaysLabel(days) : null
           hint = dl ? <>Target completion <strong>{dl.label}</strong></> : 'Execution underway.'
         } else if (phase === 'done') {
           const endDate = detail.actualEndDate ?? detail.targetEndDate
-          hint = endDate ? <>Ditutup {new Date(endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</> : null
+          hint = endDate ? <>Closed {new Date(endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</> : null
         }
 
         // Variant menentukan warna banner. "planning" punya 4 sub-state:
@@ -2041,7 +2041,7 @@ export function ProgramDetailView() {
             <div className="prog-activation-banner__body">
               <strong className="prog-activation-banner__title">New program active · ready to execute</strong>
               <span className="prog-activation-banner__hint">
-                Tarik task harian di Board, refleksi mingguan dari Ringkasan.
+                Pull daily tasks on the Board, log weekly reflections from the Summary.
               </span>
             </div>
             <div className="prog-activation-banner__actions">
@@ -2050,7 +2050,7 @@ export function ProgramDetailView() {
                 onClick={() => navigate(`/execution?programId=${numId}`)}
                 type="button"
               >
-                Buka Board →
+                Open Board →
               </button>
               <button
                 aria-label="Close hint"
@@ -2127,7 +2127,7 @@ export function ProgramDetailView() {
                     : 'RED'
                   const toneLabel = tone === 'GREEN' ? 'On Track'
                     : tone === 'YELLOW' ? 'At Risk'
-                    : tone === 'RED' ? 'Terlambat'
+                    : tone === 'RED' ? 'Delayed'
                     : '—'
                   return (
                     <div className="wi-section">
@@ -2147,10 +2147,10 @@ export function ProgramDetailView() {
                           </div>
                           <div className="prog-achievement__caption">
                             <span className="prog-achievement__caption-line">
-                              Realisasi {ea.actualSoFar} / {ea.plannedSoFar} minggu yang seharusnya selesai
+                              Actual {ea.actualSoFar} / {ea.plannedSoFar} weeks that should be complete
                             </span>
                             <span className="prog-achievement__caption-sub">
-                              Total plan program: {ea.plannedTotal} minggu · sudah realisasi {ea.actualTotal} minggu
+                              Total program plan: {ea.plannedTotal} weeks · {ea.actualTotal} weeks completed
                             </span>
                           </div>
                         </div>
@@ -2166,7 +2166,7 @@ export function ProgramDetailView() {
                                 <li key={ws.id} className={`prog-achievement__ws prog-achievement__ws--${wsTone}`}>
                                   <span className="prog-achievement__ws-name">{ws.name}</span>
                                   <span className="prog-achievement__ws-stat">
-                                    {ws.actualSoFar}/{ws.plannedSoFar} mg
+                                    {ws.actualSoFar}/{ws.plannedSoFar} wk
                                     {wsPct != null && (
                                       <span className="prog-achievement__ws-pct"> · {wsPct}%</span>
                                     )}
@@ -2205,7 +2205,7 @@ export function ProgramDetailView() {
                     : 'GREEN'
                   // Vocabulary firm ATLAS: on_track / at_risk / terlambat
                   // (sama dengan health label di Charter & refleksi, BUKAN warna).
-                  const kpiHealthLabel = kpiHealth === 'RED' ? 'Terlambat' : kpiHealth === 'YELLOW' ? 'At Risk' : 'On Track'
+                  const kpiHealthLabel = kpiHealth === 'RED' ? 'Delayed' : kpiHealth === 'YELLOW' ? 'At Risk' : 'On Track'
                   return (
                     <div className="wi-section">
                       <div className="wi-section__header">
@@ -2405,7 +2405,7 @@ export function ProgramDetailView() {
                           className="btn btn--ghost"
                           onClick={openProgressForm}
                         >
-                          + Refleksi mingguan
+                          + Weekly reflection
                         </button>
                       )}
                     </div>
@@ -2413,7 +2413,7 @@ export function ProgramDetailView() {
                     <div className="prog-progress-log">
                         {progressLog.map(entry => {
                           const healthLabel: Record<string, string> = {
-                            on_track: 'On Track', at_risk: 'At Risk', terlambat: 'Terlambat', overdue: 'Lewat Tenggat',
+                            on_track: 'On Track', at_risk: 'At Risk', terlambat: 'Delayed', overdue: 'Overdue',
                           }
                           const healthTone: Record<string, string> = {
                             on_track: 'positive', at_risk: 'warning', terlambat: 'danger', overdue: 'danger',
@@ -2436,12 +2436,12 @@ export function ProgramDetailView() {
                               {(entry.kendala || entry.correctiveAction || entry.nextStep || entry.dukunganDibutuhkan) && (
                                 <details className="prog-progress-log__details">
                                   <summary className="prog-progress-log__details-toggle">
-                                    Detail kendala, tindak lanjut &amp; dukungan
+                                    Issues, follow-ups &amp; support details
                                   </summary>
                                   <div className="prog-progress-log__details-body">
                                     {entry.kendala && (
                                       <div className="prog-progress-log__kendala">
-                                        <strong>Kendala:</strong> {entry.kendala}
+                                        <strong>Issue:</strong> {entry.kendala}
                                       </div>
                                     )}
                                     {entry.correctiveAction && (
@@ -2461,7 +2461,7 @@ export function ProgramDetailView() {
                                           <EscalationButton
                                             sourceType="PROGRESS_LOG"
                                             sourceId={entry.id}
-                                            prefillTitle={`Dukungan untuk ${entry.period}`}
+                                            prefillTitle={`Support for ${entry.period}`}
                                             prefillDescription={entry.dukunganDibutuhkan}
                                             linkedProgramId={numId}
                                             size="sm"
@@ -2537,10 +2537,10 @@ export function ProgramDetailView() {
                         <span className="prog-checklist-ribbon__sep" aria-hidden="true">·</span>
                         <span className="prog-checklist-ribbon__hint">
                           {isInRevision
-                            ? `Ajukan ulang ke ${nextApprover} setelah perbaikan selesai.`
+                            ? `Resubmit to ${nextApprover} once the fixes are done.`
                             : useActivate
-                              ? 'Tim langsung bisa eksekusi setelah diaktifkan.'
-                              : `Persetujuan ${nextApprover} dibutuhkan sebelum eksekusi dimulai.`}
+                              ? 'The team can start executing right after activation.'
+                              : `${nextApprover} approval is required before execution can begin.`}
                         </span>
                         <button
                           className="btn btn--primary prog-checklist-ribbon__cta"
@@ -2548,7 +2548,7 @@ export function ProgramDetailView() {
                           onClick={() => useActivate ? void activateProgram() : setApprovalModal('submit')}
                           type="button"
                         >
-                          {useActivate ? 'Mulai Eksekusi →' : `Ajukan ke ${nextApprover} →`}
+                          {useActivate ? 'Start Execution →' : `Submit to ${nextApprover} →`}
                         </button>
                       </div>
                     )
@@ -2574,7 +2574,7 @@ export function ProgramDetailView() {
                             </span>
                             <span className="prog-checklist__label">{c.label}</span>
                             {!c.done && c.cta && (
-                              <button className="prog-checklist__btn" onClick={c.cta} type="button">Lengkapi →</button>
+                              <button className="prog-checklist__btn" onClick={c.cta} type="button">Complete →</button>
                             )}
                           </li>
                         ))}
@@ -2620,35 +2620,35 @@ export function ProgramDetailView() {
                       // Bedakan submitted on-time vs late — sebelumnya keduanya tampil
                       // sama "Sudah masuk", info compliance hilang.
                       if (m.existing?.isLate) {
-                        return { tone: 'late', icon: '⚠', text: 'Sudah masuk (telat)' }
+                        return { tone: 'late', icon: '⚠', text: 'Submitted (late)' }
                       }
-                      return { tone: 'submitted', icon: '✓', text: 'Sudah masuk minggu ini' }
+                      return { tone: 'submitted', icon: '✓', text: 'Submitted this week' }
                     }
                     const fmtShort = (iso: string | null) => {
                       if (!iso) return ''
                       const d = new Date(iso)
                       return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' }) +
-                        ' jam ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+                        ' at ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
                     }
                     const fmtCountdown = () => {
                       if (!m.deadline) return ''
                       const ms = new Date(m.deadline).getTime() - new Date(m.now).getTime()
                       if (ms <= 0) return ''
                       const mins = Math.floor(ms / 60000)
-                      if (mins < 60) return `${mins} menit lagi`
+                      if (mins < 60) return `${mins} min left`
                       const hours = Math.floor(mins / 60)
                       const restMins = mins % 60
-                      return restMins > 0 ? `${hours}j ${restMins}m lagi` : `${hours} jam lagi`
+                      return restMins > 0 ? `${hours}h ${restMins}m left` : `${hours} hr left`
                     }
                     switch (m.state) {
                       case 'OPEN':
                         return { tone: 'open', icon: '⏱', text: `Deadline ${fmtShort(m.deadline)}` }
                       case 'DUE_SOON':
-                        return { tone: 'due-soon', icon: '⏱', text: `Jatuh tempo ${fmtShort(m.deadline)}` }
+                        return { tone: 'due-soon', icon: '⏱', text: `Due ${fmtShort(m.deadline)}` }
                       case 'URGENT':
                         return { tone: 'urgent', icon: '⚠', text: `Deadline ${fmtCountdown()}` }
                       case 'LATE':
-                        return { tone: 'late', icon: '⚠', text: 'Telat · masih bisa submit' }
+                        return { tone: 'late', icon: '⚠', text: 'Late · can still submit' }
                       case 'MISSED':
                         return { tone: 'missed', icon: '✕', text: 'Reflection missed this week' }
                       default:
@@ -2682,7 +2682,7 @@ export function ProgramDetailView() {
                               className="prog-update-panel__action"
                               onClick={openProgressForm}
                             >
-                              {reflectionMeta?.hasSubmitted ? 'Edit refleksi' : '+ Refleksi Mingguan'}
+                              {reflectionMeta?.hasSubmitted ? 'Edit reflection' : '+ Weekly Reflection'}
                             </button>
                           )}
                         </>
@@ -2694,10 +2694,10 @@ export function ProgramDetailView() {
                             className="prog-update-panel__action prog-update-panel__action--primary"
                             onClick={openProgressForm}
                           >
-                            + Refleksi Mingguan
+                            + Weekly Reflection
                           </button>
                           <span className="prog-update-panel__hint">
-                            Catat posisi & kendala — muncul di Charter &amp; KPI Saya.
+                            Note your position & blockers — shows in Charter &amp; My KPI.
                           </span>
                         </div>
                       ) : isActive && !reflectionMeta?.exempt ? (
@@ -2705,15 +2705,15 @@ export function ProgramDetailView() {
                         // owner/admin → tampil empty state read-only (no CTA).
                         // Hindari "ghost button" yang nampak clickable padahal nanti 403.
                         <p className="prog-update-panel__empty">
-                          Belum ada refleksi minggu ini dari PIC program.
+                          No reflection this week from the program PIC yet.
                         </p>
                       ) : isActive ? (
                         <p className="prog-update-panel__empty">
-                          Refleksi pertama jatuh tempo minggu depan.
+                          The first reflection is due next week.
                         </p>
                       ) : (
                         <p className="prog-update-panel__empty">
-                          Refleksi mingguan bisa dicatat setelah program aktif.
+                          Weekly reflections can be logged once the program is active.
                         </p>
                       )}
                     </div>
@@ -2863,7 +2863,7 @@ export function ProgramDetailView() {
                                   // Tidak tampil status problematik kalau workstream belum ada progress
                                   // sama sekali (0%). User baru bikin tidak perlu langsung dilabeli At Risk.
                                   if ((ini.progressPercent ?? 0) === 0) return null
-                                  const label = h === 'YELLOW' ? 'At Risk' : h === 'RED' ? 'Terlambat' : 'Lewat tenggat'
+                                  const label = h === 'YELLOW' ? 'At Risk' : h === 'RED' ? 'Delayed' : 'Overdue'
                                   return (
                                     <span className={`workstream-row__health workstream-row__health--${h.toLowerCase()}`}>{label}</span>
                                   )
@@ -2885,7 +2885,7 @@ export function ProgramDetailView() {
                                         <span
                                           key={p.id}
                                           className={`workstream-row__pic-chip${p.id === primaryId ? ' workstream-row__pic-chip--primary' : ''}`}
-                                          title={p.id === primaryId ? 'PIC Utama' : 'PIC'}
+                                          title={p.id === primaryId ? 'Lead PIC' : 'PIC'}
                                         >
                                           {p.id === primaryId && <span className="workstream-row__pic-chip-star">★</span>}
                                           {p.name}
@@ -2899,9 +2899,9 @@ export function ProgramDetailView() {
                                 })()}
                               {ini.budgetIdr != null && (
                                 <span className="ws-budget">
-                                  Anggaran: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(ini.budgetIdr))}
+                                  Budget: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(ini.budgetIdr))}
                                   {ini.budgetSpent != null && ini.budgetSpent > 0 && (
-                                    <span className="ws-budget__spent"> · Terpakai: {Math.round(Number(ini.budgetSpent) / Number(ini.budgetIdr) * 100)}%</span>
+                                    <span className="ws-budget__spent"> · Spent: {Math.round(Number(ini.budgetSpent) / Number(ini.budgetIdr) * 100)}%</span>
                                   )}
                                 </span>
                               )}
@@ -2948,7 +2948,7 @@ export function ProgramDetailView() {
                                 onClick={() => void submitDelIni(ini.id)}
                                 type="button"
                               >
-                                {delIniSaving ? '…' : 'Hapus'}
+                                {delIniSaving ? '…' : 'Delete'}
                               </button>
                               <button
                                 className="btn btn--ghost workstream-row__action"
@@ -2956,7 +2956,7 @@ export function ProgramDetailView() {
                                 onClick={() => { setConfirmDelIniId(null); setDelIniError(null) }}
                                 type="button"
                               >
-                                Batal
+                                Cancel
                               </button>
                             </div>
                           )}
@@ -2986,7 +2986,7 @@ export function ProgramDetailView() {
                                     <div className="workstream-panel-info">
                                       {(doneCount > 0 || blockerCount > 0) && (
                                         <span className="workstream-panel-info__stats">
-                                          {doneCount > 0 && <span className="ws-stat ws-stat--done">{doneCount} Selesai</span>}
+                                          {doneCount > 0 && <span className="ws-stat ws-stat--done">{doneCount} Completed</span>}
                                           {blockerCount > 0 && <span className="ws-stat ws-stat--blocker">{blockerCount} Blocker</span>}
                                         </span>
                                       )}
@@ -3003,8 +3003,8 @@ export function ProgramDetailView() {
                                       <p className="workstream-empty-body__text">
                                         <strong>No phases &amp; tasks in this workstream yet.</strong>
                                         <span className="workstream-empty-body__hint">
-                                          Mulai dengan menambahkan phase pertama untuk mengelompokkan tahapan,
-                                          atau task langsung jika tidak butuh pengelompokan.
+                                          Start by adding the first phase to group steps,
+                                          or add a task directly if grouping isn't needed.
                                         </span>
                                       </p>
                                       {roleAccess.canCreateWorkstream && (
@@ -3013,7 +3013,7 @@ export function ProgramDetailView() {
                                           onClick={() => { setCpWorkstreamId(ini.id); setShowCreatePhase(true) }}
                                           type="button"
                                         >
-                                          + Tambah Phase Pertama
+                                          + Add First Phase
                                         </button>
                                       )}
                                     </div>
@@ -3027,7 +3027,7 @@ export function ProgramDetailView() {
                                             <span className="phase-group__name">{phase.name}</span>
                                             {phase.tasks.length > 0 && (
                                               <span className="phase-group__count">
-                                                {phase.tasks.filter(t => t.status === 'COMPLETED' || t.percentComplete === 100).length}/{phase.tasks.length} selesai
+                                                {phase.tasks.filter(t => t.status === 'COMPLETED' || t.percentComplete === 100).length}/{phase.tasks.length} done
                                               </span>
                                             )}
                                             {!['PLANNING', 'BACKLOG', 'READY'].includes(phase.status) && (
@@ -3043,9 +3043,9 @@ export function ProgramDetailView() {
                                               <div className="phase-group__del-confirm" onClick={e => e.stopPropagation()}>
                                                 {delPhaseError && <span className="wid-form__error">{delPhaseError}</span>}
                                                 <span className="phase-group__del-text">
-                                                  Hapus phase ini{phase.tasks.length > 0 ? ` beserta ${phase.tasks.length} task di dalamnya` : ''}?
+                                                  Delete this phase{phase.tasks.length > 0 ? ` along with its ${phase.tasks.length} task(s)` : ''}?
                                                 </span>
-                                                <button className="btn btn--danger phase-group__del-btn" disabled={delPhaseSaving} onClick={() => void submitDelPhase(phase.id)} type="button">{delPhaseSaving ? '…' : 'Hapus'}</button>
+                                                <button className="btn btn--danger phase-group__del-btn" disabled={delPhaseSaving} onClick={() => void submitDelPhase(phase.id)} type="button">{delPhaseSaving ? '…' : 'Delete'}</button>
                                                 <button className="btn btn--ghost phase-group__del-btn" disabled={delPhaseSaving} onClick={() => { setConfirmDelPhaseId(null); setDelPhaseError(null) }} type="button">Cancel</button>
                                               </div>
                                             )}
@@ -3118,7 +3118,7 @@ export function ProgramDetailView() {
                                                 }}
                                                 type="button"
                                               >
-                                                + Tambah Task
+                                                + Add Task
                                               </button>
                                             )}
                                           </div>
@@ -3181,7 +3181,7 @@ export function ProgramDetailView() {
                                           onClick={() => { setCpWorkstreamId(ini.id); setShowCreatePhase(true) }}
                                           type="button"
                                         >
-                                          + Tambah Phase
+                                          + Add Phase
                                         </button>
                                       )}
 
@@ -3192,7 +3192,7 @@ export function ProgramDetailView() {
                                             onClick={() => setActiveTab('execution')}
                                             type="button"
                                           >
-                                            Lihat jadwal lengkap →
+                                            View full schedule →
                                           </button>
                                         </div>
                                       )}
@@ -3266,7 +3266,7 @@ export function ProgramDetailView() {
                       </svg>
                     }
                     title="No blockers reported"
-                    text="Tab ini aktif penuh setelah program masuk fase Eksekusi. Tim melaporkan blocker dari task yang sedang dikerjakan."
+                    text="This tab becomes fully active once the program enters the Execution phase. The team reports blockers from tasks in progress."
                   />
                 ) : (
                   <SectionState
@@ -3277,7 +3277,7 @@ export function ProgramDetailView() {
                       </svg>
                     }
                     title="No active blockers"
-                    text="Program berjalan lancar tanpa blocker. Status auto-update saat tim melaporkan hambatan dari task."
+                    text="The program is running smoothly with no blockers. Status auto-updates when the team reports an obstacle from a task."
                   />
                 )
               })() : (
@@ -3296,15 +3296,15 @@ export function ProgramDetailView() {
                             {b.task.workstream.name} › {b.task.title}
                           </div>
                         </div>
-                        <span className="blocker-item__age" title="Berapa lama blocker ini dilaporkan">
-                          {b.daysOpen === 0 ? 'Hari ini' : `${b.daysOpen} hari`}
+                        <span className="blocker-item__age" title="How long this blocker has been open">
+                          {b.daysOpen === 0 ? 'Today' : `${b.daysOpen} days`}
                         </span>
                         <button
                           className="btn btn--ghost blocker-item__action"
                           onClick={() => navigate(`/execution/tasks/${b.task.id}`)}
                           type="button"
                         >
-                          Buka task →
+                          Open task →
                         </button>
                       </div>
                     )
@@ -3323,7 +3323,7 @@ export function ProgramDetailView() {
                 <div className="prog-kpi-head__title-row">
                   <h3 className="wi-section__title prog-kpi-head__title">
                     {PIcon.kpi}
-                    KPI APMS Terkait
+                    Related APMS KPIs
                   </h3>
                   {/* Badge count: hide saat 0 — redundant info ketika empty state
                       sudah komunikasi "Belum ada KPI yang terhubung". */}
@@ -3340,9 +3340,9 @@ export function ProgramDetailView() {
                       return (
                         <span
                           style={{ fontSize: 11.5, color: isStale ? 'var(--yellow)' : 'var(--text-muted)' }}
-                          title={`Data APMS diambil ${new Date(apmsLastFetchedAt).toLocaleTimeString('en-US')}`}
+                          title={`APMS data fetched ${new Date(apmsLastFetchedAt).toLocaleTimeString('en-US')}`}
                         >
-                          Sinkron {minsAgo < 1 ? 'baru saja' : `${minsAgo} menit lalu`}
+                          Synced {minsAgo < 1 ? 'just now' : `${minsAgo} min ago`}
                         </span>
                       )
                     })()}
@@ -3350,7 +3350,7 @@ export function ProgramDetailView() {
                       type="button"
                       className="prog-kpi-sync-btn"
                       onClick={() => void refreshApmsKpis()}
-                      title="Sync ulang data KPI dari APMS/AGHRIS"
+                      title="Re-sync KPI data from APMS/AGHRIS"
                     >
                       <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="11" aria-hidden="true">
                         <path d="M1.5 5a4.5 4.5 0 0 1 8-2.5L10.5 2M10.5 7a4.5 4.5 0 0 1-8 2.5L1.5 10M10.5 1.5v2.5h-2.5M3.5 8h-2v2.5"/>
@@ -3361,8 +3361,8 @@ export function ProgramDetailView() {
                 </div>
                 <p className="prog-kpi-head__note">
                   {detail?.hasNoApmsKpi
-                    ? 'Program ini ditandai tidak memiliki KPI di APMS. Gunakan KPI Internal di bawah untuk mencatat target dan realisasi.'
-                    : 'Atributkan kode KPI dari AGHRIS yang relevan dengan program ini. Data KPI tetap bersumber dari APMS.'}
+                    ? 'This program is marked as having no APMS KPI. Use the Internal KPIs below to record targets and actuals.'
+                    : 'Attribute the relevant AGHRIS KPI codes to this program. KPI data still comes from APMS.'}
                 </p>
               </div>
 
@@ -3399,7 +3399,7 @@ export function ProgramDetailView() {
                 )}
                 {kpiLinkDropdownOpen && kpiLinkSearch.length > 0 && kpiSearchResults.length === 0 && (
                   <div className="prog-kpi-dropdown prog-kpi-dropdown--empty">
-                    Tidak ada KPI yang cocok.
+                    No matching KPIs.
                   </div>
                 )}
               </div>
@@ -3412,7 +3412,7 @@ export function ProgramDetailView() {
               {kpiLinks.length === 0 ? (
                 <div className="prog-kpi-empty">
                   {detail?.hasNoApmsKpi
-                    ? 'Program ini tidak dihubungkan ke KPI APMS. Lihat bagian Target KPI Internal di bawah untuk mendefinisikan metrik program.'
+                    ? 'This program is not linked to any APMS KPI. See the Internal KPI Targets section below to define the program metrics.'
                     : 'Search APMS KPI by code or name above to link the program to relevant AGHRIS targets.'}
                 </div>
               ) : (
@@ -3439,7 +3439,7 @@ export function ProgramDetailView() {
                             {displayName}
                           </span>
                           {displayBobot != null && (
-                            <span className="prog-kpi-card__weight">bobot {displayBobot}%</span>
+                            <span className="prog-kpi-card__weight">weight {displayBobot}%</span>
                           )}
                           {apmsStatus && (
                             <span className={`prog-kpi-status prog-kpi-status--${apmsTone}`}>{apmsStatus}</span>
@@ -3463,7 +3463,7 @@ export function ProgramDetailView() {
                             </div>
                             <span className="prog-kpi-progress__meta">
                               {realisasi} / {sasaran} ({apmsAchievePct}%)
-                              {skor != null && <> · skor {skor.toFixed(1)}</>}
+                              {skor != null && <> · score {skor.toFixed(1)}</>}
                             </span>
                           </div>
                         )}
@@ -3482,10 +3482,10 @@ export function ProgramDetailView() {
                   <div className="prog-kpi-internal__copy">
                     <h4 className="wi-section__title" style={{ marginBottom: 2 }}>
                       {PIcon.chart}
-                      Target KPI Internal
+                      Internal KPI Targets
                     </h4>
                     <p className="prog-kpi-internal__desc">
-                      Untuk program yang tidak memiliki KPI di APMS.
+                      For programs that have no KPI in APMS.
                     </p>
                     {(() => {
                       const kpis = detail?.kpis ?? []
@@ -3527,7 +3527,7 @@ export function ProgramDetailView() {
                           {counts.unset > 0 && (
                             <span className="prog-kpi-summary-pill prog-kpi-summary-pill--muted">
                               <span className="prog-kpi-summary-pill__dot" />
-                              {counts.unset} belum diukur
+                              {counts.unset} not measured
                             </span>
                           )}
                         </div>
@@ -3545,7 +3545,7 @@ export function ProgramDetailView() {
                       setShowKpiInternalForm(v => !v)
                     }}
                   >
-                    {showKpiInternalForm ? 'Batal' : '+ Buat Target'}
+                    {showKpiInternalForm ? 'Cancel' : '+ Create Target'}
                   </button>
                 </div>
                 {showKpiInternalForm && (
@@ -3577,7 +3577,7 @@ export function ProgramDetailView() {
                         />
                       </div>
                       <div className="form-field prog-form-field">
-                        <label>Satuan</label>
+                        <label>Unit</label>
                         <input
                           maxLength={30} placeholder="%, unit, etc."
                           value={kpiInternal.unitOfMeasure}
@@ -3585,16 +3585,16 @@ export function ProgramDetailView() {
                         />
                       </div>
                       <div className="form-field prog-form-field">
-                        <label>Frekuensi</label>
+                        <label>Frequency</label>
                         <select
                           className="form-input"
                           value={kpiInternal.reviewFrequency}
                           onChange={e => setKpiInternal(f => ({ ...f, reviewFrequency: e.target.value }))}
                         >
                           <option value="WEEKLY">Weekly</option>
-                          <option value="MONTHLY">Bulanan</option>
-                          <option value="QUARTERLY">Kuartalan</option>
-                          <option value="ANNUALLY">Tahunan</option>
+                          <option value="MONTHLY">Monthly</option>
+                          <option value="QUARTERLY">Quarterly</option>
+                          <option value="ANNUALLY">Annually</option>
                         </select>
                       </div>
                     </div>
@@ -3632,11 +3632,11 @@ export function ProgramDetailView() {
                             <span className="code-badge">{kpi.code}</span>
                             <span className="prog-kpi-card__name">{kpi.name}</span>
                             {kpi.reviewFrequency && (
-                              <span className="prog-kpi-card__freq" title="Frekuensi pengukuran">
-                                {kpi.reviewFrequency === 'WEEKLY' ? 'Mingguan'
-                                  : kpi.reviewFrequency === 'MONTHLY' ? 'Bulanan'
-                                  : kpi.reviewFrequency === 'QUARTERLY' ? 'Kuartalan'
-                                  : 'Tahunan'}
+                              <span className="prog-kpi-card__freq" title="Measurement frequency">
+                                {kpi.reviewFrequency === 'WEEKLY' ? 'Weekly'
+                                  : kpi.reviewFrequency === 'MONTHLY' ? 'Monthly'
+                                  : kpi.reviewFrequency === 'QUARTERLY' ? 'Quarterly'
+                                  : 'Annually'}
                               </span>
                             )}
                             <span className={`prog-kpi-status prog-kpi-status--${kpiTone}`}>
@@ -3663,7 +3663,7 @@ export function ProgramDetailView() {
                                 className="btn btn--ghost prog-kpi-card__action"
                                 onClick={() => { setRecordingKpiId(isRecording ? null : kpi.id); setKpiActualError(null) }}
                               >
-                                {isRecording ? 'Batal' : 'Catat Aktual'}
+                                {isRecording ? 'Cancel' : 'Record Actual'}
                               </button>
                             ) : (
                               <span
@@ -3674,7 +3674,7 @@ export function ProgramDetailView() {
                                   <rect height="6" rx="1" width="8" x="2" y="5"/>
                                   <path d="M4 5V3.5a2 2 0 0 1 4 0V5"/>
                                 </svg>
-                                Perencanaan
+                                Planning
                               </span>
                             )}
                           </div>
@@ -3692,7 +3692,7 @@ export function ProgramDetailView() {
                           </div>
                           {kpi.lastMeasuredDate && (
                             <p className="prog-kpi-card__note">
-                              Terakhir diukur: {new Date(kpi.lastMeasuredDate).toLocaleDateString('en-US')}
+                              Last measured: {new Date(kpi.lastMeasuredDate).toLocaleDateString('en-US')}
                             </p>
                           )}
                           {/* Inline record actual form */}
@@ -4580,18 +4580,18 @@ export function ProgramDetailView() {
             <div className="modal-headcopy">
               <span className="modal-kicker">{detail.code} · {periodToLabel(progressForm.period)}</span>
               <h3 className="modal__title" id={reflectionTitleId}>
-                {reflectionMeta?.hasSubmitted ? 'Edit Refleksi Mingguan' : 'Refleksi Mingguan'}
+                {reflectionMeta?.hasSubmitted ? 'Edit Weekly Reflection' : 'Weekly Reflection'}
               </h3>
               <p className="modal-subtitle" id={reflectionDescId}>
                 {reflectionMeta?.hasSubmitted && reflectionMeta.existing ? (
                   // Edit mode subtitle — context kapan & oleh siapa submission asli
-                  `Mengubah refleksi ${reflectionMeta.existing.createdByName ?? 'PIC'} · ${new Date(reflectionMeta.existing.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}.`
+                  `Editing reflection by ${reflectionMeta.existing.createdByName ?? 'PIC'} · ${new Date(reflectionMeta.existing.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}.`
                 ) : reflectionMeta && !reflectionMeta.exempt && reflectionMeta.deadline ? (() => {
                   const d = new Date(reflectionMeta.deadline)
                   const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short' })
                   const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
-                  return `Posisi s.d. Jumat · Deadline submit ${dateStr} jam ${timeStr} WIB.`
-                })() : 'Posisi s.d. Jumat · Catatan reflektif minggu ini.'}
+                  return `Position as of Friday · Submit deadline ${dateStr} at ${timeStr} WIB.`
+                })() : 'Position as of Friday · Reflective note for this week.'}
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -4726,7 +4726,7 @@ export function ProgramDetailView() {
                                 <span className="reflection-form__kpi-name">{kpi.name}</span>
                                 <span className="reflection-form__kpi-sub">
                                   Target {targetLabel}
-                                  {lastActual ? ` · terakhir ${lastActual}` : ' · belum ada actual'}
+                                  {lastActual ? ` · last ${lastActual}` : ' · no actual yet'}
                                 </span>
                               </div>
                               <input
@@ -4737,7 +4737,7 @@ export function ProgramDetailView() {
                                 value={weeklyKpiActuals[kpi.id] ?? ''}
                                 onChange={e => setWeeklyKpiActuals(s => ({ ...s, [kpi.id]: e.target.value }))}
                                 placeholder={lastActual ?? '—'}
-                                aria-label={`Aktual baru untuk ${kpi.name}`}
+                                aria-label={`New actual for ${kpi.name}`}
                               />
                             </div>
                           )
@@ -4824,7 +4824,7 @@ export function ProgramDetailView() {
 
                 {weeklyKpiErrors.length > 0 && (
                   <div className="reflection-form__error" role="alert">
-                    <strong>Refleksi tersimpan,</strong> tapi {weeklyKpiErrors.length} KPI gagal disimpan:
+                    <strong>Reflection saved,</strong> but {weeklyKpiErrors.length} KPI failed to save:
                     <ul>
                       {weeklyKpiErrors.map((msg, i) => <li key={i}>{msg}</li>)}
                     </ul>
@@ -4839,7 +4839,7 @@ export function ProgramDetailView() {
                 disabled={progressFormSaving}
                 onClick={triggerProgressFormClose}
               >
-                Batal
+                Cancel
               </button>
               <button
                 type="submit"

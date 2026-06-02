@@ -559,12 +559,12 @@ class WorkspaceController extends Controller
         ]);
 
         if (!Hash::check($data['currentPassword'], $request->user()->passwordHash)) {
-            return response()->json(['message' => 'Password saat ini tidak sesuai.'], 422);
+            return response()->json(['message' => 'The current password is incorrect.'], 422);
         }
 
         $request->user()->update(['passwordHash' => Hash::make($data['newPassword'])]);
 
-        return response()->json(['message' => 'Password berhasil diperbarui.']);
+        return response()->json(['message' => 'Password updated successfully.']);
     }
 
     public function usersDirectory(): JsonResponse

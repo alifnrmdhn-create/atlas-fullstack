@@ -385,7 +385,7 @@ function CardFace({ item, currentUserId, className }: { item: Assignment; curren
             <span className="work-card__context-ini">{item.relatedProgram.name}</span>
           </>
         ) : (
-          <span className="work-card__context-ini" style={{ fontStyle: 'italic', opacity: 0.7 }}>Ad-hoc · dari {firstName(item.assigner.name)}</span>
+          <span className="work-card__context-ini" style={{ fontStyle: 'italic', opacity: 0.7 }}>Ad-hoc · from {firstName(item.assigner.name)}</span>
         )}
       </div>
       {/* Review badge — muncul di kolom IN_REVIEW */}
@@ -393,7 +393,7 @@ function CardFace({ item, currentUserId, className }: { item: Assignment; curren
         <div className="pg-card-review-badge" data-me={iAmCurrentReviewer}>
           <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="5" cy="5" r="3.5"/><path d="M3.5 5l1 1 2-2"/></svg>
           Review: {firstName(currentReviewer.name)}
-          {iAmCurrentReviewer && <span className="pg-card-review-badge__me">giliran Anda</span>}
+          {iAmCurrentReviewer && <span className="pg-card-review-badge__me">your turn</span>}
         </div>
       )}
       {progress && (
@@ -403,12 +403,12 @@ function CardFace({ item, currentUserId, className }: { item: Assignment; curren
       )}
       <div className="work-card__footer">
         <span className="code-badge">{item.code}</span>
-        {isOverdue ? <span className="work-card__blocked">Lewat</span> : null}
-        {needsAck ? <span className="pg-card__flag" title="Menunggu Anda menerima">PERLU RESPON</span> : null}
-        {item.needsClarification ? <span className="pg-card__flag pg-card__flag--clarify">KLARIFIKASI</span> : null}
-        {item.revisionCount > 0 ? <span className="pg-card__flag pg-card__flag--revision" title={`Sudah ${item.revisionCount}× revisi`}>REV·{item.revisionCount}</span> : null}
+        {isOverdue ? <span className="work-card__blocked">Overdue</span> : null}
+        {needsAck ? <span className="pg-card__flag" title="Awaiting your acceptance">NEEDS RESPONSE</span> : null}
+        {item.needsClarification ? <span className="pg-card__flag pg-card__flag--clarify">CLARIFICATION</span> : null}
+        {item.revisionCount > 0 ? <span className="pg-card__flag pg-card__flag--revision" title={`${item.revisionCount} revision(s) so far`}>REV·{item.revisionCount}</span> : null}
         {item.isPrivate ? <span className="pg-card__flag pg-card__flag--private" title="Private">🔒</span> : null}
-        {(item._count?.evidenceItems ?? 0) > 0 ? <span className="pg-card__evidence-badge" title={`${item._count?.evidenceItems} lampiran evidence`}><svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M9 4.5L5 8.5a2 2 0 0 1-3-3l4.5-4.5a1.4 1.4 0 0 1 2 2L4 7.5"/></svg>{item._count?.evidenceItems}</span> : null}
+        {(item._count?.evidenceItems ?? 0) > 0 ? <span className="pg-card__evidence-badge" title={`${item._count?.evidenceItems} evidence attachment(s)`}><svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M9 4.5L5 8.5a2 2 0 0 1-3-3l4.5-4.5a1.4 1.4 0 0 1 2 2L4 7.5"/></svg>{item._count?.evidenceItems}</span> : null}
         <span className="work-card__footer-meta">
           <span className={`pg-due-inline pg-due-inline--${due.tone}`}>{due.label}</span> · {firstName(item.assignee.name)}
         </span>
@@ -422,7 +422,7 @@ function ListView({ items, onSelect }: { items: Assignment[]; onSelect: (id: num
   return (
     <div className="panel">
       <div className="panel__header">
-        <h3 className="panel__title">Semua Assignment</h3>
+        <h3 className="panel__title">All Assignments</h3>
         <span className="badge">{items.length}</span>
       </div>
       <div className="wi-list">
@@ -560,7 +560,7 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
     <section className="pg-section">
       <h4 className="pg-section__title">
         Evidence {count > 0 && <span className="pg-evidence__count">{count}</span>}
-        {evidenceRequired && <span className="pg-evidence__req" title="Wajib sebelum submit">WAJIB</span>}
+        {evidenceRequired && <span className="pg-evidence__req" title="Required before submit">REQUIRED</span>}
       </h4>
 
       {loading && <div className="pg-evidence__empty">Loading…</div>}
@@ -742,10 +742,10 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
             <span className={`badge ${statusBadgeClass}`}>{STATUS_LABEL[a.status]}</span>
             <span className={`priority-badge priority-badge--${a.priority}`}>{PRIORITY_LABEL[a.priority]}</span>
             {a.isPrivate && <span className="badge badge--purple" title="Private">🔒 Private</span>}
-            {a.needsClarification && <span className="badge badge--yellow">Butuh klarifikasi</span>}
-            {a.revisionCount > 0 && <span className="badge badge--yellow">Revisi ke-{a.revisionCount}</span>}
+            {a.needsClarification && <span className="badge badge--yellow">Needs clarification</span>}
+            {a.revisionCount > 0 && <span className="badge badge--yellow">Revision #{a.revisionCount}</span>}
           </div>
-          <button className="pg-panel__close" onClick={onClose} type="button" aria-label="Tutup">
+          <button className="pg-panel__close" onClick={onClose} type="button" aria-label="Close">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m1 1 10 10M11 1 1 11"/></svg>
           </button>
         </header>

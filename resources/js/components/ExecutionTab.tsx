@@ -17,10 +17,10 @@ async function downloadXlsx(programId: number, workstreamId: number, grid: Execu
     headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
   })
   if (!res.ok) {
-    let msg = `Gagal export Excel (HTTP ${res.status}).`
+    let msg = `Failed to export Excel (HTTP ${res.status}).`
     try {
       const body = await res.json()
-      if (body?.error) msg = `Gagal export: ${body.error}`
+      if (body?.error) msg = `Export failed: ${body.error}`
     } catch { /* non-JSON body */ }
     alert(msg)
     return
@@ -31,7 +31,7 @@ async function downloadXlsx(programId: number, workstreamId: number, grid: Execu
   const ws = grid.workstream.name.replace(/[^a-zA-Z0-9\-_]/g, '_').slice(0, 40)
   const a = document.createElement('a')
   a.href = url
-  a.download = `JadwalMingguan_${prog}_${ws}.xlsx`
+  a.download = `WeeklySchedule_${prog}_${ws}.xlsx`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -42,7 +42,7 @@ function exportGridCSV(grid: ExecutionGridData, programName?: string) {
   const weeks = grid.weekRange.weeks
   // PIC Unit dihapus dari header — selaras dengan Jadwal grid view yang juga
   // tidak lagi menampilkan kolom tersebut (tidak ada di form Struktur).
-  const header = ['Fase', 'Uraian', 'PIC Person', 'Tipe', 'Status', ...weeks]
+  const header = ['Phase', 'Description', 'PIC Person', 'Type', 'Status', ...weeks]
   const rows: string[][] = [header]
 
   const encodeCell = (v: string) => `"${v.replace(/"/g, '""')}"`
@@ -110,7 +110,7 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
       })
       .catch((err) => {
         if (cancelled) return
-        setWsError(err instanceof Error ? err.message : 'Gagal memuat workstream.')
+        setWsError(err instanceof Error ? err.message : 'Failed to load workstream.')
       })
       .finally(() => {
         if (!cancelled) setWsLoading(false)
@@ -133,7 +133,7 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
       })
       .catch((err) => {
         if (cancelled) return
-        setGridError(err instanceof Error ? err.message : 'Gagal memuat execution grid.')
+        setGridError(err instanceof Error ? err.message : 'Failed to load execution grid.')
       })
       .finally(() => {
         if (!cancelled) setGridLoading(false)
@@ -217,15 +217,15 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
   }
 
   if (wsError) {
-    return <SectionState icon="⚠️" title="Gagal memuat workstream" text={wsError} />
+    return <SectionState icon="⚠️" title="Failed to load workstream" text={wsError} />
   }
 
   if (!workstreams || workstreams.length === 0) {
     return (
       <SectionState
         icon="📋"
-        title="Belum ada workstream"
-        text={`Program ${programName ?? '#' + programId} belum memiliki workstream untuk ditampilkan di Execution Grid.`}
+        title="No workstreams yet"
+        text={`Program ${programName ?? '#' + programId} has no workstreams to show in the Execution Grid yet.`}
       />
     )
   }
@@ -236,7 +236,7 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
         <div>
           <h3 className="section-title">Execution Grid — {programName ?? `Program #${programId}`}</h3>
           <p className="section-subtitle">
-            Tabel mingguan Plan vs Realisasi (Real). Klik sel Real untuk input realisasi manual.
+            Weekly Plan vs Actual (Real) table. Click a Real cell to enter actuals manually.
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -244,9 +244,9 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
             type="button"
             className={`view-toggle-btn${myOnly ? ' active' : ''}`}
             onClick={() => setMyOnly((v) => !v)}
-            title="Tampilkan hanya workstream yang saya pimpin"
+            title="Show only workstreams I lead"
           >
-            Saya saja
+            Mine only
           </button>
           {grid && activeId && (
             <>
@@ -254,7 +254,7 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
                 type="button"
                 className="view-toggle-btn"
                 onClick={() => void downloadXlsx(programId, activeId, grid)}
-                title="Download sebagai Excel (XLSX) — pertahankan layout tabel"
+                title="Download as Excel (XLSX) — preserves table layout"
               >
                 ↓ XLSX
               </button>
@@ -262,7 +262,7 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
                 type="button"
                 className="view-toggle-btn"
                 onClick={() => exportGridCSV(grid, programName)}
-                title="Download sebagai CSV"
+                title="Download as CSV"
               >
                 ↓ CSV
               </button>
@@ -271,17 +271,17 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             {visibleWorkstreams.length === workstreams.length
               ? `${workstreams.length} workstream`
-              : `${visibleWorkstreams.length} dari ${workstreams.length} workstream`}
+              : `${visibleWorkstreams.length} of ${workstreams.length} workstream`}
             {' · '}
-            {totalSteps} tahapan
+            {totalSteps} steps
           </span>
         </div>
       </div>
 
       {visibleWorkstreams.length === 0 ? (
         <SectionState
-          title="Tidak ada workstream yang Anda pimpin"
-          text="Nonaktifkan filter 'Saya saja' untuk melihat semua workstream program ini."
+          title="No workstreams you lead"
+          text="Turn off the 'Mine only' filter to see all workstreams in this program."
           compact
         />
       ) : (
@@ -296,7 +296,7 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
             >
               {w.name}
               <span className="workstream-pill__count">
-                {w.phaseCount} fase · {w.taskCount} task
+                {w.phaseCount} phases · {w.taskCount} tasks
               </span>
             </button>
           ))}
@@ -310,7 +310,7 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
       )}
 
       {gridError && !gridLoading && (
-        <SectionState title="Gagal memuat grid" text={gridError} />
+        <SectionState title="Failed to load grid" text={gridError} />
       )}
 
       {!gridLoading && !gridError && grid && (
@@ -318,8 +318,8 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
           {inPlanning && (
             <div className="exec-planning-notice">
               <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="12" aria-hidden="true"><circle cx="7" cy="7" r="5.5"/><path d="M7 4.5v3M7 9v.5"/></svg>
-              Kolom <strong>Real</strong> akan aktif setelah program masuk fase Eksekusi.
-              Saat ini hanya <strong>Plan (Ren)</strong> yang bisa disusun.
+              The <strong>Real</strong> column becomes active once the program enters the Execution phase.
+              For now, only the <strong>Plan</strong> can be set up.
             </div>
           )}
           <ExecutionGrid

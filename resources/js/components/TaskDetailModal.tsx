@@ -128,15 +128,15 @@ export function TaskDetailModal({ taskId, originRect, onClose }: TaskDetailModal
               const url = `${window.location.origin}/execution/tasks/${taskId}`
               navigator.clipboard?.writeText(url)
             }}
-            title="Salin link task untuk di-share"
+            title="Copy task link to share"
           >
-            🔗 Salin link
+            🔗 Copy link
           </button>
           <button
             type="button"
             className="task-detail-modal__close"
             onClick={handleClose}
-            aria-label="Tutup"
+            aria-label="Close"
           >
             <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="14">
               <path d="m1 1 12 12M13 1 1 13" />
