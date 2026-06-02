@@ -6,23 +6,6 @@ import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import PanduanKonsepHierarki from './PanduanKonsepHierarki'
 import './PanduanView.css'
 
-// ── Quick card icons — match destination semantics ──────────────────────────
-function QuickCardIcon({ href }: { href: string }): ReactElement {
-  const s = { width: 18, height: 18, viewBox: '0 0 18 18', fill: 'none',
-    stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const }
-  if (href === '/executive')              return <svg {...s}><path d="M3 14V8M7 14V5M11 14v-7M15 14V3"/></svg>
-  if (href === '/performance/scorecard')  return <svg {...s}><path d="M9 2 10.6 5.5l3.8.4-2.8 2.5L12.5 12 9 9.9 5.5 12l.9-3.6L3.6 5.9l3.8-.4z"/></svg>
-  if (href === '/performance/kolegial')   return <svg {...s}><circle cx="9" cy="9" r="6"/><path d="M9 9V5M9 9l3 2"/></svg>
-  if (href === '/performance/divisi')     return <svg {...s}><rect x="2" y="11" width="3" height="5"/><rect x="7.5" y="7" width="3" height="9"/><rect x="13" y="3" width="3" height="13"/></svg>
-  if (href === '/performance/me')         return <svg {...s}><circle cx="9" cy="6.5" r="2.8"/><path d="M3.5 15.5c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5"/></svg>
-  if (href === '/programs')               return <svg {...s}><rect x="3.5" y="3" width="11" height="12" rx="1.5"/><path d="M7 3h4v2H7z"/><path d="M6 8h6M6 11h4"/></svg>
-  if (href === '/roadmap')                return <svg {...s}><path d="M2 5h14M2 9h10M2 13h7"/></svg>
-  if (href === '/execution')              return <svg {...s}><rect x="2.5" y="3" width="3.5" height="12" rx="1"/><rect x="7.5" y="3" width="3.5" height="9" rx="1"/><rect x="12.5" y="3" width="3.5" height="6" rx="1"/></svg>
-  if (href === '/penugasan')              return <svg {...s}><rect x="3" y="2.5" width="11" height="12" rx="1.5"/><path d="M6 2.5h5v2H6z"/><path d="M6 9h5M6 12h3"/></svg>
-  return <svg {...s}><circle cx="9" cy="9" r="6"/></svg>
-}
-
 // ── Custom line-icon set ──────────────────────────────────────────────────
 // Mengganti emoji dengan ikon garis kustom (monokrom, currentColor) — emoji =
 // sinyal "AI slop" di tool enterprise. 20×20, stroke 1.6, tint dari tile.
@@ -252,34 +235,6 @@ const TOPIK: Topik[] = [
   },
 ]
 
-// ── Role-aware quick cards ───────────────────────────────────────────────────
-
-type QuickCard = { label: string; sub: string; href: string }
-
-function quickCardsForRole(role: string): QuickCard[] {
-  if (role === 'BOD') return [
-    { label: 'Executive Summary', sub: 'One-page snapshot + PPTX export',  href: '/executive' },
-    { label: 'Scorecard',         sub: 'Directorate achievement ranking',  href: '/performance/scorecard' },
-    { label: 'Roadmap',           sub: 'Visual portfolio timeline',        href: '/roadmap' },
-  ]
-  if (role === 'KADIV') return [
-    { label: 'Executive Summary', sub: 'Snapshot of your directorate',     href: '/executive' },
-    { label: 'Programs',          sub: 'Manage programs & approvals',      href: '/programs' },
-    { label: 'Directorate KPIs',  sub: 'Collegial achievement across your team', href: '/performance/kolegial' },
-  ]
-  if (role === 'KASUBDIV') return [
-    { label: 'Programs',          sub: 'Manage your division’s programs',  href: '/programs' },
-    { label: 'Workboard',         sub: 'Track team tasks',                 href: '/execution' },
-    { label: 'Division KPIs',     sub: 'Your division’s achievement',      href: '/performance/divisi' },
-  ]
-  // OFFICER, ASISTEN, default
-  return [
-    { label: 'Workboard',         sub: 'Your daily tasks',                 href: '/execution' },
-    { label: 'Assignment',        sub: 'Ad-hoc tasks from your superior',  href: '/penugasan' },
-    { label: 'My KPIs',           sub: 'Your personal KPI achievement',    href: '/performance/me' },
-  ]
-}
-
 // ── FAQ data ─────────────────────────────────────────────────────────────────
 
 const FAQ: Array<{ q: string; a: string; link?: { anchor: string; label: string } }> = [
@@ -330,9 +285,7 @@ export default function PanduanView() {
   const [active, setActive] = useState<string | null>(null)
   const [query,  setQuery]  = useState('')
 
-  const role = currentUser?.roleType ?? 'OFFICER'
   const greetName = currentUser?.name ?? 'there'
-  const quickCards = useMemo(() => quickCardsForRole(role), [role])
 
   const filteredTopik = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -466,23 +419,6 @@ export default function PanduanView() {
           <p className="panduan__hero-sub">
             Find step-by-step guides, quick answers, and the full ATLAS documentation.
           </p>
-          <div className="panduan__hero-quick-head">
-            <span className="panduan__hero-quick-label">Quick access for <strong>{role}</strong></span>
-          </div>
-          <div className="panduan__hero-cards">
-            {quickCards.map((c, idx) => (
-              <Link key={c.href} href={c.href} className="panduan__hero-card" style={{ '--hero-card-idx': idx } as CSSProperties}>
-                <span className="panduan__hero-card-icon" aria-hidden="true">
-                  <QuickCardIcon href={c.href} />
-                </span>
-                <span className="panduan__hero-card-body">
-                  <span className="panduan__hero-card-label">{c.label}</span>
-                  <span className="panduan__hero-card-sub">{c.sub}</span>
-                </span>
-                <span className="panduan__hero-card-arrow" aria-hidden="true">→</span>
-              </Link>
-            ))}
-          </div>
         </header>
 
         {/* Search */}

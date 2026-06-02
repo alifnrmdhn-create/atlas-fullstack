@@ -865,3 +865,59 @@
 .ds.channels-v2:hover .members-panel::-webkit-scrollbar-thumb {
   background: var(--panel-border-soft);
 }
+
+
+/* ───────── PHASE 5 — Bubbles dua sisi (WA/Telegram) ─────────
+   Keputusan 2026-06-02 (user): pesan orang lain (non-own) jadi bubble KIRI,
+   mengimbangi bubble KANAN milik sendiri (own, hijau). Sebelumnya non-own flat
+   di light-theme & kotak `--surface-1` samar di dark-theme (tidak konsisten).
+   Di-scope ke .ds.channels-v2 + di-load terakhir → menang cascade tanpa
+   menyentuh aturan .message-card yang tersebar/terduplikasi di responsive.css.
+   Radius "ekor" pesan beruntun sudah dari responsive.css:12399+; di sini kita
+   tambah bg/border/lebar (hug-content) + radius default untuk pesan solo, dan
+   menyamakan perilaku lebar own agar kedua sisi sama-sama memeluk konten. */
+
+/* Non-own: bubble kiri, surface netral, hug-content (konsisten light + dark) */
+.ds.channels-v2 .message-card:not(.message-card--own):not(.message-card--tagged):not(.message-card--deleted-state) .message-card__body {
+  flex: 0 1 auto;
+  width: fit-content;
+  max-width: min(680px, 100%);
+  margin-right: auto;
+  padding: 9px 13px;
+  background: var(--surface-1);
+  border: 1px solid var(--panel-border-soft);
+  box-shadow:
+    0 8px 22px color-mix(in srgb, var(--panel-border-strong) 7%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 5%, transparent);
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+/* Own: samakan perilaku lebar jadi hug-content (override flex:0 1 720px dari
+   responsive.css). Margin-left:auto + bubble hijau tetap dari responsive.css. */
+.ds.channels-v2 .message-card--own .message-card__body {
+  flex: 0 1 auto;
+  width: fit-content;
+  max-width: min(680px, 100%);
+}
+
+/* Radius default bubble solo (pesan beruntun start/middle/end sudah punya
+   radius-ekor dari responsive.css:12399+) */
+.ds.channels-v2 .message-card--cluster-solo:not(.message-card--own):not(.message-card--tagged) .message-card__body {
+  border-radius: 18px 18px 18px 6px;
+}
+
+/* Hover lift halus untuk bubble non-own (mengimbangi hover own) */
+.ds.channels-v2 .message-card:not(.message-card--own):not(.message-card--deleted-state):hover .message-card__body {
+  transform: translateY(-1px);
+  border-color: var(--panel-border);
+  box-shadow:
+    0 12px 28px color-mix(in srgb, var(--panel-border-strong) 10%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 6%, transparent);
+}
+
+/* Reaksi & lampiran tetap rata-kiri di dalam bubble kiri (default own rata-kanan
+   tidak berlaku di sini) */
+.ds.channels-v2 .message-card:not(.message-card--own) .message-reactions,
+.ds.channels-v2 .message-card:not(.message-card--own) .message-attachments {
+  justify-content: flex-start;
+}

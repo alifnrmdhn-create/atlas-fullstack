@@ -50,7 +50,7 @@ import './styles/programs.css'
 import './styles/execution-grid.css'
 import './styles/workboard.css'
 import './styles/wi-detail.css'
-import './styles/channels.css'
+import './styles/search.css'
 import './styles/presence.css'
 import './styles/misc-views.css'
 import './styles/performance.css'
@@ -119,3 +119,13 @@ createInertiaApp({
         root.render(<App {...props} />)
     },
 })
+
+// PWA: daftarkan service worker hanya di production build (hindari ganggu Vite
+// HMR saat dev). Mengaktifkan installable + offline shell. Lihat public/sw.js.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.warn('[pwa] service worker registration failed', err)
+        })
+    })
+}

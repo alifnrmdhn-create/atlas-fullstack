@@ -133,13 +133,89 @@
     pointer-events: auto;
   }
 
-  .topbar__hamburger { display: inline-flex; }
+  /* Hamburger topbar TIDAK dipakai di phone — digantikan tab "Menu" di bottom
+   * tab bar (jangkauan jempol). Biarkan display:none (base). */
 
   /* Topbar respect notch + sedikit rapatkan padding di phone. */
   .topbar {
     padding-left: max(14px, env(safe-area-inset-left, 0px));
     padding-right: max(14px, env(safe-area-inset-right, 0px));
     gap: 8px;
+  }
+
+  /* ── Bottom tab bar (Mobile UX, 2026-06-02) ─────────────────────────────
+   * Navigasi utama jangkauan-jempol. Fixed di bawah, opaque, safe-area aware.
+   * Konten workspace dikasih padding-bottom supaya tak ketutup. */
+  .mobile-tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-tabbar);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    background: var(--app-bg);
+    border-top: 1px solid var(--sidebar-border-strong);
+    box-shadow: 0 -2px 14px rgba(15, 20, 40, 0.07);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .mobile-tabbar__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 54px; /* ≥44px touch target */
+    padding: 7px 4px 6px;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    text-decoration: none;
+    cursor: pointer;
+    font: inherit;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 120ms ease;
+  }
+  .mobile-tabbar__item--active { color: var(--ptpn-green); }
+  .mobile-tabbar__item:active { background: var(--sidebar-hover); }
+  .mobile-tabbar__icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+  }
+  .mobile-tabbar__icon svg { width: 21px; height: 21px; }
+  .mobile-tabbar__label {
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.01em;
+  }
+  .mobile-tabbar__badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--gray);
+    color: #fff;
+    font-size: 9.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 0 0 2px var(--app-bg);
+  }
+  .mobile-tabbar__badge--urgent { background: var(--red); }
+
+  /* Konten clear dari tab bar (tinggi bar ~54 + safe area). */
+  .app-shell--mobile .workspace__content {
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -884,7 +960,7 @@
   align-items: center;
   gap: 8px;
   height: 32px;
-  width: 200px;
+  width: 252px;
   padding: 0 8px 0 11px;
   border: 1px solid var(--panel-border);
   background: var(--panel);

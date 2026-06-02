@@ -1920,6 +1920,11 @@
 .hvc__tl2-line { position: absolute; left: 0; right: 0; bottom: 16px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--ds-border-default), var(--ds-border-subtle)); }
 .hvc__tl2-tick { position: absolute; bottom: 0; transform: translateX(-50%); font-size: var(--ds-text-11); color: var(--ds-text-tertiary); font-variant-numeric: tabular-nums; }
 .hvc__tl2-tick::before { content: ''; position: absolute; left: 50%; bottom: 16px; width: 1px; height: 5px; background: var(--ds-border-default); transform: translateX(-50%); }
+/* "Today" — penambat acuan: garis vertikal putus-putus dari atas sumbu ke baseline,
+   memberi makna pada klaster (kiri = lewat, kanan = upcoming). Subtil (reference,
+   bukan data) dan di belakang dot (z-index 0). */
+.hvc__tl2-today { position: absolute; top: 2px; bottom: 16px; transform: translateX(-50%); border-left: 1px dashed var(--ds-border-default); z-index: 0; }
+.hvc__tl2-today-label { position: absolute; top: -2px; left: 50%; transform: translateX(-50%); padding: 0 4px; font-size: var(--ds-text-11); font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--ds-text-tertiary); background: var(--ds-surface-card); white-space: nowrap; }
 .hvc__tl2-dot { position: absolute; left: 0; bottom: calc(20px + var(--lane, 0) * 14px); transform: translateX(-50%); width: 17px; height: 17px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center; color: #fff; font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums; z-index: 1; box-shadow: 0 0 0 3px var(--ds-surface-card); transition: transform .12s ease, box-shadow .12s ease; }
 .hvc__tl2-dot::after { content: ''; position: absolute; top: 100%; left: 50%; width: 1px; height: calc(4px + var(--lane, 0) * 14px); background: var(--ds-border-default); transform: translateX(-50%); z-index: -1; }
 .hvc__tl2-dot:hover { transform: translateX(-50%) scale(1.22); z-index: 4; }
@@ -1934,6 +1939,11 @@
 .hvc__tl2-rnum[data-tone="red"]   { background: #EF4444; }
 .hvc__tl2-rnum[data-tone="amber"] { background: #F59E0B; }
 .hvc__tl2-rnum[data-tone="green"] { background: #10B981; }
+/* Dot penanda baris (pin tak lagi bernomor urut — penanda = tanggal, bukan rank) */
+.hvc__tl2-rdot { width: 9px; height: 9px; border-radius: 50%; justify-self: center; }
+.hvc__tl2-rdot[data-tone="red"]   { background: #EF4444; }
+.hvc__tl2-rdot[data-tone="amber"] { background: #F59E0B; }
+.hvc__tl2-rdot[data-tone="green"] { background: #10B981; }
 .hvc__tl2-rdate { font-size: var(--ds-text-13); font-weight: 700; font-variant-numeric: tabular-nums; }
 .hvc__tl2-rdate[data-tone="red"]   { color: var(--tone-red); }
 .hvc__tl2-rdate[data-tone="amber"] { color: var(--tone-amber); }
@@ -2452,6 +2462,20 @@ button.hvc__hcard:hover .hvc__arrow { transform: translateX(3px); }
 .hvc__hcard-legend .hvc__dot[data-tone="amber"] { background: #F59E0B; }
 .hvc__hcard-legend .hvc__dot[data-tone="red"]   { background: #EF4444; }
 .hvc__hcard-legend .hvc__dot[data-tone="neutral"] { background: #94A3B8; }
+
+/* ── Traceability (2026-06-02): elemen display jadi clickable (deep-link/drill).
+   Semua = reset tombol + warisi layout dari kelas dasarnya + hover halus. ── */
+.hvc__legend-btn { display: flex; align-items: center; gap: 7px; width: 100%; padding: 0; background: none; border: 0; font: inherit; color: var(--ds-text-secondary); text-align: left; cursor: pointer; transition: color .12s ease; }
+.hvc__legend-btn:hover { color: var(--ds-text-primary); }
+.hvc__mstat--link { border-left: 0; border-right: 0; border-bottom: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; border-radius: var(--ds-radius-sm); transition: opacity .12s ease; }
+.hvc__mstat--link:hover { opacity: .7; }
+.hvc__act-row--link { width: 100%; border-top: 0; border-left: 0; border-right: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; transition: color .12s ease; }
+.hvc__act-row--link:hover .hvc__act-text { color: var(--ds-text-primary); }
+.hvc__kpi-divbar--btn { padding: 1px 0; background: none; border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; transition: opacity .12s ease; }
+.hvc__kpi-divbar--btn:hover { opacity: .72; }
+@media (prefers-reduced-motion: reduce) {
+  .hvc__legend-btn, .hvc__mstat--link, .hvc__act-row--link, .hvc__kpi-divbar--btn { transition: none; }
+}
 
 /* gap card: 3D isometric accent, glowing */
 .hvc__hcard--gap .hvc__hcard-motif {
@@ -3148,6 +3172,9 @@ button.hvc__hcard:hover .hvc__arrow { transform: translateX(3px); }
 .hv--cockpit .hvc__hud       { grid-template-columns: repeat(4, 1fr); gap: var(--ds-space-4); }
 .hv--cockpit .hvc__grid--cmd { grid-template-columns: repeat(4, 1fr); gap: var(--ds-space-4); }
 .hv--cockpit .hvc__grid--mid { grid-template-columns: 1fr 1.5fr 1.5fr; gap: var(--ds-space-4); }
+/* Command Center = 3 panel di track 4-kolom (panel "By Division" dihapus
+   2026-06-02): Momentum span 2 mengisi sisa + jaga align tepi dgn HUD. */
+.hv--cockpit .hvc__grid--cmd > .hvc__panel--wide { grid-column: span 2; }
 /* KPI divbars boleh menyempit di kolom 25% (meter fleksibel) */
 .hvc__kpi-divbars { min-width: 0; }
 
@@ -3164,6 +3191,7 @@ button.hvc__hcard:hover .hvc__arrow { transform: translateX(3px); }
   .hv--cockpit .hvc__hud,
   .hv--cockpit .hvc__grid--cmd,
   .hv--cockpit .hvc__grid--mid { grid-template-columns: 1fr; }
+  .hv--cockpit .hvc__grid--cmd > .hvc__panel--wide { grid-column: auto; }
 }
 
 /* ════════════════════════════════════════════════════════════════════

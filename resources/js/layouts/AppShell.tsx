@@ -1567,6 +1567,56 @@ export function AppShell({ children }: { children?: ReactNode }) {
         </main>
       </div>
 
+      {/* ── Bottom tab bar (phone ≤640) — navigasi utama jangkauan-jempol.
+           4 destinasi inti + "Menu" yang membuka drawer lengkap. Hanya phone. */}
+      {viewportPhone ? (
+        <nav className="mobile-tabbar" aria-label="Navigasi utama">
+          {[
+            { path: '/',           label: 'Home',      icon: IconHome,      badge: 0 },
+            { path: '/execution',  label: 'Workboard', icon: IconExecution, badge: tasksCount },
+            { path: '/programs',   label: 'Programs',  icon: IconPrograms,  badge: programsCount },
+            { path: '/channels',   label: 'Channels',  icon: IconChannels,  badge: totalUnreadChannels, urgent: true },
+          ].map((t) => {
+            const active = activePath === t.path
+            return (
+              <Link
+                key={t.path}
+                href={t.path}
+                className={`mobile-tabbar__item${active ? ' mobile-tabbar__item--active' : ''}`}
+                aria-current={active ? 'page' : undefined}
+                onMouseEnter={() => prefetchRoute(t.path)}
+              >
+                <span className="mobile-tabbar__icon">
+                  {t.icon()}
+                  {t.badge > 0 ? (
+                    <span className={`mobile-tabbar__badge${t.urgent ? ' mobile-tabbar__badge--urgent' : ''}`}>
+                      {t.badge > 99 ? '99+' : t.badge}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="mobile-tabbar__label">{t.label}</span>
+              </Link>
+            )
+          })}
+          <button
+            type="button"
+            className={`mobile-tabbar__item${mobileNavOpen ? ' mobile-tabbar__item--active' : ''}`}
+            onClick={() => setMobileNavOpen((o) => !o)}
+            aria-expanded={mobileNavOpen}
+            aria-label="Menu lengkap"
+          >
+            <span className="mobile-tabbar__icon">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                <line x1="4" y1="6.5" x2="18" y2="6.5" />
+                <line x1="4" y1="11" x2="18" y2="11" />
+                <line x1="4" y1="15.5" x2="18" y2="15.5" />
+              </svg>
+            </span>
+            <span className="mobile-tabbar__label">Menu</span>
+          </button>
+        </nav>
+      ) : null}
+
       {/* ── Sign-out confirmation modal ── */}
       {logoutPending && (
         <div className="modal-backdrop" onClick={cancelLogout}>

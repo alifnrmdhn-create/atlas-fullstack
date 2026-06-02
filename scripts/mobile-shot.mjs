@@ -120,7 +120,7 @@ try {
           await shot(page, join(outDir, `${d.name}-${r.name}-tabend.png`))
         }
         if (process.env.OPEN_NAV) {
-          await page.send('Runtime.evaluate', { expression: `document.querySelector('.topbar__hamburger')?.click()` })
+          await page.send('Runtime.evaluate', { expression: `document.querySelector('[aria-label="Menu lengkap"]')?.click()` })
           await sleep(450)
           await shot(page, join(outDir, `${d.name}-${r.name}-navopen.png`))
           console.log('OK', `${d.name}-${r.name}-navopen.png`)

@@ -1,0 +1,111 @@
+/* ─── Search View ──────────────────────────────────────────────
+   Styles for SearchView (/search deep-view) and shared search chrome
+   used by ScheduleView. Moved out of the former styles/channels.css
+   (2026-06-02): that file's channel-messaging rules were dead/legacy
+   (component migrated to .message-card / .composer-slim / .channel-row,
+   all base styles now live in responsive.css + channels-polish.css).
+   Only this Search block was still live, so it was extracted here and
+   channels.css was removed. */
+.view-search { padding: 0 0 32px; }
+
+.search-header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--panel-border);
+  padding: 20px 36px;
+}
+.search-header__title { font-size: 22px; font-weight: 800; color: var(--text-strong); letter-spacing: -0.03em; }
+.search-header__sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+.search-workspace {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 20px;
+  padding: 20px 36px;
+  align-items: start;
+}
+.search-main { display: flex; flex-direction: column; gap: 0; }
+.search-main .panel { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.search-sidebar { display: flex; flex-direction: column; gap: 12px; }
+
+.search-form__input-row { display: flex; gap: 8px; align-items: center; }
+.search-form__input-wrap { position: relative; flex: 1; }
+.search-form__icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+.search-form__input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  font-size: 13.5px;
+  outline: none;
+  background: var(--app-bg);
+  color: var(--text);
+}
+.search-form__input:focus { border-color: var(--accent); background: var(--panel); }
+.search-form__type {
+  padding: 7px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  font-size: 12.5px;
+  background: var(--panel);
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+}
+.search-form__type:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px var(--indigo-dim); }
+
+.search-presets { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.preset-chip {
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--panel-border);
+  background: var(--app-bg);
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.preset-chip:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-dim); }
+
+.search-meta { display: flex; align-items: center; gap: 10px; min-height: 20px; }
+.search-mix { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.search-mix__stat {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 1px 8px;
+  border-radius: 20px;
+  background: var(--app-bg);
+  border: 1px solid var(--panel-border);
+}
+
+.search-results { display: flex; flex-direction: column; gap: 8px; }
+.search-result {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  background: var(--panel);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  width: 100%;
+}
+.search-result:hover { border-color: var(--indigo); box-shadow: 0 0 0 2px var(--indigo-dim); }
+.search-result__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.search-result__title { font-size: 13px; font-weight: 600; color: var(--text-strong); flex: 1; }
+.search-result__snippet { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+.search-result__meta { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted); }
+.search-result-skeleton { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid var(--panel-border); border-radius: var(--radius); }
+
+.saved-list { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+.saved-item { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border: 1px solid var(--panel-border); border-radius: var(--radius); cursor: pointer; text-align: left; background: var(--panel); transition: border-color var(--transition); width: 100%; }
+.saved-item:hover { border-color: var(--indigo); }
+.saved-item__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.saved-item__query { font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); background: var(--surface-quiet); padding: 2px 6px; border-radius: 3px; }
+
+.operator-list { display: flex; flex-direction: column; padding: 8px 0; }
+.operator-row { display: flex; align-items: center; gap: 10px; padding: 7px 16px; border-bottom: 1px solid var(--panel-border); }
+.operator-row:last-child { border-bottom: none; }
+.operator-row__op { font-family: var(--font-mono); font-size: 12px; background: var(--surface-quiet); padding: 1px 6px; border-radius: 3px; color: var(--accent); min-width: 60px; }

@@ -131,3 +131,25 @@ Urutan prioritas (paling sering dibuka di HP dulu):
 
 ## 4. Deliverable Fase 1 (definition of done)
 Di 390px: hamburger buka drawer full-label dengan backdrop; klik nav menutup & navigasi; konten pakai full width (sidebar tak makan ruang); Esc & klik-luar menutup; desktop ≥641px **tidak berubah sama sekali**. Smoke `mobile-shot.mjs` bersih.
+
+---
+
+## TRACK BARU — Mobile UX (mobile-first, bukan sekadar responsive) — 2026-06-02
+
+Keputusan user 2026-06-02: app harus **benar-benar nyaman & fungsional di HP untuk SEMUA peran** (Direktur pantau/approve, PIC update kerja, komunikasi/jadwal, fungsionalitas penuh), **satu codebase** (mobile UX pass, bukan dedicated views), **+ PWA installable**.
+
+Konteks: Fase 1–3 = "tidak rusak / muat" (responsive bug-fixing). Track ini = "enak dipakai pakai jempol" (touch ergonomics, thumb-reach, density, app-like). Gap konkret: tap target 20–32px (perlu ≥44px), nav hamburger pojok (perlu bottom-nav), kepadatan tinggi, tabel scroll-horizontal canggung (perlu →kartu), modal multi-kolom (perlu sheet), belum installable.
+
+### M1 — Bottom tab bar ✅ DONE (2026-06-02)
+- `MobileTabBar` inline di `AppShell.tsx` (gate `viewportPhone`): 4 destinasi inti (Home/Workboard/Programs/Channels, reuse ikon+badge NI) + tab "Menu" buka drawer. `shell.css` `.mobile-tabbar` (fixed bottom, z `--z-tabbar`, ≥54px touch, safe-area, badge). Hamburger topbar dihapus di phone (digantikan tab Menu). `workspace__content` padding-bottom clear bar. Verified: tab bar tampil, active state hijau, drawer buka via Menu, badge (Workboard 6 / Programs 22).
+
+### M2 — PWA installable ✅ DONE (2026-06-02)
+- Ikon generate dari brand mark via `scripts/gen-icons.mjs` → `public/icons/` (192/512/maskable-512/apple-touch-180/favicon-32).
+- `public/manifest.webmanifest` (standalone, theme #2D8C3E, portrait). `public/sw.js` (network-first nav + SWR aset + API passthrough; offline shell). Meta manifest/theme-color/apple-touch di `app.blade.php` + `viewport-fit=cover`. Registrasi SW di `app.tsx` guard `import.meta.env.PROD` (tak ganggu HMR dev).
+- Installable di deploy HTTPS (Railway) setelah `npm run build`. Validated: manifest JSON ok, sw.js syntax ok, ikon render ok.
+- NB build penuh tertahan sementara karena HomeView.tsx WIP user (bukan dari mobile work).
+
+### M3 — Touch targets ≥44px (global pass)
+### M4 — Tabel → kartu reflow (pola reusable)
+### M5 — Modal → full-screen sheet (phone)
+### M6 — Density tuning per-flow

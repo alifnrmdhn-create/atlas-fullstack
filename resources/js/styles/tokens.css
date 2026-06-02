@@ -254,6 +254,7 @@
    * (1, 2, 10, 60/61 dst) TIDAK pakai token — biarkan apa adanya.
    * Urutan: sidebar < popover < tooltip < palette < modal < topbar < floating < toast */
   --z-sidebar: 100;          /* sidebar rail */
+  --z-tabbar: 150;           /* phone bottom tab bar (≤640) — di atas konten, di bawah modal/scrim */
   --z-popover-backdrop: 198; /* scrim di bawah popover menu (klik-luar) */
   --z-popover: 199;          /* user/quick/notif/menu popover (portaled) */
   --z-tooltip: 300;          /* tooltip sidebar collapsed */

@@ -280,3 +280,158 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * Premium craft pass (2026-06-02)
+ *
+ * Focus was reading flat next to the Home cockpit ("jomplang"): plain
+ * hairline boxes, no depth, no rhythm. This brings Home's craft language
+ * here — layered shadow, urgency-tied top-accent glow, a real icon anchor,
+ * hover lift — without abandoning the page's restraint (color still rides
+ * the urgency rail; depth does the heavy lifting, not extra color).
+ *
+ * Everything is scoped to .fokus-v2 on purpose: .panel, .hd-act-row,
+ * .collapsible-section and .fokus-* are shared primitives used on Home and
+ * elsewhere, so the polish stays local to this page.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+.fokus-v2 .fokus-page { gap: 20px; }
+
+/* ─── NOW — hero card gets genuine presence ──────────────────────────── */
+.fokus-v2 .fokus-hero-card {
+  grid-template-columns: 40px 1fr auto;
+  gap: 18px;
+  align-items: center;
+  padding: 24px 28px;
+  border-radius: 18px;
+  box-shadow: var(--panel-shadow-md);
+  /* Soft accent bloom in the top-left, tinted by urgency. Invisible for
+   * `info` items (rail = transparent) so calm items stay calm. */
+  background:
+    radial-gradient(135% 130% at 0% 0%, color-mix(in srgb, var(--u-rail) 9%, transparent) 0%, transparent 46%),
+    var(--panel);
+  transition: box-shadow .22s var(--ds-ease-standard, ease),
+              transform .22s var(--ds-ease-standard, ease),
+              border-color .22s var(--ds-ease-standard, ease);
+}
+.fokus-v2 .fokus-hero-card::before { width: 4px; }
+.fokus-v2 .fokus-hero-card:hover {
+  box-shadow: var(--panel-shadow-xl);
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--u-rail) 28%, var(--panel-border));
+}
+/* Icon: from a bare gray glyph to an anchored badge that picks up the
+ * urgency hue. Neutral for `info`. */
+.fokus-v2 .fokus-hero-card__icon {
+  width: 40px;
+  height: 40px;
+  margin-top: 0;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--u-rail) 11%, var(--surface-overlay-soft));
+  border: 1px solid color-mix(in srgb, var(--u-rail) 22%, var(--panel-border));
+  color: color-mix(in srgb, var(--u-rail) 62%, var(--text));
+}
+.fokus-v2 .fokus-hero-card__icon svg { width: 18px; height: 18px; }
+.fokus-v2 .fokus-hero-card__title {
+  font-size: 16.5px;
+  letter-spacing: -0.018em;
+}
+
+/* CTA — a touch of lift so the primary action feels tactile */
+.fokus-v2 .fokus-cta { border-radius: 9px; }
+.fokus-v2 .fokus-cta--lg { border-radius: 11px; }
+.fokus-v2 .fokus-cta--primary {
+  box-shadow: 0 1px 2px rgba(15,20,40,0.14), 0 3px 10px rgba(15,20,40,0.10);
+}
+.fokus-v2 .fokus-cta--primary:hover {
+  box-shadow: 0 2px 4px rgba(15,20,40,0.18), 0 5px 16px rgba(15,20,40,0.14);
+}
+
+/* ─── Bucket labels — NOW gets a pulse-dot like the Home headline ────── */
+.fokus-v2 .fokus-bucket__head { align-items: center; }
+.fokus-v2 .fokus-bucket--now .fokus-bucket__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.fokus-v2 .fokus-bucket--now .fokus-bucket__label::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tone-red);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tone-red) 16%, transparent);
+}
+
+/* ─── TODAY / CAN WAIT — list container reads as a real surface ──────── */
+.fokus-v2 .fokus-bucket__list {
+  border-radius: 14px;
+  box-shadow: var(--panel-shadow);
+}
+.fokus-v2 .fokus-row {
+  padding: 14px 18px;
+  transition: background .15s var(--ds-ease-standard, ease);
+}
+.fokus-v2 .fokus-row:hover { background: var(--surface-overlay-soft); }
+.fokus-v2 .fokus-row__title { font-size: 13.5px; }
+/* Row icon picks up the urgency hue — subtle life, consistent with the rail */
+.fokus-v2 .fokus-row--critical .fokus-row__icon { color: var(--tone-red); }
+.fokus-v2 .fokus-row--warn     .fokus-row__icon { color: var(--tone-amber); }
+.fokus-v2 .fokus-row--decide   .fokus-row__icon { color: var(--indigo); }
+
+/* ─── Today's Commitments — collapsible reads as a card, not a faint box ─ */
+.fokus-v2 .collapsible-section {
+  background: var(--panel);
+  border-color: var(--panel-border);
+  border-radius: 14px;
+  box-shadow: var(--panel-shadow);
+}
+.fokus-v2 .collapsible-section__header { padding: 13px 18px; }
+.fokus-v2 .collapsible-section__title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-strong);
+  letter-spacing: -0.01em;
+}
+.fokus-v2 .collapsible-section__body { padding: 6px 18px 16px; }
+
+/* ─── Needs Your Action (ActionPanel) — depth + de-monotonized rows ───── */
+.fokus-v2 .panel {
+  border-radius: 16px;
+  box-shadow: var(--panel-shadow);
+}
+.fokus-v2 .panel__header { padding: 14px 18px; }
+.fokus-v2 .panel__title {
+  font-size: 14px;
+  letter-spacing: -0.015em;
+}
+/* The old layout repeated a fixed 160px type column down 20+ rows — a wall
+ * of identical "Needs Support" tags. Let the type label hug its content as a
+ * tinted pill, freeing width for the title. Rows stay calm at rest and reveal
+ * an accent rail + lift on hover (no 20-rail wall, but tactile feedback). */
+.fokus-v2 .hd-act-row {
+  grid-template-columns: max-content 1fr auto auto;
+  gap: 14px;
+  padding: 15px 20px;
+  transition: background .14s var(--ds-ease-standard, ease);
+}
+.fokus-v2 .hd-act-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--row-accent-color, var(--text-muted));
+  opacity: 0;
+  transition: opacity .14s var(--ds-ease-standard, ease);
+}
+.fokus-v2 .hd-act-row:hover { background: var(--surface-overlay-soft); }
+.fokus-v2 .hd-act-row:hover::before { opacity: 1; }
+.fokus-v2 .hd-act-row__type {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--row-accent-color, var(--text-muted)) 10%, transparent);
+}
+.fokus-v2 .hd-act-row__body strong { font-size: 13.5px; }

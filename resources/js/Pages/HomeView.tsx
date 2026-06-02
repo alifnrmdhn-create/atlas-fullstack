@@ -252,131 +252,121 @@ function initials(text: string): string {
 /* ─── Eksekusi per divisi — toggle KPI / Eksekusi, 6 rows + sparkline
  * (mockup "Eksekusi per divisi"). KPI view = score vs 100; Eksekusi view =
  * overdue count. Each row: icon dot + name + bar + trend sparkline + value. */
-type DivRow = { code: string; name: string; kpi: number | null; overdue: number; total: number; pctOnTrack: number }
-function DivisiPanel({ rows, onRow }: { rows: DivRow[]; onRow: (code: string) => void }) {
-  const [mode, setMode] = useState<'kpi' | 'exec'>('exec')
-  const showKpi = mode === 'kpi' && rows.some(r => r.kpi != null)
-  const sorted = [...rows].sort((a, b) =>
-    showKpi ? (b.kpi ?? -1) - (a.kpi ?? -1) : b.overdue - a.overdue
-  ).slice(0, 6)
-  return (
-    <div className="hvc__divp">
-      <div className="hvc__divp-toggle" role="tablist">
-        <button type="button" role="tab" aria-selected={mode === 'kpi'} data-active={mode === 'kpi'} onClick={() => setMode('kpi')}>KPI</button>
-        <button type="button" role="tab" aria-selected={mode === 'exec'} data-active={mode === 'exec'} onClick={() => setMode('exec')}>Execution</button>
-      </div>
-      <div className="hvc__divlist">
-        {sorted.map(r => {
-          const t: Tone = showKpi
-            ? scoreTone(r.kpi ?? 0)
-            : (r.overdue === 0 ? 'green' : r.pctOnTrack < 50 ? 'red' : 'amber')
-          const val = showKpi ? (r.kpi != null ? `${r.kpi.toFixed(1)}%` : '—') : String(r.overdue)
-          const meterVal = showKpi ? (r.kpi ?? 0) : r.overdue
-          const meterMax = showKpi ? 120 : Math.max(1, ...sorted.map(x => x.overdue))
-          return (
-            <button key={r.code} type="button" className="hvc__divrow" onClick={() => onRow(r.code)}>
-              <span className="hvc__divrow-dot" data-tone={t} aria-hidden />
-              <span className="hvc__divrow-code" title={r.name}>{r.code}</span>
-              <Meter className="hvc__divrow-meter" value={meterVal} max={meterMax} target={showKpi ? 100 : undefined} tone={t} height={10} aria-label={`${r.code}: ${val}`} />
-              <span className="hvc__divrow-val" data-tone={t}>{val}</span>
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 /* ─── Horizontal deadline timeline — date axis with stop markers (mockup
  * "Timeline Deadline Kritis"). Programs plotted as nodes on a baseline,
  * spaced by sequence; each node = date + program label, colored by urgency. */
 type TLProg = { id: number; code: string; name: string; daysRemaining: number | null; targetEndDate?: string | null; divisi: string; healthTone: string }
 const TL_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+// Deep-link ke /programs ter-filter. ProgramsView hanya mengenal status
+// GREEN/YELLOW/RED via ?status (on_track/at_risk/terlambat) — Completed & filter
+// divisi tidak ada di URL → fallback ke /programs generik. (ProgramsView = modul
+// inti, tidak diubah; kita hanya memanfaatkan param yang sudah didukungnya.)
+const PROGRAM_STATUS_HREF: Record<string, string> = {
+  onTrack: '/programs?status=on_track',
+  atRisk: '/programs?status=at_risk',
+  tlm: '/programs?status=terlambat',
+  terlambat: '/programs?status=terlambat',
+}
+const programsHref = (key?: string) => (key && PROGRAM_STATUS_HREF[key]) || '/programs'
+
 function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (id: number) => void }) {
-  const items = programs.slice(0, 8)
-  if (items.length === 0) return <p className="hvc__empty">No active programs with deadlines.</p>
-  const fmt = (iso?: string | null) => {
-    if (!iso) return '—'
-    const d = new Date(iso)
-    if (Number.isNaN(d.getTime())) return iso
-    return `${d.getDate()} ${TL_MON[d.getMonth()]}`
-  }
-  const toneOf = (days: number): Tone => days < 0 ? 'red' : days <= 14 ? 'red' : days <= 30 ? 'amber' : 'green'
+  const dated = programs.filter(p => p.targetEndDate && p.daysRemaining != null)
+  if (dated.length === 0) return <p className="hvc__empty">No active programs with deadlines.</p>
+  const fmt = (t: number) => { const d = new Date(t); return `${d.getDate()} ${TL_MON[d.getMonth()]}` }
+  // Overdue = merah; upcoming dekat (≤30h) = amber; jauh = hijau. Membedakan
+  // "terlambat" dari "akan jatuh tempo" di sumbu yang sama.
+  const toneOf = (days: number): Tone => days < 0 ? 'red' : days <= 30 ? 'amber' : 'green'
   const daysLabelOf = (days: number) => days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Today' : `${days}d left`
 
-  // Sumbu PROPORSIONAL: tiap penanda diposisikan menurut tanggal aslinya (bukan
-  // urutan), jadi tenggat yang berdempetan terbaca jujur sebagai tumpukan — bukan
-  // disamaratakan seolah jaraknya seragam. Butuh ≥2 tanggal valid; jika tidak,
-  // fallback ke spasi rata.
-  const stamped = items.map(p => ({ p, t: p.targetEndDate ? new Date(p.targetEndDate).getTime() : NaN }))
-  const valid = stamped.filter(s => !Number.isNaN(s.t)).map(s => s.t)
-  const scaled = valid.length >= 2
-  const min = scaled ? Math.min(...valid) : 0
-  const max = scaled ? Math.max(...valid) : 1
-  const span = Math.max(1, max - min)
-  const posOf = (t: number, i: number) =>
-    scaled && !Number.isNaN(t)
-      ? 4 + 92 * ((t - min) / span)
-      : (items.length === 1 ? 50 : 4 + 92 * (i / (items.length - 1)))
-  const positions = stamped.map(({ t }, i) => posOf(t, i))
+  // Kelompokkan per TANGGAL (granularity hari). Banyak program berbagi tenggat
+  // akhir-bulan → tanpa grouping, pin menumpuk jadi menara. Satu tanggal = satu
+  // penanda dengan badge jumlah. Pilih tanggal TER-DEKAT hari ini (kedua arah),
+  // lalu tampilkan kronologis. Sumbu selalu mencakup hari ini sebagai penambat,
+  // jadi cluster overdue terbaca "di kiri (lewat)", upcoming "di kanan".
+  const byDay = new Map<number, { t: number; days: number; items: TLProg[] }>()
+  for (const p of dated) {
+    const d = new Date(p.targetEndDate as string)
+    const t = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    const g = byDay.get(t)
+    if (g) g.items.push(p)
+    else byDay.set(t, { t, days: p.daysRemaining as number, items: [p] })
+  }
+  const groups = [...byDay.values()]
+    .sort((a, b) => Math.abs(a.days) - Math.abs(b.days))
+    .slice(0, 8)
+    .sort((a, b) => a.t - b.t)
 
-  // Stagger penanda yang berhimpit secara vertikal (lane) supaya klaster jadi
-  // tumpukan yang terbaca, bukan blob. Urut by posisi lalu beri lane bertingkat.
-  const lanes = new Array<number>(items.length).fill(0)
+  const todayT = Date.now()
+  const domain = [...groups.map(g => g.t), todayT]
+  const min = Math.min(...domain)
+  const max = Math.max(...domain)
+  const span = Math.max(1, max - min)
+  const scaleX = (t: number) => 4 + 92 * ((t - min) / span)
+  const todayPos = scaleX(todayT)
+  const positions = groups.map(g => scaleX(g.t))
+
+  // Stagger vertikal hanya saat dua tanggal terlalu berhimpit posisinya.
+  const lanes = new Array<number>(groups.length).fill(0)
   const order = positions.map((_, i) => i).sort((a, b) => positions[a] - positions[b])
   let prevPos = -Infinity, prevLane = 0
   for (const idx of order) {
-    prevLane = positions[idx] - prevPos < 4 ? Math.min(prevLane + 1, 3) : 0
+    prevLane = positions[idx] - prevPos < 5 ? Math.min(prevLane + 1, 2) : 0
     lanes[idx] = prevLane
     prevPos = positions[idx]
   }
 
   // Tick bulan sepanjang rentang — penambat skala nyata.
   const ticks: Array<{ pos: number; label: string }> = []
-  if (scaled) {
-    const dMin = new Date(min)
-    let y = dMin.getFullYear(), m = dMin.getMonth()
+  { const dMin = new Date(min); let y = dMin.getFullYear(), m = dMin.getMonth()
     for (let k = 0; k < 14; k++) {
       const tt = new Date(y, m, 1).getTime()
       if (tt > max) break
-      if (tt >= min) ticks.push({ pos: 4 + 92 * ((tt - min) / span), label: TL_MON[m] })
+      if (tt >= min) ticks.push({ pos: scaleX(tt), label: TL_MON[m] })
       m++; if (m > 11) { m = 0; y++ }
-    }
-  }
+    } }
 
   return (
     <div className="hvc__tl2">
-      <div className="hvc__tl2-axis" role="img" aria-label="Program deadline distribution">
+      <div className="hvc__tl2-axis" role="img" aria-label="Program deadline distribution relative to today">
         <span className="hvc__tl2-line" aria-hidden />
         {ticks.map((tk, i) => (
           <span key={i} className="hvc__tl2-tick" style={{ left: `${tk.pos}%` } as CSSProperties}>{tk.label}</span>
         ))}
-        {stamped.map(({ p, t }, i) => {
-          const days = p.daysRemaining ?? 0
-          const tone = toneOf(days)
+        <span className="hvc__tl2-today" style={{ left: `${todayPos}%` } as CSSProperties} aria-hidden>
+          <span className="hvc__tl2-today-label">Today</span>
+        </span>
+        {groups.map((g, i) => {
+          const tone = toneOf(g.days)
+          const n = g.items.length
+          const label = `${fmt(g.t)} · ${daysLabelOf(g.days)} · ${n > 1 ? `${n} programs` : g.items[0].name}`
           return (
-            <button key={p.id} type="button" className="hvc__tl2-dot" data-tone={tone}
+            <button key={g.t} type="button" className="hvc__tl2-dot" data-tone={tone}
               style={{ left: `${positions[i]}%`, ['--lane' as string]: lanes[i] } as CSSProperties}
-              title={`${p.name} · ${fmt(p.targetEndDate)} · ${daysLabelOf(days)}`}
-              aria-label={`${p.name}, ${daysLabelOf(days)}`}
-              onClick={() => onOpen(p.id)}>
-              <span className="hvc__tl2-num">{i + 1}</span>
+              title={label} aria-label={label}
+              onClick={() => onOpen(g.items[0].id)}>
+              {n > 1 ? <span className="hvc__tl2-num">{n}</span> : null}
             </button>
           )
         })}
       </div>
+      {/* List = satu baris per TANGGAL → 1:1 dengan pin di sumbu (count, upcoming,
+          dan tanggal terpadat semuanya konsisten; tak ada pin tanpa baris). */}
       <ol className="hvc__tl2-list">
-        {stamped.map(({ p }, i) => {
-          const days = p.daysRemaining ?? 0
-          const tone = toneOf(days)
+        {groups.map(g => {
+          const tone = toneOf(g.days)
+          const n = g.items.length
+          const divs = [...new Set(g.items.map(p => p.divisi).filter(Boolean))]
           return (
-            <li key={p.id}>
-              <button type="button" className="hvc__tl2-row" onClick={() => onOpen(p.id)}>
-                <span className="hvc__tl2-rnum" data-tone={tone}>{i + 1}</span>
-                <span className="hvc__tl2-rdate" data-tone={tone}>{fmt(p.targetEndDate)}</span>
-                <span className="hvc__tl2-rname" title={p.name}>{p.name}</span>
-                <span className="hvc__tl2-rmeta">{p.divisi || '—'}</span>
-                <span className="hvc__tl2-rdays" data-tone={tone}>{daysLabelOf(days)}</span>
+            <li key={g.t}>
+              <button type="button" className="hvc__tl2-row" onClick={() => onOpen(g.items[0].id)}>
+                <span className="hvc__tl2-rdot" data-tone={tone} aria-hidden />
+                <span className="hvc__tl2-rdate" data-tone={tone}>{fmt(g.t)}</span>
+                <span className="hvc__tl2-rname" title={n > 1 ? g.items.map(p => p.name).join(' · ') : g.items[0].name}>
+                  {n > 1 ? `${n} programs due` : g.items[0].name}
+                </span>
+                <span className="hvc__tl2-rmeta">{divs.join(', ') || '—'}</span>
+                <span className="hvc__tl2-rdays" data-tone={tone}>{daysLabelOf(g.days)}</span>
               </button>
             </li>
           )
@@ -564,32 +554,17 @@ export default function HomeView() {
     .slice(0, 6)
   const overdueMax = Math.max(1, ...overdueRows.map(d => d.value))
 
-  /* ── Eksekusi per divisi (KPI + execution merged) ────────────── */
-  const kpiByCode = new Map<string, number>()
-  ;(scorecard.grid && scorecard.grid.length === 1 ? scorecard.grid[0].divisi : scorecard.topItems.map(d => ({ kode: d.kode, nilai: d.nilai })))
-    .forEach(d => kpiByCode.set(d.kode.split('-')[0], d.nilai))
-  const divRows = [...byDivisi]
-    .filter(d => d.unit.id !== null && d.total > 0)
-    .map(d => ({
-      code: d.unit.code.split('-')[0],
-      name: d.unit.name,
-      kpi: kpiByCode.get(d.unit.code.split('-')[0]) ?? null,
-      overdue: (d.terlambat ?? 0) + (d.overdue ?? 0),
-      total: d.total,
-      pctOnTrack: d.pctOnTrack,
-    }))
-
   /* ── Command-center: Momentum ────────────────────────────────── */
-  const activeRatePct = momentum ? Math.round((momentum.activeRate ?? 0) * (momentum.activeRate <= 1 ? 100 : 1)) : 0
-  const activeRateTone: Tone = activeRatePct >= 60 ? 'green' : activeRatePct >= 30 ? 'amber' : 'red'
-  // Stat pendukung kartu Momentum. Active-rate (dulu gauge dominan yang nyaris
-  // selalu 100% → low-signal) diturunkan jadi satu stat; kartu kini fokus ke
-  // tren On Track yang nyata. 'suffix' di semua entri agar tipe array seragam.
+  // Kartu Momentum fokus ke TREN On Track 14 hari (sinyal leading nyata). Dua
+  // stat sebelumnya dibuang karena artefak lingkungan, bukan sinyal:
+  //  • 'Programs moving' (active-rate) → di-derive dari updatedAt; saat seed/
+  //    recompute bulk men-stamp semua program di hari yang sama, nyaris selalu
+  //    100% → tak bermakna.
+  //  • 'Stalled' (stagnantCount) → sebab sama (semua updatedAt baru) → ~0 palsu.
+  // Sisa stat = throughput nyata (program selesai 30 hari + task selesai pekan ini).
   const momentumStats = momentum ? [
-    { label: 'Programs moving', value: activeRatePct, suffix: '%', tone: activeRateTone },
-    { label: 'Completed · 30d', value: momentum.programsCompletedLast30d, suffix: '', tone: 'green' as Tone },
-    { label: 'Tasks done · this week', value: momentum.tasksCompletedThisWeek, suffix: '', tone: 'green' as Tone },
-    { label: 'Stalled', value: momentum.stagnantCount, suffix: '', tone: (momentum.stagnantCount > 0 ? 'red' : 'green') as Tone },
+    { label: 'Completed · 30d', value: momentum.programsCompletedLast30d, suffix: '', tone: 'green' as Tone, href: '/programs' },
+    { label: 'Tasks done · this week', value: momentum.tasksCompletedThisWeek, suffix: '', tone: 'green' as Tone, href: '/execution' },
   ] : []
 
   /* ── Mid: Heatmap rekap program (divisi × status) ────────────── */
@@ -646,10 +621,14 @@ export default function HomeView() {
   ]
 
   /* ── Below-the-fold detail data (unchanged sources) ──────────── */
-  const topDeadlinePrograms = [...programsForChart]
+  const datedPrograms = programsForChart
     .filter(p => p.daysRemaining != null && p.healthTone !== 'selesai')
-    .sort((a, b) => (a.daysRemaining ?? 9999) - (b.daysRemaining ?? 9999))
-    .slice(0, 10)
+  // Usia tertinggal terburuk — konteks severity untuk kartu Delayed. Sumber baru
+  // (bukan dup "awaiting decision" yang sudah dibawa kartu ④ Needs Your Decision).
+  const minDays = datedPrograms.length ? Math.min(...datedPrograms.map(p => p.daysRemaining as number)) : 0
+  const oldestOverdueDays = minDays < 0 ? Math.abs(minDays) : null
+  // Feed timeline = semua program bertanggal; DeadlineTimeline yang mengelompokkan
+  // per tanggal + memilih tanggal ter-dekat hari ini (kedua arah). Lihat komponen.
 
   /* ── Verdict — editorial lead: the one-line state + WHY (reframes a green
    * lagging KPI against the leading execution risk). All from existing data. */
@@ -771,7 +750,7 @@ export default function HomeView() {
               {canSeePerformance && hasKpi && (
                 <Card padding="none" className="hvc__hcard hvc__hcard--kpi" data-tone={kpiTone}>
                   <div className="hvc__hcard-body">
-                    <span className="hvc__hcard-eyebrow">KPI Achievement · {scorecard.periodeLabel}</span>
+                    <span className="hvc__hcard-eyebrow">KPI Achievement · {scorecard.periodeLabel} <InfoHint content="Latest available scorecard period — KPI is reported roughly one month in arrears, so this trails the current month." /></span>
                     <div className="hvc__kpi-split">
                       <div className="hvc__kpi-left">
                         <div className="hvc__hcard-figure">
@@ -781,18 +760,20 @@ export default function HomeView() {
                         <span className="hvc__hcard-foot">vs target 100</span>
                       </div>
                       {hasKpiDivisi && (
-                        <ul className="hvc__kpi-divbars">
+                        <div className="hvc__kpi-divbars">
                           {kpiRows.slice(0, 3).map(d => {
                             const t = scoreTone(d.nilai)
                             return (
-                              <li key={d.kode} className="hvc__kpi-divbar">
+                              <button key={d.kode} type="button" className="hvc__kpi-divbar hvc__kpi-divbar--btn"
+                                title={`${d.nama}: ${d.nilai.toFixed(1)}% — buka KPI divisi`}
+                                onClick={() => navigate(`/performance/divisi/${shortCode(d.kode).toLowerCase()}`)}>
                                 <span className="hvc__kpi-divbar-name" title={d.nama}>{shortCode(d.kode)}</span>
                                 <Meter className="hvc__kpi-divbar-meter" value={d.nilai} max={120} target={100} tone={t} height={6} aria-label={`${d.nama}: ${d.nilai.toFixed(1)}%`} />
                                 <span className="hvc__kpi-divbar-val" data-tone={t}>{d.nilai.toFixed(1)}</span>
-                              </li>
+                              </button>
                             )
                           })}
-                        </ul>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -813,10 +794,10 @@ export default function HomeView() {
                   <div className="hvc__hcard-exec-row">
                     <Gauge value={onTrackPct} max={100} tone={leadingTone} size={84} thickness={9} valueText={`${onTrackPct}`} unit="%" label="on track" rich className="hvc__execgauge" />
                     <ul className="hvc__hcard-legend">
-                      <li><i className="hvc__dot" data-tone="green" />On Track<b>{summary.onTrack}</b></li>
-                      <li><i className="hvc__dot" data-tone="amber" />At Risk<b>{summary.atRisk}</b></li>
-                      <li><i className="hvc__dot" data-tone="red" />Delayed<b>{tlm}</b></li>
-                      <li><i className="hvc__dot" data-tone="neutral" />Completed<b>{summary.selesai}</b></li>
+                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('onTrack'))}><i className="hvc__dot" data-tone="green" />On Track<b>{summary.onTrack}</b></button></li>
+                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('atRisk'))}><i className="hvc__dot" data-tone="amber" />At Risk<b>{summary.atRisk}</b></button></li>
+                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('tlm'))}><i className="hvc__dot" data-tone="red" />Delayed<b>{tlm}</b></button></li>
+                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate('/programs')}><i className="hvc__dot" data-tone="neutral" />Completed<b>{summary.selesai}</b></button></li>
                     </ul>
                   </div>
                 </div>
@@ -824,11 +805,11 @@ export default function HomeView() {
               </Card>
 
               {/* ③ Program tertinggal — big number + embedded area trend */}
-              <button type="button" className="ds-card hvc__hcard hvc__hcard--late" data-tone={tlm > 0 ? 'red' : 'green'} onClick={() => navigate('/programs')}>
+              <button type="button" className="ds-card hvc__hcard hvc__hcard--late" data-tone={tlm > 0 ? 'red' : 'green'} onClick={() => navigate('/programs?status=terlambat')}>
                 <div className="hvc__hcard-body">
                   <span className="hvc__hcard-eyebrow">Delayed Programs</span>
                   <span className="hvc__hcard-big" data-tone={tlm > 0 ? 'red' : 'green'}><CountUp value={tlm} /></span>
-                  <span className="hvc__hcard-foot">{needsAction.length} awaiting decision</span>
+                  <span className="hvc__hcard-foot">{oldestOverdueDays != null ? `oldest ${oldestOverdueDays}d overdue` : `${summary.atRisk} at risk`}</span>
                 </div>
                 {(() => {
                   const lt = stableSeries.slice(-14).map(t => t.terlambat)
@@ -898,7 +879,7 @@ export default function HomeView() {
                   </span>
                 </header>
                 {horizonBars.length > 0
-                  ? <Bars bars={horizonBars} height={112} rich />
+                  ? <Bars bars={horizonBars} height={112} rich onBarClick={(b) => navigate(b.label.toLowerCase().includes('overdue') ? '/programs?status=terlambat' : '/programs')} />
                   : <p className="hvc__empty">No active programs with deadlines.</p>}
               </Card>
 
@@ -910,9 +891,10 @@ export default function HomeView() {
                 <ExecutionMap programs={programsForChart} onOpen={() => navigate('/programs')} />
               </Card>
 
-              {/* Momentum — fokus ke arah tren On Track 14 hari (sinyal leading nyata);
-                  gauge active-rate (dulu ~100% trivial) diturunkan jadi stat. */}
-              <Card padding="lg" className="hvc__panel">
+              {/* Momentum — fokus ke arah tren On Track 14 hari (sinyal leading nyata).
+                  Span 2 kolom: mengisi slot panel "By Division" yang dihapus + memberi
+                  ruang tren time-series, sambil menjaga align 4-kolom dgn HUD di atas. */}
+              <Card padding="lg" className="hvc__panel hvc__panel--wide">
                 <header className="hvc__panel-head">
                   <span className="hvc__panel-title">
                     <span className="hvc__eyebrow">Momentum</span>
@@ -938,23 +920,18 @@ export default function HomeView() {
                 </div>
                 <div className="hvc__mstats">
                   {momentumStats.map(s => (
-                    <div key={s.label} className="hvc__mstat">
+                    <button key={s.label} type="button" className="hvc__mstat hvc__mstat--link" onClick={() => navigate(s.href)}>
                       <span className="hvc__mstat-val" data-tone={s.value === 0 ? 'neutral' : s.tone} data-zero={s.value === 0 ? '' : undefined}>{s.value}{s.suffix}</span>
                       <span className="hvc__mstat-label">{s.label}</span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </Card>
 
-              {/* Eksekusi per divisi — toggle KPI/Eksekusi, 6 baris + sparkline (mockup) */}
-              <Card padding="lg" className="hvc__panel">
-                <header className="hvc__panel-head"><span className="hvc__eyebrow">By Division</span></header>
-                {divRows.length > 0 ? (
-                  <DivisiPanel rows={divRows} onRow={(code) => navigate(canSeePerformance ? `/performance/divisi/${code.toLowerCase()}` : '/programs')} />
-                ) : (
-                  <p className="hvc__empty">No division data yet.</p>
-                )}
-              </Card>
+              {/* Panel "By Division" (toggle KPI/Eksekusi) DIHAPUS 2026-06-02: kolom
+                  Delayed-nya identik dengan heatmap Program Summary di bawah (sumber
+                  redundansi "45 delayed"). Heatmap menang — 4 status, bukan 1.
+                  Command Center kini 3 panel: Deadlines · Execution Map · Momentum. */}
 
               {/* Decision rail dipindah ke HERO (kartu ④ "Butuh Keputusan Anda") — command
                   center kini 4 panel (tidak sesak). */}
@@ -987,7 +964,7 @@ export default function HomeView() {
                               data-col={c.key}
                               style={{ '--i': v === 0 ? 0 : 0.18 + 0.82 * (v / heatMax) } as CSSProperties}
                               title={`${d.unit.name} · ${c.label}: ${v}`}
-                              onClick={() => navigate('/programs')}
+                              onClick={() => navigate(programsHref(c.key))}
                             >
                               {v > 0 ? v : ''}
                             </button>
@@ -1037,11 +1014,21 @@ export default function HomeView() {
                   <ul className="hvc__activity">
                     {activity.map(a => {
                       const txt = activityText(a)
-                      return (
-                        <li key={a.id} className="hvc__act-row">
+                      // PROGRAM (update/KPI-measured) → bisa dibuka ke workspace program.
+                      // BLOCKER/TASK entityId ≠ program id → biarkan non-interaktif.
+                      const canOpen = a.entityType === 'PROGRAM' && a.entityId > 0
+                      const inner = (
+                        <>
                           <span className="hvc__act-icon" data-tone={activityTone(a.action)} aria-hidden><ActivityGlyph action={a.action} /></span>
                           <span className="hvc__act-text">{txt}</span>
                           <span className="hvc__act-time" title={new Date(a.changeTimestamp).toLocaleString('en-US')}>{relativeTime(a.changeTimestamp)}</span>
+                        </>
+                      )
+                      return (
+                        <li key={a.id}>
+                          {canOpen
+                            ? <button type="button" className="hvc__act-row hvc__act-row--link" onClick={() => openProgramWorkspace(a.entityId)}>{inner}</button>
+                            : <div className="hvc__act-row">{inner}</div>}
                         </li>
                       )
                     })}
@@ -1061,7 +1048,7 @@ export default function HomeView() {
                 <span className="hvc__eyebrow">Critical Deadlines · Active Programs</span>
                 <button type="button" className="hvc__link" onClick={() => navigate('/programs')}>All <span aria-hidden>→</span></button>
               </header>
-              <DeadlineTimeline programs={topDeadlinePrograms} onOpen={openProgramWorkspace} />
+              <DeadlineTimeline programs={datedPrograms} onOpen={openProgramWorkspace} />
             </Card>
           </section>
 
