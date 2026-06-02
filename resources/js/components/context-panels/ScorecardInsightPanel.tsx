@@ -46,7 +46,7 @@ export function ScorecardInsightPanel() {
           <span className="context-panel__section-icon" aria-hidden="true">
             <Calendar size={13} />
           </span>
-          <h3 className="context-panel__section-title">Periode</h3>
+          <h3 className="context-panel__section-title">Period</h3>
         </header>
         <div className="context-panel__section-body">
           <p className="context-panel__period">{periode}</p>
@@ -83,7 +83,7 @@ export function ScorecardInsightPanel() {
             <span className="context-panel__section-icon" aria-hidden="true">
               <AlertCircle size={13} />
             </span>
-            <h3 className="context-panel__section-title">Di bawah target</h3>
+            <h3 className="context-panel__section-title">Below target</h3>
           </header>
           <div className="context-panel__section-body">
             {belowTarget.map((d) => (

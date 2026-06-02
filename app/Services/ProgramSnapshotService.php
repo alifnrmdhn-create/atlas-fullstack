@@ -56,14 +56,25 @@ class ProgramSnapshotService
 
     /**
      * Returns velocity: delta between current counts and the most recent
-     * snapshot that is at least 7 days old.
+     * snapshot that is ≥6 days old AND of comparable portfolio scale.
      *
-     * Returns null if there is no older snapshot to compare against.
+     * Returns null when no such snapshot exists — including when the only older
+     * snapshots are bootstrap/seed-scale (total ≪ current); see guard below.
      */
     public function velocity(array $current, array $currentByDivisi): ?array
     {
+        // Bandingkan HANYA terhadap snapshot berskala sebanding. Snapshot awal
+        // (bootstrap/seed: total ≪ sekarang, mis. 1 program) kalau jadi anchor
+        // bikin delta meledak jadi artefak tak bermakna — mis. portfolio 97
+        // program dibandingkan dgn snapshot 1-program → "+33 terlambat / +27 On
+        // Track", padahal cuma efek seeding. Cermin guard `trendStable` di Home:
+        // tanpa pembanding sebanding, return null (baris delta di-hide via
+        // `hasDelta` di FE). (fix Jun 2026)
+        $minTotal = max(2, (int) floor(((int) ($current['total'] ?? 0)) * 0.5));
+
         $previous = ProgramHealthSnapshot::query()
             ->where('snapshotDate', '<=', Carbon::today()->subDays(6)->toDateString())
+            ->where('total', '>=', $minTotal)
             ->orderByDesc('snapshotDate')
             ->first();
 

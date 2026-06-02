@@ -31,12 +31,12 @@ interface Props {
 
 function formatTime(d: Date): string {
     const minutes = Math.floor((Date.now() - d.getTime()) / 60_000)
-    if (minutes < 1)  return 'beberapa detik lalu'
-    if (minutes < 60) return `${minutes} menit lalu`
+    if (minutes < 1)  return 'a few seconds ago'
+    if (minutes < 60) return `${minutes}m ago`
     const hours = Math.floor(minutes / 60)
-    if (hours < 24)   return `${hours} jam lalu`
+    if (hours < 24)   return `${hours}h ago`
     const days = Math.floor(hours / 24)
-    return `${days} hari lalu`
+    return `${days}d ago`
 }
 
 export function DraftRestoreBanner({
@@ -62,7 +62,7 @@ export function DraftRestoreBanner({
                     />
                 </div>
                 <span className="draft-restore-banner__text">
-                    Draf akan dihapus dalam {seconds} detik…
+                    Draft will be deleted in {seconds}s…
                 </span>
                 <div className="draft-restore-banner__actions">
                     <button
@@ -70,7 +70,7 @@ export function DraftRestoreBanner({
                         className="draft-restore-banner__btn draft-restore-banner__btn--primary"
                         onClick={onCancelDiscard}
                     >
-                        Urungkan
+                        Undo
                     </button>
                 </div>
             </div>
@@ -81,8 +81,8 @@ export function DraftRestoreBanner({
         <div className="draft-restore-banner" role="status">
             <span className="draft-restore-banner__icon" aria-hidden="true">↺</span>
             <span className="draft-restore-banner__text">
-                Pulih draf dari <strong>{formatTime(savedAt)}</strong>
-                {source === 'local' ? ' (backup lokal)' : ''}.
+                Recover draft from <strong>{formatTime(savedAt)}</strong>
+                {source === 'local' ? ' (local backup)' : ''}.
             </span>
             <div className="draft-restore-banner__actions">
                 <button
@@ -90,21 +90,21 @@ export function DraftRestoreBanner({
                     className="draft-restore-banner__btn draft-restore-banner__btn--primary"
                     onClick={onRestore}
                 >
-                    Pulihkan
+                    Restore
                 </button>
                 <button
                     type="button"
                     className="draft-restore-banner__btn draft-restore-banner__btn--ghost"
                     onClick={onStartDiscard}
                 >
-                    Buang draf
+                    Discard draft
                 </button>
                 {onDismiss && (
                     <button
                         type="button"
                         className="draft-restore-banner__dismiss"
                         onClick={onDismiss}
-                        aria-label="Tutup"
+                        aria-label="Close"
                     >
                         ×
                     </button>

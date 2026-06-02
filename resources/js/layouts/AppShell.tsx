@@ -371,31 +371,31 @@ const ACTION_NOTIF_TYPES = new Set([
 ])
 
 const NOTIF_FALLBACK_CONTEXT: Record<string, { roleImpact: string; impact: string }> = {
-  APPROVAL: { roleImpact: 'Anda pemberi keputusan', impact: 'Menahan alur sampai diputuskan' },
-  BLOCKER_CREATED: { roleImpact: 'Anda perlu bantu unblock', impact: 'Progres task tertahan' },
-  DEADLINE_APPROACHING: { roleImpact: 'Anda pemilik tenggat', impact: 'Risiko keterlambatan meningkat' },
-  DM_RECEIVED: { roleImpact: 'Anda penerima pesan langsung', impact: 'Percakapan kerja menunggu respon' },
-  MENTION: { roleImpact: 'Anda disebut dalam diskusi', impact: 'Ada konteks yang mungkin membutuhkan respon' },
-  PROGRAM_NEEDS_APPROVAL: { roleImpact: 'Anda approver program', impact: 'Program belum bisa lanjut tanpa approval' },
-  PROGRAM_REJECTED: { roleImpact: 'Anda PIC program', impact: 'Perbaiki sesuai catatan, lalu ajukan ulang' },
-  PROGRAM_WITHDRAWN: { roleImpact: 'Anda reviewer program', impact: 'Pengajuan ditarik PIC — tidak perlu review lagi' },
-  PROGRAM_COMMITMENT_CHANGED: { roleImpact: 'Anda KADIV approver program ini', impact: 'PIC ubah commitment (target/priority/budget/dll) — review kalau perlu' },
-  REPORT_NEEDS_REVISION: { roleImpact: 'Anda perlu memperbaiki laporan', impact: 'Siklus review tertahan sampai revisi masuk' },
-  TASK_ASSIGNED: { roleImpact: 'Anda PIC tugas', impact: 'Menunggu tindak lanjut dari Anda' },
+  APPROVAL: { roleImpact: 'You are the decision-maker', impact: 'Holding up the flow until decided' },
+  BLOCKER_CREATED: { roleImpact: 'You need to help unblock', impact: 'Task progress is stalled' },
+  DEADLINE_APPROACHING: { roleImpact: 'You own the deadline', impact: 'Rising risk of falling behind' },
+  DM_RECEIVED: { roleImpact: 'You received a direct message', impact: 'A work conversation is awaiting your reply' },
+  MENTION: { roleImpact: 'You were mentioned in a discussion', impact: 'Context that may need your response' },
+  PROGRAM_NEEDS_APPROVAL: { roleImpact: 'You are the program approver', impact: "Program can't proceed without approval" },
+  PROGRAM_REJECTED: { roleImpact: 'You are the program PIC', impact: 'Fix per the notes, then resubmit' },
+  PROGRAM_WITHDRAWN: { roleImpact: 'You are the program reviewer', impact: 'Submission withdrawn by PIC — no further review needed' },
+  PROGRAM_COMMITMENT_CHANGED: { roleImpact: 'You are the KADIV approver for this program', impact: 'PIC changed the commitment (target/priority/budget/etc.) — review if needed' },
+  REPORT_NEEDS_REVISION: { roleImpact: 'You need to revise the report', impact: 'Review cycle is on hold until the revision lands' },
+  TASK_ASSIGNED: { roleImpact: 'You are the task PIC', impact: 'Awaiting your follow-up' },
   // Sprint 4 — Clear the Path
-  CLEAR_PATH_REQUESTED: { roleImpact: 'Anda diminta membersihkan hambatan', impact: 'Tim menunggu disposition (Commit / Reroute / Decline)' },
-  CLEAR_PATH_COMMITTED:  { roleImpact: 'Permintaan Anda di-commit atasan', impact: 'Hambatan akan dibersihkan sesuai komitmen' },
-  CLEAR_PATH_CLEARED:    { roleImpact: 'Hambatan sudah dibersihkan', impact: 'Anda bisa lanjut eksekusi' },
+  CLEAR_PATH_REQUESTED: { roleImpact: 'You are asked to clear a blocker', impact: 'The team awaits a disposition (Commit / Reroute / Decline)' },
+  CLEAR_PATH_COMMITTED:  { roleImpact: 'Your request was committed by your manager', impact: 'The blocker will be cleared per the commitment' },
+  CLEAR_PATH_CLEARED:    { roleImpact: 'The blocker has been cleared', impact: 'You can resume execution' },
   // Sprint 4 — carryover
-  CARRYOVER_THRESHOLD: { roleImpact: 'Action item Anda berulang carry-over', impact: 'Pertimbangkan eskalasi atau re-scope' },
+  CARRYOVER_THRESHOLD: { roleImpact: 'Your action item keeps carrying over', impact: 'Consider escalating or re-scoping' },
   // Sprint 5 — Plan→Do handoff
-  PROGRAM_TASKS_ASSIGNED: { roleImpact: 'Tugas baru di pipeline Anda', impact: 'Program aktif, mulai eksekusi' },
+  PROGRAM_TASKS_ASSIGNED: { roleImpact: 'New tasks in your pipeline', impact: 'Program is active, start executing' },
   // Meeting flow
-  MEETING_INVITED:       { roleImpact: 'Anda diundang ke rapat',         impact: 'Konfirmasi RSVP supaya organizer tahu kehadiran' },
-  MEETING_UPDATED:       { roleImpact: 'Jadwal rapat berubah',           impact: 'Cek waktu baru dan adjust kalender Anda' },
-  MEETING_CANCELLED:     { roleImpact: 'Meeting dibatalkan organizer',   impact: 'Slot waktu Anda terbuka kembali' },
-  MEETING_POSTPONED:     { roleImpact: 'Meeting ditunda sementara',      impact: 'Tunggu jadwal baru dari organizer' },
-  ACTION_ITEM_ASSIGNED:  { roleImpact: 'Anda PIC action item rapat',     impact: 'Tindak lanjut dengan deadline yang ditetapkan' },
+  MEETING_INVITED:       { roleImpact: 'You are invited to a meeting',   impact: 'Confirm your RSVP so the organizer knows your attendance' },
+  MEETING_UPDATED:       { roleImpact: 'The meeting schedule changed',   impact: 'Check the new time and adjust your calendar' },
+  MEETING_CANCELLED:     { roleImpact: 'The organizer cancelled the meeting', impact: 'Your time slot is free again' },
+  MEETING_POSTPONED:     { roleImpact: 'The meeting is postponed',       impact: 'Wait for a new schedule from the organizer' },
+  ACTION_ITEM_ASSIGNED:  { roleImpact: 'You are the PIC for a meeting action item', impact: 'Follow up by the set deadline' },
 }
 
 function isActionNotification(type: string): boolean {
@@ -404,24 +404,24 @@ function isActionNotification(type: string): boolean {
 
 function notificationIntentLabel(notification: NotificationItem): string {
   if (notification.actionLabel) return notification.actionLabel
-  if (notification.type === 'DM_RECEIVED') return 'Balas'
-  if (notification.type === 'MENTION') return 'Buka percakapan'
+  if (notification.type === 'DM_RECEIVED') return 'Reply'
+  if (notification.type === 'MENTION') return 'Open conversation'
   if (notification.type === 'BLOCKER_CREATED') return 'Follow up'
   if (notification.type === 'PROGRAM_NEEDS_APPROVAL' || notification.type === 'APPROVAL') return 'Review'
-  if (notification.type === 'PROGRAM_REJECTED') return 'Perbaiki & ajukan ulang'
-  if (notification.type === 'REPORT_NEEDS_REVISION') return 'Revisi'
-  if (notification.type === 'DEADLINE_APPROACHING') return 'Cek deadline'
-  if (notification.type === 'TASK_ASSIGNED') return 'Kerjakan'
+  if (notification.type === 'PROGRAM_REJECTED') return 'Fix & resubmit'
+  if (notification.type === 'REPORT_NEEDS_REVISION') return 'Revise'
+  if (notification.type === 'DEADLINE_APPROACHING') return 'Check deadline'
+  if (notification.type === 'TASK_ASSIGNED') return 'Work on it'
   if (notification.type === 'CLEAR_PATH_REQUESTED') return 'Disposition'
-  if (notification.type === 'CLEAR_PATH_COMMITTED') return 'Lihat komitmen'
-  if (notification.type === 'CLEAR_PATH_CLEARED') return 'Lanjut eksekusi'
-  if (notification.type === 'CARRYOVER_THRESHOLD') return 'Tinjau ulang'
-  if (notification.type === 'PROGRAM_TASKS_ASSIGNED') return 'Buka pipeline'
-  if (notification.type === 'MEETING_INVITED') return 'Konfirmasi RSVP'
-  if (notification.type === 'MEETING_UPDATED') return 'Lihat jadwal'
-  if (notification.type === 'MEETING_CANCELLED' || notification.type === 'MEETING_POSTPONED') return 'Buka rapat'
-  if (notification.type === 'ACTION_ITEM_ASSIGNED') return 'Kerjakan'
-  return 'Cek detail'
+  if (notification.type === 'CLEAR_PATH_COMMITTED') return 'View commitment'
+  if (notification.type === 'CLEAR_PATH_CLEARED') return 'Resume execution'
+  if (notification.type === 'CARRYOVER_THRESHOLD') return 'Review again'
+  if (notification.type === 'PROGRAM_TASKS_ASSIGNED') return 'Open pipeline'
+  if (notification.type === 'MEETING_INVITED') return 'Confirm RSVP'
+  if (notification.type === 'MEETING_UPDATED') return 'View schedule'
+  if (notification.type === 'MEETING_CANCELLED' || notification.type === 'MEETING_POSTPONED') return 'Open meeting'
+  if (notification.type === 'ACTION_ITEM_ASSIGNED') return 'Work on it'
+  return 'View details'
 }
 
 function notificationRequiresAction(notification: NotificationItem): boolean {
@@ -572,7 +572,7 @@ function NotifToast({
         className="notif-toast__close"
         onClick={(e) => { e.stopPropagation(); onDismiss() }}
         type="button"
-        aria-label="Tutup"
+        aria-label="Close"
       >
         <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <path d="m1 1 10 10M11 1 1 11" />
@@ -784,7 +784,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
   const NOTIF_TYPE_LABEL: Record<string, string> = {
     MENTION: 'Mention', APPROVAL: 'Approval',
-    BLOCKER_CREATED: 'Blocker', TASK_ASSIGNED: 'Tugas',
+    BLOCKER_CREATED: 'Blocker', TASK_ASSIGNED: 'Task',
     PROGRAM_NEEDS_APPROVAL: 'Approval', PROGRAM_APPROVED: 'Program',
     PROGRAM_REJECTED: 'Program', PROGRAM_WITHDRAWN: 'Program',
     PROGRAM_COMMITMENT_CHANGED: 'Commitment',
@@ -818,11 +818,11 @@ export function AppShell({ children }: { children?: ReactNode }) {
   function formatNotifTime(dateString: string): string {
     const diff = Date.now() - new Date(dateString).getTime()
     const m = Math.floor(diff / 60000)
-    if (m < 1) return 'baru saja'
-    if (m < 60) return `${m}m lalu`
+    if (m < 1) return 'just now'
+    if (m < 60) return `${m}m ago`
     const h = Math.floor(m / 60)
-    if (h < 24) return `${h}j lalu`
-    return `${Math.floor(h / 24)}h lalu`
+    if (h < 24) return `${h}h ago`
+    return `${Math.floor(h / 24)}d ago`
   }
 
   function navigateToNotifSource(source: string) {
@@ -902,10 +902,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
           ? dropRiskGroups.slice(0, 8)
           : []
   const notifViewOptions: Array<{ view: NotificationDropView; label: string; count: number }> = [
-    { view: 'all', label: 'Semua', count: dropNotifGroups.length },
-    { view: 'action', label: 'Aksi', count: dropActionGroups.length },
-    { view: 'communication', label: 'Komunikasi', count: dropCommunicationGroups.length },
-    { view: 'risk', label: 'Risiko', count: dropRiskGroups.length },
+    { view: 'all', label: 'All', count: dropNotifGroups.length },
+    { view: 'action', label: 'Action', count: dropActionGroups.length },
+    { view: 'communication', label: 'Communication', count: dropCommunicationGroups.length },
+    { view: 'risk', label: 'Risk', count: dropRiskGroups.length },
   ]
 
   const renderNotifDropGroup = (group: NotificationDropGroup, displayItem: NotificationItem = group.latest) => {
@@ -940,10 +940,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
           </div>
         </button>
         <button
-          aria-label={`Sembunyikan notifikasi: ${n.message}`}
+          aria-label={`Dismiss notification: ${n.message}`}
           className="topbar__notif-dismiss"
           onClick={() => void handleNotifGroupDismiss(group)}
-          title="Sembunyikan dari notifikasi"
+          title="Dismiss notification"
           type="button"
         >
           <svg aria-hidden="true" fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" viewBox="0 0 12 12" width="12">
@@ -966,21 +966,21 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // dioptimasi untuk fast lookup (group by intent, bukan by abstract phase).
   // Single source of truth: lib/nav-config.ts. Labels & order mirror that file.
   const NI = {
-    home:        { path: '/',          label: 'Home',             caption: 'Ringkasan eksekutif program kerja', icon: IconHome,        shortcut: 'G H' },
+    home:        { path: '/',          label: 'Home',             caption: 'Executive overview of work programs', icon: IconHome,        shortcut: 'G H' },
     roadmap:     { path: '/roadmap',   label: 'Roadmap',          caption: 'Visual program timeline',           icon: IconRoadmap    },
     programs:    { path: '/programs',  label: 'Programs',         caption: 'Portfolio orchestration',           icon: IconPrograms,    shortcut: 'G P', badge: () => programsCount },
     execution:   { path: '/execution', label: 'Workboard',        caption: 'Scheduled tasks from Programs',     icon: IconExecution,   shortcut: 'G E', badge: () => tasksCount },
     penugasan:   { path: '/penugasan', label: 'Assignment',       caption: 'Ad-hoc tasks outside Programs',     icon: IconAssignments, shortcut: 'G A' },
-    goals:       { path: '/goals',      label: 'Goals & KPI',   caption: 'Manage KPI organisasi & tracking capaian',  icon: IconGoals    },
-    activity:    { path: '/activity',   label: 'Team Activity', caption: 'Leaderboard sesi & aktivitas harian tim',   icon: IconActivity },
+    goals:       { path: '/goals',      label: 'Goals & KPI',   caption: 'Manage org KPIs & achievement tracking',  icon: IconGoals    },
+    activity:    { path: '/activity',   label: 'Team Activity', caption: 'Session leaderboard & daily team activity', icon: IconActivity },
     reports:       { path: '/reports',         label: 'Analytics',       caption: 'KPI, program health & leaderboard',  icon: IconReports       },
-    executive:     { path: '/executive',             label: 'Executive Summary', caption: 'Snapshot eksekutif 1-halaman',     icon: IconScorecard    },
-    perfScorecard: { path: '/performance/scorecard', label: 'Scorecard',       caption: 'Ranking capaian direktorat & divisi',  icon: IconScorecard    },
-    perfDirektorat:{ path: '/performance/kolegial',  label: 'KPI Direktorat',  caption: 'Capaian KPI bersama jajaran direksi',  icon: IconKpiDirektorat },
-    perfDivisi:    { path: '/performance/divisi',    label: 'KPI Divisi',      caption: 'Capaian KPI level divisi',             icon: IconKpiDivisi    },
-    perfSaya:      { path: '/performance/me',        label: 'KPI Saya',        caption: 'KPI individual saya',                  icon: IconKpiIndividu  },
+    executive:     { path: '/executive',             label: 'Executive Summary', caption: 'One-page executive snapshot',      icon: IconScorecard    },
+    perfScorecard: { path: '/performance/scorecard', label: 'Scorecard',       caption: 'Directorate & division achievement ranking', icon: IconScorecard    },
+    perfDirektorat:{ path: '/performance/kolegial',  label: 'Directorate KPI', caption: 'KPI achievement across the board',     icon: IconKpiDirektorat },
+    perfDivisi:    { path: '/performance/divisi',    label: 'Division KPI',    caption: 'Division-level KPI achievement',       icon: IconKpiDivisi    },
+    perfSaya:      { path: '/performance/me',        label: 'My KPI',          caption: 'My individual KPI',                    icon: IconKpiIndividu  },
     perfIndividu:  { path: '/performance/individu',  label: 'Leaderboard',     caption: 'Top performer per BOD level',          icon: IconKpiIndividu  },
-    schedule:    { path: '/jadwal',    label: 'Coordination',     caption: 'Rapat koordinasi & cadence tim',    icon: IconSchedule,    shortcut: 'G R' },
+    schedule:    { path: '/jadwal',    label: 'Coordination',     caption: 'Coordination meetings & team cadence', icon: IconSchedule,    shortcut: 'G R' },
     channels:    { path: '/channels',  label: 'Channels',         caption: 'Team collaboration',                icon: IconChannels,    shortcut: 'G C', badge: () => totalUnreadChannels, badgeUrgent: true },
     presence:    { path: '/presence',  label: 'Presence',         caption: 'Live team availability',            icon: IconPresence   },
     profile:     { path: '/profile',   label: 'Profile',          caption: 'Account & position hierarchy',      icon: IconProfile    },
@@ -1031,13 +1031,13 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const grpAdmin = {
     label: 'Admin',
     items: [
-      { path: '/admin/orgs',           label: 'Companies',      caption: 'Entitas & hierarki org',     icon: IconOrg       },
-      { path: '/admin/positions',      label: 'Positions',      caption: 'Manajemen jabatan',          icon: IconPositions },
-      { path: '/admin/users',          label: 'Users',          caption: 'Manajemen pengguna',         icon: IconUsers     },
-      { path: '/admin/roles',          label: 'Roles',          caption: 'Peran & permission matrix',  icon: IconRoles     },
+      { path: '/admin/orgs',           label: 'Companies',      caption: 'Org entities & hierarchy',   icon: IconOrg       },
+      { path: '/admin/positions',      label: 'Positions',      caption: 'Position management',        icon: IconPositions },
+      { path: '/admin/users',          label: 'Users',          caption: 'User management',            icon: IconUsers     },
+      { path: '/admin/roles',          label: 'Roles',          caption: 'Roles & permission matrix',  icon: IconRoles     },
       { path: '/admin/pilot-metrics',  label: 'Pilot Metrics',  caption: 'Pilot DKM dashboard (Sprint 4)', icon: IconReports },
       ...(role === 'SUPERADMIN' ? [
-        { path: '/admin/thresholds',   label: 'Thresholds',     caption: 'Tuning angka sistem (live)',     icon: IconSettings },
+        { path: '/admin/thresholds',   label: 'Thresholds',     caption: 'Live system number tuning',      icon: IconSettings },
       ] : []),
     ],
   }
@@ -1067,10 +1067,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
     '/admin/orgs': 'Companies', '/admin/roles': 'Roles & Permissions',
     '/playbook': 'Playbook',
     '/performance/scorecard': 'Scorecard',
-    '/performance/kolegial': 'KPI Direktorat',
-    '/performance/divisi': 'KPI Divisi',
-    '/performance/me': 'KPI Saya',
-    '/performance/individu': 'KPI Individu',
+    '/performance/kolegial': 'Directorate KPI',
+    '/performance/divisi': 'Division KPI',
+    '/performance/me': 'My KPI',
+    '/performance/individu': 'Leaderboard',
   }
   const currentPage = PAGE_NAMES[activePath] ?? PAGE_NAMES[pathname] ?? 'ATLAS'
 
@@ -1088,8 +1088,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
               className="sidebar__brand-mark"
               role={sidebarCollapsedView ? 'button' : undefined}
               tabIndex={sidebarCollapsedView ? 0 : undefined}
-              aria-label={sidebarCollapsedView ? 'Buka sidebar' : undefined}
-              title={sidebarCollapsedView ? 'Buka sidebar (⌘\\)' : 'ATLAS'}
+              aria-label={sidebarCollapsedView ? 'Expand sidebar' : undefined}
+              title={sidebarCollapsedView ? 'Expand sidebar (⌘\\)' : 'ATLAS'}
               onClick={sidebarCollapsedView ? toggleSidebar : undefined}
               onKeyDown={sidebarCollapsedView ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSidebar() } } : undefined}
             >
@@ -1107,8 +1107,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
           <button
             className="sidebar__collapse-toggle"
             onClick={toggleSidebar}
-            title={sidebarCollapsedView ? 'Buka sidebar (⌘\\)' : 'Tutup sidebar (⌘\\)'}
-            aria-label={sidebarCollapsedView ? 'Buka sidebar' : 'Tutup sidebar'}
+            title={sidebarCollapsedView ? 'Expand sidebar (⌘\\)' : 'Collapse sidebar (⌘\\)'}
+            aria-label={sidebarCollapsedView ? 'Expand sidebar' : 'Collapse sidebar'}
             type="button"
           >
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1202,8 +1202,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
           <Link
             className={`sidebar__util-btn${activePath === '/panduan' ? ' sidebar__util-btn--active' : ''}`}
             href="/panduan"
-            title="Bantuan & Panduan"
-            aria-label="Bantuan & Panduan"
+            title="Help & Guide"
+            aria-label="Help & Guide"
             onMouseEnter={() => prefetchRoute('/panduan')}
             onFocus={() => prefetchRoute('/panduan')}
             aria-current={activePath === '/panduan' ? 'page' : undefined}
@@ -1214,8 +1214,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
             type="button"
             className="sidebar__util-btn"
             onClick={toggleTheme}
-            title={resolvedTheme === 'dark' ? 'Mode terang' : 'Mode gelap'}
-            aria-label={resolvedTheme === 'dark' ? 'Beralih ke mode terang' : 'Beralih ke mode gelap'}
+            title={resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
+            aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {resolvedTheme === 'dark' ? (
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1263,7 +1263,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
             type="button"
             className="topbar__hamburger"
             onClick={() => setMobileNavOpen((o) => !o)}
-            aria-label={mobileNavOpen ? 'Tutup menu' : 'Buka menu'}
+            aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileNavOpen}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
@@ -1286,7 +1286,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
             const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
             const firstISO = firstOfMonth.getDay() || 7 // Mon=1 … Sun=7
             const weekOfMonth = Math.ceil((now.getDate() + firstISO - 1) / 7)
-            const monthName = now.toLocaleDateString('id-ID', { month: 'long' })
+            const monthName = now.toLocaleDateString('en-US', { month: 'long' })
             const monthLabel = monthName.charAt(0).toUpperCase() + monthName.slice(1)
             const periodLabel = `Q${quarter} · W${weekOfMonth} ${monthLabel} ${now.getFullYear()}`
             const liveLabel = realtimeStatus === 'connected' ? 'Live'
@@ -1302,9 +1302,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
                   <span
                     className={`topbar__live ${liveClass}`}
                     title={
-                      realtimeStatus === 'connected' ? 'Real-time aktif — data tersinkron'
-                      : realtimeStatus === 'connecting' ? 'Menyambung ke server real-time…'
-                      : realtimeStatus === 'disconnected' ? 'Koneksi real-time terputus — mencoba sambung ulang'
+                      realtimeStatus === 'connected' ? 'Real-time active — data in sync'
+                      : realtimeStatus === 'connecting' ? 'Connecting to real-time server…'
+                      : realtimeStatus === 'disconnected' ? 'Real-time connection lost — reconnecting'
                       : ''
                     }
                   >
@@ -1334,14 +1334,14 @@ export function AppShell({ children }: { children?: ReactNode }) {
             type="button"
             className="topbar__cmdk"
             onClick={() => setPaletteOpen(true)}
-            aria-label="Buka command palette (⌘K)"
-            title="Cari (⌘K)"
+            aria-label="Open command palette (⌘K)"
+            title="Search (⌘K)"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
               <circle cx="6" cy="6" r="4.5" />
               <path d="m9.5 9.5 3 3" />
             </svg>
-            <span className="topbar__cmdk-placeholder">Cari programs, tasks…</span>
+            <span className="topbar__cmdk-placeholder">Search programs, tasks…</span>
             <kbd>⌘K</kbd>
           </button>
 
@@ -1354,7 +1354,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                 aria-haspopup="menu"
                 className="topbar__notif-btn"
                 onClick={() => setNotifDropOpen(open => !open)}
-                title="Notifikasi"
+                title="Notifications"
                 type="button"
               >
                 <svg className="topbar__notif-icon" fill="none" height="20" viewBox="0 0 20 20" width="20" aria-hidden="true">
@@ -1371,7 +1371,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
               {notifDropOpen && (
                 <div className="topbar__notif-popover" role="menu">
                   <div className="topbar__notif-popover-head">
-                    <span className="topbar__notif-popover-title">Notifikasi</span>
+                    <span className="topbar__notif-popover-title">Notifications</span>
                     {unreadCount > 0 && (
                       <button
                         className="topbar__notif-mark-all"
@@ -1379,12 +1379,12 @@ export function AppShell({ children }: { children?: ReactNode }) {
                         onClick={() => void handleMarkAllReadDrop()}
                         type="button"
                       >
-                        {markingAllRead ? 'Menandai…' : 'Tandai semua dibaca'}
+                        {markingAllRead ? 'Marking…' : 'Mark all read'}
                       </button>
                     )}
                   </div>
 
-                  <div className="topbar__notif-filter" aria-label="Filter notifikasi">
+                  <div className="topbar__notif-filter" aria-label="Filter notifications">
                     {notifViewOptions.map(option => (
                       <button
                         aria-pressed={notifDropView === option.view}
@@ -1406,15 +1406,15 @@ export function AppShell({ children }: { children?: ReactNode }) {
                           <path d="M8 1.5a5 5 0 0 1 5 5v2.5l1 1.5H1l1-1.5V6.5a5 5 0 0 1 5-5Z" />
                           <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" />
                         </svg>
-                        Tidak ada notifikasi
+                        No notifications
                       </div>
                     ) : (
                       <>
                         {dropActionGroups.length > 0 && (
                           <div className="topbar__notif-priority">
                             <div>
-                                <span className="topbar__notif-priority-label">Perlu tindakan</span>
-                                <span className="topbar__notif-priority-copy">Tugas, approval, blocker, revisi, atau percakapan yang butuh respons.</span>
+                                <span className="topbar__notif-priority-label">Needs action</span>
+                                <span className="topbar__notif-priority-copy">Tasks, approvals, blockers, revisions, or conversations needing a response.</span>
                             </div>
                             <strong>{dropActionGroups.length}</strong>
                           </div>
@@ -1424,7 +1424,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                             {visibleDropActionGroups.map(group => renderNotifDropGroup(group, group.actionItem ?? group.latest))}
                             {visibleDropContextGroups.length > 0 && (
                               <div className="topbar__notif-section-label">
-                                {visibleDropActionGroups.length > 0 ? 'Update lainnya' : 'Update terbaru'}
+                                {visibleDropActionGroups.length > 0 ? 'Other updates' : 'Latest updates'}
                               </div>
                             )}
                             {visibleDropContextGroups.map(group => renderNotifDropGroup(group))}
@@ -1433,7 +1433,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                           visibleFilteredGroups.map(group => renderNotifDropGroup(group, notifDropView === 'action' ? group.actionItem ?? group.latest : group.latest))
                         ) : (
                           <div className="topbar__notif-empty topbar__notif-empty--compact">
-                            Tidak ada notifikasi untuk filter ini
+                            No notifications for this filter
                           </div>
                         )}
                       </>
@@ -1446,7 +1446,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                       onClick={() => { setNotifDropOpen(false); navigate('/fokus') }}
                       type="button"
                     >
-                      Lihat semua di Focus →
+                      View all in Focus →
                     </button>
                   </div>
                 </div>
@@ -1537,7 +1537,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                         <path d="M12.5 7A5.5 5.5 0 1 1 7 1.5a5.5 5.5 0 0 1 4.5 2.3" />
                         <path d="M10 1.5h3v3" />
                       </svg>
-                      {overviewStatus.refreshing ? 'Menyegarkan…' : 'Refresh data'}
+                      {overviewStatus.refreshing ? 'Refreshing…' : 'Refresh data'}
                     </button>
                     <div className="topbar__user-popover-divider" />
                     <button
@@ -1573,9 +1573,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
           <div aria-describedby={logoutDescId} aria-labelledby={logoutTitleId} aria-modal="true" className="modal" ref={logoutDialogRef} role="dialog" style={{ maxWidth: 380 }} tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Sesi</span>
-                <h3 className="modal__title" id={logoutTitleId}>Keluar dari sesi?</h3>
-                <p className="modal-subtitle" id={logoutDescId}>Akhiri sesi saat ini dan kembali ke layar login.</p>
+                <span className="modal-kicker">Session</span>
+                <h3 className="modal__title" id={logoutTitleId}>Sign out?</h3>
+                <p className="modal-subtitle" id={logoutDescId}>End the current session and return to the login screen.</p>
               </div>
               <button className="modal__close" onClick={cancelLogout} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12">
@@ -1585,12 +1585,12 @@ export function AppShell({ children }: { children?: ReactNode }) {
             </div>
             <div className="modal__body">
               <div className="modal-helper-note modal-helper-note--danger">
-                Anda akan kembali ke layar login. Perubahan yang belum disimpan akan hilang.
+                You'll return to the login screen. Unsaved changes will be lost.
               </div>
             </div>
             <div className="modal__footer">
               <button className="btn btn--ghost" onClick={cancelLogout} type="button">
-                Batal
+                Cancel
               </button>
               <button
                 className="btn btn--primary"
@@ -1598,7 +1598,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                 style={{ background: 'var(--red)', borderColor: 'var(--red)' }}
                 type="button"
               >
-                Keluar
+                Sign out
               </button>
             </div>
           </div>
@@ -1607,7 +1607,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
       {/* ── Notification toast stack (kanan bawah) ── */}
       {notifToasts.length > 0 && (
-        <div className="notif-toast-stack" aria-live="polite" aria-label="Notifikasi baru">
+        <div className="notif-toast-stack" aria-live="polite" aria-label="New notifications">
           {notifToasts.map(toast => {
             const typeLabel = NOTIF_TYPE_LABEL[toast.type] ?? toast.type
             const typeClass = NOTIF_TYPE_COLOR[toast.type] ?? ''

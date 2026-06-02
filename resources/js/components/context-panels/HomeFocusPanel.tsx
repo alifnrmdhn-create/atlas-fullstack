@@ -15,8 +15,8 @@ export function HomeFocusPanel() {
 
   if (!programSummary) {
     return (
-      <Section icon={<AlertCircle size={13} />} title="Butuh perhatian">
-        <p className="context-panel__empty">Memuat ringkasan…</p>
+      <Section icon={<AlertCircle size={13} />} title="Needs attention">
+        <p className="context-panel__empty">Loading summary…</p>
       </Section>
     )
   }
@@ -32,49 +32,49 @@ export function HomeFocusPanel() {
 
   return (
     <>
-      <Section icon={<AlertCircle size={13} />} title="Butuh perhatian" tone={hasAttention ? 'danger' : undefined}>
+      <Section icon={<AlertCircle size={13} />} title="Needs attention" tone={hasAttention ? 'danger' : undefined}>
         {hasAttention ? (
           <>
             {terlambatCount > 0 ? (
               <FocusItem
-                label={`${terlambatCount} program terlambat`}
-                meta="butuh intervensi"
+                label={`${terlambatCount} programs delayed`}
+                meta="needs intervention"
                 href="/programs?status=terlambat"
               />
             ) : null}
             {criticalControls > 0 ? (
               <FocusItem
-                label={`${criticalControls} kontrol kritis terbuka`}
+                label={`${criticalControls} critical controls open`}
                 meta="risk"
                 href="/laporan-risiko"
               />
             ) : null}
             {decisionCount > 0 ? (
               <FocusItem
-                label={`${decisionCount} hal butuh keputusan`}
+                label={`${decisionCount} items awaiting decision`}
                 meta="approval"
                 href="/fokus"
               />
             ) : null}
           </>
         ) : (
-          <p className="context-panel__empty">Tidak ada item mendesak hari ini.</p>
+          <p className="context-panel__empty">Nothing urgent today.</p>
         )}
       </Section>
 
-      <Section icon={<Calendar size={13} />} title="Jadwal hari ini">
+      <Section icon={<Calendar size={13} />} title="Today's schedule">
         <p className="context-panel__empty">
-          Belum ada rapat terjadwal.
+          No meetings scheduled.
           <br />
           <Link href="/jadwal" className="context-panel__inline-link">
-            Lihat kalender →
+            View calendar →
           </Link>
         </p>
       </Section>
 
       <Section icon={<Pin size={13} />} title="Pinned">
         <p className="context-panel__empty">
-          Pin program atau laporan dari halaman detail untuk akses cepat.
+          Pin a program or report from its detail page for quick access.
         </p>
       </Section>
     </>

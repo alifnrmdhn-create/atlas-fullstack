@@ -21,7 +21,7 @@ type Props = {
   onToggleTheme: () => void
 }
 
-/** Icon + Indonesian label per backend search result type. */
+/** Icon + label per backend search result type. */
 const TYPE_META: Record<string, { label: string; Icon: typeof Search }> = {
   TASK:             { label: 'Task',       Icon: CheckSquare },
   TASKS:            { label: 'Task',       Icon: CheckSquare },
@@ -29,10 +29,10 @@ const TYPE_META: Record<string, { label: string; Icon: typeof Search }> = {
   WORKSTREAM:       { label: 'Workstream', Icon: GitBranch },
   MEETING:          { label: 'Meeting',    Icon: CalendarDays },
   BLOCKER:          { label: 'Blocker',    Icon: AlertTriangle },
-  CHANNEL_MESSAGE:  { label: 'Pesan',      Icon: MessageSquare },
-  CHANNEL_MESSAGES: { label: 'Pesan',      Icon: MessageSquare },
-  COMMENT:          { label: 'Komentar',   Icon: MessageSquare },
-  COMMENTS:         { label: 'Komentar',   Icon: MessageSquare },
+  CHANNEL_MESSAGE:  { label: 'Message',    Icon: MessageSquare },
+  CHANNEL_MESSAGES: { label: 'Message',    Icon: MessageSquare },
+  COMMENT:          { label: 'Comment',    Icon: MessageSquare },
+  COMMENTS:         { label: 'Comment',    Icon: MessageSquare },
 }
 
 const RESULT_LIMIT = 6
@@ -145,7 +145,7 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
             className="cmdk-input"
             value={query}
             onValueChange={setQuery}
-            placeholder="Ketik halaman, aksi, atau pencarian…"
+            placeholder="Type a page, action, or search…"
             autoFocus
           />
           <kbd className="cmdk-input-kbd">ESC</kbd>
@@ -153,12 +153,12 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
 
         <Command.List className="cmdk-list">
           <Command.Empty className="cmdk-empty">
-            Tidak ada hasil untuk "{trimmed}"
+            No results for "{trimmed}"
           </Command.Empty>
 
-          {/* Hasil — live workspace search, shown first so Enter hits the top match */}
+          {/* Results — live workspace search, shown first so Enter hits the top match */}
           {hasQuery ? (
-            <Command.Group heading="Hasil" className="cmdk-group">
+            <Command.Group heading="Results" className="cmdk-group">
               {searching && results.length === 0 ? (
                 <Command.Item
                   className="cmdk-item"
@@ -166,7 +166,7 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
                   disabled
                 >
                   <Search size={13} className="cmdk-item-icon" aria-hidden="true" />
-                  <span className="cmdk-item-label">Mencari…</span>
+                  <span className="cmdk-item-label">Searching…</span>
                 </Command.Item>
               ) : null}
               {results.map((result) => {
@@ -190,8 +190,8 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
             </Command.Group>
           ) : null}
 
-          {/* Navigasi */}
-          <Command.Group heading="Navigasi" className="cmdk-group">
+          {/* Navigation */}
+          <Command.Group heading="Navigation" className="cmdk-group">
             {NAV_SECTIONS.flatMap((section) =>
               section.items.map((item) => (
                 <Command.Item
@@ -208,8 +208,8 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
             )}
           </Command.Group>
 
-          {/* Aksi */}
-          <Command.Group heading="Aksi" className="cmdk-group">
+          {/* Actions */}
+          <Command.Group heading="Actions" className="cmdk-group">
             <Command.Item
               className="cmdk-item"
               value="toggle theme dark light mode tema gelap terang"
@@ -224,7 +224,7 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
                 <Moon size={13} className="cmdk-item-icon" aria-hidden="true" />
               )}
               <span className="cmdk-item-label">
-                {resolvedTheme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+                {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
               </span>
               <span className="cmdk-item-meta">Toggle theme</span>
             </Command.Item>
@@ -246,9 +246,9 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
             })}
           </Command.Group>
 
-          {/* Pencarian — deep view escape hatch for filters/operators/saved searches */}
+          {/* Search — deep view escape hatch for filters/operators/saved searches */}
           {trimmed.length > 0 ? (
-            <Command.Group heading="Pencarian" className="cmdk-group">
+            <Command.Group heading="Search" className="cmdk-group">
               <Command.Item
                 className="cmdk-item"
                 value={`__search__ ${trimmed}`}
@@ -256,7 +256,7 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
               >
                 <Search size={13} className="cmdk-item-icon" aria-hidden="true" />
                 <span className="cmdk-item-label">
-                  Lihat semua hasil untuk "<strong>{trimmed}</strong>"
+                  See all results for "<strong>{trimmed}</strong>"
                 </span>
                 <span className="cmdk-item-meta">Search</span>
               </Command.Item>

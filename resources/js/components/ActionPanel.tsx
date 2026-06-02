@@ -8,16 +8,16 @@ const Ico = {
 }
 
 const ACT = {
-  approval: { ico: Ico.approval, label: 'Menunggu Persetujuan', tone: 'blue'   },
-  blocker:  { ico: Ico.blocker,  label: 'Blocker Kritis',       tone: 'red'    },
-  support:  { ico: Ico.support,  label: 'Perlu Dukungan',       tone: 'yellow' },
+  approval: { ico: Ico.approval, label: 'Awaiting Approval', tone: 'blue'   },
+  blocker:  { ico: Ico.blocker,  label: 'Critical Blocker',  tone: 'red'    },
+  support:  { ico: Ico.support,  label: 'Needs Support',     tone: 'yellow' },
 }
 
 export function actionPanelTitleFor(scope: ProgramScope | null | undefined): string {
-  if (scope?.level === 'portfolio') return 'Perlu Tindakan Direktur'
-  if (scope?.role === 'KADIV')      return 'Perlu Tindakan Kepala Divisi'
-  if (scope?.role === 'KASUBDIV')   return 'Perlu Tindakan Kepala Sub Divisi'
-  return 'Perlu Tindakan Anda'
+  if (scope?.level === 'portfolio') return 'Needs Director Action'
+  if (scope?.role === 'KADIV')      return 'Needs Division Head Action'
+  if (scope?.role === 'KASUBDIV')   return 'Needs Sub-Division Head Action'
+  return 'Needs Your Action'
 }
 
 export function ActionPanel({ items, onOpen, title }: {
@@ -32,11 +32,11 @@ export function ActionPanel({ items, onOpen, title }: {
         <div className="panel__header-meta">
           {items.length > 0
             ? <span className="section-badge section-badge--red">{items.length}</span>
-            : <span className="section-badge">Aman</span>}
+            : <span className="section-badge">Clear</span>}
         </div>
       </div>
       {items.length === 0
-        ? <p className="hd-panel-empty">Tidak ada item yang membutuhkan keputusan eksekutif.</p>
+        ? <p className="hd-panel-empty">No items need an executive decision.</p>
         : (
           <div className="hd-act-list">
             {items.map(item => {

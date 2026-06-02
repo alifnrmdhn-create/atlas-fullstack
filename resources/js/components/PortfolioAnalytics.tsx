@@ -19,8 +19,8 @@ export function PortfolioAnalytics({ data }: { data: ProgramSummaryPayload }) {
   // which the coarse deadlineClusters folds away).
   const dr = programsForChart.map(p => p.daysRemaining).filter((d): d is number => d != null)
   const horizon = [
-    { label: 'Lewat',  value: dr.filter(d => d < 0).length,             tone: 'red' as Tone },
-    { label: '≤30 hr', value: dr.filter(d => d >= 0 && d <= 30).length, tone: 'amber' as Tone },
+    { label: 'Overdue', value: dr.filter(d => d < 0).length,            tone: 'red' as Tone },
+    { label: '≤30d',   value: dr.filter(d => d >= 0 && d <= 30).length, tone: 'amber' as Tone },
     { label: '31–60',  value: dr.filter(d => d > 30 && d <= 60).length, tone: 'amber' as Tone },
     { label: '61–90',  value: dr.filter(d => d > 60 && d <= 90).length, tone: 'green' as Tone },
     { label: '90+',    value: dr.filter(d => d > 90).length,            tone: 'green' as Tone },
@@ -37,16 +37,16 @@ export function PortfolioAnalytics({ data }: { data: ProgramSummaryPayload }) {
   return (
     <section className="hv__section">
       <header className="hv__sec-head">
-        <h2 className="hv__sec-title">Portfolio program</h2>
-        <span className="hv__sec-meta">{summary.total} program · {activeProgramCount} aktif</span>
+        <h2 className="hv__sec-title">Program Portfolio</h2>
+        <span className="hv__sec-meta">{summary.total} programs · {activeProgramCount} active</span>
       </header>
       <div className="hv__analisis-grid">
 
         {hasHorizon && (
           <div className="hv__chart-card">
             <div className="hv__chart-title">
-              <Tooltip content="Jumlah program AKTIF per sisa-hari ke tenggat akhir. 'Lewat' = sudah melewati tenggat — beda dari status 'Terlambat' yang berbasis kesehatan/milestone.">
-                <span className="hv__has-tip">Horizon tenggat</span>
+              <Tooltip content="Count of ACTIVE programs by days remaining to the final deadline. 'Overdue' = already past the deadline — distinct from the 'Delayed' status, which is based on health/milestones.">
+                <span className="hv__has-tip">Deadline horizon</span>
               </Tooltip>
             </div>
             <Bars bars={horizon} height={132} onBarClick={() => navigate('/programs')} />
@@ -54,37 +54,37 @@ export function PortfolioAnalytics({ data }: { data: ProgramSummaryPayload }) {
         )}
 
         <div className="hv__chart-card">
-          <div className="hv__chart-title">Momentum · 30 hari</div>
+          <div className="hv__chart-title">Momentum · 30 days</div>
           <div className="hv__momentum">
             <div className="hv__mom-stat">
               <span className="hv__mom-val">{momentum.programsCompletedLast30d}</span>
-              <span className="hv__mom-lbl">program selesai</span>
+              <span className="hv__mom-lbl">programs completed</span>
             </div>
             <div className="hv__mom-stat">
               <span className="hv__mom-val">{momentum.newProgramsLast30d}</span>
-              <span className="hv__mom-lbl">program baru</span>
+              <span className="hv__mom-lbl">new programs</span>
             </div>
             <div className="hv__mom-stat">
               <span className="hv__mom-val">{momentum.tasksCompletedThisWeek}</span>
-              <span className="hv__mom-lbl">task minggu ini</span>
+              <span className="hv__mom-lbl">tasks this week</span>
             </div>
             <div className="hv__mom-stat">
               <span className="hv__mom-val">{momentum.activeRate}<span className="hv__mom-unit">%</span></span>
-              <span className="hv__mom-lbl">tingkat aktif</span>
+              <span className="hv__mom-lbl">active rate</span>
             </div>
           </div>
           {velocity && (
             <div className="hv__velocity">
-              <span className="hv__velocity-label">vs {Math.abs(velocity.daysAgo)} hari lalu</span>
-              <span className="hv__velocity-item">On track <Delta value={velocity.onTrack} /></span>
-              <span className="hv__velocity-item">Selesai <Delta value={velocity.selesai} /></span>
+              <span className="hv__velocity-label">vs {Math.abs(velocity.daysAgo)}d ago</span>
+              <span className="hv__velocity-item">On Track <Delta value={velocity.onTrack} /></span>
+              <span className="hv__velocity-item">Completed <Delta value={velocity.selesai} /></span>
             </div>
           )}
         </div>
 
         {hasCapacity && (
           <div className="hv__chart-card">
-            <div className="hv__chart-title">Kapasitas tim · per divisi</div>
+            <div className="hv__chart-title">Team capacity · by division</div>
             <div className="hv__cap-list">
               {units.map(u => (
                 <div key={u.unit?.code ?? u.unit?.id} className="hv__cap-row">
@@ -95,11 +95,11 @@ export function PortfolioAnalytics({ data }: { data: ProgramSummaryPayload }) {
                     max={u.total}
                     tone={u.overdue > 0 ? 'amber' : 'green'}
                     height={7}
-                    aria-label={`${u.unit?.code}: ${u.done}/${u.total} task selesai`}
+                    aria-label={`${u.unit?.code}: ${u.done}/${u.total} tasks completed`}
                   />
                   <span className="hv__cap-meta">
                     {u.done}/{u.total}
-                    {u.overdue > 0 && <em className="hv__cap-overdue"> · {u.overdue} telat</em>}
+                    {u.overdue > 0 && <em className="hv__cap-overdue"> · {u.overdue} overdue</em>}
                   </span>
                 </div>
               ))}

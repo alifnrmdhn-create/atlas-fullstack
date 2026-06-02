@@ -31,21 +31,21 @@ type Lane = { key: string; label: string; statuses: string[]; hint: string }
 const LANES: Lane[] = [
   {
     key: 'todo',
-    label: 'Belum Mulai',
+    label: 'Not Started',
     statuses: ['BACKLOG', 'READY'],
-    hint: 'Task belum dikerjakan. Isi progres di rincian kartu untuk memulai.',
+    hint: 'Task not started yet. Enter progress in the card detail to begin.',
   },
   {
     key: 'doing',
-    label: 'Berjalan',
+    label: 'In Progress',
     statuses: ['IN_PROGRESS', 'IN_REVIEW', 'BLOCKED'],
-    hint: 'Task sedang aktif dikerjakan atau terhambat.',
+    hint: 'Task is actively being worked on or blocked.',
   },
   {
     key: 'done',
-    label: 'Selesai',
+    label: 'Completed',
     statuses: ['COMPLETED'],
-    hint: 'Task tuntas (progres 100% atau disetujui reviewer).',
+    hint: 'Task done (100% progress or approved by reviewer).',
   },
 ]
 const statusSlug = (status: string) => status.toLowerCase()
@@ -55,7 +55,7 @@ const statusSlug = (status: string) => status.toLowerCase()
 // Catatan: Execution TIDAK punya review/approval (beda dgn Assignments), jadi
 // tidak ada badge "Menunggu Review". IN_REVIEW = status legacy yang dinormalisasi.
 const STATUS_BADGE_ID: Record<string, string> = {
-  READY: 'Siap',
+  READY: 'Ready',
 }
 
 // Time-based filter helpers (Daily PIC Workspace)
@@ -79,10 +79,10 @@ function taskInFlight(t: Task): boolean {
   return t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW'
 }
 const TIME_FILTER_LABELS: Record<TimeFilter, string> = {
-  week: 'Aktif Pekan Ini',
-  overdue: 'Lewat',
-  'in-flight': 'Berjalan',
-  all: 'Semua',
+  week: 'Active This Week',
+  overdue: 'Overdue',
+  'in-flight': 'In Progress',
+  all: 'All',
 }
 
 // ── Sub-components for smooth DnD ──────────────────────────────────────────
@@ -120,8 +120,8 @@ function CardFace({
         {item.isBlocked ? (
           <span
             className="work-card__blocked"
-            title={item.blockedReason ?? 'Task terhambat — butuh intervensi'}
-          >⚠ Terhambat</span>
+            title={item.blockedReason ?? 'Task blocked — needs intervention'}
+          >⚠ Blocked</span>
         ) : STATUS_BADGE_ID[item.status] ? (
           <span className={`work-card__status-badge work-card__status-badge--${statusSlug(item.status)}`}>
             {STATUS_BADGE_ID[item.status]}
@@ -129,7 +129,7 @@ function CardFace({
         ) : null}
         {item.status === 'COMPLETED' && item.targetCompletion && item.actualCompletion && (
           <span className={`work-card__ontime work-card__ontime--${new Date(item.actualCompletion) <= new Date(item.targetCompletion) ? 'ok' : 'late'}`}>
-            {new Date(item.actualCompletion) <= new Date(item.targetCompletion) ? '✓ Tepat waktu' : '⚠ Terlambat'}
+            {new Date(item.actualCompletion) <= new Date(item.targetCompletion) ? '✓ On time' : '⚠ Late'}
           </span>
         )}
         <span className="work-card__footer-meta">
@@ -417,7 +417,7 @@ export function WorkboardView() {
     if (wiSaving) return
     const wiDirty = wiForm.workstreamId !== '' || wiForm.title !== '' || wiForm.description !== '' ||
       wiForm.status !== 'BACKLOG' || wiForm.priority !== 'MEDIUM' || wiForm.assignedTo !== ''
-    if (wiDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (wiDirty && !window.confirm('Discard unsaved changes?')) return
     closeWIOverlay('create-wi', () => { setShowCreateWI(false); setWiError(null) })
   }, showCreateWI || closingWIOverlay === 'create-wi')
 
@@ -465,7 +465,7 @@ export function WorkboardView() {
       closeCreateWI()
       await loadOverview('refresh')
     } catch (err: unknown) {
-      setWiError((err as { message?: string })?.message ?? 'Gagal membuat task.')
+      setWiError((err as { message?: string })?.message ?? 'Failed to create task.')
     } finally {
       setWiSaving(false)
     }
@@ -484,10 +484,10 @@ export function WorkboardView() {
         title="Workboard"
         subtitle={
           roleAccess.isMonitoringOnly
-            ? 'Pantau task & blocker Program di seluruh direktorat Anda.'
+            ? 'Track Program tasks & blockers across your directorate.'
             : roleAccess.isOfficer
-            ? 'Task dari Program yang ditugaskan kepada Anda.'
-            : 'Task dari Program kerja — bagian dari rencana yang disetujui.'
+            ? 'Program tasks assigned to you.'
+            : 'Tasks from work Programs — part of the approved plan.'
         }
         actions={
           boardStatus.message ? (
@@ -537,7 +537,7 @@ export function WorkboardView() {
                 key={tf}
                 className={`view-toggle-btn${timeFilter === tf ? ' active' : ''}`}
                 onClick={() => setTimeFilter(tf)}
-                title={tf === 'week' ? 'In-flight + due ≤ 7 hari + overdue' : undefined}
+                title={tf === 'week' ? 'In-flight + due ≤ 7 days + overdue' : undefined}
               >
                 {TIME_FILTER_LABELS[tf]}
               </button>
@@ -575,44 +575,44 @@ export function WorkboardView() {
               className={`wb-summary-stat wb-summary-stat--overdue${overdueCount === 0 ? ' is-zero' : ''}${timeFilter === 'overdue' ? ' is-active' : ''}`}
               onClick={() => overdueCount > 0 && setTimeFilter('overdue')}
               disabled={overdueCount === 0}
-              title="Task target sudah lewat & belum selesai"
+              title="Task past due & not completed"
             >
               <span className="wb-summary-stat__num">{overdueCount}</span>
-              <em>lewat</em>
+              <em>overdue</em>
             </button>
             <button
               type="button"
               className={`wb-summary-stat wb-summary-stat--today${dueTodayCount === 0 ? ' is-zero' : ''}`}
               onClick={() => dueTodayCount > 0 && setTimeFilter('week')}
               disabled={dueTodayCount === 0}
-              title="Task yang due hari ini"
+              title="Tasks due today"
             >
               <span className="wb-summary-stat__num">{dueTodayCount}</span>
-              <em>hari ini</em>
+              <em>today</em>
             </button>
             <button
               type="button"
               className={`wb-summary-stat wb-summary-stat--week${dueWeekCount === 0 ? ' is-zero' : ''}`}
               onClick={() => dueWeekCount > 0 && setTimeFilter('week')}
               disabled={dueWeekCount === 0}
-              title="Task yang due dalam 7 hari ke depan"
+              title="Tasks due in the next 7 days"
             >
               <span className="wb-summary-stat__num">{dueWeekCount}</span>
-              <em>7 hari</em>
+              <em>7 days</em>
             </button>
             <span className="wb-summary-stat">
               <span className="wb-summary-stat__num">{inFlightCount}</span>
-              <em>berjalan</em>
+              <em>in progress</em>
             </span>
             {blockedCount > 0 && (
               <span className="wb-summary-stat wb-stats__blocked">
                 <span className="wb-summary-stat__num">{blockedCount}</span>
-                <em>terhambat</em>
+                <em>blocked</em>
               </span>
             )}
             <span className="wb-summary-stat">
               <span className="wb-summary-stat__num">{completedCount}</span>
-              <em>selesai</em>
+              <em>completed</em>
             </span>
           </div>
         </div>
@@ -636,15 +636,15 @@ export function WorkboardView() {
               icon="✨"
               title={
                 effectiveMyItemsOnly
-                  ? (timeFilter === 'week' ? 'Anda free minggu ini' : 'Tidak ada task aktif')
-                  : 'Tidak ada task yang match filter saat ini'
+                  ? (timeFilter === 'week' ? "You're free this week" : 'No active tasks')
+                  : 'No tasks match the current filter'
               }
               text={
                 effectiveMyItemsOnly && timeFilter === 'week'
-                  ? "Tidak ada task overdue, due 7 hari, atau in-flight yang assigned ke Anda. Klik 'Semua' untuk lihat semua, atau 'All' untuk lihat task tim."
+                  ? "No overdue, due-in-7-days, or in-flight tasks assigned to you. Click 'All' to see everything, or toggle to team tasks."
                   : effectiveMyItemsOnly
-                  ? "Tidak ada task Anda yang match. Coba ubah filter waktu atau toggle ke 'All'."
-                  : "Tidak ada task yang match filter saat ini. Ubah preset waktu atau filter program/workstream."
+                  ? "None of your tasks match. Try changing the time filter or toggle to 'All'."
+                  : "No tasks match the current filter. Change the time preset or the program/workstream filter."
               }
             />
           ) : null}
@@ -667,7 +667,7 @@ export function WorkboardView() {
                       className={`kanban-col__header kanban-col__header--toggle kanban-col__header--${lane.key}`}
                       onClick={() => toggleCollapsedCol(lane.key)}
                       aria-expanded={!isCollapsed}
-                      title={isCollapsed ? 'Buka lane' : 'Tutup lane'}
+                      title={isCollapsed ? 'Expand lane' : 'Collapse lane'}
                     >
                       <div className="kanban-col__label-row">
                         <span className="kanban-col__caret" aria-hidden="true">{isCollapsed ? '▸' : '▾'}</span>
@@ -675,7 +675,7 @@ export function WorkboardView() {
                         <span
                           className="kanban-col__info"
                           title={lane.hint}
-                          aria-label={`Tentang lane ${lane.label}`}
+                          aria-label={`About the ${lane.label} lane`}
                         >ⓘ</span>
                       </div>
                       <span className="section-badge">{items.length}</span>
@@ -704,8 +704,8 @@ export function WorkboardView() {
           {boardMode === 'list' && (
             <div className="panel">
               <div className="panel__header">
-                <h3 className="panel__title">{myItemsOnly ? 'Task Saya' : 'Semua Task'}</h3>
-                <span className="badge">{allItems.length} task</span>
+                <h3 className="panel__title">{myItemsOnly ? 'My Tasks' : 'All Tasks'}</h3>
+                <span className="badge">{allItems.length} tasks</span>
               </div>
               <div className="wi-list">
                 {allItems.map((item) => (
@@ -811,17 +811,17 @@ export function WorkboardView() {
           <div aria-describedby={createTaskDescId} aria-labelledby={createTaskTitleId} aria-modal="true" className="modal modal--wide" ref={createTaskDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Eksekusi</span>
-                <h3 className="modal__title" id={createTaskTitleId}>Task Baru</h3>
+                <span className="modal-kicker">Execution</span>
+                <h3 className="modal__title" id={createTaskTitleId}>New Task</h3>
                 <p className="modal-subtitle" id={createTaskDescId}>
-                  Buat item kerja baru dengan konteks workstream, prioritas, dan pemilik yang jelas agar eksekusi langsung rapi.
+                  Create a new work item with clear workstream context, priority, and owner so execution stays tidy.
                 </p>
                 <p className="modal-cross-hint">
-                  Bukan bagian dari Program? Buat sebagai <Link href="/penugasan">Assignment →</Link>
+                  Not part of a Program? Create it as an <Link href="/penugasan">Assignment →</Link>
                 </p>
               </div>
               <button
-                aria-label="Tutup"
+                aria-label="Close"
                 className="modal__close"
                 disabled={wiSaving}
                 onClick={closeCreateWI}
@@ -837,8 +837,8 @@ export function WorkboardView() {
                 {wiError && <div className="wb-modal-error">{wiError}</div>}
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>Konteks Pekerjaan</h4>
-                    <p>Pautkan task ke workstream yang tepat dan beri judul yang cukup spesifik untuk action owner.</p>
+                    <h4>Work Context</h4>
+                    <p>Link the task to the right workstream and give it a title specific enough for the action owner.</p>
                   </div>
                   <div className="form-field">
                     <label>Workstream <span className="form-field__required">*</span></label>
@@ -848,7 +848,7 @@ export function WorkboardView() {
                       required
                       value={wiForm.workstreamId}
                     >
-                      <option value="">Pilih workstream…</option>
+                      <option value="">Select a workstream…</option>
                       {wiWorkstreams.map(ini => (
                         <option key={ini.id} value={ini.id}>
                           {ini.program ? `${ini.program.code} › ` : ''}{ini.name}
@@ -857,24 +857,24 @@ export function WorkboardView() {
                     </select>
                   </div>
                   <div className="form-field">
-                    <label>Judul <span className="form-field__required">*</span></label>
+                    <label>Title <span className="form-field__required">*</span></label>
                     <input
                       maxLength={120}
                       minLength={3}
                       onChange={e => setWiForm(f => ({ ...f, title: e.target.value }))}
-                      placeholder="Judul task"
+                      placeholder="Task title"
                       required
                       type="text"
                       value={wiForm.title}
                     />
                   </div>
                   <div className="form-field">
-                    <label>Deskripsi</label>
+                    <label>Description</label>
                     <textarea
                       className="composer__input wb-modal-textarea"
                       maxLength={400}
                       onChange={e => setWiForm(f => ({ ...f, description: e.target.value }))}
-                      placeholder="Deskripsi singkat (opsional)"
+                      placeholder="Brief description (optional)"
                       rows={2}
                       value={wiForm.description}
                     />
@@ -882,8 +882,8 @@ export function WorkboardView() {
                 </section>
                 <section className="modal-section modal-section--soft">
                   <div className="modal-section__intro">
-                    <h4>Eksekusi</h4>
-                    <p>Tentukan status awal dan penanggung jawab supaya item ini siap dipantau dari board.</p>
+                    <h4>Execution</h4>
+                    <p>Set the initial status and assignee so this item is ready to track from the board.</p>
                   </div>
                   <div className="form-field">
                     <label>Status</label>
@@ -901,20 +901,20 @@ export function WorkboardView() {
                     </select>
                   </div>
                   <div className="form-field">
-                    <label>Penanggung Jawab</label>
+                    <label>Assignee</label>
                     <select
                       className="form-input"
                       onChange={e => setWiForm(f => ({ ...f, assignedTo: e.target.value }))}
                       value={wiForm.assignedTo}
                     >
-                      <option value="">— Belum ditugaskan —</option>
+                      <option value="">— Unassigned —</option>
                       {wiUsers.map(u => (
                         <option key={u.id} value={u.id}>{u.name}{u.positionTitle ? ` · ${u.positionTitle}` : ''}</option>
                       ))}
                     </select>
                   </div>
                   <div className="form-field">
-                    <label>Tenggat <span className="form-field__required">*</span></label>
+                    <label>Deadline <span className="form-field__required">*</span></label>
                     <input
                       className="form-input"
                       onChange={e => setWiForm(f => ({ ...f, targetCompletion: e.target.value }))}
@@ -932,14 +932,14 @@ export function WorkboardView() {
                   onClick={closeCreateWI}
                   type="button"
                 >
-                  Batal
+                  Cancel
                 </button>
                 <button
                   className="profile-save-btn"
                   disabled={wiSaving || !wiForm.workstreamId || !wiForm.title.trim() || !wiForm.targetCompletion}
                   type="submit"
                 >
-                  {wiSaving ? 'Menyimpan…' : 'Buat Tugas'}
+                  {wiSaving ? 'Saving…' : 'Create Task'}
                 </button>
               </div>
             </form>

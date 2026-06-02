@@ -21,14 +21,14 @@ interface Props {
 
 function relativeTime(from: Date): string {
     const seconds = Math.max(0, Math.floor((Date.now() - from.getTime()) / 1000))
-    if (seconds < 5)   return 'baru saja'
-    if (seconds < 60)  return `${seconds} detik lalu`
+    if (seconds < 5)   return 'just now'
+    if (seconds < 60)  return `${seconds}s ago`
     const minutes = Math.floor(seconds / 60)
-    if (minutes < 60)  return `${minutes} menit lalu`
+    if (minutes < 60)  return `${minutes}m ago`
     const hours = Math.floor(minutes / 60)
-    if (hours < 24)    return `${hours} jam lalu`
+    if (hours < 24)    return `${hours}h ago`
     const days = Math.floor(hours / 24)
-    return `${days} hari lalu`
+    return `${days}d ago`
 }
 
 export function DraftStatusBadge({ status, lastSavedAt, className = '' }: Props) {
@@ -49,27 +49,27 @@ export function DraftStatusBadge({ status, lastSavedAt, className = '' }: Props)
         case 'idle':
             if (!lastSavedAt) return null
             tone = 'green'
-            label = `Tersimpan • ${relativeTime(lastSavedAt)}`
+            label = `Saved • ${relativeTime(lastSavedAt)}`
             break
         case 'saved':
             tone = 'green'
-            label = lastSavedAt ? `Tersimpan • ${relativeTime(lastSavedAt)}` : 'Tersimpan'
+            label = lastSavedAt ? `Saved • ${relativeTime(lastSavedAt)}` : 'Saved'
             break
         case 'typing':
             tone = 'muted'
-            label = 'Sedang mengetik…'
+            label = 'Typing…'
             break
         case 'saving':
             tone = 'blue'
-            label = 'Menyimpan…'
+            label = 'Saving…'
             break
         case 'offline':
             tone = 'yellow'
-            label = 'Offline — backup lokal'
+            label = 'Offline — local backup'
             break
         case 'error':
             tone = 'red'
-            label = 'Gagal menyimpan'
+            label = 'Save failed'
             break
     }
 

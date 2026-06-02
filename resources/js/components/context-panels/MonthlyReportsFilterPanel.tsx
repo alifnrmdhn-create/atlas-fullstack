@@ -19,10 +19,10 @@ const YEARS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2]
 
 const STATUS_OPTIONS: Array<{ value: string; label: string; tone: 'gray' | 'amber' | 'blue' | 'green' | 'red' }> = [
   { value: 'DRAFT', label: 'Draft', tone: 'gray' },
-  { value: 'SUBMITTED', label: 'Diajukan', tone: 'amber' },
-  { value: 'REVIEWED', label: 'Direview', tone: 'blue' },
-  { value: 'APPROVED', label: 'Disetujui', tone: 'green' },
-  { value: 'REJECTED', label: 'Ditolak', tone: 'red' },
+  { value: 'SUBMITTED', label: 'Submitted', tone: 'amber' },
+  { value: 'REVIEWED', label: 'Reviewed', tone: 'blue' },
+  { value: 'APPROVED', label: 'Approved', tone: 'green' },
+  { value: 'REJECTED', label: 'Rejected', tone: 'red' },
 ]
 
 function readQuery(): URLSearchParams {

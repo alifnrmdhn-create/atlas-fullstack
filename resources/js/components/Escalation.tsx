@@ -2,7 +2,7 @@
  * Sprint 4 — Clear the Path UI Components.
  *
  * Tiga komponen yang dipakai di banyak tempat:
- *   - EscalationButton       : tombol "Butuh Dukungan Atasan"
+ *   - EscalationButton       : tombol "Request Manager Support"
  *   - EscalationCreateModal  : form create escalation
  *   - EscalationTriagePanel  : side panel disposition (Commit/Reroute/Decline)
  *
@@ -80,13 +80,13 @@ export function EscalationButton({
         type="button"
         className={`btn btn--ghost ${size === 'sm' ? 'btn--sm' : ''}`}
         onClick={() => setOpen(true)}
-        title="Eskalasi ke atasan langsung"
+        title="Escalate to your manager"
         data-tour="escalation-button"
       >
         <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M7 12V2M3 6l4-4 4 4" />
         </svg>
-        Butuh Dukungan Atasan
+        Request Manager Support
       </button>
       {open && (
         <EscalationCreateModal
@@ -126,7 +126,7 @@ export function EscalationCreateModal({
   const isDirty = title !== prefillTitle || description !== prefillDescription
   const safeClose = () => {
     if (saving) return
-    if (isDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (isDirty && !window.confirm('Discard unsaved changes?')) return
     onClose()
   }
   useEscKey(safeClose, true)
@@ -134,7 +134,7 @@ export function EscalationCreateModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (title.trim().length < 3) { setError('Judul minimal 3 karakter.'); return }
+    if (title.trim().length < 3) { setError('Title must be at least 3 characters.'); return }
     setSaving(true)
     try {
       const payload = await api.post<{ data: EscalationRequest }>('/escalations', {
@@ -144,7 +144,7 @@ export function EscalationCreateModal({
       })
       onCreated?.(payload.data)
     } catch (err) {
-      setError((err as Error).message || 'Gagal mengajukan eskalasi.')
+      setError((err as Error).message || 'Failed to submit escalation.')
     } finally {
       setSaving(false)
     }
@@ -166,10 +166,10 @@ export function EscalationCreateModal({
           <div className="modal__header">
             <div className="modal-headcopy">
               <span className="modal-kicker">Clear the Path</span>
-              <h3 id={titleId} className="modal__title">Butuh Dukungan Atasan</h3>
-              <p className="modal-subtitle">Sistem akan otomatis mengarahkan ke atasan langsung Anda untuk disposition.</p>
+              <h3 id={titleId} className="modal__title">Request Manager Support</h3>
+              <p className="modal-subtitle">This is automatically routed to your direct manager for disposition.</p>
             </div>
-            <button type="button" className="modal__close" onClick={safeClose} aria-label="Tutup">
+            <button type="button" className="modal__close" onClick={safeClose} aria-label="Close">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="m1 1 10 10M11 1 1 11" />
               </svg>
@@ -177,7 +177,7 @@ export function EscalationCreateModal({
           </div>
           <div className="modal__body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Judul *</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Title *</span>
               <input
                 type="text"
                 value={title}
@@ -189,13 +189,13 @@ export function EscalationCreateModal({
               />
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Konteks tambahan (opsional)</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Additional context (optional)</span>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
                 maxLength={2000}
-                placeholder="Apa yang membuat ini stuck? Apa yang Anda butuhkan dari atasan?"
+                placeholder="What's making this stuck? What do you need from your manager?"
                 style={{ padding: '6px 10px', border: '1px solid var(--panel-border)', borderRadius: 4, font: 'inherit', resize: 'vertical' }}
               />
             </label>
@@ -206,9 +206,9 @@ export function EscalationCreateModal({
             )}
           </div>
           <div className="modal__footer">
-            <button type="button" className="btn btn--ghost" onClick={safeClose} disabled={saving}>Batal</button>
+            <button type="button" className="btn btn--ghost" onClick={safeClose} disabled={saving}>Cancel</button>
             <button type="submit" className="btn btn--primary" disabled={saving || title.trim().length < 3}>
-              {saving ? 'Mengirim…' : 'Ajukan Eskalasi'}
+              {saving ? 'Submitting…' : 'Submit Escalation'}
             </button>
           </div>
         </form>
@@ -294,7 +294,7 @@ export function EscalationTriagePanel({
       </div>
 
       {request.description && (
-        <Section label="Konteks">
+        <Section label="Context">
           <p style={{ fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap', margin: 0 }}>{request.description}</p>
         </Section>
       )}
@@ -328,11 +328,11 @@ export function EscalationTriagePanel({
           )}
           {canResolve && (
             <button type="button" className="btn btn--primary btn--sm" onClick={() => setMode('resolve')}>
-              Tandai Selesai (Cleared)
+              Mark Resolved (Cleared)
             </button>
           )}
           {!canDispose && !canResolve && !isRequester && (
-            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Tidak ada aksi tersedia untuk Anda.</p>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>No actions available to you.</p>
           )}
         </>
       )}
@@ -389,19 +389,19 @@ function DispositionDetails({ req }: { req: EscalationRequest }) {
   if (req.status === 'COMMITTED' || req.status === 'IN_PROGRESS') {
     return (
       <div style={{ fontSize: 12, color: 'var(--text)' }}>
-        <p style={{ margin: '0 0 4px' }}>Atasan commit menyelesaikan{req.commitmentDueDate ? ` sebelum ${formatDate(req.commitmentDueDate)}` : ''}.</p>
+        <p style={{ margin: '0 0 4px' }}>Manager committed to resolve{req.commitmentDueDate ? ` by ${formatDate(req.commitmentDueDate)}` : ''}.</p>
         {req.commitmentNote && <p style={{ margin: 0, color: 'var(--text-muted)' }}>"{req.commitmentNote}"</p>}
       </div>
     )
   }
   if (req.status === 'CLEARED' && req.resolutionNote) {
-    return <p style={{ fontSize: 12, margin: 0 }}>✓ Diselesaikan: {req.resolutionNote}</p>
+    return <p style={{ fontSize: 12, margin: 0 }}>✓ Resolved: {req.resolutionNote}</p>
   }
   if (req.status === 'DECLINED' && req.declinedReason) {
-    return <p style={{ fontSize: 12, margin: 0, color: 'var(--text-muted)' }}>✗ Ditolak: {req.declinedReason}</p>
+    return <p style={{ fontSize: 12, margin: 0, color: 'var(--text-muted)' }}>✗ Declined: {req.declinedReason}</p>
   }
   if (req.status === 'REROUTED') {
-    return <p style={{ fontSize: 12, margin: 0 }}>↻ Diteruskan ke {req.reroutedTo?.name ?? '—'}</p>
+    return <p style={{ fontSize: 12, margin: 0 }}>↻ Rerouted to {req.reroutedTo?.name ?? '—'}</p>
   }
   return null
 }
@@ -414,11 +414,11 @@ function CommitForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel:
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(due, note) }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Target tanggal selesai (opsional)</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Target completion date (optional)</span>
         <input type="date" value={due} onChange={(e) => setDue(e.target.value)} min={new Date().toISOString().slice(0, 10)} style={inputStyle} />
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Catatan (opsional)</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Notes (optional)</span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={1000} style={{ ...inputStyle, resize: 'vertical' }} />
       </label>
       <FormActions saving={saving} primaryLabel="Commit" onCancel={safeCancel} />
@@ -433,7 +433,7 @@ function DeclineForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(reason) }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Alasan menolak *</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Decline reason *</span>
         <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} required minLength={5} maxLength={1000} autoFocus style={{ ...inputStyle, resize: 'vertical' }} />
       </label>
       <FormActions saving={saving} primaryLabel="Decline" disabled={reason.trim().length < 5} onCancel={safeCancel} />
@@ -448,10 +448,10 @@ function ResolveForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(note) }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Catatan penyelesaian *</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Resolution note *</span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} required minLength={5} maxLength={1000} autoFocus style={{ ...inputStyle, resize: 'vertical' }} />
       </label>
-      <FormActions saving={saving} primaryLabel="Tandai Selesai" disabled={note.trim().length < 5} onCancel={safeCancel} />
+      <FormActions saving={saving} primaryLabel="Mark Resolved" disabled={note.trim().length < 5} onCancel={safeCancel} />
     </form>
   )
 }
@@ -465,12 +465,12 @@ function RerouteForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel
   return (
     <form onSubmit={(e) => { e.preventDefault(); if (id) onSubmit(id, note) }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>User ID target *</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Target user ID *</span>
         <input type="number" value={targetId} onChange={(e) => setTargetId(e.target.value)} required autoFocus style={inputStyle} />
-        <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>MVP: input manual user ID. Sprint berikutnya: typeahead picker.</span>
+        <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>MVP: manual user ID input. Next sprint: typeahead picker.</span>
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Catatan (opsional)</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Notes (optional)</span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={500} style={{ ...inputStyle, resize: 'vertical' }} />
       </label>
       <FormActions saving={saving} primaryLabel="Reroute" disabled={!id} onCancel={safeCancel} />
@@ -487,7 +487,7 @@ function RerouteForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel
 function makeSafeCancel(saving: boolean, isDirty: boolean, onCancel: () => void): () => void {
   return () => {
     if (saving) return
-    if (isDirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (isDirty && !window.confirm('Discard unsaved changes?')) return
     onCancel()
   }
 }
@@ -495,9 +495,9 @@ function makeSafeCancel(saving: boolean, isDirty: boolean, onCancel: () => void)
 function FormActions({ saving, primaryLabel, disabled, onCancel }: { saving: boolean; primaryLabel: string; disabled?: boolean; onCancel: () => void }) {
   return (
     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-      <button type="button" className="btn btn--ghost btn--sm" onClick={onCancel} disabled={saving}>Batal</button>
+      <button type="button" className="btn btn--ghost btn--sm" onClick={onCancel} disabled={saving}>Cancel</button>
       <button type="submit" className="btn btn--primary btn--sm" disabled={saving || disabled}>
-        {saving ? 'Menyimpan…' : primaryLabel}
+        {saving ? 'Saving…' : primaryLabel}
       </button>
     </div>
   )
@@ -524,15 +524,15 @@ function statusToTone(s: EscalationStatus): string {
 
 function statusLabel(s: EscalationStatus): string {
   return ({
-    REQUESTED: 'Menunggu',
-    COMMITTED: 'Di-commit',
-    IN_PROGRESS: 'Berjalan',
-    CLEARED: 'Selesai',
-    DECLINED: 'Ditolak',
-    REROUTED: 'Diteruskan',
+    REQUESTED: 'Awaiting',
+    COMMITTED: 'Committed',
+    IN_PROGRESS: 'In Progress',
+    CLEARED: 'Resolved',
+    DECLINED: 'Declined',
+    REROUTED: 'Rerouted',
   } as const)[s] ?? s
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
 }

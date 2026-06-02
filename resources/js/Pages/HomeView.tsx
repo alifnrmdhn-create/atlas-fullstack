@@ -47,14 +47,9 @@ type ScorecardSnapshot = {
 
 function getGreeting(): string {
   const h = new Date().getHours()
-  if (h < 11) return 'Selamat pagi'
-  if (h < 15) return 'Selamat siang'
-  if (h < 19) return 'Selamat sore'
-  return 'Selamat malam'
-}
-
-function getQuarter(d: Date): number {
-  return Math.floor(d.getMonth() / 3) + 1
+  if (h < 11) return 'Good morning'
+  if (h < 15) return 'Good afternoon'
+  return 'Good evening'
 }
 
 /* Proyeksi KPI akhir tahun — regresi linear tren bulanan → nilai Desember.
@@ -99,36 +94,28 @@ function CountUp({ value, decimals = 0, duration = 900 }: { value: number; decim
   return <>{n.toFixed(decimals)}</>
 }
 
-function getISOWeek(d: Date): number {
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
-  const dayNum = date.getUTCDay() || 7
-  date.setUTCDate(date.getUTCDate() + 4 - dayNum)
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1))
-  return Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
-}
-
 function direkturSlug(kode: string): string {
   return kode.toLowerCase()
 }
 
-/* Relative time for the activity feed — "baru saja / 3 jam lalu / 2 hr lalu". */
+/* Relative time for the activity feed — "just now / 3h ago / 2d ago". */
 function relativeTime(iso: string): string {
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return ''
   const m = Math.floor((Date.now() - then) / 60000)
-  if (m < 1) return 'baru saja'
-  if (m < 60) return `${m} mnt lalu`
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m}m ago`
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h} jam lalu`
+  if (h < 24) return `${h}h ago`
   const d = Math.floor(h / 24)
-  if (d < 30) return `${d} hr lalu`
-  return `${Math.floor(d / 30)} bln lalu`
+  if (d < 30) return `${d}d ago`
+  return `${Math.floor(d / 30)}mo ago`
 }
 
 const ENTITY_LABEL: Record<string, string> = {
-  Program: 'program', WorkItem: 'task', Task: 'task', Meeting: 'rapat',
-  ProgressLog: 'progres', Blocker: 'hambatan', Assignment: 'penugasan',
-  EscalationRequest: 'eskalasi', MeetingActionItem: 'tindak lanjut',
+  Program: 'program', WorkItem: 'task', Task: 'task', Meeting: 'meeting',
+  ProgressLog: 'progress', Blocker: 'blocker', Assignment: 'assignment',
+  EscalationRequest: 'escalation', MeetingActionItem: 'action item',
 }
 
 function activityText(a: { action: string; entityType: string; description?: string }): string {
@@ -203,7 +190,7 @@ function ExecutionMap({ programs, onOpen }: {
   const progCol = (p: number) => p < 34 ? 0 : p < 67 ? 1 : 2
   programs.forEach(p => { grid[pressRow(p.daysRemaining)][progCol(p.progressPercent)]++ })
   const max = Math.max(1, ...grid.flat())
-  const rowLabels = ['Tinggi', 'Sedang', 'Rendah']
+  const rowLabels = ['High', 'Medium', 'Low']
   // tone: high-pressure + low-progress (top-left) = danger; low-pressure + high-progress = safe
   const cellTone = (r: number, c: number): Tone => {
     const score = (2 - r) + c // 0..4
@@ -218,19 +205,19 @@ function ExecutionMap({ programs, onOpen }: {
             {row.map((count, c) => (
               <button key={c} type="button" className="hvc__xmap-cell" data-tone={cellTone(r, c)} data-empty={count === 0 ? '' : undefined}
                 style={{ ['--i' as string]: count === 0 ? 0.05 : 0.18 + 0.82 * (count / max) } as CSSProperties}
-                title={`Tekanan ${rowLabels[r].toLowerCase()} · progres ${['awal','tengah','akhir'][c]}: ${count} program`}
+                title={`${rowLabels[r]} pressure · ${['early','mid','final'][c]} progress: ${count} programs`}
                 onClick={onOpen}>
                 {count > 0
-                  ? <span className="hvc__xmap-count">{count}<span className="hvc__xmap-cap">Program</span></span>
-                  : <span className="hvc__xmap-count hvc__xmap-count--zero">0<span className="hvc__xmap-cap">Program</span></span>}
+                  ? <span className="hvc__xmap-count">{count}<span className="hvc__xmap-cap">Programs</span></span>
+                  : <span className="hvc__xmap-count hvc__xmap-count--zero">0<span className="hvc__xmap-cap">Programs</span></span>}
               </button>
             ))}
           </Fragment>
         ))}
         <span className="hvc__xmap-corner" aria-hidden />
-        <span className="hvc__xmap-colh">Awal</span>
-        <span className="hvc__xmap-colh">Tengah</span>
-        <span className="hvc__xmap-colh">Akhir</span>
+        <span className="hvc__xmap-colh">Early</span>
+        <span className="hvc__xmap-colh">Mid</span>
+        <span className="hvc__xmap-colh">Final</span>
       </div>
     </div>
   )
@@ -258,7 +245,7 @@ function DivisiPanel({ rows, onRow }: { rows: DivRow[]; onRow: (code: string) =>
     <div className="hvc__divp">
       <div className="hvc__divp-toggle" role="tablist">
         <button type="button" role="tab" aria-selected={mode === 'kpi'} data-active={mode === 'kpi'} onClick={() => setMode('kpi')}>KPI</button>
-        <button type="button" role="tab" aria-selected={mode === 'exec'} data-active={mode === 'exec'} onClick={() => setMode('exec')}>Eksekusi</button>
+        <button type="button" role="tab" aria-selected={mode === 'exec'} data-active={mode === 'exec'} onClick={() => setMode('exec')}>Execution</button>
       </div>
       <div className="hvc__divlist">
         {sorted.map(r => {
@@ -286,10 +273,10 @@ function DivisiPanel({ rows, onRow }: { rows: DivRow[]; onRow: (code: string) =>
  * "Timeline Deadline Kritis"). Programs plotted as nodes on a baseline,
  * spaced by sequence; each node = date + program label, colored by urgency. */
 type TLProg = { id: number; code: string; name: string; daysRemaining: number | null; targetEndDate?: string | null; divisi: string; healthTone: string }
-const TL_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+const TL_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (id: number) => void }) {
   const items = programs.slice(0, 8)
-  if (items.length === 0) return <p className="hvc__empty">Tidak ada program aktif bertenggat.</p>
+  if (items.length === 0) return <p className="hvc__empty">No active programs with deadlines.</p>
   const fmt = (iso?: string | null) => {
     if (!iso) return '—'
     const d = new Date(iso)
@@ -297,7 +284,7 @@ function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (i
     return `${d.getDate()} ${TL_MON[d.getMonth()]}`
   }
   const toneOf = (days: number): Tone => days < 0 ? 'red' : days <= 14 ? 'red' : days <= 30 ? 'amber' : 'green'
-  const daysLabelOf = (days: number) => days < 0 ? `${Math.abs(days)} hr lewat` : days === 0 ? 'Hari ini' : `${days} hr lagi`
+  const daysLabelOf = (days: number) => days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Today' : `${days}d left`
 
   // Sumbu PROPORSIONAL: tiap penanda diposisikan menurut tanggal aslinya (bukan
   // urutan), jadi tenggat yang berdempetan terbaca jujur sebagai tumpukan — bukan
@@ -341,7 +328,7 @@ function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (i
 
   return (
     <div className="hvc__tl2">
-      <div className="hvc__tl2-axis" role="img" aria-label="Sebaran tenggat program">
+      <div className="hvc__tl2-axis" role="img" aria-label="Program deadline distribution">
         <span className="hvc__tl2-line" aria-hidden />
         {ticks.map((tk, i) => (
           <span key={i} className="hvc__tl2-tick" style={{ left: `${tk.pos}%` } as CSSProperties}>{tk.label}</span>
@@ -398,7 +385,7 @@ export default function HomeView() {
   if (overviewStatus.loading && !programSummary) {
     return (
       <div className="ds home-v2 home-v2--cockpit">
-        <div className="hv hv--cockpit hvc__sk" aria-busy="true" aria-label="Memuat dashboard">
+        <div className="hv hv--cockpit hvc__sk" aria-busy="true" aria-label="Loading dashboard">
           <div className="hvc__sk-line" style={{ width: 260, height: 20 }} />
           <div className="hvc__sk-bar" />
           <div className="hvc__sk-grid hvc__sk-grid--hud">
@@ -418,8 +405,8 @@ export default function HomeView() {
       <div className="ds home-v2">
         <div className="hv">
           <SectionState
-            title="Data dashboard tidak tersedia"
-            text="Tidak dapat memuat ringkasan portfolio. Coba refresh — jika berlanjut, periksa koneksi server."
+            title="Dashboard data unavailable"
+            text="Couldn't load the portfolio summary. Try refreshing — if it persists, check the server connection."
           />
         </div>
       </div>
@@ -437,7 +424,6 @@ export default function HomeView() {
   const programsForChart = Array.isArray(programSummary.programsForChart) ? programSummary.programsForChart : []
   const recentActivity = Array.isArray(programSummary.recentActivity) ? programSummary.recentActivity : []
   const deadlineClusters = Array.isArray(programSummary.deadlineClusters) ? programSummary.deadlineClusters : []
-  const now = new Date()
 
   /* ── Derived figures (all from existing payload) ─────────────── */
   const tlm = summary.terlambat + summary.overdue
@@ -447,8 +433,6 @@ export default function HomeView() {
   const draftPipeline = Math.max(summary.total - summary.onTrack - summary.atRisk - tlm - summary.selesai, 0)
   const activeProgramCount = summary.onTrack + summary.atRisk + tlm
   const onTrackPct = activeProgramCount > 0 ? Math.round((summary.onTrack / activeProgramCount) * 100) : 0
-  const statusTotal = Math.max(summary.onTrack + summary.atRisk + tlm + draftPipeline, 1)
-  const onTrackDelta = velocity?.onTrack ?? null
   const programTone: Tone = tlm > 0 ? 'red' : summary.atRisk > 0 ? 'amber' : 'green'
 
   // Headline KPI = the viewer's OWN directorate score (ownItem) at
@@ -477,11 +461,6 @@ export default function HomeView() {
   // the result hasn't caught up to the slowdown yet (KPI at risk next period).
   const leadingTone: Tone = onTrackPct >= 80 ? 'green' : onTrackPct >= 50 ? 'amber' : 'red'
   const kpiDiverges = hasKpi && kpiHeadline >= 100 && leadingTone === 'red'
-  const alignTone: Tone = kpiDiverges ? 'red'
-    : (hasKpi && kpiHeadline >= 100 && leadingTone === 'green') ? 'green'
-    : 'amber'
-  const alignText = kpiDiverges ? 'Tidak selaras' : alignTone === 'green' ? 'Selaras' : 'Perhatikan'
-  const alignGap = hasKpi ? Math.round(kpiHeadline - onTrackPct) : 0
 
   /* ── Overall verdict (management by exception) ───────────────── */
   const exceptionCount = tlm + belowTargetCount + needsAction.length + criticalControlCount
@@ -494,7 +473,7 @@ export default function HomeView() {
     (tlm > 0 || belowTargetCount > 0 || criticalControlCount > 0) ? 'red'
     : (summary.atRisk > 0 || needsAction.length > 0) ? 'amber'
     : 'green'
-  const statusLabel = statusTone === 'green' ? 'Terkendali' : statusTone === 'amber' ? 'Perhatian' : 'Tindakan'
+  const statusLabel = statusTone === 'green' ? 'Under Control' : statusTone === 'amber' ? 'Attention' : 'Action'
   const aksiTone: Tone = decisionCount > 0 ? (belowTargetCount > 0 ? 'red' : 'amber')
     : tlm > 0 ? 'amber' : 'green'
 
@@ -505,22 +484,22 @@ export default function HomeView() {
     const f = scorecard.belowTarget[0]
     exceptions.push({
       id: 'kpi', tone: 'red',
-      label: <><strong>{belowTargetCount} KPI</strong> di bawah target</>,
+      label: <><strong>{belowTargetCount} KPI</strong> below target</>,
       meta: `${f.nama} · ${f.nilai.toFixed(1)}%`, onClick: () => navigate(kpiRowUrl(f.kode)),
     })
   }
   if (needsAction.length > 0) {
     exceptions.push({
       id: 'na', tone: 'amber',
-      label: <><strong>{needsAction.length} hal</strong> menunggu keputusan</>,
-      meta: 'Approval & eskalasi', onClick: () => navigate('/fokus'),
+      label: <><strong>{needsAction.length} items</strong> awaiting decision</>,
+      meta: 'Approvals, escalations & support', onClick: () => navigate('/fokus'),
     })
   }
   if (criticalControlCount > 0) {
     exceptions.push({
       id: 'cc', tone: 'amber',
-      label: <><strong>{criticalControlCount} kontrol kritis</strong> terbuka</>,
-      meta: 'Risiko CRITICAL/HIGH', onClick: () => navigate('/programs'),
+      label: <><strong>{criticalControlCount} critical controls</strong> open</>,
+      meta: 'CRITICAL/HIGH risk', onClick: () => navigate('/programs'),
     })
   }
 
@@ -529,9 +508,13 @@ export default function HomeView() {
   // mis. baru 1 program di-snapshot, pctOnTrack=100) lalu terjun ke nilai riil. Tanpa
   // filter ini, delta first→last jadi artefak seed (mis. −71 poin), bukan momentum
   // nyata. Bandingkan hanya periode dengan skala portfolio sebanding. (Jun 2026)
+  // PENTING: JANGAN fallback ke `trendSeries` mentah saat stabil <2 — itu
+  // memasukkan kembali hari bootstrap yang baru saja dibuang (delta & sparkline
+  // jadi artefak lagi). Kurang dari 2 titik stabil = "belum cukup data", bukan
+  // pakai data kotor. `stableSeries` dipakai bersama momentum + kartu terlambat.
   const latestTotal = trendSeries.length ? trendSeries[trendSeries.length - 1].total : 0
-  const trendStable = trendSeries.filter(t => t.total >= Math.max(2, latestTotal * 0.5))
-  const trendValues = (trendStable.length >= 2 ? trendStable : trendSeries).slice(-14).map(t => t.pctOnTrack)
+  const stableSeries = trendSeries.filter(t => t.total >= Math.max(2, latestTotal * 0.5))
+  const trendValues = stableSeries.slice(-14).map(t => t.pctOnTrack)
   const trendDelta = trendValues.length >= 2
     ? trendValues[trendValues.length - 1] - trendValues[0]
     : null
@@ -585,10 +568,10 @@ export default function HomeView() {
   // selalu 100% → low-signal) diturunkan jadi satu stat; kartu kini fokus ke
   // tren On Track yang nyata. 'suffix' di semua entri agar tipe array seragam.
   const momentumStats = momentum ? [
-    { label: 'Program bergerak', value: activeRatePct, suffix: '%', tone: activeRateTone },
-    { label: 'Selesai · 30 hari', value: momentum.programsCompletedLast30d, suffix: '', tone: 'green' as Tone },
-    { label: 'Task selesai · pekan ini', value: momentum.tasksCompletedThisWeek, suffix: '', tone: 'green' as Tone },
-    { label: 'Tertahan', value: momentum.stagnantCount, suffix: '', tone: (momentum.stagnantCount > 0 ? 'red' : 'green') as Tone },
+    { label: 'Programs moving', value: activeRatePct, suffix: '%', tone: activeRateTone },
+    { label: 'Completed · 30d', value: momentum.programsCompletedLast30d, suffix: '', tone: 'green' as Tone },
+    { label: 'Tasks done · this week', value: momentum.tasksCompletedThisWeek, suffix: '', tone: 'green' as Tone },
+    { label: 'Stalled', value: momentum.stagnantCount, suffix: '', tone: (momentum.stagnantCount > 0 ? 'red' : 'green') as Tone },
   ] : []
 
   /* ── Mid: Heatmap rekap program (divisi × status) ────────────── */
@@ -599,8 +582,8 @@ export default function HomeView() {
   const heatCols: Array<{ key: 'onTrack' | 'atRisk' | 'tlm' | 'selesai'; label: string; tone: Tone }> = [
     { key: 'onTrack', label: 'On Track', tone: 'green' },
     { key: 'atRisk', label: 'At Risk', tone: 'amber' },
-    { key: 'tlm', label: 'Terlambat', tone: 'red' },
-    { key: 'selesai', label: 'Selesai', tone: 'neutral' },
+    { key: 'tlm', label: 'Delayed', tone: 'red' },
+    { key: 'selesai', label: 'Completed', tone: 'neutral' },
   ]
   const heatVal = (d: typeof heatRows[number], key: string) =>
     key === 'tlm' ? (d.terlambat ?? 0) + (d.overdue ?? 0)
@@ -630,7 +613,7 @@ export default function HomeView() {
   const shortcuts: Array<{ icon: string; label: string; tone: Tone; onClick: () => void }> = [
     { icon: 'programs', label: 'Programs', tone: 'green', onClick: () => navigate('/programs') },
     { icon: 'workboard', label: 'Workboard', tone: 'amber', onClick: () => navigate('/execution') },
-    { icon: 'meeting', label: 'Rapat', tone: 'neutral', onClick: () => navigate('/jadwal') },
+    { icon: 'meeting', label: 'Meetings', tone: 'neutral', onClick: () => navigate('/jadwal') },
     canSeePerformance
       ? { icon: 'performance', label: 'Performance', tone: 'green', onClick: () => navigate('/performance/scorecard') }
       : { icon: 'workboard', label: 'Assignment', tone: 'neutral', onClick: () => navigate('/penugasan') },
@@ -638,23 +621,13 @@ export default function HomeView() {
 
   /* ── Hero stat chips ─────────────────────────────────────────── */
   const heroStats: Array<{ val: number; label: string; tone: Tone; onClick: () => void }> = [
-    { val: tlm, label: 'Program terlambat', tone: tlm > 0 ? 'red' : 'green', onClick: () => navigate('/programs') },
-    { val: summary.selesai, label: 'Selesai', tone: 'green', onClick: () => navigate('/programs') },
-    { val: summary.total, label: 'Total program', tone: 'neutral', onClick: () => navigate('/programs') },
-    { val: exceptionCount, label: 'Perlu aksi', tone: exceptionCount > 0 ? 'amber' : 'green', onClick: () => navigate('/fokus') },
+    { val: tlm, label: 'Delayed programs', tone: tlm > 0 ? 'red' : 'green', onClick: () => navigate('/programs') },
+    { val: summary.selesai, label: 'Completed', tone: 'green', onClick: () => navigate('/programs') },
+    { val: summary.total, label: 'Total programs', tone: 'neutral', onClick: () => navigate('/programs') },
+    { val: exceptionCount, label: 'Needs action', tone: exceptionCount > 0 ? 'amber' : 'green', onClick: () => navigate('/fokus') },
   ]
 
   /* ── Below-the-fold detail data (unchanged sources) ──────────── */
-  const attentionPrograms = [...programsForChart]
-    .sort((a, b) => {
-      const order: Record<string, number> = { overdue: 0, terlambat: 1, at_risk: 2, on_track: 3, selesai: 4 }
-      const ao = order[a.healthTone] ?? 5
-      const bo = order[b.healthTone] ?? 5
-      if (ao !== bo) return ao - bo
-      return (a.daysRemaining ?? 9999) - (b.daysRemaining ?? 9999)
-    })
-    .slice(0, 6)
-
   const topDeadlinePrograms = [...programsForChart]
     .filter(p => p.daysRemaining != null && p.healthTone !== 'selesai')
     .sort((a, b) => (a.daysRemaining ?? 9999) - (b.daysRemaining ?? 9999))
@@ -662,21 +635,21 @@ export default function HomeView() {
 
   /* ── Verdict — editorial lead: the one-line state + WHY (reframes a green
    * lagging KPI against the leading execution risk). All from existing data. */
-  const verdictLabel = statusTone === 'red' ? 'Perlu Tindakan' : statusTone === 'amber' ? 'Perhatian' : 'Terkendali'
+  const verdictLabel = statusTone === 'red' ? 'Action Needed' : statusTone === 'amber' ? 'Attention' : 'Under Control'
   const verdictSub: ReactNode = kpiDiverges
-    ? <>Hasil di atas target (<b>{kpiHeadline.toFixed(1)}%</b>), tapi eksekusi tertinggal (<b>{onTrackPct}%</b>) — <b>{tlm} program terlambat</b> berisiko menekan KPI kuartal depan.</>
+    ? <>Result above target (<b>{kpiHeadline.toFixed(1)}%</b>), but execution lags (<b>{onTrackPct}%</b>) — <b>{tlm} programs delayed</b> risk pressuring next quarter's KPI.</>
     : tlm > 0
-      ? <><b>{tlm} program terlambat</b>{belowTargetCount > 0 ? <> &amp; <b>{belowTargetCount} KPI</b> di bawah target</> : null} butuh perhatian — sisanya bergerak sesuai rencana.</>
+      ? <><b>{tlm} programs delayed</b>{belowTargetCount > 0 ? <> &amp; <b>{belowTargetCount} KPIs</b> below target</> : null} need attention — the rest are on plan.</>
       : exceptionCount > 0
-        ? <><b>{exceptionCount} hal</b> butuh keputusan Anda; portofolio lainnya terkendali.</>
-        : <>Semua indikator terkendali — tidak ada yang perlu tindakan khusus.</>
-  const verdictCta = tlm > 0 ? `Tinjau ${tlm} program` : exceptionCount > 0 ? 'Buka Focus' : 'Lihat program'
+        ? <><b>{exceptionCount} items</b> need your decision; the rest of the portfolio is under control.</>
+        : <>All indicators under control — nothing needs special action.</>
+  const verdictCta = tlm > 0 ? `Review ${tlm} programs` : exceptionCount > 0 ? 'Open Focus' : 'View programs'
   const verdictHref = tlm > 0 ? '/programs' : exceptionCount > 0 ? '/fokus' : '/programs'
 
   /* ── Portofolio scope — jawab "apa yang saya kelola & berapa" (data: scope+summary,
    * sebelumnya tak dirender). Active = berjalan (on-track+at-risk+telat), bukan selesai/draft. */
-  const scopeName = scope?.level === 'portfolio' ? 'Portofolio PTPN III' : (scope?.name ?? 'Portofolio Anda')
-  const scopeUnitLabel = scope?.level === 'portfolio' ? 'direktorat' : 'divisi'
+  const scopeName = scope?.level === 'portfolio' ? 'PTPN III Portfolio' : (scope?.name ?? 'Your Portfolio')
+  const scopeUnitLabel = scope?.level === 'portfolio' ? 'directorates' : 'divisions'
   const activeCount = summary.onTrack + summary.atRisk + tlm
 
   /* ── P1: intelligence strip (1 baris padat) — forecast · insight · delta ── */
@@ -688,7 +661,7 @@ export default function HomeView() {
   const totalOverAll = overByDiv.reduce((s, d) => s + d.over, 0)
   const topOver = [...overByDiv].sort((a, b) => b.over - a.over)[0]
   const insightText = topOver && totalOverAll > 0 && topOver.over > 0 && overByDiv.length > 1 && topOver.over / totalOverAll >= 0.34
-    ? `${topOver.code} menyumbang ${Math.round((topOver.over / totalOverAll) * 100)}% keterlambatan`
+    ? `${topOver.code} accounts for ${Math.round((topOver.over / totalOverAll) * 100)}% of delays`
     : null
   // Delta vs periode pembanding (velocity): Δtelat (naik = buruk), Δon-track (naik = baik)
   const velLate = velocity?.terlambat ?? null
@@ -707,12 +680,12 @@ export default function HomeView() {
           <header className="hv__head hvc__head hvc__head--slim">
             <h1 className="hv__greeting">
               {getGreeting()},{' '}
-              <span className="hv__greeting-name">{currentUser?.name ?? 'Anda'}</span>
+              <span className="hv__greeting-name">{currentUser?.name ?? 'there'}</span>
             </h1>
             <span className="hvc__scope">
-              {scopeName} · <b>{summary.total} program</b>
+              {scopeName} · <b>{summary.total} programs</b>
               {scope?.unitCount ? <> · {scope.unitCount} {scopeUnitLabel}</> : null}
-              {' · '}<b>{activeCount}</b> berjalan
+              {' · '}<b>{activeCount}</b> active
               {draftPipeline > 0 ? <> · {draftPipeline} draft</> : null}
             </span>
           </header>
@@ -740,13 +713,13 @@ export default function HomeView() {
               {forecast && (
                 <span className="hvc__intel-seg" data-tone={forecast.tone}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 18 L9 11 L13 14 L20 5" /><polyline points="15 5 20 5 20 10" /></svg>
-                  Proyeksi KPI Des <b>≈{forecast.value.toFixed(1)}%</b> <span className="hvc__intel-delta" data-tone={forecast.tone}>({forecast.deltaVsTarget >= 0 ? '+' : ''}{forecast.deltaVsTarget.toFixed(1)} vs target)</span>
+                  Dec KPI forecast <b>≈{forecast.value.toFixed(1)}%</b> <span className="hvc__intel-delta" data-tone={forecast.tone}>({forecast.deltaVsTarget >= 0 ? '+' : ''}{forecast.deltaVsTarget.toFixed(1)} vs target)</span>
                 </span>
               )}
               {hasDelta && (
                 <span className="hvc__intel-seg hvc__intel-seg--delta">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 12a9 9 0 1 1-2.6-6.4" /><polyline points="21 3 21 8 16 8" /></svg>
-                  <span className="hvc__intel-deltawrap">vs {Math.abs(velDays!)} hr lalu:{velLate != null && velLate !== 0 && <b data-tone={velLate > 0 ? 'red' : 'green'}>{velLate > 0 ? '+' : ''}{velLate} terlambat</b>}{velOn != null && velOn !== 0 && <b data-tone={velOn > 0 ? 'green' : 'red'}>{velOn > 0 ? '+' : ''}{velOn} On Track</b>}</span>
+                  <span className="hvc__intel-deltawrap">vs {Math.abs(velDays!)}d ago:{velLate != null && velLate !== 0 && <b data-tone={velLate > 0 ? 'red' : 'green'}>{velLate > 0 ? '+' : ''}{velLate} delayed</b>}{velOn != null && velOn !== 0 && <b data-tone={velOn > 0 ? 'green' : 'red'}>{velOn > 0 ? '+' : ''}{velOn} On Track</b>}</span>
                 </span>
               )}
             </div>
@@ -760,12 +733,12 @@ export default function HomeView() {
               {canSeePerformance && hasKpi && (
                 <Card padding="none" className="hvc__hcard hvc__hcard--kpi" data-tone={kpiTone}>
                   <div className="hvc__hcard-body">
-                    <span className="hvc__hcard-eyebrow">Capaian KPI · {scorecard.periodeLabel}</span>
+                    <span className="hvc__hcard-eyebrow">KPI Achievement · {scorecard.periodeLabel}</span>
                     <div className="hvc__kpi-split">
                       <div className="hvc__kpi-left">
                         <div className="hvc__hcard-figure">
                           <span className="hvc__hcard-big" data-tone={kpiTone}><CountUp value={kpiHeadline} decimals={1} /><span className="hvc__hcard-unit">%</span></span>
-                          {scorecard.avgDelta != null && <Delta value={scorecard.avgDelta} suffix=" poin" />}
+                          {scorecard.avgDelta != null && <Delta value={scorecard.avgDelta} suffix=" pts" />}
                         </div>
                         <span className="hvc__hcard-foot">vs target 100</span>
                       </div>
@@ -791,41 +764,41 @@ export default function HomeView() {
                   {kpiSpark.length >= 4 && (
                     <div className="hvc__hcard-spark"><Sparkline values={kpiSpark} tone={kpiTone} width={340} height={48} smooth lastDot={false} /></div>
                   )}
-                  <button type="button" className="hvc__hcard-link" onClick={() => navigate('/performance/scorecard')}>Lihat scorecard <span className="hvc__arrow" aria-hidden>→</span></button>
+                  <button type="button" className="hvc__hcard-link" onClick={() => navigate('/performance/scorecard')}>View scorecard <span className="hvc__arrow" aria-hidden>→</span></button>
                 </Card>
               )}
 
               {/* ② Execution health — arc gauge + legend */}
               <Card padding="none" className="hvc__hcard hvc__hcard--exec" data-tone={programTone}>
                 <div className="hvc__hcard-body">
-                  <span className="hvc__hcard-eyebrow">Kesehatan Eksekusi</span>
+                  <span className="hvc__hcard-eyebrow">Execution Health</span>
                   <div className="hvc__hcard-exec-row">
                     <Gauge value={onTrackPct} max={100} tone={leadingTone} size={84} thickness={9} valueText={`${onTrackPct}`} unit="%" label="on track" rich className="hvc__execgauge" />
                     <ul className="hvc__hcard-legend">
                       <li><i className="hvc__dot" data-tone="green" />On Track<b>{summary.onTrack}</b></li>
                       <li><i className="hvc__dot" data-tone="amber" />At Risk<b>{summary.atRisk}</b></li>
-                      <li><i className="hvc__dot" data-tone="red" />Terlambat<b>{tlm}</b></li>
-                      <li><i className="hvc__dot" data-tone="neutral" />Selesai<b>{summary.selesai}</b></li>
+                      <li><i className="hvc__dot" data-tone="red" />Delayed<b>{tlm}</b></li>
+                      <li><i className="hvc__dot" data-tone="neutral" />Completed<b>{summary.selesai}</b></li>
                     </ul>
                   </div>
                 </div>
-                <button type="button" className="hvc__hcard-link" onClick={() => navigate('/programs')}>Lihat detail <span className="hvc__arrow" aria-hidden>→</span></button>
+                <button type="button" className="hvc__hcard-link" onClick={() => navigate('/programs')}>View details <span className="hvc__arrow" aria-hidden>→</span></button>
               </Card>
 
               {/* ③ Program tertinggal — big number + embedded area trend */}
               <button type="button" className="ds-card hvc__hcard hvc__hcard--late" data-tone={tlm > 0 ? 'red' : 'green'} onClick={() => navigate('/programs')}>
                 <div className="hvc__hcard-body">
-                  <span className="hvc__hcard-eyebrow">Program Terlambat</span>
+                  <span className="hvc__hcard-eyebrow">Delayed Programs</span>
                   <span className="hvc__hcard-big" data-tone={tlm > 0 ? 'red' : 'green'}><CountUp value={tlm} /></span>
-                  <span className="hvc__hcard-foot">{needsAction.length} menunggu keputusan</span>
+                  <span className="hvc__hcard-foot">{needsAction.length} awaiting decision</span>
                 </div>
                 {(() => {
-                  const lt = (trendSeries ?? []).slice(-14).map(t => t.terlambat)
+                  const lt = stableSeries.slice(-14).map(t => t.terlambat)
                   return lt.length >= 4
                     ? <div className="hvc__hcard-spark"><Sparkline values={lt} tone="red" width={340} height={48} smooth lastDot={false} /></div>
                     : null
                 })()}
-                <span className="hvc__hcard-link hvc__hcard-link--static">Lihat daftar <span className="hvc__arrow" aria-hidden>→</span></span>
+                <span className="hvc__hcard-link hvc__hcard-link--static">View list <span className="hvc__arrow" aria-hidden>→</span></span>
               </button>
 
               {/* ④ Decision Inbox — keputusan yang menunggu Anda (naik dari command center
@@ -834,7 +807,7 @@ export default function HomeView() {
               <Card padding="none" className="hvc__hcard hvc__hcard--inbox" data-tone={aksiTone}>
                 <div className="hvc__hcard-body hvc__inbox-body">
                   <div className="hvc__inbox-head">
-                    <span className="hvc__hcard-eyebrow">Butuh Keputusan Anda</span>
+                    <span className="hvc__hcard-eyebrow">Needs Your Decision</span>
                     {decisionCount > 0 && <span className="hvc__count-badge" data-tone={aksiTone}>{decisionCount}</span>}
                   </div>
                   {exceptions.length > 0 ? (
@@ -854,16 +827,16 @@ export default function HomeView() {
                     <div className="hvc__inbox-list">
                       <button type="button" className="hvc__inbox-row" data-tone="red" onClick={() => navigate('/programs')}>
                         <span className="hv__dot" data-tone="red" aria-hidden />
-                        <span className="hvc__inbox-label"><strong>{tlm} program</strong> terlambat</span>
-                        <span className="hvc__inbox-meta">Tinjau &amp; intervensi</span>
+                        <span className="hvc__inbox-label"><strong>{tlm} programs</strong> delayed</span>
+                        <span className="hvc__inbox-meta">Review &amp; act</span>
                         <span className="hvc__inbox-arrow" aria-hidden>→</span>
                       </button>
                     </div>
                   ) : (
-                    <p className="hvc__inbox-empty"><ToneGlyph tone="green" /> Tidak ada keputusan tertunda.</p>
+                    <p className="hvc__inbox-empty"><ToneGlyph tone="green" /> No pending decisions.</p>
                   )}
                 </div>
-                <button type="button" className="hvc__hcard-link" onClick={() => navigate('/fokus')}>Buka Focus <span className="hvc__arrow" aria-hidden>→</span></button>
+                <button type="button" className="hvc__hcard-link" onClick={() => navigate('/fokus')}>Open Focus <span className="hvc__arrow" aria-hidden>→</span></button>
               </Card>
             </div>
           </section>
@@ -872,25 +845,28 @@ export default function HomeView() {
           {<>
 
           {/* ═══════════════ EXECUTION COMMAND CENTER (+ rail keputusan) ═══════════════ */}
-          <section className="hvc__section" aria-label="Pusat Kendali Eksekusi">
+          <section className="hvc__section" aria-label="Execution Command Center">
             <header className="hvc__sec-head">
-              <h2 className="hvc__sec-title">Pusat Kendali Eksekusi</h2>
+              <h2 className="hvc__sec-title">Execution Command Center</h2>
             </header>
             <div className="hvc__grid hvc__grid--cmd">
 
               {/* Horizon — workload by deadline window */}
               <Card padding="lg" className="hvc__panel">
-                <header className="hvc__panel-head"><span className="hvc__eyebrow">Beban tenggat</span></header>
+                <header className="hvc__panel-head">
+                  <span className="hvc__eyebrow">Deadlines</span>
+                  <span className="hvc__panel-hint">red bar = past due · rest = upcoming</span>
+                </header>
                 {horizonBars.length > 0
                   ? <Bars bars={horizonBars} height={112} rich />
-                  : <p className="hvc__empty">Tidak ada program aktif bertenggat.</p>}
+                  : <p className="hvc__empty">No active programs with deadlines.</p>}
               </Card>
 
               {/* Execution Map — 3×3 progres × tekanan (digest peta) */}
               <Card padding="lg" className="hvc__panel">
                 <header className="hvc__panel-head">
-                  <span className="hvc__eyebrow">Peta Eksekusi</span>
-                  <span className="hvc__panel-hint">baris = tekanan tenggat · kolom = progres</span>
+                  <span className="hvc__eyebrow">Execution Map</span>
+                  <span className="hvc__panel-hint">rows = deadline pressure · columns = progress</span>
                 </header>
                 <ExecutionMap programs={programsForChart} onOpen={() => navigate('/programs')} />
               </Card>
@@ -899,20 +875,20 @@ export default function HomeView() {
                   gauge active-rate (dulu ~100% trivial) diturunkan jadi stat. */}
               <Card padding="lg" className="hvc__panel">
                 <header className="hvc__panel-head">
-                  <span className="hvc__eyebrow">Momentum eksekusi</span>
-                  <span className="hvc__panel-hint">tren On Track</span>
+                  <span className="hvc__eyebrow">Momentum</span>
+                  <span className="hvc__panel-hint">On Track trend</span>
                 </header>
                 <div className="hvc__mtrend hvc__mtrend--hero">
                   {(() => {
                     const tv = trendValues
-                    if (tv.length < 2) return <p className="hvc__empty">Tren belum cukup data.</p>
+                    if (tv.length < 2) return <p className="hvc__empty">Not enough trend data.</p>
                     return (
                       <>
                         <div className="hvc__mtrend-head">
-                          <span className="hvc__sub">Arah on-track</span>
+                          <span className="hvc__sub">On-track trend</span>
                           {trendDelta != null
-                            ? <Delta value={Math.round(trendDelta)} suffix=" poin" />
-                            : <span className="hvc__mtrend-flat">stabil</span>}
+                            ? <Delta value={Math.round(trendDelta)} suffix=" pts" />
+                            : <span className="hvc__mtrend-flat">stable</span>}
                         </div>
                         <Sparkline values={tv} tone={leadingTone} width={300} height={52} smooth areaFill lastDot className="hvc__mtrend-spark" />
                       </>
@@ -931,11 +907,11 @@ export default function HomeView() {
 
               {/* Eksekusi per divisi — toggle KPI/Eksekusi, 6 baris + sparkline (mockup) */}
               <Card padding="lg" className="hvc__panel">
-                <header className="hvc__panel-head"><span className="hvc__eyebrow">Eksekusi per divisi</span></header>
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">By Division</span></header>
                 {divRows.length > 0 ? (
                   <DivisiPanel rows={divRows} onRow={(code) => navigate(canSeePerformance ? `/performance/divisi/${code.toLowerCase()}` : '/programs')} />
                 ) : (
-                  <p className="hvc__empty">Belum ada data divisi.</p>
+                  <p className="hvc__empty">No division data yet.</p>
                 )}
               </Card>
 
@@ -951,7 +927,7 @@ export default function HomeView() {
 
               {/* Heatmap rekap program (divisi × status) */}
               <Card padding="lg" className="hvc__panel">
-                <header className="hvc__panel-head"><span className="hvc__eyebrow">Rekap program · per divisi</span></header>
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">Program Summary · by Division</span></header>
                 {heatRows.length > 0 ? (
                   <div className="hvc__heat" style={{ '--cols': heatCols.length } as CSSProperties}>
                     <span className="hvc__heat-corner" aria-hidden />
@@ -980,27 +956,27 @@ export default function HomeView() {
                     ))}
                   </div>
                 ) : (
-                  <p className="hvc__empty">Belum ada program untuk direkap.</p>
+                  <p className="hvc__empty">No programs to summarize yet.</p>
                 )}
               </Card>
 
               {/* Top 5 program terlambat */}
               <Card padding="lg" className="hvc__panel">
                 <header className="hvc__panel-head">
-                  <span className="hvc__eyebrow">Top 5 program terlambat</span>
-                  <button type="button" className="hvc__link" onClick={() => navigate('/programs')}>Semua <span aria-hidden>→</span></button>
+                  <span className="hvc__eyebrow">Top 5 Delayed Programs</span>
+                  <button type="button" className="hvc__link" onClick={() => navigate('/programs')}>All <span aria-hidden>→</span></button>
                 </header>
                 {top5Terlambat.length > 0 ? (
                   <div className="hvc__toplist">
                     {top5Terlambat.map((p, i) => {
                       const days = p.daysRemaining ?? 0
-                      const daysLabel = days < 0 ? `${Math.abs(days)} hr lewat` : days === 0 ? 'Hari ini' : `${days} hr lagi`
+                      const daysLabel = days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Today' : `${days}d left`
                       return (
                         <button key={p.id} type="button" className="hvc__toprow" onClick={() => openProgramWorkspace(p.id)}>
                           <span className="hvc__toprank">{i + 1}</span>
                           <span className="hvc__topbody">
                             <span className="hvc__topname" title={p.name}>{p.name}</span>
-                            <span className="hvc__topmeta">{p.divisi || '—'} · {p.code}{(p.priority === 'HIGH' || p.priority === 'CRITICAL') ? <span className="hvc__topprio" data-prio={p.priority}>{p.priority === 'CRITICAL' ? 'Kritis' : 'Prioritas tinggi'}</span> : null}</span>
+                            <span className="hvc__topmeta">{p.divisi || '—'} · {p.code}{(p.priority === 'HIGH' || p.priority === 'CRITICAL') ? <span className="hvc__topprio" data-prio={p.priority}>{p.priority === 'CRITICAL' ? 'Critical' : 'High priority'}</span> : null}</span>
                           </span>
                           {p.ownerName ? <span className="hvc__topowner" title={`PIC: ${p.ownerName}`} aria-label={`PIC: ${p.ownerName}`}>{initials(p.ownerName)}</span> : null}
                           <span className="hvc__topdays" data-tone="red">{daysLabel}</span>
@@ -1009,13 +985,13 @@ export default function HomeView() {
                     })}
                   </div>
                 ) : (
-                  <p className="hvc__empty">Tidak ada program terlambat.</p>
+                  <p className="hvc__empty">No delayed programs.</p>
                 )}
               </Card>
 
               {/* Activity timeline */}
               <Card padding="lg" className="hvc__panel">
-                <header className="hvc__panel-head"><span className="hvc__eyebrow">Aktivitas terbaru</span></header>
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">Recent Activity</span></header>
                 {activity.length > 0 ? (
                   <ul className="hvc__activity">
                     {activity.map(a => {
@@ -1024,13 +1000,13 @@ export default function HomeView() {
                         <li key={a.id} className="hvc__act-row">
                           <span className="hvc__act-icon" data-tone={activityTone(a.action)} aria-hidden><ActivityGlyph action={a.action} /></span>
                           <span className="hvc__act-text">{txt}</span>
-                          <span className="hvc__act-time" title={new Date(a.changeTimestamp).toLocaleString('id-ID')}>{relativeTime(a.changeTimestamp)}</span>
+                          <span className="hvc__act-time" title={new Date(a.changeTimestamp).toLocaleString('en-US')}>{relativeTime(a.changeTimestamp)}</span>
                         </li>
                       )
                     })}
                   </ul>
                 ) : (
-                  <p className="hvc__empty">Belum ada aktivitas tercatat.</p>
+                  <p className="hvc__empty">No activity recorded yet.</p>
                 )}
               </Card>
             </div>
@@ -1041,8 +1017,8 @@ export default function HomeView() {
           <section className="hvc__section">
             <Card padding="lg" className="hvc__panel hvc__tl-card">
               <header className="hvc__panel-head">
-                <span className="hvc__eyebrow">Tenggat kritis · program aktif</span>
-                <button type="button" className="hvc__link" onClick={() => navigate('/programs')}>Semua <span aria-hidden>→</span></button>
+                <span className="hvc__eyebrow">Critical Deadlines · Active Programs</span>
+                <button type="button" className="hvc__link" onClick={() => navigate('/programs')}>All <span aria-hidden>→</span></button>
               </header>
               <DeadlineTimeline programs={topDeadlinePrograms} onOpen={openProgramWorkspace} />
             </Card>
@@ -1051,7 +1027,7 @@ export default function HomeView() {
           {/* Shortcut — chip ringkas (bukan kartu besar; pelengkap, bukan duplikat sidebar) */}
           <section className="hvc__section">
             <div className="hvc__shortcuts hvc__shortcuts--chips">
-              <span className="hvc__shortcuts-lead">Pintasan</span>
+              <span className="hvc__shortcuts-lead">Shortcuts</span>
               {shortcuts.map(s => (
                 <button key={s.label} type="button" className="hvc__shortcut" data-tone={s.tone} onClick={s.onClick}>
                   <span className="hvc__shortcut-icon" data-tone={s.tone}><ShortcutIcon name={s.icon} /></span>

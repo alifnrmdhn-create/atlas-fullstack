@@ -195,7 +195,7 @@ class ScorecardSummaryService
         $payload = [
             'level'        => $level,
             'periode'      => $periode,
-            'periodeLabel' => Carbon::createFromFormat('Y-m', $periode)->isoFormat('MMMM YYYY'),
+            'periodeLabel' => Carbon::createFromFormat('Y-m', $periode)->locale('en')->isoFormat('MMMM YYYY'),
             'itemLabel'    => $itemLabel,
             'avgItem'      => $avgItem,
             'avgDelta'     => $avgDelta,

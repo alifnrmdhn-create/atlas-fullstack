@@ -28,16 +28,16 @@ export function getProgramDisplayStatus(
   // dead code that made rejected programs look like fresh drafts.
   const isRejected = a === 'DRAFT' && !!program.rejectionNote
 
-  if (isRejected)                        return { label: 'Perlu revisi',      tone: 'rejected',  slug: 'blocked' }
-  if (a === 'DRAFT' || a === 'PLANNING') return { label: 'Perencanaan',      tone: 'planning',  slug: 'backlog' }
-  if (a === 'PENDING_KASUB')             return { label: 'Menunggu KASUBDIV', tone: 'pending',   slug: 'in-review' }
-  if (a === 'PENDING_KADIV')             return { label: 'Menunggu KADIV',    tone: 'pending',   slug: 'in-review' }
+  if (isRejected)                        return { label: 'Needs revision',    tone: 'rejected',  slug: 'blocked' }
+  if (a === 'DRAFT' || a === 'PLANNING') return { label: 'Planning',          tone: 'planning',  slug: 'backlog' }
+  if (a === 'PENDING_KASUB')             return { label: 'Awaiting KASUBDIV', tone: 'pending',   slug: 'in-review' }
+  if (a === 'PENDING_KADIV')             return { label: 'Awaiting KADIV',    tone: 'pending',   slug: 'in-review' }
 
   // ACTIVE (Eksekusi) or COMPLETED phase — fall back to operational status
   if (s === 'COMPLETED')                 return { label: 'Completed',         tone: 'done',      slug: 'completed' }
-  if (s === 'CANCELLED')                 return { label: 'Dibatalkan',        tone: 'cancelled', slug: 'blocked' }
-  if (s === 'ON_HOLD')                   return { label: 'Ditahan',           tone: 'hold',      slug: 'in-review' }
-  return { label: 'Berjalan',            tone: 'running',                      slug: 'in-progress' }
+  if (s === 'CANCELLED')                 return { label: 'Cancelled',         tone: 'cancelled', slug: 'blocked' }
+  if (s === 'ON_HOLD')                   return { label: 'On Hold',           tone: 'hold',      slug: 'in-review' }
+  return { label: 'Active',              tone: 'running',                      slug: 'in-progress' }
 }
 
 // ── Program Health Display ────────────────────────────────────────────────────
@@ -69,11 +69,11 @@ export function getProgramHealthDisplay(program: {
     !!program.targetEndDate && new Date(program.targetEndDate) < new Date() && !isCompleted
 
   if (isOverdue) {
-    return { label: 'Lewat Tenggat', tone: 'overdue', slug: 'overdue', isOverdue: true }
+    return { label: 'Overdue', tone: 'overdue', slug: 'overdue', isOverdue: true }
   }
 
   const h = program.healthStatus?.toUpperCase()
   if (h === 'GREEN')  return { label: 'On Track',   tone: 'on-track',  slug: 'green',  isOverdue: false }
-  if (h === 'RED')    return { label: 'Terlambat',  tone: 'terlambat', slug: 'red',    isOverdue: false }
+  if (h === 'RED')    return { label: 'Delayed',    tone: 'terlambat', slug: 'red',    isOverdue: false }
   return               { label: 'At Risk',    tone: 'at-risk',   slug: 'yellow', isOverdue: false }
 }

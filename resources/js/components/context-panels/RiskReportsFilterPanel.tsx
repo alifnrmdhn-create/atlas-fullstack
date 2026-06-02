@@ -19,8 +19,8 @@ const YEARS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2]
 
 const STATUS_OPTIONS: Array<{ value: string; label: string; tone: 'gray' | 'amber' | 'green' }> = [
   { value: 'DRAFT', label: 'Draft', tone: 'gray' },
-  { value: 'SUBMITTED', label: 'Diajukan', tone: 'amber' },
-  { value: 'APPROVED', label: 'Disetujui', tone: 'green' },
+  { value: 'SUBMITTED', label: 'Submitted', tone: 'amber' },
+  { value: 'APPROVED', label: 'Approved', tone: 'green' },
 ]
 
 function readQuery(): URLSearchParams {
@@ -123,7 +123,7 @@ export function RiskReportsFilterPanel() {
               checked={status === 'all'}
               onChange={() => setStatusAndPush('all')}
             />
-            <span className="context-panel__check-label">Semua</span>
+            <span className="context-panel__check-label">All</span>
           </label>
           {STATUS_OPTIONS.map((opt) => (
             <label key={opt.value} className="context-panel__check">

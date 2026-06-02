@@ -37,7 +37,7 @@ function CommitmentTodaySection() {
     let cancelled = false
     api.get<CommitmentPayload>('/inbox/today')
       .then(payload => { if (!cancelled) { setData(payload); setLoading(false) } })
-      .catch(err => { if (!cancelled) { setError(err?.message || 'Gagal memuat'); setLoading(false) } })
+      .catch(err => { if (!cancelled) { setError(err?.message || 'Failed to load'); setLoading(false) } })
     return () => { cancelled = true }
   }, [])
 
@@ -55,23 +55,23 @@ function CommitmentTodaySection() {
 
   return (
     <CollapsibleSection
-      title="Komitmen Hari Ini"
+      title="Today's Commitments"
       count={data?.count ?? 0}
-      summary={data ? `${data.breakdown.task} task · ${data.breakdown.action_item} action · ${data.breakdown.assignment} penugasan` : undefined}
+      summary={data ? `${data.breakdown.task} tasks · ${data.breakdown.action_item} actions · ${data.breakdown.assignment} assignments` : undefined}
       defaultOpen
       persistKey="inbox.commitment-today"
     >
       {loading && (
-        <div style={{ padding: '8px 0', fontSize: 12, color: 'var(--text-muted)' }}>Memuat…</div>
+        <div style={{ padding: '8px 0', fontSize: 12, color: 'var(--text-muted)' }}>Loading…</div>
       )}
       {error && (
         <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--red, #c33)' }}>
-          Gagal memuat komitmen: {error}
+          Failed to load commitments: {error}
         </div>
       )}
       {!loading && !error && data && data.items.length === 0 && (
         <div style={{ padding: '12px', fontSize: 13, color: 'var(--text-muted)' }}>
-          Tidak ada komitmen mendesak hari ini. Nice — fokus ke yang penting tapi belum genting.
+          No urgent commitments today. Nice — focus on what matters before it gets urgent.
         </div>
       )}
       {!loading && !error && data && data.items.length > 0 && (
@@ -157,16 +157,16 @@ function EscalationSections({ currentUserId }: { currentUserId: number }) {
     <>
       <div data-tour="escalation-incoming">
       <CollapsibleSection
-        title="Permintaan Clear the Path Saya"
+        title="My Clear the Path Requests"
         count={incomingPending.length}
         defaultOpen
         persistKey="inbox.escalation-incoming"
       >
         {loading && incoming.length === 0 ? (
-          <div style={{ padding: '8px 0', fontSize: 12, color: 'var(--text-muted)' }}>Memuat…</div>
+          <div style={{ padding: '8px 0', fontSize: 12, color: 'var(--text-muted)' }}>Loading…</div>
         ) : incomingPending.length === 0 ? (
           <div style={{ padding: '12px', fontSize: 13, color: 'var(--text-muted)' }}>
-            Tidak ada permintaan menunggu. Tim Anda lancar — bagus.
+            No pending requests. Your team is running smoothly — nice.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -180,16 +180,16 @@ function EscalationSections({ currentUserId }: { currentUserId: number }) {
 
       <div data-tour="escalation-mine">
       <CollapsibleSection
-        title="Eskalasi yang Saya Ajukan"
+        title="Escalations I Raised"
         count={mineActive.length}
         defaultOpen={false}
         persistKey="inbox.escalation-mine"
       >
         {loading && mine.length === 0 ? (
-          <div style={{ padding: '8px 0', fontSize: 12, color: 'var(--text-muted)' }}>Memuat…</div>
+          <div style={{ padding: '8px 0', fontSize: 12, color: 'var(--text-muted)' }}>Loading…</div>
         ) : mineActive.length === 0 ? (
           <div style={{ padding: '12px', fontSize: 13, color: 'var(--text-muted)' }}>
-            Belum ada eskalasi aktif dari Anda.
+            No active escalations from you.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -236,10 +236,10 @@ function EscalationRowButton({
       <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{request.title}</span>
       {showStatus && (
         <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-          {request.status === 'REQUESTED' ? 'Menunggu' :
-           request.status === 'COMMITTED' ? 'Di-commit' :
-           request.status === 'IN_PROGRESS' ? 'Berjalan' :
-           request.status === 'REROUTED' ? 'Diteruskan' : request.status}
+          {request.status === 'REQUESTED' ? 'Awaiting' :
+           request.status === 'COMMITTED' ? 'Committed' :
+           request.status === 'IN_PROGRESS' ? 'In Progress' :
+           request.status === 'REROUTED' ? 'Rerouted' : request.status}
         </span>
       )}
       <AgingIndicator days={request.agingDays} showText />
@@ -297,21 +297,21 @@ type NotificationGroup = {
 }
 
 const FOCUS_SCOPE_LABEL: Record<FocusScope, string> = {
-  all: 'Semua',
-  action: 'Aksi',
-  risk: 'Risiko',
-  communication: 'Komunikasi',
-  schedule: 'Jadwal',
+  all: 'All',
+  action: 'Action',
+  risk: 'Risk',
+  communication: 'Communication',
+  schedule: 'Schedule',
 }
 
 const SEV_LABEL: Record<string, string> = {
-  CRITICAL: 'Kritis', HIGH: 'Tinggi', MEDIUM: 'Sedang', LOW: 'Rendah',
+  CRITICAL: 'Critical', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low',
 }
 
 const NOTIF_TYPE_LABEL: Record<string, string> = {
   MENTION: 'Mention', APPROVAL: 'Approval', BLOCKER_RAISED: 'Blocker',
-  BLOCKER_CREATED: 'Blocker', STATUS_CHANGE: 'Update', COMMENT: 'Komentar',
-  ASSIGNED: 'Ditugaskan', TASK_ASSIGNED: 'Ditugaskan', SYSTEM: 'Sistem',
+  BLOCKER_CREATED: 'Blocker', STATUS_CHANGE: 'Update', COMMENT: 'Comment',
+  ASSIGNED: 'Assigned', TASK_ASSIGNED: 'Assigned', SYSTEM: 'System',
   PROGRAM_NEEDS_APPROVAL: 'Approval', PROGRAM_APPROVED: 'Program',
   PROGRAM_REJECTED: 'Program', REPORT_AWAITING_REVIEW: 'Report',
   REPORT_AWAITING_APPROVAL: 'Report', REPORT_APPROVED: 'Report',
@@ -406,10 +406,10 @@ function daysSince(dateString?: string | null): number | null {
 function dueLabel(dateString?: string | null, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): string | null {
   const days = daysUntil(dateString)
   if (days == null) return null
-  if (days < 0) return `Lewat ${Math.abs(days)} hari`
-  if (days === 0) return 'Jatuh tempo hari ini'
-  if (days === 1) return 'Jatuh tempo besok'
-  if (days <= policy.due.watchWindowDays) return `Jatuh tempo ${days} hari lagi`
+  if (days < 0) return `${Math.abs(days)} days overdue`
+  if (days === 0) return 'Due today'
+  if (days === 1) return 'Due tomorrow'
+  if (days <= policy.due.watchWindowDays) return `Due in ${days} days`
   return null
 }
 
@@ -436,8 +436,8 @@ function idleScore(dateString?: string | null, policy: FocusPolicy = DEFAULT_FOC
 function idleLabel(dateString?: string | null, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): string | null {
   const days = daysSince(dateString)
   if (days == null || days < policy.idle.watchAfterDays) return null
-  if (days >= policy.idle.criticalAfterDays) return `Idle ${days} hari`
-  return `Belum update ${days} hari`
+  if (days >= policy.idle.criticalAfterDays) return `Idle ${days} days`
+  return `No update for ${days} days`
 }
 
 function focusEvidence(items: Array<string | null | undefined | false>): string[] {
@@ -454,27 +454,27 @@ function recencyScore(dateString?: string): number {
 }
 
 function notificationRoleCue(notification: NotificationItem): string {
-  if (notification.type === 'DM_RECEIVED') return 'Anda penerima pesan'
-  if (notification.type === 'MENTION') return 'Anda disebut dalam diskusi'
-  if (notification.type === 'BLOCKER_CREATED') return 'Anda perlu bantu unblock'
-  if (notification.type === 'PROGRAM_NEEDS_APPROVAL' || notification.type === 'APPROVAL') return 'Anda pemberi keputusan'
-  if (notification.type === 'PROGRAM_REJECTED') return 'Anda PIC program yang ditolak'
-  if (notification.type === 'REPORT_NEEDS_REVISION') return 'Anda perlu koreksi laporan'
-  if (notification.type === 'DEADLINE_APPROACHING') return 'Anda pemilik tenggat'
-  if (notification.type === 'TASK_ASSIGNED') return 'Anda pemilik tugas'
-  return 'Update relevan untuk Anda'
+  if (notification.type === 'DM_RECEIVED') return 'You received a message'
+  if (notification.type === 'MENTION') return 'You were mentioned in a discussion'
+  if (notification.type === 'BLOCKER_CREATED') return 'You need to help unblock'
+  if (notification.type === 'PROGRAM_NEEDS_APPROVAL' || notification.type === 'APPROVAL') return 'You are the decision-maker'
+  if (notification.type === 'PROGRAM_REJECTED') return 'You are the PIC of a rejected program'
+  if (notification.type === 'REPORT_NEEDS_REVISION') return 'You need to correct the report'
+  if (notification.type === 'DEADLINE_APPROACHING') return 'You own the deadline'
+  if (notification.type === 'TASK_ASSIGNED') return 'You own the task'
+  return 'Update relevant to you'
 }
 
 function notificationNextCue(notification: NotificationItem): string {
-  if (notification.type === 'DM_RECEIVED') return 'Balas agar alur kerja tidak tertahan'
-  if (notification.type === 'MENTION') return 'Buka konteks dan respon bila perlu'
-  if (notification.type === 'BLOCKER_CREATED') return 'Follow up hambatan'
-  if (notification.type === 'PROGRAM_NEEDS_APPROVAL' || notification.type === 'APPROVAL') return 'Putuskan agar program bisa lanjut'
-  if (notification.type === 'PROGRAM_REJECTED') return 'Perbaiki sesuai catatan, lalu ajukan ulang'
-  if (notification.type === 'REPORT_NEEDS_REVISION') return 'Revisi sebelum proses lanjut'
-  if (notification.type === 'DEADLINE_APPROACHING') return 'Amankan sebelum lewat tenggat'
-  if (notification.type === 'TASK_ASSIGNED') return 'Mulai atau update progres'
-  return 'Cek detail perubahan'
+  if (notification.type === 'DM_RECEIVED') return 'Reply so the workflow keeps moving'
+  if (notification.type === 'MENTION') return 'Open the context and respond if needed'
+  if (notification.type === 'BLOCKER_CREATED') return 'Follow up on the blocker'
+  if (notification.type === 'PROGRAM_NEEDS_APPROVAL' || notification.type === 'APPROVAL') return 'Decide so the program can proceed'
+  if (notification.type === 'PROGRAM_REJECTED') return 'Fix per the notes, then resubmit'
+  if (notification.type === 'REPORT_NEEDS_REVISION') return 'Revise before the process continues'
+  if (notification.type === 'DEADLINE_APPROACHING') return 'Secure it before the deadline passes'
+  if (notification.type === 'TASK_ASSIGNED') return 'Start or update progress'
+  return 'Check the change details'
 }
 
 function taskFocusItem(task: Task, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): FocusItem {
@@ -484,11 +484,11 @@ function taskFocusItem(task: Task, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): 
   const programContext = program ? `${program.code} · ${program.name}` : task.workstream?.name
   const programImpact =
     program?.healthStatus === 'RED'
-      ? `Berdampak ke program merah ${program.code}`
+      ? `Affects red program ${program.code}`
       : program?.healthStatus === 'YELLOW'
-        ? `Menjaga program ${program.code} agar tidak memburuk`
+        ? `Keeps program ${program.code} from worsening`
         : program
-          ? `Terkait program ${program.code}`
+          ? `Related to program ${program.code}`
           : undefined
   const score =
     28 +
@@ -502,16 +502,16 @@ function taskFocusItem(task: Task, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): 
 
   const reason =
     task.isBlocked
-      ? task.blockedReason || `${task.blockerCount || 1} blocker menahan progres task ini`
+      ? task.blockedReason || `${task.blockerCount || 1} blocker(s) holding up this task`
       : due
         ? due
         : idle
           ? idle
           : task.healthStatus === 'RED'
-          ? 'Status kesehatan task merah dan perlu diperiksa'
+          ? 'Task health is red and needs checking'
           : task.priority === 'HIGH' || task.priority === 'CRITICAL'
-            ? `Prioritas ${task.priority.toLowerCase()}`
-            : 'Task aktif yang menunggu progres Anda'
+            ? `${task.priority.toLowerCase()} priority`
+            : 'Active task awaiting your progress'
 
   // Urgency: derived from due/blocked context, NOT from healthStatus —
   // a task with healthGreen but 7 days overdue is critical, not "ok".
@@ -531,9 +531,9 @@ function taskFocusItem(task: Task, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): 
     meta: `${task.code}${programContext ? ` · ${programContext}` : ''}`,
     impact: programImpact,
     reason,
-    roleCue: task.isBlocked ? 'Anda PIC untuk membuka hambatan' : 'Anda PIC progres task',
-    nextCue: task.isBlocked ? 'Selesaikan blocker sebelum progres lanjut' : due ? due : idle ? 'Update status agar risiko tidak tersembunyi' : 'Update progres berikutnya',
-    actionLabel: task.isBlocked ? 'Buka blocker →' : 'Kerjakan →',
+    roleCue: task.isBlocked ? 'You are the PIC to clear the blocker' : 'You are the task progress PIC',
+    nextCue: task.isBlocked ? 'Clear the blocker before progress can continue' : due ? due : idle ? 'Update the status so risk stays visible' : 'Log the next progress update',
+    actionLabel: task.isBlocked ? 'Open blocker →' : 'Work on it →',
     score,
     urgency,
     chip: due ?? idle ?? task.status.replace(/_/g, ' '),
@@ -542,7 +542,7 @@ function taskFocusItem(task: Task, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): 
       due,
       idle,
       task.healthStatus !== 'GREEN' && `Health ${task.healthStatus}`,
-      task.priority === 'HIGH' || task.priority === 'CRITICAL' ? `Prioritas ${task.priority}` : null,
+      task.priority === 'HIGH' || task.priority === 'CRITICAL' ? `${task.priority} priority` : null,
       program?.healthStatus === 'RED' ? 'Program RED' : program?.healthStatus === 'YELLOW' ? 'Program YELLOW' : null,
     ]),
     entityId: task.id,
@@ -552,15 +552,15 @@ function taskFocusItem(task: Task, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): 
 function blockerFocusItem(blocker: Blocker, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): FocusItem {
   const program = blocker.task?.workstream?.program
   const age = daysSince(blocker.createdAt)
-  const ageText = age != null && age >= policy.blockerAging.watchAfterDays ? `Terbuka ${age} hari` : null
+  const ageText = age != null && age >= policy.blockerAging.watchAfterDays ? `Open ${age} days` : null
   const taskContext = blocker.task ? `${blocker.task.code} · ${blocker.task.title}` : blocker.code
   const impact =
     program?.healthStatus === 'RED'
-      ? `Menahan task pada program merah ${program.code}`
+      ? `Holding up a task on red program ${program.code}`
       : program
-        ? `Menahan task pada program ${program.code}`
+        ? `Holding up a task on program ${program.code}`
         : blocker.task
-          ? `Menahan task ${blocker.task.code}`
+          ? `Holding up task ${blocker.task.code}`
           : undefined
   const score =
     42 +
@@ -581,9 +581,9 @@ function blockerFocusItem(blocker: Blocker, policy: FocusPolicy = DEFAULT_FOCUS_
     title: blocker.title,
     meta: `${blocker.code} · ${taskContext}`,
     impact,
-    reason: ageText ? `${ageText} · ${SEV_LABEL[blocker.severity] ?? blocker.severity}` : `${SEV_LABEL[blocker.severity] ?? blocker.severity} dan masih membutuhkan tindak lanjut`,
-    roleCue: 'Anda perlu membantu unblock pekerjaan',
-    nextCue: ageText ? 'Prioritaskan karena blocker sudah menua' : program ? `Dampaknya tersambung ke ${program.code}` : 'Follow up hambatan sampai ada owner',
+    reason: ageText ? `${ageText} · ${SEV_LABEL[blocker.severity] ?? blocker.severity}` : `${SEV_LABEL[blocker.severity] ?? blocker.severity} and still needs follow-up`,
+    roleCue: 'You need to help unblock the work',
+    nextCue: ageText ? 'Prioritize — this blocker is aging' : program ? `Its impact links to ${program.code}` : 'Follow up until the blocker has an owner',
     actionLabel: 'Follow up →',
     score,
     // Blockers are intrinsically critical — by definition something is blocked.
@@ -593,7 +593,7 @@ function blockerFocusItem(blocker: Blocker, policy: FocusPolicy = DEFAULT_FOCUS_
     evidence: focusEvidence([
       SEV_LABEL[blocker.severity] ?? blocker.severity,
       ageText,
-      blocker.status === 'OPEN' ? 'Masih open' : blocker.status.replace(/_/g, ' '),
+      blocker.status === 'OPEN' ? 'Still open' : blocker.status.replace(/_/g, ' '),
       program?.healthStatus === 'RED' ? 'Program RED' : program?.healthStatus === 'YELLOW' ? 'Program YELLOW' : null,
     ]),
     entityId: blocker.id,
@@ -621,19 +621,19 @@ function programFocusItem(program: Program, isStrategic: boolean): FocusItem {
     title: program.name,
     meta: `${program.code} · ${displayStatus}`,
     reason: program.healthStatus === 'RED'
-      ? 'Program merah dan berpotensi berdampak ke portofolio'
-      : 'Program kuning perlu dipantau sebelum memburuk',
-    roleCue: isStrategic ? 'Anda pemantau portofolio' : 'Program berada di area Anda',
-    nextCue: program.healthStatus === 'RED' ? 'Butuh intervensi atau keputusan cepat' : 'Pantau sebelum berubah merah',
-    actionLabel: isStrategic ? 'Review program →' : 'Cek program →',
+      ? 'Red program — could impact the portfolio'
+      : 'Yellow program — watch before it worsens',
+    roleCue: isStrategic ? 'You monitor the portfolio' : 'Program is in your area',
+    nextCue: program.healthStatus === 'RED' ? 'Needs intervention or a quick decision' : 'Watch before it turns red',
+    actionLabel: isStrategic ? 'Review program →' : 'Check program →',
     score,
     urgency: program.healthStatus === 'RED' ? 'critical' : program.healthStatus === 'YELLOW' ? 'warn' : 'info',
     chip: `${program.progressPercent}%`,
     evidence: focusEvidence([
       `Health ${program.healthStatus}`,
-      isStrategic ? 'Portfolio' : 'Area Anda',
-      `${program.progressPercent}% selesai`,
-      program.priority === 'HIGH' || program.priority === 'CRITICAL' ? `Prioritas ${program.priority}` : null,
+      isStrategic ? 'Portfolio' : 'Your area',
+      `${program.progressPercent}% complete`,
+      program.priority === 'HIGH' || program.priority === 'CRITICAL' ? `${program.priority} priority` : null,
     ]),
     entityId: program.id,
   }
@@ -660,17 +660,17 @@ function approvalFocusItem(program: ApprovalCandidate, role: string, policy: Foc
     reason: hasDecisionSignal
       ? program.decisionReason
       : role === 'KASUBDIV' || isKadivApproval
-      ? `Menunggu keputusan ${label} Anda agar program bisa lanjut`
-      : 'Draft belum diajukan dan masih menunggu tindakan Anda',
-    roleCue: hasDecisionSignal ? program.decisionLabel : role === 'KASUBDIV' || isKadivApproval ? `Anda approver ${label}` : 'Anda owner pengajuan',
-    nextCue: role === 'KASUBDIV' || isKadivApproval ? 'Putuskan agar bottleneck selesai' : 'Ajukan supaya masuk alur approval',
-    actionLabel: hasDecisionSignal && program.decisionType === 'SUBMIT_PROGRAM' ? 'Ajukan →' : role === 'KASUBDIV' || isKadivApproval ? 'Review →' : 'Ajukan →',
+      ? `Awaiting your ${label} decision so the program can proceed`
+      : 'Draft not yet submitted and awaiting your action',
+    roleCue: hasDecisionSignal ? program.decisionLabel : role === 'KASUBDIV' || isKadivApproval ? `You are the ${label} approver` : 'You are the submission owner',
+    nextCue: role === 'KASUBDIV' || isKadivApproval ? 'Decide to clear the bottleneck' : 'Submit it to enter the approval flow',
+    actionLabel: hasDecisionSignal && program.decisionType === 'SUBMIT_PROGRAM' ? 'Submit →' : role === 'KASUBDIV' || isKadivApproval ? 'Review →' : 'Submit →',
     score: approvalScore,
     urgency: 'decide',
     chip: 'Approval',
     evidence: focusEvidence([
-      `Peran ${label}`,
-      hasDecisionSignal && program.blockingLevel === 'HIGH' ? 'High blocking' : 'Menahan alur',
+      `${label} role`,
+      hasDecisionSignal && program.blockingLevel === 'HIGH' ? 'High blocking' : 'Holding up the flow',
       program.approvalStatus?.replace(/_/g, ' '),
     ]),
     entityId: program.id,
@@ -712,18 +712,18 @@ function humanizeNotificationMeta(source: string, programs: Program[]): string {
 function notifVerbFor(type: string): string {
   switch (type) {
     case 'PROGRAM_NEEDS_APPROVAL': case 'APPROVAL': return 'Review'
-    case 'PROGRAM_REJECTED': return 'Perbaiki'
-    case 'PROGRAM_WITHDRAWN': case 'PROGRAM_APPROVED': return 'Lihat program'
-    case 'PROGRAM_COMMITMENT_CHANGED': return 'Lihat perubahan'
-    case 'DM_RECEIVED': return 'Balas'
-    case 'MENTION': return 'Buka percakapan'
+    case 'PROGRAM_REJECTED': return 'Fix'
+    case 'PROGRAM_WITHDRAWN': case 'PROGRAM_APPROVED': return 'View program'
+    case 'PROGRAM_COMMITMENT_CHANGED': return 'View change'
+    case 'DM_RECEIVED': return 'Reply'
+    case 'MENTION': return 'Open conversation'
     case 'BLOCKER_CREATED': return 'Follow up'
-    case 'TASK_ASSIGNED': return 'Kerjakan'
-    case 'DEADLINE_APPROACHING': return 'Cek deadline'
-    case 'MEETING_INVITED': return 'Konfirmasi'
-    case 'ACTION_ITEM_ASSIGNED': return 'Kerjakan'
+    case 'TASK_ASSIGNED': return 'Work on it'
+    case 'DEADLINE_APPROACHING': return 'Check deadline'
+    case 'MEETING_INVITED': return 'Confirm'
+    case 'ACTION_ITEM_ASSIGNED': return 'Work on it'
     case 'CLEAR_PATH_REQUESTED': return 'Disposition'
-    default: return 'Buka'
+    default: return 'Open'
   }
 }
 
@@ -763,9 +763,9 @@ function notificationFocusItem(notification: NotificationItem, programs: Program
     chip: NOTIF_TYPE_LABEL[notification.type] ?? notification.type,
     evidence: focusEvidence([
       NOTIF_TYPE_LABEL[notification.type] ?? notification.type,
-      recencyScore(notification.createdAt) >= 10 ? 'Baru' : null,
-      requiresAction ? 'Perlu aksi' : null,
-      notification.priority ? `Prioritas ${notification.priority}` : null,
+      recencyScore(notification.createdAt) >= 10 ? 'New' : null,
+      requiresAction ? 'Needs action' : null,
+      notification.priority ? `${notification.priority} priority` : null,
     ]),
     notificationId: notification.id,
     source: notification.source,
@@ -779,18 +779,18 @@ function dmFocusItem(channel: ChannelSummary): FocusItem {
     kind: 'dm',
     section: 'mention',
     title: partnerName,
-    meta: channel.lastMessage?.content ? channel.lastMessage.content.slice(0, 72) : 'Pesan langsung belum dibaca',
-    reason: `${channel.unreadCount} pesan langsung belum dibaca`,
-    roleCue: 'Anda penerima pesan langsung',
-    nextCue: 'Balas untuk membuka konteks kerja',
-    actionLabel: 'Balas →',
+    meta: channel.lastMessage?.content ? channel.lastMessage.content.slice(0, 72) : 'Unread direct message',
+    reason: `${channel.unreadCount} unread direct message(s)`,
+    roleCue: 'You received a direct message',
+    nextCue: 'Reply to open the work context',
+    actionLabel: 'Reply →',
     score: 58 + Math.min(18, channel.unreadCount * 4) + recencyScore(channel.lastMessage?.createdAt),
     urgency: 'info',
-    chip: `${channel.unreadCount} baru`,
+    chip: `${channel.unreadCount} new`,
     evidence: focusEvidence([
-      `${channel.unreadCount} pesan`,
-      recencyScore(channel.lastMessage?.createdAt) >= 10 ? 'Baru' : null,
-      'Komunikasi',
+      `${channel.unreadCount} messages`,
+      recencyScore(channel.lastMessage?.createdAt) >= 10 ? 'New' : null,
+      'Communication',
     ]),
     channelId: channel.id,
   }
@@ -839,12 +839,12 @@ function focusItemMatchesScope(item: FocusItem, scope: FocusScope): boolean {
 
 /** Verb-driven CTA per item kind. Primary CTA only for genuinely urgent items. */
 function ctaFor(item: FocusItem): { label: string; primary: boolean } {
-  if (item.kind === 'blocker')                       return { label: 'Tangani',     primary: true  }
-  if (item.kind === 'approval')                      return { label: 'Putuskan',    primary: true  }
-  if (item.kind === 'task')                          return { label: 'Kerjakan',    primary: item.urgency === 'critical' }
-  if (item.kind === 'program')                       return { label: 'Tinjau',      primary: false }
-  if (item.kind === 'mention' || item.kind === 'dm') return { label: 'Balas',       primary: false }
-  if (item.kind === 'meeting' || item.kind === 'focus') return { label: 'Buka jadwal', primary: false }
+  if (item.kind === 'blocker')                       return { label: 'Handle',      primary: true  }
+  if (item.kind === 'approval')                      return { label: 'Decide',      primary: true  }
+  if (item.kind === 'task')                          return { label: 'Work on it',  primary: item.urgency === 'critical' }
+  if (item.kind === 'program')                       return { label: 'Review',      primary: false }
+  if (item.kind === 'mention' || item.kind === 'dm') return { label: 'Reply',       primary: false }
+  if (item.kind === 'meeting' || item.kind === 'focus') return { label: 'Open schedule', primary: false }
   // Notification cards — strip the " →" suffix yang ditambahkan oleh
   // notificationFocusItem.actionLabel; promote ke primary kalau urgency-nya warn/critical
   // (mis. PROGRAM_NEEDS_APPROVAL, PROGRAM_REJECTED) supaya user lihat itu butuh aksi.
@@ -852,7 +852,7 @@ function ctaFor(item: FocusItem): { label: string; primary: boolean } {
     const label = item.actionLabel.replace(/\s*→\s*$/, '')
     return { label, primary: item.urgency === 'warn' || item.urgency === 'critical' }
   }
-  return { label: 'Lihat', primary: false }
+  return { label: 'View', primary: false }
 }
 
 /** Map item.kind to a per-kind icon. Replaces section-based icon (which was generic). */
@@ -1157,17 +1157,17 @@ export function InboxView() {
         section: 'notif',
         title: meeting.title,
         meta: `${start} – ${end}${meeting.location ? ` · ${meeting.location}` : ''}`,
-        reason: isOngoing ? 'Meeting sedang berlangsung dan membutuhkan perhatian Anda' : 'Agenda hari ini yang perlu dipersiapkan',
-        roleCue: 'Anda peserta agenda hari ini',
-        nextCue: isOngoing ? 'Masuk sekarang atau cek hasil diskusi' : 'Siapkan konteks sebelum agenda dimulai',
-        actionLabel: 'Buka jadwal →',
+        reason: isOngoing ? 'Meeting in progress and needs your attention' : "Today's agenda to prepare for",
+        roleCue: "You're a participant in today's agenda",
+        nextCue: isOngoing ? 'Join now or check the discussion outcome' : 'Prepare context before the agenda starts',
+        actionLabel: 'Open schedule →',
         score: isOngoing ? 72 : 44 + recencyScore(meeting.startAt),
         urgency: isOngoing ? 'warn' : 'info',
-        chip: isOngoing ? 'Berlangsung' : 'Meeting',
+        chip: isOngoing ? 'In progress' : 'Meeting',
         evidence: focusEvidence([
-          isOngoing ? 'Sedang berlangsung' : 'Agenda hari ini',
-          meeting.location ? 'Ada lokasi' : null,
-          'Jadwal',
+          isOngoing ? 'In progress' : "Today's agenda",
+          meeting.location ? 'Has a location' : null,
+          'Schedule',
         ]),
         entityId: meeting.id,
       }
@@ -1176,25 +1176,25 @@ export function InboxView() {
     const focusBlockItems: FocusItem[] = todayFocusBlocks.slice(0, 1).map((block) => {
       const now = Date.now()
       const isActive = now >= new Date(block.startAt).getTime() && now <= new Date(block.endAt).getTime()
-      const start = new Date(block.startAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-      const end = new Date(block.endAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+      const start = new Date(block.startAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+      const end = new Date(block.endAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
       return {
         id: `focus-${block.id}`,
         kind: 'focus',
         section: 'priority',
         title: block.title,
         meta: `${start} – ${end}`,
-        reason: isActive ? 'Slot fokus sedang aktif; pilih satu prioritas untuk dituntaskan' : block.note || 'Slot fokus hari ini sudah dijadwalkan',
-        roleCue: 'Anda pemilik waktu fokus',
-        nextCue: isActive ? 'Gunakan slot ini untuk satu aksi utama' : 'Amankan waktu dari distraksi',
-        actionLabel: 'Buka jadwal →',
+        reason: isActive ? 'Focus slot is active; pick one priority to finish' : block.note || "Today's focus slot is scheduled",
+        roleCue: 'You own this focus time',
+        nextCue: isActive ? 'Use this slot for one main action' : 'Protect the time from distractions',
+        actionLabel: 'Open schedule →',
         score: isActive ? 70 : 38,
         urgency: isActive ? 'warn' : 'info',
-        chip: isActive ? 'Aktif' : 'Fokus',
+        chip: isActive ? 'Active' : 'Focus',
         evidence: focusEvidence([
-          isActive ? 'Slot aktif' : 'Slot hari ini',
-          'Proteksi waktu',
-          block.note ? 'Ada catatan' : null,
+          isActive ? 'Active slot' : "Today's slot",
+          'Time protection',
+          block.note ? 'Has a note' : null,
         ]),
         entityId: block.id,
       }
@@ -1237,7 +1237,7 @@ export function InboxView() {
     setMarkingAll(true)
     try { await api.put('/notifications/read-all', {}); await loadOverview('refresh') }
     catch (err) {
-      showToast(err instanceof Error ? err.message : 'Gagal menandai semua notifikasi.', 'error')
+      showToast(err instanceof Error ? err.message : 'Failed to mark all notifications read.', 'error')
     } finally { setMarkingAll(false) }
   }
   const goToProgram = (id: number) => { setSelectedProgramId(id); navigate('/programs') }
@@ -1328,8 +1328,8 @@ export function InboxView() {
           title="Focus"
           subtitle={
             todayCompletedCount > 0
-              ? `Komitmen & notifikasi prioritas hari ini · ${todayCompletedCount} selesai`
-              : 'Komitmen & notifikasi prioritas hari ini'
+              ? `Today's priority commitments & notifications · ${todayCompletedCount} done`
+              : "Today's priority commitments & notifications"
           }
           actions={
             (mentions.length > 0 || otherUnread.length > 0) ? (
@@ -1339,7 +1339,7 @@ export function InboxView() {
                 disabled={markingAll}
                 onClick={() => void handleMarkAllRead()}
               >
-                {markingAll ? 'Marking…' : 'Tandai semua dibaca'}
+                {markingAll ? 'Marking…' : 'Mark all read'}
               </button>
             ) : null
           }
@@ -1363,7 +1363,7 @@ export function InboxView() {
         )}
 
         {/* ── 2. Scope strip — filter pill ── */}
-        <div className="fokus-scope-strip" aria-label="Mode baca Focus">
+        <div className="fokus-scope-strip" aria-label="Focus reading mode">
           {focusScopeOptions.map(option => (
             <button
               aria-pressed={focusScope === option.scope}
@@ -1382,7 +1382,7 @@ export function InboxView() {
         {nowItem && (
           <section className="fokus-bucket fokus-bucket--now">
             <div className="fokus-bucket__head">
-              <h3 className="fokus-bucket__label">Sekarang</h3>
+              <h3 className="fokus-bucket__label">Now</h3>
             </div>
             <FokusHeroCard item={nowItem} onAction={handleFocusItemClick} />
           </section>
@@ -1392,7 +1392,7 @@ export function InboxView() {
         {todayItems.length > 0 && (
           <section className="fokus-bucket">
             <div className="fokus-bucket__head">
-              <h3 className="fokus-bucket__label">Hari Ini</h3>
+              <h3 className="fokus-bucket__label">Today</h3>
               <span className="fokus-bucket__count">{todayItems.length}</span>
             </div>
             <ul className="fokus-bucket__list">
@@ -1418,7 +1418,7 @@ export function InboxView() {
               aria-expanded={laterOpen}
             >
               <span className={`fokus-bucket__chev${laterOpen ? ' is-open' : ''}`}>▸</span>
-              <h3 className="fokus-bucket__label">Bisa Ditunda</h3>
+              <h3 className="fokus-bucket__label">Can Wait</h3>
               <span className="fokus-bucket__count">{laterItems.length}</span>
             </button>
             {laterOpen && (
@@ -1441,9 +1441,9 @@ export function InboxView() {
         {nowItem == null && todayItems.length === 0 && laterItems.length === 0 && (programSummary?.needsAction.length ?? 0) === 0 && (
           <div className="fokus-zero">
             <div className="fokus-zero__check" aria-hidden="true">✓</div>
-            <p className="fokus-zero__title">Antrian Anda beres</p>
+            <p className="fokus-zero__title">Your queue is clear</p>
             <p className="fokus-zero__sub">
-              Tidak ada yang perlu ditangani sekarang. Saatnya istirahat atau cek <button type="button" className="fokus-zero__link" onClick={() => navigate('/')}>Home</button> untuk gambaran divisi.
+              Nothing to handle right now. Take a break or check <button type="button" className="fokus-zero__link" onClick={() => navigate('/')}>Home</button> for the division overview.
             </p>
           </div>
         )}

@@ -88,27 +88,27 @@ const STATUS_TO_SLUG: Record<Status, string> = {
 // lintas modul. Penugasan tidak punya tahap "Belum Direncanakan" (atasan sudah
 // menjabarkan tugas saat memberikan), jadi mulai dari "Siap Dikerjakan".
 const STATUS_COLUMNS: Array<{ status: Status; label: string; hint: string }> = [
-  { status: 'DITUGASKAN', label: 'Siap Dikerjakan', hint: 'Assignment diterima, menunggu PIC mulai' },
-  { status: 'DIKERJAKAN', label: 'Sedang Berjalan', hint: 'Sedang dikerjakan' },
-  { status: 'IN_REVIEW',  label: 'Menunggu Review', hint: 'Menunggu persetujuan reviewer' },
-  { status: 'SELESAI',    label: 'Selesai',         hint: 'Tuntas' },
+  { status: 'DITUGASKAN', label: 'Ready',       hint: 'Assignment received, awaiting PIC to start' },
+  { status: 'DIKERJAKAN', label: 'In Progress', hint: 'Being worked on' },
+  { status: 'IN_REVIEW',  label: 'In Review',   hint: 'Awaiting reviewer approval' },
+  { status: 'SELESAI',    label: 'Completed',   hint: 'Done' },
 ]
 
 const STATUS_LABEL: Record<Status, string> = {
-  DITUGASKAN: 'Siap Dikerjakan', DIKERJAKAN: 'Sedang Berjalan', IN_REVIEW: 'Menunggu Review',
-  SELESAI: 'Selesai', REJECTED: 'Ditolak', DIBATALKAN: 'Dibatalkan',
+  DITUGASKAN: 'Ready', DIKERJAKAN: 'In Progress', IN_REVIEW: 'In Review',
+  SELESAI: 'Completed', REJECTED: 'Rejected', DIBATALKAN: 'Cancelled',
 }
-const PRIORITY_LABEL: Record<Priority, string> = { CRITICAL: 'Mendesak', HIGH: 'Tinggi', MEDIUM: 'Sedang', LOW: 'Rendah' }
+const PRIORITY_LABEL: Record<Priority, string> = { CRITICAL: 'Critical', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' }
 const PRIORITY_ORDER: Priority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
 
 function formatDueDate(iso: string | null): { label: string; tone: 'overdue' | 'soon' | 'normal' | 'none' } {
-  if (!iso) return { label: 'Tanpa tenggat', tone: 'none' }
+  if (!iso) return { label: 'No deadline', tone: 'none' }
   const diff = Math.round((new Date(iso).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
-  const locale = new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-  if (diff < 0) return { label: `Lewat ${Math.abs(diff)}h`, tone: 'overdue' }
-  if (diff === 0) return { label: 'Hari ini', tone: 'soon' }
-  if (diff === 1) return { label: 'Besok', tone: 'soon' }
-  if (diff <= 3) return { label: `${diff}h lagi`, tone: 'soon' }
+  const locale = new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
+  if (diff < 0) return { label: `${Math.abs(diff)}d overdue`, tone: 'overdue' }
+  if (diff === 0) return { label: 'Today', tone: 'soon' }
+  if (diff === 1) return { label: 'Tomorrow', tone: 'soon' }
+  if (diff <= 3) return { label: `${diff}d left`, tone: 'soon' }
   return { label: locale, tone: 'normal' }
 }
 
@@ -217,7 +217,7 @@ export function AssignmentsView() {
           (CreateModal) sudah di-portal-mount ke document.body (Phase 5B). */}
       <div className="assignments-v2__inner ds-stagger">
       {/* ── Page header (design-system PageHeader) ── */}
-      <PageHeader title="Assignment" subtitle="Assignment ad-hoc di luar Program — permintaan singkat, tanpa workstream." />
+      <PageHeader title="Assignment" subtitle="Ad-hoc assignments outside Programs — short requests, no workstream." />
 
       {/* ── Controls row: mode + scope toggles + stats ── */}
       <div className="view-toolbar">
@@ -231,10 +231,10 @@ export function AssignmentsView() {
 
         <div className="view-toggle" style={{ marginLeft: 8 }}>
           {([
-            { key: 'team',  label: 'Tim Saya' },
-            { key: 'mine',  label: 'Untuk Saya' },
-            { key: 'given', label: 'Saya Berikan' },
-            { key: 'all',   label: 'Semua' },
+            { key: 'team',  label: 'My Team' },
+            { key: 'mine',  label: 'For Me' },
+            { key: 'given', label: 'I Assigned' },
+            { key: 'all',   label: 'All' },
           ] as const).map((t) => (
             <button key={t.key} className={`view-toggle-btn${scope === t.key ? ' active' : ''}`} onClick={() => setScope(t.key)}>
               {t.label}
@@ -245,8 +245,8 @@ export function AssignmentsView() {
         <div className="view-toolbar__right">
           <div className="view-toolbar__stats wb-stats">
             <span>{stats.total} <em>items</em></span>
-            <span>{stats.active} <em>aktif</em></span>
-            {stats.needResp > 0 && <span className="text-yellow">{stats.needResp} <em>perlu respon</em></span>}
+            <span>{stats.active} <em>active</em></span>
+            {stats.needResp > 0 && <span className="text-yellow">{stats.needResp} <em>needs response</em></span>}
             {stats.overdue > 0 && <span className="text-red">{stats.overdue} <em>overdue</em></span>}
             {stats.done > 0 && <span className="text-green">{stats.done} <em>done</em></span>}
           </div>
@@ -262,7 +262,7 @@ export function AssignmentsView() {
           {error && <div className="board-rollback-banner" role="alert"><span className="board-rollback-banner__icon">⚠</span><span className="board-rollback-banner__msg">{error}</span></div>}
 
           {loading ? (
-            <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40, fontSize: 13 }}>Memuat…</div>
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40, fontSize: 13 }}>Loading…</div>
           ) : items.length === 0 ? (
             <EmptyState canAssign={canAssign} onCreate={() => setShowCreate(true)} />
           ) : boardMode === 'board' ? (
@@ -459,9 +459,9 @@ function EmptyState({ canAssign, onCreate }: { canAssign: boolean; onCreate: () 
           <path d="m23 26 1.5 1.5L28 24" stroke="var(--green)" strokeWidth="1.6"/>
         </svg>
       </div>
-      <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-strong)', margin: '0 0 6px' }}>Belum ada assignment</h3>
-      <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 auto 18px', maxWidth: 340, lineHeight: 1.5 }}>Assignment yang bukan bagian dari Program akan muncul di sini.</p>
-      {canAssign && <button className="toolbar-action-btn" onClick={onCreate} type="button">+ Buat tugas pertama</button>}
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-strong)', margin: '0 0 6px' }}>No assignments yet</h3>
+      <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 auto 18px', maxWidth: 340, lineHeight: 1.5 }}>Assignments that aren't part of a Program will show up here.</p>
+      {canAssign && <button className="toolbar-action-btn" onClick={onCreate} type="button">+ Create your first one</button>}
     </div>
   )
 }
@@ -545,7 +545,7 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
   }
 
   async function handleDelete(id: number) {
-    if (!window.confirm('Hapus lampiran ini?')) return
+    if (!window.confirm('Delete this attachment?')) return
     try {
       await api.delete(`/assignments/${assignmentId}/attachments/${id}`)
     } catch (er) {
@@ -563,16 +563,16 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
         {evidenceRequired && <span className="pg-evidence__req" title="Wajib sebelum submit">WAJIB</span>}
       </h4>
 
-      {loading && <div className="pg-evidence__empty">Memuat…</div>}
+      {loading && <div className="pg-evidence__empty">Loading…</div>}
 
       {!loading && items.length === 0 && !canUpload && (
-        <div className="pg-evidence__empty">Belum ada evidence.</div>
+        <div className="pg-evidence__empty">No evidence yet.</div>
       )}
 
       {!loading && items.length === 0 && canUpload && needsEvidence && (
         <div className="alert alert--warn" style={{ marginBottom: 10 }}>
-          <strong>Evidence wajib</strong>
-          <p>Assignment ini mewajibkan minimal 1 lampiran (file / link / catatan) sebelum bisa di-submit.</p>
+          <strong>Evidence required</strong>
+          <p>This assignment requires at least 1 attachment (file / link / note) before it can be submitted.</p>
         </div>
       )}
 
@@ -591,7 +591,7 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
                       rel="noreferrer"
                     >{it.originalName ?? it.filename ?? 'file'}</a>
                     {it.description && <span className="pg-evidence__desc">{it.description}</span>}
-                    <span className="pg-evidence__meta">{formatFileSize(it.filesize)} · {it.uploader.name} · {new Date(it.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
+                    <span className="pg-evidence__meta">{formatFileSize(it.filesize)} · {it.uploader.name} · {new Date(it.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
                   </div>
                 </>
               )}
@@ -601,7 +601,7 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
                   <div className="pg-evidence__body">
                     <a className="pg-evidence__title" href={it.url ?? '#'} target="_blank" rel="noreferrer">{it.description ?? it.url}</a>
                     {it.url && <span className="pg-evidence__desc" style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10.5 }}>{it.url}</span>}
-                    <span className="pg-evidence__meta">{it.uploader.name} · {new Date(it.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
+                    <span className="pg-evidence__meta">{it.uploader.name} · {new Date(it.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
                   </div>
                 </>
               )}
@@ -610,12 +610,12 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
                   <span className="pg-evidence__icon">📝</span>
                   <div className="pg-evidence__body">
                     <p className="pg-evidence__note-text">{it.description}</p>
-                    <span className="pg-evidence__meta">{it.uploader.name} · {new Date(it.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="pg-evidence__meta">{it.uploader.name} · {new Date(it.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 </>
               )}
               {canDelete(it) && (
-                <button className="pg-evidence__del" onClick={() => void handleDelete(it.id)} type="button" title="Hapus" aria-label="Hapus">
+                <button className="pg-evidence__del" onClick={() => void handleDelete(it.id)} type="button" title="Delete" aria-label="Delete">
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m1 1 10 10M11 1 1 11"/></svg>
                 </button>
               )}
@@ -629,40 +629,40 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
           {uploadMode === 'idle' && (
             <div className="pg-evidence__upload-actions">
               <button className="btn btn--ghost btn--sm" type="button" onClick={() => setUploadMode('file')}>📎 Upload File</button>
-              <button className="btn btn--ghost btn--sm" type="button" onClick={() => setUploadMode('link')}>🔗 Tambah Link</button>
-              <button className="btn btn--ghost btn--sm" type="button" onClick={() => setUploadMode('note')}>📝 Catatan</button>
+              <button className="btn btn--ghost btn--sm" type="button" onClick={() => setUploadMode('link')}>🔗 Add Link</button>
+              <button className="btn btn--ghost btn--sm" type="button" onClick={() => setUploadMode('note')}>📝 Note</button>
             </div>
           )}
           {uploadMode === 'file' && (
             <div className="pg-evidence__form">
-              <label>Pilih file <small>(max 20 MB — PDF/Office/image/ZIP)</small></label>
+              <label>Choose file <small>(max 20 MB — PDF/Office/image/ZIP)</small></label>
               <input ref={fileInputRef} type="file" onChange={(e) => void handleFileUpload(e)} disabled={busy} />
-              <label>Keterangan <small>(opsional)</small></label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Mis. draft v1, sebelum review manajer" />
+              <label>Caption <small>(optional)</small></label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="e.g. draft v1, before manager review" />
               <div className="pg-evidence__form-actions">
-                <button className="btn btn--ghost btn--sm" type="button" onClick={reset} disabled={busy}>Batal</button>
+                <button className="btn btn--ghost btn--sm" type="button" onClick={reset} disabled={busy}>Cancel</button>
               </div>
             </div>
           )}
           {uploadMode === 'link' && (
             <div className="pg-evidence__form">
-              <label>URL <small>(Google Drive / SharePoint / link eksternal)</small></label>
+              <label>URL <small>(Google Drive / SharePoint / external link)</small></label>
               <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://drive.google.com/…" disabled={busy} />
-              <label>Deskripsi <small>(wajib — jelaskan isi link)</small></label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Mis. Folder draft materi Danantara lengkap dengan asumsi" />
+              <label>Description <small>(required — describe the link)</small></label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="e.g. Folder of Danantara draft materials with assumptions" />
               <div className="pg-evidence__form-actions">
-                <button className="btn btn--ghost btn--sm" type="button" onClick={reset} disabled={busy}>Batal</button>
-                <button className="btn btn--primary btn--sm" type="button" onClick={() => void handleLinkSubmit()} disabled={busy || !linkUrl.trim() || !description.trim()}>Simpan</button>
+                <button className="btn btn--ghost btn--sm" type="button" onClick={reset} disabled={busy}>Cancel</button>
+                <button className="btn btn--primary btn--sm" type="button" onClick={() => void handleLinkSubmit()} disabled={busy || !linkUrl.trim() || !description.trim()}>Save</button>
               </div>
             </div>
           )}
           {uploadMode === 'note' && (
             <div className="pg-evidence__form">
-              <label>Catatan ringkas</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Mis. Koordinasi dengan BUMN holding sudah dilakukan 23 April via Zoom, kesimpulan: …" disabled={busy} autoFocus />
+              <label>Short note</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="e.g. Coordinated with the BUMN holding on 23 April via Zoom, conclusion: …" disabled={busy} autoFocus />
               <div className="pg-evidence__form-actions">
-                <button className="btn btn--ghost btn--sm" type="button" onClick={reset} disabled={busy}>Batal</button>
-                <button className="btn btn--primary btn--sm" type="button" onClick={() => void handleNoteSubmit()} disabled={busy || !description.trim()}>Simpan</button>
+                <button className="btn btn--ghost btn--sm" type="button" onClick={reset} disabled={busy}>Cancel</button>
+                <button className="btn btn--primary btn--sm" type="button" onClick={() => void handleNoteSubmit()} disabled={busy || !description.trim()}>Save</button>
               </div>
             </div>
           )}
@@ -757,26 +757,26 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
           {/* Banner: tugas dikembalikan oleh reviewer, PIC perlu revisi */}
           {a.status === 'DIKERJAKAN' && lastReturn && a.revisionCount > 0 && (
             <div className="alert alert--warn">
-              <strong>Dikembalikan untuk revisi</strong>
-              <p>Oleh {lastReturn.name} pada {lastReturn.actedAt ? new Date(lastReturn.actedAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-'}{lastReturn.note ? ` — "${lastReturn.note}"` : ''}. Perbaiki & submit ulang.</p>
+              <strong>Returned for revision</strong>
+              <p>By {lastReturn.name} on {lastReturn.actedAt ? new Date(lastReturn.actedAt).toLocaleString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-'}{lastReturn.note ? ` — "${lastReturn.note}"` : ''}. Fix & resubmit.</p>
             </div>
           )}
           {/* Banner: tugas ditolak */}
           {a.status === 'REJECTED' && a.rejectionReason && (
             <div className="alert alert--error">
-              <strong>Assignment ditolak</strong>
+              <strong>Assignment rejected</strong>
               <p>{a.rejectionReason}</p>
             </div>
           )}
           {a.needsClarification && a.clarificationNote && (
             <div className="alert alert--warn">
-              <strong>Pertanyaan klarifikasi</strong>
+              <strong>Clarification question</strong>
               <p>{a.clarificationNote}</p>
             </div>
           )}
           {a.status === 'DIBATALKAN' && a.cancelReason && (
             <div className="alert alert--muted">
-              <strong>Alasan pembatalan</strong>
+              <strong>Cancellation reason</strong>
               <p>{a.cancelReason}</p>
             </div>
           )}
@@ -784,7 +784,7 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
           {/* Rantai Approval — hanya muncul kalau ada chain (non self-assign) */}
           {chain.length > 0 && (
             <section className="pg-section">
-              <h4 className="pg-section__title">Rantai Approval</h4>
+              <h4 className="pg-section__title">Approval Chain</h4>
               <ol className="pg-approval-chain">
                 {chain.map((c, i) => {
                   const isCurrent = a.status === 'IN_REVIEW' && i === a.currentReviewerIdx
@@ -801,12 +801,12 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
                           <Avatar name={c.name} size={18} />
                           <strong>{c.name}</strong>
                           <span className="pg-approval-chain__role">{c.role}</span>
-                          {isCurrent && <span className="pg-approval-chain__now">giliran sekarang</span>}
+                          {isCurrent && <span className="pg-approval-chain__now">current turn</span>}
                         </div>
                         {c.positionTitle && <small className="pg-approval-chain__pos">{c.positionTitle}</small>}
                         {c.status !== 'PENDING' && c.actedAt && (
                           <small className="pg-approval-chain__act">
-                            {c.status === 'APPROVED' ? '✓ Disetujui' : c.status === 'RETURNED' ? '↩ Dikembalikan' : '✕ Ditolak'} · {new Date(c.actedAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            {c.status === 'APPROVED' ? '✓ Approved' : c.status === 'RETURNED' ? '↩ Returned' : '✕ Rejected'} · {new Date(c.actedAt).toLocaleString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                           </small>
                         )}
                         {c.note && <small className="pg-approval-chain__note">"{c.note}"</small>}
@@ -821,7 +821,7 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
           {isSelfAssign && (
             <div className="alert alert--muted" style={{ marginTop: 14 }}>
               <strong>Self-assign</strong>
-              <p>Assignment ini ditugaskan ke diri sendiri — tidak melewati approval berjenjang.</p>
+              <p>This assignment is assigned to yourself — it skips the tiered approval chain.</p>
             </div>
           )}
 
@@ -841,34 +841,34 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
                 <span className="pg-person"><Avatar name={a.assignee.name} size={20} />{a.assignee.name}</span>
                 {a.assignee.positionTitle && <small>{a.assignee.positionTitle}</small>}
               </dd></div>
-              <div><dt>Pemberi</dt><dd>
+              <div><dt>Assigner</dt><dd>
                 <span className="pg-person"><Avatar name={a.assigner.name} size={20} />{a.assigner.name}</span>
                 {a.assigner.positionTitle && <small>{a.assigner.positionTitle}</small>}
               </dd></div>
-              <div><dt>Tenggat</dt><dd style={{ padding: 0 }}>
+              <div><dt>Deadline</dt><dd style={{ padding: 0 }}>
                 <span className={`pg-due-inline pg-due-inline--${due.tone}`}>{due.label}</span>
-                {a.dueDate && <small>{new Date(a.dueDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</small>}
+                {a.dueDate && <small>{new Date(a.dueDate).toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</small>}
                 {a.completedAt && a.dueDate && (
                   <small style={{ marginTop: 2, display: 'block', fontWeight: 600, color: new Date(a.completedAt) <= new Date(a.dueDate) ? 'var(--green)' : 'var(--red)' }}>
-                    {new Date(a.completedAt) <= new Date(a.dueDate) ? '✓ Selesai tepat waktu' : '⚠ Selesai melewati tenggat'}
+                    {new Date(a.completedAt) <= new Date(a.dueDate) ? '✓ Completed on time' : '⚠ Completed past deadline'}
                   </small>
                 )}
                 <small style={{ color: 'var(--text-muted)', marginTop: 1, display: 'block' }}>
-                  Ditetapkan oleh: {a.assigner.name}
+                  Set by: {a.assigner.name}
                 </small>
               </dd></div>
               {a.relatedProgram && (<div><dt>Program</dt><dd>[{a.relatedProgram.code}] {a.relatedProgram.name}</dd></div>)}
-              <div><dt>Dibuat</dt><dd>{new Date(a.createdAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</dd></div>
+              <div><dt>Created</dt><dd>{new Date(a.createdAt).toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</dd></div>
             </dl>
           </section>
 
           <section className="pg-section">
-            <h4 className="pg-section__title">Linimasa</h4>
+            <h4 className="pg-section__title">Timeline</h4>
             <ol className="pg-timeline">
-              <li className="is-done"><span className="pg-timeline__dot" /><div><strong>Ditugaskan</strong><small>{new Date(a.createdAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></div></li>
-              <li className={a.acknowledgedAt ? 'is-done' : ''}><span className="pg-timeline__dot" /><div><strong>Diterima</strong><small>{a.acknowledgedAt ? new Date(a.acknowledgedAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Belum diterima'}</small></div></li>
-              <li className={['IN_REVIEW', 'SELESAI'].includes(a.status) ? 'is-done' : ''}><span className="pg-timeline__dot" /><div><strong>Submit review</strong><small>{a.status === 'IN_REVIEW' ? 'Sedang direview' : a.status === 'SELESAI' ? 'Sudah disetujui' : 'Belum submit'}</small></div></li>
-              <li className={a.completedAt ? 'is-done' : ''}><span className="pg-timeline__dot" /><div><strong>Selesai</strong><small>{a.completedAt ? new Date(a.completedAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Belum selesai'}</small></div></li>
+              <li className="is-done"><span className="pg-timeline__dot" /><div><strong>Assigned</strong><small>{new Date(a.createdAt).toLocaleString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></div></li>
+              <li className={a.acknowledgedAt ? 'is-done' : ''}><span className="pg-timeline__dot" /><div><strong>Received</strong><small>{a.acknowledgedAt ? new Date(a.acknowledgedAt).toLocaleString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not yet received'}</small></div></li>
+              <li className={['IN_REVIEW', 'SELESAI'].includes(a.status) ? 'is-done' : ''}><span className="pg-timeline__dot" /><div><strong>Submit review</strong><small>{a.status === 'IN_REVIEW' ? 'In review' : a.status === 'SELESAI' ? 'Approved' : 'Not submitted'}</small></div></li>
+              <li className={a.completedAt ? 'is-done' : ''}><span className="pg-timeline__dot" /><div><strong>Completed</strong><small>{a.completedAt ? new Date(a.completedAt).toLocaleString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not completed'}</small></div></li>
             </ol>
           </section>
 
@@ -876,41 +876,41 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
 
           {mode === 'clarify' && (
             <div className="pg-inline-form">
-              <label>Pertanyaan klarifikasi</label>
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Mis. deadline bentrok dengan persiapan Rapat Dekom 26 April" autoFocus />
+              <label>Clarification question</label>
+              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="e.g. deadline clashes with prep for the 26 April Dekom meeting" autoFocus />
               <div className="pg-inline-form__actions">
-                <button className="btn btn--ghost btn--sm" onClick={() => { setMode('none'); setNote('') }} type="button">Batal</button>
-                <button className="btn btn--primary btn--sm" disabled={!note.trim() || busy} onClick={() => void runAction('CLARIFY', note.trim())} type="button">Kirim</button>
+                <button className="btn btn--ghost btn--sm" onClick={() => { setMode('none'); setNote('') }} type="button">Cancel</button>
+                <button className="btn btn--primary btn--sm" disabled={!note.trim() || busy} onClick={() => void runAction('CLARIFY', note.trim())} type="button">Send</button>
               </div>
             </div>
           )}
           {mode === 'cancel' && (
             <div className="pg-inline-form pg-inline-form--danger">
-              <label>Alasan pembatalan <small>(opsional)</small></label>
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Mis. ruang lingkup berubah, masuk ke Program lain" autoFocus />
+              <label>Cancellation reason <small>(optional)</small></label>
+              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="e.g. scope changed, moved into another Program" autoFocus />
               <div className="pg-inline-form__actions">
-                <button className="btn btn--ghost btn--sm" onClick={() => { setMode('none'); setNote('') }} type="button">Kembali</button>
-                <button className="btn btn--danger btn--sm" disabled={busy} onClick={() => void runAction('CANCEL', note.trim() || undefined)} type="button">Batalkan Tugas</button>
+                <button className="btn btn--ghost btn--sm" onClick={() => { setMode('none'); setNote('') }} type="button">Back</button>
+                <button className="btn btn--danger btn--sm" disabled={busy} onClick={() => void runAction('CANCEL', note.trim() || undefined)} type="button">Cancel Assignment</button>
               </div>
             </div>
           )}
           {mode === 'return' && (
             <div className="pg-inline-form">
-              <label>Catatan untuk PIC <small>(wajib — jelaskan apa yang harus diperbaiki)</small></label>
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Mis. lengkapi analisis dampak di bagian 3, tambahkan tabel breakdown cost" autoFocus />
+              <label>Note for the PIC <small>(required — explain what needs fixing)</small></label>
+              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="e.g. complete the impact analysis in section 3, add a cost breakdown table" autoFocus />
               <div className="pg-inline-form__actions">
-                <button className="btn btn--ghost btn--sm" onClick={() => { setMode('none'); setNote('') }} type="button">Batal</button>
-                <button className="btn btn--primary btn--sm" disabled={!note.trim() || busy} onClick={() => void runAction('RETURN', note.trim())} type="button">Kembalikan</button>
+                <button className="btn btn--ghost btn--sm" onClick={() => { setMode('none'); setNote('') }} type="button">Cancel</button>
+                <button className="btn btn--primary btn--sm" disabled={!note.trim() || busy} onClick={() => void runAction('RETURN', note.trim())} type="button">Return</button>
               </div>
             </div>
           )}
           {mode === 'reject' && (
             <div className="pg-inline-form pg-inline-form--danger">
-              <label>Alasan penolakan <small>(wajib)</small></label>
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Mis. hasil tidak memenuhi standar, scope salah, materi tidak relevan" autoFocus />
+              <label>Rejection reason <small>(required)</small></label>
+              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="e.g. results don't meet the standard, wrong scope, irrelevant material" autoFocus />
               <div className="pg-inline-form__actions">
-                <button className="btn btn--ghost btn--sm" onClick={() => { setMode('none'); setNote('') }} type="button">Batal</button>
-                <button className="btn btn--danger btn--sm" disabled={!note.trim() || busy} onClick={() => void runAction('REJECT', note.trim())} type="button">Tolak Tugas</button>
+                <button className="btn btn--ghost btn--sm" onClick={() => { setMode('none'); setNote('') }} type="button">Cancel</button>
+                <button className="btn btn--danger btn--sm" disabled={!note.trim() || busy} onClick={() => void runAction('REJECT', note.trim())} type="button">Reject Assignment</button>
               </div>
             </div>
           )}
@@ -921,32 +921,32 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
             {/* ── DITUGASKAN: PIC menerima atau klarifikasi ── */}
             {(isAssignee || isAdmin) && a.status === 'DITUGASKAN' && (
               <>
-                <button className="btn btn--primary btn--sm" disabled={busy} onClick={() => void runAction('ACKNOWLEDGE')} type="button">Terima & Mulai</button>
-                <button className="btn btn--ghost btn--sm" disabled={busy} onClick={() => setMode('clarify')} type="button">Minta Klarifikasi</button>
+                <button className="btn btn--primary btn--sm" disabled={busy} onClick={() => void runAction('ACKNOWLEDGE')} type="button">Accept & Start</button>
+                <button className="btn btn--ghost btn--sm" disabled={busy} onClick={() => setMode('clarify')} type="button">Ask for Clarification</button>
               </>
             )}
             {/* ── DIKERJAKAN: submit atau (self-assign) langsung selesai ── */}
             {(isAssignee || isAdmin) && a.status === 'DIKERJAKAN' && !isSelfAssign && (
-              <button className="btn btn--primary btn--sm" disabled={busy} onClick={() => void runAction('SUBMIT')} type="button">Submit untuk Review</button>
+              <button className="btn btn--primary btn--sm" disabled={busy} onClick={() => void runAction('SUBMIT')} type="button">Submit for Review</button>
             )}
             {(isAssignee || isAdmin) && a.status === 'DIKERJAKAN' && isSelfAssign && (
-              <button className="btn btn--primary btn--sm" disabled={busy} onClick={() => void runAction('APPROVE')} type="button">Tandai Selesai</button>
+              <button className="btn btn--primary btn--sm" disabled={busy} onClick={() => void runAction('APPROVE')} type="button">Mark Complete</button>
             )}
             {/* ── IN_REVIEW: reviewer giliran approve/return/reject ── */}
             {(iAmCurrentReviewer || isAdmin) && a.status === 'IN_REVIEW' && (
               <>
                 <button className="btn btn--primary btn--sm" disabled={busy} onClick={() => void runAction('APPROVE')} type="button">Approve</button>
-                <button className="btn btn--ghost btn--sm" disabled={busy} onClick={() => setMode('return')} type="button">Kembalikan</button>
-                <button className="btn btn--ghost btn--sm" style={{ color: 'var(--red)' }} disabled={busy} onClick={() => setMode('reject')} type="button">Tolak</button>
+                <button className="btn btn--ghost btn--sm" disabled={busy} onClick={() => setMode('return')} type="button">Return</button>
+                <button className="btn btn--ghost btn--sm" style={{ color: 'var(--red)' }} disabled={busy} onClick={() => setMode('reject')} type="button">Reject</button>
               </>
             )}
             {/* ── Pemberi: batalkan (selain terminal) ── */}
             {(isAssigner || isAdmin) && !['SELESAI', 'REJECTED', 'DIBATALKAN'].includes(a.status) && (
-              <button className="btn btn--ghost btn--sm" style={{ color: 'var(--red)', marginLeft: 'auto' }} disabled={busy} onClick={() => setMode('cancel')} type="button">Batalkan</button>
+              <button className="btn btn--ghost btn--sm" style={{ color: 'var(--red)', marginLeft: 'auto' }} disabled={busy} onClick={() => setMode('cancel')} type="button">Cancel</button>
             )}
             {/* ── Terminal: REOPEN oleh pemberi ── */}
             {(isAssigner || isAdmin) && ['SELESAI', 'REJECTED', 'DIBATALKAN'].includes(a.status) && (
-              <button className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void runAction('REOPEN')} type="button">Buka Kembali</button>
+              <button className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void runAction('REOPEN')} type="button">Reopen</button>
             )}
           </footer>
         )}
@@ -998,7 +998,7 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
       .then(({ chain, allowed }) => {
         if (cancelled) return
         if (!allowed) {
-          setPreviewError('Anda tidak berwenang menugaskan ke user ini.')
+          setPreviewError("You're not authorized to assign to this user.")
           setPreviewChain([])
         } else {
           setPreviewChain(chain)
@@ -1039,10 +1039,10 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
         <div className="modal__header">
           <div className="modal-headcopy">
             <span className="modal-kicker">Assignment</span>
-            <h3 className="modal__title">Assignment Baru</h3>
-            <p className="modal-subtitle">Assignment ad-hoc di luar Program. PIC akan dinotifikasi.</p>
+            <h3 className="modal__title">New Assignment</h3>
+            <p className="modal-subtitle">Ad-hoc assignment outside a Program. The PIC will be notified.</p>
             <p className="modal-cross-hint">
-              Bagian dari Program kerja? Buat sebagai <Link href="/execution">Task di Workboard →</Link>
+              Part of a work Program? Create it as a <Link href="/execution">Task on the Workboard →</Link>
             </p>
           </div>
           <button className="modal__close" onClick={onClose} type="button">
@@ -1052,12 +1052,12 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
         <div className="modal__body">
           <div className="pg-form">
             <label className="pg-form__field">
-              <span>Judul tugas *</span>
-              <input ref={firstFieldRef} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={140} required placeholder="Mis. Susun materi presentasi Danantara" />
+              <span>Task title *</span>
+              <input ref={firstFieldRef} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={140} required placeholder="e.g. Prepare the Danantara presentation deck" />
             </label>
             <label className="pg-form__field">
-              <span>Deskripsi</span>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} rows={3} placeholder="Konteks, ekspektasi output, referensi…" />
+              <span>Description</span>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} rows={3} placeholder="Context, expected output, references…" />
             </label>
             <div className="pg-form__row">
               <label className="pg-form__field">
@@ -1066,12 +1066,12 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
                   inputClassName="pg-form__input"
                   onChange={(id) => setAssigneeId(id ?? '')}
                   options={options}
-                  placeholder="— Pilih PIC —"
+                  placeholder="— Select PIC —"
                   value={assigneeId === '' ? null : assigneeId}
                 />
               </label>
               <label className="pg-form__field">
-                <span>Tenggat <span style={{ color: 'var(--red)', fontWeight: 700 }}>*</span></span>
+                <span>Deadline <span style={{ color: 'var(--red)', fontWeight: 700 }}>*</span></span>
                 <input
                   min={new Date().toISOString().slice(0, 10)}
                   onChange={(e) => setDueDate(e.target.value)}
@@ -1079,11 +1079,11 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
                   type="date"
                   value={dueDate}
                 />
-                <span className="pg-form__hint">Pemberi tugas menetapkan tenggat waktu</span>
+                <span className="pg-form__hint">The assigner sets the deadline</span>
               </label>
             </div>
             <div className="pg-form__field">
-              <span>Prioritas</span>
+              <span>Priority</span>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {PRIORITY_ORDER.map((p) => (
                   <button key={p} type="button" className={`priority-badge priority-badge--${p}`} style={{ cursor: 'pointer', border: priority === p ? '1px solid currentColor' : '1px solid transparent', opacity: priority === p ? 1 : 0.55 }} onClick={() => setPriority(p)}>
@@ -1096,9 +1096,9 @@ function CreateModal({ directory, currentUserId, currentRole, isOpen, onClose }:
           {err && <div className="alert alert--error">{err}</div>}
         </div>
         <div className="modal__footer">
-          <button className="btn btn--ghost btn--sm" onClick={() => onClose()} type="button" disabled={busy}>Batal</button>
+          <button className="btn btn--ghost btn--sm" onClick={() => onClose()} type="button" disabled={busy}>Cancel</button>
           <button className="toolbar-action-btn" type="submit" disabled={busy || !title.trim() || !assigneeId || !dueDate}>
-            {busy ? 'Menyimpan…' : 'Tugaskan'}
+            {busy ? 'Saving…' : 'Assign'}
           </button>
         </div>
       </form>

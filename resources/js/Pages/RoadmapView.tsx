@@ -64,7 +64,7 @@ export function RoadmapView() {
   } else {
     groups = ['GREEN', 'YELLOW', 'RED'].map(h => ({
       key: h,
-      label: h === 'GREEN' ? 'On Track' : h === 'YELLOW' ? 'At Risk' : 'Terlambat',
+      label: h === 'GREEN' ? 'On Track' : h === 'YELLOW' ? 'At Risk' : 'Delayed',
       tone: h.toLowerCase(),
       items: filtered.filter(p => normalizeHealthStatus(p.healthStatus) === h),
     })).filter(g => g.items.length > 0)
@@ -90,7 +90,7 @@ export function RoadmapView() {
         <h2 className="view-toolbar__title">Program Roadmap</h2>
         <div className="view-toolbar__sep" />
         <span className="view-toolbar__subtitle">
-          {isStrategic ? 'Visualisasi kesehatan dan kemajuan seluruh portfolio program.' : 'Visualisasi jadwal dan kemajuan program dalam unit Anda.'}
+          {isStrategic ? 'Health and progress across the entire program portfolio.' : 'Schedule and progress of programs in your unit.'}
         </span>
 
         {/* View mode toggle */}
@@ -108,18 +108,18 @@ export function RoadmapView() {
           <div className="view-toggle roadmap-toolbar-offset">
             {(['status', 'priority', 'health'] as RoadmapGrouping[]).map(g => (
               <button className={`view-toggle-btn${groupBy === g ? ' active' : ''}`} key={g} onClick={() => setGroupBy(g)}>
-                {g === 'status' ? 'Status' : g === 'priority' ? 'Prioritas' : 'Kesehatan'}
+                {g === 'status' ? 'Status' : g === 'priority' ? 'Priority' : 'Health'}
               </button>
             ))}
           </div>
         )}
 
-        <input className="view-toolbar__search roadmap-toolbar-offset" onChange={e => setSearch(e.target.value)} placeholder="Filter program…" value={search} />
+        <input className="view-toolbar__search roadmap-toolbar-offset" onChange={e => setSearch(e.target.value)} placeholder="Filter programs…" value={search} />
 
         <div className="view-toolbar__right">
           <div className="view-toolbar__stats">
-            <span>{total} <em>program</em></span>
-            <span>{inProgress} <em>aktif</em></span>
+            <span>{total} <em>programs</em></span>
+            <span>{inProgress} <em>active</em></span>
             <span>{avgProgress}% <em>avg</em></span>
             {atRiskOrOff > 0 && <span className="roadmap-stat-alert">{atRiskOrOff} <em>perlu perhatian</em></span>}
           </div>
@@ -129,11 +129,11 @@ export function RoadmapView() {
       {viewMode === 'timeline' ? (
         <div className="roadmap-body roadmap-body--timeline">
           {timelineLoading ? (
-            <p className="text-sm text-muted roadmap-empty">Memuat timeline…</p>
+            <p className="text-sm text-muted roadmap-empty">Loading timeline…</p>
           ) : (
             <TimelineGantt
               programs={filteredTimeline}
-              emptyText="Tidak ada program untuk ditampilkan."
+              emptyText="No programs to show."
               onOpenProgram={openProgramWorkspace}
             />
           )}
@@ -143,7 +143,7 @@ export function RoadmapView() {
           {overviewStatus.loading ? (
             <p className="text-sm text-muted roadmap-empty">Memuat roadmap…</p>
           ) : groups.length === 0 ? (
-            <p className="text-sm text-muted roadmap-empty">Tidak ada program yang cocok.</p>
+            <p className="text-sm text-muted roadmap-empty">No matching programs.</p>
           ) : (
             <>
               {groups.map(group => (

@@ -20,7 +20,7 @@ import { router, usePage } from '@inertiajs/react'
 const STATUS_OPTIONS: Array<{ value: string; label: string; tone: 'green' | 'amber' | 'red' }> = [
   { value: 'on_track', label: 'On Track', tone: 'green' },
   { value: 'at_risk', label: 'At Risk', tone: 'amber' },
-  { value: 'terlambat', label: 'Terlambat', tone: 'red' },
+  { value: 'terlambat', label: 'Delayed', tone: 'red' },
 ]
 
 function readQuery(): URLSearchParams {

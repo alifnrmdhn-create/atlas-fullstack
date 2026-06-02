@@ -184,25 +184,33 @@ class OrganizationController extends Controller
 
         // ── 2. Deadline Clusters (future workload horizon) ─────────────────
         $activeProg = $classified->whereNotIn('status', ['COMPLETED', 'CANCELLED']);
+        // "Lewat tenggat" (overdue, days < 0) = bucket sendiri. Sebelumnya overdue
+        // ikut jatuh ke "≤ 30 hari" (kondisi `<= 30` mencakup angka negatif) → bar itu
+        // menggabung program telat + akan-datang dan menyembunyikan bahwa mayoritasnya
+        // sudah lewat tenggat. Horizon = beban tenggat KE DEPAN; overdue beda cerita.
+        // ('max' lama dibuang — metadata tak pernah dibaca downstream.) (fix Jun 2026)
         $deadlineClusters = [
-            ['label' => '≤ 30 hari',   'max' => 30,  'programs' => []],
-            ['label' => '31–60 hari',  'max' => 60,  'programs' => []],
-            ['label' => '61–90 hari',  'max' => 90,  'programs' => []],
-            ['label' => '90+ hari',    'max' => null, 'programs' => []],
-            ['label' => 'Tanpa tenggat','max' => -1,  'programs' => []],
+            ['label' => 'Overdue',     'programs' => []],
+            ['label' => '≤ 30 days',   'programs' => []],
+            ['label' => '31–60 days',  'programs' => []],
+            ['label' => '61–90 days',  'programs' => []],
+            ['label' => '90+ days',    'programs' => []],
+            ['label' => 'No deadline', 'programs' => []],
         ];
         foreach ($activeProg as $p) {
             $days = $p['targetEndDate'] ? (int) $now->diffInDays(Carbon::parse($p['targetEndDate']), false) : null;
             if ($days === null) {
-                $deadlineClusters[4]['programs'][] = ['tone' => $p['healthTone'], 'days' => null];
-            } elseif ($days <= 30) {
+                $deadlineClusters[5]['programs'][] = ['tone' => $p['healthTone'], 'days' => null];
+            } elseif ($days < 0) {
                 $deadlineClusters[0]['programs'][] = ['tone' => $p['healthTone'], 'days' => $days];
-            } elseif ($days <= 60) {
+            } elseif ($days <= 30) {
                 $deadlineClusters[1]['programs'][] = ['tone' => $p['healthTone'], 'days' => $days];
-            } elseif ($days <= 90) {
+            } elseif ($days <= 60) {
                 $deadlineClusters[2]['programs'][] = ['tone' => $p['healthTone'], 'days' => $days];
-            } else {
+            } elseif ($days <= 90) {
                 $deadlineClusters[3]['programs'][] = ['tone' => $p['healthTone'], 'days' => $days];
+            } else {
+                $deadlineClusters[4]['programs'][] = ['tone' => $p['healthTone'], 'days' => $days];
             }
         }
         $deadlineClusters = collect($deadlineClusters)->map(function ($cluster) {
@@ -277,11 +285,15 @@ class OrganizationController extends Controller
                 'divisi' => $units->firstWhere('id', $p['ownerUnitId'])?->code ?? '-',
             ]);
 
+        // Cap dinaikkan 10 → 50: badge "Butuh Keputusan Anda" memakai count(needsAction),
+        // dan list ini dirender penuh di Inbox. Cap 10 lama bikin badge understate (mentok
+        // 10 walau antrian lebih banyak) + Inbox memotong item. Sumbernya sudah ber-bound
+        // natural (criticalBlockers limit 20, sisanya scoped), 50 = pagar realistis. (Jun 2026)
         $needsAction = $pendingApproval
             ->concat($criticalBlockers)
             ->concat($needsSupport)
             ->unique('id')
-            ->take(10)
+            ->take(50)
             ->values();
 
         // ── 4. Stagnation Signal ────────────────────────────────────────────
@@ -557,7 +569,7 @@ class OrganizationController extends Controller
                     'PENDING_KASUB', 'PENDING_KADIV' => 'CREATED',
                     default        => 'STATUS_CHANGED',
                 },
-                'description'     => $p->name . ' diperbarui',
+                'description'     => $p->name . ' updated',
                 'changeTimestamp' => $p->updatedAt->toISOString(),
             ]);
 
@@ -575,7 +587,7 @@ class OrganizationController extends Controller
                     'entityType'      => 'PROGRAM',
                     'entityId'        => $v->kpiDefinition?->programId ?? 0,
                     'action'          => 'MEASURED',
-                    'description'     => ($v->kpiDefinition?->name ?? 'KPI') . ' diukur',
+                    'description'     => ($v->kpiDefinition?->name ?? 'KPI') . ' measured',
                     'changeTimestamp' => $v->createdAt->toISOString(),
                 ]);
         }
@@ -591,7 +603,7 @@ class OrganizationController extends Controller
                 'entityType'      => 'TASK',
                 'entityId'        => $b->id,
                 'action'          => 'BLOCKER_ADDED',
-                'description'     => $b->title ?? ($b->code ? "Blocker {$b->code}" : 'Blocker baru ditambahkan'),
+                'description'     => $b->title ?? ($b->code ? "Blocker {$b->code}" : 'New blocker added'),
                 'changeTimestamp' => $b->createdAt->toISOString(),
             ]);
 

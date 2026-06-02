@@ -47,7 +47,7 @@ export function ReportsAnalyticsPanel() {
             ) : (
               <>
                 <ZapOff size={12} aria-hidden="true" />
-                <span>Belum terhubung</span>
+                <span>Not connected</span>
               </>
             )}
           </div>
@@ -63,7 +63,7 @@ export function ReportsAnalyticsPanel() {
         </header>
         <div className="context-panel__section-body">
           {top3.length === 0 ? (
-            <p className="context-panel__empty">Belum ada skor.</p>
+            <p className="context-panel__empty">No scores yet.</p>
           ) : (
             top3.map((entry, idx) => {
               const health = normalizeHealthStatus(entry.status)
@@ -90,20 +90,20 @@ export function ReportsAnalyticsPanel() {
 
       <section className="context-panel__section">
         <header className="context-panel__section-header">
-          <h3 className="context-panel__section-title">Laporan terkait</h3>
+          <h3 className="context-panel__section-title">Related reports</h3>
         </header>
         <div className="context-panel__section-body">
           <Link href="/laporan-bulanan" className="context-panel__focus-item">
             <span className="context-panel__focus-icon-inline" aria-hidden="true">
               <FileText size={13} />
             </span>
-            <span className="context-panel__focus-label">Laporan Bulanan</span>
+            <span className="context-panel__focus-label">Monthly Report</span>
           </Link>
           <Link href="/laporan-risiko" className="context-panel__focus-item">
             <span className="context-panel__focus-icon-inline" aria-hidden="true">
               <ShieldAlert size={13} />
             </span>
-            <span className="context-panel__focus-label">Laporan Risiko</span>
+            <span className="context-panel__focus-label">Risk Report</span>
           </Link>
         </div>
       </section>

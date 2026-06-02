@@ -5,14 +5,14 @@
  *   - "YYYY-WNN"  ISO 8601 week (e.g., "2026-W17")
  *   - "YYYY-MM"   Calendar month (e.g., "2026-05")
  *
- * Label format (yang ditampilkan ke user, mirror DKMR PDF):
- *   - "Minggu ke 1 bulan Mei 2026"
- *   - "Bulan Mei 2026"
+ * Label format (UI = English):
+ *   - "Week 1 of May 2026"
+ *   - "May 2026"
  */
 
-const MONTH_NAMES_ID = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ] as const
 
 /** Match "YYYY-WNN" ISO week. */
@@ -46,9 +46,9 @@ function isoWeekThursday(year: number, week: number): Date {
 }
 
 /**
- * Convert ISO week ("2026-W20") → "Minggu ke 3 bulan Mei 2026".
+ * Convert ISO week ("2026-W20") → "Week 3 of May 2026".
  *
- * "Minggu ke N" = posisi week ini di antara week-week yang Thursday-nya jatuh
+ * "Week N" = posisi week ini di antara week-week yang Thursday-nya jatuh
  * di bulan yang sama. Konsisten dengan WeekToMonthMapper backend.
  */
 export function isoWeekToMonthLabel(period: string): string {
@@ -67,16 +67,16 @@ export function isoWeekToMonthLabel(period: string): string {
     }
   }
 
-  return `Minggu ke ${weekOfMonth} bulan ${MONTH_NAMES_ID[targetMonth]} ${year}`
+  return `Week ${weekOfMonth} of ${MONTH_NAMES[targetMonth]} ${year}`
 }
 
-/** Convert "YYYY-MM" → "Bulan Mei 2026". */
+/** Convert "YYYY-MM" → "May 2026". */
 export function monthToLabel(period: string): string {
   const m = period.match(RE_MONTH)
   if (!m) return period
   const year = parseInt(m[1], 10)
   const monthIdx = parseInt(m[2], 10) - 1
-  return `Bulan ${MONTH_NAMES_ID[monthIdx]} ${year}`
+  return `${MONTH_NAMES[monthIdx]} ${year}`
 }
 
 /** Auto-detect format and produce human label. */

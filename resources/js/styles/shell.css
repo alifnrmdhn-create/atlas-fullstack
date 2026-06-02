@@ -47,19 +47,23 @@
   /* Topbar: hemat ruang di viewport sempit.
    * - Period meta ("Q2 · W4 Mei · W21") hidden — info internal team
    * - Cmdk placeholder + kbd hidden, button jadi icon-only */
-  .topbar__meta-period,
-  .topbar__meta-sep { display: none; }
-  .topbar__cmdk {
+  /* Prefix `.topbar ` = bump specificity (0,2,0 > 0,1,0). WAJIB: aturan dasar
+   * .topbar__cmdk (≈878) & .topbar__avatar-btn (≈1096) ada LEBIH BAWAH di file,
+   * jadi tanpa prefix ini override mobile kalah source-order → pill cmdk tetap
+   * 200px di phone & topbar overflow (avatar hijau kepotong di kanan). 2026-06-02 */
+  .topbar .topbar__meta-period,
+  .topbar .topbar__meta-sep { display: none; }
+  .topbar .topbar__cmdk {
     width: 36px;
     padding: 0;
     justify-content: center;
   }
-  .topbar__cmdk-placeholder,
-  .topbar__cmdk kbd { display: none; }
+  .topbar .topbar__cmdk-placeholder,
+  .topbar .topbar__cmdk kbd { display: none; }
   /* User chip jadi avatar-only di viewport sempit — hemat ruang topbar */
-  .topbar__avatar-name,
-  .topbar__avatar-chev { display: none; }
-  .topbar__avatar-btn { padding: 2px; }
+  .topbar .topbar__avatar-name,
+  .topbar .topbar__avatar-chev { display: none; }
+  .topbar .topbar__avatar-btn { padding: 2px; }
 }
 
 /* Viewport sangat sempit (tablet portrait): tambahan reduksi */

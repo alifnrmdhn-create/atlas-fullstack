@@ -56,7 +56,7 @@ function getDeadlineTone(daysLeft: number): 'overdue' | 'today' | 'soon' | 'calm
 
 function getDeadlineLabel(daysLeft: number): string {
   if (daysLeft < 0) return 'Overdue'
-  if (daysLeft === 0) return 'Hari ini'
+  if (daysLeft === 0) return 'Today'
   return `${daysLeft}h`
 }
 
@@ -86,19 +86,19 @@ function KpiSection({
       </div>
       {list.length === 0 ? (
         <div className="section-state section-state--compact goals-section-empty">
-          <strong>Belum ada KPI</strong>
-          <p>Belum ada KPI dalam kategori ini.</p>
+          <strong>No KPIs yet</strong>
+          <p>No KPIs in this category yet.</p>
         </div>
       ) : (
         <table className="reports-table">
           <thead>
             <tr>
-              <th>Kode</th>
-              <th>Nama KPI</th>
+              <th>Code</th>
+              <th>KPI Name</th>
               <th className="goals-kpi-table__head--numeric">Target</th>
-              <th>Satuan</th>
-              <th>Tipe</th>
-              <th>Frekuensi</th>
+              <th>Unit</th>
+              <th>Type</th>
+              <th>Frequency</th>
               <th>Status</th>
               {canManage && <th />}
             </tr>
@@ -109,8 +109,8 @@ function KpiSection({
               const healthClass = KPI_HEALTH_CLASS[health] ?? 'off-track'
               const healthLabel = KPI_HEALTH_LABEL[health] ?? 'Off Track'
               const freqLabel: Record<string, string> = {
-                WEEKLY: 'Mingguan', MONTHLY: 'Bulanan',
-                QUARTERLY: 'Kuartalan', ANNUALLY: 'Tahunan',
+                WEEKLY: 'Weekly', MONTHLY: 'Monthly',
+                QUARTERLY: 'Quarterly', ANNUALLY: 'Annually',
               }
               return (
                 <tr key={kpi.id}>
@@ -121,7 +121,7 @@ function KpiSection({
                     </span>
                   </td>
                   <td className="goals-kpi-target">
-                    {kpi.targetValue.toLocaleString('id-ID')}
+                    {kpi.targetValue.toLocaleString('en-US')}
                   </td>
                   <td><span className="text-xs text-muted">{kpi.unitOfMeasure ?? '–'}</span></td>
                   <td><span className="badge">{kpi.metricType}</span></td>
@@ -146,7 +146,7 @@ function KpiSection({
                           onClick={() => onDelete(kpi)}
                           type="button"
                         >
-                          Hapus
+                          Delete
                         </button>
                       </div>
                     </td>
@@ -205,7 +205,7 @@ export function GoalsView() {
       : empty
     const dirty = (Object.keys(baseline) as Array<keyof typeof baseline>)
       .some(k => kpiForm[k] !== baseline[k])
-    if (dirty && !window.confirm('Buang perubahan yang belum disimpan?')) return
+    if (dirty && !window.confirm('Discard unsaved changes?')) return
     setShowKpiModal(false); setEditingKpi(null); setKpiError(null)
   }, showKpiModal)
 
@@ -260,7 +260,7 @@ export function GoalsView() {
       setEditingKpi(null)
       refreshKpis()
     } catch (err: unknown) {
-      setKpiError((err as { message?: string })?.message ?? 'Gagal menyimpan KPI.')
+      setKpiError((err as { message?: string })?.message ?? 'Failed to save KPI.')
     } finally {
       setKpiSaving(false)
     }
@@ -284,7 +284,7 @@ export function GoalsView() {
       setConfirmDeleteKpi(null)
       refreshKpis()
     } catch (err) {
-      setKpiDeleteError(err instanceof Error ? err.message : 'Gagal menghapus KPI.')
+      setKpiDeleteError(err instanceof Error ? err.message : 'Failed to delete KPI.')
     } finally {
       setKpiDeleteSaving(false)
     }
@@ -312,8 +312,8 @@ export function GoalsView() {
         <div className="view-toolbar__sep" />
         <span className="view-toolbar__subtitle">
           {isStrategic
-            ? 'Kelola definisi KPI, target, dan keselarasan strategis portfolio.'
-            : 'Kelola KPI dan target kinerja dalam lingkup unit Anda.'}
+            ? 'Manage KPI definitions, targets, and portfolio strategic alignment.'
+            : 'Manage KPIs and performance targets within your unit.'}
         </span>
         <div className="view-toolbar__right">
           <div className="view-toolbar__stats goals-toolbar-stats">
@@ -325,7 +325,7 @@ export function GoalsView() {
           </div>
           {canManage && (
             <button className="btn btn--primary btn--sm goals-toolbar-cta" onClick={openCreateKpi}>
-              + Buat KPI
+              + New KPI
             </button>
           )}
         </div>
@@ -335,7 +335,7 @@ export function GoalsView() {
         {/* Left: KPI management tables */}
         <div className="goals-main">
           <KpiSection
-            title="KPI Sinyal Utama"
+            title="Leading KPIs"
             badge="Leading"
             badgeTone="leading"
             list={leadingKpis}
@@ -344,7 +344,7 @@ export function GoalsView() {
             onDelete={(k) => setConfirmDeleteKpi(k)}
           />
           <KpiSection
-            title="Indikator Lagging"
+            title="Lagging KPIs"
             badge="Lagging"
             badgeTone="lagging"
             list={laggingKpis}
@@ -424,15 +424,15 @@ export function GoalsView() {
             <div className="modal__header">
               <div className="modal-headcopy">
                 <span className="modal-kicker">Goals</span>
-                <h3 className="modal__title" id={kpiDialogTitleId}>{editingKpi ? 'Edit KPI' : 'Buat KPI Baru'}</h3>
+                <h3 className="modal__title" id={kpiDialogTitleId}>{editingKpi ? 'Edit KPI' : 'New KPI'}</h3>
                 <p className="modal-subtitle" id={kpiDialogDescId}>
                   {editingKpi
-                    ? 'Perbarui definisi, target, dan aturan review agar KPI tetap relevan dan mudah dipantau.'
-                    : 'Bangun KPI baru dengan identitas yang jelas, target terukur, dan ritme review yang konsisten.'}
+                    ? 'Update the definition, target, and review rules so the KPI stays relevant and easy to track.'
+                    : 'Build a new KPI with a clear identity, measurable target, and a consistent review cadence.'}
                 </p>
               </div>
               <button
-                aria-label="Tutup"
+                aria-label="Close"
                 className="modal__close"
                 disabled={kpiSaving}
                 onClick={() => setShowKpiModal(false)}
@@ -445,12 +445,12 @@ export function GoalsView() {
               <div className="modal__body goals-modal-body">
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>Identitas KPI</h4>
-                    <p>Tetapkan kode, nama, dan konteks singkat agar indikator mudah dikenali di dashboard.</p>
+                    <h4>KPI Identity</h4>
+                    <p>Set the code, name, and brief context so the indicator is easy to recognize on the dashboard.</p>
                   </div>
                   <div className="goals-form-grid goals-form-grid--name">
                     <div className="modal-field">
-                      <label className="modal-label">Kode <span className="goals-required">*</span></label>
+                      <label className="modal-label">Code <span className="goals-required">*</span></label>
                       <input
                         autoFocus
                         className="form-input"
@@ -465,14 +465,14 @@ export function GoalsView() {
                       />
                     </div>
                     <div className="modal-field">
-                      <label className="modal-label">Nama KPI <span className="goals-required">*</span></label>
+                      <label className="modal-label">KPI Name <span className="goals-required">*</span></label>
                       <input
                         className="form-input"
                         disabled={kpiSaving}
                         maxLength={120}
                         minLength={2}
                         onChange={e => setKpiForm(f => ({ ...f, name: e.target.value }))}
-                        placeholder="Nama indikator kinerja…"
+                        placeholder="Performance indicator name…"
                         required
                         type="text"
                         value={kpiForm.name}
@@ -480,13 +480,13 @@ export function GoalsView() {
                     </div>
                   </div>
                   <div className="modal-field">
-                    <label className="modal-label">Deskripsi</label>
+                    <label className="modal-label">Description</label>
                     <textarea
                       className="form-input goals-textarea"
                       disabled={kpiSaving}
                       maxLength={400}
                       onChange={e => setKpiForm(f => ({ ...f, description: e.target.value }))}
-                      placeholder="Penjelasan singkat tentang KPI ini…"
+                      placeholder="Brief description of this KPI…"
                       rows={2}
                       value={kpiForm.description}
                     />
@@ -496,7 +496,7 @@ export function GoalsView() {
                 <section className="modal-section">
                   <div className="modal-section__intro">
                     <h4>Target & review</h4>
-                    <p>Pastikan angka target, satuan, dan frekuensi review selaras dengan cara KPI ini dinilai.</p>
+                    <p>Make sure the target value, unit, and review frequency match how this KPI is assessed.</p>
                   </div>
                   <div className="goals-form-grid goals-form-grid--metrics">
                     <div className="modal-field">
@@ -513,7 +513,7 @@ export function GoalsView() {
                       />
                     </div>
                     <div className="modal-field">
-                      <label className="modal-label">Satuan</label>
+                      <label className="modal-label">Unit</label>
                       <input
                         className="form-input"
                         disabled={kpiSaving}
@@ -525,17 +525,17 @@ export function GoalsView() {
                       />
                     </div>
                     <div className="modal-field">
-                      <label className="modal-label">Frekuensi Review</label>
+                      <label className="modal-label">Review Frequency</label>
                       <select
                         className="form-input"
                         disabled={kpiSaving}
                         onChange={e => setKpiForm(f => ({ ...f, reviewFrequency: e.target.value }))}
                         value={kpiForm.reviewFrequency}
                       >
-                        <option value="WEEKLY">Mingguan</option>
-                        <option value="MONTHLY">Bulanan</option>
-                        <option value="QUARTERLY">Kuartalan</option>
-                        <option value="ANNUALLY">Tahunan</option>
+                        <option value="WEEKLY">Weekly</option>
+                        <option value="MONTHLY">Monthly</option>
+                        <option value="QUARTERLY">Quarterly</option>
+                        <option value="ANNUALLY">Annually</option>
                       </select>
                     </div>
                   </div>
@@ -543,23 +543,23 @@ export function GoalsView() {
 
                 <section className="modal-section modal-section--soft">
                   <div className="modal-section__intro">
-                    <h4>Perilaku metrik</h4>
-                    <p>Tentukan karakter KPI dan tandai bila indikator ini berfungsi sebagai sinyal utama.</p>
+                    <h4>Metric behavior</h4>
+                    <p>Define the KPI's character and mark whether it serves as a leading signal.</p>
                   </div>
                   <div className="goals-form-grid goals-form-grid--meta">
                     <div className="modal-field">
-                      <label className="modal-label">Tipe Metrik</label>
+                      <label className="modal-label">Metric Type</label>
                       <select
                         className="form-input"
                         disabled={kpiSaving}
                         onChange={e => setKpiForm(f => ({ ...f, metricType: e.target.value }))}
                         value={kpiForm.metricType}
                       >
-                        <option value="PERCENTAGE">Persentase</option>
-                        <option value="CURRENCY">Mata Uang</option>
-                        <option value="COUNT">Jumlah</option>
-                        <option value="RATIO">Rasio</option>
-                        <option value="INDEX">Indeks</option>
+                        <option value="PERCENTAGE">Percentage</option>
+                        <option value="CURRENCY">Currency</option>
+                        <option value="COUNT">Count</option>
+                        <option value="RATIO">Ratio</option>
+                        <option value="INDEX">Index</option>
                       </select>
                     </div>
                     <div className="modal-field goals-modal-field goals-modal-field--end">
@@ -570,7 +570,7 @@ export function GoalsView() {
                           onChange={e => setKpiForm(f => ({ ...f, isLeadingIndicator: e.target.checked }))}
                           type="checkbox"
                         />
-                        Indikator Sinyal Utama (Leading)
+                        Leading Indicator
                       </label>
                     </div>
                   </div>
@@ -585,10 +585,10 @@ export function GoalsView() {
                   onClick={() => setShowKpiModal(false)}
                   type="button"
                 >
-                  Batal
+                  Cancel
                 </button>
                 <button className="btn btn--primary" disabled={kpiSaving} type="submit">
-                  {kpiSaving ? 'Menyimpan…' : editingKpi ? 'Simpan Perubahan' : 'Buat KPI'}
+                  {kpiSaving ? 'Saving…' : editingKpi ? 'Save Changes' : 'Create KPI'}
                 </button>
               </div>
             </form>
@@ -603,11 +603,11 @@ export function GoalsView() {
           <div aria-describedby={deleteKpiDescId} aria-labelledby={deleteKpiTitleId} aria-modal="true" className="modal goals-delete-modal" ref={deleteKpiDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={deleteKpiTitleId}>Hapus KPI?</h3>
-                <p className="modal-subtitle" id={deleteKpiDescId}>Aksi ini permanen dan akan menghapus KPI beserta seluruh histori nilainya.</p>
+                <h3 className="modal__title" id={deleteKpiTitleId}>Delete KPI?</h3>
+                <p className="modal-subtitle" id={deleteKpiDescId}>This is permanent and will delete the KPI and its entire value history.</p>
               </div>
               <button
-                aria-label="Tutup"
+                aria-label="Close"
                 className="modal__close"
                 disabled={kpiDeleteSaving}
                 onClick={() => { setConfirmDeleteKpi(null); setKpiDeleteError(null) }}
@@ -618,7 +618,7 @@ export function GoalsView() {
             </div>
             <div className="modal__body">
               <p className="text-sm goals-delete-copy modal-helper-note modal-helper-note--danger">
-                KPI <strong>{confirmDeleteKpi.name}</strong> [{confirmDeleteKpi.code}] akan dihapus permanen beserta seluruh riwayat nilainya.
+                KPI <strong>{confirmDeleteKpi.name}</strong> [{confirmDeleteKpi.code}] will be permanently deleted along with its entire value history.
               </p>
               {kpiDeleteError && <p className="wid-form__error" style={{ marginTop: 8 }}>{kpiDeleteError}</p>}
             </div>
@@ -629,7 +629,7 @@ export function GoalsView() {
                 onClick={() => { setConfirmDeleteKpi(null); setKpiDeleteError(null) }}
                 type="button"
               >
-                Batal
+                Cancel
               </button>
               <button
                 className="btn btn--danger"
@@ -637,7 +637,7 @@ export function GoalsView() {
                 onClick={() => void doDeleteKpi()}
                 type="button"
               >
-                {kpiDeleteSaving ? 'Menghapus…' : 'Hapus'}
+                {kpiDeleteSaving ? 'Deleting…' : 'Delete'}
               </button>
             </div>
           </div>

@@ -29,17 +29,17 @@ export type TopbarAction = {
  * NOTE: Pages can also render their own primary CTA in their page header
  * (e.g., ProgramsView). When a page owns its CTA, omit the route here. */
 export const TOPBAR_ACTIONS: Record<string, TopbarAction> = {
-  '/execution': { id: 'task.new', label: 'Task Baru', icon: 'Plus' },
-  '/penugasan': { id: 'assignment.new', label: 'Assignment Baru', icon: 'Plus' },
-  '/jadwal': { id: 'meeting.new', label: 'Meeting Baru', icon: 'Plus' },
-  '/laporan-bulanan': { id: 'report.new', label: 'Report Baru', icon: 'Plus' },
-  '/performance/scorecard': { id: 'scorecard.export', label: 'Ekspor', icon: 'Download' },
-  '/performance/kolegial': { id: 'kolegial.export', label: 'Ekspor', icon: 'Download' },
-  '/performance/divisi': { id: 'divisi.export', label: 'Ekspor', icon: 'Download' },
-  '/admin/users': { id: 'user.new', label: 'User Baru', icon: 'Plus' },
-  '/admin/orgs': { id: 'org.new', label: 'Company Baru', icon: 'Plus' },
-  '/admin/positions': { id: 'position.new', label: 'Posisi Baru', icon: 'Plus' },
-  '/admin/roles': { id: 'role.new', label: 'Role Baru', icon: 'Plus' },
+  '/execution': { id: 'task.new', label: 'New Task', icon: 'Plus' },
+  '/penugasan': { id: 'assignment.new', label: 'New Assignment', icon: 'Plus' },
+  '/jadwal': { id: 'meeting.new', label: 'New Meeting', icon: 'Plus' },
+  '/laporan-bulanan': { id: 'report.new', label: 'New Report', icon: 'Plus' },
+  '/performance/scorecard': { id: 'scorecard.export', label: 'Export', icon: 'Download' },
+  '/performance/kolegial': { id: 'kolegial.export', label: 'Export', icon: 'Download' },
+  '/performance/divisi': { id: 'divisi.export', label: 'Export', icon: 'Download' },
+  '/admin/users': { id: 'user.new', label: 'New User', icon: 'Plus' },
+  '/admin/orgs': { id: 'org.new', label: 'New Company', icon: 'Plus' },
+  '/admin/positions': { id: 'position.new', label: 'New Position', icon: 'Plus' },
+  '/admin/roles': { id: 'role.new', label: 'New Role', icon: 'Plus' },
 }
 
 export const TOPBAR_ACTION_EVENT = 'atlas:topbar-action'

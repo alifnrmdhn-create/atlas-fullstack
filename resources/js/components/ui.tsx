@@ -129,7 +129,7 @@ export function PanelHeader({ title, subtitle, onClose }: { title: string; subti
         <p>{subtitle}</p>
       </div>
       {onClose && (
-        <button className="panel-close-btn" onClick={onClose} title="Tutup panel (Esc)" type="button">
+        <button className="panel-close-btn" onClick={onClose} title="Close panel (Esc)" type="button">
           <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg>
           <kbd>Esc</kbd>
         </button>
@@ -154,7 +154,7 @@ export function CommentThreadList({
   const topLevelComments = comments.filter((comment) => !comment.parentCommentId)
 
   if (topLevelComments.length === 0) {
-    return <SectionState title="Belum ada catatan" text="Tulis catatan keputusan, tindak lanjut, atau eskalasi di bawah." compact />
+    return <SectionState title="No notes yet" text="Write a decision, follow-up, or escalation note below." compact />
   }
 
   const canDelete = (comment: CommentItem) => !!onDelete && (comment.createdBy === currentUserId)
@@ -175,7 +175,7 @@ export function CommentThreadList({
                   className="ghost-button"
                   onClick={() => onDelete!(comment.id)}
                   style={{ fontSize: 10, color: 'var(--text-muted)', padding: '0 4px' }}
-                  title="Hapus komentar"
+                  title="Delete comment"
                   type="button"
                 >
                   ✕
@@ -213,7 +213,7 @@ export function CommentThreadList({
                             className="ghost-button"
                             onClick={() => onDelete!(reply.id)}
                             style={{ fontSize: 10, color: 'var(--text-muted)', padding: '0 4px' }}
-                            title="Hapus komentar"
+                            title="Delete comment"
                             type="button"
                           >
                             ✕
@@ -388,8 +388,8 @@ export function Metric({ label, value }: { label: string; value: string }) {
 const HEALTH_LABELS: Record<string, string> = {
   GREEN:   'On Track',
   YELLOW:  'At Risk',
-  RED:     'Terlambat',
-  OVERDUE: 'Lewat Tenggat',
+  RED:     'Delayed',
+  OVERDUE: 'Overdue',
 }
 export function HealthPill({ status, title }: { status: 'GREEN' | 'YELLOW' | 'RED' | 'OVERDUE'; title?: string }) {
   return (
@@ -466,14 +466,14 @@ type TimeAge = 'fresh' | 'today' | 'old'
 export function formatRelativeTime(isoString: string): { text: string; age: TimeAge } {
   const diff = Date.now() - new Date(isoString).getTime()
   const seconds = Math.floor(diff / 1000)
-  if (seconds < 60)  return { text: 'baru saja', age: 'fresh' }
+  if (seconds < 60)  return { text: 'just now', age: 'fresh' }
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60)  return { text: `${minutes} mnt lalu`, age: 'fresh' }
+  if (minutes < 60)  return { text: `${minutes}m ago`, age: 'fresh' }
   const hours = Math.floor(minutes / 60)
-  if (hours < 24)    return { text: `${hours} jam lalu`, age: 'today' }
+  if (hours < 24)    return { text: `${hours}h ago`, age: 'today' }
   const days = Math.floor(hours / 24)
-  if (days < 7)      return { text: `${days} hari lalu`, age: 'old' }
-  return { text: new Date(isoString).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }), age: 'old' }
+  if (days < 7)      return { text: `${days}d ago`, age: 'old' }
+  return { text: new Date(isoString).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }), age: 'old' }
 }
 
 export function HighlightText({ text, query }: { text: string; query: string }) {
@@ -562,7 +562,7 @@ export function PresenceRow({
         <button
           className="presence-row__dm-btn"
           onClick={(e) => { e.stopPropagation(); onDm(presence.userId) }}
-          title={`Kirim pesan ke ${userName}`}
+          title={`Message ${userName}`}
           type="button"
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -782,7 +782,7 @@ export function SidePanel({
             type="button"
             className="side-panel__close"
             onClick={onClose}
-            aria-label="Tutup panel"
+            aria-label="Close panel"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M2 2 12 12M12 2 2 12" />
@@ -818,11 +818,11 @@ export function AgingIndicator({
     days >= thresholds.red    ? 'red'    :
     days >= thresholds.orange ? 'orange' :
     days >= thresholds.yellow ? 'yellow' : 'green'
-  const label = days === 0 ? 'baru saja' : `${days} hari`
+  const label = days === 0 ? 'just now' : `${days}d`
   return (
     <span
       className={`aging-indicator aging-indicator--${tone} ${className}`.trim()}
-      title={`Aging: ${days} hari`}
+      title={`Aging: ${days} days`}
     >
       <span className="aging-indicator__dot" aria-hidden="true" />
       {showText && <span className="aging-indicator__label">{label}</span>}
@@ -836,7 +836,7 @@ export function AgingIndicator({
 export function ForecastBadge({
   value,
   status,
-  method = 'Estimasi linear berdasarkan capaian YTD. Tidak memperhitungkan musim/seasonality. Akan disempurnakan di Sprint 6.',
+  method = 'Linear estimate based on YTD achievement. Does not account for seasonality. To be refined in Sprint 6.',
   className = '',
 }: {
   value: number | string
@@ -867,10 +867,10 @@ export function DataSourceBadge({
   tooltip?: string
   className?: string
 }) {
-  const label = type === 'dummy' ? 'Demo' : type === 'partial' ? 'Sebagian' : 'Live'
+  const label = type === 'dummy' ? 'Demo' : type === 'partial' ? 'Partial' : 'Live'
   const defaultTooltip = type === 'dummy'
-    ? 'Data demo. Integrasi data riil di milestone Sprint 6.'
-    : type === 'partial' ? 'Sebagian data riil, sebagian demo.' : 'Data live dari sistem.'
+    ? 'Demo data. Real-data integration in Sprint 6 milestone.'
+    : type === 'partial' ? 'Partly real data, partly demo.' : 'Live data from the system.'
   return (
     <span
       className={`data-source-badge data-source-badge--${type} ${className}`.trim()}
