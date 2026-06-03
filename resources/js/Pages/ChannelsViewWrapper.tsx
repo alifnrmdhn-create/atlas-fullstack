@@ -449,6 +449,7 @@ export function ChannelsViewWrapper() {
         setSelectedThreadId(null)
         handleMarkAsRead(channelId)
       }}
+      onCloseConversation={() => { setSelectedChannelId(null); setSelectedThreadId(null) }}
       onMarkAllAsRead={handleMarkAllAsRead}
       onOpenDM={handleOpenDM}
       onToggleStar={handleToggleStar}

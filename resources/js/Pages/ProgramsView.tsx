@@ -25,8 +25,7 @@ import { ExecutionTab } from '../components/ExecutionTab'
 import { MonitoringMatrix } from '../components/MonitoringMatrix'
 import { useInlineToast } from '../components/InlineToast'
 import { UserPicker } from '../components/UserPicker'
-import { PageHeader, Bars, Donut, Sparkline, Delta } from '../design-system'
-import type { Tone } from '../lib/tone'
+import { PageHeader } from '../design-system'
 import './ProgramsView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -113,65 +112,6 @@ const healthStatusLabel = (status: 'GREEN' | 'YELLOW' | 'RED') => {
 const workstreamSummaryLabel = (count: number | undefined | null) => {
   if (!count || count <= 0) return 'No workstreams yet'
   return `${count} workstream`
-}
-
-// ── Health Donut — SVG donut chart untuk hero stats strip ──────────────
-// Pure SVG, no chart library. Segments via stroke-dasharray dengan offset
-// kumulatif. Center label menampilkan total program. */
-function HealthDonut({ green, yellow, red, total }: {
-  green: number; yellow: number; red: number; total: number
-}) {
-  const SIZE = 92
-  const STROKE = 12
-  const r = (SIZE - STROKE) / 2
-  const c = 2 * Math.PI * r
-  const cx = SIZE / 2
-  const safeTotal = Math.max(total, 1)
-  const greenLen = (green / safeTotal) * c
-  const yellowLen = (yellow / safeTotal) * c
-  const redLen = (red / safeTotal) * c
-
-  return (
-    <svg
-      viewBox={`0 0 ${SIZE} ${SIZE}`}
-      className="programs-v2__donut"
-      role="img"
-      aria-label={`Health distribution: On Track ${green}, At Risk ${yellow}, Delayed ${red}`}
-    >
-      {/* Track ring */}
-      <circle cx={cx} cy={cx} r={r} fill="none"
-        stroke="var(--ds-surface-sunken)" strokeWidth={STROKE} />
-      {/* Segments — rotate -90deg agar mulai dari atas (12 o'clock) */}
-      <g transform={`rotate(-90 ${cx} ${cx})`} strokeLinecap="butt">
-        {green > 0 && (
-          <circle cx={cx} cy={cx} r={r} fill="none"
-            stroke="var(--ds-green-500)" strokeWidth={STROKE}
-            strokeDasharray={`${greenLen} ${c}`}
-            strokeDashoffset={0}
-          />
-        )}
-        {yellow > 0 && (
-          <circle cx={cx} cy={cx} r={r} fill="none"
-            stroke="var(--ds-amber-500)" strokeWidth={STROKE}
-            strokeDasharray={`${yellowLen} ${c}`}
-            strokeDashoffset={-greenLen}
-          />
-        )}
-        {red > 0 && (
-          <circle cx={cx} cy={cx} r={r} fill="none"
-            stroke="var(--ds-red-500)" strokeWidth={STROKE}
-            strokeDasharray={`${redLen} ${c}`}
-            strokeDashoffset={-(greenLen + yellowLen)}
-          />
-        )}
-      </g>
-      {/* Center label */}
-      <text x={cx} y={cx - 2} textAnchor="middle" dominantBaseline="middle"
-        className="programs-v2__donut-num">{total}</text>
-      <text x={cx} y={cx + 14} textAnchor="middle" dominantBaseline="middle"
-        className="programs-v2__donut-label">programs</text>
-    </svg>
-  )
 }
 
 // ── Peta Programs — portfolio scatter ────────────────────────────────────
@@ -481,6 +421,9 @@ export function ProgramsView() {
   const [portfolioView, setPortfolioView] = useState<PortfolioView>('list')
   const [timelineView, setTimelineView] = useState<TimelineView>('lanes')
   const [laneGrouping, setLaneGrouping] = useState<LaneGrouping>(isStrategic ? 'health' : 'status')
+  // Per-lane collapse override (key → collapsed?). Low-attention lanes (On
+  // Track / Completed) start collapsed by default so exceptions surface first.
+  const [laneOverrides, setLaneOverrides] = useState<Record<string, boolean>>({})
   const [laneSearch, setLaneSearch] = useState('')
   const [portfolioSearch, setPortfolioSearch] = useState('')
   const [approvalFilter, setApprovalFilter] = useState<'all' | 'needs_action'>('all')
@@ -981,70 +924,12 @@ export function ProgramsView() {
   }
 
   // ── Computed values ────────────────────────────────────────────────────
-  const avgProgress = programs.length > 0
-    ? Math.round(programs.reduce((s, p) => s + p.progressPercent, 0) / programs.length) : 0
   const healthMix = {
     green:  programs.filter(p => normalizeHealthStatus(p.healthStatus) === 'GREEN').length,
     yellow: programs.filter(p => normalizeHealthStatus(p.healthStatus) === 'YELLOW').length,
     red:    programs.filter(p => normalizeHealthStatus(p.healthStatus) === 'RED').length,
   }
-  // Program butuh perhatian = health RED (Delayed). Sebelumnya OR riskScore>=15 —
-  // dilepas: ATLAS bukan app manajemen risiko, skor risiko ditiadakan (2026-06-02).
-  const attentionPrograms = programs.filter(p => normalizeHealthStatus(p.healthStatus) === 'RED').length
 
-  // ── Portfolio insight panels (data dari programSummary, sama dgn Home) ──
-  // Fokus EKSEKUSI PROGRAM (bukan KPI/risiko) — Sebaran tenggat, Laju eksekusi,
-  // dan Kesehatan per divisi. Tidak ada query baru; semua derive dari payload.
-  const trendValues = (programSummary?.trendSeries ?? []).slice(-14).map(t => t.pctOnTrack)
-  const onTrackTrendDelta = trendValues.length >= 2
-    ? trendValues[trendValues.length - 1] - trendValues[0]
-    : null
-  // Horizon di-derive client-side dari programsForChart (bukan deadlineClusters
-  // backend) supaya bisa pisahkan bucket "Lewat" — di backend program overdue
-  // tertelan di "≤ 30 hari" (days <= 30 termasuk negatif), menyembunyikan yang
-  // paling genting. Tanpa ubah backend (Home tetap memakai cluster lama).
-  const horizonBars = (() => {
-    const chart = programSummary?.programsForChart ?? []
-    const defs: Array<{ label: string; test: (d: number | null) => boolean; forceRed?: boolean }> = [
-      { label: 'Overdue', test: d => d != null && d < 0, forceRed: true },
-      { label: '≤ 30 days', test: d => d != null && d >= 0 && d <= 30 },
-      { label: '31–60 days', test: d => d != null && d > 30 && d <= 60 },
-      { label: '61–90 days', test: d => d != null && d > 60 && d <= 90 },
-      { label: '90+ days', test: d => d != null && d > 90 },
-    ]
-    return defs.map(def => {
-      const items = chart.filter(p => def.test(p.daysRemaining))
-      const atRisk = items.filter(p => p.healthTone === 'at_risk' || p.healthTone === 'terlambat' || p.healthTone === 'overdue').length
-      const onTrack = items.filter(p => p.healthTone === 'on_track').length
-      const tone: Tone = def.forceRed ? 'red' : atRisk > 0 ? (atRisk >= onTrack ? 'red' : 'amber') : 'green'
-      return { label: def.label, value: items.length, tone, valueLabel: String(items.length) }
-    }).filter(c => c.value > 0)
-  })()
-  const momentum = programSummary?.momentum
-  const activeRatePct = momentum
-    ? Math.round((momentum.activeRate ?? 0) * (momentum.activeRate <= 1 ? 100 : 1))
-    : 0
-  const activeRateTone: Tone = activeRatePct >= 60 ? 'green' : activeRatePct >= 30 ? 'amber' : 'red'
-  const momentumStats = momentum ? [
-    { label: 'Completed · 30 days', value: momentum.programsCompletedLast30d, tone: 'green' as Tone },
-    { label: 'New · 30 days', value: momentum.newProgramsLast30d, tone: 'neutral' as Tone },
-    { label: 'Tasks done · this week', value: momentum.tasksCompletedThisWeek, tone: 'green' as Tone },
-    { label: 'Stalled', value: momentum.stagnantCount, tone: (momentum.stagnantCount > 0 ? 'red' : 'green') as Tone },
-  ] : []
-  const divisiHealthRows = [...(programSummary?.byDivisi ?? [])]
-    .filter(d => d.unit.id !== null && d.total > 0)
-    .map(d => ({
-      code: d.unit.code.split('-')[0],
-      name: d.unit.name,
-      total: d.total,
-      onTrack: d.onTrack,
-      atRisk: d.atRisk,
-      terlambat: (d.terlambat ?? 0) + (d.overdue ?? 0),
-      selesai: d.selesai,
-    }))
-    .sort((a, b) => (b.terlambat - a.terlambat) || (b.total - a.total))
-    .slice(0, 6)
-  const showInsight = programs.length > 0 && !!programSummary
 
   const daysUntil = (dateStr: string) =>
     Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
@@ -1133,26 +1018,39 @@ export function ProgramsView() {
 
   // Lane grouping
   type Group = { key: string; label: string; tone: string; items: typeof programs }
+  // Surface exceptions first: nearest deadline, then lowest progress.
+  const byUrgency = (a: (typeof programs)[number], b: (typeof programs)[number]) => {
+    const da = a.targetEndDate ? Date.parse(a.targetEndDate) : Number.POSITIVE_INFINITY
+    const db = b.targetEndDate ? Date.parse(b.targetEndDate) : Number.POSITIVE_INFINITY
+    if (da !== db) return da - db
+    return a.progressPercent - b.progressPercent
+  }
   let laneGroups: Group[] = []
   if (laneGrouping === 'status') {
     laneGroups = STATUS_ORDER.map(s => ({
       key: s, label: formatStatusLabel(s), tone: s.toLowerCase(),
-      items: filteredLane.filter(p => p.status === s),
+      items: filteredLane.filter(p => p.status === s).sort(byUrgency),
     })).filter(g => g.items.length > 0)
   } else if (laneGrouping === 'priority') {
     laneGroups = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(pri => ({
       key: pri, label: pri,
       tone: pri.toLowerCase(),
-      items: filteredLane.filter(p => p.priority === pri),
+      items: filteredLane.filter(p => p.priority === pri).sort(byUrgency),
     })).filter(g => g.items.length > 0)
   } else {
     laneGroups = ['GREEN', 'YELLOW', 'RED'].map(h => ({
       key: h,
       label: h === 'GREEN' ? 'On Track' : h === 'YELLOW' ? 'At Risk' : 'Delayed',
       tone: h.toLowerCase(),
-      items: filteredLane.filter(p => normalizeHealthStatus(p.healthStatus) === h),
+      items: filteredLane.filter(p => normalizeHealthStatus(p.healthStatus) === h).sort(byUrgency),
     })).filter(g => g.items.length > 0)
   }
+  // Low-attention lanes (healthy / done / low priority) collapse by default.
+  const defaultLaneCollapsed = (g: Group) =>
+    g.tone === 'green' || g.key === 'COMPLETED' || g.key === 'CANCELLED' || g.key === 'LOW'
+  const isLaneCollapsed = (g: Group) => laneOverrides[g.key] ?? defaultLaneCollapsed(g)
+  const toggleLane = (g: Group) =>
+    setLaneOverrides(prev => ({ ...prev, [g.key]: !(prev[g.key] ?? defaultLaneCollapsed(g)) }))
 
   // ── Pulse filter state ─────────────────────────────────────────────────
   const [pulseFilter, setPulseFilter] = useState<'all' | number>('all')
@@ -1220,165 +1118,6 @@ export function ProgramsView() {
         }
       />
 
-      {/* ── Portfolio stats strip ──────────────────────────────────────────
-          Glance summary dengan donut chart sebagai visualisasi utama health
-          distribution. Total program ditampilkan di tengah donut — menghapus
-          stat cell terpisah yang redundan. Pure SVG, no chart library. */}
-      {programs.length > 0 && (
-        <div className="programs-v2__hero-stats">
-          <div className="programs-v2__stat programs-v2__stat--donut">
-            <HealthDonut
-              green={healthMix.green}
-              yellow={healthMix.yellow}
-              red={healthMix.red}
-              total={programs.length}
-            />
-            <div className="programs-v2__health-legend programs-v2__health-legend--column">
-              <span className="programs-v2__health-legend-item">
-                <i className="programs-v2__health-dot programs-v2__health-dot--green" />
-                On Track <strong>{healthMix.green}</strong>
-              </span>
-              <span className="programs-v2__health-legend-item">
-                <i className="programs-v2__health-dot programs-v2__health-dot--yellow" />
-                At Risk <strong>{healthMix.yellow}</strong>
-              </span>
-              <span className="programs-v2__health-legend-item">
-                <i className="programs-v2__health-dot programs-v2__health-dot--red" />
-                Delayed <strong>{healthMix.red}</strong>
-              </span>
-            </div>
-          </div>
-
-          <div className="programs-v2__stat">
-            <div className="programs-v2__stat-num">{avgProgress}<span className="programs-v2__stat-num-unit">%</span></div>
-            <div className="programs-v2__stat-label">Average Progress</div>
-            <div className="programs-v2__progress-bar">
-              <span style={{ width: `${Math.min(avgProgress, 100)}%` }} />
-            </div>
-          </div>
-
-          {(attentionPrograms > 0 || needsActionPrograms.length > 0) && (
-            <button
-              type="button"
-              className="programs-v2__stat programs-v2__stat--action"
-              onClick={() => {
-                setTab('portfolio')
-                if (needsActionPrograms.length > 0) {
-                  setApprovalFilter('needs_action')
-                } else {
-                  router.visit('/programs?status=at_risk,terlambat', {
-                    preserveState: true, preserveScroll: true, replace: true,
-                  })
-                }
-              }}
-              title={needsActionPrograms.length > 0
-                ? 'Filter programs awaiting your action'
-                : 'Filter at-risk programs (At Risk + Delayed)'}
-            >
-              <div className="programs-v2__stat-num">
-                {needsActionPrograms.length > 0 ? needsActionPrograms.length : attentionPrograms}
-              </div>
-              <div className="programs-v2__stat-label">
-                {needsActionPrograms.length > 0 ? 'Needs Your Action' : 'Needs Attention'}
-                <span className="programs-v2__stat-arrow"> →</span>
-              </div>
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* ── Portfolio insight row — 3 panel eksekusi (Horizon / Momentum /
-          Health per divisi). Data dari programSummary, primitive design-system.
-          Memperkaya halaman mendekati command center Home tanpa duplikasi:
-          fokus eksekusi program, bukan KPI/risiko. ───────────────────────── */}
-      {showInsight && (
-        <div className="programs-insight">
-          {/* Horizon tenggat — beban program aktif per jendela deadline */}
-          <div className="programs-insight__panel">
-            <header className="programs-insight__head">
-              <span className="programs-insight__eyebrow">Deadlines</span>
-              <span className="programs-insight__hint">active programs</span>
-            </header>
-            {horizonBars.length > 0 ? (
-              <Bars bars={horizonBars} height={88} rich />
-            ) : (
-              <p className="programs-insight__empty">No active programs with deadlines.</p>
-            )}
-          </div>
-
-          {/* Momentum eksekusi — laju portfolio bergerak */}
-          <div className="programs-insight__panel">
-            <header className="programs-insight__head">
-              <span className="programs-insight__eyebrow">Momentum</span>
-            </header>
-            <div className="programs-insight__momentum">
-              <Donut
-                segments={[{ value: activeRatePct, tone: activeRateTone }]}
-                max={100}
-                size={60}
-                thickness={8}
-                rich
-                centerValue={`${activeRatePct}%`}
-              />
-              <div className="programs-insight__mtrend">
-                <span className="programs-insight__msub">active programs moving</span>
-                {trendValues.length >= 2 && (
-                  <Sparkline values={trendValues} tone={activeRateTone} width={150} height={36} smooth />
-                )}
-                <span className="programs-insight__mcap">
-                  on-track trend · 14 days
-                  {onTrackTrendDelta != null && <Delta value={onTrackTrendDelta} suffix="%" />}
-                </span>
-              </div>
-            </div>
-            {momentumStats.length > 0 && (
-              <div className="programs-insight__mstats">
-                {momentumStats.map(s => (
-                  <div key={s.label} className="programs-insight__mstat">
-                    <span className="programs-insight__mstat-val" data-tone={s.tone}>{s.value}</span>
-                    <span className="programs-insight__mstat-label">{s.label}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Health per divisi — komposisi On Track / At Risk / Terlambat */}
-          <div className="programs-insight__panel">
-            <header className="programs-insight__head">
-              <span className="programs-insight__eyebrow">Health by division</span>
-              {divisiHealthRows.length > 0 && (
-                <span className="programs-insight__hint">{divisiHealthRows.length} divisions</span>
-              )}
-            </header>
-            {divisiHealthRows.length > 0 ? (
-              <div className="programs-insight__divlist">
-                {divisiHealthRows.map(d => {
-                  const pct = (n: number) => `${(n / d.total) * 100}%`
-                  return (
-                    <div
-                      key={d.code}
-                      className="programs-insight__divrow"
-                      title={`${d.name} — ${d.onTrack} on track · ${d.atRisk} at risk · ${d.terlambat} delayed · ${d.selesai} done · ${d.total} total`}
-                    >
-                      <span className="programs-insight__divcode">{d.code}</span>
-                      <span className="programs-insight__divbar" aria-hidden="true">
-                        {d.onTrack > 0 && <i className="programs-insight__seg programs-insight__seg--green" style={{ width: pct(d.onTrack) }} />}
-                        {d.atRisk > 0 && <i className="programs-insight__seg programs-insight__seg--amber" style={{ width: pct(d.atRisk) }} />}
-                        {d.terlambat > 0 && <i className="programs-insight__seg programs-insight__seg--red" style={{ width: pct(d.terlambat) }} />}
-                        {d.selesai > 0 && <i className="programs-insight__seg programs-insight__seg--done" style={{ width: pct(d.selesai) }} />}
-                      </span>
-                      <span className="programs-insight__divtotal">{d.total}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <p className="programs-insight__empty">No division data yet.</p>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* ── Tabs ────────────────────────────────────────────────────────── */}
       <nav className="programs-v2__tabs scroll-tabs" role="tablist" aria-label="Program views">
@@ -1420,10 +1159,10 @@ export function ProgramsView() {
         <div className="programs-controls">
           <div className="programs-controls__filters" role="group" aria-label="Filter program">
             {([
-              ['GREEN',  'On Track',  'green'],
-              ['YELLOW', 'At Risk',   'amber'],
-              ['RED',    'Delayed',   'red'],
-            ] as const).map(([tone, label, toneClass]) => {
+              ['GREEN',  'On Track',  'green',  healthMix.green],
+              ['YELLOW', 'At Risk',   'amber',  healthMix.yellow],
+              ['RED',    'Delayed',   'red',    healthMix.red],
+            ] as const).map(([tone, label, toneClass, count]) => {
               const active = urlStatusFilter.has(tone)
               return (
                 <button
@@ -1435,6 +1174,7 @@ export function ProgramsView() {
                 >
                   <span className="programs-filter-chip__dot" aria-hidden="true" />
                   {label}
+                  <span className="programs-filter-chip__count">{count}</span>
                 </button>
               )
             })}
@@ -1467,6 +1207,9 @@ export function ProgramsView() {
             >
               <span className="programs-filter-chip__dot" aria-hidden="true" />
               Completed
+              <span className="programs-filter-chip__count">
+                {programs.filter(p => p.status === 'COMPLETED' || p.approvalStatus === 'COMPLETED').length}
+              </span>
             </button>
             {/* Chip deep-link aktif (division/deadline/progress) — bisa di-clear per nilai */}
             {Array.from(urlDivisionFilter).map(code => (
@@ -1932,13 +1675,32 @@ export function ProgramsView() {
                     <p className="text-sm text-muted roadmap-empty">No matching programs.</p>
                   ) : (
                     <>
-                      {laneGroups.map(group => (
-                        <div className="roadmap-lane" key={group.key}>
-                          <div className={`roadmap-lane__header${group.key === 'ON_HOLD' ? ' roadmap-lane__header--on-hold' : ''}`}>
+                      <div className="roadmap-head" aria-hidden="true">
+                        <span className="roadmap-head__code" />
+                        <span className="roadmap-head__title">Program</span>
+                        <span className="roadmap-head__progress">Progress</span>
+                        <span className="roadmap-head__pct">%</span>
+                        <span className="roadmap-head__risk" />
+                        <span className="roadmap-head__owner">Owner</span>
+                      </div>
+                      {laneGroups.map(group => {
+                        const collapsed = isLaneCollapsed(group)
+                        return (
+                        <div className={`roadmap-lane${collapsed ? ' roadmap-lane--collapsed' : ''}`} key={group.key}>
+                          <button
+                            type="button"
+                            className={`roadmap-lane__header${group.key === 'ON_HOLD' ? ' roadmap-lane__header--on-hold' : ''}`}
+                            onClick={() => toggleLane(group)}
+                            aria-expanded={!collapsed}
+                          >
+                            <svg className="roadmap-lane__chevron" width="11" height="11" viewBox="0 0 12 12" aria-hidden="true">
+                              <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
                             <span className={`roadmap-lane__dot roadmap-lane__dot--${group.tone}`} />
                             <span className="roadmap-lane__label">{group.label}</span>
                             <span className="section-badge">{group.items.length}</span>
-                          </div>
+                          </button>
+                          {!collapsed && (
                           <div className="roadmap-lane__body">
                             {group.items.map(prog => {
                               const health = normalizeHealthStatus(prog.healthStatus)
@@ -1969,8 +1731,10 @@ export function ProgramsView() {
                               )
                             })}
                           </div>
+                          )}
                         </div>
-                      ))}
+                        )
+                      })}
 
                     </>
                   )}

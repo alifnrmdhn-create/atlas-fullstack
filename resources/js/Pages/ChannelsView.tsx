@@ -531,6 +531,7 @@ type ChannelsViewProps = {
   typingUsers: { userId: number; userName: string }[]
   onComposerChange: (value: string) => void
   onSelectChannel: (channelId: number) => void
+  onCloseConversation: () => void
   onSelectThread: (threadId: number | null) => void
   onReactEmoji: (messageId: number, emoji: string) => void
   onEditMessage: (messageId: number, content: string) => Promise<void>
@@ -585,6 +586,7 @@ export function ChannelsView({
   typingUsers = [],
   onComposerChange,
   onSelectChannel,
+  onCloseConversation,
   onSelectThread,
   onReactEmoji,
   onEditMessage,
@@ -1625,7 +1627,7 @@ export function ChannelsView({
           ) : undefined
         }
       />
-    <section className="channels-layout channels-layout--polished" style={{ flex: 1, minHeight: 0 }}>
+    <section className={`channels-layout channels-layout--polished${selectedChannelId ? ' has-conversation' : ''}`} style={{ flex: 1, minHeight: 0 }}>
       {/* ── Channel sidebar (compact, Slack-style) ──────────── */}
       <aside className="panel channel-panel">
         <div className="channel-sidebar channel-sidebar--compact">
@@ -1864,6 +1866,14 @@ export function ChannelsView({
         {/* Slim 1-row header — only when a channel or DM is selected */}
         {(selectedChannel || selectedDmPartner) && (
         <div className="channel-header-slim">
+          <button
+            className="channel-header-slim__back"
+            onClick={onCloseConversation}
+            type="button"
+            aria-label="Kembali ke daftar channel"
+          >
+            <svg fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="16"><path d="M10 3L5 8l5 5" /></svg>
+          </button>
           <div className="channel-header-slim__title">
             {selectedDmPartner ? (
               <>
@@ -2188,26 +2198,6 @@ export function ChannelsView({
                   ? <><span className="jump-to-bottom__count">{floatingNewCount} new</span> ↓</>
                   : '↓'}
               </button>
-            )}
-            {/* Channel intro card — shown above the very first message group, hidden for DMs */}
-            {streamMode === 'all' && !searchActive && selectedChannel && !selectedDmPartner && (
-              <div className="channel-intro-card">
-                <div className="channel-intro-card__icon">
-                  {selectedChannel.type === 'PRIVATE' ? <IcoLock /> : '#'}
-                </div>
-                <div className="channel-intro-card__body">
-                  <div className="channel-intro-card__headline">
-                    <h3 className="channel-intro-card__name">{selectedChannel.name}</h3>
-                    <span className="channel-intro-card__membercount">
-                      <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="10"><circle cx="6" cy="5" r="2.5"/><path d="M1.5 14c0-3 2-4.5 4.5-4.5s4.5 1.5 4.5 4.5"/><circle cx="11.5" cy="5" r="2"/><path d="M13.5 14c0-2.5-1.5-4-3.5-4.5"/></svg>
-                      {selectedChannel.memberCount}
-                    </span>
-                    {selectedChannel.type === 'PRIVATE' && (
-                      <span className="channel-intro-card__private-badge"><IcoLock /> Private</span>
-                    )}
-                  </div>
-                </div>
-              </div>
             )}
             {groupedMessages.map((group) => (
               <div className="message-group" key={group.dateKey}>

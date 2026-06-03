@@ -2372,3 +2372,16 @@
 .forecast-badge--yellow { color: var(--yellow-ink); border-color: color-mix(in srgb, var(--yellow-ink) 30%, var(--panel-border)); }
 .forecast-badge--red    { color: var(--red-ink); border-color: color-mix(in srgb, var(--red-ink) 35%, var(--panel-border)); }
 .forecast-badge--muted  { color: var(--text-muted); }
+
+/* Touch (hover:none): tombol topbar search/bell jangan sticky-hover sesudah
+   tap — balikkan ke base, ganti dgn :active press. 2026-06-03. */
+@media (hover: none) {
+  .topbar__cmdk:hover,
+  .topbar__notif-btn:hover {
+    background: var(--panel);
+    border-color: var(--panel-border);
+    color: var(--text-muted);
+  }
+  .topbar__cmdk:active,
+  .topbar__notif-btn:active { background: var(--surface-1); }
+}

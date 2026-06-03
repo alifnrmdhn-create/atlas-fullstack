@@ -50,12 +50,46 @@ class ProgramCharterService
     private function loadTasks(Program $program): \Illuminate\Support\Collection
     {
         return Task::query()
-            ->select(['id', 'title', 'output', 'status', 'plannedWeeks', 'actualWeeks', 'initiativeId'])
+            ->select(['id', 'title', 'output', 'status', 'percentComplete', 'plannedWeeks', 'actualWeeks', 'initiativeId'])
             ->whereIn('initiativeId', $program->workstreams->pluck('id'))
             ->with(['workstream:id,name,programId'])
             ->orderBy('initiativeId')
             ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * Realized weeks untuk satu task.
+     *
+     * `actualWeeks = null` di DB itu SINYAL "derive dari status +
+     * percentComplete", bukan "nol realisasi" — konvensi yang sama
+     * dipakai ProgramController::buildWorkstreamRollup dan
+     * ExecutionGridController::buildSteps. Sebelumnya CharterService
+     * membaca actualWeeks mentah, jadi baris REAL + % achievement selalu
+     * kosong meski tab Eksekusi menampilkan progres dari data yang sama.
+     *
+     * Non-null actualWeeks (termasuk []) = override manual, dihormati apa adanya.
+     */
+    private function deriveActualWeeks(Task $task): array
+    {
+        $stored = $task->actualWeeks;
+        if (is_array($stored)) {
+            return $stored;
+        }
+
+        $planned = is_array($task->plannedWeeks) ? $task->plannedWeeks : [];
+        sort($planned); // "YYYY-Www" zero-padded → lexical sort == kronologis
+        $total = count($planned);
+        $pct = (int) ($task->percentComplete ?? 0);
+
+        if (in_array($task->status, ['COMPLETED', 'IN_REVIEW'], true)) {
+            return $planned;
+        }
+        if ($task->status === 'IN_PROGRESS' && $pct > 0 && $total > 0) {
+            $n = max(1, min((int) round(($pct / 100) * $total), $total));
+            return array_slice($planned, 0, $n);
+        }
+        return [];
     }
 
     /**
@@ -76,7 +110,7 @@ class ProgramCharterService
 
         return $tasks->map(function (Task $task) use ($year, $currentMonth, $currentYear) {
             $planned = is_array($task->plannedWeeks) ? $task->plannedWeeks : [];
-            $actual = is_array($task->actualWeeks) ? $task->actualWeeks : [];
+            $actual = $this->deriveActualWeeks($task);
 
             $months = [];
             foreach (self::MONTH_LABELS as $monthNum => $label) {
@@ -137,7 +171,8 @@ class ProgramCharterService
     {
         $health = $this->mapHealth($program);
         $totalCount = $tasks->count();
-        $completedCount = $tasks->where('status', 'DONE')->count();
+        // DB pakai status 'COMPLETED' (bukan 'DONE') — cek 'DONE' lama selalu 0.
+        $completedCount = $tasks->whereIn('status', ['COMPLETED', 'DONE'])->count();
         $achievementPct = $this->computeAchievementPct($program, $tasks);
 
         return [
@@ -173,10 +208,14 @@ class ProgramCharterService
 
         foreach ($tasks as $task) {
             $planned = is_array($task->plannedWeeks) ? $task->plannedWeeks : [];
-            $actual = is_array($task->actualWeeks) ? $task->actualWeeks : [];
+            $actual = $this->deriveActualWeeks($task);
 
-            $plannedToDate += count(array_filter($planned, fn ($w) => (int) $w <= $cutoffWeek));
-            $realizedToDate += count(array_filter($actual, fn ($w) => (int) $w <= $cutoffWeek));
+            // Parse via mapper — `(int) "2026-W09"` salah jadi 2026, bukan 9.
+            $plannedNums = WeekToMonthMapper::weekNumbersForYear($planned, $year);
+            $actualNums = WeekToMonthMapper::weekNumbersForYear($actual, $year);
+
+            $plannedToDate += count(array_filter($plannedNums, fn ($w) => $w <= $cutoffWeek));
+            $realizedToDate += count(array_filter($actualNums, fn ($w) => $w <= $cutoffWeek));
         }
 
         if ($plannedToDate === 0) {
@@ -188,14 +227,15 @@ class ProgramCharterService
 
     private function buildKpiBlock(Program $program): ?array
     {
-        // kelompok di-cast ke Kelompok enum di Program model. Comparison
-        // langsung enum !== 'SCORECARD' ALWAYS true (PHP strict type mismatch
-        // antara backed enum object vs string) → fungsi ini SEBELUMNYA selalu
-        // return null untuk SEMUA program. Silent bug — KPI block di Charter
-        // tidak pernah render. Fix: compare via ->value.
-        if ($program->kelompok?->value !== 'SCORECARD') {
-            return null;
-        }
+        // Tampilkan KPI apa pun yang punya KpiDefinition aktif — baik KPI
+        // APMS/scorecard (kelompok SCORECARD, di-link via ProgramKpiLink lalu
+        // di-materialize ke KpiDefinition) MAUPUN KPI internal/non-APMS yang
+        // didefinisikan owner sendiri lewat tab KPI (program non-scorecard).
+        //
+        // Gate lama `kelompok !== 'SCORECARD'` menyembunyikan KPI non-APMS →
+        // 69 program non-scorecard SELALU tampil "Non-Scorecard" meski owner
+        // sudah mengisi Internal KPI. Yang menentukan render bukan kelompok,
+        // tapi ada/tidaknya KpiDefinition.
         $kpi = KpiDefinition::query()
             ->where('programId', $program->id)
             ->where('isActive', true)

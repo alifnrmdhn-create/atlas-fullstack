@@ -74,7 +74,9 @@ export function HeaderStrip({ program, status, kpi, actionSlot }: Props) {
             <div className="cs-header__sub">Target {kpi.target.toLocaleString('en-US')} {kpi.unit}</div>
           </>
         ) : (
-          <div className="cs-header__sub cs-header__sub--muted">Non-Scorecard</div>
+          // kpi null = belum ada KpiDefinition (APMS maupun internal). Bukan
+          // "non-scorecard" — owner bisa menetapkannya via tab KPI program.
+          <div className="cs-header__sub cs-header__sub--muted">Not set</div>
         )}
       </div>
 

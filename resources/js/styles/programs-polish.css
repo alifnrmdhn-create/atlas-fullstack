@@ -118,11 +118,14 @@
   color: var(--text-strong) !important;
 }
 
-/* Bar row: proper breathing, slimmer progress bar */
+/* Bar row: dense table-like row, single line, scannable.
+   Was 14px pad + 2-line name = ~55px/row → endless scroll with 49 programs.
+   Now ~34px/row halves the lane height. */
 .programs-v2 .roadmap-bar,
 .view-programs .roadmap-bar {
-  padding: 14px 18px !important;
+  padding: 7px 18px !important;
   gap: 16px !important;
+  align-items: center !important;
   border-bottom: 1px solid var(--panel-border-soft) !important;
 }
 .programs-v2 .roadmap-bar:hover,
@@ -136,7 +139,8 @@
   margin-right: 4px;
 }
 
-/* Program name in Timeline lane row — allow 2-line wrap (no ellipsis cut) */
+/* Program name in Timeline lane row — single line, ellipsis (full name on
+   hover via title attr). Keeps each row to one line so the lane stays dense. */
 .programs-v2 .roadmap-bar__title,
 .view-programs .roadmap-bar__title {
   min-width: 0;
@@ -146,14 +150,11 @@
   font-size: 12.5px !important;
   font-weight: 600 !important;
   color: var(--text-strong) !important;
-  white-space: normal !important;
-  display: -webkit-box !important;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: nowrap !important;
+  display: block !important;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 /* Slim progress bar (was 20px tall — too dominant) */
@@ -250,7 +251,7 @@
 .view-programs .monitoring-matrix__table th,
 .view-programs .monitoring-matrix__table td {
   border-bottom: 1px solid var(--panel-border-soft) !important;
-  padding: 10px 8px !important;
+  padding: 6px 8px !important;
 }
 .programs-v2 .monitoring-matrix__table th,
 .view-programs .monitoring-matrix__table th {
@@ -278,15 +279,12 @@
   font-size: 13px !important;
   color: var(--text-strong) !important;
   font-weight: 600 !important;
-  /* Allow 2-line wrap with ellipsis on overflow — long program names readable */
-  white-space: normal !important;
-  display: -webkit-box !important;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
+  /* Single line + ellipsis (full name on hover via title) keeps rows dense */
+  white-space: nowrap !important;
+  display: block !important;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 /* Progress column */
@@ -3564,3 +3562,91 @@ select.prog-strategic__input {
 .prog-achievement__ws--green .prog-achievement__ws-pct { color: var(--green); }
 .prog-achievement__ws--yellow .prog-achievement__ws-pct { color: var(--yellow); }
 .prog-achievement__ws--red .prog-achievement__ws-pct { color: var(--red); }
+
+/* ═══════════ Timeline + Monitoring density pass (Jun 2026) ═══════════
+   Column header on Timeline lanes, collapsible lane groups, and a sticky
+   header for the Monitoring matrix so long lists read as real tables. */
+
+/* ── Timeline: column header strip ────────────────────────────────
+   Mirrors the .roadmap-bar flex columns (code | title | progress 200 |
+   pct 40 | risk 52 | owner) so labels sit above their columns. Sticky to
+   the workspace scroll so headers stay while scrolling lanes. */
+.programs-v2 .roadmap-head,
+.view-programs .roadmap-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 18px;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--app-bg);
+  border-bottom: 1px solid var(--panel-border-soft);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.programs-v2 .roadmap-head__code,
+.view-programs .roadmap-head__code {
+  /* aligns with code-badge column — badge auto width ~ 96px incl. margin */
+  width: 96px;
+  flex-shrink: 0;
+}
+.programs-v2 .roadmap-head__title,
+.view-programs .roadmap-head__title { flex: 1; min-width: 0; }
+.programs-v2 .roadmap-head__progress,
+.view-programs .roadmap-head__progress { width: 200px; flex-shrink: 0; }
+.programs-v2 .roadmap-head__pct,
+.view-programs .roadmap-head__pct { width: 40px; flex-shrink: 0; }
+.programs-v2 .roadmap-head__risk,
+.view-programs .roadmap-head__risk { width: 52px; flex-shrink: 0; }
+.programs-v2 .roadmap-head__owner,
+.view-programs .roadmap-head__owner { width: 120px; flex-shrink: 0; }
+
+/* ── Timeline: collapsible lane header (now a <button>) ───────────── */
+.programs-v2 .roadmap-lane__header,
+.view-programs .roadmap-lane__header {
+  width: 100%;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  appearance: none;
+}
+.programs-v2 .roadmap-lane__header:hover,
+.view-programs .roadmap-lane__header:hover {
+  background: var(--surface-1) !important;
+}
+.programs-v2 .roadmap-lane__chevron,
+.view-programs .roadmap-lane__chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 140ms ease;
+}
+.programs-v2 .roadmap-lane:not(.roadmap-lane--collapsed) .roadmap-lane__chevron,
+.view-programs .roadmap-lane:not(.roadmap-lane--collapsed) .roadmap-lane__chevron {
+  transform: rotate(90deg);
+}
+/* Collapsed lane drops its bottom border so headers stack tight */
+.programs-v2 .roadmap-lane--collapsed .roadmap-lane__header,
+.view-programs .roadmap-lane--collapsed .roadmap-lane__header {
+  border-bottom: 0 !important;
+}
+
+/* ── Monitoring: sticky header + internal scroll ──────────────────
+   overflow-x forces overflow-y→auto, so the wrapper is the scroll
+   context; cap its height so sticky thead actually sticks instead of
+   the whole page scrolling the header out of view. */
+.programs-v2 .monitoring-matrix__scroll,
+.view-programs .monitoring-matrix__scroll {
+  max-height: calc(100vh - 300px);
+  overflow: auto;
+}
+.programs-v2 .monitoring-matrix__table thead th,
+.view-programs .monitoring-matrix__table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--app-bg);
+}

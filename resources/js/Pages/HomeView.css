@@ -3443,3 +3443,79 @@ button.hvc__hcard:hover .hvc__arrow { transform: translateX(3px); }
 .hvc__verdict-card .hvc__intel-delta[data-tone="amber"] { color: var(--tone-amber); }
 .hvc__verdict-card .hvc__intel-delta[data-tone="red"],
 .hvc__verdict-card .hvc__intel-deltawrap b[data-tone="red"]   { color: var(--tone-red); }
+
+/* ════════════════════════════════════════════════════════════════════
+   PHONE DENSITY PASS (≤640) — 2026-06-03
+   Tujuan: rasa "app native" (Livin/Grab) → muat lebih banyak kartu per layar
+   TANPA ubah IA/konten. Hanya merapatkan whitespace (gap/padding/min-height).
+   ATURAN: angka hero (.hvc__hcard-big, gauge) TIDAK dikecilkan — pakem eksekutif
+   = glanceable ≤3 detik. Tap target (link/tombol) tinggi tetap ≥44px. Desktop
+   tak tersentuh. Block di akhir file → menang source-order atas ≤640 lain.
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  /* Ritme antar-seksi lebih rapat: 24/20 → 16; mulai lebih dekat ke topbar. */
+  .hv { padding-top: var(--ds-space-3); gap: var(--ds-space-4); }
+  .hv__greeting { font-size: var(--ds-text-17, 1.0625rem); }
+
+  /* Verdict "Action needed": padding utama + sub-baris intel dipadatkan. */
+  .hvc__verdict-main { padding: var(--ds-space-3); }
+  .hvc__verdict-card .hvc__intel { padding-top: var(--ds-space-2); padding-bottom: var(--ds-space-2); }
+
+  /* Hero cards: floor min-height turun (kartu pendek tak lagi dipaksa 158px),
+     padding internal & jarak antar-kartu dipangkas. Kartu berkonten panjang
+     (Exec gauge) tetap tumbuh natural — min-height cuma lantai, bukan clip. */
+  .hvc__maphero { gap: var(--ds-space-3); }
+  .hv--cockpit .hvc__hcard { min-height: 118px; }
+  .hvc__hcard-body { padding: var(--ds-space-3) var(--ds-space-3) var(--ds-space-2); }
+  .hvc__hcard-link { padding-top: var(--ds-space-2); padding-bottom: var(--ds-space-3); padding-left: var(--ds-space-3); }
+
+  /* ── 2-kolom selektif (pilihan user 2026-06-03, "Pasangan aman") ──────────
+     KPI ⟷ Delayed bersanding: keduanya stat-tile murni + sandingan
+     lagging⟷leading (pakem Kaplan-Norton). Exec Health (gauge+legend) &
+     Needs Decision (list) span penuh — butuh lebar. Action needed/verdict di
+     LUAR .hvc__hud → tetap full otomatis. Pakai `order` sebab urutan DOM =
+     KPI,Exec,Delayed,Decision; tanpa order, Exec(span-2) menyisakan sel kosong
+     di baris KPI. WAJIB prefix `.hv--cockpit` (spesifisitas 0,2,0): rule
+     `.hv--cockpit .hvc__hud{1fr}` di ≤640/≤768 (L2930/3190/3329) mengalahkan
+     `.hvc__hud` polos (0,1,0). Blok ini paling akhir → menang source-order. */
+  .hv--cockpit .hvc__hud { grid-template-columns: 1fr 1fr; gap: var(--ds-space-3); }
+  .hv--cockpit .hvc__hcard--kpi   { order: 1; }
+  .hv--cockpit .hvc__hcard--late  { order: 2; }
+  .hv--cockpit .hvc__hcard--exec  { order: 3; grid-column: 1 / -1; }
+  .hv--cockpit .hvc__hcard--inbox { order: 4; grid-column: 1 / -1; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   TOUCH INTERACTION (hover:none) — 2026-06-03
+   Di touch tak ada state hover: efek hover (lift/highlight) malah NYANGKUT
+   sesudah tap ("sticky-hover") → terlihat seperti bug. Gate `hover:none`
+   (bukan width — laptop-touch lebar pun ikut benar). Netralkan lift/bg lalu
+   ganti dgn `:active` press (umpan-balik tap instan, rasa native).
+   CATATAN: hanya selektor lift translateY/scale (base transform = none → aman
+   di-reset none). `.hvc__tl2-dot` SENGAJA tak disentuh (transform-nya
+   translateX(-50%) utk centering, bukan lift — reset none akan merusak posisi).
+   ════════════════════════════════════════════════════════════════════ */
+@media (hover: none) {
+  /* matikan lift/scale hover (sumber sticky-hover paling kentara) */
+  .hv--cockpit .hvc__stat:hover,
+  .hv--cockpit button.hvc__hcard:hover,
+  .hv--cockpit .hvc__tcard:hover,
+  .hv--cockpit .hvc__shortcut:hover,
+  .hv--cockpit .hvc__shortcuts--chips .hvc__shortcut:hover,
+  .hv--cockpit .hvc__hud-item--btn:hover,
+  .hv--cockpit .ds-card:hover,
+  .hv--cockpit .hvc__hb-chip:hover,
+  .hvc__verdict:hover { transform: none; }
+
+  /* matikan highlight background yang nyangkut (base = transparan/none) */
+  .hvc__inbox-row:hover,
+  .hvc__verdict-main:hover { background: transparent; }
+
+  /* :active — press momentary saat disentuh (menggantikan feedback hover) */
+  .hv--cockpit button.hvc__hcard:active,
+  .hv--cockpit .hvc__shortcut:active,
+  .hv--cockpit .hvc__hud-item--btn:active,
+  .hv--cockpit .hvc__stat:active { transform: scale(0.985); transition: transform .08s ease; }
+  .hvc__inbox-row:active,
+  .hvc__verdict-main:active { background: color-mix(in srgb, var(--ds-text-primary) 6%, transparent); }
+}

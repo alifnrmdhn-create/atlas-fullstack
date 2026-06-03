@@ -1570,10 +1570,15 @@ export function AppShell({ children }: { children?: ReactNode }) {
            4 destinasi inti + "Menu" yang membuka drawer lengkap. Hanya phone. */}
       {viewportPhone ? (
         <nav className="mobile-tabbar" aria-label="Navigasi utama">
+          {/* Badge bottom-nav HANYA untuk sinyal unread/butuh-aksi (Channels).
+           * Workboard/Programs dulu pakai count total (tasksCount/programsCount)
+           * → dot mengambang yang selalu nyala terbaca sebagai notifikasi padahal
+           * cuma jumlah katalog/antrian. Count tetap tersedia inline di sidebar
+           * (afordans inventaris, bukan dot). 2026-06-03. */}
           {[
             { path: '/',           label: 'Home',      icon: IconHome,      badge: 0 },
-            { path: '/execution',  label: 'Workboard', icon: IconExecution, badge: tasksCount },
-            { path: '/programs',   label: 'Programs',  icon: IconPrograms,  badge: programsCount },
+            { path: '/execution',  label: 'Workboard', icon: IconExecution, badge: 0 },
+            { path: '/programs',   label: 'Programs',  icon: IconPrograms,  badge: 0 },
             { path: '/channels',   label: 'Channels',  icon: IconChannels,  badge: totalUnreadChannels, urgent: true },
           ].map((t) => {
             const active = activePath === t.path

@@ -945,10 +945,12 @@
 .ds.channels-v2 {
   --chat-col: 980px;
 }
-.ds.channels-v2 .message-stream--slackish > .message-group,
-.ds.channels-v2 .message-stream--slackish > .channel-intro-card {
-  max-width: var(--chat-col);
-  margin-inline: auto;
+.ds.channels-v2 .message-stream--slackish > .message-group {
+  /* width definitif + align-self → kolom KONSISTEN selebar --chat-col, center.
+     (margin-inline:auto pada flex-item bikin grup menyusut ke lebar konten →
+     bubble mengambang di tengah saat pesan pendek). */
+  width: min(var(--chat-col), 100%);
+  align-self: center;
 }
 .ds.channels-v2 .composer-slim__box,
 .ds.channels-v2 .composer-slim__context,
@@ -1006,4 +1008,57 @@
   padding-left: 12px;
   margin-left: 8px;
   border-left: 1px solid var(--panel-border-soft);
+}
+
+
+/* ───────── PHASE 10 — Mobile (phone): list ↔ conversation ─────────
+   Sebelumnya 3-panel ditumpuk vertikal (sidebar 50vh + percakapan sempit) →
+   tak terpakai. Pola HP benar: layar DAFTAR; pilih channel → percakapan
+   full-screen + tombol BACK. Gated --bp-sm (640). Meng-override aturan stacking
+   lama (responsive.css:1734 @max-width:900) via specificity + !important. */
+
+/* Tombol back: hanya tampil di mobile */
+.ds.channels-v2 .channel-header-slim__back { display: none; }
+
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  /* Hemat ruang vertikal */
+  .ds.channels-v2 .ds-page-header--inset { display: none; }
+  .ds.channels-v2 .channel-header-slim__topic { display: none; }
+
+  /* Daftar (sidebar) jadi layar penuh — bukan 50vh tumpuk */
+  .ds.channels-v2 .channel-panel {
+    width: 100% !important;
+    max-height: none !important;
+    border-bottom: none !important;
+  }
+
+  /* Mode DAFTAR (belum ada percakapan aktif) → sembunyikan panel percakapan */
+  .ds.channels-v2 .channels-layout--polished:not(.has-conversation) .panel.channel-stream {
+    display: none !important;
+  }
+
+  /* Mode PERCAKAPAN → sembunyikan daftar, percakapan full-screen */
+  .ds.channels-v2 .channels-layout--polished.has-conversation .panel.channel-panel {
+    display: none !important;
+  }
+  .ds.channels-v2 .channels-layout--polished.has-conversation .panel.channel-stream {
+    display: flex !important;
+    width: 100% !important;
+  }
+
+  /* Tombol back tampil + bergaya */
+  .ds.channels-v2 .channel-header-slim__back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-left: -4px;
+    margin-right: 2px;
+    border-radius: 8px;
+    color: var(--text);
+    flex-shrink: 0;
+    transition: background 120ms ease;
+  }
+  .ds.channels-v2 .channel-header-slim__back:hover { background: var(--surface-1); }
 }

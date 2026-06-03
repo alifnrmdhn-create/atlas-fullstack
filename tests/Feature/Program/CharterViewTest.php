@@ -162,8 +162,10 @@ class CharterViewTest extends TestCase
         );
     }
 
-    public function test_non_scorecard_program_returns_null_kpi(): void
+    public function test_program_without_kpi_definition_returns_null_kpi(): void
     {
+        // kpi=null karena belum ada KpiDefinition — BUKAN karena kelompok
+        // non-scorecard (gate kelompok sudah dibuka, lihat buildKpiBlock).
         $response = $this->actingAs($this->admin)
             ->get("/programs/{$this->nonScorecardProgram->id}/charter");
 
@@ -173,6 +175,30 @@ class CharterViewTest extends TestCase
             ->where('program.pillar', 'ENABLER')
             ->where('program.pillarLabel', 'Program Enabler')
         );
+    }
+
+    public function test_non_scorecard_program_with_internal_kpi_shows_kpi_block(): void
+    {
+        // KPI non-APMS/internal yang didefinisikan owner pada program
+        // non-scorecard HARUS tampil di Charter (regresi gate kelompok).
+        KpiDefinition::create([
+            'code' => 'KPI-INTERNAL-NSC',
+            'programId' => $this->nonScorecardProgram->id,
+            'name' => 'Ketepatan Penerbitan Surat Arahan',
+            'metricType' => 'PERCENTAGE',
+            'dataType' => 'DECIMAL',
+            'targetValue' => 100,
+            'unitOfMeasure' => '%',
+            'isActive' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->getJson("/programs/{$this->nonScorecardProgram->id}/charter");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.kpi.name', 'Ketepatan Penerbitan Surat Arahan');
+        $response->assertJsonPath('data.kpi.target', 100);
+        $response->assertJsonPath('data.kpi.unit', '%');
     }
 
     public function test_health_status_maps_to_charter_vocabulary(): void

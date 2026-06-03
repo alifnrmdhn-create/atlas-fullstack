@@ -38,6 +38,19 @@ class WeekToMonthMapper
         return $result;
     }
 
+    /**
+     * Public accessor: week numbers (1–53) untuk $year dari array
+     * planned/actual (format "YYYY-WNN" atau bare int). Dipakai
+     * ProgramCharterService::computeAchievementPct yang butuh angka
+     * minggu, bukan string — `(int) "2026-W09"` salah parse jadi 2026.
+     *
+     * @return int[]
+     */
+    public static function weekNumbersForYear(array $weeks, int $year): array
+    {
+        return self::extractWeekNumbersForYear($weeks, $year);
+    }
+
     /** True if any week in the month appears in $plannedWeeks. */
     public static function isMonthTargeted(array $plannedWeeks, int $year, int $month): bool
     {

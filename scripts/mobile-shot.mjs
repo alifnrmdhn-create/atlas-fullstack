@@ -59,21 +59,29 @@ try {
   const page = await connectCDP(target.webSocketDebuggerUrl)
   await page.send('Page.enable'); await page.send('Runtime.enable')
 
-  // login once at phone size
   await page.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 3, mobile: true })
   await navigate(page, `${baseUrl}/login`)
   await waitFor(page, () => document.querySelector('#identifier') && document.querySelector('#password'), 12000, 'login form')
-  await typeInput(page, '#identifier', loginId)
-  await typeInput(page, '#password', loginPassword)
-  await page.send('Runtime.evaluate', { expression: `document.querySelector('button[type="submit"]').click()` })
-  await waitFor(page, () => location.pathname !== '/login' && document.querySelector('.app-shell'), 15000, 'app shell')
+  if (process.env.THEME) {
+    await page.send('Runtime.evaluate', { expression: `localStorage.setItem('atlas.theme', ${JSON.stringify(process.env.THEME)})` })
+    await navigate(page, `${baseUrl}/login`)
+    await waitFor(page, () => document.querySelector('#identifier'), 12000, 'login form (themed)')
+  }
+  if (process.env.SKIP_LOGIN) {
+    // capture pre-auth screens (e.g. /login) without signing in.
+  } else {
+    await typeInput(page, '#identifier', loginId)
+    await typeInput(page, '#password', loginPassword)
+    await page.send('Runtime.evaluate', { expression: `document.querySelector('button[type="submit"]').click()` })
+    await waitFor(page, () => location.pathname !== '/login' && document.querySelector('.app-shell'), 15000, 'app shell')
+  }
 
   for (const d of devices) {
     await page.send('Emulation.setDeviceMetricsOverride', { width: d.width, height: d.height, deviceScaleFactor: d.dpr, mobile: d.mobile })
     for (const r of routes) {
       try {
         await navigate(page, `${baseUrl}${r.path}`)
-        await waitFor(page, () => document.querySelector('.app-shell'), 20000, `${r.name} shell`)
+        await waitFor(page, () => document.querySelector('.app-shell, .auth-shell'), 20000, `${r.name} shell`)
         await sleep(settleMs)
         await shot(page, join(outDir, `${d.name}-${r.name}.png`))
         console.log('OK', `${d.name}-${r.name}.png`)

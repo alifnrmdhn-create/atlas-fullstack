@@ -52,6 +52,11 @@ try {
     })()` })
     await sleep(1400)
   }
+  // Optional: click the mobile back button to return to the channel list
+  if (process.env.CLICK_BACK) {
+    await page.send('Runtime.evaluate', { expression: `(() => { const b = document.querySelector('.channel-header-slim__back'); if (b) b.click(); })()` })
+    await sleep(1000)
+  }
 
   await shot(page, join(outDir, `${tag}-top.png`))
 

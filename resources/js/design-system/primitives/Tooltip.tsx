@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { ReactNode, PointerEvent as ReactPointerEvent } from 'react'
 import { createPortal } from 'react-dom'
 import './Tooltip.css'
 
@@ -41,13 +41,38 @@ export function Tooltip({ content, children, side = 'top', className }: TooltipP
 
   const hide = useCallback(() => setPos(null), [])
 
+  // Pointer-aware: mouse → hover; touch/pen → tap-toggle (tak ada state hover di
+  // touch, jadi hover-only bikin tooltip mustahil dibuka). Keyboard → focus/blur.
+  const onPointerEnter = useCallback((e: ReactPointerEvent) => {
+    if (e.pointerType === 'mouse') show()
+  }, [show])
+  const onPointerLeave = useCallback((e: ReactPointerEvent) => {
+    if (e.pointerType === 'mouse') hide()
+  }, [hide])
+  const onPointerUp = useCallback((e: ReactPointerEvent) => {
+    if (e.pointerType === 'mouse') return
+    e.preventDefault() // cegah focus/scroll sekuel di sebagian browser touch
+    if (pos) hide(); else show()
+  }, [pos, show, hide])
+
+  // Saat terbuka via tap, tutup kalau user tap di luar pemicu (bubble = teks saja).
+  useEffect(() => {
+    if (!pos) return
+    const onDocDown = (ev: PointerEvent) => {
+      if (ref.current && !ref.current.contains(ev.target as Node)) hide()
+    }
+    document.addEventListener('pointerdown', onDocDown)
+    return () => document.removeEventListener('pointerdown', onDocDown)
+  }, [pos, hide])
+
   return (
     <span
       ref={ref}
       className={['ds-tip', className].filter(Boolean).join(' ')}
       tabIndex={0}
-      onMouseEnter={show}
-      onMouseLeave={hide}
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
+      onPointerUp={onPointerUp}
       onFocus={show}
       onBlur={hide}
     >

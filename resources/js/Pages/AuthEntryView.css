@@ -913,20 +913,22 @@
 }
 
 @media (max-width: 1180px) {
+  /* Aurora hijau-sentris — selaras OPSI A (aksen biru lama dibuang). Variasi
+   * tonal: hijau brand ↔ emerald segar ↔ hijau dalam, BUKAN biru nyasar. */
   .auth-shell {
     grid-template-columns: 1fr;
     background:
-      radial-gradient(ellipse 60% 50% at 12% 8%, color-mix(in srgb, var(--ptpn-green) 32%, transparent), transparent 70%),
-      radial-gradient(ellipse 60% 50% at 92% 6%, color-mix(in srgb, var(--blue) 32%, transparent), transparent 70%),
-      radial-gradient(ellipse 80% 50% at 50% 105%, color-mix(in srgb, var(--green) 26%, transparent), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 12% 8%, color-mix(in srgb, var(--ptpn-green) 30%, transparent), transparent 70%),
+      radial-gradient(ellipse 58% 50% at 90% 6%, color-mix(in srgb, var(--green) 26%, transparent), transparent 70%),
+      radial-gradient(ellipse 84% 52% at 50% 106%, color-mix(in srgb, var(--indigo) 22%, transparent), transparent 72%),
       linear-gradient(180deg, var(--surface-2) 0%, var(--surface-1) 52%, var(--surface-0) 100%);
   }
 
   [data-theme="dark"] .auth-shell {
     background:
-      radial-gradient(ellipse 60% 50% at 12% 8%, color-mix(in srgb, var(--indigo) 38%, transparent), transparent 70%),
-      radial-gradient(ellipse 60% 50% at 92% 6%, color-mix(in srgb, var(--blue) 38%, transparent), transparent 70%),
-      radial-gradient(ellipse 80% 50% at 50% 105%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 12% 8%, color-mix(in srgb, var(--indigo) 34%, transparent), transparent 70%),
+      radial-gradient(ellipse 58% 50% at 90% 6%, color-mix(in srgb, var(--green) 30%, transparent), transparent 70%),
+      radial-gradient(ellipse 84% 52% at 50% 106%, color-mix(in srgb, var(--ptpn-green) 24%, transparent), transparent 72%),
       linear-gradient(180deg, color-mix(in srgb, var(--app-bg) 92%, var(--surface-0) 8%) 0%, color-mix(in srgb, var(--app-bg) 78%, var(--surface-1) 22%) 52%, var(--surface-0) 100%);
   }
 
@@ -954,80 +956,148 @@
     z-index: 0;
   }
 
+  /* ── Premium card (2026-06-03 redesign) — theme-aware surface, BUKAN dark
+   * panel di kedua tema. Putih lift di light, charcoal di dark. Shadow berlapis
+   * + garis aksen hijau tipis di tepi atas. Tanpa backdrop-filter (pakem perf). */
   .auth-form-container {
     position: relative;
     z-index: 1;
-    max-width: 480px;
-    background: var(--auth-panel-bg);
-    border: 1px solid var(--auth-panel-border);
-    border-radius: 28px;
+    width: 100%;
+    /* Kolom fokus — JANGAN melebar penuh di tablet/medium (akar keluhan
+     * "terlalu memenuhi halaman horizontally"). Tetap kartu terpusat ~408px. */
+    max-width: 408px;
+    margin-inline: auto;
+    /* Halo hijau halus di puncak kartu (di belakang konten) = kedalaman, bukan
+     * gimmick. Surface tetap theme-aware via var(--panel). */
+    background:
+      radial-gradient(125% 62% at 50% -12%, color-mix(in srgb, var(--ptpn-green) 10%, transparent), transparent 58%),
+      var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 22px;
     box-shadow:
-      0 30px 60px color-mix(in srgb, var(--scrim) 26%, transparent),
-      0 12px 24px color-mix(in srgb, var(--scrim) 18%, transparent);
-    backdrop-filter: blur(20px);
-    padding: clamp(28px, 4vh, 40px) clamp(24px, 5vw, 36px);
+      0 1px 0 rgba(255, 255, 255, 0.6) inset,
+      0 2px 6px rgba(15, 20, 40, 0.05),
+      0 18px 40px rgba(15, 20, 40, 0.13),
+      0 44px 88px rgba(15, 20, 40, 0.10);
+    padding: clamp(28px, 4vh, 38px) clamp(24px, 5vw, 34px) clamp(20px, 3vh, 26px);
+    overflow: hidden;
+  }
+  /* Garis aksen hijau halus di tepi atas kartu — sinyal brand, bukan pita warna. */
+  .auth-form-container::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent 8%, var(--ptpn-green) 50%, transparent 92%);
+    opacity: 0.9;
   }
 
+  /* Brand lockup bersih (bukan sub-kartu) — ikon + ATLAS + tagline, dipisah
+   * hairline. Teks theme-correct (gelap di light, terang di dark). */
   .auth-mobile-brand {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin: -8px -8px 6px;
-    padding: 18px 18px 20px;
-    border-radius: 22px;
-    background: var(--auth-highlight-primary-bg);
-    border: 1px solid var(--auth-highlight-border);
-    box-shadow: var(--auth-highlight-shadow);
-    overflow: hidden;
+    gap: 13px;
+    margin: 2px 0 4px;
+    padding: 0 0 18px;
+    border-radius: 0;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--panel-border);
+    box-shadow: none;
+    overflow: visible;
     animation: auth-fade-in 320ms ease both;
   }
-
-  .auth-mobile-brand::after {
-    content: '';
-    position: absolute;
-    top: -40px;
-    right: -40px;
-    width: 120px;
-    height: 120px;
-    border-radius: 999px;
-    background: radial-gradient(circle, color-mix(in srgb, var(--blue) 28%, transparent), transparent 70%);
-    pointer-events: none;
-  }
+  .auth-mobile-brand::after { display: none; }
 
   .auth-mobile-brand .auth-panel__mark {
-    width: 44px;
-    height: 44px;
+    width: 46px;
+    height: 46px;
     border-radius: 14px;
     flex-shrink: 0;
     z-index: 1;
+    box-shadow:
+      0 8px 22px color-mix(in srgb, var(--ptpn-green) 38%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
   }
 
   .auth-mobile-brand__copy {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     min-width: 0;
     z-index: 1;
   }
 
   .auth-mobile-brand__copy .auth-panel__wordmark {
-    font-size: 1.5rem;
+    font-size: 1.45rem;
     line-height: 1;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.035em;
+    color: var(--text-strong);
   }
 
   .auth-mobile-brand__copy span {
-    font-size: 0.74rem;
-    color: var(--auth-highlight-label);
-    line-height: 1.45;
-    font-weight: 600;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.42;
+    font-weight: 500;
   }
 }
 
-@media (max-width: 860px) {
+/* Premium polish (mobile login redesign 2026-06-03): dark-card shadow + tombol
+ * hijau gradient + glow. Gradient via token --auth-submit-bg supaya state
+ * loading/success (yang override bg sendiri) tetap utuh. */
+@media (max-width: 1180px) {
+  .auth-shell {
+    /* Hijau bersih & segar (highlight di puncak), bukan olive-washed. */
+    --auth-submit-bg: linear-gradient(180deg, color-mix(in srgb, var(--ptpn-green) 80%, #5BE08A 20%) 0%, var(--ptpn-green) 62%, color-mix(in srgb, var(--ptpn-green) 88%, #000000 12%) 100%);
+  }
+  [data-theme="dark"] .auth-form-container {
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.42),
+      0 28px 64px rgba(0, 0, 0, 0.55);
+  }
+  [data-theme="dark"] .auth-form-container::before { opacity: 0.72; }
+
+  /* Input lebih ringkas & tegas — radius lebih kecil + border lebih hadir,
+   * mengurangi kesan "balon" pucat. Theme-aware via token input. */
+  .auth-float-input {
+    min-height: 56px;
+    border-radius: 13px;
+    padding: 23px 16px 11px;
+  }
+  .auth-float-label { left: 15px; }
+  .auth-float-input:focus ~ .auth-float-label,
+  .auth-float-input:not(:placeholder-shown) ~ .auth-float-label { top: 11px; }
+
+  .auth-form__submit {
+    border-radius: 14px;
+    box-shadow:
+      0 10px 26px color-mix(in srgb, var(--ptpn-green) 42%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.30);
+  }
+  .auth-form__submit:hover:not(:disabled) {
+    box-shadow:
+      0 14px 34px color-mix(in srgb, var(--ptpn-green) 50%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  }
+
+  /* Footer (copyright) dipisah hairline halus = penutup rapi, bukan teks
+   * menggantung. */
+  .auth-legal {
+    margin-top: 4px;
+    padding-top: 16px;
+    border-top: 1px solid var(--panel-border);
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Hanya di HP sempit kartu boleh isi lebar (margin tetap dari padding
+   * .auth-form-side). Di atas ini tetap kolom terpusat ~408px. */
   .auth-form-container {
-    max-width: 100%;
+    max-width: none;
   }
 }
 
