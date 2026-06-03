@@ -1277,3 +1277,38 @@
   margin-left: -16px;
   border-left: 1px solid color-mix(in srgb, var(--panel-border, #e5e7eb) 100%, transparent);
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PHONE DENSITY PASS (≤640) — 2026-06-03
+   Di phone lane kanban menumpuk vertikal. Floor min-height 200px × 5 lane =
+   ribuan px kosong → biarkan konten (header + empty-state) yang menentukan
+   tinggi. Kartu & baris dirapatkan. Hanya gap/padding/min-height (IA tetap).
+   Block di akhir file → menang source-order atas ≤640 lain (L176).
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .workboard-v2 .view-toolbar { padding-bottom: 12px; }
+  .workboard-v2 .kanban-board { gap: 10px; }
+  /* Lane kosong tak lagi dipaksa 200px (collapsed tetap 44px via rule lain). */
+  .workboard-v2 .kanban-col { min-height: 0; }
+  .workboard-v2 .kanban-col__body { padding: 6px; gap: 6px; }
+  .workboard-v2 .work-card { padding: 10px 12px; gap: 6px; }
+  .workboard-v2 .wi-list-row { padding: 10px 14px; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   TOUCH INTERACTION (hover:none) — 2026-06-03
+   work-card hover = translateY(-1px) lift + shadow ("drag me" affordance);
+   di touch lift NYANGKUT sesudah tap → terlihat seperti bug. Netralkan lift
+   (base transform=none) + shadow (kecuali --blocked yg punya inset base),
+   highlight baris/header (base transparan), ganti :active press.
+   wb-summary-stat & toolbar primary SENGAJA tak digate (tap = jadi aktif /
+   base bg non-transparan).
+   ════════════════════════════════════════════════════════════════════ */
+@media (hover: none) {
+  .workboard-v2 .work-card:hover { transform: none; }
+  .workboard-v2 .work-card:not(.work-card--blocked):hover { box-shadow: none; }
+  .workboard-v2 .wi-list-row:hover,
+  .workboard-v2 .kanban-col__header:hover { background: transparent; }
+  .workboard-v2 .work-card:active { transform: scale(0.99); transition: transform .08s ease; }
+  .workboard-v2 .wi-list-row:active { background: color-mix(in srgb, var(--ds-text-primary) 6%, transparent); }
+}

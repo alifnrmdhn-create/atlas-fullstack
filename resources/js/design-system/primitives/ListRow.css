@@ -28,6 +28,14 @@
   box-shadow: inset 0 0 0 2px var(--ds-brand-600);
 }
 
+/* Touch (hover:none) — app-wide: baris interaktif sering navigasi; di sentuh
+ * highlight hover NYANGKUT sesudah tap. Netralkan ke base transparan + :active
+ * press momentary. Mengkover semua ListRow di seluruh app sekaligus. */
+@media (hover: none) {
+  .ds-list-row--interactive:hover { background: transparent; }
+  .ds-list-row--interactive:active { background: var(--ds-surface-hover); }
+}
+
 /* ─── Slots ─────────────────────────────────────────────── */
 .ds-list-row__leading {
   flex-shrink: 0;

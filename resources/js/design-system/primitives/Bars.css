@@ -126,6 +126,11 @@
 }
 .ds-bars__col--btn:hover { background: color-mix(in srgb, var(--ds-text-primary) 4%, transparent); }
 .ds-bars__col--btn:hover .ds-bars__bar { filter: brightness(1.08); }
+/* Touch (hover:none): tint kolom + brightness bar nyangkut sesudah tap → base. */
+@media (hover: none) {
+  .ds-bars__col--btn:hover { background: transparent; }
+  .ds-bars__col--btn:hover .ds-bars__bar { filter: none; }
+}
 .ds-bars__col--btn:focus-visible { outline: none; }
 .ds-bars__col--btn:focus-visible .ds-bars__bar {
   outline: 2px solid color-mix(in srgb, var(--tone-green) 45%, transparent);

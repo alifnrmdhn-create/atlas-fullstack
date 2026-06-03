@@ -1850,3 +1850,36 @@
   color: var(--ds-text-primary);
   text-align: right;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PHONE DENSITY PASS (≤640) — 2026-06-03
+   Rapatkan whitespace agar lebih banyak baris program muat per layar (rasa
+   app native, selaras HomeView). Hanya gap/padding/min-height — tap target
+   baris tetap ≥44px. Selektor dead (hero-stats/insight — dashboard dihapus
+   2026-06-03) sengaja dilewati. Block di akhir file → menang source-order.
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .programs-v2 .programs-v2__tabs { margin-bottom: 14px; }
+  .programs-v2 .programs-controls { gap: 12px; padding-bottom: 12px; }
+  .programs-v2 .programs-subbar { padding-bottom: 12px; }
+  .programs-v2 .section-block { margin-bottom: 18px; }
+  .programs-v2 .section-header { gap: 12px; padding-bottom: 10px; }
+  /* Baris program: floor min-height 56→48 (tetap ≥44px tap), padding dirapat. */
+  .programs-v2 .program-row__main { min-height: 48px; padding: 7px 12px 7px 14px; }
+  .programs-v2 .program-roster__header-main { padding: 8px 12px 8px 14px; }
+  .programs-pager { padding-top: var(--ds-space-3); }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   TOUCH INTERACTION (hover:none) — 2026-06-03
+   Matikan highlight BARIS NAVIGASI yang nyangkut sesudah tap (base bg
+   transparan, tak punya state selected persisten). Chip/toggle/filter
+   SENGAJA tak digate — tap = jadi aktif, highlight-nya memang harus menetap.
+   Ganti dgn :active press momentary (umpan-balik tap, rasa native).
+   ════════════════════════════════════════════════════════════════════ */
+@media (hover: none) {
+  .programs-v2 .list-row:hover,
+  .programs-v2 .gov-table tr:hover td,
+  .programs-v2 .program-row__kebab-btn:hover { background: transparent; }
+  .programs-v2 .list-row:active { background: color-mix(in srgb, var(--ds-text-primary) 6%, transparent); }
+}

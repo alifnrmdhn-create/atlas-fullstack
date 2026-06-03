@@ -101,3 +101,19 @@
   background: var(--ds-red-600);
   border-color: var(--ds-red-600);
 }
+
+/* ─── Touch (hover:none) — app-wide ──────────────────────────────────────
+ * Di layar sentuh tak ada state hover: warna hover tombol NYANGKUT sesudah
+ * tap (tombol terlihat "tertekan terus"). Netralkan hover ke base, lalu
+ * :active beri press momentary (rasa native). Primary sudah punya :active.
+ * Block ini menang source-order atas rule :hover di atas. */
+@media (hover: none) {
+  .ds-button--primary:hover:not(:disabled)   { background: var(--ds-brand-600); border-color: var(--ds-brand-600); }
+  .ds-button--secondary:hover:not(:disabled) { background: var(--ds-surface-card); border-color: var(--ds-border-default); }
+  .ds-button--ghost:hover:not(:disabled)     { background: transparent; }
+  .ds-button--danger:hover:not(:disabled)    { background: var(--ds-red-500); border-color: var(--ds-red-500); }
+
+  .ds-button--secondary:active:not(:disabled),
+  .ds-button--ghost:active:not(:disabled)    { background: var(--ds-surface-hover); }
+  .ds-button--danger:active:not(:disabled)   { background: var(--ds-red-600); border-color: var(--ds-red-600); }
+}

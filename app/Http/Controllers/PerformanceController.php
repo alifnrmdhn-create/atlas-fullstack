@@ -712,11 +712,11 @@ class PerformanceController extends Controller
         // Karyawan: derive dari User model (identitas riil). Sebelumnya
         // hardcoded "Dimas Aryo Wibisono" untuk semua id — sekarang lookup
         // by id; fallback ke placeholder kalau user tidak ada.
-        $user = is_numeric($id) ? \App\Models\User::with(['unit:id,code', 'position:id,title'])->find((int) $id) : null;
+        $user = is_numeric($id) ? \App\Models\User::with(['unit:id,code', 'position:id,name'])->find((int) $id) : null;
         $karyawan = $user ? [
             'id'         => (string) $user->id,
             'nama'       => $user->name,
-            'jabatan'    => $user->position?->title ?? '—',
+            'jabatan'    => $user->position?->name ?? '—',
             'unit'       => $user->unit?->code ?? '—',
             'nilai'      => 0.0,
             'jumlah_kpi' => 0,

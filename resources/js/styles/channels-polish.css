@@ -1062,3 +1062,36 @@
   }
   .ds.channels-v2 .channel-header-slim__back:hover { background: var(--surface-1); }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PHONE DENSITY (≤640) — 2026-06-03
+   Channels sudah padat (bubble 9px, row 7px, group gap 4px). Density di sini
+   hanya composer (tetap tap-safe ≥44px). Block di akhir → menang source-order.
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .ds.channels-v2 .composer-slim { padding: 10px 14px 12px; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   TOUCH INTERACTION (hover:none) — 2026-06-03
+   Bubble pesan & tombol punya hover lift (translateY) yang NYANGKUT sesudah
+   tap di layar sentuh → terlihat seperti bug. Lift bubble di-define di
+   responsive.css; dinetralkan dari SINI via scope `.ds.channels-v2`
+   (spesifisitas lebih tinggi + load terakhir). Highlight baris channel/member
+   dinetralkan — `.is-active` terpisah (di-:not), jadi channel aktif TETAP
+   ter-highlight; ganti dgn :active press.
+   ════════════════════════════════════════════════════════════════════ */
+@media (hover: none) {
+  /* Lift bubble pesan (responsive.css) + tombol — netralkan. */
+  .ds.channels-v2 .message-card:hover .message-card__body,
+  .ds.channels-v2 .message-card--own:hover .message-card__body,
+  .ds.channels-v2 .composer-slim__send:hover:not(:disabled),
+  .ds.channels-v2 .jump-to-bottom:hover,
+  .ds.channels-v2 .channel-empty-cta .btn--primary:hover { transform: none; }
+  /* Highlight baris (is-active terpisah → channel aktif tetap ter-highlight). */
+  .ds.channels-v2 .channel-row:not(.is-active):hover,
+  .ds.channels-v2 .member-row:hover,
+  .ds.channels-v2 .channel-header-slim__back:hover { background: transparent; }
+  /* :active press momentary (umpan-balik tap sebelum baris jadi aktif). */
+  .ds.channels-v2 .channel-row:not(.is-active):active { background: var(--surface-1); }
+}
