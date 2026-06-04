@@ -704,6 +704,26 @@ class ProgramController extends Controller
     }
 
     /**
+     * Pastikan user yang meng-approve/reject benar-benar reviewer sah di org-chain
+     * PIC program ini (bukan KADIV/KASUBDIV direktorat lain). Sebelumnya gate hanya
+     * cek role+status → KADIV direktorat A bisa approve program pending direktorat B.
+     * Admin/superadmin di-exempt (cross-cutting). Notifikasi sudah memakai chain
+     * submitter; guard ini menyelaraskan otorisasi dengan target notifikasi.
+     */
+    private function assertIsLegitimateReviewer(Program $program, User $user, string $targetRole): void
+    {
+        if (in_array(strtoupper($user->roleType), ['ADMIN', 'SUPERADMIN'], true)) return;
+
+        $submitterId = $program->submittedById ?? $program->ownerId;
+        $submitter = $submitterId ? User::find($submitterId) : null;
+        $reviewerIds = $submitter ? $this->resolveReviewerIds($submitter, $targetRole) : [];
+
+        if (!in_array($user->id, $reviewerIds, true)) {
+            abort(403, 'You are not the designated reviewer for this program in its organization chain.');
+        }
+    }
+
+    /**
      * Resolve the user(s) currently expected to act on a PENDING program.
      * Returns null kalau status bukan PENDING_* atau submitter tidak diketahui.
      * Untuk multiple match, ambil yang pertama (kasus jarang — biasanya 1 KADIV
@@ -777,6 +797,7 @@ class ProgramController extends Controller
         $user = $request->user();
 
         if ($prevStatus === 'PENDING_KASUB' && $role === 'KASUBDIV') {
+            $this->assertIsLegitimateReviewer($program, $user, 'KASUBDIV');
             $program->update(['approvalStatus' => 'PENDING_KADIV']);
             ProgramApprovalLog::record($id, 'APPROVED', $prevStatus, 'PENDING_KADIV', $user->id, $user->name);
             // Escalate to KADIV — notify next-stage reviewers. Use submitter's
@@ -791,6 +812,7 @@ class ProgramController extends Controller
                 excludeUserId: $user->id,
             );
         } elseif ($prevStatus === 'PENDING_KADIV' && in_array($role, ['KADIV', 'ADMIN', 'SUPERADMIN'], true)) {
+            $this->assertIsLegitimateReviewer($program, $user, 'KADIV');
             $program->update(['approvalStatus' => 'ACTIVE']);
             ProgramApprovalLog::record($id, 'APPROVED', $prevStatus, 'ACTIVE', $user->id, $user->name);
             // Sprint 5 — Plan→Do handoff (KADIV approval triggers ACTIVE)
@@ -820,6 +842,11 @@ class ProgramController extends Controller
             ($program->approvalStatus === 'PENDING_KADIV' && in_array($role, ['KADIV', 'ADMIN', 'SUPERADMIN'], true));
 
         if (!$canReject) abort(403, 'You do not have permission to reject this program');
+        $this->assertIsLegitimateReviewer(
+            $program,
+            $request->user(),
+            $program->approvalStatus === 'PENDING_KADIV' ? 'KADIV' : 'KASUBDIV',
+        );
 
         $prevStatus = $program->approvalStatus;
         $program->update(['approvalStatus' => 'DRAFT', 'rejectionNote' => $data['note']]);

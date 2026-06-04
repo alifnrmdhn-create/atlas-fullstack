@@ -186,9 +186,17 @@ class EscalationController extends Controller
         if ($req->isTerminal()) return response()->json(['message' => 'Status is already final.'], 422);
 
         $data = $request->validate([
-            'reroutedToId' => 'required|integer|different:escalatedToId',
+            'reroutedToId' => 'required|integer',
             'commitmentNote' => 'nullable|string|max:500',
         ]);
+
+        // Cegah reroute ke target saat ini (= user ini, lihat guard di atas).
+        // Rule `different:escalatedToId` tidak bekerja: escalatedToId bukan field
+        // payload, jadi selalu pass → dulu bisa membuat escalation duplikat ke
+        // orang yang sama. Bandingkan langsung ke model.
+        if ((int) $data['reroutedToId'] === (int) $req->escalatedToId) {
+            return response()->json(['message' => 'Cannot reroute to the current target.'], 422);
+        }
 
         $newTarget = User::find($data['reroutedToId']);
         if (!$newTarget) {

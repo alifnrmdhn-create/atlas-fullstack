@@ -129,8 +129,24 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         let cancelled = false
         let timer: ReturnType<typeof setTimeout> | null = null
         let consecutiveErrors = 0
+        let wasDisconnected = false
+        let hiddenAt: number | null = null
+        const RESYNC_AFTER_HIDDEN_MS = 10 * 60 * 1000 // selaras-aman dgn retensi 15m server
 
         setStatus('connecting')
+
+        // Bump SEMUA tick bucket → setiap consumer (Workspace context dsb) refetch
+        // datanya. Dipakai saat reconnect / kembali dari background lama: event yang
+        // terjadi selama gap bisa sudah di-GC dari broadcast_events (retensi server),
+        // jadi cursor `since` maju melewatinya tanpa kita tahu. Full refetch =
+        // jaring pengaman anti event-loss.
+        const resyncAll = () => {
+            setTicks(prev => {
+                const next = { ...prev }
+                for (const k of Object.keys(next) as (keyof RefreshTicks)[]) next[k] += 1
+                return next
+            })
+        }
 
         // Seed lastEventId ke current max — supaya poll pertama tidak banjir
         // event historis (broadcast_events bisa berisi ribuan presence pings).
@@ -161,10 +177,19 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                 }
                 consecutiveErrors = 0
                 setStatus('connected')
+                // Baru pulih dari disconnect → event selama gap mungkin sudah ter-GC.
+                // Refetch semua supaya tidak ada update yang hilang diam-diam.
+                if (wasDisconnected) {
+                    wasDisconnected = false
+                    resyncAll()
+                }
             } catch {
                 consecutiveErrors++
                 // 2x gagal beruntun = jaringan / server bermasalah → tunjukkan offline indicator
-                if (consecutiveErrors >= 2) setStatus('disconnected')
+                if (consecutiveErrors >= 2) {
+                    setStatus('disconnected')
+                    wasDisconnected = true
+                }
             }
             // Exponential backoff saat error (max 30s) supaya tidak hammer server
             const delay = consecutiveErrors > 0
@@ -173,11 +198,25 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
             timer = setTimeout(tick, delay)
         }
 
+        // Saat tab kembali terlihat: segera poll (jangan tunggu timer, yang bisa
+        // di-throttle browser saat hidden), dan kalau sempat hidden lama (> ambang
+        // aman retensi) resync penuh karena event selama suspend bisa sudah ter-GC.
+        const onVisibility = () => {
+            if (document.hidden) { hiddenAt = Date.now(); return }
+            const hiddenFor = hiddenAt ? Date.now() - hiddenAt : 0
+            hiddenAt = null
+            if (hiddenFor > RESYNC_AFTER_HIDDEN_MS) resyncAll()
+            if (timer) clearTimeout(timer)
+            if (!cancelled) void tick()
+        }
+        document.addEventListener('visibilitychange', onVisibility)
+
         void seed().then(() => { if (!cancelled) timer = setTimeout(tick, POLL_INTERVAL_MS) })
 
         return () => {
             cancelled = true
             if (timer) clearTimeout(timer)
+            document.removeEventListener('visibilitychange', onVisibility)
             setStatus('idle')
         }
     }, [enabled])

@@ -8,6 +8,7 @@ use App\Models\UserSession;
 use App\Models\UserStatus;
 use App\Services\BroadcastService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Endpoint real-time untuk push event ke browser via polling.
@@ -129,9 +130,17 @@ class RealtimeController extends Controller
 
         // Broadcast
         if ($newStatus) {
+            // Perubahan status (mis. OFFLINE→ONLINE) penting → broadcast langsung.
             BroadcastService::presence($user->id, $newStatus, $now->toIso8601String());
         } else {
-            BroadcastService::presenceActivity($user->id, $now->toIso8601String());
+            // presence:activity di-broadcast GLOBAL (userIds=null) ke semua poller.
+            // Dulu tiap ping (60s/user) memancarkannya → O(N²): N event/menit ×
+            // fan-out ke N poller. lastActivityAt sudah dipersist tiap ping di atas;
+            // broadcast hanya untuk menyegarkan relative-time di UI presence, jadi
+            // cukup jarang. Throttle: maks 1×/5 menit per user (Cache::add atomik).
+            if (Cache::add("presence-activity-broadcast:{$user->id}", true, now()->addMinutes(5))) {
+                BroadcastService::presenceActivity($user->id, $now->toIso8601String());
+            }
         }
 
         return response()->noContent();

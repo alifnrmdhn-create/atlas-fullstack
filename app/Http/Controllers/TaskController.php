@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\OrgScope;
 use App\Models\Blocker;
 use App\Models\SubTask;
 use App\Models\Task;
+use App\Models\User;
 use App\Models\WorkItemStatusLog;
 use App\Services\BroadcastService;
 use App\Services\ProgramHealthService;
@@ -104,9 +106,7 @@ class TaskController extends Controller
 
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Your role is not allowed to perform this action.');
-        }
+        $this->assertCanModifyTask(Task::findOrFail($id), $request->user());
 
         $data = $request->validate([
             'title' => 'sometimes|string|min:2|max:200',
@@ -135,9 +135,7 @@ class TaskController extends Controller
 
     public function updateStatus(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Your role is not allowed to perform this action.');
-        }
+        $this->assertCanModifyTask(Task::findOrFail($id), $request->user());
 
         $data = $request->validate([
             'status'         => 'required|string',
@@ -178,9 +176,7 @@ class TaskController extends Controller
 
     public function updateProgress(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Your role is not allowed to perform this action.');
-        }
+        $this->assertCanModifyTask(Task::findOrFail($id), $request->user());
 
         $data = $request->validate([
             'percentComplete' => 'required|integer|min:0|max:100',
@@ -205,9 +201,7 @@ class TaskController extends Controller
 
     public function assign(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Your role is not allowed to perform this action.');
-        }
+        $this->assertCanModifyTask(Task::findOrFail($id), $request->user());
 
         $data = $request->validate(['assignedTo' => 'nullable|integer']);
         Task::query()->where('id', $id)->update(['assignedTo' => $data['assignedTo']]);
@@ -256,7 +250,7 @@ class TaskController extends Controller
         ]);
 
         $subTask = SubTask::create([...$data, 'workItemId' => $id, 'assignedTo' => $request->user()->id]);
-        $this->taskService->recomputeFromSubTasks($id);
+        $this->taskService->recomputeFromSubTasks($id, $request->user()->id);
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $subTask], 201);
@@ -268,7 +262,7 @@ class TaskController extends Controller
     public function destroySubTask(Request $request, int $id, int $subTaskId): JsonResponse|RedirectResponse
     {
         SubTask::query()->where('id', $subTaskId)->where('workItemId', $id)->delete();
-        $this->taskService->recomputeFromSubTasks($id);
+        $this->taskService->recomputeFromSubTasks($id, $request->user()->id);
 
         if ($request->expectsJson()) {
             return response()->json(['ok' => true]);
@@ -279,7 +273,7 @@ class TaskController extends Controller
 
     public function toggleSubTask(Request $request, int $id, int $subTaskId): JsonResponse|RedirectResponse
     {
-        $subTask = $this->taskService->toggleSubTask($subTaskId);
+        $subTask = $this->taskService->toggleSubTask($subTaskId, $request->user()->id);
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $subTask]);
@@ -289,6 +283,31 @@ class TaskController extends Controller
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Gate mutasi task per-direktorat. Sebelumnya update/status/progress/assign
+     * hanya cek isReadOnly → user non-BOD mana pun bisa mengubah task program/
+     * divisi LAIN (merusak integritas progres yang menggerakkan health & dashboard).
+     * Izinkan: admin, pembuat/PIC task, atau user yang scope-nya mencakup unit
+     * pemilik program task. Blokir lintas-direktorat.
+     */
+    private function assertCanModifyTask(Task $task, User $user): void
+    {
+        if (RolePolicy::isReadOnly($user->roleType)) {
+            abort(403, 'Your role is not allowed to perform this action.');
+        }
+        if (RolePolicy::isAdminOrAbove($user->roleType)) return;
+        if ($task->createdBy === $user->id || $task->assignedTo === $user->id) return;
+
+        $ownerUnitId = $task->loadMissing('workstream.program')->workstream?->program?->ownerUnitId;
+        $scope = OrgScope::forUser($user);
+        if ($scope->isExecutive
+            || ($ownerUnitId !== null && in_array((int) $ownerUnitId, $scope->unitIds, true))) {
+            return;
+        }
+
+        abort(403, 'You do not have access to modify a work item that belongs to another unit.');
+    }
 
     private function triggerHealth(int $taskId): void
     {

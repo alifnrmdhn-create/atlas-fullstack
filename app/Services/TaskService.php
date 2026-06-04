@@ -453,7 +453,7 @@ class TaskService
     }
 
     /** Toggle subtask completion + recalculate task percentComplete. */
-    public function toggleSubTask(int $subTaskId): SubTask
+    public function toggleSubTask(int $subTaskId, ?int $userId = null): SubTask
     {
         $sub = SubTask::findOrFail($subTaskId);
         $sub->update([
@@ -461,28 +461,45 @@ class TaskService
             'completedAt' => !$sub->isCompleted ? now() : null,
         ]);
 
-        $this->recomputeFromSubTasks($sub->workItemId);
+        $this->recomputeFromSubTasks($sub->workItemId, $userId);
         return $sub->fresh();
     }
 
     /** Recalculate task percentComplete from its subtasks. */
-    public function recomputeFromSubTasks(int $taskId): void
+    public function recomputeFromSubTasks(int $taskId, ?int $userId = null): void
     {
         $subs = SubTask::query()->where('workItemId', $taskId)->get(['isCompleted']);
         if ($subs->isEmpty()) return;
 
         $pct = (int) round($subs->where('isCompleted', true)->count() / $subs->count() * 100);
         $data = ['percentComplete' => $pct];
+        $autoCompletedFrom = null;
 
         if ($pct === 100) {
             $task = Task::find($taskId);
             $allowed = self::TRANSITIONS[$task?->status ?? ''] ?? [];
-            if (in_array('COMPLETED', $allowed, true)) {
+            if ($task && in_array('COMPLETED', $allowed, true)) {
                 $data['status'] = 'COMPLETED';
+                // Stempel actualCompletion (mirror transitionStatus). Tanpa ini,
+                // task auto-complete punya actualCompletion NULL → hilang dari
+                // metrik "Tasks done this week" (bug lama yang sudah ada command
+                // backfill-nya). Set hanya bila belum ter-set.
+                if (!$task->actualCompletion) {
+                    $data['actualCompletion'] = now();
+                }
+                $autoCompletedFrom = $task->status;
             }
         }
 
-        Task::query()->where('id', $taskId)->update($data);
+        DB::transaction(function () use ($taskId, $data, $autoCompletedFrom, $userId) {
+            Task::query()->where('id', $taskId)->update($data);
+            // Audit trail: auto-complete dari subtask harus tercatat seperti
+            // transisi status manual (dulu update langsung tanpa WorkItemStatusLog
+            // → jejak bolong). Lewati hanya bila aktor tak diketahui.
+            if ($autoCompletedFrom !== null && $userId !== null) {
+                $this->writeStatusLog($taskId, $autoCompletedFrom, 'COMPLETED', $userId, 'Auto-completed: all sub-tasks done');
+            }
+        });
     }
 
     /** Auto-unblock task ketika semua blocker resolved. */
