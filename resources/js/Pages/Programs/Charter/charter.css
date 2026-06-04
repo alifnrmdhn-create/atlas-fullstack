@@ -176,19 +176,16 @@
   color: var(--text-muted);
   margin-bottom: 4px;
 }
-/* Strategic Objective text — clamp ke 3 baris untuk header consistency.
-   Full text masih readable via title tooltip. Mencegah card mengembang
-   karena SO panjang yang membuat sister-columns tidak align. */
+/* Strategic Objective text — tampil PENUH (tanpa clamp/ellipsis) di mana pun.
+   Objective sengaja di-derive ringkas (≤~14 kata, 1 kalimat utuh) sehingga muat
+   tanpa memecah alignment kolom. Lihat command programs:strategic-objective. */
 .cs-header__so {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-strong);
   line-height: 1.4;
   word-wrap: break-word;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 .cs-header__pillar {
   margin-top: 4px;

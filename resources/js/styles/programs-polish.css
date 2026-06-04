@@ -2377,10 +2377,8 @@ select.prog-strategic__input {
   font-weight: 500;
   color: var(--text-strong);
   line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 .prog-hero__so--empty {
   color: var(--text-muted);
