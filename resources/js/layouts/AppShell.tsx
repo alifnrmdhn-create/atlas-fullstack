@@ -366,6 +366,9 @@ const ACTION_NOTIF_TYPES = new Set([
   'MEETING_INVITED',
   'MEETING_UPDATED',
   'ACTION_ITEM_ASSIGNED',
+  // Assignment review flow — reviewer giliran perlu approve, PIC perlu revisi
+  'ASSIGNMENT_REVIEW',
+  'ASSIGNMENT_RETURNED',
 ])
 
 const NOTIF_FALLBACK_CONTEXT: Record<string, { roleImpact: string; impact: string }> = {
@@ -394,6 +397,11 @@ const NOTIF_FALLBACK_CONTEXT: Record<string, { roleImpact: string; impact: strin
   MEETING_CANCELLED:     { roleImpact: 'The organizer cancelled the meeting', impact: 'Your time slot is free again' },
   MEETING_POSTPONED:     { roleImpact: 'The meeting is postponed',       impact: 'Wait for a new schedule from the organizer' },
   ACTION_ITEM_ASSIGNED:  { roleImpact: 'You are the PIC for a meeting action item', impact: 'Follow up by the set deadline' },
+  // Assignment review flow
+  ASSIGNMENT_REVIEW:   { roleImpact: 'You are the reviewer in turn', impact: 'The assignment is on hold until you approve or return it' },
+  ASSIGNMENT_RETURNED: { roleImpact: 'You are the assignment PIC', impact: 'Revise per the notes, then resubmit for review' },
+  ASSIGNMENT_REJECTED: { roleImpact: 'You are the assignment PIC', impact: 'The assignment was rejected — check the reason' },
+  ASSIGNMENT_APPROVED: { roleImpact: 'You are the assignment PIC', impact: 'Approved and marked complete — no further action' },
 }
 
 function isActionNotification(type: string): boolean {
@@ -419,6 +427,8 @@ function notificationIntentLabel(notification: NotificationItem): string {
   if (notification.type === 'MEETING_UPDATED') return 'View schedule'
   if (notification.type === 'MEETING_CANCELLED' || notification.type === 'MEETING_POSTPONED') return 'Open meeting'
   if (notification.type === 'ACTION_ITEM_ASSIGNED') return 'Work on it'
+  if (notification.type === 'ASSIGNMENT_REVIEW') return 'Review'
+  if (notification.type === 'ASSIGNMENT_RETURNED') return 'Revise & resubmit'
   return 'View details'
 }
 
@@ -796,6 +806,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
     MEETING_INVITED: 'Meeting', MEETING_UPDATED: 'Meeting',
     MEETING_CANCELLED: 'Meeting', MEETING_POSTPONED: 'Meeting',
     ACTION_ITEM_ASSIGNED: 'Action Item',
+    ASSIGNMENT_REVIEW: 'Review', ASSIGNMENT_RETURNED: 'Assignment',
+    ASSIGNMENT_REJECTED: 'Assignment', ASSIGNMENT_APPROVED: 'Assignment',
   }
 
   const NOTIF_TYPE_COLOR: Record<string, string> = {
@@ -811,6 +823,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
     MEETING_CANCELLED: 'notif-type--danger',
     MEETING_POSTPONED: 'notif-type--warn',
     ACTION_ITEM_ASSIGNED: 'notif-type--approval',
+    ASSIGNMENT_REVIEW: 'notif-type--approval',
+    ASSIGNMENT_RETURNED: 'notif-type--warn',
+    ASSIGNMENT_REJECTED: 'notif-type--danger',
+    ASSIGNMENT_APPROVED: 'notif-type--success' as string,
   }
 
   function formatNotifTime(dateString: string): string {

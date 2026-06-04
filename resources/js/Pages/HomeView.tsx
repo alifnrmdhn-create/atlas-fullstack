@@ -366,31 +366,29 @@ function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (i
               style={{ left: `${positions[i]}%`, ['--lane' as string]: lanes[i] } as CSSProperties}
               title={label} aria-label={label}
               onClick={() => onOpen(g.items[0].id)}>
-              {n > 1 ? <span className="hvc__tl2-num">{n}</span> : null}
+              <span className="hvc__tl2-num">{n}</span>
             </button>
           )
         })}
       </div>
-      {/* List = satu baris per TANGGAL → 1:1 dengan pin di sumbu (count, upcoming,
-          dan tanggal terpadat semuanya konsisten; tak ada pin tanpa baris). */}
+      {/* List = satu baris per PROGRAM, di-susun (stacked) di bawah tanggalnya.
+          Tanggal & label hari hanya tampil di baris pertama tiap tanggal; baris
+          berikutnya menampilkan nama program di kolom yang sama → terbaca sebagai
+          klaster di bawah tanggal. Pin "N" di sumbu = jumlah baris di klaster itu. */}
       <ol className="hvc__tl2-list">
-        {groups.map(g => {
+        {groups.flatMap(g => {
           const tone = toneOf(g.days)
-          const n = g.items.length
-          const divs = [...new Set(g.items.map(p => p.divisi).filter(Boolean))]
-          return (
-            <li key={g.t}>
-              <button type="button" className="hvc__tl2-row" onClick={() => onOpen(g.items[0].id)}>
-                <span className="hvc__tl2-rdot" data-tone={tone} aria-hidden />
-                <span className="hvc__tl2-rdate" data-tone={tone}>{fmt(g.t)}</span>
-                <span className="hvc__tl2-rname" title={n > 1 ? g.items.map(p => p.name).join(' · ') : g.items[0].name}>
-                  {n > 1 ? `${n} programs due` : g.items[0].name}
-                </span>
-                <span className="hvc__tl2-rmeta">{divs.join(', ') || '—'}</span>
-                <span className="hvc__tl2-rdays" data-tone={tone}>{daysLabelOf(g.days)}</span>
+          return g.items.map((p, idx) => (
+            <li key={p.id} data-group-start={idx === 0 ? '' : undefined}>
+              <button type="button" className="hvc__tl2-row" onClick={() => onOpen(p.id)}>
+                <span className="hvc__tl2-rdot" data-tone={tone} aria-hidden style={idx > 0 ? { visibility: 'hidden' } : undefined} />
+                <span className="hvc__tl2-rdate" data-tone={tone}>{idx === 0 ? fmt(g.t) : ''}</span>
+                <span className="hvc__tl2-rname" title={p.name}>{p.name}</span>
+                <span className="hvc__tl2-rmeta">{p.divisi || '—'}</span>
+                <span className="hvc__tl2-rdays" data-tone={tone}>{idx === 0 ? daysLabelOf(g.days) : ''}</span>
               </button>
             </li>
-          )
+          ))
         })}
       </ol>
     </div>

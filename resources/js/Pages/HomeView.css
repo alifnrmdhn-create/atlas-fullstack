@@ -1933,6 +1933,8 @@
 .hvc__tl2-dot[data-tone="green"] { background: #10B981; box-shadow: 0 0 0 3px var(--ds-surface-card); }
 .hvc__tl2-num { pointer-events: none; line-height: 1; }
 .hvc__tl2-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+/* Beri napas antar klaster tanggal; baris program dalam satu tanggal tetap rapat. */
+.hvc__tl2-list li[data-group-start]:not(:first-child) { margin-top: var(--ds-space-2); }
 .hvc__tl2-row { display: grid; grid-template-columns: 20px 58px minmax(0, 1fr) auto auto; align-items: center; gap: var(--ds-space-3); width: 100%; padding: var(--ds-space-2); border: 0; background: none; cursor: pointer; text-align: left; border-radius: var(--ds-radius-sm); transition: background .12s ease; }
 .hvc__tl2-row:hover { background: var(--ds-surface-hover); }
 .hvc__tl2-rnum { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }

@@ -113,6 +113,11 @@ export interface WorkspaceContextValue {
   programs: Program[]
   workGroups: WorkGroup[]
   setWorkGroups: Dispatch<SetStateAction<WorkGroup[]>>
+  /** Status request /tasks terpisah dari overviewStatus (yang agregat) — supaya
+   *  Workboard bisa bedakan "gagal load" vs "sukses tapi kosong". */
+  workGroupsStatus: { loading: boolean; failed: boolean }
+  /** Retry terarah hanya untuk /tasks (tanpa refetch 13 request overview). */
+  reloadTasks: () => Promise<void>
   kpis: Kpi[]
   apmsKpis: ApmsKpi[]
   apmsConnected: boolean
@@ -317,6 +322,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [channels, setChannels] = useState<ChannelSummary[]>([])
   const [programs, setPrograms] = useState<Program[]>([])
   const [workGroups, setWorkGroups] = useState<WorkGroup[]>([])
+  // Status request /tasks (lihat komentar di interface): board kosong di prod
+  // ternyata fetch /tasks yang gagal lalu ditelan diam oleh `track`, bukan data
+  // hilang. Lacak sukses/gagal-nya supaya Workboard tak salah tampil "no match".
+  const [workGroupsStatus, setWorkGroupsStatus] = useState<{ loading: boolean; failed: boolean }>({ loading: true, failed: false })
   const [kpis, setKpis] = useState<Kpi[]>([])
   const [apmsKpis, setApmsKpis] = useState<ApmsKpi[]>([])
   const [apmsConnected, setApmsConnected] = useState(false)
@@ -355,9 +364,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const selectedProgramIdRef = useRef<number | null>(null)
   const selectedTaskIdRef = useRef<number | null>(null)
   const selectedWorkstreamIdRef = useRef<number | null>(null)
+  // Juga dipakai untuk men-guard respons out-of-order di refreshChannel: callback
+  // `.then()` (setelah await) memegang channelId saat request dimulai, jadi kita
+  // bandingkan ke ref ini sebelum setState supaya pesan channel lama tidak menimpa
+  // channel baru saat user ganti channel cepat. (Sync effect diletakkan SEBELUM
+  // effect pemicu refreshChannel agar ref sudah mutakhir saat refresh dijalankan.)
+  const selectedChannelIdRef = useRef<number | null>(null)
   useEffect(() => { selectedProgramIdRef.current = selectedProgramId }, [selectedProgramId])
   useEffect(() => { selectedTaskIdRef.current = selectedTaskId }, [selectedTaskId])
   useEffect(() => { selectedWorkstreamIdRef.current = selectedWorkstreamId }, [selectedWorkstreamId])
+  useEffect(() => { selectedChannelIdRef.current = selectedChannelId }, [selectedChannelId])
 
   // Detail data
   const [channelMembers, setChannelMembers] = useState<ChannelMember[]>([])
@@ -384,6 +400,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [taskDetailStatus, setTaskDetailStatus] = useState({ loading: false, message: null as string | null })
   const [workstreamDetailStatus, setWorkstreamDetailStatus] = useState({ loading: false, message: null as string | null })
   const [overviewStatus, setOverviewStatus] = useState<OverviewStatus>({ loading: true, refreshing: false, message: null })
+  // Sinyal khusus: list channel sudah ter-load + selectedChannelId tervalidasi.
+  // Lebih sempit dari overviewStatus.loading — feed pesan tidak perlu menunggu
+  // 12 request overview lain selesai, cukup `/channels` saja (penyebab blank ~5s).
+  const [channelsLoaded, setChannelsLoaded] = useState(false)
   const [boardStatus, setBoardStatus] = useState({ saving: false, message: null as string | null })
   const [taskActionStatus, setTaskActionStatus] = useState({ saving: false, message: null as string | null })
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null)
@@ -535,9 +555,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           // Fall back to first channel
           return loadedChannels[0]?.id ?? null
         })
+        // Unblock the channel-message fetch SEKARANG — jangan tunggu 12 request lain.
+        setChannelsLoaded(true)
       })
       const progP = track(api.get<CollectionResponse<Program>>('/programs'), (v) => setPrograms(v.data))
-      const wiP = track(api.get<TasksResponse>('/tasks'), (v) => setWorkGroups(v.groups))
+      // /tasks = endpoint terberat (ratusan WorkItem × 3 relasi eager-load).
+      // Timeout default 15s sering kalah saat 13 request overview ini berebut
+      // worker FrankenPHP di prod → di-abort → board kosong TANPA error (karena
+      // `track` menelan kegagalannya). Naikkan timeout + lacak status terpisah.
+      setWorkGroupsStatus((s) => ({ ...s, loading: true, failed: false }))
+      const wiP = api.get<TasksResponse>('/tasks', { timeoutMs: 30_000 })
+        .then((v) => { setWorkGroups(v.groups); setWorkGroupsStatus({ loading: false, failed: false }); return true })
+        .catch(() => { setWorkGroupsStatus({ loading: false, failed: true }); return false })
       const kpiP = track(api.get<CollectionResponse<Kpi>>('/kpis'), (v) => setKpis(v.data))
       const blkP = track(api.get<CollectionResponse<Blocker>>('/blockers'), (v) => setBlockers(v.data))
       const presP = track(api.get<{ users: PresenceUser[] }>('/users/presence'), (v) => setPresence(v.users))
@@ -575,6 +604,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setOverviewStatus({ loading: false, refreshing: false, message: 'Workspace failed to load. Try refreshing the page.' })
     } finally {
       setOverviewStatus((cur) => ({ ...cur, loading: false, refreshing: false }))
+      // Jaring pengaman: walau `/channels` gagal, jangan biarkan gate channel
+      // ter-blokir permanen (mirror perilaku lama yang bersandar overview.loading).
+      setChannelsLoaded(true)
+    }
+  })
+
+  // Retry terarah untuk /tasks saja — dipakai tombol "Coba lagi" di Workboard
+  // ketika fetch task gagal, tanpa memuat ulang 13 request overview lainnya.
+  const reloadTasks = useEffectEvent(async () => {
+    setWorkGroupsStatus({ loading: true, failed: false })
+    try {
+      const v = await api.get<TasksResponse>('/tasks', { timeoutMs: 30_000 })
+      setWorkGroups(v.groups)
+      setWorkGroupsStatus({ loading: false, failed: false })
+    } catch {
+      setWorkGroupsStatus({ loading: false, failed: true })
     }
   })
 
@@ -584,31 +629,51 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     silent = false,
   ) => {
     if (!silent) setChannelStatus({ loading: true, message: null })
-    try {
-      const [detail, msgs] = await Promise.all([
-        api.get<ChannelDetailResponse>(`/channels/${channelId}`),
-        api.get<{ data: ChannelMessage[]; total: number }>(
-          `/channels/${channelId}/messages?limit=40&offset=0&includeThreads=true`,
-        ),
-      ])
-      setChannelMembers(detail.members)
+
+    // Feed pesan = elemen yang paling dilihat user. Render BEGITU `/messages`
+    // tiba — jangan tunggu member list atau thread. Dulu ketiganya di-Promise.all
+    // (+ thread di-await), jadi skeleton nyangkut selama request paling lambat;
+    // chat "seolah kosong padahal loading". Sekarang feed prioritas, sisanya
+    // menyusul non-blocking.
+    // Guard race: respons yang tiba setelah user pindah channel tidak boleh
+    // menimpa state channel yang sekarang aktif (lihat selectedChannelIdRef).
+    const isStale = () => channelId !== selectedChannelIdRef.current
+
+    const msgsP = api.get<{ data: ChannelMessage[]; total: number }>(
+      `/channels/${channelId}/messages?limit=40&offset=0&includeThreads=true`,
+    ).then((msgs) => {
+      if (isStale()) return false
       setMessages(msgs.data ?? [])
-      const resolvedThread = threadId ?? selectedThreadId
-      if (resolvedThread) {
-        const threadData = await api.get<{ data: { parent: ChannelMessage; replies: ChannelMessage[] } }>(
-          `/channels/${channelId}/messages/${resolvedThread}/thread`,
-        )
+      return true
+    }).catch(() => false)
+
+    // Member list hanya untuk panel anggota / add-member — boleh telat, tidak
+    // memblokir feed, dan kegagalannya tidak meng-error-kan channel.
+    void api.get<ChannelDetailResponse>(`/channels/${channelId}`)
+      .then((detail) => { if (!isStale()) setChannelMembers(detail.members) })
+      .catch(() => { /* noop — feed tetap tampil tanpa member list */ })
+
+    // Thread (kalau ada yang terbuka) juga lepas dari jalur kritis feed.
+    const resolvedThread = threadId ?? selectedThreadId
+    if (resolvedThread) {
+      void api.get<{ data: { parent: ChannelMessage; replies: ChannelMessage[] } }>(
+        `/channels/${channelId}/messages/${resolvedThread}/thread`,
+      ).then((threadData) => {
+        if (isStale()) return
         setThreadParent(threadData.data?.parent ?? null)
         setThreadReplies(threadData.data?.replies ?? [])
-      } else {
-        setThreadParent(null)
-        setThreadReplies([])
-      }
-      if (!silent) setChannelStatus({ loading: false, message: null })
-      setLastSyncedAt(new Date().toISOString())
-    } catch {
-      if (!silent) setChannelStatus({ loading: false, message: 'Channel tidak dapat dimuat.' })
+      }).catch(() => { /* noop */ })
+    } else {
+      setThreadParent(null)
+      setThreadReplies([])
     }
+
+    const ok = await msgsP
+    // Channel sudah berganti sementara request berjalan → biarkan refresh channel
+    // aktif yang mengatur status; jangan sentuh apa pun di sini.
+    if (isStale()) return
+    if (!silent) setChannelStatus({ loading: false, message: ok ? null : 'Channel tidak dapat dimuat.' })
+    if (ok) setLastSyncedAt(new Date().toISOString())
   })
 
   const loadProgramDetail = useEffectEvent(async (programId: number, silent = false) => {
@@ -812,10 +877,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setThreadParent(null)
     setThreadReplies([])
     if (authStatus !== 'signed_in') return
-    // Wait until overview has loaded so selectedChannelId has been validated against the channels list
-    if (overviewStatus.loading) return
+    // Tunggu list channel ter-load (selectedChannelId tervalidasi) — TAPI tidak
+    // perlu menunggu seluruh batch overview. Feed pesan unblock segera setelah
+    // `/channels` resolve, bukan setelah request paling lambat dari 13.
+    if (!channelsLoaded) return
     void refreshChannel(selectedChannelId)
-  }, [authStatus, selectedChannelId, overviewStatus.loading])
+  }, [authStatus, selectedChannelId, channelsLoaded])
 
   useEffect(() => {
     if (authStatus !== 'signed_in' || !selectedChannelId || !selectedThreadId) return
@@ -1380,6 +1447,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     logoutPending, requestLogout, cancelLogout,
     navRailCollapsed, setNavRailCollapsed, userMenuSurface, toggleUserMenu, closeUserMenu,
     dashboard, myWork, programSummary, channels, setChannels, programs, workGroups, setWorkGroups,
+    workGroupsStatus, reloadTasks,
     kpis, apmsKpis, apmsConnected, apmsLinkedPrograms, apmsLastFetchedAt, refreshApmsKpis, blockers, presence, setPresence, notifications, notifToasts, dismissToast, savedSearches, systemStatus,
     selectedChannelId, setSelectedChannelId, selectedThreadId, setSelectedThreadId,
     selectedProgramId, setSelectedProgramId, selectedTaskId, setSelectedTaskId,

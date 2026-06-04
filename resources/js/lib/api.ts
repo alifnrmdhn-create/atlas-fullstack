@@ -123,7 +123,7 @@ async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
 }
 
 export const api = {
-    get:    <T>(path: string) => request<T>(path),
+    get:    <T>(path: string, opts?: ApiRequestInit) => request<T>(path, opts),
     post:   <T>(path: string, body?: unknown) => request<T>(path, {
         method: 'POST', body: body ? JSON.stringify(body) : undefined,
     }),

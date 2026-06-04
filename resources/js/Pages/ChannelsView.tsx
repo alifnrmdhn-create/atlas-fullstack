@@ -2162,7 +2162,7 @@ export function ChannelsView({
 
         {channelStatus.message && <InlineNotice tone="error">{channelStatus.message}</InlineNotice>}
 
-        {!selectedChannel && !selectedDmPartner ? (
+        {!selectedChannelId && !selectedChannel && !selectedDmPartner ? (
           <div className="channel-stream-empty">
             <div className="channel-stream-empty__icon" aria-hidden="true">
               <svg fill="none" height="40" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="40">
@@ -2172,7 +2172,7 @@ export function ChannelsView({
             <h3 className="channel-stream-empty__title">Select a channel to start</h3>
             <p className="channel-stream-empty__text">Choose a channel or DM from the left panel to open a conversation.</p>
           </div>
-        ) : channelStatus.loading ? (
+        ) : (channelStatus.loading || (!selectedChannel && !selectedDmPartner)) ? (
           <div className="detail-skeleton">
             <SkeletonBlock height={18} width="30%" />
             {[0, 1, 2].map((item) => (

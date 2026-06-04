@@ -520,7 +520,11 @@ class TaskService
         $endMonday->modify('Monday this week');
 
         while ($current <= $endMonday) {
-            $weeks[] = $current->format('Y-\WW');
+            // Pakai 'o' (ISO-8601 week-numbering year), BUKAN 'Y' (tahun kalender):
+            // di batas tahun keduanya berbeda (mis. 2025-12-29 = ISO 2026-W01), dan
+            // 'Y-\WW' menghasilkan "2025-W01" yang salah-attribute. Konsisten dengan
+            // ExecutionGrid/PerformanceController/ProgramController yang pakai 'o-\WW'.
+            $weeks[] = $current->format('o-\WW');
             $current->modify('+1 week');
         }
 

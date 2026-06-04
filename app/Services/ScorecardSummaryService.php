@@ -181,10 +181,17 @@ class ScorecardSummaryService
             array_filter($items, fn ($d) => $d['nilai'] < 80.0)
         ));
 
-        // KPI trend (last 6 months, averaged across the scoped items) + the
-        // delta vs the previous period that has data. Powers the lagging-side
-        // sparkline and the Delta indicator on Home. Reuses the same table+scope
-        // as `items` so the last point matches `avgItem`.
+        // KPI trend (last 6 months) + delta vs the previous period with data.
+        // Powers the lagging-side sparkline + Delta indicator on Home.
+        // PENTING: kpiAvgSeries di-anchor agar cocok dengan ANGKA HERO yang
+        // ditampilkan FE (HomeView `kpiHeadline`), BUKAN selalu `avgItem`:
+        //   - level directorate/unit → series direktorat SENDIRI
+        //     (DirektoratScorecard) → titik akhir == ownItem.nilai (= hero).
+        //   - level portfolio        → rata-rata lintas direktorat dalam scope
+        //     → titik akhir == avgItem (ownItem null di portfolio).
+        // `items` (divisi grid di level directorate) sengaja TIDAK dipakai untuk
+        // series — itu hanya untuk breakdown/topItems. Jaga sinkron dengan
+        // kpiAvgSeries() + HomeView.kpiHeadline kalau mengubah salah satunya.
         $series   = $this->kpiAvgSeries($user, $periode, 6);
         $kpiTrend = array_map(fn ($s) => ['label' => $s['label'], 'avg' => $s['avg']], $series);
         $nonNull  = array_values(array_filter($series, fn ($s) => $s['avg'] !== null));

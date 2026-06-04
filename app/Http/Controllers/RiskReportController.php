@@ -12,6 +12,8 @@ use App\Models\RiskReportNarrative;
 use App\Models\RiskReportRiskSnapshot;
 use App\Models\RiskReportStrategy;
 use App\Models\User;
+use App\Auth\OrgScope;
+use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -186,6 +188,12 @@ class RiskReportController extends Controller
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $existing = RiskMonthlyReport::findOrFail($id);
+
+        // Hanya user di scope unit report (atau executive) & bukan read-only yang
+        // boleh mengedit. Tanpa ini, user mana pun bisa mengubah isi laporan risiko
+        // unit lain.
+        $this->assertCanWriteUnit($request->user(), (int) $existing->unitId);
+
         if ($existing->status === 'APPROVED') {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'An approved report cannot be modified.'], 422);
@@ -408,6 +416,24 @@ class RiskReportController extends Controller
 
         $report = RiskMonthlyReport::findOrFail($id);
         $user = $request->user();
+        $roleType = strtoupper($user->roleType);
+
+        // Gate berjenjang (mirror MonthlyReportController): KASUBDIV menyetujui di
+        // tahap PENDING_KASUB, KADIV di tahap PENDING_KADIV — dan hanya bila report
+        // berada di scope unit-nya (menutup approve lintas-unit/direktorat).
+        $scope = OrgScope::forUser($user);
+        $inScope = $scope->isExecutive || in_array((int) $report->unitId, $scope->unitIds, true);
+        $canApprove = $inScope && (
+            ($roleType === 'KASUBDIV' && $report->status === 'PENDING_KASUB')
+            || ($roleType === 'KADIV' && $report->status === 'PENDING_KADIV')
+        );
+
+        if (!$canApprove) {
+            $msg = "Role {$roleType} cannot {$data['action']} a report with status {$report->status}.";
+            return $request->expectsJson()
+                ? response()->json(['message' => $msg], 422)
+                : back()->withErrors([$msg]);
+        }
 
         $nextStatus = $data['action'] === 'REJECT'
             ? 'REJECTED'
@@ -437,6 +463,13 @@ class RiskReportController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $report = RiskMonthlyReport::findOrFail($id);
+
+        // Hanya pembuat draft atau admin pengelola yang boleh menghapus.
+        $user = $request->user();
+        if ((int) $report->createdById !== (int) $user->id && !RolePolicy::canManageUsers($user->roleType)) {
+            abort(403, 'You can only delete your own draft.');
+        }
+
         if ($report->status !== 'DRAFT') {
             return response()->json(['message' => 'Only DRAFT reports can be deleted.'], 422);
         }
@@ -444,5 +477,18 @@ class RiskReportController extends Controller
         $report->delete();
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Pastikan user boleh menulis ke report milik unit $unitId: berada di scope
+     * unit tersebut (atau executive) dan bukan role read-only (BOD).
+     */
+    private function assertCanWriteUnit(User $user, int $unitId): void
+    {
+        $scope = OrgScope::forUser($user);
+        $inScope = $scope->isExecutive || in_array($unitId, $scope->unitIds, true);
+        if (!$inScope || RolePolicy::isReadOnly($user->roleType)) {
+            abort(403, 'You are not allowed to modify this risk report.');
+        }
     }
 }

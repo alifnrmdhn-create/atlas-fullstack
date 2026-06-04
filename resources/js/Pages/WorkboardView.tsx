@@ -161,7 +161,7 @@ function BoardCard({
 
 export function WorkboardView() {
   const {
-    workGroups, blockers, programs,
+    workGroups, workGroupsStatus, reloadTasks, blockers, programs,
     boardStatus,
     loadOverview,
     normalizeHealthStatus, formatStatusLabel,
@@ -345,6 +345,13 @@ export function WorkboardView() {
       effectiveMyItemsOnly ? g.items.filter(i => i.assignee?.id === currentUser?.id) : g.items
     ).filter(matchesTimeFilter),
   }))
+
+  // Bedakan "fetch /tasks gagal/masih jalan" dari "sukses tapi nol task" —
+  // tanpa ini board menampilkan "No tasks match the current filter" yang
+  // menyesatkan padahal datanya gagal dimuat (lihat bug board kosong di prod).
+  const boardLoadFailed = workGroupsStatus.failed && workGroups.length === 0
+  const boardLoading = workGroupsStatus.loading && workGroups.length === 0
+  const boardReady = !boardLoadFailed && !boardLoading
 
   // Derive workstream options from loaded items, scoped by program filter if set
   const workstreamOptions = (() => {
@@ -631,7 +638,19 @@ export function WorkboardView() {
       <div className="workboard-workspace">
         {/* ── Main board ───────────────────────── */}
         <div className="workboard-main">
-          {boardMode === 'kanban' && allItems.length === 0 ? (
+          {boardLoading && (
+            <SectionState icon="⏳" title="Loading tasks…" text="Fetching Program tasks across your directorate." />
+          )}
+          {boardLoadFailed && (
+            <SectionState
+              tone="warning"
+              icon="⚠️"
+              title="Couldn't load tasks"
+              text="The task list failed to load (the request may have timed out). Your data is safe — this is a loading issue, not missing tasks."
+              cta={{ label: 'Try again', onClick: () => void reloadTasks() }}
+            />
+          )}
+          {boardReady && boardMode === 'kanban' && allItems.length === 0 ? (
             <SectionState
               icon="✨"
               title={
@@ -648,7 +667,7 @@ export function WorkboardView() {
               }
             />
           ) : null}
-          {boardMode === 'kanban' && allItems.length > 0 && (
+          {boardReady && boardMode === 'kanban' && allItems.length > 0 && (
             <div className="kanban-board kanban-board--lanes">
               {LANES.map((lane) => {
                 // Bucket item per lane berdasarkan status underlying. Urutan
@@ -701,7 +720,7 @@ export function WorkboardView() {
             </div>
           )}
 
-          {boardMode === 'list' && (
+          {boardReady && boardMode === 'list' && (
             <div className="panel">
               <div className="panel__header">
                 <h3 className="panel__title">{myItemsOnly ? 'My Tasks' : 'All Tasks'}</h3>
@@ -739,7 +758,7 @@ export function WorkboardView() {
             </div>
           )}
 
-          {boardMode === 'blockers' && (
+          {boardReady && boardMode === 'blockers' && (
             <div className="panel">
               <div className="panel__header">
                 <h3 className="panel__title">Blocker Tracker</h3>

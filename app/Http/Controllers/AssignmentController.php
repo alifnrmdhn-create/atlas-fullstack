@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\AssignmentAttachment;
 use App\Models\Notification;
+use App\Services\ApprovalChainService;
 use App\Services\AssignmentService;
 use App\Services\BroadcastService;
 use App\Support\RolePolicy;
@@ -25,7 +26,10 @@ class AssignmentController extends Controller
         'text/', 'application/zip', 'application/x-zip-compressed',
     ];
 
-    public function __construct(private AssignmentService $service) {}
+    public function __construct(
+        private AssignmentService $service,
+        private ApprovalChainService $chainService,
+    ) {}
 
     // ── Pages ────────────────────────────────────────────────────────────────
 
@@ -136,11 +140,61 @@ class AssignmentController extends Controller
             'status' => $a->status, 'action' => $data['action'],
         ]);
 
+        // Notifikasi inbox (Notification + broadcast, selalu berpasangan). Sebelumnya
+        // transisi hanya emit event realtime ephemeral (dihapus cleanup 2 menit), jadi
+        // reviewer giliran berikutnya & PIC tak pernah tahu harus bertindak.
+        $this->notifyAfterTransition($a, $data['action'], $request->user()->id);
+
         if ($request->expectsJson()) {
             return response()->json(['data' => $a]);
         }
 
         return back()->with('success', "Action {$data['action']} completed.");
+    }
+
+    /**
+     * Kirim notifikasi ke pihak yang harus bertindak setelah transisi:
+     *  - masuk/maju review (IN_REVIEW) → reviewer giliran sekarang
+     *  - RETURN (kembali DIKERJAKAN)   → PIC (assignee), perlu revisi
+     *  - REJECT (REJECTED)            → PIC, ditolak
+     *  - approve final (SELESAI)      → PIC, disetujui & selesai
+     * Lewati bila penerima = aktor (mis. self-assign yang submit→selesai sendiri).
+     */
+    private function notifyAfterTransition(Assignment $a, string $action, int $actorId): void
+    {
+        $recipientId = null;
+        $type = null;
+        $message = null;
+
+        if ($a->status === AssignmentService::STATUS_IN_REVIEW && $a->currentReviewerIdx !== null) {
+            $recipientId = $this->chainService->getCurrentReviewerUserId($a->id, $a->currentReviewerIdx);
+            $type = 'ASSIGNMENT_REVIEW';
+            $message = "Assignment awaiting your review: {$a->title}";
+        } elseif ($a->status === AssignmentService::STATUS_DIKERJAKAN && $action === 'RETURN') {
+            $recipientId = $a->assigneeId;
+            $type = 'ASSIGNMENT_RETURNED';
+            $message = "Assignment returned for revision: {$a->title}";
+        } elseif ($a->status === AssignmentService::STATUS_REJECTED) {
+            $recipientId = $a->assigneeId;
+            $type = 'ASSIGNMENT_REJECTED';
+            $message = "Assignment rejected: {$a->title}";
+        } elseif ($a->status === AssignmentService::STATUS_SELESAI) {
+            $recipientId = $a->assigneeId;
+            $type = 'ASSIGNMENT_APPROVED';
+            $message = "Assignment approved & completed: {$a->title}";
+        }
+
+        if (!$recipientId || $recipientId === $actorId) return;
+
+        $notif = Notification::create([
+            'userId' => $recipientId,
+            'type' => $type,
+            'message' => $message,
+            'source' => "assignment:{$a->id}",
+            'state' => 'UNREAD',
+            'createdAt' => now(),
+        ]);
+        BroadcastService::toUsers('notification:created', ['notification' => $notif], [$recipientId]);
     }
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse

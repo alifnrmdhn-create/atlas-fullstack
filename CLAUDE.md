@@ -67,7 +67,7 @@ Lihat **`ATLAS_PDCA_IMPLEMENTATION_PLAN.md`** untuk detail lengkap. Highlight:
 
 ```bash
 # .env
-FEATURE_CLEAR_THE_PATH=DKM   # 'enabled' | 'disabled' | 'DKM' | 'DBS'...
+FEATURE_CLEAR_THE_PATH=DIR-KMR   # 'enabled' | 'disabled' | kode direktorat (DIR-KMR/DBS/DAS/...) — harus cocok Directorate.code
 ```
 
 Jalankan scheduler untuk auto-health update:

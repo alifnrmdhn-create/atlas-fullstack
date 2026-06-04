@@ -24,6 +24,7 @@ use App\Models\Workstream;
 use App\Services\BroadcastService;
 use App\Services\OrgChainService;
 use App\Services\ProgramHealthService;
+use App\Support\RolePolicy;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -605,6 +606,10 @@ class WorkspaceController extends Controller
 
     public function storeUser(Request $request): JsonResponse
     {
+        // Hanya pengelola user (admin) yang boleh membuat akun. Tanpa gate ini,
+        // user mana pun bisa membuat akun ber-roleType arbitrer (privilege escalation).
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+
         $data = $request->validate([
             'name' => 'required|string|max:120',
             'email' => 'required|email|max:160|unique:User,email',
@@ -645,6 +650,11 @@ class WorkspaceController extends Controller
 
     public function updateUser(Request $request, int $id): JsonResponse
     {
+        // Hanya pengelola user (admin) yang boleh mutasi jabatan / nonaktifkan akun.
+        // positionId men-cascade roleType (lihat di bawah) — tanpa gate ini user
+        // bisa mempromosikan diri ke SUPERADMIN atau menonaktifkan akun siapa pun.
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+
         $data = $request->validate([
             'isActive' => 'sometimes|boolean',
             'positionId' => 'sometimes|nullable|integer|exists:Position,id',
@@ -1039,6 +1049,9 @@ class WorkspaceController extends Controller
 
     public function updateRoleConfig(Request $request, string $role): JsonResponse
     {
+        // Konfigurasi RBAC = admin-only.
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+
         $data = $request->validate(['description' => 'nullable|string|max:500']);
         DB::table('role_configs')->where('role', $role)->update([
             'description' => $data['description'] ?? '',
