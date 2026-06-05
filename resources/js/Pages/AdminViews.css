@@ -582,3 +582,26 @@
 .admin-v2 [data-tone="blue"]   { background: #EEF2FF; color: #4338CA; }
 .admin-v2 [data-tone="purple"] { background: #FAF5FF; color: #7E22CE; }
 .admin-v2 [data-tone="gray"]   { background: var(--ds-neutral-100); color: var(--ds-text-secondary); }
+
+/* ─── Phone (≤640) ─────────────────────────────────────────
+   Halaman admin tak pernah di-collapse untuk phone (media existing 860px =
+   Settings, 720px = form-grid saja). Akibatnya di 390px:
+   - admin-orgs-layout (grid 360px 1fr) & admin-roles-layout (380px 1fr) →
+     kolom-1 fixed > viewport → konten ter-clip + kolom detail/matrix ke-push
+     keluar layar (roles desc kepotong, dll).
+   - admin-positions-stats (grid 4 kolom) → stat ke-4 ("Average Level") clip.
+   - margin samping 36px (baris .view-admin-* > …) kebesaran di HP.
+   - nama direktorat panjang dorong actions/units → tabrakan.
+   Fix: collapse semua layout ke 1 kolom, stat 4→2, rapatkan margin, nama shrink. */
+@media (max-width: 640px) {
+  .admin-v2 .admin-orgs-layout,
+  .admin-v2 .admin-roles-layout { grid-template-columns: 1fr; }
+  .admin-v2 .admin-positions-stats { grid-template-columns: repeat(2, 1fr); }
+  .admin-v2 .directorate-card__name { flex: 1 1 auto; min-width: 0; }
+  .view-admin-orgs > .admin-orgs-layout,
+  .view-admin-positions > .admin-positions-stats,
+  .view-admin-roles > .admin-roles-layout,
+  .view-admin-users > .panel,
+  .view-admin-positions > .panel,
+  .view-admin-orgs > .panel { margin-left: 14px; margin-right: 14px; }
+}

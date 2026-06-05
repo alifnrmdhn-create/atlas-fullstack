@@ -565,6 +565,17 @@
 .activity-leader-row__bar { display: block; height: 100%; background: var(--indigo); border-radius: 3px; transition: width 0.4s ease; }
 .activity-leader-row__sessions { font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono); text-align: center; }
 .activity-leader-row__last { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Phone (≤640): workspace 2-kolom (1fr + 280px detail) overflow → 1 kolom.
+   Tabel leaderboard = grid 7-kolom (~430px) di .activity-main yang `overflow:clip`
+   → kolom Sessions/Last active kepotong tak terjangkau. Buka jadi scroll-x +
+   min-width baris supaya semua kolom bisa di-scroll (tak ada data hilang). */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .activity-workspace { grid-template-columns: 1fr; padding: 0 14px; }
+  .activity-main { overflow-x: auto; }
+  .activity-leader-header,
+  .activity-leader-row { min-width: 560px; } /* 6 kolom fixed ~430px → sisakan ~130px utk kolom nama (1fr) */
+}
 .activity-leader-row__avatar-wrap { position: relative; display: inline-flex; }
 .activity-leader-row__online-dot {
   position: absolute; bottom: 0; right: 0;

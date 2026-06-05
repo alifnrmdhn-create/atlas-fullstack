@@ -435,3 +435,31 @@
   background: color-mix(in srgb, var(--row-accent-color, var(--text-muted)) 10%, transparent);
 }
 .fokus-v2 .hd-act-row__body strong { font-size: 13.5px; }
+
+/* ─── Phone (≤640) ─────────────────────────────────────────
+   Kartu hero = grid `40px 1fr auto` (icon | body | CTA). Di 390px kolom CTA
+   "auto" + icon menghimpit body sampai judul program wrap SATU-KATA-PER-BARIS
+   ("Strategi & / Perencanaan / Pajak / …"). Reflow: icon+body baris-1, CTA
+   full-width baris-2 → body dapat lebar penuh, judul wrap normal. */
+@media (max-width: 640px) {
+  .fokus-v2 .fokus-hero-card {
+    grid-template-columns: 40px 1fr;
+    gap: 12px 14px;
+    padding: 16px;
+  }
+  .fokus-v2 .fokus-hero-card .fokus-cta {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+  }
+  /* Decision/action row (Needs Your Action): grid `max-content 1fr auto auto`
+     (pill | judul | pill-divisi | panah) → di 390px kolom judul (1fr) gepeng
+     ~75px, judul wrap SATU-KATA-PER-BARIS. Jadikan 2 kolom: pill+judul di
+     baris-1 (judul dapat ~226px), pill-divisi + panah turun ke baris-2. */
+  .fokus-v2 .hd-act-row {
+    grid-template-columns: max-content 1fr;
+    gap: 8px 12px;
+    padding: 14px 16px;
+  }
+  .fokus-v2 .hd-act-row__body { min-width: 0; }
+}
