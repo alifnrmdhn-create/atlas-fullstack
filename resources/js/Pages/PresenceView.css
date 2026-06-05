@@ -331,3 +331,15 @@
   box-shadow: var(--ds-shadow-popover);
   padding: 16px;
 }
+
+/* ─── Phone (≤640) ─────────────────────────────────────────
+   Stat toolbar ("1 online … 41 offline"), header actions, dan controls bar
+   (search + filter chips) semuanya flex no-wrap → meluber tepi di 390px
+   (stat "41 offline" mepet, chip "My unit" ter-clip). Izinkan wrap; search
+   jadi full-width supaya chip turun ke baris berikutnya, bukan terpotong. */
+@media (max-width: 640px) {
+  .presence-v2 .presence-toolbar-stats,
+  .presence-v2 .ds-page-header__actions,
+  .presence-v2 .presence-controls-bar { flex-wrap: wrap; }
+  .presence-v2 .presence-controls-bar .presence-search-wrap { flex: 1 1 100%; max-width: none; }
+}

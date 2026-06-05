@@ -123,9 +123,9 @@ Tests baseline: 147/148 passing (1 pre-existing KPI decimal serialization di Wor
 7. **Responsive baku (Mei 2026)** — wajib didukung 4 device tier: T1 laptop kantor 1366×768, T2 modern 1440-1536, T3 FHD 1920, T4 2K/4K. Aturan:
    - Breakpoint values **ambil dari `--bp-*` tokens** di `tokens.css` (sm=640, md=1024, lg=1280, xl=1536, 2xl=1920; plus 768 floor tablet). Jangan karang sendiri — sebelumnya tersebar 20 nilai berbeda di 16 file. **Di-enforce via `npm run audit:breakpoints`** (bagian dari `npm run check`): nilai liar baru → build gagal. 54 violation lama di-grandfather di `scripts/breakpoint-baseline.json` — turunkan bertahap saat migrasi (`--update-baseline`). Breakpoint disengaja: tandai komentar `bp-allow` di baris @media.
    - Sidebar **auto-collapse di ≤1024** (handled di `AppShell.tsx` + `shell.css`). Toggle button hidden di narrow viewport.
-   - Mobile <640px **tidak resmi didukung** — tablet portrait 768px = floor.
+   - **Phone ≤640px KINI DIDUKUNG penuh** (keputusan user 2026-06-01, mengganti "floor 768"). Shell jadi off-canvas: hamburger/bottom-tab-bar (`MobileTabBar`) buka drawer, sidebar keluar grid (`app-shell--mobile`), safe-area insets. Pakem mobile-UX: tap target ≥44px, modal→bottom-sheet ≤640, tabel→kartu (`.reports-table` data-label) atau scroll-x utk matriks, tab horizontal pakai `.scroll-tabs`, density override `--space-page-x` 16px. **PWA installable** (`public/manifest.webmanifest` + `public/sw.js` + ikon). Halaman baru WAJIB reflow bersih @390px; pola di `docs/mobile-phone-support-plan-2026-06.md`. Tablet 768px tetap tier resmi.
    - T4 cap: konten DI DALAM workspace boleh capped 1680px via `.page-shell__cap` utility (opt-in). Workspace itself stays full-bleed.
-   - Audit + roadmap: `docs/responsive-audit-2026-05.md`.
+   - Audit + roadmap: `docs/responsive-audit-2026-05.md` (desktop tier) + `docs/mobile-phone-support-plan-2026-06.md` (phone/tablet).
 
 ## Dokumen Reference
 

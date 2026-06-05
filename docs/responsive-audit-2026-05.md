@@ -270,7 +270,7 @@ Konsolidasi: **20 breakpoint values → 5 baku**. Migration akan pakai sed/awk +
 1. **Sidebar default**: Auto-collapse icon-only di ≤1024px. Pakem Linear/Stripe. User bisa expand manual via toggle existing. Tooltip wajib untuk label accessibility.
 2. **Charter activity table**: Horizontal scroll dengan **sticky kolom name** di kiri. Visual PPT charter (12 kolom) dipertahankan. Tambah `overflow-x: auto` wrapper + `position: sticky` di kolom 1.
 3. **T4 cap policy**: Workspace tetap full-bleed sesuai pakem `CLAUDE.md`. Tambah **inner content max-width 1680px** dengan `margin: 0 auto`. Halaman prose (Playbook body) ikut existing 78ch.
-4. **Mobile scope**: ATLAS officially **desktop + tablet portrait (≥768px)**. <640px tidak didukung (tools desk-bound, tablet portrait sudah cukup untuk field review).
+4. **Mobile scope**: ~~ATLAS officially **desktop + tablet portrait (≥768px)**. <640px tidak didukung~~ — **SUPERSEDED 2026-06-01**: phone ≤640px kini didukung penuh (off-canvas shell + PWA + mobile-UX pass). Lihat `docs/mobile-phone-support-plan-2026-06.md`.
 
 ---
 

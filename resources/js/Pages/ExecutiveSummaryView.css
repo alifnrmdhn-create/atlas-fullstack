@@ -168,7 +168,7 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
-@media (max-width: 720px) {
+@media (max-width: 640px) {
   .exec-status-grid { grid-template-columns: repeat(2, 1fr); }
 }
 .exec-status-card {
@@ -210,6 +210,10 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: 10px;
+}
+/* Phone: minmax(360px) > lebar konten ~358px → overflow. Paksa 1 kolom. */
+@media (max-width: 640px) {
+  .exec-perhatian-grid { grid-template-columns: 1fr; }
 }
 .exec-perhatian-card {
   padding: 12px 14px;

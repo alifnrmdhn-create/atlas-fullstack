@@ -67,6 +67,7 @@ export type RealtimeContextValue = { ticks: RefreshTicks; status: RealtimeStatus
 export const RealtimeContext = createContext<RealtimeContextValue | null>(null)
 
 const POLL_INTERVAL_MS = 2000          // polling cadence — 2s cukup realtime untuk notifikasi & presence; ribuan user tetap aman di FrankenPHP
+const HIDDEN_POLL_INTERVAL_MS = 30_000 // tab tersembunyi (background, terutama mobile): heartbeat lambat — hemat baterai/kuota, catch-up via onVisibility saat kembali
 const POLL_SEED_SENTINEL = 2_147_483_647 // max int — seeds lastEventId tanpa fetch event lama
 
 type PollResponse = { events?: { id: number; eventType: string; payload: unknown }[]; lastEventId?: number }
@@ -166,6 +167,15 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
         const tick = async () => {
             if (cancelled) return
+            // Mobile/baterai: saat tab tersembunyi jangan tarik /realtime/poll tiap 2s.
+            // Lewati fetch & reschedule heartbeat lambat (jaga loop tetap hidup walau
+            // visibilitychange terlewat); begitu tab kembali terlihat, onVisibility
+            // memicu tick() langsung + resyncAll bila hidden lama, jadi data tetap
+            // catch-up via cursor `since`. Status dibiarkan apa adanya (bukan disconnected).
+            if (document.hidden) {
+                timer = setTimeout(tick, HIDDEN_POLL_INTERVAL_MS)
+                return
+            }
             try {
                 const res = await api.get<PollResponse>(`/realtime/poll?since=${lastEventIdRef.current}`)
                 if (cancelled) return

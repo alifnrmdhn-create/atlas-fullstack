@@ -182,6 +182,12 @@
     padding-left: 0;
     gap: 10px 16px;
   }
+  /* Cluster kanan flush-right (margin-left:auto) kurang ruang wrap → ~5px meluber
+   * tepi. Beri full-width dari kiri supaya item leluasa membungkus. */
+  .workboard-v2 .view-toolbar__right {
+    width: 100%;
+    margin-left: 0;
+  }
 }
 
 /* ─── Role badge ────────────────────────────────────────── */

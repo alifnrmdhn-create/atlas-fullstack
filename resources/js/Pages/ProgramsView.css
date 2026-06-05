@@ -1132,6 +1132,29 @@
   }
 }
 
+/* Phone (≤640): dua masalah yang harus dibereskan bersama —
+   (a) grid 4-kolom punya lebar-min ~626px (kolom 1fr min 220 + 3 kolom fixed +
+       gap) → tak muat 390px, kolom state/progress terdorong keluar & ter-clip;
+   (b) .list-row itu flex-row: tombol Charter + kebab (~194px) mencuri lebar,
+       menyisakan ~160px utk konten → code-badge habiskan, JUDUL kebagian 0px.
+   Solusi: grid sel menumpuk vertikal (a), DAN list-row wrap supaya konten utama
+   full-width di baris-1 (judul muncul) & aksi turun ke baris-2 rata-kanan (b).
+   Header kolom disembunyikan (tak relevan saat sel menumpuk). */
+@media (max-width: 640px) {
+  .programs-v2 .program-roster__header { display: none; }
+  .programs-v2 .list-row--with-actions { flex-wrap: wrap; }
+  .programs-v2 .program-row__main {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    align-items: stretch;
+    padding: 12px 14px;
+    flex: 1 1 100%;
+  }
+  .programs-v2 .program-row__state,
+  .programs-v2 .program-row__progress { min-width: 0; width: 100%; }
+  .programs-v2 .program-row__charter-btn { margin-left: auto; }
+}
+
 .programs-v2 .program-row__identity {
   display: flex;
   align-items: flex-start;

@@ -620,6 +620,13 @@
 }
 .mr-db-col-main { flex: 1; min-width: 0; }
 .mr-db-col-side { width: 256px; flex-shrink: 0; }
+/* Phone: 2-kolom (main + side 256px) menyisakan ~90px utk main → stack vertikal.
+   Hero KPI 4-kolom juga terlalu sempit di 390px → 2×2. */
+@media (max-width: 640px) {
+  .mr-db-row { flex-direction: column; }
+  .mr-db-col-side { width: 100%; }
+  .mr-hero-grid { grid-template-columns: repeat(2, 1fr); }
+}
 
 /* ── Hero KPI grid ───────────────────────────────────────────────────────── */
 .mr-hero-grid {
