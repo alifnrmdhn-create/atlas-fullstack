@@ -3412,9 +3412,12 @@ button.hvc__hcard:hover .hvc__arrow { transform: translateX(3px); }
 /* intel: buang indent dalam (align ke padding kartu, seragam dgn metrik) */
 .hvc__verdict-card .hvc__intel { padding-left: var(--ds-space-3); padding-right: var(--ds-space-3); }
 
-/* Mobile ≤640: CTA full-width turun ke bawah; metrik & intel menumpuk (tanpa middot nyangkut) */
+/* Mobile ≤640: CTA turun ke baris sendiri TAPI hug-content (selebar teksnya),
+   rata-kiri sejajar ikon + baris metrik di bawah — BUKAN pill full-width dengan
+   teks mengambang di tengah (terlihat seperti bar kosong). flex-basis:100% =
+   paksa pindah baris; max-width:max-content = kotak menyusut ke konten. */
 @media (max-width: 640px) {
-  .hvc__verdict-cta { flex-basis: 100%; margin-left: 0; margin-top: var(--ds-space-2); justify-content: center; }
+  .hvc__verdict-cta { flex-basis: 100%; max-width: max-content; margin-left: 0; margin-top: var(--ds-space-1); justify-content: flex-start; }
   .hvc__verdict-metrics { flex-direction: column; align-items: flex-start; gap: 3px; }
   .hvc__verdict-metrics .hvc__vmetric + .hvc__vmetric::before { content: none; }
   .hvc__verdict-card .hvc__intel { flex-direction: column; align-items: flex-start; gap: 4px; }
