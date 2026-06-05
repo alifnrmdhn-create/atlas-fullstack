@@ -2555,6 +2555,31 @@
   gap: 8px;
 }
 .schedule-modal__hint { margin-top: 3px; }
+.schedule-focus-dt { display: flex; flex-direction: column; gap: 10px; }
+.schedule-focus-dt__row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.schedule-focus-dt__cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.schedule-focus-dt__cap {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.schedule-focus-dt__allday {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  font-size: 12.5px;
+  color: var(--text-strong);
+  cursor: pointer;
+}
+.schedule-focus-dt__allday input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--purple);
+  cursor: pointer;
+}
 .schedule-modal__textarea { resize: vertical; }
 .schedule-rsvp-options {
   display: flex;
@@ -2577,6 +2602,7 @@
 
 @media (max-width: 640px) {
   .schedule-modal__datetime-grid { grid-template-columns: 1fr; }
+  .schedule-focus-dt__row { grid-template-columns: 1fr; }
 }
 
 .meeting-add-item-btn {
@@ -2711,10 +2737,22 @@
   box-shadow: var(--panel-shadow);
   overflow: hidden;
 }
+/* Collapsed = compact chip that hugs its content, not a full-width bar */
+.suggestions-banner--collapsed {
+  width: fit-content;
+  max-width: 100%;
+  box-shadow: none;
+  border: 1px solid var(--panel-border-soft);
+}
+.suggestions-banner--collapsed .suggestions-banner__header {
+  border-bottom: none;
+  padding: 6px 10px 6px 12px;
+}
 .suggestions-banner__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 9px 14px;
   border-bottom: 1px solid var(--panel-border-soft);
 }
@@ -2727,6 +2765,19 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.suggestions-banner__chevron {
+  color: var(--text-muted);
+  transition: transform 140ms ease;
+  flex-shrink: 0;
+}
+.suggestions-banner--collapsed .suggestions-banner__chevron {
+  transform: rotate(-90deg);
 }
 .suggestions-banner__icon { font-size: 12px; }
 .suggestions-banner__count {

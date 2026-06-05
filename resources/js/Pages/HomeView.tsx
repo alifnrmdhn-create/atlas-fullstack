@@ -292,6 +292,12 @@ const DEADLINE_PREFIX: Array<[string, string]> = [['Overdue', 'overdue'], ['≤'
 const deadlineToken = (label: string) => DEADLINE_PREFIX.find(([p]) => label.startsWith(p))?.[1] ?? null
 
 function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (id: number) => void }) {
+  const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  const toggle = (t: number) => setExpanded(prev => {
+    const next = new Set(prev)
+    next.has(t) ? next.delete(t) : next.add(t)
+    return next
+  })
   const dated = programs.filter(p => p.targetEndDate && p.daysRemaining != null)
   if (dated.length === 0) return <p className="hvc__empty">No active programs with deadlines.</p>
   const fmt = (t: number) => { const d = new Date(t); return `${d.getDate()} ${TL_MON[d.getMonth()]}` }
@@ -299,6 +305,12 @@ function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (i
   // "terlambat" dari "akan jatuh tempo" di sumbu yang sama.
   const toneOf = (days: number): Tone => days < 0 ? 'red' : days <= 30 ? 'amber' : 'green'
   const daysLabelOf = (days: number) => days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Today' : `${days}d left`
+  // Ringkasan divisi untuk baris tanggal padat — kode pendek unik, cap 4.
+  const shortDiv = (d: string) => (d || '').split('-')[0]
+  const divSummary = (items: TLProg[]) => {
+    const uniq = [...new Set(items.map(p => shortDiv(p.divisi)).filter(Boolean))]
+    return uniq.length <= 4 ? uniq.join(' · ') : `${uniq.slice(0, 4).join(' · ')} +${uniq.length - 4}`
+  }
 
   // Kelompokkan per TANGGAL (granularity hari). Banyak program berbagi tenggat
   // akhir-bulan → tanpa grouping, pin menumpuk jadi menara. Satu tanggal = satu
@@ -371,24 +383,58 @@ function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (i
           )
         })}
       </div>
-      {/* List = satu baris per PROGRAM, di-susun (stacked) di bawah tanggalnya.
-          Tanggal & label hari hanya tampil di baris pertama tiap tanggal; baris
-          berikutnya menampilkan nama program di kolom yang sama → terbaca sebagai
-          klaster di bawah tanggal. Pin "N" di sumbu = jumlah baris di klaster itu. */}
+      {/* List collapsible PER-TANGGAL. Tanggal isi-1 = baris program langsung.
+          Tanggal padat = baris ringkas "N programs · divisi · Xd overdue" yg di-expand
+          on-demand → ringkas (30+ baris → ~8) tapi komprehensif: jumlah, divisi, &
+          tingkat keterlambatan selalu terlihat; nama lengkap sekali klik. Pin "N" di
+          sumbu = jumlah program di klaster itu (1:1 dgn baris). */}
       <ol className="hvc__tl2-list">
-        {groups.flatMap(g => {
+        {groups.map(g => {
           const tone = toneOf(g.days)
-          return g.items.map((p, idx) => (
-            <li key={p.id} data-group-start={idx === 0 ? '' : undefined}>
-              <button type="button" className="hvc__tl2-row" onClick={() => onOpen(p.id)}>
-                <span className="hvc__tl2-rdot" data-tone={tone} aria-hidden style={idx > 0 ? { visibility: 'hidden' } : undefined} />
-                <span className="hvc__tl2-rdate" data-tone={tone}>{idx === 0 ? fmt(g.t) : ''}</span>
-                <span className="hvc__tl2-rname" title={p.name}>{p.name}</span>
-                <span className="hvc__tl2-rmeta">{p.divisi || '—'}</span>
-                <span className="hvc__tl2-rdays" data-tone={tone}>{idx === 0 ? daysLabelOf(g.days) : ''}</span>
-              </button>
-            </li>
-          ))
+          const n = g.items.length
+          if (n === 1) {
+            const p = g.items[0]
+            return (
+              <li key={g.t} className="hvc__tl2-grp">
+                <button type="button" className="hvc__tl2-row" onClick={() => onOpen(p.id)}>
+                  <span className="hvc__tl2-rdot" data-tone={tone} aria-hidden />
+                  <span className="hvc__tl2-rdate" data-tone={tone}>{fmt(g.t)}</span>
+                  <span className="hvc__tl2-rname" title={p.name}>{p.name}</span>
+                  <span className="hvc__tl2-rmeta">{p.divisi || '—'}</span>
+                  <span className="hvc__tl2-rdays" data-tone={tone}>{daysLabelOf(g.days)}</span>
+                </button>
+              </li>
+            )
+          }
+          const open = expanded.has(g.t)
+          return (
+            <Fragment key={g.t}>
+              <li className="hvc__tl2-grp">
+                <button type="button" className="hvc__tl2-row hvc__tl2-row--group" aria-expanded={open}
+                  onClick={() => toggle(g.t)}>
+                  <span className="hvc__tl2-rdot" data-tone={tone} aria-hidden />
+                  <span className="hvc__tl2-rdate" data-tone={tone}>{fmt(g.t)}</span>
+                  <span className="hvc__tl2-rgroup">
+                    <span className="hvc__tl2-rcount">{n} programs</span>
+                    <span className="hvc__tl2-rdiv" title={divSummary(g.items)}>{divSummary(g.items)}</span>
+                  </span>
+                  <span className="hvc__tl2-rdays" data-tone={tone}>{daysLabelOf(g.days)}</span>
+                  <span className={`hvc__tl2-chev${open ? ' is-open' : ''}`} aria-hidden>›</span>
+                </button>
+              </li>
+              {open && g.items.map(p => (
+                <li key={p.id} className="hvc__tl2-sub">
+                  <button type="button" className="hvc__tl2-row hvc__tl2-row--sub" onClick={() => onOpen(p.id)}>
+                    <span className="hvc__tl2-rdot" aria-hidden style={{ visibility: 'hidden' }} />
+                    <span className="hvc__tl2-rdate" />
+                    <span className="hvc__tl2-rname" title={p.name}>{p.name}</span>
+                    <span className="hvc__tl2-rmeta">{p.divisi || '—'}</span>
+                    <span className="hvc__tl2-rdays" />
+                  </button>
+                </li>
+              ))}
+            </Fragment>
+          )
         })}
       </ol>
     </div>

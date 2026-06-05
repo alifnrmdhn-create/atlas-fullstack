@@ -236,6 +236,54 @@ function durationLabel(startAt: string, endAt: string) {
   return m > 0 ? `${h} hr ${m} min` : `${h} hr`
 }
 
+// A focus block may span multiple days. Expand it into one segment per calendar
+// day it covers, clamping each segment to that day's bounds so list + calendar
+// rendering (both keyed by day) stay correct. Capped at 90 days as a safety net.
+type FocusSegment = {
+  block: FocusBlock
+  dateKey: string
+  segStart: string  // ISO, clamped to this day
+  segEnd: string    // ISO, clamped to this day
+  index: number     // 0-based day index within the span
+  total: number     // total days the block spans
+  isStart: boolean  // first day → real start time
+  isEnd: boolean    // last day → real end time
+}
+function expandFocusBlock(b: FocusBlock): FocusSegment[] {
+  const start = new Date(b.startAt), end = new Date(b.endAt)
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
+    return [{ block: b, dateKey: start.toDateString(), segStart: b.startAt, segEnd: b.endAt, index: 0, total: 1, isStart: true, isEnd: true }]
+  }
+  const cur = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+  const endMid = new Date(end.getFullYear(), end.getMonth(), end.getDate())
+  const total = Math.min(90, Math.round((endMid.getTime() - cur.getTime()) / 86400000) + 1)
+  const segs: FocusSegment[] = []
+  for (let i = 0; i < total; i++) {
+    const dayStart = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate())
+    const dayEnd = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate(), 23, 59, 59, 999)
+    const isStart = i === 0
+    const isEnd = cur.getTime() === endMid.getTime()
+    segs.push({
+      block: b,
+      dateKey: cur.toDateString(),
+      segStart: (isStart ? start : dayStart).toISOString(),
+      segEnd: (isEnd ? end : dayEnd).toISOString(),
+      index: i, total, isStart, isEnd,
+    })
+    cur.setDate(cur.getDate() + 1)
+  }
+  return segs
+}
+// Human label for a segment's time portion on its day.
+function focusSegLabel(seg: FocusSegment): string {
+  const startHM = formatTime(seg.segStart), endHM = formatTime(seg.segEnd)
+  const startsMidnight = startHM === '00.00', endsEod = endHM === '23.59'
+  if (seg.total === 1) return startsMidnight && endsEod ? 'All day' : `${startHM} – ${endHM}`
+  if (seg.isStart) return startsMidnight ? 'All day' : `From ${startHM}`
+  if (seg.isEnd) return endsEod ? 'All day' : `Until ${endHM}`
+  return 'All day'
+}
+
 function rsvpSymbol(status: RsvpStatus) {
   return status === 'HADIR' ? '✓' : status === 'TIDAK_HADIR' ? '✗' : status === 'DELEGASI' ? '↪' : '○'
 }
@@ -311,9 +359,10 @@ export function ScheduleView() {
   const [personOptions, setPersonOptions] = useState<PersonView[]>([])
   const [personSearchLoading, setPersonSearchLoading] = useState(false)
 
-  // Portfolio suggestions
+  // Portfolio suggestions — collapsed chip by default; dismiss + expand persist across visits
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(true)
+  const [suggestExpanded, setSuggestExpanded] = useState(false)
+  const [suggestDismissedSig, setSuggestDismissedSig] = useState<string | null>(null)
 
   // Focus blocks
   const [focusBlocks, setFocusBlocks] = useState<FocusBlock[]>([])
@@ -321,7 +370,7 @@ export function ScheduleView() {
   const focusDialogRef = useDialogFocus<HTMLDivElement>(showFocusForm || closingOverlay === 'focus')
   const focusDialogTitleId = useId()
   const focusDialogDescId = useId()
-  const [focusForm, setFocusForm] = useState({ title: 'Focus Time', date: '', startTime: '', endTime: '', note: '' })
+  const [focusForm, setFocusForm] = useState({ title: 'Focus Time', date: '', endDate: '', startTime: '', endTime: '', allDay: false, note: '' })
   const [focusSaving, setFocusSaving] = useState(false)
   const [focusError, setFocusError] = useState<string | null>(null)
 
@@ -461,6 +510,30 @@ export function ScheduleView() {
       .then(res => setSuggestions(res.data ?? []))
       .catch((err) => { console.error('[Atlas] Silent failure in ScheduleView.tsx:', err); setSuggestions([]) })
   }, [])
+
+  // Restore persisted dismiss/expand preference once on mount
+  useEffect(() => {
+    try {
+      setSuggestDismissedSig(localStorage.getItem('atlas.schedule.suggestDismissed'))
+      setSuggestExpanded(localStorage.getItem('atlas.schedule.suggestExpanded') === '1')
+    } catch { /* localStorage unavailable — fall back to defaults */ }
+  }, [])
+
+  // Signature keyed to the program set: a new/changed set re-surfaces the chip even after dismiss
+  const suggestSig = suggestions.map(s => s.programId).sort((a, b) => a - b).join(',')
+  const suggestVisible = filter === 'upcoming' && suggestSig !== '' && suggestSig !== suggestDismissedSig
+
+  const dismissSuggestions = () => {
+    setSuggestDismissedSig(suggestSig)
+    try { localStorage.setItem('atlas.schedule.suggestDismissed', suggestSig) } catch { /* ignore */ }
+  }
+  const toggleSuggestExpanded = () => {
+    setSuggestExpanded(v => {
+      const next = !v
+      try { localStorage.setItem('atlas.schedule.suggestExpanded', next ? '1' : '0') } catch { /* ignore */ }
+      return next
+    })
+  }
 
   const loadFocusBlocks = useCallback(() => {
     setFocusBlocks([])
@@ -625,13 +698,15 @@ export function ScheduleView() {
 
   // ── Group meetings + focus blocks by date ────────────────────────────────
 
-  type DayGroup = { dateKey: string; meetings: Meeting[]; blocks: FocusBlock[] }
-  const grouped = [...filteredMeetings, ...focusBlocks.map(b => ({ _type: 'block' as const, ...b }))].reduce<DayGroup[]>((acc, item) => {
-    const key = new Date(item.startAt).toDateString()
-    let g = acc.find(d => d.dateKey === key)
-    if (!g) { g = { dateKey: key, meetings: [], blocks: [] }; acc.push(g) }
-    if ('_type' in item) g.blocks.push(item)
-    else g.meetings.push(item as Meeting)
+  type DayGroup = { dateKey: string; meetings: Meeting[]; blocks: FocusSegment[] }
+  const grouped = [
+    ...filteredMeetings.map(m => ({ _type: 'meeting' as const, dateKey: new Date(m.startAt).toDateString(), meeting: m })),
+    ...focusBlocks.flatMap(expandFocusBlock).map(seg => ({ _type: 'block' as const, dateKey: seg.dateKey, seg })),
+  ].reduce<DayGroup[]>((acc, item) => {
+    let g = acc.find(d => d.dateKey === item.dateKey)
+    if (!g) { g = { dateKey: item.dateKey, meetings: [], blocks: [] }; acc.push(g) }
+    if (item._type === 'block') g.blocks.push(item.seg)
+    else g.meetings.push(item.meeting)
     return acc
   }, []).sort((a, b) => new Date(a.dateKey).getTime() - new Date(b.dateKey).getTime())
 
@@ -759,18 +834,25 @@ export function ScheduleView() {
 
   const openFocusForm = () => {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date())
-    setFocusForm({ title: 'Focus Time', date: today, startTime: '09:00', endTime: '11:00', note: '' })
+    setFocusForm({ title: 'Focus Time', date: today, endDate: '', startTime: '09:00', endTime: '11:00', allDay: false, note: '' })
     setFocusError(null)
     setShowFocusForm(true)
   }
 
   const submitFocusBlock = async () => {
-    if (!focusForm.date || !focusForm.startTime || !focusForm.endTime) {
-      setFocusError('Date and time are required.'); return
+    if (!focusForm.date) { setFocusError('Date is required.'); return }
+    const endDate = focusForm.endDate || focusForm.date
+    if (endDate < focusForm.date) { setFocusError('End date must be on or after the start date.'); return }
+    let startAt: string, endAt: string
+    if (focusForm.allDay) {
+      startAt = new Date(`${focusForm.date}T00:00:00`).toISOString()
+      endAt   = new Date(`${endDate}T23:59:00`).toISOString()
+    } else {
+      if (!focusForm.startTime || !focusForm.endTime) { setFocusError('Start and end time are required.'); return }
+      startAt = new Date(`${focusForm.date}T${focusForm.startTime}:00`).toISOString()
+      endAt   = new Date(`${endDate}T${focusForm.endTime}:00`).toISOString()
     }
-    const startAt = new Date(`${focusForm.date}T${focusForm.startTime}:00`).toISOString()
-    const endAt   = new Date(`${focusForm.date}T${focusForm.endTime}:00`).toISOString()
-    if (new Date(endAt) <= new Date(startAt)) { setFocusError('End time must be after start time.'); return }
+    if (new Date(endAt) <= new Date(startAt)) { setFocusError('End must be after start.'); return }
     setFocusSaving(true)
     setFocusError(null)
     try {
@@ -1062,23 +1144,30 @@ export function ScheduleView() {
         </div>
       )}
 
-      {/* Portfolio suggestions banner */}
-      {suggestions.length > 0 && showSuggestions && (
-        <div className="suggestions-banner">
+      {/* Portfolio suggestions banner — Upcoming tab only, collapsed chip by default */}
+      {suggestVisible && (
+        <div className={`suggestions-banner${suggestExpanded ? '' : ' suggestions-banner--collapsed'}`}>
           <div className="suggestions-banner__header">
-            <div className="suggestions-banner__title">
+            <button
+              className="suggestions-banner__title"
+              onClick={toggleSuggestExpanded}
+              aria-expanded={suggestExpanded}
+              title={suggestExpanded ? 'Collapse' : 'Show details'}
+            >
               <span className="suggestions-banner__icon">⚡</span>
               <span>Meeting Recommendations</span>
               <span className="suggestions-banner__count">{suggestions.length} programs need attention</span>
-            </div>
+              <svg className="suggestions-banner__chevron" fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10"><path d="m3 4.5 3 3 3-3" /></svg>
+            </button>
             <button
               className="suggestions-banner__dismiss"
-              onClick={() => setShowSuggestions(false)}
-              title="Hide"
+              onClick={dismissSuggestions}
+              title="Dismiss"
             >
               <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg>
             </button>
           </div>
+          {suggestExpanded && (
           <div className="suggestions-banner__list">
             {suggestions.map(s => (
               <div key={s.programId} className="suggestion-card">
@@ -1113,6 +1202,7 @@ export function ScheduleView() {
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 
@@ -1241,15 +1331,14 @@ export function ScheduleView() {
           const gridCols = `52px repeat(${numDays}, 1fr)`
 
           // Build event map: dateKey → events (meetings + blocks)
-          const eventsByDay = new Map<string, { meetings: Meeting[]; blocks: FocusBlock[] }>()
+          const eventsByDay = new Map<string, { meetings: Meeting[]; blocks: FocusSegment[] }>()
           displayDays.forEach(d => eventsByDay.set(d.toDateString(), { meetings: [], blocks: [] }))
           meetings.forEach(m => {
             const k = new Date(m.startAt).toDateString()
             if (eventsByDay.has(k)) eventsByDay.get(k)!.meetings.push(m)
           })
-          focusBlocks.forEach(b => {
-            const k = new Date(b.startAt).toDateString()
-            if (eventsByDay.has(k)) eventsByDay.get(k)!.blocks.push(b)
+          focusBlocks.flatMap(expandFocusBlock).forEach(seg => {
+            if (eventsByDay.has(seg.dateKey)) eventsByDay.get(seg.dateKey)!.blocks.push(seg)
           })
 
           const todayStr = new Date().toDateString()
@@ -1372,7 +1461,7 @@ export function ScheduleView() {
                   // Compute overlap layout for all events in this day
                   const allEvs = [
                     ...dayEvs.meetings.map(m => ({ id: m.id, startAt: m.startAt, endAt: m.endAt })),
-                    ...dayEvs.blocks.map(b => ({ id: -b.id, startAt: b.startAt, endAt: b.endAt })),
+                    ...dayEvs.blocks.map(seg => ({ id: -seg.block.id, startAt: seg.segStart, endAt: seg.segEnd })),
                   ]
                   const layout = computeOverlapLayout(allEvs)
 
@@ -1426,22 +1515,22 @@ export function ScheduleView() {
                         <div key={`h${i}`} className="schedule-cal-day__half-line" style={{ top: i * CAL_HOUR_PX + CAL_HOUR_PX / 2 }} />
                       ))}
 
-                      {/* Focus blocks */}
-                      {dayEvs.blocks.map(b => {
-                        const s = new Date(b.startAt), e = new Date(b.endAt)
+                      {/* Focus blocks (per-day segment; clamped to this day) */}
+                      {dayEvs.blocks.map(seg => {
+                        const s = new Date(seg.segStart), e = new Date(seg.segEnd)
                         const top = calTop(s, CAL_HOUR_PX), height = calHeight(s, e, CAL_HOUR_PX)
-                        const { col, totalCols } = layout.get(-b.id) ?? { col: 0, totalCols: 1 }
+                        const { col, totalCols } = layout.get(-seg.block.id) ?? { col: 0, totalCols: 1 }
                         const usable = 96, colW = (usable - (totalCols - 1)) / totalCols
                         const leftPct = 2 + col * (colW + 1)
                         const rightPct = 2 + (totalCols - col - 1) * (colW + 1)
                         return (
                           <div
-                            key={`fb-${b.id}`}
+                            key={`fb-${seg.block.id}-${seg.dateKey}`}
                             className="schedule-cal-event schedule-cal-event--focus"
                             style={{ top, height, left: `${leftPct}%`, right: `${rightPct}%` }}
                           >
-                            <span className="schedule-cal-event__time">{formatTime(b.startAt)}</span>
-                            <span className="schedule-cal-event__title">🔒 {b.title}</span>
+                            <span className="schedule-cal-event__time">{seg.total > 1 ? `Day ${seg.index + 1}/${seg.total}` : formatTime(seg.segStart)}</span>
+                            <span className="schedule-cal-event__title">🔒 {seg.block.title}</span>
                           </div>
                         )
                       })}
@@ -1536,7 +1625,7 @@ export function ScheduleView() {
             <>
               {pagedGroups.map(group => {
                 const todayGroup = isToday(group.dateKey)
-                const dateRef = group.meetings[0]?.startAt ?? group.blocks[0]?.startAt ?? group.dateKey
+                const dateRef = group.meetings[0]?.startAt ?? group.blocks[0]?.segStart ?? group.dateKey
 
                 return (
                   <div key={group.dateKey} className={`schedule-date-group${todayGroup ? ' schedule-date-group--today' : ''}`}>
@@ -1724,36 +1813,39 @@ export function ScheduleView() {
                         )
                       })}
 
-                      {/* Focus blocks for this day */}
-                      {group.blocks.map(block => (
-                        <div key={`fb-${block.id}`} className="schedule-card schedule-card--focus">
+                      {/* Focus blocks for this day (one card per spanned day) */}
+                      {group.blocks.map(seg => {
+                        const label = focusSegLabel(seg)
+                        return (
+                        <div key={`fb-${seg.block.id}-${seg.dateKey}`} className="schedule-card schedule-card--focus">
                           <div className="schedule-card__top">
                             <div className="schedule-card__meta">
                               <span className="schedule-tone-pill" data-tone="purple">
                                 🔒 Focus
                               </span>
-                              <span className="schedule-card__time">
-                                {formatTime(block.startAt)} – {formatTime(block.endAt)}
-                              </span>
-                              <span className="schedule-card__duration text-muted">
-                                ({durationLabel(block.startAt, block.endAt)})
-                              </span>
+                              <span className="schedule-card__time">{label}</span>
+                              {seg.total > 1 ? (
+                                <span className="schedule-card__duration text-muted">Day {seg.index + 1}/{seg.total}</span>
+                              ) : label !== 'All day' ? (
+                                <span className="schedule-card__duration text-muted">({durationLabel(seg.segStart, seg.segEnd)})</span>
+                              ) : null}
                             </div>
-                            {block.userId === currentUser?.id && (
+                            {seg.block.userId === currentUser?.id && (
                               <button
                                 className="btn btn--xs btn--ghost schedule-card__action"
-                                onClick={() => void deleteFocusBlock(block.id)}
+                                onClick={() => void deleteFocusBlock(seg.block.id)}
                               >
                                 Delete
                               </button>
                             )}
                           </div>
-                          <h3 className="schedule-card__title schedule-card__title--focus">{block.title}</h3>
-                          {block.note && (
-                            <p className="schedule-card__note">{block.note}</p>
+                          <h3 className="schedule-card__title schedule-card__title--focus">{seg.block.title}</h3>
+                          {seg.block.note && (
+                            <p className="schedule-card__note">{seg.block.note}</p>
                           )}
                         </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
                 )
@@ -2188,16 +2280,45 @@ export function ScheduleView() {
                   />
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Date & Time <span className="schedule-modal__required">*</span></label>
-                  <div className="schedule-modal__datetime-grid">
-                    <input className="form-input" type="date" value={focusForm.date}
-                      onChange={e => setFocusForm(f => ({ ...f, date: e.target.value }))} />
-                    <input className="form-input" type="time" value={focusForm.startTime}
-                      onChange={e => setFocusForm(f => ({ ...f, startTime: e.target.value }))} />
-                    <input className="form-input" type="time" value={focusForm.endTime}
-                      onChange={e => setFocusForm(f => ({ ...f, endTime: e.target.value }))} />
+                  <label className="modal-label">Date &amp; Time <span className="schedule-modal__required">*</span></label>
+                  <div className="schedule-focus-dt">
+                    <div className="schedule-focus-dt__row">
+                      <div className="schedule-focus-dt__cell">
+                        <span className="schedule-focus-dt__cap">Start date</span>
+                        <input className="form-input" type="date" value={focusForm.date}
+                          onChange={e => setFocusForm(f => ({ ...f, date: e.target.value }))} />
+                      </div>
+                      <div className="schedule-focus-dt__cell">
+                        <span className="schedule-focus-dt__cap">End date <span className="text-muted">(optional)</span></span>
+                        <input className="form-input" type="date" value={focusForm.endDate} min={focusForm.date}
+                          onChange={e => setFocusForm(f => ({ ...f, endDate: e.target.value }))} />
+                      </div>
+                    </div>
+                    <label className="schedule-focus-dt__allday">
+                      <input type="checkbox" checked={focusForm.allDay}
+                        onChange={e => setFocusForm(f => ({ ...f, allDay: e.target.checked }))} />
+                      <span>All day</span>
+                    </label>
+                    {!focusForm.allDay && (
+                      <div className="schedule-focus-dt__row">
+                        <div className="schedule-focus-dt__cell">
+                          <span className="schedule-focus-dt__cap">Start time</span>
+                          <input className="form-input" type="time" value={focusForm.startTime}
+                            onChange={e => setFocusForm(f => ({ ...f, startTime: e.target.value }))} />
+                        </div>
+                        <div className="schedule-focus-dt__cell">
+                          <span className="schedule-focus-dt__cap">End time</span>
+                          <input className="form-input" type="time" value={focusForm.endTime}
+                            onChange={e => setFocusForm(f => ({ ...f, endTime: e.target.value }))} />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <span className="text-xs text-muted schedule-modal__hint">Date · Start · End</span>
+                  <span className="text-xs text-muted schedule-modal__hint">
+                    {focusForm.endDate && focusForm.endDate !== focusForm.date
+                      ? 'Spans multiple days — shown on each day, free of meeting invites'
+                      : focusForm.allDay ? 'Whole day marked meeting-free' : 'A few hours of meeting-free time'}
+                  </span>
                 </div>
                 <div className="modal-field">
                   <label className="modal-label">Note <span className="text-muted">(optional)</span></label>

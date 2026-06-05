@@ -1932,10 +1932,21 @@
 .hvc__tl2-dot[data-tone="green"] { background: #10B981; box-shadow: 0 0 0 3px var(--ds-surface-card); }
 .hvc__tl2-num { pointer-events: none; line-height: 1; }
 .hvc__tl2-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
-/* Beri napas antar klaster tanggal; baris program dalam satu tanggal tetap rapat. */
-.hvc__tl2-list li[data-group-start]:not(:first-child) { margin-top: var(--ds-space-2); }
+/* Beri napas antar klaster tanggal; baris sub (expand) tetap rapat di bawahnya. */
+.hvc__tl2-grp:not(:first-child) { margin-top: var(--ds-space-2); }
 .hvc__tl2-row { display: grid; grid-template-columns: 20px 58px minmax(0, 1fr) auto auto; align-items: center; gap: var(--ds-space-3); width: 100%; padding: var(--ds-space-2); border: 0; background: none; cursor: pointer; text-align: left; border-radius: var(--ds-radius-sm); transition: background .12s ease; }
 .hvc__tl2-row:hover { background: var(--ds-surface-hover); }
+/* Baris ringkas tanggal padat: rdot · date · (count+div) · days · chevron. */
+.hvc__tl2-row--group { grid-template-columns: 20px 58px minmax(0, 1fr) auto 16px; }
+.hvc__tl2-rgroup { display: inline-flex; align-items: baseline; gap: var(--ds-space-2); min-width: 0; }
+.hvc__tl2-rcount { font-size: var(--ds-text-13); font-weight: 600; color: var(--ds-text-primary); white-space: nowrap; }
+.hvc__tl2-rdiv { font-size: var(--ds-text-11); color: var(--ds-text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.hvc__tl2-chev { justify-self: end; color: var(--ds-text-tertiary); font-size: 16px; line-height: 1; transition: transform .15s ease; }
+.hvc__tl2-chev.is-open { transform: rotate(90deg); }
+/* Baris program di dalam tanggal yang di-expand — nama selaras di bawah header,
+   warna sekunder + guide tipis di kiri sebagai isyarat hierarki. */
+.hvc__tl2-sub .hvc__tl2-row--sub { padding-top: 3px; padding-bottom: 3px; }
+.hvc__tl2-row--sub .hvc__tl2-rname { color: var(--ds-text-secondary); }
 .hvc__tl2-rnum { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .hvc__tl2-rnum[data-tone="red"]   { background: #EF4444; }
 .hvc__tl2-rnum[data-tone="amber"] { background: #F59E0B; }
@@ -1957,7 +1968,7 @@
 .hvc__tl2-rdays[data-tone="green"] { color: var(--ds-text-tertiary); }
 
 @media (prefers-reduced-motion: reduce) {
-  .hvc__tl2-dot, .hvc__tl2-row { transition: none; }
+  .hvc__tl2-dot, .hvc__tl2-row, .hvc__tl2-chev { transition: none; }
 }
 
 /* Shortcut as a slim row (was 2×2 card) */
