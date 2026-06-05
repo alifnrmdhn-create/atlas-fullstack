@@ -4864,7 +4864,10 @@ select.wid-input {
   .wid-status-seg { grid-template-columns: 1fr 1fr; }
   .wid-hero__program-name { max-width: 200px; }
   .wid-alert { flex-wrap: wrap; }
-  .wid-alert__action { width: 100%; justify-content: center; margin-left: 0; }
+  /* Action turun ke baris sendiri (alert wrap) TAPI hug-content rata-kiri —
+     bukan tombol full-width teks-tengah (bar kosong). inline-flex sudah hug;
+     cukup lepas width:100% + center, margin-left:0 supaya rata-kiri. */
+  .wid-alert__action { width: max-content; max-width: 100%; justify-content: flex-start; margin-left: 0; }
 }
 
 /* ══════════════════════════════════════════════════════════════════

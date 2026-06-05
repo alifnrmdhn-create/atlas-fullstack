@@ -447,10 +447,16 @@
     gap: 12px 14px;
     padding: 16px;
   }
+  /* CTA hero turun ke baris sendiri TAPI hug-content (selebar teksnya), rata-kiri
+     sejajar ikon — BUKAN pill full-width dengan teks di tengah (bar kosong).
+     justify-self:start override `stretch` dari responsive.css; max-content susutkan box. */
   .fokus-v2 .fokus-hero-card .fokus-cta {
     grid-column: 1 / -1;
-    width: 100%;
-    justify-content: center;
+    justify-self: start;
+    width: auto;
+    max-width: max-content;
+    justify-content: flex-start;
+    margin-top: 2px;
   }
   /* Decision/action row (Needs Your Action): grid `max-content 1fr auto auto`
      (pill | judul | pill-divisi | panah) → di 390px kolom judul (1fr) gepeng
