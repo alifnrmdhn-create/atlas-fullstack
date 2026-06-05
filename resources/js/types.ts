@@ -622,6 +622,8 @@ export type MomentumPayload = {
   programsCompletedLast30d: number
   newProgramsLast30d: number
   tasksCompletedThisWeek: number
+  /** Real execution velocity: task completions per ISO week, 8 weeks oldest→newest. */
+  weeklyThroughput: Array<{ weekStart: string; label: string; count: number }>
   stagnantCount: number
   activeRate: number
   stagnantPrograms: StagnantProgram[]

@@ -390,6 +390,36 @@ class OrganizationController extends Controller
                 fn ($q2) => $q2->whereIn('ownerUnitId', $unitIds)))
             ->count();
 
+        // Weekly throughput — REAL execution velocity (task completions keyed on
+        // actualCompletion, NOT updatedAt). 8 ISO weeks, oldest→newest. This is the
+        // signal that makes "Momentum" mean one thing: how fast work is finishing.
+        // Scoped identically to tasksCompletedThisWeek (directorate sees all, others
+        // see only their units).
+        $weekStart      = $now->copy()->startOfWeek();          // Monday 00:00, current week
+        $throughputFrom = $weekStart->copy()->subWeeks(7);      // start of the 8-week window
+        $weeklyRaw = Task::query()
+            ->where('status', 'COMPLETED')
+            ->whereNotNull('actualCompletion')
+            ->where('actualCompletion', '>=', $throughputFrom)
+            ->when(!$isExecutive, fn ($q) => $q->whereHas('workstream.program',
+                fn ($q2) => $q2->whereIn('ownerUnitId', $unitIds)))
+            ->selectRaw('date_trunc(\'week\', "actualCompletion") as wk, COUNT(*) as c')
+            ->groupBy('wk')
+            ->pluck('c', 'wk');                                  // keyed by week-start timestamp
+        $weeklyThroughput = [];
+        for ($i = 7; $i >= 0; $i--) {
+            $ws    = $weekStart->copy()->subWeeks($i);
+            $count = 0;
+            foreach ($weeklyRaw as $k => $v) {
+                if (Carbon::parse($k)->isSameDay($ws)) { $count = (int) $v; break; }
+            }
+            $weeklyThroughput[] = [
+                'weekStart' => $ws->toDateString(),
+                'label'     => $ws->format('j/n'),
+                'count'     => $count,
+            ];
+        }
+
         $stagnantCount = $stagnantPrograms->count();
         $totalActive   = $programs->where('approvalStatus', 'ACTIVE')
             ->whereNotIn('status', ['COMPLETED', 'CANCELLED'])->count();
@@ -399,6 +429,7 @@ class OrganizationController extends Controller
             'programsCompletedLast30d' => $recentCompletedPrograms,
             'newProgramsLast30d'       => $newProgramsThisMonth,
             'tasksCompletedThisWeek'   => $tasksCompletedThisWeek,
+            'weeklyThroughput'         => $weeklyThroughput,
             'stagnantCount'            => $stagnantCount,
             'activeRate'               => $activeRate,
             'stagnantPrograms'         => $stagnantPrograms->values(),

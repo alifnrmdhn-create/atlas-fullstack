@@ -1215,17 +1215,6 @@
 .hvc__panel[data-tone="red"]   { border-left: 3px solid var(--tone-red); }
 .hvc__panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--ds-space-2); }
 
-/* ── Momentum ──────────────────────────────────────────────── */
-.hvc__mhead { display: flex; align-items: baseline; gap: var(--ds-space-2); flex-wrap: wrap; }
-.hvc__mstats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ds-space-2) var(--ds-space-3); margin-top: auto; }
-.hvc__mstat {
-  display: flex; flex-direction: column; gap: 0;
-  padding: var(--ds-space-2) 0;
-  border-top: 1px solid var(--ds-border-subtle);
-}
-.hvc__mstat-val { font-size: var(--ds-text-20); font-weight: var(--ds-weight-semibold); color: var(--ds-text-primary); font-variant-numeric: tabular-nums; }
-.hvc__mstat-label { font-size: var(--ds-text-11); color: var(--ds-text-tertiary); }
-
 /* ── Alert & Insight: align band ───────────────────────────── */
 .hvc__align {
   display: flex; align-items: center; gap: var(--ds-space-2); flex-wrap: wrap;
@@ -1908,11 +1897,21 @@
 .hvc__infohint { display: inline-flex; align-items: center; color: var(--ds-text-quaternary, var(--ds-text-tertiary)); cursor: help; transition: color 120ms ease; }
 .hvc__infohint:hover, .hvc__infohint:focus-visible { color: var(--ds-text-secondary); }
 
-/* ── Momentum — hero arah tren On Track (gauge trivial dihapus) ── */
-.hvc__mtrend--hero { display: flex; flex-direction: column; gap: var(--ds-space-2); margin-bottom: var(--ds-space-3); }
-.hvc__mtrend-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--ds-space-2); }
+/* ── Momentum — throughput nyata (task selesai/minggu, 8 minggu) ── */
+.hvc__mtrend-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--ds-space-2); margin-bottom: var(--ds-space-3); }
 .hvc__mtrend-flat { font-size: var(--ds-text-12); font-weight: 600; color: var(--ds-text-tertiary); }
-.hvc__mtrend-spark { width: 100%; height: auto; }
+.hvc__mthead-val { display: inline-flex; align-items: baseline; gap: var(--ds-space-2); min-width: 0; }
+.hvc__mthead-num {
+  font-size: clamp(1.75rem, 2.8vw, 2.5rem);
+  font-weight: var(--ds-weight-semibold);
+  line-height: var(--ds-leading-tight);
+  letter-spacing: var(--ds-tracking-tight);
+  color: var(--tone-green);
+  font-variant-numeric: tabular-nums;
+}
+.hvc__mthead-num[data-zero] { color: var(--ds-text-tertiary); }
+.hvc__mbars { width: 100%; }
+.hvc__mcaption { margin: var(--ds-space-2) 0 0; font-size: var(--ds-text-11); color: var(--ds-text-tertiary); }
 
 /* ── Deadline timeline v2 — sumbu proporsional terhadap tanggal + daftar terbaca ── */
 .hvc__tl2 { display: flex; flex-direction: column; gap: var(--ds-space-3); width: 100%; }

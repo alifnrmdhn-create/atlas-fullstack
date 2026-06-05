@@ -530,21 +530,14 @@ export default function HomeView() {
     })
   }
 
-  /* ── Program trend sparkline (% on track, 14d) ───────────────── */
+  /* ── Stable snapshot series (drop bootstrap days) ────────────── */
   // Buang snapshot "bootstrap" — hari saat portfolio masih ~kosong (total ≪ sekarang,
   // mis. baru 1 program di-snapshot, pctOnTrack=100) lalu terjun ke nilai riil. Tanpa
-  // filter ini, delta first→last jadi artefak seed (mis. −71 poin), bukan momentum
-  // nyata. Bandingkan hanya periode dengan skala portfolio sebanding. (Jun 2026)
-  // PENTING: JANGAN fallback ke `trendSeries` mentah saat stabil <2 — itu
-  // memasukkan kembali hari bootstrap yang baru saja dibuang (delta & sparkline
-  // jadi artefak lagi). Kurang dari 2 titik stabil = "belum cukup data", bukan
-  // pakai data kotor. `stableSeries` dipakai bersama momentum + kartu terlambat.
+  // filter ini, delta first→last jadi artefak seed (mis. −71 poin), bukan tren nyata.
+  // Bandingkan hanya periode dengan skala portfolio sebanding. (Jun 2026)
+  // `stableSeries` dipakai sparkline terlambat di hero KPI card.
   const latestTotal = trendSeries.length ? trendSeries[trendSeries.length - 1].total : 0
   const stableSeries = trendSeries.filter(t => t.total >= Math.max(2, latestTotal * 0.5))
-  const trendValues = stableSeries.slice(-14).map(t => t.pctOnTrack)
-  const trendDelta = trendValues.length >= 2
-    ? trendValues[trendValues.length - 1] - trendValues[0]
-    : null
 
   /* ── KPI divisi breakdown (hero card ①) ─────────────────────── */
   const shortCode = (kode: string) => kode.split('-')[0]
@@ -573,18 +566,28 @@ export default function HomeView() {
     .slice(0, 6)
   const overdueMax = Math.max(1, ...overdueRows.map(d => d.value))
 
-  /* ── Command-center: Momentum ────────────────────────────────── */
-  // Kartu Momentum fokus ke TREN On Track 14 hari (sinyal leading nyata). Dua
-  // stat sebelumnya dibuang karena artefak lingkungan, bukan sinyal:
-  //  • 'Programs moving' (active-rate) → di-derive dari updatedAt; saat seed/
-  //    recompute bulk men-stamp semua program di hari yang sama, nyaris selalu
-  //    100% → tak bermakna.
-  //  • 'Stalled' (stagnantCount) → sebab sama (semua updatedAt baru) → ~0 palsu.
-  // Sisa stat = throughput nyata (program selesai 30 hari + task selesai pekan ini).
-  const momentumStats = momentum ? [
-    { label: 'Completed · 30d', value: momentum.programsCompletedLast30d, suffix: '', tone: 'green' as Tone, href: '/programs?completed=1' },
-    { label: 'Tasks done · this week', value: momentum.tasksCompletedThisWeek, suffix: '', tone: 'green' as Tone, href: '/execution' },
-  ] : []
+  /* ── Command-center: Momentum = THROUGHPUT NYATA ─────────────────
+   * Momentum kini menjawab SATU pertanyaan: seberapa cepat kerja selesai.
+   * Sumber = weeklyThroughput (task selesai per minggu ISO, keyed `actualCompletion`),
+   * BUKAN updatedAt. Versi lama mencampur 3 sinyal tak nyambung & menyesatkan:
+   *  • Sparkline on-track% → itu STATUS/health, sudah ada di HUD ring + heatmap,
+   *    dan ke-render merah-flat = kesan "error" (sinyal salah).
+   *  • 'Completed · 30d' (programsCompletedLast30d) → ARTEFAK: seluruh program
+   *    COMPLETED di-bulk-stamp updatedAt di satu tanggal seed → angka jendela 30d
+   *    bisa loncat 30↔0 tanpa progres riil. Cacat sama dgn 'Programs moving'/'Stalled'
+   *    yang sudah dibuang dulu.
+   * Hasil: 1 cerita = bar throughput mingguan + angka pekan ini + delta vs pekan lalu. */
+  const throughput = momentum?.weeklyThroughput ?? []
+  const thisWeekDone = throughput.length ? throughput[throughput.length - 1].count : 0
+  const lastWeekDone = throughput.length >= 2 ? throughput[throughput.length - 2].count : 0
+  const throughputDelta = throughput.length >= 2 ? thisWeekDone - lastWeekDone : null
+  const throughputTotal = throughput.reduce((s, w) => s + w.count, 0)
+  const throughputBars = throughput.map(w => ({
+    label: w.label,
+    value: w.count,
+    tone: 'green' as Tone,
+    valueLabel: String(w.count),
+  }))
 
   /* ── Mid: Heatmap rekap program (divisi × status) ────────────── */
   const heatRows = [...byDivisi]
@@ -910,41 +913,40 @@ export default function HomeView() {
                 <ExecutionMap programs={programsForChart} onOpen={(href) => navigate(href)} />
               </Card>
 
-              {/* Momentum — fokus ke arah tren On Track 14 hari (sinyal leading nyata).
-                  Span 2 kolom: mengisi slot panel "By Division" yang dihapus + memberi
-                  ruang tren time-series, sambil menjaga align 4-kolom dgn HUD di atas. */}
+              {/* Momentum = THROUGHPUT NYATA — task selesai per minggu (8 minggu,
+                  dari actualCompletion). Span 2 kolom: ruang untuk bar time-series,
+                  sambil align 4-kolom dgn HUD di atas. Sinyal on-track% (status) sengaja
+                  TIDAK di sini — sudah ada di HUD ring + heatmap; di sini = kecepatan. */}
               <Card padding="lg" className="hvc__panel hvc__panel--wide">
                 <header className="hvc__panel-head">
                   <span className="hvc__panel-title">
                     <span className="hvc__eyebrow">Momentum</span>
-                    <InfoHint content="On-track program trend over the last 14 days" />
+                    <InfoHint content="Tasks completed per week — real execution throughput over the last 8 weeks" />
                   </span>
                 </header>
-                <div className="hvc__mtrend hvc__mtrend--hero">
-                  {(() => {
-                    const tv = trendValues
-                    if (tv.length < 2) return <p className="hvc__empty">Not enough trend data.</p>
-                    return (
-                      <>
-                        <div className="hvc__mtrend-head">
-                          <span className="hvc__sub">On-track trend</span>
-                          {trendDelta != null
-                            ? <Delta value={Math.round(trendDelta)} suffix=" pts" />
-                            : <span className="hvc__mtrend-flat">stable</span>}
-                        </div>
-                        <Sparkline values={tv} tone={leadingTone} width={300} height={52} smooth areaFill lastDot className="hvc__mtrend-spark" />
-                      </>
-                    )
-                  })()}
-                </div>
-                <div className="hvc__mstats">
-                  {momentumStats.map(s => (
-                    <button key={s.label} type="button" className="hvc__mstat hvc__mstat--link" onClick={() => navigate(s.href)}>
-                      <span className="hvc__mstat-val" data-tone={s.value === 0 ? 'neutral' : s.tone} data-zero={s.value === 0 ? '' : undefined}>{s.value}{s.suffix}</span>
-                      <span className="hvc__mstat-label">{s.label}</span>
-                    </button>
-                  ))}
-                </div>
+                {throughputTotal > 0 ? (
+                  <>
+                    <div className="hvc__mtrend-head">
+                      <span className="hvc__mthead-val">
+                        <span className="hvc__mthead-num" data-zero={thisWeekDone === 0 ? '' : undefined}>{thisWeekDone}</span>
+                        <span className="hvc__sub">tasks done · this week</span>
+                      </span>
+                      {throughputDelta != null && throughputDelta !== 0
+                        ? <Delta value={throughputDelta} suffix=" vs last wk" />
+                        : <span className="hvc__mtrend-flat">no change vs last wk</span>}
+                    </div>
+                    <Bars
+                      bars={throughputBars}
+                      height={96}
+                      rich
+                      className="hvc__mbars"
+                      onBarClick={() => navigate('/execution')}
+                    />
+                    <p className="hvc__mcaption">Tasks completed per week · last 8 weeks</p>
+                  </>
+                ) : (
+                  <p className="hvc__empty">No tasks completed in the last 8 weeks.</p>
+                )}
               </Card>
 
               {/* Panel "By Division" (toggle KPI/Eksekusi) DIHAPUS 2026-06-02: kolom
