@@ -8,6 +8,7 @@ use App\Models\SubTask;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\WorkItemStatusLog;
+use App\Models\Workstream;
 use App\Services\BroadcastService;
 use App\Services\ProgramHealthService;
 use App\Services\TaskService;
@@ -25,16 +26,35 @@ class TaskController extends Controller
         private ProgramHealthService $healthService,
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $tasks = Task::query()
+        $user = $request->user();
+        $scope = OrgScope::forUser($user);
+
+        $query = Task::query()
             ->with([
                 'workstream:id,code,name,programId',
                 'workstream.program:id,code,name,healthStatus,approvalStatus,ownerUnitId,startDate,targetEndDate,actualEndDate',
                 'assignee:id,name,roleType,avatarUrl',
             ])
-            ->orderBy('targetCompletion')
-            ->get();
+            ->orderBy('targetCompletion');
+
+        // Scope guard (C1): non-eksekutif hanya melihat task miliknya / yang ia
+        // buat, atau task pada program yang unit pemiliknya ada di scope-nya.
+        // Mirror assertCanModifyTask → read == himpunan yang bisa dimodifikasi,
+        // tidak ada kebocoran lintas-direktorat lewat board.
+        if (!$scope->isExecutive) {
+            $unitIds = $scope->unitIds;
+            $query->where(function ($q) use ($unitIds, $user) {
+                $q->where('assignedTo', $user->id)
+                  ->orWhere('createdBy', $user->id);
+                if (!empty($unitIds)) {
+                    $q->orWhereHas('workstream.program', fn ($p) => $p->whereIn('ownerUnitId', $unitIds));
+                }
+            });
+        }
+
+        $tasks = $query->get();
 
         return response()->json([
             'data' => $tasks,
@@ -53,6 +73,7 @@ class TaskController extends Controller
     public function show(Request $request, int $id)
     {
         $task = $this->taskService->findOrFail($id);
+        $this->assertCanSeeTask($task, $request->user());
         if ($request->expectsJson()) {
             return response()->json(['data' => [
                 ...$task->toArray(),
@@ -81,11 +102,20 @@ class TaskController extends Controller
             'priority' => 'in:LOW,MEDIUM,HIGH,CRITICAL',
             'targetCompletion' => 'required|date',
             'startDate' => 'nullable|date',
-            'assignedTo' => 'nullable|integer',
+            'assignedTo' => 'nullable|integer|exists:User,id',
             'phaseId' => 'nullable|integer',
             'estimatedHours' => 'nullable|numeric',
             'picPersonIds' => 'nullable|array',
         ]);
+
+        // Scope guard (H2): hanya boleh membuat task di program yang unit
+        // pemiliknya ada dalam scope user. Tanpa ini, user direktorat lain bisa
+        // menyuntik task ke workstream direktorat mana pun (merusak progres yang
+        // menggerakkan health & dashboard).
+        $ownerUnitId = $this->ownerUnitForWorkstream((int) $data['workstreamId']);
+        if (!OrgScope::forUser($request->user())->coversUnit($ownerUnitId)) {
+            abort(403, 'You do not have access to create a work item in another unit\'s program.');
+        }
 
         // Rename for table column
         if (isset($data['workstreamId'])) {
@@ -144,7 +174,7 @@ class TaskController extends Controller
             'percentComplete' => 'nullable|integer|min:0|max:100',
         ]);
 
-        $this->taskService->transitionStatus(
+        $task = $this->taskService->transitionStatus(
             $id,
             $data['status'],
             $request->user()->id,
@@ -153,7 +183,9 @@ class TaskController extends Controller
             $data['percentComplete'] ?? null,
         );
         $this->triggerHealth($id);
-        BroadcastService::task($id, 'status-changed', ['status' => $data['status']]);
+        // Broadcast status AKTUAL hasil transisi (bukan string mentah request) —
+        // benar secara konstruksi bila logika transisi berubah di masa depan.
+        BroadcastService::task($id, 'status-changed', ['status' => $task->status]);
 
         if ($request->expectsJson()) {
             return response()->json(['data' => Task::findOrFail($id)]);
@@ -164,7 +196,7 @@ class TaskController extends Controller
 
     public function statusLog(Request $request, int $id): JsonResponse
     {
-        Task::findOrFail($id);
+        $this->assertCanSeeTask(Task::findOrFail($id), $request->user());
 
         $logs = WorkItemStatusLog::query()
             ->where('workItemId', $id)
@@ -203,7 +235,7 @@ class TaskController extends Controller
     {
         $this->assertCanModifyTask(Task::findOrFail($id), $request->user());
 
-        $data = $request->validate(['assignedTo' => 'nullable|integer']);
+        $data = $request->validate(['assignedTo' => 'nullable|integer|exists:User,id']);
         Task::query()->where('id', $id)->update(['assignedTo' => $data['assignedTo']]);
 
         if ($request->expectsJson()) {
@@ -299,14 +331,48 @@ class TaskController extends Controller
         if (RolePolicy::isAdminOrAbove($user->roleType)) return;
         if ($task->createdBy === $user->id || $task->assignedTo === $user->id) return;
 
-        $ownerUnitId = $task->loadMissing('workstream.program')->workstream?->program?->ownerUnitId;
-        $scope = OrgScope::forUser($user);
-        if ($scope->isExecutive
-            || ($ownerUnitId !== null && in_array((int) $ownerUnitId, $scope->unitIds, true))) {
+        if (OrgScope::forUser($user)->coversUnit($this->ownerUnitForTask($task))) {
             return;
         }
 
         abort(403, 'You do not have access to modify a work item that belongs to another unit.');
+    }
+
+    /**
+     * Versi read-only dari assertCanModifyTask (H4): boleh MEMBACA task bila
+     * admin/eksekutif, pembuat/PIC, atau scope unit-nya mencakup unit pemilik
+     * program. Tidak mengecek isReadOnly — BOD/role read-only tetap boleh baca.
+     */
+    private function assertCanSeeTask(Task $task, User $user): void
+    {
+        if (RolePolicy::isAdminOrAbove($user->roleType)) return;
+        if ($task->createdBy === $user->id || $task->assignedTo === $user->id) return;
+
+        if (OrgScope::forUser($user)->coversUnit($this->ownerUnitForTask($task))) {
+            return;
+        }
+
+        abort(403, 'You do not have access to this work item.');
+    }
+
+    /**
+     * Resolve unit pemilik program lewat query Workstream terpisah — JANGAN
+     * andalkan relasi yang sudah ter-load di $task: findOrFail() mem-eager-load
+     * workstream.program TANPA kolom ownerUnitId, sehingga loadMissing() jadi
+     * no-op dan ownerUnitId selalu null (false-403). Query terpisah juga tidak
+     * menimpa bentuk relasi yang dipakai response show().
+     */
+    private function ownerUnitForTask(Task $task): ?int
+    {
+        return $this->ownerUnitForWorkstream((int) $task->initiativeId);
+    }
+
+    private function ownerUnitForWorkstream(int $workstreamId): ?int
+    {
+        $ownerUnitId = Workstream::query()
+            ->with('program:id,ownerUnitId')
+            ->find($workstreamId)?->program?->ownerUnitId;
+        return $ownerUnitId !== null ? (int) $ownerUnitId : null;
     }
 
     private function triggerHealth(int $taskId): void

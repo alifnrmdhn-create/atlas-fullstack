@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\OrgScope;
 use App\Models\Blocker;
 use App\Models\Task;
+use App\Models\User;
 use App\Services\BroadcastService;
 use App\Services\ProgramHealthService;
 use App\Support\RolePolicy;
@@ -47,6 +49,11 @@ class BlockerController extends Controller
             'severity' => 'required|in:CRITICAL,HIGH,MEDIUM,LOW',
         ]);
 
+        // Scope guard (H5): blocker mewarisi kepemilikan dari task induknya.
+        // Tanpa ini, user direktorat lain bisa menandai task program mana pun
+        // sebagai blocked → langsung menurunkan health program tsb.
+        $this->assertCanModifyBlockerTask((int) $data['taskId'], $request->user());
+
         $code = 'BLK-' . strtoupper(substr(md5(uniqid()), 0, 6));
         $blocker = Blocker::create([
             ...$data,
@@ -59,6 +66,10 @@ class BlockerController extends Controller
 
         // Mark task as blocked
         Task::query()->where('id', $data['taskId'])->update(['isBlocked' => true]);
+
+        // Blocker baru menaikkan blocker-count → health program harus di-refresh
+        // saat itu juga (sebelumnya hanya updateStatus yang memicu recompute).
+        $this->recomputeHealthForTask((int) $data['taskId']);
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $blocker], 201);
@@ -79,6 +90,7 @@ class BlockerController extends Controller
         ]);
 
         $blocker = Blocker::findOrFail($id);
+        $this->assertCanModifyBlockerTask((int) $blocker->workItemId, $request->user(), $blocker);
         $updateData = ['status' => $data['status']];
         if ($data['status'] === 'RESOLVED') {
             $updateData['resolvedAt'] = now();
@@ -208,6 +220,7 @@ class BlockerController extends Controller
         }
 
         $blocker = Blocker::findOrFail($id);
+        $this->assertCanModifyBlockerTask((int) $blocker->workItemId, $request->user(), $blocker);
         $taskId = $blocker->workItemId;
         $blocker->delete();
 
@@ -220,10 +233,46 @@ class BlockerController extends Controller
             Task::query()->where('id', $taskId)->update(['isBlocked' => false]);
         }
 
+        // Menghapus blocker bisa meng-unblock task → health program berubah.
+        $this->recomputeHealthForTask((int) $taskId);
+
         if ($request->expectsJson()) {
             return response()->json(['ok' => true]);
         }
 
         return back()->with('success', 'Blocker deleted.');
+    }
+
+    /**
+     * Scope guard (H5) untuk mutasi blocker. Izinkan admin/eksekutif, user yang
+     * scope unit-nya mencakup unit pemilik program task, atau (untuk blocker
+     * yang sudah ada) pembuat/penerima blocker. Blokir lintas-direktorat.
+     */
+    private function assertCanModifyBlockerTask(int $taskId, User $user, ?Blocker $blocker = null): void
+    {
+        if (RolePolicy::isAdminOrAbove($user->roleType)) {
+            return;
+        }
+        if ($blocker && ($blocker->createdBy === $user->id || $blocker->assignedTo === $user->id)) {
+            return;
+        }
+
+        $ownerUnitId = Task::query()
+            ->with(['workstream:id,programId', 'workstream.program:id,ownerUnitId'])
+            ->find($taskId)?->workstream?->program?->ownerUnitId;
+
+        if (OrgScope::forUser($user)->coversUnit($ownerUnitId !== null ? (int) $ownerUnitId : null)) {
+            return;
+        }
+
+        abort(403, "You do not have access to a blocker on another unit's work item.");
+    }
+
+    private function recomputeHealthForTask(int $taskId): void
+    {
+        $task = Task::query()->with('workstream:id,programId')->find($taskId);
+        if ($task?->workstream?->programId) {
+            rescue(fn () => $this->healthService->recompute($task->workstream->programId));
+        }
     }
 }

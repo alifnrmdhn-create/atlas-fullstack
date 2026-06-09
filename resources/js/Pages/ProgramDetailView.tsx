@@ -213,14 +213,31 @@ export function ProgramDetailView() {
   // ── Detail data ───────────────────────────────────────────────────────
   const [detail, setDetail] = useState<ProgramDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  // Bedakan kegagalan-muat dari program-tidak-ada: null = belum ada error;
+  // 'notfound' = program memang tidak ada (404); string = gagal memuat
+  // (network/500/403) → tampilkan pesan + tombol "Coba lagi". Tanpa ini, request
+  // gagal salah ditampilkan sebagai "Program not found." (anti-pola silent-fetch).
+  const [detailError, setDetailError] = useState<'notfound' | string | null>(null)
 
   const loadDetail = async (silent = false) => {
     if (!numId) return
-    if (!silent) setLoading(true)
+    if (!silent) { setLoading(true); setDetailError(null) }
     try {
       const res = await api.get<{ data: ProgramDetail }>(`/programs/${numId}`)
       setDetail(res.data)
-    } catch { /* no-op */ } finally {
+      setDetailError(null)
+    } catch (err) {
+      // Reload diam-diam (sesudah mutasi) tidak mengganggu tampilan yang sudah
+      // ada. Hanya load utama yang memunculkan layar error/not-found.
+      if (!silent) {
+        if (err instanceof ApiRequestError && err.status === 404) {
+          setDetail(null)
+          setDetailError('notfound')
+        } else {
+          setDetailError(extractErrorMessage(err, 'Failed to load this program.'))
+        }
+      }
+    } finally {
       if (!silent) setLoading(false)
     }
   }
@@ -1930,6 +1947,15 @@ export function ProgramDetailView() {
             )
           })()}
         </>
+      ) : detailError && detailError !== 'notfound' ? (
+        <div className="prog-title-row">
+          <div className="wi-detail-titlebar__empty" role="alert">
+            <p>Couldn't load this program. Your data is safe — this is a loading issue, not a missing program.</p>
+            <button type="button" className="btn btn--ghost" onClick={() => void loadDetail()}>
+              Try again
+            </button>
+          </div>
+        </div>
       ) : (
         <div className="prog-title-row">
           <p className="wi-detail-titlebar__empty">Program not found.</p>

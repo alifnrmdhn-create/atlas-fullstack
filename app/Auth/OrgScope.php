@@ -29,6 +29,21 @@ class OrgScope
         public readonly string $role,
     ) {}
 
+    /**
+     * True jika scope ini mencakup unit tertentu. Executive (DIRUT/ADMIN/
+     * SUPERADMIN) selalu true. Primitive otorisasi unit-level yang dipakai
+     * bersama (TaskController, PhaseController, BlockerController) supaya jalur
+     * BACA, CREATE, dan MODIFY task konsisten dengan satu definisi scope.
+     */
+    public function coversUnit(?int $unitId): bool
+    {
+        if ($this->isExecutive) {
+            return true;
+        }
+
+        return $unitId !== null && in_array($unitId, $this->unitIds, true);
+    }
+
     public static function forUser(User $user): self
     {
         $role = strtoupper($user->roleType ?? '');

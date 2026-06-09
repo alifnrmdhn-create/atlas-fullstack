@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\OrgScope;
 use App\Models\EntityPic;
 use App\Models\Phase;
+use App\Models\User;
+use App\Models\Workstream;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +19,7 @@ class PhaseController extends Controller
         if (!RolePolicy::canCreateProgram($request->user()->roleType)) {
             abort(403, 'You do not have permission to create a phase.');
         }
+        $this->assertUnitScope($this->ownerUnitForWorkstream($id), $request->user());
 
         $data = $request->validate([
             'name' => 'required|string|max:120',
@@ -55,6 +59,8 @@ class PhaseController extends Controller
         if (!RolePolicy::canCreateProgram($request->user()->roleType)) {
             abort(403, 'You do not have permission to update a phase.');
         }
+        $phase = Phase::findOrFail($id);
+        $this->assertUnitScope($this->ownerUnitForWorkstream((int) $phase->initiativeId), $request->user());
 
         $data = $request->validate([
             'name' => 'sometimes|string|max:120',
@@ -89,6 +95,8 @@ class PhaseController extends Controller
         if (!RolePolicy::canCreateProgram($request->user()->roleType)) {
             abort(403, 'You do not have permission to delete a phase.');
         }
+        $phase = Phase::findOrFail($id);
+        $this->assertUnitScope($this->ownerUnitForWorkstream((int) $phase->initiativeId), $request->user());
 
         Phase::destroy($id);
 
@@ -97,5 +105,25 @@ class PhaseController extends Controller
         }
 
         return back()->with('success', 'Phase deleted.');
+    }
+
+    /**
+     * Scope guard (H3): fase mewarisi kepemilikan dari program induknya.
+     * Blokir mutasi fase lintas-direktorat — sebelumnya semua role non-BOD
+     * bisa edit/hapus/tambah fase di workstream direktorat mana pun.
+     */
+    private function assertUnitScope(?int $ownerUnitId, User $user): void
+    {
+        if (!OrgScope::forUser($user)->coversUnit($ownerUnitId)) {
+            abort(403, 'You do not have access to a phase that belongs to another unit.');
+        }
+    }
+
+    private function ownerUnitForWorkstream(int $workstreamId): ?int
+    {
+        $ownerUnitId = Workstream::query()
+            ->with('program:id,ownerUnitId')
+            ->find($workstreamId)?->program?->ownerUnitId;
+        return $ownerUnitId !== null ? (int) $ownerUnitId : null;
     }
 }

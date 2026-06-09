@@ -954,6 +954,8 @@ class ProgramController extends Controller
 
     public function addKpiLink(Request $request, int $id): JsonResponse|RedirectResponse
     {
+        $this->programService->assertAccess($request->user(), $id);
+
         $data = $request->validate([
             'apmsKpiCode' => 'required|string|max:30',
             'note' => 'nullable|string|max:200',
@@ -979,6 +981,8 @@ class ProgramController extends Controller
 
     public function removeKpiLink(Request $request, int $id, string $code): JsonResponse|RedirectResponse
     {
+        $this->programService->assertAccess($request->user(), $id);
+
         ProgramKpiLink::query()
             ->where('programId', $id)
             ->where('apmsKpiCode', $code)

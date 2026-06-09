@@ -191,8 +191,13 @@ export function WorkboardView() {
     if (uid) setBoardFilterOwnerUnitId(Number(uid))
   }, [url])
 
-  // Default myItemsOnly respects role: KADIV/KASUBDIV/BOD default to full view
+  // Default myItemsOnly respects role: KADIV/KASUBDIV/BOD default to full view.
+  // NOTE: saat hard-load /execution, currentUser (→role) belum termuat di render
+  // pertama (provider set via effect), jadi useState ini menangkap default
+  // peran-kosong (= My Tasks). Di-sync ulang ke default-sesuai-peran begitu peran
+  // termuat (effect di bawah) — KECUALI user sudah memilih view sendiri.
   const [myItemsOnly, setMyItemsOnly] = useState(roleAccess.defaultMyItemsOnly)
+  const userPickedViewRef = useRef(false)
 
   // Daily PIC Workspace: smart time filter (default 'week' = active work this week)
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('week')
@@ -200,8 +205,19 @@ export function WorkboardView() {
   // OFFICER: locked to myItemsOnly regardless of toggle
   const effectiveMyItemsOnly = roleAccess.myItemsLocked ? true : myItemsOnly
   const setEffectiveMyItemsOnly = (v: boolean) => {
-    if (!roleAccess.myItemsLocked) setMyItemsOnly(v)
+    if (!roleAccess.myItemsLocked) {
+      userPickedViewRef.current = true
+      setMyItemsOnly(v)
+    }
   }
+
+  // Re-sync default begitu peran user termuat (lihat NOTE di atas). Hanya
+  // berlaku selama user belum memilih view sendiri dan belum ada intent
+  // navigasi (boardOnOpen) yang menandai pilihan.
+  useEffect(() => {
+    if (!roleAccess.role || userPickedViewRef.current) return
+    setMyItemsOnly(roleAccess.defaultMyItemsOnly)
+  }, [roleAccess.role, roleAccess.defaultMyItemsOnly])
   const [boardFilterProgramId, setBoardFilterProgramId] = useState<number | null>(null)
   const [boardFilterWorkstreamId, setBoardFilterWorkstreamId] = useState<number | null>(null)
   // Lane collapse state (keyed by lane.key). Default semua lane terbuka.
@@ -223,7 +239,10 @@ export function WorkboardView() {
   useEffect(() => {
     if (!boardOnOpen) return
     // OFFICER is always locked to myItemsOnly — don't override even if forceShowAll
-    if (boardOnOpen.forceShowAll && !roleAccess.myItemsLocked) setMyItemsOnly(false)
+    if (boardOnOpen.forceShowAll && !roleAccess.myItemsLocked) {
+      userPickedViewRef.current = true
+      setMyItemsOnly(false)
+    }
     if (boardOnOpen.filterProgramId !== null) setBoardFilterProgramId(boardOnOpen.filterProgramId)
     clearBoardOnOpen()
   }, [boardOnOpen, clearBoardOnOpen, roleAccess.myItemsLocked])
