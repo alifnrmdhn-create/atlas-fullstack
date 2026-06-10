@@ -29,6 +29,9 @@ cmds = [
 #   3. cache config/routes/views
 #   4. pre-boot cleanup   — flush stale broadcast_events kalau scheduler container lama mati
 #   5. scheduler respawn  — auto-restart loop kalau schedule:work exit (sebelumnya fire-and-forget,
-#                           silent-die kalau ada exception di salah satu scheduled command)
+#                           silent-die kalau ada exception di salah satu scheduled command).
+#                           Output SENGAJA dialirkan ke stdout (audit 2026-06-10: dulu >/dev/null
+#                           → kegagalan scheduled command tak terlihat siapa pun); --whisper
+#                           sudah meredam noise per-menit, yang lolos hanya output command & error.
 #   6. frankenphp foreground (main process)
-cmd = "php artisan migrate --force && mkdir -p storage/app/public && php artisan storage:link --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && (php artisan atlas:cleanup-broadcast-events || true) && (while true; do php artisan schedule:work --whisper; sleep 2; done >/dev/null 2>&1 &) && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT"
+cmd = "php artisan migrate --force && mkdir -p storage/app/public && php artisan storage:link --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && (php artisan atlas:cleanup-broadcast-events || true) && (while true; do php artisan schedule:work --whisper; sleep 2; done &) && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT"
