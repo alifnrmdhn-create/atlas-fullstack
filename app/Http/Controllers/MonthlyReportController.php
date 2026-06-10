@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\OrgScope;
 use App\Models\Blocker;
 use App\Models\KpiDefinition;
 use App\Models\MonthlyReport;
@@ -73,6 +74,21 @@ class MonthlyReportController extends Controller
         if (RolePolicy::isAdminOrAbove($role) || $role === 'KADIV') return;
         if ($user->unitId && $user->unitId === $report->unitId) return;
         abort(403, 'You do not have access to this report.');
+    }
+
+    /**
+     * Gate TULIS: unit report wajib dalam OrgScope user (mirror
+     * RiskReportController::assertCanWriteUnit). Audit 2026-06-10:
+     * update/upload/submit dulu hanya cek status DRAFT — user terotentikasi
+     * mana pun bisa mengedit/menimpa metrics/men-submit laporan unit lain.
+     */
+    private function assertReportWriteAccess(\App\Models\User $user, MonthlyReport $report): void
+    {
+        $scope = OrgScope::forUser($user);
+        $inScope = $scope->isExecutive || in_array((int) $report->unitId, $scope->unitIds, true);
+        if (!$inScope || RolePolicy::isReadOnly($user->roleType)) {
+            abort(403, 'You are not allowed to modify this report.');
+        }
     }
 
     public function show(Request $request, int $id)
@@ -300,6 +316,7 @@ class MonthlyReportController extends Controller
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $report = MonthlyReport::findOrFail($id);
+        $this->assertReportWriteAccess($request->user(), $report);
         if ($report->status !== 'DRAFT') {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Only DRAFT reports can be edited.'], 422);
@@ -328,6 +345,7 @@ class MonthlyReportController extends Controller
     public function upload(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $report = MonthlyReport::findOrFail($id);
+        $this->assertReportWriteAccess($request->user(), $report);
         if ($report->status !== 'DRAFT') {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Only DRAFT reports can be updated.'], 422);
@@ -382,6 +400,7 @@ class MonthlyReportController extends Controller
     public function submit(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $report = MonthlyReport::withCount('metrics')->findOrFail($id);
+        $this->assertReportWriteAccess($request->user(), $report);
         if ($report->status !== 'DRAFT') {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Only DRAFT reports can be submitted.'], 422);
@@ -420,8 +439,16 @@ class MonthlyReportController extends Controller
 
         $report = MonthlyReport::findOrFail($id);
 
-        $canApprove = ($roleType === 'KASUBDIV' && $report->status === 'SUBMITTED')
-                   || ($roleType === 'KADIV' && $report->status === 'REVIEWED');
+        // Scope unit WAJIB (mirror RiskReportController::approve) — audit
+        // 2026-06-10: tanpa ini KASUBDIV/KADIV mana pun bisa approve/reject
+        // laporan unit & direktorat lain.
+        $scope = OrgScope::forUser($user);
+        $inScope = $scope->isExecutive || in_array((int) $report->unitId, $scope->unitIds, true);
+
+        $canApprove = $inScope && (
+            ($roleType === 'KASUBDIV' && $report->status === 'SUBMITTED')
+            || ($roleType === 'KADIV' && $report->status === 'REVIEWED')
+        );
 
         if (!$canApprove) {
             if ($request->expectsJson()) {
