@@ -178,8 +178,6 @@ export interface WorkspaceContextValue {
   setBoardStatus: Dispatch<SetStateAction<{ saving: boolean; message: string | null }>>
   taskActionStatus: { saving: boolean; message: string | null }
   setTaskActionStatus: Dispatch<SetStateAction<{ saving: boolean; message: string | null }>>
-  lastSyncedAt: string | null
-  currentTimeTick: number
 
   // Presence draft
   presenceDraft: { status: PresenceStatus; statusEmoji: string; statusMessage: string }
@@ -199,9 +197,6 @@ export interface WorkspaceContextValue {
   selectedChannel: ChannelSummary | null
   selectedProgram: Program | null
   totalUnreadChannels: number
-  liveStatusLabel: string
-  topbarSyncLabel: string
-  nextRefreshAt: number | null
 
   // Actions
   loadOverview: (mode?: 'initial' | 'refresh') => Promise<void>
@@ -406,9 +401,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [channelsLoaded, setChannelsLoaded] = useState(false)
   const [boardStatus, setBoardStatus] = useState({ saving: false, message: null as string | null })
   const [taskActionStatus, setTaskActionStatus] = useState({ saving: false, message: null as string | null })
-  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null)
-  const [nextRefreshAt, setNextRefreshAt] = useState<number | null>(null)
-  const [currentTimeTick, setCurrentTimeTick] = useState(Date.now())
 
   // Board navigation intent — set by openTaskWorkspace, consumed once by WorkboardView
   const [boardOnOpen, setBoardOnOpen] = useState<{ forceShowAll: boolean; filterProgramId: number | null } | null>(null)
@@ -446,24 +438,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [channels],
   )
 
-  const formatCountdown = (target: number | null) => {
-    if (!target) return 'Auto-refresh scheduled'
-    const rem = Math.max(0, target - currentTimeTick)
-    const s = Math.floor(rem / 1000)
-    const m = Math.floor(s / 60)
-    return `Auto-refresh ${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
-  }
-
-  const liveStatusLabel = useMemo(() => {
-    if (overviewStatus.loading && !dashboard) return 'Menyiapkan workspace'
-    if (overviewStatus.refreshing) return 'Menyegarkan data'
-    return formatCountdown(nextRefreshAt)
-  }, [currentTimeTick, dashboard, nextRefreshAt, overviewStatus.loading, overviewStatus.refreshing])
-
-  const topbarSyncLabel = useMemo(() => {
-    if (!lastSyncedAt) return 'Not synced yet'
-    return `Synced ${formatDate(lastSyncedAt)}`
-  }, [lastSyncedAt])
+  // NB (audit 2026-06-10): dulu ada ticker setInterval 1 detik (currentTimeTick)
+  // yang me-re-render SELURUH provider + 32 file konsumen useWorkspace() tiap
+  // detik — hanya demi label countdown "Auto-refresh MM:SS" (liveStatusLabel/
+  // topbarSyncLabel/nextRefreshAt/lastSyncedAt) yang ternyata tidak pernah
+  // dirender komponen mana pun. Seluruh klaster dihapus. Kalau label sejenis
+  // dibutuhkan lagi: tick di KOMPONEN leaf yang menampilkannya, jangan di
+  // provider ini.
 
   // ── Auth helpers ─────────────────────────────────────────
   const closeUserMenu = () => setUserMenuSurface(null)
@@ -483,7 +464,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setSelectedProgramId(null); setSelectedTaskId(null); setSelectedWorkstreamId(null)
     setChannelMembers([]); setMessages([]); setThreadParent(null); setThreadReplies([])
     setProgramDetail(null); setWorkstreamDetail(null); setTaskDetail(null)
-    setLastSyncedAt(null); setNextRefreshAt(null)
     setOverviewStatus({ loading: false, refreshing: false, message: null })
   }
 
@@ -588,11 +568,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
       const hasCoreData = dashOk || psOk || progOk
       const failedCount = oks.filter((ok) => !ok).length
-      const syncedAt = Date.now()
-      if (hasCoreData) {
-        setLastSyncedAt(new Date(syncedAt).toISOString())
-        setNextRefreshAt(syncedAt + 5 * 60 * 1000)
-      }
       setOverviewStatus({
         loading: false,
         refreshing: false,
@@ -673,7 +648,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     // aktif yang mengatur status; jangan sentuh apa pun di sini.
     if (isStale()) return
     if (!silent) setChannelStatus({ loading: false, message: ok ? null : 'Channel tidak dapat dimuat.' })
-    if (ok) setLastSyncedAt(new Date().toISOString())
   })
 
   const loadProgramDetail = useEffectEvent(async (programId: number, silent = false) => {
@@ -686,7 +660,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         return payload.data.workstreams?.[0]?.id ?? null
       })
       if (!silent) setProgramDetailStatus({ loading: false, message: null })
-      setLastSyncedAt(new Date().toISOString())
     } catch {
       if (!silent) setProgramDetailStatus({ loading: false, message: 'Program detail tidak dapat dimuat.' })
     }
@@ -698,7 +671,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const payload = await api.get<WorkstreamDetailResponse>(`/workstreams/${workstreamId}`)
       setWorkstreamDetail(payload.data)
       if (!silent) setWorkstreamDetailStatus({ loading: false, message: null })
-      setLastSyncedAt(new Date().toISOString())
     } catch {
       if (!silent) setWorkstreamDetailStatus({ loading: false, message: 'Workstream detail could not be loaded.' })
     }
@@ -710,7 +682,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const payload = await api.get<TaskDetailResponse>(`/tasks/${taskId}`)
       setTaskDetail(payload.data)
       if (!silent) setTaskDetailStatus({ loading: false, message: null })
-      setLastSyncedAt(new Date().toISOString())
     } catch {
       if (!silent) setTaskDetailStatus({ loading: false, message: 'Task could not be loaded.' })
     }
@@ -844,12 +815,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [navRailCollapsed])
 
   useEffect(() => {
-    if (authStatus !== 'signed_in') return
-    const timer = window.setInterval(() => setCurrentTimeTick(Date.now()), 1000)
-    return () => window.clearInterval(timer)
-  }, [authStatus])
-
-  useEffect(() => {
     const handleExpired = (event: Event) => {
       const detail = event instanceof CustomEvent ? (event.detail as { message?: string } | undefined) : undefined
       signOutToEntry(detail?.message ?? 'Sesi berakhir. Silakan masuk kembali.')
@@ -940,7 +905,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setChannels(snapshot.channels)
     setPresence(snapshot.presence)
     setNotifications(snapshot.notifications.notifications)
-    setLastSyncedAt(snapshot.generatedAt)
     // Messages are now delivered via channel:* events — no full refresh needed here
   })
 
@@ -1257,7 +1221,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const event = realtimePayload<RealtimeSnapshot>(data)
       if (event) handleRealtimeSnapshot(event)
     },
-    'workspace:ready': () => setLastSyncedAt(new Date().toISOString()),
+    // 'workspace:ready' tidak butuh handler lagi — dulu hanya menstempel
+    // lastSyncedAt (klaster label sync mati yang dihapus audit 2026-06-10).
     'channel:message:created': (data) => {
       const event = realtimePayload<{ channelId: number; message: ChannelMessage }>(data)
       if (event) handleMessageCreated(event)
@@ -1460,12 +1425,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     channelStatus, setChannelStatus, programDetailStatus, setProgramDetailStatus,
     taskDetailStatus, setTaskDetailStatus, workstreamDetailStatus,
     overviewStatus, boardStatus, setBoardStatus, taskActionStatus, setTaskActionStatus,
-    lastSyncedAt, currentTimeTick,
     presenceDraft, setPresenceDraft,
     searchResults, setSearchResults, searchTotal, setSearchTotal,
     query, setQuery, searching, searchError,
     selectedChannel, selectedProgram, totalUnreadChannels,
-    liveStatusLabel, topbarSyncLabel, nextRefreshAt,
     loadOverview, refreshChannel, loadProgramDetail, loadWorkstreamDetail, loadTaskDetail,
     handleReact, markNotificationRead, dismissNotification,
     handleStatusUpdate, runSearch,
