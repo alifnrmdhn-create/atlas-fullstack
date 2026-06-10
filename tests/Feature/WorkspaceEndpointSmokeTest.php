@@ -309,10 +309,15 @@ class WorkspaceEndpointSmokeTest extends TestCase
         $this->actingAs($this->admin);
         $message = ChannelMessage::query()->firstOrFail();
 
-        $this->getJson('/search?q=Runtime&type=ALL&limit=10')
+        // Assertion order-independent: hasil multi-tipe diurutkan by-timestamp,
+        // dan fixture setUp dibuat nyaris bersamaan → posisi 0 bisa tie-break
+        // nondeterministik (flaky di CI Linux yang cepat, ketahuan 2026-06-10).
+        // Yang dijamin kontrak: program-nya KETEMU, bukan posisinya.
+        $titles = $this->getJson('/search?q=Runtime&type=ALL&limit=10')
             ->assertOk()
             ->assertJsonStructure(['results', 'total'])
-            ->assertJsonPath('results.0.title', 'Runtime Program');
+            ->json('results.*.title');
+        $this->assertContains('Runtime Program', $titles);
 
         $this->getJson('/search?q=Runtime&type=TASKS&limit=10')
             ->assertOk()
