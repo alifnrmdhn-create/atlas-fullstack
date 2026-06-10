@@ -200,7 +200,7 @@ export default function ScorecardView() {
                 {[...soloDir.divisi].sort((a, b) => b.nilai - a.nilai).map(d => (
                   <Link
                     key={d.kode}
-                    href={`/performance/divisi/${d.kode.toLowerCase()}`}
+                    href={`/performance/divisi/${d.kode.replace('-HLD', '').toLowerCase()}`}
                     className="perf-hero__divrow"
                   >
                     <span className="perf-hero__divcode">{d.kode.replace('-HLD', '')}</span>
@@ -414,7 +414,7 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
       {rows.map(r => (
         <Link
           key={r.kode}
-          href={`/performance/divisi/${r.kode.toLowerCase()}`}
+          href={`/performance/divisi/${r.kode.replace('-HLD', '').toLowerCase()}`}
           className="perf-matrix__row"
           role="row"
         >

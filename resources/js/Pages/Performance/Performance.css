@@ -2379,3 +2379,30 @@
 
 /* Gauge label rapat. */
 .perf-subject--gauge .ds-gauge, .perf-hero__gauge .ds-gauge { margin: -4px 0; }
+
+/* ═══ RONDE 6 — perbaikan rusak/terpotong (laporan user 2026-06-10) ═══ */
+
+/* (1) Grid blowout kokpit: kolom fr punya lantai min-content dari matriks
+   → aside terdorong keluar viewport (Needs attention/Score trend terklip).
+   minmax(0,…) melepas lantai; matriks scroll di DALAM kartunya sendiri. */
+.perf-cockpit { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+.perf-cockpit > section { min-width: 0; }
+.perf-cockpit__aside { min-width: 0; }
+.perf-cockpit__aside > * { min-width: 0; }
+.perf-matrix-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.perf-matrix { min-width: 640px; }
+
+/* Hero juga: tiga zona tidak boleh memaksa lebar melebihi kontainer. */
+.perf-hero--rich { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) auto; }
+.perf-hero__verdict, .perf-hero__divisions { min-width: 0; }
+.perf-subject--gauge { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) auto; }
+
+/* (2) Angka di dalam gauge meluber keluar ring (default --ds-text-40 utk
+   gauge besar; di 118px "102,7%" lebih lebar dari diameter dalam). */
+.perf .ds-gauge__value { font-size: 21px; }
+.perf .ds-gauge__unit { font-size: 11px; }
+.perf .ds-gauge__label { font-size: 10px; }
+
+/* (3) Chip divisi di Needs-attention: muat kode panjang tanpa terpotong. */
+.perf-exc__divisi { min-width: 52px; width: auto; padding: 3px 8px; }
+.perf-exc { grid-template-columns: auto minmax(0, 1fr) auto; }

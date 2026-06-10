@@ -408,16 +408,21 @@ class PerformanceController extends Controller
     /** Lookup divisi info + peer divisi di direktorat yang sama. */
     private function lookupDivisi(string $kode): array
     {
-        $kode = strtoupper($kode);
+        // Normalisasi dua sisi: URL bisa membawa varian "-HLD" (link/bookmark
+        // lama, kode unit asli DKSA-HLD) sementara kode grid bare (DKSA).
+        // Tanpa ini /divisi/dksa-hld jatuh ke "Division not available" padahal
+        // KPI-nya termuat (unitForKode toleran, lookup-nya tidak).
+        $canon = fn (string $k) => str_replace('-HLD', '', strtoupper(trim($k)));
+        $kode = $canon($kode);
         foreach ($this->getDirektoratGrid() as $direktorat) {
             foreach ($direktorat['divisi'] as $idx => $divisi) {
-                if ($divisi['kode'] === $kode) {
+                if ($canon($divisi['kode']) === $kode) {
                     $divisiData = array_merge($divisi, [
                         'rank' => $idx + 1,
                         'totalDivisi' => count($direktorat['divisi']),
                     ]);
                     $peers = collect($direktorat['divisi'])
-                        ->reject(fn ($d) => $d['kode'] === $kode)
+                        ->reject(fn ($d) => $canon($d['kode']) === $kode)
                         ->values()
                         ->all();
                     return [

@@ -23,6 +23,7 @@ const PAGES = [
   { path: '/performance/kolegial', slug: 'kolegial', ready: () => document.querySelector('.perf') },
   { path: '/performance/divisi', slug: 'divisi-compare', ready: () => document.querySelector('.perf') },
   { path: '/performance/divisi/DKSA', slug: 'divisi-DKSA', ready: () => document.querySelector('.perf') },
+  { path: '/performance/divisi/dksa-hld', slug: 'divisi-DKSA-hld', ready: () => document.querySelector('.perf') },
 ]
 
 const userDataDir = mkdtempSync(join(tmpdir(), 'atlas-perf-shot-'))

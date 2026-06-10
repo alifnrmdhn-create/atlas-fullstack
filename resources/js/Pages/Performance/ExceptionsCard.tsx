@@ -32,14 +32,18 @@ export function ExceptionsCard({ exceptions, total }: { exceptions: ExceptionRow
         </p>
       ) : (
         <div className="perf-exc-list">
-          {exceptions.map(e => (
+          {exceptions.map(e => {
+            // Normalisasi kode (-HLD bisa ikut dari sumber data) — link & chip
+            // selalu bentuk bare supaya konsisten dgn routing /divisi/{kode}.
+            const bare = e.divisi.replace('-HLD', '')
+            return (
             <Link
               key={`${e.divisi}-${e.kpi}`}
-              href={`/performance/divisi/${e.divisi.toLowerCase()}`}
+              href={`/performance/divisi/${bare.toLowerCase()}`}
               className="perf-exc"
               data-sev={e.pct < 80 ? 'red' : 'amber'}
             >
-              <span className="perf-exc__divisi">{e.divisi}</span>
+              <span className="perf-exc__divisi">{bare}</span>
               <span className="perf-exc__main">
                 <span className="perf-exc__kpi">{e.kpi}</span>
                 <span className="perf-exc__detail">
@@ -53,7 +57,8 @@ export function ExceptionsCard({ exceptions, total }: { exceptions: ExceptionRow
                 {e.realisasi === '—' ? 'N/A' : formatPercent(e.pct, 0)}
               </span>
             </Link>
-          ))}
+            )
+          })}
         </div>
       )}
     </Card>
