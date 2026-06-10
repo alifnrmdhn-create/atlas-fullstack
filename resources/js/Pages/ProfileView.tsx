@@ -206,7 +206,7 @@ export function ProfileView() {
   })
   const positionHistory = profileData?.positionHistory ?? []
   const directReportsCount = subordinates.length
-  const hierarchyCount = supervisorChain.length + (user?.position ? 1 : 0) + directReportsCount
+  const _hierarchyCount = supervisorChain.length + (user?.position ? 1 : 0) + directReportsCount
   const hasDirtyProfile = Boolean(user) && (formName !== (user?.name ?? '') || formEmail !== (user?.email ?? ''))
   const profileFields = [user?.name, user?.email, user?.nik, user?.unit, user?.directorate, user?.position]
   const profileCompleteness = user ? Math.round((profileFields.filter(Boolean).length / profileFields.length) * 100) : 0

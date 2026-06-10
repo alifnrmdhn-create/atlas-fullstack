@@ -13,7 +13,7 @@ const STATUS_ORDER = ['IN_PROGRESS', 'PLANNING', 'ON_HOLD', 'COMPLETED', 'CANCEL
 
 export function RoadmapView() {
   const {
-    programs, dashboard, overviewStatus,
+    programs, dashboard: _dashboard, overviewStatus,
     openProgramWorkspace,
     normalizeHealthStatus, formatStatusLabel,
     currentUser,
@@ -48,7 +48,7 @@ export function RoadmapView() {
 
   // Build lane groups
   type Group = { key: string; label: string; tone: string; items: typeof programs }
-  let groups: Group[] = []
+  let groups: Group[]
 
   if (groupBy === 'status') {
     groups = STATUS_ORDER.map(status => ({

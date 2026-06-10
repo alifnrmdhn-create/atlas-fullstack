@@ -215,7 +215,7 @@ export interface TaskDetailViewProps {
   onClose?: () => void
 }
 
-export function TaskDetailView({ taskId, mode = 'page', onClose }: TaskDetailViewProps = {}) {
+export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: TaskDetailViewProps = {}) {
   const page = usePage<{ task?: { id: number } }>()
   const id = taskId != null
     ? String(taskId)

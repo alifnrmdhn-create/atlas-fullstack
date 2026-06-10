@@ -15,13 +15,11 @@ import { TimelineGantt } from '../components/TimelineGantt'
 import type { TimelineGanttProgram } from '../components/TimelineGantt'
 import { api, extractErrorMessage } from '../lib/api'
 import type { CharterPayload } from '../types/charter'
-import { formatKpiValue, formatKpiValueParts, getKpiFillPercent } from '../lib/kpi'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import { useStrategicPillars } from '../hooks/useStrategicPillars'
 import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
-import { ExecutionTab } from '../components/ExecutionTab'
 import { MonitoringMatrix } from '../components/MonitoringMatrix'
 import { useInlineToast } from '../components/InlineToast'
 import { UserPicker } from '../components/UserPicker'
@@ -381,7 +379,7 @@ function Pager({ page, pageCount, total, pageSize, onPage }: {
 
 export function ProgramsView() {
   const {
-    programs, kpis, dashboard, selectedProgramId,
+    programs, kpis: _kpis, dashboard: _dashboard, selectedProgramId,
     loadOverview,
     normalizeHealthStatus, formatStatusLabel,
     currentUser, apmsKpis, programSummary,
@@ -546,7 +544,7 @@ export function ProgramsView() {
   // ── Execution pulse data ───────────────────────────────────────────────
   const [pulse, setPulse] = useState<ExecutionPulse | null>(null)
   const [pulseLoading, setPulseLoading] = useState(false)
-  const [pulseError, setPulseError] = useState<string | null>(null)
+  const [_pulseError, setPulseError] = useState<string | null>(null)
 
   const loadPulse = useCallback(() => {
     setPulseLoading(true)
@@ -1025,7 +1023,7 @@ export function ProgramsView() {
     if (da !== db) return da - db
     return a.progressPercent - b.progressPercent
   }
-  let laneGroups: Group[] = []
+  let laneGroups: Group[]
   if (laneGrouping === 'status') {
     laneGroups = STATUS_ORDER.map(s => ({
       key: s, label: formatStatusLabel(s), tone: s.toLowerCase(),

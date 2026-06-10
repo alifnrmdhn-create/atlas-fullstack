@@ -2,7 +2,6 @@ import { Fragment, useEffect, useId, useRef, useState, startTransition } from 'r
 import type { ReactNode } from 'react'
 import { Link, usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
-import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
@@ -13,7 +12,7 @@ import type { ResolvedTheme } from '../lib/theme'
 import { TopbarAction } from '../components/TopbarAction'
 import { CommandPalette } from '../components/CommandPalette'
 import { ContextPanel } from '../components/ContextPanel'
-import { TOPBAR_ACTIONS, TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
+import { TOPBAR_ACTIONS } from '../lib/topbar-config'
 import { resolveContextPanel } from '../lib/context-panel-config'
 import { formatRoleLabel } from '../lib/roleLabel'
 
@@ -48,7 +47,7 @@ function IconHome() {
     </svg>
   )
 }
-function IconDashboard() {
+function _IconDashboard() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="2" width="4" height="4" rx="0.8" />
@@ -678,7 +677,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [paletteOpen, setPaletteOpen] = useState(false)
-  const [stickyTitleVisible, setStickyTitleVisible] = useState(false)
+  const [_stickyTitleVisible, setStickyTitleVisible] = useState(false)
 
   // User account menu kini hidup di kanan-atas topbar (avatar) — popover pakai
   // positioning absolut biasa di dalam `.topbar__user-menu` (topbar tidak
@@ -1087,7 +1086,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     '/performance/me': 'My KPI',
     '/performance/individu': 'Leaderboard',
   }
-  const currentPage = PAGE_NAMES[activePath] ?? PAGE_NAMES[pathname] ?? 'ATLAS'
+  const _currentPage = PAGE_NAMES[activePath] ?? PAGE_NAMES[pathname] ?? 'ATLAS'
 
   return (
     <div className={`app-shell${effectiveCollapsed ? ' app-shell--collapsed' : ''}${hasContextPanel ? ' app-shell--with-panel' : ''}${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}${viewportPhone ? ' app-shell--mobile' : ''}${mobileNavOpen ? ' app-shell--nav-open' : ''}`} ref={shellRef}>

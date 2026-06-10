@@ -92,7 +92,7 @@ async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
     }
 
     if (!response.ok) {
-        let payload: { error?: string; message?: string; errors?: unknown } | null = null
+        let payload: { error?: string; message?: string; errors?: unknown } | null
         try {
             payload = await response.json()
         } catch {

@@ -9,7 +9,7 @@ import {
 } from 'react'
 import type { Dispatch, FormEvent, ReactNode, SetStateAction } from 'react'
 import { router } from '@inertiajs/react'
-import { api, extractErrorMessage, sessionStorage } from '../lib/api'
+import { api, sessionStorage } from '../lib/api'
 import { useAuth as useInertiaAuth } from '../hooks/useAuth'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useRealtimeEvents } from '../hooks/useRealtimeEvents'

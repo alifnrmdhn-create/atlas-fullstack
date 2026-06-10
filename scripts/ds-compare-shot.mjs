@@ -147,7 +147,7 @@ async function waitFor(page, predicate, ms, label) {
   }
   throw new Error(`waitFor failed: ${label}`)
 }
-async function typeInput(page, selector, value) {
+async function _typeInput(page, selector, value) {
   await page.send('Runtime.evaluate', {
     expression: `(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (el) { el.focus(); const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; set.call(el, ${JSON.stringify(value)}); el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); el.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true })); el.blur(); } })()`,
   })

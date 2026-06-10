@@ -48,7 +48,7 @@ const chrome = spawn(chromeBin, [
   'about:blank',
 ], { stdio: ['ignore', 'pipe', 'pipe'] })
 
-let browserWSEndpoint = ''
+let browserWSEndpoint
 let stderr = ''
 
 try {

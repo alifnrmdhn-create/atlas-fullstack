@@ -205,7 +205,7 @@ export function useAutoSave<T>(opts: UseAutoSaveOptions<T>): UseAutoSaveReturn {
     const handleSaveError = useCallback((err: unknown) => {
         // 409 — version conflict. Fetch latest, bump version, retry sekali.
         if (err instanceof ApiRequestError && err.status === 409) {
-            const detail = err.details as { version?: number } | undefined
+            const _detail = err.details as { version?: number } | undefined
             // Server detail diembed di `details`? — kita tidak parse error body
             // (api.ts hanya expose `details` dari `errors`). Cara aman: re-fetch
             // server state via show endpoint.

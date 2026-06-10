@@ -319,7 +319,7 @@ const NOTIF_TYPE_LABEL: Record<string, string> = {
   DEADLINE_APPROACHING: 'Deadline', DM_RECEIVED: 'DM',
 }
 
-function todayLabel(): string {
+function _todayLabel(): string {
   return new Date().toLocaleDateString('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
@@ -1031,7 +1031,7 @@ export function InboxView() {
     await markNotificationRead(notifId)
     navigateToNotifSource(source)
   }
-  async function handleNotifGroupClick(group: NotificationGroup) {
+  async function _handleNotifGroupClick(group: NotificationGroup) {
     await Promise.all(group.items.map(n => api.put(`/notifications/${n.id}/read`, {})))
     await loadOverview('refresh')
     navigateToNotifSource(group.latest.source)
@@ -1078,7 +1078,7 @@ export function InboxView() {
   )
 
   const mentionGroups = groupNotifications(mentions)
-  const otherUnreadGroups = groupNotifications(otherUnread)
+  const _otherUnreadGroups = groupNotifications(otherUnread)
 
   const actionableOtherUnread = otherUnread.filter(n =>
     n.type === 'REPORT_NEEDS_REVISION' ||
@@ -1126,7 +1126,7 @@ export function InboxView() {
       .catch((err) => console.error('[Atlas] Gagal memuat jadwal meeting hari ini:', err))
   }, [currentUser?.id])
 
-  const MEETING_TYPE_LABEL: Record<string, string> = {
+  const _MEETING_TYPE_LABEL: Record<string, string> = {
     RAPAT_DIREKSI:    'Rapat Direksi',
     RAPAT_KOORDINASI: 'Rapat Koordinasi',
     RAPAT_DIVISI:     'Rapat Divisi',

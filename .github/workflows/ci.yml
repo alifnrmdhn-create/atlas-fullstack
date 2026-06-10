@@ -81,8 +81,10 @@ jobs:
       - run: npm ci
 
       # Bukan `npm run check`: audit:routes butuh php artisan + vendor/, jadi
-      # dijalankan di job backend. Sisanya (typecheck, breakpoints, build) di sini.
+      # dijalankan di job backend. Sisanya (typecheck, lint, breakpoints, build) di sini.
       - run: npm run typecheck
+
+      - run: npm run lint
 
       - run: npm run audit:breakpoints
 

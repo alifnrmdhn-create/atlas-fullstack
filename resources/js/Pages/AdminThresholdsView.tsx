@@ -53,7 +53,7 @@ function formatValue(v: unknown): string {
 }
 
 function FieldRow({
-  fullKey, def, category, defaultValue, override, onSave, onReset,
+  fullKey, def, category: _category, defaultValue, override, onSave, onReset,
 }: {
   fullKey: string
   def: FieldDef

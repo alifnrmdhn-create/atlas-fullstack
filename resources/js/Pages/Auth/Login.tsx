@@ -34,7 +34,7 @@ type PageProps = {
     errors?: { identifier?: string; password?: string }
 }
 
-export default function Login({ errors: pageErrors }: PageProps) {
+export default function Login({ errors: _pageErrors }: PageProps) {
     const { data, setData, post, processing, errors } = useForm({
         identifier: '',
         password: '',

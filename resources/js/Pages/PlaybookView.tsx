@@ -12,6 +12,7 @@ function esc(s: string) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
+    // eslint-disable-next-line no-control-regex -- \x00/\x01 sentinel placeholder entity (disengaja)
     .replace(/\x00([^\x01]*)\x01/g, '&$1;')
 }
 
@@ -256,6 +257,7 @@ mermaid.initialize({
   flowchart: { curve: 'basis', padding: 12, useMaxWidth: true, htmlLabels: false, nodeSpacing: 36, rankSpacing: 44 },
 })
 
+// eslint-disable-next-line no-control-regex -- \x00 sentinel penanda blok mermaid (disengaja)
 const MERMAID_RE = /\x00MERMAID:(\d+)\x00/
 
 function MermaidDiagram({ source }: { source: string }) {

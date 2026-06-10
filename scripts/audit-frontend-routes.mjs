@@ -18,7 +18,7 @@ function walk(dir) {
 walk(jsRoot)
 
 const calls = []
-const callRe = /\bapi\.(get|post|put|patch|delete|upload)\s*<[^>]*>?\s*\(\s*([`'"])(\/[^`'"]+)\2|\bapi\.(get|post|put|patch|delete|upload)\s*\(\s*([`'"])(\/[^`'"]+)\5|\bfetch\s*\(\s*([`'"])(\/[^`'"]+)\7(?<fetchOptions>[\s\S]{0,300}?\))|\bhref=\{?([`'"])(\/[^`'"]+)\9/g
+const callRe = /\bapi\.(get|post|put|patch|delete|upload)\s*<[^>]*>?\s*\(\s*([`'"])(\/[^`'"]+)\2|\bapi\.(get|post|put|patch|delete|upload)\s*\(\s*([`'"])(\/[^`'"]+)\5|\bfetch\s*\(\s*([`'"])(\/[^`'"]+)\7(?<fetchOptions>[\s\S]{0,300}?\))|\bhref=\{?([`'"])(\/[^`'"]+)\10/g
 
 for (const file of files) {
   if (file.endsWith('resources/js/lib/api.ts')) continue

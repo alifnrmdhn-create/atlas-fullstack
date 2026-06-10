@@ -1295,6 +1295,7 @@ type RichOpts = { mentionNames?: string[]; currentUserName?: string; taskCodes?:
 // 7. @user mentions (from mentionNames)
 function renderRichSegment(text: string, opts: RichOpts): ReactNode {
   // Combined regex with named-style alternation. Order matters — longest patterns first.
+  // eslint-disable-next-line no-useless-escape -- escape eksplisit dipertahankan demi keterbacaan tokenizer; menghapusnya identik secara semantik tapi rawan salah-edit
   const TOKEN_RE = /(\*\*[^*\n]+?\*\*|__[^_\n]+?__|`[^`\n]+?`|~[^~\n]+?~|_[^_\n]+?_|\*[^*\n]+?\*|:[a-z0-9_+\-]+:|@WI-[A-Z0-9-]+|@(?:channel|here|everyone|all)\b|@[A-Za-zÀ-ÿ0-9._-]+(?:\s[A-Za-zÀ-ÿ0-9._-]+)*)/g
   const parts: ReactNode[] = []
   let lastIndex = 0

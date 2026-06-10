@@ -171,7 +171,7 @@ export function WorkboardView() {
 
   const roleAccess = useRoleAccess()
   const { url } = usePage()
-  const navigate = useInertiaNavigate()
+  const _navigate = useInertiaNavigate()
 
   // Drill-down filters from URL — set by Kapasitas Tim cards on Home
   const [boardFilterAssigneeId, setBoardFilterAssigneeId] = useState<number | null>(null)

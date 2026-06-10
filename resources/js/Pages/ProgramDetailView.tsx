@@ -20,11 +20,9 @@ import { useAutoSave } from '../hooks/useAutoSave'
 import {
   Avatar,
   HealthPill,
-  Metric,
   SectionState,
   SkeletonBlock,
   SkeletonStack,
-  formatRelativeTime,
 } from '../components/ui'
 import type { ProgramDetail, ProgramKpiLink } from '../types'
 import { ExecutionTab } from '../components/ExecutionTab'
@@ -190,8 +188,8 @@ export function ProgramDetailView() {
   const programSummary = programs.find(p => p.id === numId) ?? null
 
   // ── Sidebar collapse state ────────────────────────────────────────────
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<Record<string, boolean>>(() => loadProgSidebar())
-  const toggleSidebar = (key: string) => {
+  const [_sidebarCollapsed, setSidebarCollapsed] = useState<Record<string, boolean>>(() => loadProgSidebar())
+  const _toggleSidebar = (key: string) => {
     setSidebarCollapsed(prev => {
       const next = { ...prev, [key]: !prev[key] }
       saveProgSidebar(next)
@@ -312,7 +310,7 @@ export function ProgramDetailView() {
     existingLogId: number | null
   }
   const [progressLog, setProgressLog] = useState<ProgressLogEntry[]>([])
-  const [progressLogLoading, setProgressLogLoading] = useState(false)
+  const [_progressLogLoading, setProgressLogLoading] = useState(false)
   const [showProgressForm, setShowProgressForm] = useState(false)
   const [reflectionMeta, setReflectionMeta] = useState<ReflectionMeta | null>(null)
   // Flag per-session: kalau user sudah klik "Buang draf", jangan re-apply prefill
@@ -974,7 +972,7 @@ export function ProgramDetailView() {
   })
   const [epPicIds, setEpPicIds] = useState<number[]>([])
   const [epOwnerId, setEpOwnerId] = useState<number | null>(null)
-  const [epPicQuery, setEpPicQuery] = useState('')
+  const [_epPicQuery, setEpPicQuery] = useState('')
   const [epOwnerEditing, setEpOwnerEditing] = useState(false)
   const [epOwnerQuery, setEpOwnerQuery] = useState('')
   const [epSaving, setEpSaving] = useState(false)
@@ -2997,10 +2995,10 @@ export function ProgramDetailView() {
                                   ...((iniDetail.phases ?? []).flatMap(p => p.tasks)),
                                   ...((iniDetail.tasks ?? []).filter(t => !t.phaseId)),
                                 ]
-                                const taskCount = allTasks.length
+                                const _taskCount = allTasks.length
                                 const doneCount = allTasks.filter(t => t.status === 'COMPLETED' || t.percentComplete === 100).length
                                 const blockerCount = allTasks.filter(t => t.isBlocked).length
-                                const phaseCount = (iniDetail.phases ?? []).length
+                                const _phaseCount = (iniDetail.phases ?? []).length
                                 return (
                                 <>
                                   {/* Workstream info baseline: chips "1 Phase / 1 Task"

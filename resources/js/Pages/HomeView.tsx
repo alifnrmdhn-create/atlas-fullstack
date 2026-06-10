@@ -4,7 +4,7 @@ import { Head, usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useAuth } from '../hooks/useAuth'
-import { SkeletonBlock, SectionState } from '../components/ui'
+import {  SectionState } from '../components/ui'
 import { Card, Sparkline, Meter, Delta, Bars, Gauge, Tooltip } from '../design-system'
 import { scoreTone, type Tone } from '../lib/tone'
 import { resolveMonthIndex } from '../lib/forecast'
@@ -533,7 +533,7 @@ export default function HomeView() {
   // valuable executive signal: a green KPI sitting on top of red execution means
   // the result hasn't caught up to the slowdown yet (KPI at risk next period).
   const leadingTone: Tone = onTrackPct >= 80 ? 'green' : onTrackPct >= 50 ? 'amber' : 'red'
-  const kpiDiverges = hasKpi && kpiHeadline >= 100 && leadingTone === 'red'
+  const _kpiDiverges = hasKpi && kpiHeadline >= 100 && leadingTone === 'red'
 
   /* ── Overall verdict (management by exception) ───────────────── */
   const exceptionCount = tlm + belowTargetCount + needsAction.length + criticalControlCount
@@ -546,7 +546,7 @@ export default function HomeView() {
     (tlm > 0 || belowTargetCount > 0 || criticalControlCount > 0) ? 'red'
     : (summary.atRisk > 0 || needsAction.length > 0) ? 'amber'
     : 'green'
-  const statusLabel = statusTone === 'green' ? 'Under Control' : statusTone === 'amber' ? 'Attention' : 'Action'
+  const _statusLabel = statusTone === 'green' ? 'Under Control' : statusTone === 'amber' ? 'Attention' : 'Action'
   const aksiTone: Tone = decisionCount > 0 ? (belowTargetCount > 0 ? 'red' : 'amber')
     : tlm > 0 ? 'amber' : 'green'
 
@@ -610,7 +610,7 @@ export default function HomeView() {
     .filter(d => d.value > 0)
     .sort((a, b) => b.value - a.value)
     .slice(0, 6)
-  const overdueMax = Math.max(1, ...overdueRows.map(d => d.value))
+  const _overdueMax = Math.max(1, ...overdueRows.map(d => d.value))
 
   /* ── Command-center: Momentum = THROUGHPUT NYATA ─────────────────
    * Momentum kini menjawab SATU pertanyaan: seberapa cepat kerja selesai.
@@ -681,7 +681,7 @@ export default function HomeView() {
   ]
 
   /* ── Hero stat chips ─────────────────────────────────────────── */
-  const heroStats: Array<{ val: number; label: string; tone: Tone; onClick: () => void }> = [
+  const _heroStats: Array<{ val: number; label: string; tone: Tone; onClick: () => void }> = [
     { val: tlm, label: 'Delayed programs', tone: tlm > 0 ? 'red' : 'green', onClick: () => navigate('/programs') },
     { val: summary.selesai, label: 'Completed', tone: 'green', onClick: () => navigate('/programs') },
     { val: summary.total, label: 'Total programs', tone: 'neutral', onClick: () => navigate('/programs') },
