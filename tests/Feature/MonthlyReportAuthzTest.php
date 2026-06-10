@@ -2,12 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\Directorate;
 use App\Models\MonthlyReport;
-use App\Models\OrganizationalUnit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\BuildsOrgFixtures;
 use Tests\TestCase;
 
 /**
@@ -27,6 +25,7 @@ use Tests\TestCase;
 class MonthlyReportAuthzTest extends TestCase
 {
     use RefreshDatabase;
+    use BuildsOrgFixtures;
 
     private User $officerA;
     private User $officerB;
@@ -149,31 +148,4 @@ class MonthlyReportAuthzTest extends TestCase
             ->assertJsonPath('data.status', 'APPROVED');
     }
 
-    // ── Fixture helpers (mirror CrossDirectorateAuthzTest) ──────────────────
-
-    /** @return array{0: Directorate, 1: OrganizationalUnit} */
-    private function makeDirectorate(string $dirCode, string $unitCode): array
-    {
-        $dir = Directorate::create(['code' => $dirCode, 'name' => "Direktorat {$dirCode}", 'description' => null]);
-        $unit = OrganizationalUnit::create([
-            'code' => $unitCode, 'name' => "Divisi {$unitCode}", 'unitType' => 'DIVISI',
-            'directorateId' => $dir->id, 'parentId' => null,
-        ]);
-
-        return [$dir, $unit];
-    }
-
-    private function makeUser(string $slug, string $role, int $unitId, int $directorateId): User
-    {
-        return User::create([
-            'name'          => $slug,
-            'email'         => "{$slug}@ptpn.test",
-            'userId'        => $slug,
-            'passwordHash'  => Hash::make('password'),
-            'roleType'      => $role,
-            'isActive'      => true,
-            'unitId'        => $unitId,
-            'directorateId' => $directorateId,
-        ]);
-    }
 }

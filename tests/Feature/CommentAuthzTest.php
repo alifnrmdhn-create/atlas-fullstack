@@ -3,11 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Comment;
-use App\Models\Directorate;
-use App\Models\OrganizationalUnit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\BuildsOrgFixtures;
 use Tests\TestCase;
 
 /**
@@ -25,6 +23,7 @@ use Tests\TestCase;
 class CommentAuthzTest extends TestCase
 {
     use RefreshDatabase;
+    use BuildsOrgFixtures;
 
     private User $adminA;
     private User $kadivA;
@@ -100,77 +99,4 @@ class CommentAuthzTest extends TestCase
         $this->assertTrue((bool) Comment::findOrFail($commentId)->isPinned);
     }
 
-    // ── Fixture helpers (mirror CrossDirectorateAuthzTest) ──────────────────
-
-    /** @return array{0: Directorate, 1: OrganizationalUnit} */
-    private function makeDirectorate(string $dirCode, string $unitCode): array
-    {
-        $dir = Directorate::create(['code' => $dirCode, 'name' => "Direktorat {$dirCode}", 'description' => null]);
-        $unit = OrganizationalUnit::create([
-            'code' => $unitCode, 'name' => "Divisi {$unitCode}", 'unitType' => 'DIVISI',
-            'directorateId' => $dir->id, 'parentId' => null,
-        ]);
-
-        return [$dir, $unit];
-    }
-
-    private function makeUser(string $slug, string $role, int $unitId, int $directorateId): User
-    {
-        return User::create([
-            'name'          => $slug,
-            'email'         => "{$slug}@ptpn.test",
-            'userId'        => $slug,
-            'passwordHash'  => Hash::make('password'),
-            'roleType'      => $role,
-            'isActive'      => true,
-            'unitId'        => $unitId,
-            'directorateId' => $directorateId,
-        ]);
-    }
-
-    /** @return array<string,int> Buat Program→Workstream→Task→Blocker via HTTP sebagai admin. */
-    private function seedProgramStack(User $admin, string $tag): array
-    {
-        $this->actingAs($admin);
-
-        $programId = $this->postJson('/programs', [
-            'code' => "PRG-{$tag}",
-            'name' => "Program {$tag}",
-            'description' => "Seed program {$tag}.",
-            'status' => 'IN_PROGRESS',
-            'priority' => 'HIGH',
-            'startDate' => now()->toDateString(),
-            'targetEndDate' => now()->addMonth()->toDateString(),
-            'ownerId' => $admin->id,
-            'hasNoApmsKpi' => true,
-        ])->assertCreated()->json('data.id');
-
-        $workstreamId = $this->postJson('/workstreams', [
-            'programId' => $programId,
-            'name' => "Workstream {$tag}",
-            'priority' => 'HIGH',
-            'targetCompletion' => now()->addWeeks(2)->toDateString(),
-            'ownerId' => $admin->id,
-        ])->assertCreated()->json('data.id');
-
-        $taskId = $this->postJson('/tasks', [
-            'title' => "Task {$tag}",
-            'workstreamId' => $workstreamId,
-            'targetCompletion' => now()->addWeek()->toDateString(),
-            'priority' => 'MEDIUM',
-        ])->assertCreated()->json('data.id');
-
-        $blockerId = $this->postJson('/blockers', [
-            'taskId' => $taskId,
-            'title' => "Blocker {$tag}",
-            'severity' => 'HIGH',
-        ])->assertCreated()->json('data.id');
-
-        return [
-            'program' => $programId,
-            'workstream' => $workstreamId,
-            'task' => $taskId,
-            'blocker' => $blockerId,
-        ];
-    }
 }
