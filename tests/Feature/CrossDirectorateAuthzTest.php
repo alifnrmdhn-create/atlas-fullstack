@@ -142,6 +142,23 @@ class CrossDirectorateAuthzTest extends TestCase
         $this->actingAs($this->kadivA)->postJson("/programs/{$this->a['program']}/activate")->assertOk();
     }
 
+    // ── Program update (detail edit) ──────────────────────────────────────────
+
+    public function test_program_update_blocks_cross_directorate_kadiv(): void
+    {
+        // KADIV punya hak edit tanpa-kepemilikan, tapi HARUS terbatas
+        // direktoratnya — bukan program direktorat lain.
+        $this->actingAs($this->kadivB)
+            ->putJson("/programs/{$this->a['program']}", ['name' => 'Diedit KADIV asing'])
+            ->assertForbidden();
+
+        // KADIV direktorat sendiri (bukan owner) tetap boleh — perannya
+        // memang mengawasi seluruh program direktoratnya.
+        $this->actingAs($this->kadivA)
+            ->putJson("/programs/{$this->a['program']}", ['name' => 'Diedit KADIV sendiri'])
+            ->assertSuccessful();
+    }
+
     // ── Program ownerId reassign ──────────────────────────────────────────────
 
     public function test_owner_reassign_blocks_out_of_scope_target(): void

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Auth\MembershipResolver;
+use App\Auth\OrgScope;
 use App\Auth\ScopeResolver;
 use App\Models\Program;
 use App\Models\User;
@@ -49,11 +50,26 @@ class AuthServiceProvider extends ServiceProvider
             $isStakeholder = $program->ownerId === $user->id
                 || $program->submittedById === $user->id
                 || in_array($user->id, $program->picPersonIds ?? [], true);
-            return RolePolicy::canEditProgram(
+            $allowed = RolePolicy::canEditProgram(
                 $user->roleType,
                 $isStakeholder,
                 $program->approvalStatus === 'DRAFT' && !empty($program->rejectionNote),
             );
+            if (!$allowed) {
+                return false;
+            }
+
+            // Hak edit KADIV tanpa-kepemilikan dibatasi direktoratnya sendiri.
+            // Tanpa ini, KADIV direktorat lain bisa PUT detail program manapun
+            // lewat API langsung (halaman detailnya sendiri tertutup oleh
+            // assertAccess di jalur baca, tapi Gate ini tidak ber-scope).
+            if (!$isStakeholder && RolePolicy::norm($user->roleType) === 'kadiv') {
+                return OrgScope::forUser($user)->coversUnit(
+                    $program->ownerUnitId !== null ? (int) $program->ownerUnitId : null,
+                );
+            }
+
+            return true;
         });
 
         Gate::define('delete-program', fn (User $user, Program $program) =>
