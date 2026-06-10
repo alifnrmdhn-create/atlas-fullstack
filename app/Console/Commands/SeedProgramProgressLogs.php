@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\ConfirmsDestructiveRun;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,11 @@ use Illuminate\Support\Facades\DB;
  */
 class SeedProgramProgressLogs extends Command
 {
-    protected $signature = 'programs:seed-progress-logs {--dry-run : Tampilkan ringkasan tanpa menulis}';
+    use ConfirmsDestructiveRun;
+
+    protected $signature = 'programs:seed-progress-logs
+        {--dry-run : Tampilkan ringkasan tanpa menulis}
+        {--force : Lewati konfirmasi saat target DB produksi/remote}';
     protected $description = 'Isi 1 ProgramProgressLog draft per program dari note monitoring (Charter: Current Update + PICA). Idempotent.';
 
     private const MARKER = 'Sistem — draft otomatis';
@@ -45,6 +50,10 @@ class SeedProgramProgressLogs extends Command
 
     public function handle(): int
     {
+        if (! $this->confirmDestructiveRun()) {
+            return self::FAILURE;
+        }
+
         $path = database_path('seeders/data/programs_execution_2026.json');
         if (! file_exists($path)) {
             $this->error("File tidak ditemukan: {$path}");

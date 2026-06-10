@@ -363,7 +363,9 @@ class WorkspaceEndpointSmokeTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('MonthlyReportDetailView'));
 
-        $this->get('/laporan-risiko/' . $this->riskReport->id)
+        // Alias '/laporan-risiko/{id}' dihapus dari routing (ATLAS bukan app
+        // manajemen risiko); detail report kini di '/risk-reports/{id}'.
+        $this->get('/risk-reports/' . $this->riskReport->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('RiskReportDetailView'));
     }

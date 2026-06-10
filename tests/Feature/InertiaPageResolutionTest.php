@@ -66,7 +66,8 @@ class InertiaPageResolutionTest extends TestCase
             'reports alias' => ['/reports', 'ReportsView'],
             'schedule alias' => ['/jadwal', 'ScheduleView'],
             'monthly reports nav alias' => ['/laporan-bulanan', 'MonthlyReportView'],
-            'risk reports nav alias' => ['/laporan-risiko', 'RiskReportView'],
+            // Alias '/laporan-risiko' sengaja dihapus dari routing (ATLAS bukan
+            // app manajemen risiko) — coverage RiskReportView via '/risk-reports'.
             'search alias' => ['/search', 'SearchView'],
             'presence alias' => ['/presence', 'PresenceView'],
             'profile alias' => ['/profile', 'ProfileView'],

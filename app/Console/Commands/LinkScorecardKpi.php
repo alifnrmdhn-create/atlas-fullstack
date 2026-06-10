@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\ConfirmsDestructiveRun;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +28,11 @@ use Illuminate\Support\Facades\DB;
  */
 class LinkScorecardKpi extends Command
 {
-    protected $signature = 'programs:link-scorecard-kpi {--dry-run : Tampilkan rencana link tanpa menulis}';
+    use ConfirmsDestructiveRun;
+
+    protected $signature = 'programs:link-scorecard-kpi
+        {--dry-run : Tampilkan rencana link tanpa menulis}
+        {--force : Lewati konfirmasi saat target DB produksi/remote}';
     protected $description = 'Link program SCORECARD ke KPI divisi riil → KpiDefinition+KpiValue utk Charter. Kurasi high-confidence, idempotent.';
 
     private const CODE_PREFIX = 'KPI-AUTO-';
@@ -74,6 +79,10 @@ class LinkScorecardKpi extends Command
 
     public function handle(): int
     {
+        if (! $this->confirmDestructiveRun()) {
+            return self::FAILURE;
+        }
+
         $now = now();
         $dryRun = (bool) $this->option('dry-run');
 

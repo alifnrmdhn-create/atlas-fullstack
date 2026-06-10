@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\ConfirmsDestructiveRun;
 use App\Services\ProgramHealthService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -36,10 +37,13 @@ use Illuminate\Support\Facades\DB;
  */
 class SimulateProgress extends Command
 {
+    use ConfirmsDestructiveRun;
+
     protected $signature = 'programs:simulate-progress
         {--as-of=2026-06-05 : Tanggal checkpoint (Jumat). Periode ISO diturunkan otomatis.}
         {--dry-run : Hitung & tampilkan ringkasan tanpa menulis apa pun}
-        {--no-logs : Lewati penulisan ProgramProgressLog}';
+        {--no-logs : Lewati penulisan ProgramProgressLog}
+        {--force : Lewati konfirmasi saat target DB produksi/remote}';
 
     protected $description = 'Simulasikan kemajuan eksekusi (catch-up jadwal) s.d. checkpoint mingguan. Idempotent.';
 
@@ -59,6 +63,10 @@ class SimulateProgress extends Command
 
     public function handle(ProgramHealthService $health): int
     {
+        if (! $this->confirmDestructiveRun()) {
+            return self::FAILURE;
+        }
+
         $path = database_path('seeders/data/programs_execution_2026.json');
         if (! file_exists($path)) {
             $this->error("File tidak ditemukan: {$path}");
