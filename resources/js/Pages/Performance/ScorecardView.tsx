@@ -1,6 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react'
 import { Card, Pill } from '../../design-system'
-import { scoreTone, fillRatio, formatNumber, formatPercent, formatPeriod } from './_shared'
+import { scoreTone, fillRatio, formatNumber, formatPercent, formatPeriod, formatVal } from './_shared'
 import { KpiTrendChart, type KpiTrendPayload } from './KpiTrendChart'
 import './Performance.css'
 
@@ -8,13 +8,42 @@ type RankItem = { rank: number; nama: string; kode?: string; sub?: string; nilai
 type Divisi = { kode: string; nama: string; nilai: number }
 type DirektoratCard = { kode: string; nama: string; nilai: number; divisi: Divisi[] }
 
+type MatrixRow = {
+  kode: string
+  nama: string
+  nilai: number
+  direktorat: string
+  perspektif: Record<string, number | null>
+}
+
+type ExceptionRow = {
+  divisi: string
+  kpi: string
+  pct: number
+  sasaran: string
+  realisasi: string
+  satuan: string
+  bobot: number
+}
+
 type PageProps = {
   topDirektorat: RankItem[]
   topDivisi: RankItem[]
   direktoratGrid: DirektoratCard[]
   trend: KpiTrendPayload
   periode: string
+  matrix: MatrixRow[]
+  exceptions: ExceptionRow[]
+  kpiTotals: { total: number; onTarget: number }
 }
+
+// Urutan + label pendek kolom perspektif BSC di matriks.
+const MATRIX_COLS: Array<{ key: string; label: string }> = [
+  { key: 'Financial', label: 'Financial' },
+  { key: 'Customer', label: 'Customer' },
+  { key: 'Internal Business Process', label: 'IBP' },
+  { key: 'L&G', label: 'L&G' },
+]
 
 /** Rank row with inline proportion bar — fills wide-column whitespace
  *  with meaningful achievement % visualization. Bar capped at 110% (max scorecard). */
@@ -59,7 +88,8 @@ function RankWithBar({
 }
 
 export default function ScorecardView() {
-  const { topDirektorat, topDivisi, direktoratGrid, trend, periode } = usePage<PageProps>().props
+  const { topDirektorat, topDivisi, direktoratGrid, trend, periode, matrix, exceptions, kpiTotals } =
+    usePage<PageProps>().props
 
   // Header summary stat — computed from grid for symmetry
   const totalDirektorat = direktoratGrid.length
@@ -68,16 +98,24 @@ export default function ScorecardView() {
     : 0
   const belowTargetCount = direktoratGrid.filter(d => d.nilai < 80).length
 
-  // Mode adaptif: pilot saat ini = 1 direktorat (DIR-KMR). Ranking antar-
-  // direktorat & "average dari 1" tidak bermakna — cerita yang ada justru
-  // antar-DIVISI. Layout solo: ranking semua divisi, tanpa pengulangan grid.
+  // Mode kokpit (pilot = 1 direktorat): verdict → matriks divisi×perspektif
+  // → pengecualian KPI lintas-divisi → trend. Ranking/grid lama nyaris tanpa
+  // informasi saat semua skor ~100% — bentuk ini menjawab "mana yang
+  // menyimpang & di mana" tanpa drill-down per divisi.
   const soloDir = totalDirektorat === 1 ? direktoratGrid[0] : null
-  const soloDivisi: RankItem[] = soloDir
-    ? [...soloDir.divisi]
-        .sort((a, b) => b.nilai - a.nilai)
-        .map((d, i) => ({ rank: i + 1, nama: d.kode, kode: d.kode, sub: d.nama, nilai: d.nilai }))
-    : []
   const soloBelow100 = soloDir ? soloDir.divisi.filter(d => d.nilai < 100).length : 0
+
+  // Delta vs bulan berisi sebelumnya (dari payload trend).
+  const soloDelta = (() => {
+    if (!soloDir || !trend?.series?.length) return null
+    const s = trend.series.find(x => x.kode === soloDir.kode) ?? trend.series[0]
+    const filled = s.values
+      .map((v, i) => ({ v, label: trend.periodes[i]?.label ?? '' }))
+      .filter((x): x is { v: number; label: string } => x.v != null)
+    if (filled.length < 2) return null
+    const last = filled[filled.length - 1], prev = filled[filled.length - 2]
+    return { value: last.v - prev.v, vs: prev.label }
+  })()
 
   const periodeLabel = formatPeriod(periode)
 
@@ -95,23 +133,28 @@ export default function ScorecardView() {
             <div className="perf__header-summary">
               {soloDir ? (
                 <>
-                  {/* Solo: "average dari 1 direktorat" menyesatkan — tampilkan
-                      skor direktorat + ringkasan divisinya. */}
+                  {/* Solo: "average dari 1 direktorat" menyesatkan — verdict
+                      strip: skor + delta + cakupan KPI lintas-divisi. */}
                   <span className="perf__header-stat">
                     <strong data-tone={scoreTone(soloDir.nilai)} data-num>{formatPercent(soloDir.nilai, 1)}</strong>
                     <span>directorate score</span>
                   </span>
+                  {soloDelta && (
+                    <span className="perf__header-delta" data-tone={soloDelta.value >= 0 ? 'green' : 'red'}>
+                      {soloDelta.value >= 0 ? '▲' : '▼'} {formatPercent(Math.abs(soloDelta.value), 1)} vs {soloDelta.vs}
+                    </span>
+                  )}
                   <span className="perf__header-divider" aria-hidden />
                   <span className="perf__header-stat">
-                    <strong data-num>{soloDir.divisi.length}</strong>
-                    <span>divisions</span>
+                    <strong data-num>{kpiTotals.onTarget}/{kpiTotals.total}</strong>
+                    <span>KPIs on target</span>
                   </span>
                   {soloBelow100 > 0 && (
                     <>
                       <span className="perf__header-divider" aria-hidden />
                       <span className="perf__header-stat">
                         <strong data-tone="amber" data-num>{soloBelow100}</strong>
-                        <span>below 100%</span>
+                        <span>divisions below 100%</span>
                       </span>
                     </>
                   )}
@@ -154,26 +197,77 @@ export default function ScorecardView() {
             </Card>
           )}
 
-          {/* ─── Podium ───────────────────────────────
-              Solo (1 direktorat): satu kartu ranking SEMUA divisi — ranking
-              antar-direktorat & duplikasi Top-3-divisi tidak ada gunanya.
-              Multi: dua kartu Top 3 berdampingan seperti semula. */}
+          {/* ─── Kokpit solo: matriks divisi × perspektif ──────────
+              Heatmap menempatkan kelemahan secara spasial (divisi mana ×
+              perspektif mana) — menggantikan ranking bar yang semua hijau
+              hampir-penuh dan tak terbedakan. */}
           {soloDir ? (
-            <Card padding="md" className="perf__section">
-              <div className="perf-card-head">
-                <h2 className="perf-card-head__title">Division Ranking — {soloDir.nama}</h2>
-                <Pill tone="neutral" variant="soft">{periodeLabel}</Pill>
+            <>
+            <section className="perf__section">
+              <div className="perf-section-head">
+                <span className="perf__section-label">Division × BSC Perspective — {soloDir.nama}</span>
+                <span className="perf-section-meta">achievement, weighted per perspective · click a row to drill down</span>
               </div>
-              <div className="perf-rank-bar-list">
-                {soloDivisi.map(item => (
-                  <RankWithBar
-                    key={item.kode || item.nama}
-                    item={item}
-                    href={`/performance/divisi/${(item.kode ?? '').toLowerCase()}`}
-                  />
-                ))}
-              </div>
-            </Card>
+              <Card padding="none" className="perf-matrix-card">
+                <ScoreMatrix rows={matrix} />
+              </Card>
+            </section>
+
+            {/* ─── Pengecualian lintas-divisi | Trend ───────────── */}
+            <div className="perf__cols-2 perf__section perf__cols-2--cockpit">
+              <Card padding="md">
+                <div className="perf-card-head">
+                  <h2 className="perf-card-head__title">Needs attention</h2>
+                  <Pill tone={exceptions.length > 0 ? 'amber' : 'green'} variant="soft">
+                    {exceptions.length > 0
+                      ? `${exceptions.length} KPI below 100%`
+                      : 'all on target'}
+                  </Pill>
+                </div>
+                {exceptions.length === 0 ? (
+                  <p className="perf-empty">
+                    All {kpiTotals.total} division KPIs meet 100% of target this period.
+                  </p>
+                ) : (
+                  <div className="perf-exc-list">
+                    {exceptions.map(e => (
+                      <Link
+                        key={`${e.divisi}-${e.kpi}`}
+                        href={`/performance/divisi/${e.divisi.toLowerCase()}`}
+                        className="perf-exc"
+                      >
+                        <span className="perf-exc__divisi">{e.divisi}</span>
+                        <span className="perf-exc__main">
+                          <span className="perf-exc__kpi">{e.kpi}</span>
+                          <span className="perf-exc__detail">
+                            {e.realisasi === '—'
+                              ? 'not measured yet'
+                              : `${formatVal(e.realisasi, e.satuan)} of ${formatVal(e.sasaran, e.satuan)} target`}
+                            {' · '}weight {formatNumber(e.bobot, 0)}%
+                          </span>
+                        </span>
+                        <span className="perf-exc__pct" data-tone={scoreTone(e.pct)}>
+                          {e.realisasi === '—' ? 'N/A' : formatPercent(e.pct, 0)}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </Card>
+
+              {trend && trend.series.length > 0 && (
+                <Card padding="md">
+                  <div className="perf-card-head">
+                    <h2 className="perf-card-head__title">Score trend</h2>
+                    <Pill tone="neutral" variant="soft">
+                      {trend.periodes[0]?.label} – {trend.periodes[trend.periodes.length - 1]?.label}
+                    </Pill>
+                  </div>
+                  <KpiTrendChart trend={trend} height={220} />
+                </Card>
+              )}
+            </div>
+            </>
           ) : direktoratGrid.length > 0 && (
           <div className="perf__cols-2 perf__section">
             <Card padding="md">
@@ -206,8 +300,8 @@ export default function ScorecardView() {
           </div>
           )}
 
-          {/* ─── Tren skor KPI 6 bulan terakhir ────── */}
-          {trend && trend.series.length > 0 && (
+          {/* ─── Tren skor KPI 6 bulan terakhir (multi-direktorat) ── */}
+          {!soloDir && trend && trend.series.length > 0 && (
             <section className="perf__section">
               <div className="perf-section-head">
                 <span className="perf__section-label">KPI Score Trend</span>
@@ -300,6 +394,62 @@ export default function ScorecardView() {
         </div>
       </div>
     </>
+  )
+}
+
+/**
+ * Matriks divisi × perspektif BSC — heatmap kecil yang menempatkan kelemahan
+ * secara spasial. Sel = achievement tertimbang perspektif itu; tint mengikuti
+ * tone (merah <80 · amber <100 · hijau ≥100). Baris klik → halaman divisi.
+ */
+function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
+  const cols = MATRIX_COLS.filter(c => rows.some(r => r.perspektif[c.key] != null))
+  return (
+    <div
+      className="perf-matrix"
+      role="table"
+      aria-label="Division by perspective achievement"
+      // Jumlah kolom eksplisit — auto-fit membuat sel wrap ke baris implisit
+      // saat sempit (mobile), bukan memicu scroll-x.
+      style={{ ['--matrix-cols' as never]: cols.length + 1 }}
+    >
+      <div className="perf-matrix__row perf-matrix__row--head" role="row">
+        <span className="perf-matrix__division" role="columnheader">Division</span>
+        {cols.map(c => (
+          <span key={c.key} className="perf-matrix__cell perf-matrix__cell--head" role="columnheader">{c.label}</span>
+        ))}
+        <span className="perf-matrix__cell perf-matrix__cell--head perf-matrix__cell--total" role="columnheader">Total</span>
+      </div>
+      {rows.map(r => (
+        <Link
+          key={r.kode}
+          href={`/performance/divisi/${r.kode.toLowerCase()}`}
+          className="perf-matrix__row"
+          role="row"
+        >
+          <span className="perf-matrix__division" role="cell">
+            <span className="perf-matrix__division-code">{r.kode}</span>
+            <span className="perf-matrix__division-name">{r.nama}</span>
+          </span>
+          {cols.map(c => {
+            const v = r.perspektif[c.key]
+            return (
+              <span
+                key={c.key}
+                className="perf-matrix__cell"
+                data-tone={v == null ? undefined : scoreTone(v)}
+                role="cell"
+              >
+                {v == null ? '—' : formatPercent(v, 1)}
+              </span>
+            )
+          })}
+          <span className="perf-matrix__cell perf-matrix__cell--total" data-tone={scoreTone(r.nilai)} role="cell">
+            {formatPercent(r.nilai, 1)}
+          </span>
+        </Link>
+      ))}
+    </div>
   )
 }
 

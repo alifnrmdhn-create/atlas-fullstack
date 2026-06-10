@@ -175,8 +175,58 @@ class PerformanceController extends Controller
         // Trend skor 6 bulan terakhir untuk bar chart (Gap #2 vs PDF slide 8)
         $trend = $this->scorecard->trendDirektorat($user, 6, $periode);
 
+        // ── Cockpit payload (redesain 2026-06-10) ──────────────────────────
+        // Bentuk lama (ranking + bar 0-110) nyaris tanpa informasi saat semua
+        // skor ~100%. Bentuk baru: matriks divisi×perspektif BSC (locate the
+        // weakness) + daftar pengecualian KPI lintas-divisi (eksekutif tidak
+        // perlu masuk per-divisi untuk menemukan yang menyimpang).
+        $matrix = [];
+        $exceptions = [];
+        $kpiTotals = ['total' => 0, 'onTarget' => 0];
+        foreach ($direktoratGrid as $dir) {
+            foreach ($dir['divisi'] as $div) {
+                $items = $this->getDivisiKpi($div['kode'], $periode);
+                $perAgg = [];
+                foreach ($items as $k) {
+                    $b = (float) $k['bobot'];
+                    $s = (float) $k['skor'];
+                    $pct = $b > 0 ? ($s / $b) * 100 : 0.0;
+                    $kpiTotals['total']++;
+                    if ($pct >= 100) {
+                        $kpiTotals['onTarget']++;
+                    } else {
+                        $exceptions[] = [
+                            'divisi'    => $div['kode'],
+                            'kpi'       => $k['nama'],
+                            'pct'       => round($pct, 1),
+                            'sasaran'   => $k['sasaran'],
+                            'realisasi' => $k['realisasi'],
+                            'satuan'    => $k['satuan'],
+                            'bobot'     => $b,
+                        ];
+                    }
+                    $p = $k['perspektif'];
+                    $perAgg[$p]['b'] = ($perAgg[$p]['b'] ?? 0) + $b;
+                    $perAgg[$p]['s'] = ($perAgg[$p]['s'] ?? 0) + $s;
+                }
+                $cells = [];
+                foreach ($perAgg as $p => $agg) {
+                    $cells[$p] = $agg['b'] > 0 ? round(($agg['s'] / $agg['b']) * 100, 1) : null;
+                }
+                $matrix[] = [
+                    'kode' => $div['kode'],
+                    'nama' => $div['nama'],
+                    'nilai' => $div['nilai'],
+                    'direktorat' => $dir['kode'],
+                    'perspektif' => $cells,
+                ];
+            }
+        }
+        usort($exceptions, fn ($a, $b) => $a['pct'] <=> $b['pct']);
+
         return Inertia::render('Performance/ScorecardView', compact(
-            'topDirektorat', 'topDivisi', 'direktoratGrid', 'trend', 'periode'
+            'topDirektorat', 'topDivisi', 'direktoratGrid', 'trend', 'periode',
+            'matrix', 'exceptions', 'kpiTotals'
         ));
     }
 
@@ -271,26 +321,33 @@ class PerformanceController extends Controller
         $divisiList = [];
         foreach ($gridDir['divisi'] as $idx => $div) {
             $kpiItems = $this->getDivisiKpi($div['kode'], $periode);
-            // Top 5 KPI by bobot — yang paling berkontribusi ke skor divisi
-            usort($kpiItems, fn ($a, $b) => ($b['bobot'] ?? 0) <=> ($a['bobot'] ?? 0));
-            $keyKpis = array_map(fn ($k) => [
-                'kode'      => $k['kode'],
-                'nama'      => $k['nama'],
-                'bobot'     => $k['bobot'],
-                'satuan'    => $k['satuan'],
-                'polaritas' => $k['polaritas'],
-                'sasaran'   => $k['sasaran'],
-                'realisasi' => $k['realisasi'],
-                'skor'      => $k['skor'],
-            ], array_slice($kpiItems, 0, 5));
 
-            // Summary: on-target vs at-risk count (skor/bobot >= 100% = on target)
+            // Achievement per perspektif BSC (redesain 2026-06-10) — menggantikan
+            // "top KPI by bobot" yang bar-nya meng-encode bobot (selalu mirip),
+            // bukan kinerja. Kartu kini mini-scorecard: 4 baris perspektif + pct.
+            $perAgg = [];
             $onTarget = 0; $atRisk = 0;
             foreach ($kpiItems as $k) {
                 $bobot = (float) ($k['bobot'] ?? 0);
                 $skor  = (float) ($k['skor'] ?? 0);
                 $pct   = $bobot > 0 ? ($skor / $bobot) * 100 : 0;
                 if ($pct >= 95) $onTarget++; else $atRisk++;
+                $p = $k['perspektif'];
+                $perAgg[$p]['b'] = ($perAgg[$p]['b'] ?? 0) + $bobot;
+                $perAgg[$p]['s'] = ($perAgg[$p]['s'] ?? 0) + $skor;
+            }
+            $order = ['Financial', 'Customer', 'Internal Business Process', 'L&G'];
+            uksort($perAgg, function ($a, $b) use ($order) {
+                $ia = array_search($a, $order); $ib = array_search($b, $order);
+                return (($ia === false) ? 99 : $ia) <=> (($ib === false) ? 99 : $ib);
+            });
+            $perspektif = [];
+            foreach ($perAgg as $p => $agg) {
+                $perspektif[] = [
+                    'nama'  => $p,
+                    'bobot' => round($agg['b'], 1),
+                    'pct'   => $agg['b'] > 0 ? round(($agg['s'] / $agg['b']) * 100, 1) : null,
+                ];
             }
 
             $divisiList[] = [
@@ -302,7 +359,7 @@ class PerformanceController extends Controller
                 'kpiCount'    => count($kpiItems),
                 'onTarget'    => $onTarget,
                 'atRisk'      => $atRisk,
-                'keyKpis'     => $keyKpis,
+                'perspektif'  => $perspektif,
             ];
         }
 

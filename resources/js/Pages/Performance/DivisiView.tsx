@@ -1,10 +1,9 @@
 import { Head, Link, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { Card, Pill } from '../../design-system'
-import { ForecastBadge } from '../../components/ui'
-import { computeForecastFromStrings } from '../../lib/forecast'
 import { useState } from 'react'
-import { scoreTone, fillRatio, realisasiPercent, formatVal, formatNumber, formatPercent, formatPeriod, isZeroTargetMet } from './_shared'
+import { scoreTone, fillRatio, realisasiPercent, formatNumber, formatPercent, formatPeriod } from './_shared'
+import { KpiScoreTable, DeviationBar, type ScoreGroup } from './KpiScoreTable'
 import { InsightPanel, type InsightPayload } from './InsightPanel'
 import './Performance.css'
 
@@ -49,15 +48,10 @@ type Performer = {
   nilai: number
 }
 
-type KeyKpi = {
-  kode: string
+type PerspektifRow = {
   nama: string
   bobot: number
-  satuan: string
-  polaritas: 'maximize' | 'minimize'
-  sasaran: string
-  realisasi: string
-  skor: number
+  pct: number | null
 }
 
 type DivisiCompare = {
@@ -69,7 +63,7 @@ type DivisiCompare = {
   kpiCount: number
   onTarget: number
   atRisk: number
-  keyKpis: KeyKpi[]
+  perspektif: PerspektifRow[]
 }
 
 type SingleProps = {
@@ -211,11 +205,6 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
   const allOnTarget = div.atRisk === 0 && div.kpiCount > 0
   const statusTone = allOnTarget ? 'green' : (div.atRisk > div.onTarget ? 'red' : 'amber')
 
-  // Find max bobot for relative bar widths
-  const maxBobot = div.keyKpis.length > 0
-    ? Math.max(...div.keyKpis.map(k => k.bobot || 0))
-    : 1
-
   return (
     <Link href={`/performance/divisi/${div.kode.toLowerCase()}`} className="perf-compare-card">
       <div className="perf-compare-card__top">
@@ -244,31 +233,31 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
 
       <div className="perf-compare-card__divider" />
 
+      {/* Mini-scorecard per perspektif BSC (redesain 2026-06-10) — dulu "top
+          KPI by bobot" yang bar-nya meng-encode bobot (selalu mirip), bukan
+          kinerja. Deviation bar = sama dgn tabel detail (jangkar 100%). */}
       <div className="perf-compare-card__kpis">
-        <span className="perf-compare-card__kpis-label">Largest contribution · weight</span>
-        {div.keyKpis.length === 0 ? (
+        <span className="perf-compare-card__kpis-label">Achievement by perspective</span>
+        {div.perspektif.length === 0 ? (
           <span className="perf-compare-card__kpi-empty">No KPIs yet</span>
         ) : (
-          div.keyKpis.map(k => {
-            const pct = realisasiPercent(k.sasaran, k.realisasi, k.polaritas)
-            const itemTone = scoreTone(pct)
-            const barWidth = maxBobot > 0 ? (k.bobot / maxBobot) * 100 : 0
-            return (
-              <div key={k.kode} className="perf-compare-card__kpi">
-                <span className="perf-compare-card__kpi-name" title={k.nama}>{k.nama}</span>
-                <div className="perf-compare-card__kpi-bar" aria-hidden="true">
-                  <div
-                    className="perf-compare-card__kpi-bar-fill"
-                    data-tone={itemTone}
-                    style={{ width: `${barWidth}%` }}
-                  />
-                </div>
-                <span className="perf-compare-card__kpi-skor" data-tone={itemTone}>
-                  {formatNumber(k.skor, 1)}
-                </span>
-              </div>
-            )
-          })
+          div.perspektif.map(p => (
+            <div key={p.nama} className="perf-compare-card__kpi">
+              <span className="perf-compare-card__kpi-name" title={`${p.nama} · weight ${formatNumber(p.bobot, 0)}%`}>
+                {p.nama}
+              </span>
+              {p.pct == null ? (
+                <span className="perf-compare-card__kpi-empty">—</span>
+              ) : (
+                <>
+                  <DeviationBar pct={p.pct} />
+                  <span className="perf-compare-card__kpi-skor" data-tone={scoreTone(p.pct)}>
+                    {formatPercent(p.pct, 1)}
+                  </span>
+                </>
+              )}
+            </div>
+          ))
         )}
       </div>
     </Link>
@@ -279,7 +268,6 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
   const navigate = useInertiaNavigate()
   const [attentionOnly, setAttentionOnly] = useState(false)
   const [lowestFirst, setLowestFirst] = useState(false)
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
   const tone = scoreTone(divisi.nilai)
   const bar = fillRatio(divisi.nilai) * 100
@@ -288,21 +276,33 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
   const itemPct = (i: KpiItem) => realisasiPercent(i.sasaran, i.realisasi, i.polaritas)
   const attentionCount = kpiItems.filter(i => itemPct(i) < 100).length
 
-  // Triage pipeline — sama dengan KolegialDetailView: filter status → sort,
-  // grup kosong di-drop.
-  const groups = groupByPerspektif(kpiItems)
+  // Triage pipeline → bentuk tabel scorecard (KpiScoreTable, sama dgn
+  // Directorate KPI). Grup kosong di-drop.
+  const tableGroups: ScoreGroup[] = groupByPerspektif(kpiItems)
     .map(g => {
       let items = attentionOnly ? g.items.filter(i => itemPct(i) < 100) : g.items
       if (lowestFirst) items = [...items].sort((a, b) => itemPct(a) - itemPct(b))
-      return { ...g, items }
+      return {
+        key: g.perspektif,
+        label: g.perspektif,
+        color: PERSPEKTIF_COLOR[g.perspektif] ?? 'var(--ds-text-tertiary)',
+        bobot: items.reduce((s, i) => s + i.bobot, 0),
+        pct: g.pct,
+        items: items.map(i => ({
+          no: i.no,
+          kode: i.kode,
+          nama: i.nama,
+          definisi: i.definisi,
+          satuan: i.satuan,
+          polaritas: i.polaritas,
+          bobot: i.bobot,
+          target: i.sasaran,
+          realisasi: i.realisasi,
+          skor: i.skor,
+        })),
+      }
     })
     .filter(g => g.items.length > 0)
-
-  const toggleGroup = (key: string) => setCollapsed(prev => {
-    const next = new Set(prev)
-    if (next.has(key)) next.delete(key); else next.add(key)
-    return next
-  })
 
   return (
     <>
@@ -401,112 +401,20 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                 </button>
               </div>
               <p className="perf-scale-note">
-                Score = contribution to total (weight × achievement, achievement capped at 110%).
-                Bar shows achievement vs target; tick marks the 100% line.
+                Score = weight × achievement (capped 110%). The achievement bar is anchored at the 100% line —
+                right of the line = above target, left = below (zoomed ±).
               </p>
 
-              {groups.length === 0 ? (
+              {tableGroups.length === 0 ? (
                 <Card padding="md" className="perf-empty">
                   <div className="perf-empty__title">Nothing needs attention</div>
                   <div>All KPIs in this view meet 100% of target. Clear the filter to see everything.</div>
                 </Card>
-              ) : groups.map(group => {
-                const isCollapsed = collapsed.has(group.perspektif)
-                return (
-                <div key={group.perspektif} className="perf-kpi-group" style={{ marginBottom: 22 }}>
-                  <button
-                    type="button"
-                    className="perf-group-head"
-                    aria-expanded={!isCollapsed}
-                    onClick={() => toggleGroup(group.perspektif)}
-                  >
-                    <span className="perf-group-head__chevron" data-collapsed={isCollapsed} aria-hidden>▾</span>
-                    <span className="perf-group-head__dot" style={{ background: PERSPEKTIF_COLOR[group.perspektif] ?? 'var(--ds-text-tertiary)' }} />
-                    <span className="perf__section-label perf-group-head__label">{group.perspektif}</span>
-                    <span className="perf-group-head__count">{group.items.length} KPI · weight {formatNumber(group.bobot, 0)}%</span>
-                    <span className="perf-group-head__pct" data-tone={scoreTone(group.pct)}>
-                      {formatPercent(group.pct, 1)}
-                    </span>
-                  </button>
-
-                  {!isCollapsed && (
-                  <div className="perf-kpi-list">
-                    {group.items.map(item => {
-                      const pct = itemPct(item)
-                      // Tone disamakan dgn KolegialDetailView: dari achievement
-                      // (pct), bukan skor/bobot — dua halaman sempat beda basis.
-                      const itemTone = scoreTone(pct)
-                      const barWidth = fillRatio(pct) * 100
-                      const zeroMet = isZeroTargetMet(item.sasaran, item.realisasi)
-                      const isNA = item.realisasi === '—'
-                      const forecast = zeroMet || isNA ? null : computeForecastFromStrings({
-                        periode, sasaran: item.sasaran, realisasi: item.realisasi, polaritas: item.polaritas,
-                      })
-
-                      return (
-                        <article key={item.kode} className="perf-kpi">
-                          <span className="perf-kpi__num">{item.no}</span>
-                          <div className="perf-kpi__main">
-                            <h3 className="perf-kpi__title">{item.nama}</h3>
-                            <div className="perf-kpi__meta">
-                              <Pill variant="mono">{item.kode}</Pill>
-                              <span className={`perf-kpi__meta-chip perf-kpi__meta-chip--${item.polaritas === 'maximize' ? 'max' : 'min'}`}>
-                                {item.polaritas === 'maximize' ? '↑ Maximize' : '↓ Minimize'}
-                              </span>
-                              <span className="perf-kpi__meta-chip">{item.satuan}</span>
-                              {forecast && forecast.value > 0 && (
-                                <ForecastBadge value={formatNumber(forecast.value, 1)} status={forecast.status} />
-                              )}
-                            </div>
-                            {zeroMet ? (
-                              <div className="perf-kpi__realisasi">
-                                <span className="perf-kpi__zero-met" data-tone="green">
-                                  ✓ Zero target met — target {formatVal(item.sasaran, item.satuan)}, no occurrence
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="perf-kpi__realisasi">
-                                <div className="perf-kpi__realisasi-block">
-                                  <span className="perf-kpi__realisasi-label">Target</span>
-                                  <span className="perf-kpi__realisasi-value">{formatVal(item.sasaran, item.satuan)}</span>
-                                </div>
-                                <span className="perf-kpi__realisasi-arrow">→</span>
-                                <div className="perf-kpi__realisasi-block">
-                                  <span className="perf-kpi__realisasi-label">Realization</span>
-                                  <span
-                                    className={`perf-kpi__realisasi-value${isNA ? ' perf-kpi__realisasi-value--na' : ''}`}
-                                    data-tone={isNA ? undefined : itemTone}
-                                    title={isNA ? 'Not yet measured for this period' : undefined}
-                                  >
-                                    {isNA ? 'N/A' : formatVal(item.realisasi, item.satuan)}
-                                  </span>
-                                </div>
-                                {!isNA && (
-                                  <span className="perf-kpi__pct" data-tone={itemTone}>{formatPercent(pct, 0)} of target</span>
-                                )}
-                              </div>
-                            )}
-                            <div className="perf-kpi__bar perf-kpi__bar--ticked">
-                              <div className="perf-kpi__bar-fill" data-tone={itemTone} style={{ width: `${barWidth}%` }} />
-                            </div>
-                            {item.definisi && (
-                              <p className="perf-kpi__definisi">{item.definisi}</p>
-                            )}
-                          </div>
-                          <div className="perf-kpi__right">
-                            <span className="perf-kpi__skor" data-tone={itemTone}>
-                              {formatNumber(item.skor)}
-                            </span>
-                            <span className="perf-kpi__bobot">Weight {item.bobot}%</span>
-                          </div>
-                        </article>
-                      )
-                    })}
-                  </div>
-                  )}
-                </div>
-                )
-              })}
+              ) : (
+                <Card padding="none" className="perf-table-card">
+                  <KpiScoreTable groups={tableGroups} />
+                </Card>
+              )}
               </>
             )}
           </section>

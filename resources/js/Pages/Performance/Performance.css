@@ -1543,3 +1543,370 @@
   gap: 6px;
   margin-top: 8px;
 }
+
+/* ═══ Redesain bentuk 2026-06-10 — kokpit + scorecard table ═══════════════ */
+
+/* Delta chip di header verdict (▲/▼ vs bulan sebelumnya). */
+.perf__header-delta {
+  font-size: 11px;
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.perf__header-delta[data-tone="green"] { color: var(--tone-green); }
+.perf__header-delta[data-tone="red"]   { color: var(--tone-red); }
+
+/* Kolom kokpit: pengecualian (kiri, dominan) | trend (kanan). */
+.perf__cols-2--cockpit { grid-template-columns: 1.15fr 0.85fr; }
+@media (max-width: 980px) {
+  .perf__cols-2--cockpit { grid-template-columns: 1fr; }
+}
+
+/* ── Matriks divisi × perspektif ─────────────────────────── */
+
+.perf-matrix-card { overflow: hidden; }
+
+.perf-matrix { width: 100%; }
+
+.perf-matrix__row {
+  display: grid;
+  /* Jumlah kolom dari --matrix-cols (di-set FE) — auto-fit bikin sel wrap
+     ke baris implisit saat sempit, merusak bentuk tabel di mobile. */
+  grid-template-columns: minmax(200px, 1.6fr) repeat(var(--matrix-cols, 5), minmax(86px, 1fr));
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.perf-matrix__row:last-child { border-bottom: none; }
+
+@media (hover: hover) {
+  a.perf-matrix__row:hover { background: var(--ds-surface-hover); }
+}
+
+.perf-matrix__row--head {
+  background: color-mix(in srgb, var(--ds-neutral-100) 55%, transparent);
+}
+
+.perf-matrix__division {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 10px 14px;
+  min-width: 0;
+}
+.perf-matrix__row--head .perf-matrix__division {
+  font-size: 10px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.perf-matrix__division-code {
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-primary);
+}
+.perf-matrix__division-name {
+  font-size: 11px;
+  color: var(--ds-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.perf-matrix__cell {
+  padding: 10px 12px;
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  border-left: 1px solid var(--ds-border-subtle);
+}
+.perf-matrix__cell--head {
+  font-size: 10px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* Tint heatmap — warna = sinyal, angka tetap terbaca (teks tone gelap). */
+.perf-matrix__cell[data-tone="green"] {
+  background: color-mix(in srgb, var(--tone-green) 9%, transparent);
+  color: var(--tone-green);
+}
+.perf-matrix__cell[data-tone="amber"] {
+  background: color-mix(in srgb, var(--tone-amber) 13%, transparent);
+  color: var(--tone-amber);
+}
+.perf-matrix__cell[data-tone="red"] {
+  background: color-mix(in srgb, var(--tone-red) 13%, transparent);
+  color: var(--tone-red);
+}
+.perf-matrix__cell--total { font-weight: var(--ds-weight-bold); }
+
+/* Phone: matriks = scroll-x (pakem CLAUDE.md §7 untuk matriks). */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .perf-matrix-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .perf-matrix { min-width: 660px; }
+}
+
+/* ── Daftar pengecualian (Needs attention) ───────────────── */
+
+.perf-exc-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.perf-exc {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 4px;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.perf-exc:last-child { border-bottom: none; }
+@media (hover: hover) {
+  .perf-exc:hover { background: var(--ds-surface-hover); }
+}
+
+.perf-exc__divisi {
+  font-size: 10px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-secondary);
+  background: var(--ds-neutral-100);
+  border-radius: var(--ds-radius-sm);
+  padding: 3px 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.perf-exc__main { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+.perf-exc__kpi {
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.perf-exc__detail { font-size: 11px; color: var(--ds-text-tertiary); }
+
+.perf-exc__pct {
+  font-size: var(--ds-text-14);
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.perf-exc__pct[data-tone="green"] { color: var(--tone-green); }
+.perf-exc__pct[data-tone="amber"] { color: var(--tone-amber); }
+.perf-exc__pct[data-tone="red"]   { color: var(--tone-red); }
+
+/* ── Deviation bar (jangkar 100%, zoom ±) ────────────────── */
+
+.kst-dev {
+  position: relative;
+  height: 6px;
+  flex: 1;
+  min-width: 56px;
+  background: var(--ds-neutral-100);
+  border-radius: 3px;
+}
+
+.kst-dev__baseline {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 75%;
+  width: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--ds-text-tertiary) 65%, transparent);
+  z-index: 1;
+}
+
+.kst-dev__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+}
+.kst-dev__fill[data-tone="green"] { background: var(--ds-green-500); }
+.kst-dev__fill[data-tone="amber"] { background: var(--ds-amber-500); }
+.kst-dev__fill[data-tone="red"]   { background: var(--ds-red-500); }
+
+/* ── KpiScoreTable (bentuk scorecard table) ──────────────── */
+
+.perf-table-card { overflow: hidden; }
+
+.kst { width: 100%; }
+
+.kst__headrow,
+.kst__row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 2.3fr) 58px minmax(86px, 0.9fr) minmax(96px, 0.9fr) minmax(150px, 1.4fr) 58px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 14px;
+}
+
+.kst__headrow {
+  font-size: 10px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  background: color-mix(in srgb, var(--ds-neutral-100) 55%, transparent);
+}
+
+.kst__row { border-bottom: 1px solid var(--ds-border-subtle); }
+.kst__group:last-child .kst__row:last-child { border-bottom: none; }
+@media (hover: hover) {
+  .kst__row:hover { background: var(--ds-surface-hover); }
+}
+
+.kst__num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.kst__cell { font-size: var(--ds-text-13); color: var(--ds-text-primary); min-width: 0; }
+.kst__cell--no { color: var(--ds-text-tertiary); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+.kst__cell--kpi { display: flex; flex-direction: column; gap: 1px; }
+
+.kst__kpi-name {
+  font-weight: var(--ds-weight-medium);
+  line-height: 1.3;
+}
+
+.kst__kpi-sub {
+  display: flex;
+  gap: 5px;
+  align-items: baseline;
+  font-size: 10.5px;
+  color: var(--ds-text-tertiary);
+  min-width: 0;
+}
+.kst__kpi-code { font-family: var(--ds-font-mono, monospace); letter-spacing: -0.01em; white-space: nowrap; }
+.kst__kpi-def {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.kst__val[data-tone="green"] { color: var(--tone-green); }
+.kst__val[data-tone="amber"] { color: var(--tone-amber); }
+.kst__val[data-tone="red"]   { color: var(--tone-red); }
+.kst__val { font-weight: var(--ds-weight-semibold); }
+
+.kst__na { color: var(--ds-text-tertiary); font-style: italic; }
+.kst__zero { font-size: 12px; font-weight: var(--ds-weight-medium); color: var(--tone-green); }
+
+.kst__cell--ach { display: flex; align-items: center; gap: 10px; }
+
+.kst__ach-pct {
+  font-size: 11.5px;
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  min-width: 38px;
+  text-align: right;
+}
+.kst__ach-pct[data-tone="green"] { color: var(--tone-green); }
+.kst__ach-pct[data-tone="amber"] { color: var(--tone-amber); }
+.kst__ach-pct[data-tone="red"]   { color: var(--tone-red); }
+
+.kst__score { font-weight: var(--ds-weight-semibold); font-size: var(--ds-text-14); }
+.kst__score[data-tone="green"] { color: var(--tone-green); }
+.kst__score[data-tone="amber"] { color: var(--tone-amber); }
+.kst__score[data-tone="red"]   { color: var(--tone-red); }
+
+/* Group header di dalam tabel */
+.kst__group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  border: none;
+  border-bottom: 1px solid var(--ds-border-subtle);
+  background: color-mix(in srgb, var(--ds-neutral-100) 40%, transparent);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+@media (hover: hover) {
+  .kst__group-head:hover { background: var(--ds-surface-hover); }
+}
+
+.kst__chevron {
+  font-size: 10px;
+  color: var(--ds-text-tertiary);
+  transition: transform var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.kst__chevron[data-collapsed="true"] { transform: rotate(-90deg); }
+
+.kst__dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+.kst__group-label {
+  font-size: 11px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.kst__group-meta { font-size: 11px; color: var(--ds-text-tertiary); font-variant-numeric: tabular-nums; }
+
+.kst__group-pct {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.kst__group-pct[data-tone="green"] { color: var(--tone-green); }
+.kst__group-pct[data-tone="amber"] { color: var(--tone-amber); }
+.kst__group-pct[data-tone="red"]   { color: var(--tone-red); }
+
+/* Phone: tabel → baris bertumpuk (label via data-label), bukan scroll-x —
+ * ini konten utama halaman, harus nyaman dibaca satu tangan. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .kst__headrow { display: none; }
+  /* Block-flow (flex-wrap meremukkan nama KPI panjang): nama full-width
+     dengan skor absolute kanan-atas, nilai ber-label inline di bawahnya,
+     bar deviasi paling bawah. */
+  .kst__row {
+    display: block;
+    position: relative;
+    padding: 10px 12px;
+  }
+  .kst__cell--no { display: none; }
+  .kst__cell--kpi { display: flex; padding-right: 52px; }
+  .kst__score {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+  }
+  .kst__row > .kst__num:not(.kst__score) {
+    display: inline-block;
+    text-align: left;
+    font-size: 12px;
+    margin: 6px 14px 0 0;
+  }
+  .kst__row > .kst__num:not(.kst__score)::before {
+    content: attr(data-label) ' ';
+    color: var(--ds-text-tertiary);
+    font-weight: var(--ds-weight-regular);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .kst__cell--ach { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+}
