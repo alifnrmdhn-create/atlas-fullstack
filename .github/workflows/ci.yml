@@ -1,0 +1,73 @@
+# CI — gerbang otomatis sebelum deploy (audit 2026-06-10: sebelumnya satu-satunya
+# gate menuju prod adalah keberhasilan `vite build` di Railway; test suite dan
+# typecheck hanya jalan kalau dev ingat menjalankannya manual).
+#
+# Dua job paralel:
+#   backend  — php artisan test (PostgreSQL service, mirror scripts/setup-test-db.sh)
+#   frontend — npm run check (typecheck + audit routes + audit breakpoints + vite build)
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: PHP tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ptpn_dev
+          POSTGRES_PASSWORD: dev_password_123
+          POSTGRES_DB: ptpn_kmr_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ptpn_dev"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          # gd dibutuhkan phpoffice/phpspreadsheet (di Railway di-skip via
+          # --ignore-platform-req=ext-gd; di CI dipasang beneran).
+          extensions: pdo_pgsql, pgsql, gd, zip, intl
+          coverage: none
+
+      - name: Install composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare app environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # Mirror scripts/setup-test-db.sh — schema harus ada sebelum migrate
+      # (search_path ptpn_kmr_app; CREATE TABLE gagal tanpa schema).
+      - name: Create test schema
+        run: PGPASSWORD=dev_password_123 psql -h 127.0.0.1 -U ptpn_dev -d ptpn_kmr_test -c 'CREATE SCHEMA IF NOT EXISTS "ptpn_kmr_app";'
+
+      - name: Run test suite
+        run: php artisan test
+
+  frontend:
+    name: Typecheck, audits & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run check
