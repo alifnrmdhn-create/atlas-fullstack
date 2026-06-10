@@ -157,7 +157,9 @@ class PerformanceController extends Controller
         $allDivisi = collect($direktoratGrid)
             ->flatMap(fn ($dir) => collect($dir['divisi'])->map(fn ($div) => [
                 'kode' => $div['kode'],
-                'sub'  => 'Divisi ' . $div['nama'],
+                // Jangan double-prefix: nama di DB sudah berawalan "Divisi ..."
+                // (dulu "Divisi Divisi Keuangan ..." tampil di Top 3).
+                'sub'  => preg_match('/^divisi\s/i', $div['nama']) ? $div['nama'] : 'Divisi ' . $div['nama'],
                 'nilai' => $div['nilai'],
             ]))
             ->sortByDesc('nilai')

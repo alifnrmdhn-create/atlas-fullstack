@@ -3,7 +3,8 @@ import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { Card, Pill } from '../../design-system'
 import { ForecastBadge } from '../../components/ui'
 import { computeForecastFromStrings } from '../../lib/forecast'
-import { scoreTone, fillRatio, realisasiPercent } from './_shared'
+import { useState } from 'react'
+import { scoreTone, fillRatio, realisasiPercent, formatVal, formatNumber, formatPercent, formatPeriod, isZeroTargetMet } from './_shared'
 import { InsightPanel, type InsightPayload } from './InsightPanel'
 import './Performance.css'
 
@@ -140,6 +141,7 @@ function ComparisonView({ direktorat, divisiList, periode }: ComparisonProps) {
     ? divisiList.reduce((s, d) => s + d.nilai, 0) / divisiList.length
     : 0
   const tone = scoreTone(direktorat.nilai)
+  const periodeLabel = formatPeriod(periode)
 
   return (
     <>
@@ -158,7 +160,7 @@ function ComparisonView({ direktorat, divisiList, periode }: ComparisonProps) {
             <div className="perf__header-actions">
               <span className="perf__period-pill">
                 <IconCalendar />
-                {periode}
+                {periodeLabel}
               </span>
             </div>
           </header>
@@ -173,21 +175,21 @@ function ComparisonView({ direktorat, divisiList, periode }: ComparisonProps) {
                 <span>·</span>
                 <span>{divisiList.length} divisions</span>
                 <span>·</span>
-                <span>division average {avgNilai.toFixed(2)}%</span>
+                <span>division average {formatPercent(avgNilai)}</span>
               </div>
             </div>
             <div className="perf-compare__hero-score">
               <span className="perf-compare__hero-score-val" data-tone={tone}>
-                {direktorat.nilai.toFixed(2)}%
+                {formatPercent(direktorat.nilai)}
               </span>
-              <span className="perf-compare__hero-score-lbl">Directorate score · {periode}</span>
+              <span className="perf-compare__hero-score-lbl">Directorate score · {periodeLabel}</span>
             </div>
           </section>
 
           {divisiList.length === 0 ? (
             <Card padding="md" className="perf-empty">
               <div className="perf-empty__title">No divisions yet</div>
-              <div>This directorate has no division data for the {periode} period.</div>
+              <div>This directorate has no division data for the {periodeLabel} period.</div>
             </Card>
           ) : (
             <div className="perf-compare-grid">
@@ -230,7 +232,7 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
         </div>
         <div className="perf-compare-card__score-row">
           <span className="perf-compare-card__score" data-tone={tone}>
-            {div.nilai.toFixed(2)}<span className="perf-compare-card__score-pct">%</span>
+            {formatNumber(div.nilai)}<span className="perf-compare-card__score-pct">%</span>
           </span>
           <span className="perf-compare-card__status" data-tone={statusTone}>
             {allOnTarget
@@ -262,7 +264,7 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
                   />
                 </div>
                 <span className="perf-compare-card__kpi-skor" data-tone={itemTone}>
-                  {k.skor.toFixed(1)}
+                  {formatNumber(k.skor, 1)}
                 </span>
               </div>
             )
@@ -275,9 +277,32 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
 
 function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insight, periode }: SingleProps) {
   const navigate = useInertiaNavigate()
+  const [attentionOnly, setAttentionOnly] = useState(false)
+  const [lowestFirst, setLowestFirst] = useState(false)
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
   const tone = scoreTone(divisi.nilai)
   const bar = fillRatio(divisi.nilai) * 100
+  const periodeLabel = formatPeriod(periode)
+
+  const itemPct = (i: KpiItem) => realisasiPercent(i.sasaran, i.realisasi, i.polaritas)
+  const attentionCount = kpiItems.filter(i => itemPct(i) < 100).length
+
+  // Triage pipeline — sama dengan KolegialDetailView: filter status → sort,
+  // grup kosong di-drop.
+  const groups = groupByPerspektif(kpiItems)
+    .map(g => {
+      let items = attentionOnly ? g.items.filter(i => itemPct(i) < 100) : g.items
+      if (lowestFirst) items = [...items].sort((a, b) => itemPct(a) - itemPct(b))
+      return { ...g, items }
+    })
+    .filter(g => g.items.length > 0)
+
+  const toggleGroup = (key: string) => setCollapsed(prev => {
+    const next = new Set(prev)
+    if (next.has(key)) next.delete(key); else next.add(key)
+    return next
+  })
 
   return (
     <>
@@ -296,7 +321,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
             <div className="perf__header-actions">
               <span className="perf__period-pill">
                 <IconCalendar />
-                {periode}
+                {periodeLabel}
               </span>
             </div>
           </header>
@@ -320,14 +345,17 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                   <Pill variant="mono">{divisi.kode}</Pill>
                   <Pill tone="neutral" variant="soft">{kpiItems.length} KPI items</Pill>
                   <Pill tone="neutral" variant="soft">Rank #{divisi.rank} of {divisi.totalDivisi} divisions</Pill>
-                  <Pill tone="neutral" variant="soft">Directorate {direktorat.nilai.toFixed(2)}%</Pill>
+                  <Pill tone="neutral" variant="soft">Directorate {formatPercent(direktorat.nilai)}</Pill>
+                  {attentionCount > 0 && (
+                    <Pill tone="amber" variant="soft">{attentionCount} below target</Pill>
+                  )}
                 </div>
               </div>
               <div className="perf-subject__score">
                 <span className="perf-subject__score-value" data-tone={tone}>
-                  {divisi.nilai.toFixed(2)}<span style={{ fontSize: 18, color: 'var(--ds-text-tertiary)', marginLeft: 4 }}>%</span>
+                  {formatNumber(divisi.nilai)}<span style={{ fontSize: 18, color: 'var(--ds-text-tertiary)', marginLeft: 4 }}>%</span>
                 </span>
-                <span className="perf-subject__score-label">Score {periode}</span>
+                <span className="perf-subject__score-label">Score {periodeLabel}</span>
               </div>
             </div>
             <div className="perf-subject__bar">
@@ -346,35 +374,72 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
             {kpiItems.length === 0 ? (
               <Card padding="md" className="perf-empty">
                 <div className="perf-empty__title">No KPIs yet</div>
-                <div>No KPIs are registered for this division in the {periode} period.</div>
+                <div>No KPIs are registered for this division in the {periodeLabel} period.</div>
               </Card>
             ) : (
-              groupByPerspektif(kpiItems).map(group => (
-                <div key={group.perspektif} className="perf-kpi-group" style={{ marginBottom: 22 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <span style={{
-                      width: 8, height: 8, borderRadius: '50%',
-                      background: PERSPEKTIF_COLOR[group.perspektif] ?? 'var(--ds-text-tertiary)',
-                    }} />
-                    <span className="perf__section-label" style={{ margin: 0 }}>{group.perspektif}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ds-text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
-                      Weight {group.bobot.toFixed(0)}%
-                    </span>
-                    <span style={{
-                      fontSize: 11, fontWeight: 600, fontVariantNumeric: 'tabular-nums',
-                      color: `var(--ds-${scoreTone(group.pct)}-600)`, marginLeft: 'auto',
-                    }}>
-                      {group.pct.toFixed(1)}
-                    </span>
-                  </div>
+              <>
+              {/* Triage toolbar + penjelasan skala skor */}
+              <div className="perf-filter-row">
+                <button
+                  type="button"
+                  className="perf-filter perf-filter--triage"
+                  data-active={attentionOnly}
+                  onClick={() => setAttentionOnly(v => !v)}
+                  title="Show only KPIs below 100% achievement"
+                >
+                  <span className="perf-filter__dot" style={{ background: 'var(--tone-amber)' }} />
+                  Needs attention{attentionCount > 0 ? ` (${attentionCount})` : ''}
+                </button>
+                <button
+                  type="button"
+                  className="perf-filter perf-filter--triage"
+                  data-active={lowestFirst}
+                  onClick={() => setLowestFirst(v => !v)}
+                  title="Sort lowest achievement first"
+                >
+                  ↓ Lowest first
+                </button>
+              </div>
+              <p className="perf-scale-note">
+                Score = contribution to total (weight × achievement, achievement capped at 110%).
+                Bar shows achievement vs target; tick marks the 100% line.
+              </p>
 
+              {groups.length === 0 ? (
+                <Card padding="md" className="perf-empty">
+                  <div className="perf-empty__title">Nothing needs attention</div>
+                  <div>All KPIs in this view meet 100% of target. Clear the filter to see everything.</div>
+                </Card>
+              ) : groups.map(group => {
+                const isCollapsed = collapsed.has(group.perspektif)
+                return (
+                <div key={group.perspektif} className="perf-kpi-group" style={{ marginBottom: 22 }}>
+                  <button
+                    type="button"
+                    className="perf-group-head"
+                    aria-expanded={!isCollapsed}
+                    onClick={() => toggleGroup(group.perspektif)}
+                  >
+                    <span className="perf-group-head__chevron" data-collapsed={isCollapsed} aria-hidden>▾</span>
+                    <span className="perf-group-head__dot" style={{ background: PERSPEKTIF_COLOR[group.perspektif] ?? 'var(--ds-text-tertiary)' }} />
+                    <span className="perf__section-label perf-group-head__label">{group.perspektif}</span>
+                    <span className="perf-group-head__count">{group.items.length} KPI · weight {formatNumber(group.bobot, 0)}%</span>
+                    <span className="perf-group-head__pct" data-tone={scoreTone(group.pct)}>
+                      {formatPercent(group.pct, 1)}
+                    </span>
+                  </button>
+
+                  {!isCollapsed && (
                   <div className="perf-kpi-list">
                     {group.items.map(item => {
-                      const pct = realisasiPercent(item.sasaran, item.realisasi, item.polaritas)
-                      const skorPct = item.bobot > 0 ? (item.skor / item.bobot) * 100 : 0
-                      const itemTone = scoreTone(skorPct)
-                      const barWidth = Math.min(pct, 100)
-                      const forecast = computeForecastFromStrings({
+                      const pct = itemPct(item)
+                      // Tone disamakan dgn KolegialDetailView: dari achievement
+                      // (pct), bukan skor/bobot — dua halaman sempat beda basis.
+                      const itemTone = scoreTone(pct)
+                      const barWidth = fillRatio(pct) * 100
+                      const zeroMet = isZeroTargetMet(item.sasaran, item.realisasi)
+                      const isNA = item.realisasi === '—'
+                      const forecast = zeroMet || isNA ? null : computeForecastFromStrings({
                         periode, sasaran: item.sasaran, realisasi: item.realisasi, polaritas: item.polaritas,
                       })
 
@@ -389,20 +454,39 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                                 {item.polaritas === 'maximize' ? '↑ Maximize' : '↓ Minimize'}
                               </span>
                               <span className="perf-kpi__meta-chip">{item.satuan}</span>
-                              {forecast && <ForecastBadge value={forecast.value} status={forecast.status} />}
+                              {forecast && forecast.value > 0 && (
+                                <ForecastBadge value={formatNumber(forecast.value, 1)} status={forecast.status} />
+                              )}
                             </div>
-                            <div className="perf-kpi__realisasi">
-                              <div className="perf-kpi__realisasi-block">
-                                <span className="perf-kpi__realisasi-label">Target</span>
-                                <span className="perf-kpi__realisasi-value">{item.sasaran}</span>
+                            {zeroMet ? (
+                              <div className="perf-kpi__realisasi">
+                                <span className="perf-kpi__zero-met" data-tone="green">
+                                  ✓ Zero target met — target {formatVal(item.sasaran, item.satuan)}, no occurrence
+                                </span>
                               </div>
-                              <span className="perf-kpi__realisasi-arrow">→</span>
-                              <div className="perf-kpi__realisasi-block">
-                                <span className="perf-kpi__realisasi-label">Realization</span>
-                                <span className="perf-kpi__realisasi-value" data-tone={itemTone}>{item.realisasi}</span>
+                            ) : (
+                              <div className="perf-kpi__realisasi">
+                                <div className="perf-kpi__realisasi-block">
+                                  <span className="perf-kpi__realisasi-label">Target</span>
+                                  <span className="perf-kpi__realisasi-value">{formatVal(item.sasaran, item.satuan)}</span>
+                                </div>
+                                <span className="perf-kpi__realisasi-arrow">→</span>
+                                <div className="perf-kpi__realisasi-block">
+                                  <span className="perf-kpi__realisasi-label">Realization</span>
+                                  <span
+                                    className={`perf-kpi__realisasi-value${isNA ? ' perf-kpi__realisasi-value--na' : ''}`}
+                                    data-tone={isNA ? undefined : itemTone}
+                                    title={isNA ? 'Not yet measured for this period' : undefined}
+                                  >
+                                    {isNA ? 'N/A' : formatVal(item.realisasi, item.satuan)}
+                                  </span>
+                                </div>
+                                {!isNA && (
+                                  <span className="perf-kpi__pct" data-tone={itemTone}>{formatPercent(pct, 0)} of target</span>
+                                )}
                               </div>
-                            </div>
-                            <div className="perf-kpi__bar">
+                            )}
+                            <div className="perf-kpi__bar perf-kpi__bar--ticked">
                               <div className="perf-kpi__bar-fill" data-tone={itemTone} style={{ width: `${barWidth}%` }} />
                             </div>
                             {item.definisi && (
@@ -410,8 +494,8 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                             )}
                           </div>
                           <div className="perf-kpi__right">
-                            <span className="perf-kpi__skor" style={{ color: `var(--ds-${itemTone}-600)` }}>
-                              {item.skor.toFixed(2)}
+                            <span className="perf-kpi__skor" data-tone={itemTone}>
+                              {formatNumber(item.skor)}
                             </span>
                             <span className="perf-kpi__bobot">Weight {item.bobot}%</span>
                           </div>
@@ -419,8 +503,11 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                       )
                     })}
                   </div>
+                  )}
                 </div>
-              ))
+                )
+              })}
+              </>
             )}
           </section>
 
@@ -443,7 +530,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                         <div className="perf-rank__sub">{p.kode}</div>
                       </div>
                       <span className="perf-rank__value" data-tone={pt}>
-                        {p.nilai.toFixed(2)}%
+                        {formatPercent(p.nilai)}
                       </span>
                     </Link>
                   )
@@ -468,7 +555,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                         <div className="perf-rank__sub">{p.jabatan}</div>
                       </div>
                       <span className="perf-rank__value" data-tone={pt}>
-                        {p.nilai.toFixed(2)}
+                        {formatPercent(p.nilai)}
                       </span>
                     </div>
                   )

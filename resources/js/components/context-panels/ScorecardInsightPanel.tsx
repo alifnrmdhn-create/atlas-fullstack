@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react'
 import { TrendingUp, TrendingDown, AlertCircle, Calendar } from 'lucide-react'
+import { formatPercent, formatPeriod } from '../../Pages/Performance/_shared'
 
 type RankItem = { rank: number; nama: string; kode?: string; sub?: string; nilai: number }
 type Divisi = { kode: string; nama: string; nilai: number }
@@ -34,10 +35,25 @@ export function ScorecardInsightPanel() {
     )
   }
 
-  // topDirektorat is already ranked by nilai descending
-  const top = topDirektorat[0]
-  const bottom = topDirektorat[topDirektorat.length - 1]
-  const belowTarget = direktoratGrid.filter((d) => d.nilai < 100)
+  // Level insight adaptif: dengan 1 direktorat, top === bottom (dulu entitas
+  // yang sama tampil hijau sebagai Outperformer DAN merah sebagai
+  // Underperformer — paradoks). Solo → pakai level DIVISI yang ceritanya ada.
+  const soloDivisi = topDirektorat.length === 1 && direktoratGrid.length === 1
+    ? [...direktoratGrid[0].divisi].sort((a, b) => b.nilai - a.nilai)
+    : null
+  const top: RankItem = soloDivisi
+    ? { rank: 1, nama: soloDivisi[0].kode, sub: soloDivisi[0].nama, nilai: soloDivisi[0].nilai }
+    : topDirektorat[0]
+  const bottomSrc = soloDivisi ? soloDivisi[soloDivisi.length - 1] : null
+  const bottom: RankItem | null = soloDivisi
+    ? (soloDivisi.length > 1 && bottomSrc
+        ? { rank: soloDivisi.length, nama: bottomSrc.kode, sub: bottomSrc.nama, nilai: bottomSrc.nilai }
+        : null)
+    : (topDirektorat.length > 1 ? topDirektorat[topDirektorat.length - 1] : null)
+  const scopeLabel = soloDivisi ? 'division' : 'directorate'
+  const belowTarget = soloDivisi
+    ? direktoratGrid[0].divisi.filter((d) => d.nilai < 100)
+    : direktoratGrid.filter((d) => d.nilai < 100)
 
   return (
     <>
@@ -49,7 +65,7 @@ export function ScorecardInsightPanel() {
           <h3 className="context-panel__section-title">Period</h3>
         </header>
         <div className="context-panel__section-body">
-          <p className="context-panel__period">{periode}</p>
+          <p className="context-panel__period">{formatPeriod(periode)}</p>
         </div>
       </section>
 
@@ -58,24 +74,26 @@ export function ScorecardInsightPanel() {
           <span className="context-panel__section-icon" aria-hidden="true">
             <TrendingUp size={13} />
           </span>
-          <h3 className="context-panel__section-title">Outperformer</h3>
+          <h3 className="context-panel__section-title">Top {scopeLabel}</h3>
         </header>
         <div className="context-panel__section-body">
           <PerformerRow item={top} tone="green" />
         </div>
       </section>
 
-      <section className="context-panel__section">
-        <header className="context-panel__section-header">
-          <span className="context-panel__section-icon" aria-hidden="true">
-            <TrendingDown size={13} />
-          </span>
-          <h3 className="context-panel__section-title">Underperformer</h3>
-        </header>
-        <div className="context-panel__section-body">
-          <PerformerRow item={bottom} tone="red" />
-        </div>
-      </section>
+      {bottom && (
+        <section className="context-panel__section">
+          <header className="context-panel__section-header">
+            <span className="context-panel__section-icon" aria-hidden="true">
+              <TrendingDown size={13} />
+            </span>
+            <h3 className="context-panel__section-title">Lowest {scopeLabel}</h3>
+          </header>
+          <div className="context-panel__section-body">
+            <PerformerRow item={bottom} tone={bottom.nilai < 100 ? 'red' : 'green'} />
+          </div>
+        </section>
+      )}
 
       {belowTarget.length > 0 ? (
         <section className="context-panel__section context-panel__section--danger">
@@ -89,11 +107,13 @@ export function ScorecardInsightPanel() {
             {belowTarget.map((d) => (
               <Link
                 key={d.kode}
-                href={`/performance/kolegial/${d.kode.toLowerCase()}`}
+                href={soloDivisi
+                  ? `/performance/divisi/${d.kode.toLowerCase()}`
+                  : `/performance/kolegial/${d.kode.toLowerCase()}`}
                 className="context-panel__focus-item"
               >
                 <span className="context-panel__focus-label">{d.nama}</span>
-                <span className="context-panel__focus-meta">{d.nilai.toFixed(2)}%</span>
+                <span className="context-panel__focus-meta">{formatPercent(d.nilai)}</span>
               </Link>
             ))}
           </div>
@@ -108,7 +128,7 @@ function PerformerRow({ item, tone }: { item: RankItem; tone: 'green' | 'red' })
     <div className={`context-panel__performer context-panel__performer--${tone}`}>
       <div className="context-panel__performer-name">{item.nama}</div>
       {item.sub ? <div className="context-panel__performer-sub">{item.sub}</div> : null}
-      <div className="context-panel__performer-value">{item.nilai.toFixed(2)}%</div>
+      <div className="context-panel__performer-value">{formatPercent(item.nilai)}</div>
     </div>
   )
 }

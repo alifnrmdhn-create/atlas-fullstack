@@ -562,13 +562,15 @@
 }
 
 .perf-kpi {
-  padding: 16px 20px;
+  /* Density pass 2026-06-10: 16/20 → 12/16 + gap 14 — 19 KPI per halaman
+     dulu ±150px/baris (scroll fatigue), konten tetap sama. */
+  padding: 12px 16px;
   border-radius: var(--ds-radius-lg);
   border: 1px solid var(--ds-border-subtle);
   background: var(--ds-surface-card);
   display: grid;
   grid-template-columns: 24px 1fr 80px;
-  gap: 18px;
+  gap: 14px;
   align-items: start;
   transition: border-color var(--ds-duration-fast) var(--ds-ease-standard);
 }
@@ -589,7 +591,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .perf-kpi__title {
@@ -656,11 +658,25 @@
 }
 
 .perf-kpi__bar {
-  margin-top: 8px;
+  margin-top: 6px;
   height: 5px;
   background: var(--ds-neutral-100);
   border-radius: 3px;
   overflow: hidden;
+  position: relative;
+}
+
+/* Tick garis 100% — skala bar = 0–110% (cap), jadi posisi 100% = 100/110.
+   Tanpa tick, bar "hampir penuh" tak terbedakan dari "tepat target". */
+.perf-kpi__bar--ticked::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  left: calc(100% * 100 / 110);
+  width: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--ds-text-tertiary) 55%, transparent);
 }
 
 .perf-kpi__bar-fill {
@@ -672,6 +688,33 @@
 .perf-kpi__bar-fill[data-tone="green"] { background: var(--ds-green-500); }
 .perf-kpi__bar-fill[data-tone="amber"] { background: var(--ds-amber-500); }
 .perf-kpi__bar-fill[data-tone="red"]   { background: var(--ds-red-500); }
+
+/* Persentase capaian inline ("104% of target") — pelengkap angka mentah. */
+.perf-kpi__pct {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.perf-kpi__pct[data-tone="green"] { color: var(--tone-green); }
+.perf-kpi__pct[data-tone="amber"] { color: var(--tone-amber); }
+.perf-kpi__pct[data-tone="red"]   { color: var(--tone-red); }
+
+/* Zero-target met (mis. "Jumlah Fraud: target 0, tercapai 0") — komunikasi
+   eksplisit, menggantikan "0 → 0" yang tampak seperti data rusak. */
+.perf-kpi__zero-met {
+  font-size: 12px;
+  font-weight: var(--ds-weight-medium);
+  color: var(--tone-green);
+}
+
+/* Realisasi belum diukur (N/A) — dibedakan dari nilai nyata "0". */
+.perf-kpi__realisasi-value--na {
+  color: var(--ds-text-tertiary);
+  font-style: italic;
+  font-weight: var(--ds-weight-regular);
+}
 
 .perf-kpi__definisi {
   font-size: 11px;
@@ -696,6 +739,12 @@
   letter-spacing: -0.02em;
   line-height: 1;
 }
+
+/* Warna skor via data-tone + token theme-aware — dulu inline style
+   `var(--ds-{tone}-600)` yang terlalu gelap di dark mode. */
+.perf-kpi__skor[data-tone="green"] { color: var(--tone-green); }
+.perf-kpi__skor[data-tone="amber"] { color: var(--tone-amber); }
+.perf-kpi__skor[data-tone="red"]   { color: var(--tone-red); }
 
 .perf-kpi__bobot {
   font-size: 10px;
@@ -745,6 +794,143 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
+}
+
+/* Pemisah visual antara filter perspektif (kiri) dan triage (kanan). */
+.perf-filter-row__spacer { flex: 1; min-width: 8px; }
+
+.perf-filter--triage[data-active="true"] {
+  background: var(--ds-amber-50);
+  border-color: var(--ds-amber-500);
+  color: var(--tone-amber);
+}
+
+/* ─── Group header (collapsible, perspektif) ─────────────── */
+
+.perf-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--ds-radius-md);
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+@media (hover: hover) {
+  .perf-group-head:hover { background: var(--ds-surface-hover); }
+}
+
+.perf-group-head__chevron {
+  font-size: 10px;
+  color: var(--ds-text-tertiary);
+  transition: transform var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.perf-group-head__chevron[data-collapsed="true"] { transform: rotate(-90deg); }
+
+.perf-group-head__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.perf-group-head__label { margin: 0; }
+
+.perf-group-head__count {
+  font-size: 11px;
+  color: var(--ds-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.perf-group-head__pct {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.perf-group-head__pct[data-tone="green"] { color: var(--tone-green); }
+.perf-group-head__pct[data-tone="amber"] { color: var(--tone-amber); }
+.perf-group-head__pct[data-tone="red"]   { color: var(--tone-red); }
+
+/* ─── Scale note (penjelasan skor) ───────────────────────── */
+
+.perf-scale-note {
+  font-size: 11px;
+  color: var(--ds-text-tertiary);
+  line-height: 1.5;
+  margin: -6px 0 14px;
+}
+
+/* ─── Sparse trend summary (histori <4 bulan) ────────────── */
+
+.kpi-trend-sparse {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kpi-trend-sparse__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-md);
+}
+
+.kpi-trend-sparse__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.kpi-trend-sparse__name {
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kpi-trend-sparse__period {
+  font-size: 11px;
+  color: var(--ds-text-tertiary);
+}
+
+.kpi-trend-sparse__value {
+  font-size: 20px;
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.kpi-trend-sparse__value[data-tone="green"] { color: var(--tone-green); }
+.kpi-trend-sparse__value[data-tone="amber"] { color: var(--tone-amber); }
+.kpi-trend-sparse__value[data-tone="red"]   { color: var(--tone-red); }
+
+.kpi-trend-sparse__delta {
+  font-size: 11px;
+  font-weight: var(--ds-weight-medium);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.kpi-trend-sparse__delta[data-tone="green"]   { color: var(--tone-green); }
+.kpi-trend-sparse__delta[data-tone="red"]     { color: var(--tone-red); }
+.kpi-trend-sparse__delta[data-tone="neutral"] { color: var(--ds-text-tertiary); }
+
+.kpi-trend-sparse__note {
+  font-size: 11px;
+  color: var(--ds-text-tertiary);
+  margin: 2px 0 0;
 }
 
 /* ─── Empty state ───────────────────────────────────────── */
@@ -1243,7 +1429,7 @@
 .kpi-trend-empty {
   padding: 36px 16px;
   text-align: center;
-  color: var(--text-muted);
+  color: var(--ds-text-secondary);
   font-size: 12.5px;
   font-style: italic;
 }
@@ -1266,12 +1452,12 @@
   font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--text-strong);
+  color: var(--ds-text-primary);
   margin: 0;
 }
 .perf-insight__sub {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--ds-text-secondary);
 }
 .perf-insight__cols {
   display: grid;
@@ -1318,12 +1504,12 @@
   font-size: 12.5px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--text-strong);
+  color: var(--ds-text-primary);
   flex: 1;
 }
 .perf-insight__col-count {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--ds-text-secondary);
   font-variant-numeric: tabular-nums;
 }
 .perf-insight__list {
@@ -1340,7 +1526,7 @@
 }
 .perf-insight__empty {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--ds-text-secondary);
   font-style: italic;
   margin: 0;
 }

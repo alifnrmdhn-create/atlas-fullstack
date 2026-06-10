@@ -1,4 +1,5 @@
 import { Card } from '../../design-system'
+import { formatNumber, formatVal } from './_shared'
 
 export type InsightBullet = {
   kpi: string
@@ -18,12 +19,14 @@ type Props = {
 }
 
 function pctLabel(ratio: number): string {
-  return `${(ratio * 100).toFixed(0)}%`
+  return `${formatNumber(ratio * 100, 0)}%`
 }
 
+// formatVal menempatkan satuan dengan benar (Rp = prefix, % = suffix,
+// Jumlah/Rasio tanpa suffix) — dulu "4406 Rp Miliar" / "0 Jumlah".
 function bulletPhrase(b: InsightBullet): string {
-  const unit = b.satuan && b.satuan !== '-' ? ` ${b.satuan}` : ''
-  return `${b.kpi}: realization ${b.realisasi}${unit} (target ${b.sasaran}${unit}, ${pctLabel(b.ratio)})`
+  const unit = b.satuan && b.satuan !== '-' ? b.satuan : ''
+  return `${b.kpi}: realization ${formatVal(b.realisasi, unit)} (target ${formatVal(b.sasaran, unit)}, ${pctLabel(b.ratio)} of target)`
 }
 
 /**

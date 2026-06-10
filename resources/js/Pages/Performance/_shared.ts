@@ -45,24 +45,49 @@ export function formatPercent(val: number, decimals = 2): string {
   return `${formatNumber(val, decimals)}%`
 }
 
-/** Format domain values with their satuan. */
+/**
+ * Format domain values with their satuan. Satuan riil di data KPI PTPN:
+ * `Skor, Rp Miliar, Jumlah, %, Rasio, Rp` (kpi_divisi_items.satuan).
+ * Aturan: currency = prefix "Rp" (bukan "1.996 Rp"); satuan tak-berdimensi
+ * (Jumlah/Rasio/Skor) tidak di-suffix — unit sudah tampil sebagai chip meta.
+ * Input string (fmtNum BE, plain parseable) di-parse lalu di-localize id-ID;
+ * non-numerik ("—") diteruskan apa adanya.
+ */
 export function formatVal(val: number | string, satuan: string): string {
-  const n = typeof val === 'string' ? val : val.toLocaleString('id-ID')
-  if (satuan === 'Rp M') return `Rp ${n} M`
-  if (satuan === '%') return `${n}%`
-  return `${n} ${satuan}`
+  const num = typeof val === 'string' ? parseFloat(val.replace(',', '.')) : val
+  if (typeof num !== 'number' || isNaN(num)) return String(val)
+  const n = formatNumber(num, Number.isInteger(num) ? 0 : 2)
+  const s = satuan.trim()
+  if (s === 'Rp') return `Rp ${n}`
+  if (s === 'Rp Miliar' || s === 'Rp M') return `Rp ${n} M`
+  if (s === '%') return `${n}%`
+  if (s === 'Jumlah' || s === 'Rasio' || s === 'Skor') return n
+  return s ? `${n} ${s}` : n
 }
 
-const MONTHS_ID = [
+// Label bulan sengaja English — UI ATLAS full English (glossary 2026-06-02);
+// angka tetap locale id-ID (konvensi finansial PTPN).
+const MONTHS_EN = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ] as const
 
-/** Format "2026-03" → "Maret 2026". Falls back to input if unparseable. */
+/** Format "2026-03" → "March 2026". Falls back to input if unparseable. */
 export function formatPeriod(p: string): string {
   const m = /^(\d{4})-(\d{1,2})$/.exec(p)
   if (!m) return p
   const idx = parseInt(m[2], 10) - 1
   if (idx < 0 || idx > 11) return p
-  return `${MONTHS_ID[idx]} ${m[1]}`
+  return `${MONTHS_EN[idx]} ${m[1]}`
+}
+
+/**
+ * Zero-target KPI yang tercapai (mis. "Jumlah Fraud: target 0, realisasi 0"
+ * → skor 100). Angka "0 → 0" tampak rusak tanpa konteks; UI pakai ini untuk
+ * menampilkan tag "zero target met" alih-alih panah biasa.
+ */
+export function isZeroTargetMet(sasaran: number | string, realisasi: number | string): boolean {
+  const t = typeof sasaran === 'string' ? parseFloat(sasaran.replace(',', '.')) : sasaran
+  const r = typeof realisasi === 'string' ? parseFloat(realisasi.replace(',', '.')) : realisasi
+  return t === 0 && r === 0
 }

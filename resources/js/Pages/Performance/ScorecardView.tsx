@@ -1,6 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react'
 import { Card, Pill } from '../../design-system'
-import { scoreTone, fillRatio, formatPercent, formatPeriod } from './_shared'
+import { scoreTone, fillRatio, formatNumber, formatPercent, formatPeriod } from './_shared'
 import { KpiTrendChart, type KpiTrendPayload } from './KpiTrendChart'
 import './Performance.css'
 
@@ -68,6 +68,17 @@ export default function ScorecardView() {
     : 0
   const belowTargetCount = direktoratGrid.filter(d => d.nilai < 80).length
 
+  // Mode adaptif: pilot saat ini = 1 direktorat (DIR-KMR). Ranking antar-
+  // direktorat & "average dari 1" tidak bermakna — cerita yang ada justru
+  // antar-DIVISI. Layout solo: ranking semua divisi, tanpa pengulangan grid.
+  const soloDir = totalDirektorat === 1 ? direktoratGrid[0] : null
+  const soloDivisi: RankItem[] = soloDir
+    ? [...soloDir.divisi]
+        .sort((a, b) => b.nilai - a.nilai)
+        .map((d, i) => ({ rank: i + 1, nama: d.kode, kode: d.kode, sub: d.nama, nilai: d.nilai }))
+    : []
+  const soloBelow100 = soloDir ? soloDir.divisi.filter(d => d.nilai < 100).length : 0
+
   const periodeLabel = formatPeriod(periode)
 
   return (
@@ -82,22 +93,49 @@ export default function ScorecardView() {
               <span className="perf__subtitle">Directorate &amp; division ranking</span>
             </div>
             <div className="perf__header-summary">
-              <span className="perf__header-stat">
-                <strong data-tone={scoreTone(avgScore)} data-num>{avgScore.toFixed(1)}%</strong>
-                <span>average</span>
-              </span>
-              <span className="perf__header-divider" aria-hidden />
-              <span className="perf__header-stat">
-                <strong data-num>{totalDirektorat}</strong>
-                <span>directorates</span>
-              </span>
-              {belowTargetCount > 0 && (
+              {soloDir ? (
                 <>
+                  {/* Solo: "average dari 1 direktorat" menyesatkan — tampilkan
+                      skor direktorat + ringkasan divisinya. */}
+                  <span className="perf__header-stat">
+                    <strong data-tone={scoreTone(soloDir.nilai)} data-num>{formatPercent(soloDir.nilai, 1)}</strong>
+                    <span>directorate score</span>
+                  </span>
                   <span className="perf__header-divider" aria-hidden />
                   <span className="perf__header-stat">
-                    <strong data-tone="red" data-num>{belowTargetCount}</strong>
-                    <span>below target</span>
+                    <strong data-num>{soloDir.divisi.length}</strong>
+                    <span>divisions</span>
                   </span>
+                  {soloBelow100 > 0 && (
+                    <>
+                      <span className="perf__header-divider" aria-hidden />
+                      <span className="perf__header-stat">
+                        <strong data-tone="amber" data-num>{soloBelow100}</strong>
+                        <span>below 100%</span>
+                      </span>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  <span className="perf__header-stat">
+                    <strong data-tone={scoreTone(avgScore)} data-num>{formatPercent(avgScore, 1)}</strong>
+                    <span>average</span>
+                  </span>
+                  <span className="perf__header-divider" aria-hidden />
+                  <span className="perf__header-stat">
+                    <strong data-num>{totalDirektorat}</strong>
+                    <span>{totalDirektorat === 1 ? 'directorate' : 'directorates'}</span>
+                  </span>
+                  {belowTargetCount > 0 && (
+                    <>
+                      <span className="perf__header-divider" aria-hidden />
+                      <span className="perf__header-stat">
+                        <strong data-tone="red" data-num>{belowTargetCount}</strong>
+                        <span>below target</span>
+                      </span>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -116,8 +154,27 @@ export default function ScorecardView() {
             </Card>
           )}
 
-          {/* ─── Top 3 podium row ─────────────────── */}
-          {direktoratGrid.length > 0 && (
+          {/* ─── Podium ───────────────────────────────
+              Solo (1 direktorat): satu kartu ranking SEMUA divisi — ranking
+              antar-direktorat & duplikasi Top-3-divisi tidak ada gunanya.
+              Multi: dua kartu Top 3 berdampingan seperti semula. */}
+          {soloDir ? (
+            <Card padding="md" className="perf__section">
+              <div className="perf-card-head">
+                <h2 className="perf-card-head__title">Division Ranking — {soloDir.nama}</h2>
+                <Pill tone="neutral" variant="soft">{periodeLabel}</Pill>
+              </div>
+              <div className="perf-rank-bar-list">
+                {soloDivisi.map(item => (
+                  <RankWithBar
+                    key={item.kode || item.nama}
+                    item={item}
+                    href={`/performance/divisi/${(item.kode ?? '').toLowerCase()}`}
+                  />
+                ))}
+              </div>
+            </Card>
+          ) : direktoratGrid.length > 0 && (
           <div className="perf__cols-2 perf__section">
             <Card padding="md">
               <div className="perf-card-head">
@@ -164,8 +221,10 @@ export default function ScorecardView() {
             </section>
           )}
 
-          {/* ─── Semua Direktorat grid ────────────── */}
-          {direktoratGrid.length > 0 && (
+          {/* ─── Semua Direktorat grid ──────────────
+              Disembunyikan saat solo — isinya identik dengan Division Ranking
+              di atas (dulu info yang sama tampil 3–4× di satu layar). */}
+          {!soloDir && direktoratGrid.length > 0 && (
           <section className="perf__section">
             <div className="perf-section-head">
               <span className="perf__section-label">All Directorates</span>
@@ -183,7 +242,7 @@ export default function ScorecardView() {
                     >
                       <span className="perf-direktorat__name">{d.nama}</span>
                       <span className="perf-direktorat__total" data-tone={tone}>
-                        {d.nilai.toFixed(2)}<span className="perf-direktorat__unit">%</span>
+                        {formatNumber(d.nilai)}<span className="perf-direktorat__unit">%</span>
                       </span>
                     </Link>
                     {/* Overall achievement bar — visualizes total in card head context */}
@@ -207,7 +266,7 @@ export default function ScorecardView() {
                             <span className="perf-divisi-row__code">{div.kode}</span>
                             <span className="perf-divisi-row__name">{div.nama}</span>
                             <span className="perf-divisi-row__value" data-tone={dt}>
-                              {div.nilai.toFixed(2)}%
+                              {formatPercent(div.nilai)}
                             </span>
                           </Link>
                         )

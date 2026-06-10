@@ -1,7 +1,7 @@
 import { Head, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { Card, Pill, Stat } from '../../design-system'
-import { scoreTone, fillRatio } from './_shared'
+import { scoreTone, fillRatio, formatNumber, formatPercent, formatPeriod } from './_shared'
 import './Performance.css'
 
 type Direktur = {
@@ -46,6 +46,7 @@ function statTone(c: StatItem['color']): 'green' | 'amber' | 'red' | 'neutral' {
 
 export default function KolegialView() {
   const { stats, dirut, direktur, periode } = usePage<PageProps>().props
+  const periodeLabel = formatPeriod(periode)
   const navigate = useInertiaNavigate()
 
   const dirutTone = dirut ? scoreTone(dirut.nilai) : 'neutral'
@@ -66,7 +67,7 @@ export default function KolegialView() {
             <div className="perf__header-actions">
               <span className="perf__period-pill">
                 <IconCalendar />
-                {periode}
+                {periodeLabel}
               </span>
             </div>
           </header>
@@ -74,7 +75,7 @@ export default function KolegialView() {
           {isEmpty && (
             <Card padding="lg" className="perf__section perf-empty">
               <div className="perf-empty__title">No KPI Collegial data yet</div>
-              <div>Directorate scores are not available for the {periode} period. Data will appear once the directors' KPI module is populated.</div>
+              <div>Directorate scores are not available for the {periodeLabel} period. Data will appear once the directors' KPI module is populated.</div>
             </Card>
           )}
 
@@ -110,7 +111,7 @@ export default function KolegialView() {
                 <div className="perf-subject__name">{dirut.nama}</div>
                 <div className="perf-subject__chips">
                   <Pill tone="neutral" variant="soft">{dirut.total_kpi} KPI</Pill>
-                  <Pill tone="neutral" variant="soft">{periode}</Pill>
+                  <Pill tone="neutral" variant="soft">{periodeLabel}</Pill>
                   {dirut.perspektif?.map(p => (
                     <span
                       key={p}
@@ -142,7 +143,7 @@ export default function KolegialView() {
               </div>
               <div className="perf-subject__score">
                 <span className="perf-subject__score-value" data-tone={dirutTone}>
-                  {dirut.nilai.toFixed(2)}<span style={{ fontSize: 14, color: 'var(--ds-text-tertiary)', marginLeft: 3, fontWeight: 500 }}>%</span>
+                  {formatNumber(dirut.nilai)}<span style={{ fontSize: 14, color: 'var(--ds-text-tertiary)', marginLeft: 3, fontWeight: 500 }}>%</span>
                 </span>
                 <span className="perf-subject__score-label">View details →</span>
               </div>
@@ -174,7 +175,7 @@ export default function KolegialView() {
                         <div className="perf-rank__sub" style={{ marginTop: 2 }}>{d.jabatan}</div>
                       </div>
                       <span className="perf-direktorat__total" data-tone={tone}>
-                        {d.nilai.toFixed(2)}
+                        {formatPercent(d.nilai)}
                       </span>
                     </div>
                     <div className="perf-subject__bar" style={{ marginTop: 0 }}>

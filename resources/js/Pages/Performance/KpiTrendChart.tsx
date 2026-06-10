@@ -3,6 +3,7 @@ import {
   Bar, BarChart, CartesianGrid, Cell, Legend,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
+import { formatPercent, scoreTone } from './_shared'
 
 /** Direktorat color palette — stable per-kode mapping. */
 const DIRECTORATE_COLORS: Record<string, string> = {
@@ -58,6 +59,16 @@ export function KpiTrendChart({ trend, height = 260 }: Props) {
     )
   }
 
+  // Gate viz sparse (pakem Home): chart 6 bulan dengan <4 titik berisi
+  // tampak seperti error/data hilang. Histori pendek → tampilkan ringkasan
+  // nilai terakhir + delta vs bulan sebelumnya per direktorat.
+  const filledPeriods = trend.periodes.filter((_, i) =>
+    trend.series.some(s => s.values[i] != null)
+  ).length
+  if (filledPeriods < 4) {
+    return <SparseTrendSummary trend={trend} />
+  }
+
   return (
     <div className="kpi-trend-chart">
       <ResponsiveContainer width="100%" height={height}>
@@ -81,7 +92,7 @@ export function KpiTrendChart({ trend, height = 260 }: Props) {
             }}
             formatter={(value) => {
               const n = typeof value === 'number' ? value : Number(value)
-              return [Number.isFinite(n) ? `${n.toFixed(1)}%` : '—', '']
+              return [Number.isFinite(n) ? formatPercent(n, 1) : '—', '']
             }}
           />
           <Legend
@@ -106,6 +117,54 @@ export function KpiTrendChart({ trend, height = 260 }: Props) {
           ))}
         </BarChart>
       </ResponsiveContainer>
+    </div>
+  )
+}
+
+/**
+ * Ringkasan histori-pendek: nilai bulan terakhir per direktorat + delta
+ * (percentage point) vs bulan berisi sebelumnya. Tampil saat data <4 bulan
+ * — kondisi awal pilot (Mar–Apr) — alih-alih chart 6 slot yang 4-nya kosong.
+ */
+function SparseTrendSummary({ trend }: { trend: KpiTrendPayload }) {
+  const rows = trend.series.map(s => {
+    const filled = s.values
+      .map((v, i) => ({ v, label: trend.periodes[i]?.label ?? '' }))
+      .filter((x): x is { v: number; label: string } => x.v != null)
+    const last = filled[filled.length - 1] ?? null
+    const prev = filled.length > 1 ? filled[filled.length - 2] : null
+    return { kode: s.kode, nama: s.nama, last, prev }
+  }).filter(r => r.last !== null)
+
+  if (rows.length === 0) {
+    return <div className="kpi-trend-empty">No scorecard data for this period yet.</div>
+  }
+
+  return (
+    <div className="kpi-trend-sparse">
+      {rows.map(r => {
+        const delta = r.prev ? r.last!.v - r.prev.v : null
+        const deltaTone = delta == null ? 'neutral' : delta >= 0 ? 'green' : 'red'
+        return (
+          <div key={r.kode} className="kpi-trend-sparse__row">
+            <div className="kpi-trend-sparse__meta">
+              <span className="kpi-trend-sparse__name">{r.nama}</span>
+              <span className="kpi-trend-sparse__period">{r.last!.label}</span>
+            </div>
+            <span className="kpi-trend-sparse__value" data-tone={scoreTone(r.last!.v)}>
+              {formatPercent(r.last!.v, 1)}
+            </span>
+            <span className="kpi-trend-sparse__delta" data-tone={deltaTone}>
+              {delta == null
+                ? 'first month'
+                : `${delta >= 0 ? '▲' : '▼'} ${formatPercent(Math.abs(delta), 1)} vs ${r.prev!.label}`}
+            </span>
+          </div>
+        )
+      })}
+      <p className="kpi-trend-sparse__note">
+        Monthly trend chart appears once 4+ months of scorecard history are available.
+      </p>
     </div>
   )
 }
