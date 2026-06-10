@@ -7,6 +7,7 @@ use App\Models\KpiValue;
 use App\Models\KpiValueRevision;
 use App\Models\Program;
 use App\Services\ProgramHealthService;
+use App\Services\ProgramService;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +17,10 @@ use Inertia\Inertia;
 
 class KpiController extends Controller
 {
-    public function __construct(private ProgramHealthService $healthService) {}
+    public function __construct(
+        private ProgramHealthService $healthService,
+        private ProgramService $programService,
+    ) {}
 
     private static function inferDataType(?string $unit, ?string $metricType): string
     {
@@ -29,17 +33,31 @@ class KpiController extends Controller
 
     public function index(Request $request)
     {
+        // Scope read-path: non-eksekutif hanya melihat KPI program dalam aksesnya
+        // + KPI global (tanpa programId). Sebelumnya semua KPI lintas-direktorat
+        // terkirim ke semua user. Eksekutif (null) tetap melihat semua.
+        $programIds = $this->programService->accessibleProgramIds($request->user());
+
         $kpis = KpiDefinition::query()
             ->with('program:id,code,name')
+            ->when($programIds !== null, fn ($q) => $q->where(
+                fn ($w) => $w->whereNull('programId')->orWhereIn('programId', $programIds)
+            ))
             ->orderBy('createdAt', 'desc')
             ->get();
 
         return response()->json(['data' => $kpis, 'total' => $kpis->count()]);
     }
 
-    public function show(int $id)
+    public function show(Request $request, int $id)
     {
         $kpi = KpiDefinition::with(['values' => fn ($q) => $q->orderBy('measurementDate', 'desc')])->findOrFail($id);
+
+        // KPI terikat program → user harus punya akses ke program tsb.
+        if ($kpi->programId) {
+            $this->programService->assertAccess($request->user(), (int) $kpi->programId);
+        }
+
         return response()->json(['data' => $kpi]);
     }
 
@@ -129,6 +147,20 @@ class KpiController extends Controller
     public function storeValue(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $kpi = KpiDefinition::findOrFail($id);
+        $user = $request->user();
+
+        // Authorization: nilai realisasi KPI = data "realitas" program. Hanya
+        // user yang punya akses program (owner/PIC/scope) yang boleh menulis.
+        // Sebelumnya tanpa cek apa pun — siapa pun bisa isi KPI program manapun.
+        if (RolePolicy::isReadOnly($user->roleType)) {
+            abort(403, 'Your role is not allowed to perform this action.');
+        }
+        if ($kpi->programId) {
+            $this->programService->assertAccess($user, (int) $kpi->programId);
+        } elseif (!RolePolicy::canManageUsers($user->roleType)) {
+            // KPI global/divisi (tanpa program induk) hanya boleh diisi admin.
+            abort(403, 'Only an admin can record values for a global KPI.');
+        }
 
         // Cek program masih dalam eksekusi
         if ($kpi->programId) {

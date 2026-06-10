@@ -788,6 +788,12 @@ class WorkspaceController extends Controller
             'budgetSpent' => 'nullable|numeric',
         ]);
 
+        // Scope guard: workstream mewarisi kepemilikan dari program induk.
+        // Blokir pembuatan workstream lintas-direktorat (sebelumnya tanpa cek
+        // sama sekali — siapa pun bisa menambah workstream di program manapun).
+        $ownerUnitId = $this->ownerUnitForProgram((int) $data['programId']);
+        $this->assertCanMutateWorkstream($ownerUnitId, $request->user());
+
         $picPersonIds = $data['picPersonIds'] ?? [];
         unset($data['picPersonIds']);
 
@@ -795,6 +801,9 @@ class WorkspaceController extends Controller
             ...$data,
             'code' => 'WS-' . strtoupper(substr(sha1(uniqid('', true)), 0, 8)),
             'ownerId' => $data['ownerId'] ?? $request->user()->id,
+            // Isi ownerUnitId dari program — sebelumnya tak pernah di-set
+            // (selalu null) sehingga scope check di lapisan task bisa keliru.
+            'ownerUnitId' => $ownerUnitId,
             'status' => 'BACKLOG',
             'priority' => $data['priority'] ?? 'MEDIUM',
             'progressPercent' => 0,
@@ -840,6 +849,8 @@ class WorkspaceController extends Controller
         unset($data['picPersonIds']);
 
         $workstream = Workstream::findOrFail($id);
+        // Scope guard: blokir edit workstream lintas-direktorat.
+        $this->assertCanMutateWorkstream($this->ownerUnitForWorkstream($id), $request->user());
         $workstream->update($data);
 
         if ($picPersonIds !== null) {
@@ -851,12 +862,48 @@ class WorkspaceController extends Controller
         return response()->json(['data' => $workstream->fresh(['entityPics'])]);
     }
 
-    public function destroyWorkstream(int $id): JsonResponse
+    public function destroyWorkstream(Request $request, int $id): JsonResponse
     {
+        // Scope guard: blokir hapus workstream lintas-direktorat (destroy
+        // meng-cascade ke phase/task + recompute health program induk).
+        $this->assertCanMutateWorkstream($this->ownerUnitForWorkstream($id), $request->user());
         $programId = Workstream::find($id)?->programId;
         Workstream::destroy($id);
         if ($programId) rescue(fn () => $this->healthService->recompute($programId));
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Scope guard workstream: workstream mewarisi kepemilikan dari program
+     * induknya. Blokir mutasi lintas-direktorat — sebelumnya store/update/
+     * destroy workstream sama sekali tanpa otorisasi (bahkan BOD lolos),
+     * sehingga siapa pun bisa merusak struktur & health program divisi lain.
+     * Pola sama dengan PhaseController::assertUnitScope.
+     */
+    private function assertCanMutateWorkstream(?int $ownerUnitId, User $user): void
+    {
+        if (!RolePolicy::canCreateProgram($user->roleType)) {
+            abort(403, 'You do not have permission to modify a workstream.');
+        }
+        if (!OrgScope::forUser($user)->coversUnit($ownerUnitId)) {
+            abort(403, 'You do not have access to a workstream that belongs to another unit.');
+        }
+    }
+
+    private function ownerUnitForProgram(int $programId): ?int
+    {
+        $ownerUnitId = Program::query()->where('id', $programId)->value('ownerUnitId');
+        return $ownerUnitId !== null ? (int) $ownerUnitId : null;
+    }
+
+    private function ownerUnitForWorkstream(int $workstreamId): ?int
+    {
+        // Query terpisah dengan select eksplisit kolom ownerUnitId — hindari
+        // false-403 dari loadMissing no-op bila relasi ter-load tanpa kolom itu.
+        $ownerUnitId = Workstream::query()
+            ->with('program:id,ownerUnitId')
+            ->find($workstreamId)?->program?->ownerUnitId;
+        return $ownerUnitId !== null ? (int) $ownerUnitId : null;
     }
 
     public function usersPresence(): JsonResponse

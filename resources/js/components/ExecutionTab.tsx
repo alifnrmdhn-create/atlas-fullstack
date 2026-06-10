@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '../lib/api'
 import type { ExecutionGridData, ExecutionWorkstreamSummary } from '../types'
 import { useWorkspace } from '../hooks/useWorkspace'
+import { useRoleAccess } from '../hooks/useRoleAccess'
 import { ExecutionGrid } from './ExecutionGrid'
 import { SectionState, SkeletonStack } from './ui'
 
@@ -87,6 +88,9 @@ function exportGridCSV(grid: ExecutionGridData, programName?: string) {
 
 export function ExecutionTab({ programId, programName, approvalStatus }: Props) {
   const inPlanning = approvalStatus != null && approvalStatus !== 'ACTIVE' && approvalStatus !== 'COMPLETED'
+  // BOD = monitoring-only: backend menolak edit actualWeeks (assertCanModifyTask),
+  // jadi jangan tampilkan sel "Real" sebagai editable supaya tak kena 403.
+  const { isMonitoringOnly } = useRoleAccess()
   const { gridRefreshTick, currentUser } = useWorkspace()
   const [workstreams, setWorkstreams] = useState<ExecutionWorkstreamSummary[] | null>(null)
   const [activeId, setActiveId] = useState<number | null>(null)
@@ -324,8 +328,8 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
           )}
           <ExecutionGrid
             data={grid}
-            onToggleActualWeek={inPlanning ? undefined : handleToggleActualWeek}
-            onResetActualWeeks={inPlanning ? undefined : handleResetActualWeeks}
+            onToggleActualWeek={inPlanning || isMonitoringOnly ? undefined : handleToggleActualWeek}
+            onResetActualWeeks={inPlanning || isMonitoringOnly ? undefined : handleResetActualWeeks}
           />
         </>
       )}

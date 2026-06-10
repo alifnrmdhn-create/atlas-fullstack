@@ -13,6 +13,7 @@ use App\Models\Program;
 use App\Models\Task;
 use App\Models\User;
 use App\Services\BroadcastService;
+use App\Services\ProgramService;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -359,11 +360,17 @@ class MeetingController extends Controller
             'startAt' => 'required|date',
             'endAt' => 'required|date|after:startAt',
             'location' => 'nullable|string|max:200',
-            'linkedProgramId' => 'nullable|integer',
+            'linkedProgramId' => 'nullable|integer|exists:Program,id',
             'attendees' => 'array',
             'attendees.*.userId' => 'integer',
             'attendees.*.attendeeRole' => 'in:REQUIRED,OPTIONAL',
         ]);
+
+        // Cegah link meeting ke program di luar akses user — endpoint PICA
+        // meeting membocorkan blocker/progress/continuity program tertaut.
+        if (!empty($data['linkedProgramId'])) {
+            app(ProgramService::class)->assertAccess($request->user(), (int) $data['linkedProgramId']);
+        }
 
         $organizerId = $request->user()->id;
         $attendees = collect($data['attendees'] ?? [])
@@ -443,10 +450,15 @@ class MeetingController extends Controller
             'endAt' => 'sometimes|date',
             'location' => 'nullable|string|max:200',
             'notes' => 'nullable|string|max:8000',
-            'linkedProgramId' => 'nullable|integer',
+            'linkedProgramId' => 'nullable|integer|exists:Program,id',
             'status' => 'sometimes|in:SCHEDULED,ONGOING,COMPLETED,CANCELLED,POSTPONED',
             'postponedReason' => 'nullable|string|max:300',
         ]);
+
+        // Cegah re-link meeting ke program di luar akses user (lihat store()).
+        if (!empty($data['linkedProgramId'])) {
+            app(ProgramService::class)->assertAccess($request->user(), (int) $data['linkedProgramId']);
+        }
 
         // Status transition guards
         if (!empty($data['status'])) {

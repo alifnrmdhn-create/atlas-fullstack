@@ -248,16 +248,13 @@ class TaskController extends Controller
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $task = Task::findOrFail($id);
-        $user = $request->user();
-        $canDelete = RolePolicy::isAdminOrAbove($user->roleType)
-            || RolePolicy::norm($user->roleType) === 'kadiv'
-            || $task->createdBy === $user->id
-            || $task->assignedTo === $user->id;
-
-        if (!$canDelete) abort(403, 'You do not have access to delete this work item.');
+        // Sebelumnya allowlist tanpa OrgScope: KADIV direktorat mana pun +
+        // creator/assignee lintas-direktorat lolos. Samakan dengan update/
+        // status — scope per-direktorat lewat helper yang sama.
+        $this->assertCanModifyTask($task, $request->user());
 
         $workstreamId = $task->initiativeId;
-        $this->taskService->delete($id, $user->id);
+        $this->taskService->delete($id, $request->user()->id);
         $this->taskService->recomputeWorkstreamProgress($workstreamId);
 
         if ($request->expectsJson()) {
@@ -271,9 +268,10 @@ class TaskController extends Controller
 
     public function storeSubTask(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        if (RolePolicy::isReadOnly($request->user()->roleType)) {
-            abort(403, 'Your role is not allowed to perform this action.');
-        }
+        // Subtask menggerakkan progres task induk (recomputeFromSubTasks) →
+        // batas izinnya = izin memodifikasi task induk. Sebelumnya hanya cek
+        // isReadOnly, sehingga user lintas-direktorat bisa menambah subtask.
+        $this->assertCanModifyTask(Task::findOrFail($id), $request->user());
 
         $data = $request->validate([
             'title' => 'required|string|max:200',
@@ -293,6 +291,10 @@ class TaskController extends Controller
 
     public function destroySubTask(Request $request, int $id, int $subTaskId): JsonResponse|RedirectResponse
     {
+        // Sebelumnya 0 cek — siapa pun (termasuk BOD) bisa hapus subtask task
+        // divisi lain & mendistorsi progres/health. Gate ke task induk.
+        $this->assertCanModifyTask(Task::findOrFail($id), $request->user());
+
         SubTask::query()->where('id', $subTaskId)->where('workItemId', $id)->delete();
         $this->taskService->recomputeFromSubTasks($id, $request->user()->id);
 
@@ -305,6 +307,9 @@ class TaskController extends Controller
 
     public function toggleSubTask(Request $request, int $id, int $subTaskId): JsonResponse|RedirectResponse
     {
+        // Sebelumnya 0 cek — toggle completion mengubah progres task induk.
+        $this->assertCanModifyTask(Task::findOrFail($id), $request->user());
+
         $subTask = $this->taskService->toggleSubTask($subTaskId, $request->user()->id);
 
         if ($request->expectsJson()) {

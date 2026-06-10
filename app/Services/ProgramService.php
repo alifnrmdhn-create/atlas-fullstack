@@ -288,6 +288,49 @@ class ProgramService
         }
     }
 
+    /**
+     * Guard reassignment owner program: non-admin hanya boleh menetapkan ownerId
+     * ke dirinya sendiri atau user dalam scope-nya (unit/bawahan). Sebelumnya
+     * ownerId bebas di-set ke siapa pun → kepemilikan program bisa "dilempar"
+     * ke user di luar wewenang. Admin/eksekutif (allowsAllUsers) bebas.
+     */
+    public function assertCanAssignOwner(User $actor, ?int $ownerId): void
+    {
+        if ($ownerId === null || $ownerId === $actor->id) {
+            return;
+        }
+        $scope = $this->scopeResolver->resolveUserScope($actor);
+        if ($scope->allowsAllUsers()) {
+            return;
+        }
+        if (!in_array($ownerId, $scope->userIds ?? [], true)) {
+            abort(403, 'You can only assign ownership to yourself or a member of your unit.');
+        }
+    }
+
+    /**
+     * ID program yang boleh diakses user (membership ∪ ownerId-dalam-scope).
+     * Return null = user eksekutif (lihat semua, tanpa filter). Dipakai untuk
+     * scoping read-path yg bersandar pada akses program (mis. daftar KPI).
+     * Predikat ini sama dengan listForUser() & assertAccess().
+     *
+     * @return array<int>|null
+     */
+    public function accessibleProgramIds(User $user): ?array
+    {
+        $scope = $this->scopeResolver->resolveUserScope($user);
+        if ($scope->allowsAllUsers()) {
+            return null;
+        }
+        $membershipIds = $this->membershipResolver->getProgramIdsViaMembership($user->id);
+        $ownedIds = Program::query()
+            ->whereIn('ownerId', $scope->userIds ?? [])
+            ->pluck('id')
+            ->all();
+
+        return array_values(array_unique([...$membershipIds, ...array_map('intval', $ownedIds)]));
+    }
+
     public function create(User $user, array $data): Program
     {
         $code = 'PRG-' . strtoupper(substr(md5(uniqid()), 0, 6));

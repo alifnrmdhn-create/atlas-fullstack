@@ -131,13 +131,10 @@ class BlockerController extends Controller
         }
 
         $blocker = Blocker::findOrFail($id);
-        $user = $request->user();
-        $canEdit = RolePolicy::isAdminOrAbove($user->roleType)
-            || RolePolicy::norm($user->roleType) === 'kadiv'
-            || $blocker->createdBy === $user->id
-            || $blocker->assignedTo === $user->id;
-
-        if (!$canEdit) abort(403, 'Only the blocker creator or assignee can edit this.');
+        // Scope guard: samakan dengan store/status/destroy. Sebelumnya allowlist
+        // tanpa OrgScope → KADIV direktorat mana pun & creator/assignee lintas-
+        // direktorat bisa edit blocker program divisi lain.
+        $this->assertCanModifyBlockerTask((int) $blocker->workItemId, $request->user(), $blocker);
 
         $data = $request->validate([
             'title' => 'sometimes|string|min:3|max:120',
@@ -173,15 +170,9 @@ class BlockerController extends Controller
         }
 
         $blocker = Blocker::findOrFail($id);
-
-        $canEdit = RolePolicy::isAdminOrAbove($user->roleType)
-            || RolePolicy::norm($user->roleType) === 'kadiv'
-            || $blocker->createdBy === $user->id
-            || $blocker->assignedTo === $user->id;
-
-        if (!$canEdit) {
-            abort(403, 'Only the creator, assignee, or KADIV+ can change the countermeasure.');
-        }
+        // Scope guard konsisten dgn store/status/destroy (sebelumnya allowlist
+        // tanpa OrgScope membuka edit countermeasure lintas-direktorat).
+        $this->assertCanModifyBlockerTask((int) $blocker->workItemId, $user, $blocker);
 
         $data = $request->validate([
             'resolution'        => 'required|string|max:2000',

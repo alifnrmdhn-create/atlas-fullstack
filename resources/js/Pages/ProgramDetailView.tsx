@@ -3560,6 +3560,8 @@ export function ProgramDetailView() {
                       )
                     })()}
                   </div>
+                  {/* BOD monitoring-only: backend menolak buat/ubah KPI internal. */}
+                  {!roleAccess.isMonitoringOnly && (
                   <button
                     className="btn btn--ghost prog-kpi-internal__toggle"
                     type="button"
@@ -3573,6 +3575,7 @@ export function ProgramDetailView() {
                   >
                     {showKpiInternalForm ? 'Cancel' : '+ Create Target'}
                   </button>
+                  )}
                 </div>
                 {showKpiInternalForm && (
                   <form className="prog-kpi-form" onSubmit={(e) => void submitKpiInternal(e)}>
@@ -3669,8 +3672,9 @@ export function ProgramDetailView() {
                               {kpiStatus !== 'UNSET' ? kpiStatus : '—'}
                             </span>
                             {/* Edit button — hover-only di KPI card. Authorization
-                                check: tidak boleh edit saat PENDING_KASUB/KADIV. */}
-                            {!['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') && (
+                                check: tidak boleh edit saat PENDING_KASUB/KADIV,
+                                dan BOD monitoring-only disembunyikan (backend 403). */}
+                            {!roleAccess.isMonitoringOnly && !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') && (
                               <button
                                 type="button"
                                 className="prog-kpi-card__edit"
@@ -3683,7 +3687,7 @@ export function ProgramDetailView() {
                                 </svg>
                               </button>
                             )}
-                            {detail.approvalStatus === 'ACTIVE' ? (
+                            {roleAccess.isMonitoringOnly ? null : detail.approvalStatus === 'ACTIVE' ? (
                               <button
                                 type="button"
                                 className="btn btn--ghost prog-kpi-card__action"

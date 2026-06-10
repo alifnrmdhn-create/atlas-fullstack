@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\OrgScope;
 use App\Models\Blocker;
 use App\Models\ChannelMember;
 use App\Models\ChannelMessage;
@@ -297,6 +298,9 @@ class ProgramController extends Controller
             'dukunganDibutuhkan' => 'nullable|string|max:2000',
         ]);
 
+        // Cegah melempar kepemilikan ke user di luar scope (non-admin).
+        $this->programService->assertCanAssignOwner($request->user(), $data['ownerId'] ?? null);
+
         $program = $this->programService->create($request->user(), $data);
         BroadcastService::program($program->id, 'created');
 
@@ -352,6 +356,14 @@ class ProgramController extends Controller
             'progresTerkini' => 'nullable|string|max:2000',
             'dukunganDibutuhkan' => 'nullable|string|max:2000',
         ]);
+
+        // Cegah reassignment owner ke luar scope (non-admin). Hanya cek bila
+        // ownerId benar-benar berubah — jangan blok no-op edit yang mengirim
+        // ulang ownerId existing (mis. co-PIC menyimpan field lain).
+        if (array_key_exists('ownerId', $data)
+            && (int) ($data['ownerId'] ?? 0) !== (int) $program->ownerId) {
+            $this->programService->assertCanAssignOwner($request->user(), $data['ownerId'] ?? null);
+        }
 
         // Snapshot SEBELUM update — kalau program ACTIVE, deteksi perubahan
         // commitment field untuk audit log + notif KADIV (Opsi A governance).
@@ -433,6 +445,10 @@ class ProgramController extends Controller
             abort(403, 'Only KADIV/Admin can activate a program directly.');
         }
         $program = Program::findOrFail($id);
+        // Scope guard: KADIV hanya boleh mengaktifkan program direktoratnya
+        // sendiri (approve/reject sudah ber-org-chain; activate sebelumnya hanya
+        // cek role → KADIV direktorat A bisa aktifkan program direktorat B).
+        $this->assertCoversProgramUnit($program, $request->user());
         if ($program->approvalStatus !== 'DRAFT') {
             return $this->validationError($request, 'Only DRAFT programs can be activated.');
         }
@@ -928,6 +944,9 @@ class ProgramController extends Controller
     {
         $program = Program::findOrFail($id);
         Gate::authorize('archive-program', $program);
+        // Gate archive-program berbasis role+ownership; tambahkan scope direktorat
+        // supaya KADIV tidak bisa mengarsip program direktorat lain.
+        $this->assertCoversProgramUnit($program, $request->user());
         if ($program->archivedAt) return $this->validationError($request, 'The program is already archived.');
         $this->programService->archive($id, $request->user()->id);
 
@@ -940,8 +959,12 @@ class ProgramController extends Controller
 
     public function restore(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        Gate::authorize('view-archive');
         $program = Program::findOrFail($id);
+        // Sebelumnya hanya Gate view-archive (role) → KADIV/Admin mana pun bisa
+        // me-restore program siapa pun. Samakan dgn archive: role+ownership +
+        // scope direktorat.
+        Gate::authorize('archive-program', $program);
+        $this->assertCoversProgramUnit($program, $request->user());
         if (!$program->archivedAt) return $this->validationError($request, 'The program is not archived.');
         $this->programService->restore($id);
 
@@ -950,6 +973,22 @@ class ProgramController extends Controller
         }
 
         return back()->with('success', 'Program restored.');
+    }
+
+    /**
+     * Scope guard direktorat untuk aksi program-level yang gate-nya berbasis
+     * role (activate/archive/restore). Admin/eksekutif bebas; selain itu unit
+     * pemilik program harus tercakup OrgScope user. Semua program kini punya
+     * ownerUnitId (0 null), jadi coversUnit(null) yg false aman.
+     */
+    private function assertCoversProgramUnit(Program $program, User $user): void
+    {
+        if (RolePolicy::isAdminOrAbove($user->roleType)) {
+            return;
+        }
+        if (!OrgScope::forUser($user)->coversUnit($program->ownerUnitId !== null ? (int) $program->ownerUnitId : null)) {
+            abort(403, 'You can only act on a program that belongs to your directorate.');
+        }
     }
 
     public function addKpiLink(Request $request, int $id): JsonResponse|RedirectResponse
