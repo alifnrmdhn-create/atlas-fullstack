@@ -4,7 +4,8 @@
 #
 # Dua job paralel:
 #   backend  — php artisan test (PostgreSQL service, mirror scripts/setup-test-db.sh)
-#   frontend — npm run check (typecheck + audit routes + audit breakpoints + vite build)
+#              + audit:routes (butuh php artisan, makanya bukan di job frontend)
+#   frontend — typecheck + audit:breakpoints + vite build
 name: CI
 
 on:
@@ -47,6 +48,9 @@ jobs:
       - name: Prepare app environment
         run: |
           cp .env.example .env
+          # Arahkan .env ke DB test — boot artisan non-test (route:list di
+          # audit:routes) ikut aman bila ada provider yang menyentuh DB.
+          sed -i 's/^DB_DATABASE=.*/DB_DATABASE=ptpn_kmr_test/' .env
           php artisan key:generate
 
       # Mirror scripts/setup-test-db.sh — schema harus ada sebelum migrate
@@ -56,6 +60,12 @@ jobs:
 
       - name: Run test suite
         run: php artisan test
+
+      # Di sini (bukan di job frontend) karena script ini menjalankan
+      # `php artisan route:list` — butuh vendor/. Script-nya murni node builtin,
+      # tidak butuh node_modules (node preinstalled di runner).
+      - name: Audit route FE↔BE
+        run: node scripts/audit-frontend-routes.mjs
 
   frontend:
     name: Typecheck, audits & build
@@ -70,4 +80,10 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run check
+      # Bukan `npm run check`: audit:routes butuh php artisan + vendor/, jadi
+      # dijalankan di job backend. Sisanya (typecheck, breakpoints, build) di sini.
+      - run: npm run typecheck
+
+      - run: npm run audit:breakpoints
+
+      - run: npm run build
