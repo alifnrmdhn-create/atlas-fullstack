@@ -2,7 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\OrgScope;
+use App\Models\Blocker;
 use App\Models\Comment;
+use App\Models\Program;
+use App\Models\Task;
+use App\Models\User;
+use App\Models\Workstream;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -17,10 +23,70 @@ class CommentController extends Controller
         'blockers'    => 'BLOCKER',
     ];
 
+    /**
+     * Gate akses entity komentar (audit 2026-06-10): dulu index/store/thread/
+     * reaction/pin menerima entityId mentah tanpa cek apa pun — user mana pun
+     * bisa membaca thread & menulis komentar (plus fan-out notifikasi mention)
+     * ke program/task/blocker unit lain by id. Semantik mengikuti
+     * TaskController::assertCanSeeTask: admin lolos, selain itu OrgScope user
+     * harus mencakup unit pemilik program entity. Baca & tulis disengaja sama
+     * (komentar = kolaborasi tim entity; author-or-admin untuk edit/hapus
+     * sudah dijaga terpisah di update/destroy).
+     */
+    private function assertEntityAccess(User $user, string $type, int $entityId): void
+    {
+        if (RolePolicy::isAdminOrAbove($user->roleType)) return;
+
+        if (OrgScope::forUser($user)->coversUnit($this->ownerUnitForEntity($type, $entityId))) {
+            return;
+        }
+
+        abort(403, 'You do not have access to this entity.');
+    }
+
+    private function assertCommentEntityAccess(User $user, Comment $comment): void
+    {
+        $this->assertEntityAccess($user, (string) $comment->entityType, (int) $comment->entityId);
+    }
+
+    /**
+     * Resolve unit pemilik program dari entity polimorfik. GOTCHA (memory
+     * proyek): Workstream.ownerUnitId selalu null → wajib resolve via
+     * Program.ownerUnitId; dan jangan andalkan relasi ter-load (pola sama dgn
+     * TaskController::ownerUnitForWorkstream). Entity tak ditemukan → null →
+     * coversUnit false (403 untuk non-admin).
+     */
+    private function ownerUnitForEntity(string $type, int $entityId): ?int
+    {
+        $unitId = match ($type) {
+            'PROGRAM' => Program::query()->find($entityId)?->ownerUnitId,
+            'WORKSTREAM' => Workstream::query()
+                ->with('program:id,ownerUnitId')
+                ->find($entityId)?->program?->ownerUnitId,
+            'TASK' => $this->ownerUnitForWorkstreamId(
+                Task::query()->find($entityId)?->initiativeId),
+            'BLOCKER' => $this->ownerUnitForWorkstreamId(
+                Blocker::query()->find($entityId)?->task?->initiativeId),
+            default => null,
+        };
+
+        return $unitId !== null ? (int) $unitId : null;
+    }
+
+    private function ownerUnitForWorkstreamId(?int $workstreamId): ?int
+    {
+        if ($workstreamId === null) return null;
+
+        return Workstream::query()
+            ->with('program:id,ownerUnitId')
+            ->find($workstreamId)?->program?->ownerUnitId;
+    }
+
     // GET /:entityType/:entityId/comments
     public function index(Request $request, string $entityType, int $entityId)
     {
         $type = self::ENTITY_TYPE_MAP[$entityType] ?? abort(404);
+        $this->assertEntityAccess($request->user(), $type, $entityId);
         $threaded = $request->boolean('threaded', true);
         $parentOnly = $request->boolean('parentOnly', false);
 
@@ -59,6 +125,7 @@ class CommentController extends Controller
     public function store(Request $request, string $entityType, int $entityId): JsonResponse|RedirectResponse
     {
         $type = self::ENTITY_TYPE_MAP[$entityType] ?? abort(404);
+        $this->assertEntityAccess($request->user(), $type, $entityId);
 
         $data = $request->validate([
             'commentText' => 'required|string|min:1|max:5000',
@@ -92,9 +159,10 @@ class CommentController extends Controller
     }
 
     // GET /comments/:commentId/thread
-    public function thread(int $commentId)
+    public function thread(Request $request, int $commentId)
     {
         $parent = Comment::with('author:id,name,avatarUrl,roleType')->findOrFail($commentId);
+        $this->assertCommentEntityAccess($request->user(), $parent);
         $replies = Comment::query()
             ->where('parentCommentId', $commentId)
             ->with('author:id,name,avatarUrl,roleType')
@@ -156,6 +224,7 @@ class CommentController extends Controller
     // POST /comments/:commentId/reactions
     public function addReaction(Request $request, int $commentId): JsonResponse|RedirectResponse
     {
+        $this->assertCommentEntityAccess($request->user(), Comment::findOrFail($commentId));
         $data = $request->validate(['emoji' => 'required|string|max:10']);
         $this->toggleReaction($commentId, $request->user()->id, $data['emoji'], false);
 
@@ -169,6 +238,7 @@ class CommentController extends Controller
     // DELETE /comments/:commentId/reactions/:emoji
     public function removeReaction(Request $request, int $commentId, string $emoji): JsonResponse|RedirectResponse
     {
+        $this->assertCommentEntityAccess($request->user(), Comment::findOrFail($commentId));
         $this->toggleReaction($commentId, $request->user()->id, $emoji, true);
 
         if ($request->expectsJson()) {
@@ -182,6 +252,9 @@ class CommentController extends Controller
     public function togglePin(Request $request, int $commentId): JsonResponse|RedirectResponse
     {
         $comment = Comment::findOrFail($commentId);
+        // Pin = aksi tim entity (bukan author-only — smart defaults), tapi tetap
+        // wajib akses entity: dulu user mana pun bisa pin/unpin komentar apa pun.
+        $this->assertCommentEntityAccess($request->user(), $comment);
         $comment->update(['isPinned' => !$comment->isPinned]);
 
         if ($request->expectsJson()) {
