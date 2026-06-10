@@ -1,0 +1,61 @@
+# Backup harian PostgreSQL produksi (Railway) — audit 2026-06-10 Task 0.2.
+# Sebelumnya NOL backup: satu insiden volume/manusia = data prod hilang total.
+#
+# pg_dump format custom (-Fc, terkompresi) → artifact GitHub, retensi 30 hari.
+# Jadwal 19:30 UTC = 02:30 WIB (di luar jam kerja).
+#
+# SETUP (sekali): tambah repository secret `DATABASE_PUBLIC_URL` di
+# Settings → Secrets and variables → Actions, isi dari Railway:
+# service Postgres → Variables → DATABASE_PUBLIC_URL.
+#
+# Restore (bila perlu):
+#   pg_restore -d "$TARGET_URL" --clean --if-exists --no-owner atlas-prod-<tanggal>.dump
+name: DB Backup
+
+on:
+  schedule:
+    - cron: '30 19 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      # Server Railway = PostgreSQL 18; client runner default (16) ditolak
+      # pg_dump ("server version mismatch") — pasang client 18 dari PGDG.
+      - name: Install postgresql-client-18
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-18
+
+      - name: Guard secret tersedia
+        run: |
+          if [ -z "${{ secrets.DATABASE_PUBLIC_URL }}" ]; then
+            echo "::error::Secret DATABASE_PUBLIC_URL belum di-set di repo (Settings → Secrets → Actions)."
+            exit 1
+          fi
+
+      - name: pg_dump
+        env:
+          DATABASE_PUBLIC_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+        run: |
+          STAMP=$(date -u +%Y%m%d-%H%M)
+          /usr/lib/postgresql/18/bin/pg_dump "$DATABASE_PUBLIC_URL" \
+            --format=custom --no-owner --no-privileges \
+            --file="atlas-prod-${STAMP}.dump"
+          ls -lh atlas-prod-*.dump
+          # Sanity check: dump kosong/terpotong = gagal keras, jangan diam-diam.
+          test "$(stat -c%s atlas-prod-${STAMP}.dump)" -gt 100000
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-prod-db-${{ github.run_id }}
+          path: atlas-prod-*.dump
+          retention-days: 30
+          if-no-files-found: error
