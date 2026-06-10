@@ -206,7 +206,7 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
   const statusTone = allOnTarget ? 'green' : (div.atRisk > div.onTarget ? 'red' : 'amber')
 
   return (
-    <Link href={`/performance/divisi/${div.kode.toLowerCase()}`} className="perf-compare-card">
+    <Link href={`/performance/divisi/${div.kode.toLowerCase()}`} className="perf-compare-card" data-rank={div.rank}>
       <div className="perf-compare-card__top">
         <span className="perf-compare-card__rank-pill">Rank #{div.rank} / {div.totalDivisi}</span>
         <span className="perf-compare-card__arrow" aria-hidden="true">→</span>
@@ -327,7 +327,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
           </header>
 
           {/* ─── Subject card ─────────────────────── */}
-          <Card padding="lg" className="perf__section perf-subject">
+          <Card padding="lg" className="perf__section perf-subject" data-tone={tone}>
             <div className="perf-subject__row">
               <div className="perf-subject__meta">
                 <span className="perf-subject__eyebrow">Division</span>

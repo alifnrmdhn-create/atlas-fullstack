@@ -131,35 +131,7 @@ export default function ScorecardView() {
               <span className="perf__subtitle">Directorate &amp; division ranking</span>
             </div>
             <div className="perf__header-summary">
-              {soloDir ? (
-                <>
-                  {/* Solo: "average dari 1 direktorat" menyesatkan — verdict
-                      strip: skor + delta + cakupan KPI lintas-divisi. */}
-                  <span className="perf__header-stat">
-                    <strong data-tone={scoreTone(soloDir.nilai)} data-num>{formatPercent(soloDir.nilai, 1)}</strong>
-                    <span>directorate score</span>
-                  </span>
-                  {soloDelta && (
-                    <span className="perf__header-delta" data-tone={soloDelta.value >= 0 ? 'green' : 'red'}>
-                      {soloDelta.value >= 0 ? '▲' : '▼'} {formatPercent(Math.abs(soloDelta.value), 1)} vs {soloDelta.vs}
-                    </span>
-                  )}
-                  <span className="perf__header-divider" aria-hidden />
-                  <span className="perf__header-stat">
-                    <strong data-num>{kpiTotals.onTarget}/{kpiTotals.total}</strong>
-                    <span>KPIs on target</span>
-                  </span>
-                  {soloBelow100 > 0 && (
-                    <>
-                      <span className="perf__header-divider" aria-hidden />
-                      <span className="perf__header-stat">
-                        <strong data-tone="amber" data-num>{soloBelow100}</strong>
-                        <span>divisions below 100%</span>
-                      </span>
-                    </>
-                  )}
-                </>
-              ) : (
+              {soloDir ? null : (
                 <>
                   <span className="perf__header-stat">
                     <strong data-tone={scoreTone(avgScore)} data-num>{formatPercent(avgScore, 1)}</strong>
@@ -197,16 +169,51 @@ export default function ScorecardView() {
             </Card>
           )}
 
-          {/* ─── Kokpit solo: matriks divisi × perspektif ──────────
+          {/* ─── Kokpit solo: hero → matriks | aside ──────────────
               Heatmap menempatkan kelemahan secara spasial (divisi mana ×
-              perspektif mana) — menggantikan ranking bar yang semua hijau
-              hampir-penuh dan tak terbedakan. */}
+              perspektif mana); hero = verdict ber-gradient ala Home. */}
           {soloDir ? (
             <>
-            <section className="perf__section">
+            <Card padding="none" className="perf__section perf-hero" data-tone={scoreTone(soloDir.nilai)}>
+              <div className="perf-hero__main">
+                <span className="perf-hero__eyebrow">Directorate scorecard · {periodeLabel}</span>
+                <h2 className="perf-hero__name">{soloDir.nama}</h2>
+                <div className="perf-hero__stats">
+                  <div className="perf-hero__stat" data-tone={kpiTotals.onTarget === kpiTotals.total ? 'green' : 'green'}>
+                    <span className="perf-hero__stat-val" data-tone="green">{kpiTotals.onTarget}/{kpiTotals.total}</span>
+                    <span className="perf-hero__stat-lbl">KPIs on target</span>
+                  </div>
+                  {exceptions.length > 0 && (
+                    <div className="perf-hero__stat" data-tone="amber">
+                      <span className="perf-hero__stat-val" data-tone="amber">{exceptions.length}</span>
+                      <span className="perf-hero__stat-lbl">KPI below 100%</span>
+                    </div>
+                  )}
+                  <div className="perf-hero__stat">
+                    <span className="perf-hero__stat-val">{soloDir.divisi.length}</span>
+                    <span className="perf-hero__stat-lbl">divisions · {soloBelow100 > 0 ? `${soloBelow100} below 100%` : 'all ≥100%'}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="perf-hero__score">
+                <span className="perf-hero__num" data-tone={scoreTone(soloDir.nilai)}>
+                  {formatNumber(soloDir.nilai, 1)}<span className="perf-hero__num-unit">%</span>
+                </span>
+                {soloDelta ? (
+                  <span className="perf__header-delta" data-tone={soloDelta.value >= 0 ? 'green' : 'red'}>
+                    {soloDelta.value >= 0 ? '▲' : '▼'} {formatPercent(Math.abs(soloDelta.value), 1)} vs {soloDelta.vs}
+                  </span>
+                ) : (
+                  <span className="perf-hero__sub">Directorate score</span>
+                )}
+              </div>
+            </Card>
+
+            <div className="perf-cockpit perf__section">
+            <section>
               <div className="perf-section-head">
-                <span className="perf__section-label">Division × BSC Perspective — {soloDir.nama}</span>
-                <span className="perf-section-meta">achievement, weighted per perspective · click a row to drill down</span>
+                <span className="perf__section-label">Division × BSC Perspective</span>
+                <span className="perf-section-meta">click a row to drill down</span>
               </div>
               <Card padding="none" className="perf-matrix-card">
                 <ScoreMatrix rows={matrix} />
@@ -214,7 +221,11 @@ export default function ScorecardView() {
             </section>
 
             {/* ─── Pengecualian lintas-divisi | Trend ───────────── */}
-            <div className="perf__cols-2 perf__section perf__cols-2--cockpit">
+            <div className="perf-cockpit__aside">
+              <div className="perf-section-head">
+                <span className="perf__section-label">This month</span>
+                <span className="perf-section-meta">across all divisions</span>
+              </div>
               <Card padding="md">
                 <div className="perf-card-head">
                   <h2 className="perf-card-head__title">Needs attention</h2>
@@ -235,6 +246,7 @@ export default function ScorecardView() {
                         key={`${e.divisi}-${e.kpi}`}
                         href={`/performance/divisi/${e.divisi.toLowerCase()}`}
                         className="perf-exc"
+                        data-sev={e.pct < 80 ? 'red' : 'amber'}
                       >
                         <span className="perf-exc__divisi">{e.divisi}</span>
                         <span className="perf-exc__main">
@@ -266,6 +278,7 @@ export default function ScorecardView() {
                   <KpiTrendChart trend={trend} height={220} />
                 </Card>
               )}
+            </div>
             </div>
             </>
           ) : direktoratGrid.length > 0 && (

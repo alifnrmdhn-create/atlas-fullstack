@@ -1,5 +1,5 @@
 import { Card } from '../../design-system'
-import { formatNumber, formatVal } from './_shared'
+import { formatNumber, formatVal, scoreTone } from './_shared'
 
 export type InsightBullet = {
   kpi: string
@@ -18,15 +18,22 @@ type Props = {
   insight: InsightPayload
 }
 
-function pctLabel(ratio: number): string {
-  return `${formatNumber(ratio * 100, 0)}%`
-}
-
-// formatVal menempatkan satuan dengan benar (Rp = prefix, % = suffix,
-// Jumlah/Rasio tanpa suffix) — dulu "4406 Rp Miliar" / "0 Jumlah".
-function bulletPhrase(b: InsightBullet): string {
+// Baris terstruktur (bukan kalimat prose): nama KPI + nilai muted + pct
+// chip bertone di kanan — scannable, bukan tembok teks.
+function InsightRow({ b }: { b: InsightBullet }) {
   const unit = b.satuan && b.satuan !== '-' ? b.satuan : ''
-  return `${b.kpi}: realization ${formatVal(b.realisasi, unit)} (target ${formatVal(b.sasaran, unit)}, ${pctLabel(b.ratio)} of target)`
+  const pct = b.ratio * 100
+  return (
+    <li className="perf-insight__item">
+      <span className="perf-insight__item-kpi">{b.kpi}</span>
+      <span className="perf-insight__item-vals">
+        {formatVal(b.realisasi, unit)} vs target {formatVal(b.sasaran, unit)}
+      </span>
+      <span className="perf-insight__item-pct" data-tone={scoreTone(pct)}>
+        {formatNumber(pct, 0)}%
+      </span>
+    </li>
+  )
 }
 
 /**
@@ -58,9 +65,7 @@ export function InsightPanel({ insight }: Props) {
           ) : (
             <ul className="perf-insight__list">
               {positif.map((b) => (
-                <li key={b.kpi} className="perf-insight__item">
-                  {bulletPhrase(b)}
-                </li>
+                <InsightRow key={b.kpi} b={b} />
               ))}
             </ul>
           )}
@@ -76,9 +81,7 @@ export function InsightPanel({ insight }: Props) {
           ) : (
             <ul className="perf-insight__list">
               {perhatian.map((b) => (
-                <li key={b.kpi} className="perf-insight__item">
-                  {bulletPhrase(b)}
-                </li>
+                <InsightRow key={b.kpi} b={b} />
               ))}
             </ul>
           )}

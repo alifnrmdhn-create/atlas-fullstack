@@ -1910,3 +1910,280 @@
   }
   .kst__cell--ach { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   RICH LAYER (2026-06-10) — bahasa visual Home cockpit (hvc) diterapkan
+   ke modul Performance per mandat user ("masih jauh dari ekspektasi";
+   pakem: rapi saja = 6/10, harus premium). Teknik identik HomeView.css:
+   layered shadow + gradient surface + gradient bignum + tinted stat +
+   backdrop glow. Layered PALING AKHIR supaya menang source order.
+   ════════════════════════════════════════════════════════════════════ */
+
+.perf {
+  --pfc-card-bg: linear-gradient(158deg, var(--ds-surface-card) 0%, color-mix(in srgb, var(--ds-surface-card) 88%, var(--ds-neutral-100)) 100%);
+  --pfc-card-border: var(--ds-border-subtle);
+  --pfc-card-radius: 16px;
+  --pfc-card-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 10px 28px -10px rgba(16,24,40,0.12);
+  --pfc-card-shadow-hover: 0 2px 4px rgba(16,24,40,0.06), 0 16px 40px -12px rgba(16,24,40,0.20);
+  --pfc-inset-top: inset 0 1px 0 rgba(255,255,255,0.6);
+  --pfc-grad-green: linear-gradient(135deg, #34D399, #059669);
+  --pfc-grad-amber: linear-gradient(135deg, #FBBF24, #D97706);
+  --pfc-grad-red: linear-gradient(135deg, #FB7185, #DC2626);
+}
+
+[data-theme="dark"] .perf {
+  --pfc-card-bg: linear-gradient(158deg, #16181F 0%, #101116 100%);
+  --pfc-card-border: rgba(255,255,255,0.08);
+  --pfc-card-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 14px 36px -14px rgba(0,0,0,0.7);
+  --pfc-card-shadow-hover: 0 2px 4px rgba(0,0,0,0.6), 0 20px 48px -14px rgba(0,0,0,0.85);
+  --pfc-inset-top: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* Backdrop glow halus (presisi sama dengan home-v2--cockpit). */
+.perf {
+  background:
+    radial-gradient(1100px 460px at 100% -6%, rgba(16,185,129,0.07), transparent 60%),
+    radial-gradient(820px 460px at -6% 112%, rgba(16,185,129,0.045), transparent 60%),
+    var(--ds-surface-page);
+}
+[data-theme="dark"] .perf {
+  background:
+    radial-gradient(1100px 520px at 100% -8%, rgba(16,185,129,0.11), transparent 55%),
+    radial-gradient(900px 600px at -8% 110%, rgba(56,189,248,0.07), transparent 55%),
+    #0A0A0B;
+}
+
+/* Depth di semua kartu Performance. */
+.perf .ds-card {
+  background: var(--pfc-card-bg);
+  border: 1px solid var(--pfc-card-border);
+  border-radius: var(--pfc-card-radius);
+  box-shadow: var(--pfc-card-shadow), var(--pfc-inset-top);
+}
+
+/* ── Hero band (Scorecard kokpit + subject detail) ───────────── */
+
+.perf-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 26px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Motif glow tone di kanan-atas hero. */
+.perf-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(420px 190px at 86% -30%, color-mix(in srgb, var(--tone-green) 14%, transparent), transparent 70%);
+}
+.perf-hero[data-tone="amber"]::after { background: radial-gradient(420px 190px at 86% -30%, color-mix(in srgb, var(--tone-amber) 16%, transparent), transparent 70%); }
+.perf-hero[data-tone="red"]::after   { background: radial-gradient(420px 190px at 86% -30%, color-mix(in srgb, var(--tone-red) 16%, transparent), transparent 70%); }
+
+.perf-hero__main { display: flex; flex-direction: column; gap: 6px; min-width: 0; position: relative; }
+
+.perf-hero__eyebrow {
+  font-size: 10px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.perf-hero__name {
+  margin: 0;
+  font-size: clamp(18px, 1.6vw, 24px);
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: -0.018em;
+  color: var(--ds-text-primary);
+  line-height: 1.15;
+}
+
+.perf-hero__stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+
+.perf-hero__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 9px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--pfc-card-border);
+  box-shadow: var(--pfc-card-shadow), var(--pfc-inset-top);
+  background: var(--ds-surface-card);
+  min-width: 104px;
+}
+.perf-hero__stat[data-tone="green"] { background: linear-gradient(158deg, color-mix(in srgb, #10B981 11%, var(--ds-surface-card)), var(--ds-surface-card)); }
+.perf-hero__stat[data-tone="amber"] { background: linear-gradient(158deg, color-mix(in srgb, #F59E0B 12%, var(--ds-surface-card)), var(--ds-surface-card)); }
+.perf-hero__stat[data-tone="red"]   { background: linear-gradient(158deg, color-mix(in srgb, #EF4444 11%, var(--ds-surface-card)), var(--ds-surface-card)); }
+
+.perf-hero__stat-val {
+  font-size: 19px;
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+  color: var(--ds-text-primary);
+}
+.perf-hero__stat-val[data-tone="green"] { color: #059669; }
+.perf-hero__stat-val[data-tone="amber"] { color: #D97706; }
+.perf-hero__stat-val[data-tone="red"]   { color: #DC2626; }
+[data-theme="dark"] .perf-hero__stat-val[data-tone="green"] { color: #34D399; }
+[data-theme="dark"] .perf-hero__stat-val[data-tone="amber"] { color: #FBBF24; }
+[data-theme="dark"] .perf-hero__stat-val[data-tone="red"]   { color: #FB7185; }
+
+.perf-hero__stat-lbl { font-size: 10.5px; color: var(--ds-text-tertiary); }
+
+.perf-hero__score { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; position: relative; }
+
+.perf-hero__num {
+  font-size: clamp(2.4rem, 3.4vw, 3.4rem);
+  font-weight: var(--ds-weight-semibold);
+  line-height: 1;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  background-image: var(--pfc-grad-green);
+}
+.perf-hero__num[data-tone="amber"] { background-image: var(--pfc-grad-amber); }
+.perf-hero__num[data-tone="red"]   { background-image: var(--pfc-grad-red); }
+.perf-hero__num-unit { font-size: 0.45em; -webkit-text-fill-color: var(--ds-text-tertiary); }
+
+.perf-hero__sub { font-size: var(--ds-text-13); color: var(--ds-text-tertiary); }
+
+/* Subject card detail (Directorate/Division KPI) ikut bahasa hero. */
+.perf-subject__score-value {
+  font-size: clamp(2.1rem, 2.8vw, 2.9rem);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  background-image: var(--pfc-grad-green);
+}
+.perf-subject__score-value[data-tone="amber"] { background-image: var(--pfc-grad-amber); }
+.perf-subject__score-value[data-tone="red"]   { background-image: var(--pfc-grad-red); }
+.perf-subject__score-value > span { -webkit-text-fill-color: var(--ds-text-tertiary); }
+
+/* Tone accent kiri pada subject (pola hvc__panel). */
+.perf-subject[data-tone="green"] { box-shadow: var(--pfc-card-shadow), var(--pfc-inset-top), inset 3px 0 0 0 #10B981; }
+.perf-subject[data-tone="amber"] { box-shadow: var(--pfc-card-shadow), var(--pfc-inset-top), inset 3px 0 0 0 #F59E0B; }
+.perf-subject[data-tone="red"]   { box-shadow: var(--pfc-card-shadow), var(--pfc-inset-top), inset 3px 0 0 0 #EF4444; }
+
+/* ── Kokpit Scorecard: matriks | aside ───────────────────────── */
+
+.perf-cockpit {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.perf-cockpit__aside { display: flex; flex-direction: column; gap: 12px; }
+@media (max-width: 1024px) { /* bp-allow: --bp-md */
+  .perf-cockpit { grid-template-columns: 1fr; }
+}
+
+/* ── Matriks: tint lebih berani + tipografi naik ─────────────── */
+
+.perf-matrix__cell { font-size: var(--ds-text-14); padding: 13px 14px; }
+.perf-matrix__division { padding: 13px 16px; }
+.perf-matrix__division-code { font-size: var(--ds-text-14); }
+
+.perf-matrix__cell[data-tone="green"] { background: color-mix(in srgb, var(--tone-green) 12%, transparent); }
+.perf-matrix__cell[data-tone="amber"] { background: color-mix(in srgb, var(--tone-amber) 20%, transparent); }
+.perf-matrix__cell[data-tone="red"]   { background: color-mix(in srgb, var(--tone-red) 18%, transparent); }
+
+.perf-matrix__cell--total { font-size: var(--ds-text-16); }
+
+/* ── Needs attention: aksen kiri + pct bubble ────────────────── */
+
+.perf-exc { border-radius: 10px; padding: 10px 12px; margin: 2px 0; border-bottom: none; }
+.perf-exc[data-sev="amber"] { box-shadow: inset 3px 0 0 0 #F59E0B; background: color-mix(in srgb, var(--tone-amber) 5%, transparent); }
+.perf-exc[data-sev="red"]   { box-shadow: inset 3px 0 0 0 #EF4444; background: color-mix(in srgb, var(--tone-red) 5%, transparent); }
+
+.perf-exc__pct {
+  padding: 4px 10px;
+  border-radius: var(--ds-radius-pill);
+  font-size: var(--ds-text-13);
+}
+.perf-exc__pct[data-tone="amber"] { background: color-mix(in srgb, var(--tone-amber) 14%, transparent); }
+.perf-exc__pct[data-tone="red"]   { background: color-mix(in srgb, var(--tone-red) 14%, transparent); }
+.perf-exc__pct[data-tone="green"] { background: color-mix(in srgb, var(--tone-green) 14%, transparent); }
+
+/* ── Compare card: aksen rank (medali) + hover lift ──────────── */
+
+.perf-compare-card { position: relative; overflow: hidden; border-radius: var(--pfc-card-radius); box-shadow: var(--pfc-card-shadow), var(--pfc-inset-top); background: var(--pfc-card-bg); transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease; }
+@media (hover: hover) {
+  .perf-compare-card:hover { transform: translateY(-2px); box-shadow: var(--pfc-card-shadow-hover), var(--pfc-inset-top); }
+}
+.perf-compare-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.perf-compare-card[data-rank="1"]::before { background: linear-gradient(90deg, #FDE68A, #FBBF24); }
+.perf-compare-card[data-rank="2"]::before { background: linear-gradient(90deg, #E5E7EB, #9CA3AF); }
+.perf-compare-card[data-rank="3"]::before { background: linear-gradient(90deg, #FDBA74, #C2410C); }
+
+.perf-compare-card__score {
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  background-image: var(--pfc-grad-green);
+}
+.perf-compare-card__score[data-tone="amber"] { background-image: var(--pfc-grad-amber); }
+.perf-compare-card__score[data-tone="red"]   { background-image: var(--pfc-grad-red); }
+.perf-compare-card__score-pct { -webkit-text-fill-color: var(--ds-text-tertiary); }
+
+/* ── Insight rows terstruktur (bukan tembok teks) ────────────── */
+
+.perf-insight__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--ds-border-subtle);
+}
+.perf-insight__item:last-child { border-bottom: none; }
+
+.perf-insight__item-kpi {
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-primary);
+  min-width: 0;
+}
+
+.perf-insight__item-vals {
+  grid-column: 1;
+  font-size: 11.5px;
+  color: var(--ds-text-tertiary);
+}
+
+.perf-insight__item-pct {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  padding: 4px 10px;
+  border-radius: var(--ds-radius-pill);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.perf-insight__item-pct[data-tone="green"] { color: var(--tone-green); background: color-mix(in srgb, var(--tone-green) 13%, transparent); }
+.perf-insight__item-pct[data-tone="amber"] { color: var(--tone-amber); background: color-mix(in srgb, var(--tone-amber) 15%, transparent); }
+.perf-insight__item-pct[data-tone="red"]   { color: var(--tone-red); background: color-mix(in srgb, var(--tone-red) 15%, transparent); }
+
+/* Hero responsive */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .perf-hero { flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px; }
+  .perf-hero__score { align-items: flex-start; }
+}
+
+/* Hero compare ikut bahasa gradient. */
+.perf-compare__hero-score-val {
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  background-image: var(--pfc-grad-green);
+}
+.perf-compare__hero-score-val[data-tone="amber"] { background-image: var(--pfc-grad-amber); }
+.perf-compare__hero-score-val[data-tone="red"]   { background-image: var(--pfc-grad-red); }

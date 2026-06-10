@@ -122,7 +122,7 @@ export default function KolegialDetailView() {
           </header>
 
           {/* ─── Subject card ─────────────────────── */}
-          <Card padding="lg" className="perf__section perf-subject">
+          <Card padding="lg" className="perf__section perf-subject" data-tone={totalTone}>
             <div className="perf-subject__row">
               <div className="perf-subject__meta">
                 <span className="perf-subject__eyebrow">{direktur.jabatan}</span>
