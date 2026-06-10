@@ -418,14 +418,25 @@ class ProgramController extends Controller
 
         $prevStatus = $program->approvalStatus;
         $nextStatus = $role === 'KASUBDIV' ? 'PENDING_KADIV' : 'PENDING_KASUB';
+        $targetRole = $nextStatus === 'PENDING_KADIV' ? 'KADIV' : 'KASUBDIV';
+
+        // Anti-deadlock: kalau rantai managerUserId submitter tidak memuat
+        // reviewer ber-role target, program akan masuk PENDING tanpa SIAPA PUN
+        // yang bisa approve (assertIsLegitimateReviewer menolak semua non-admin,
+        // notifikasi pun kosong — nyangkut diam-diam). Tolak di muka dengan
+        // pesan yang actionable; admin memperbaiki data org dulu.
+        $reviewerIds = $this->resolveReviewerIds($user, $targetRole);
+        if ($reviewerIds === []) {
+            return $this->validationError($request, "No {$targetRole} found in your reporting line — ask an admin to fix your organization chain before submitting.");
+        }
+
         $program->update(['approvalStatus' => $nextStatus, 'rejectionNote' => null, 'submittedById' => $user->id]);
         ProgramApprovalLog::record($id, 'SUBMITTED', $prevStatus, $nextStatus, $user->id, $user->name);
         BroadcastService::program($id, 'updated', ['approvalStatus' => $nextStatus]);
 
-        $targetRole = $nextStatus === 'PENDING_KADIV' ? 'KADIV' : 'KASUBDIV';
         $this->notifyApprovalEvent(
             program: $program,
-            recipientIds: $this->resolveReviewerIds($user, $targetRole),
+            recipientIds: $reviewerIds,
             type: 'PROGRAM_NEEDS_APPROVAL',
             message: "Program \"{$program->name}\" is awaiting your approval.",
             excludeUserId: $user->id,
