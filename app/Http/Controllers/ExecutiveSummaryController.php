@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Program;
 use App\Services\KpiInsightService;
 use App\Services\ScorecardSummaryService;
+use App\Support\RolePolicy;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -33,6 +34,13 @@ class ExecutiveSummaryController extends Controller
     public function show(Request $request): Response
     {
         $user = $request->user();
+
+        // Mirror gating sidebar (AppShell: NI.executive superadmin-only) + BOD —
+        // sebelumnya route tanpa gate: role mana pun bisa membuka snapshot KPI
+        // direktorat + leaderboard BOD via URL langsung (audit 2026-06-10).
+        $role = RolePolicy::norm($user->roleType);
+        abort_unless(RolePolicy::isAdminOrAbove($role) || $role === 'BOD', 403);
+
         $periode = $request->query('periode') ?? now()->format('Y-m');
 
         // Grid direktorat (4 angka utama untuk hero strip)

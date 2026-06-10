@@ -172,7 +172,10 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    // Default aman: cookie Secure otomatis di production (audit 2026-06-10 —
+    // sebelumnya tanpa default, jadi non-Secure bila env var terlupa di-set).
+    // Local dev (http://localhost:9000) tetap false via APP_ENV=local.
+    'secure' => env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production'),
 
     /*
     |--------------------------------------------------------------------------

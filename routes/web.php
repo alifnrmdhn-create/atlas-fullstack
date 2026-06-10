@@ -401,12 +401,14 @@ Route::middleware('auth')->group(function () {
 
     // ── Form autosave / drafts (Sprint 6 — Mei 2026) ──────────────────────────
     // formKey format konvensi: "{entityType}:{entityId}:{formName}",
-    // mis. "program:123:progressLog". Whitelist regex cegah path traversal.
+    // mis. "program:123:progressLog". Whitelist regex cegah key arbitrer.
+    // Constraint WAJIB per-route: ->where() yang di-chain SETELAH ->group()
+    // adalah no-op — group mendaftarkan route lebih dulu (audit 2026-06-10).
     Route::prefix('drafts')->name('drafts.')->group(function () {
-        Route::get('/{formKey}',    [DraftController::class, 'show'])->name('show');
-        Route::put('/{formKey}',    [DraftController::class, 'upsert'])->name('upsert');
-        Route::delete('/{formKey}', [DraftController::class, 'destroy'])->name('destroy');
-    })->where('formKey', '[A-Za-z0-9:_\-\.]+');
+        Route::get('/{formKey}',    [DraftController::class, 'show'])->name('show')->where('formKey', '[A-Za-z0-9:_\-\.]+');
+        Route::put('/{formKey}',    [DraftController::class, 'upsert'])->name('upsert')->where('formKey', '[A-Za-z0-9:_\-\.]+');
+        Route::delete('/{formKey}', [DraftController::class, 'destroy'])->name('destroy')->where('formKey', '[A-Za-z0-9:_\-\.]+');
+    });
 
     // ── Risk Reports ──────────────────────────────────────────────────────────
     Route::prefix('risk-reports')->name('risk-reports.')->group(function () {

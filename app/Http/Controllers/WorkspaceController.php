@@ -7,6 +7,7 @@ use App\Auth\ScopeResolver;
 use App\Models\Assignment;
 use App\Models\Blocker;
 use App\Models\Channel;
+use App\Models\ChannelMember;
 use App\Models\ChannelMessage;
 use App\Models\EntityPic;
 use App\Models\KpiDefinition;
@@ -97,11 +98,6 @@ class WorkspaceController extends Controller
             ->limit(10)
             ->get(['id', 'code', 'title', 'status', 'severity']);
 
-        $recentMessages = ChannelMessage::query()
-            ->orderByDesc('createdAt')
-            ->limit(8)
-            ->get();
-
         return response()->json([
             'generatedAt' => now()->toISOString(),
             'summary' => [
@@ -146,7 +142,11 @@ class WorkspaceController extends Controller
                     ->get(['id', 'name'])
                     ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'score' => null, 'status' => 'GREEN'])
                     ->values(),
-                'collaboration' => $recentMessages,
+                // Sengaja kosong (audit 2026-06-10): dulu berisi 8 ChannelMessage
+                // terbaru GLOBAL tanpa cek keanggotaan — bocor konten DM/channel
+                // privat ke semua user. FE tidak pernah mengonsumsi key ini; key
+                // dipertahankan hanya demi kompatibilitas shape payload.
+                'collaboration' => [],
             ],
             'recentActivity' => [],
             'mentions' => [],
@@ -362,6 +362,11 @@ class WorkspaceController extends Controller
 
     public function userActivity(Request $request): JsonResponse
     {
+        // Leaderboard durasi sesi/last-active SEMUA user = data surveilans —
+        // batasi ke pengelola user (konsumen satu-satunya: ActivityView, halaman
+        // tanpa entry nav). Aktivitas diri sendiri tetap via userActivityDetail.
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+
         [$from, $to] = $this->activityRange($request->query('range'));
         $sessions = UserSession::query()
             ->whereBetween('startedAt', [$from, $to])
@@ -410,6 +415,12 @@ class WorkspaceController extends Controller
 
     public function userActivityDetail(Request $request, int $id): JsonResponse
     {
+        // Detail sesi per-user: hanya milik sendiri (dipakai ProfileView) atau
+        // pengelola user — tanpa gate ini, siapa pun bisa memantau jam aktif
+        // user lain by id.
+        $requester = $request->user();
+        $requester->id === $id || RolePolicy::canManageUsers($requester->roleType) || abort(403);
+
         [$from, $to] = $this->activityRange($request->query('range'));
         $user = User::query()
             ->with(['unit:id,name', 'directorate:id,name'])
@@ -469,7 +480,23 @@ class WorkspaceController extends Controller
 
     public function storeSavedMessage(Request $request, int $messageId): JsonResponse
     {
-        ChannelMessage::query()->findOrFail($messageId);
+        $message = ChannelMessage::query()->findOrFail($messageId);
+
+        // Hanya pesan dari channel yang bisa diakses user (anggota, atau channel
+        // publik aktif) yang boleh disimpan — tanpa cek ini, id arbitrer
+        // membocorkan konten DM/channel privat lewat GET /saved-messages
+        // (mirror ChannelMessageController::requireChannelAccess, mode read).
+        $user = $request->user();
+        if (! RolePolicy::isAdminOrAbove($user->roleType)) {
+            $channel = Channel::findOrFail($message->channelId);
+            $isMember = ChannelMember::query()
+                ->where('channelId', $message->channelId)
+                ->where('userId', $user->id)
+                ->exists();
+            if (! $isMember && ! ($channel->type === 'PUBLIC' && ! $channel->isArchived)) {
+                abort(403, 'You do not have access to this channel.');
+            }
+        }
 
         DB::table('SavedMessage')->updateOrInsert(
             ['userId' => $request->user()->id, 'messageId' => $messageId],
@@ -580,6 +607,11 @@ class WorkspaceController extends Controller
 
     public function users(Request $request): JsonResponse
     {
+        // Direktori lengkap (termasuk nik/email/phone semua karyawan) hanya untuk
+        // pengelola user (dipakai AdminUsersView). People-picker umum memakai
+        // /users/directory yang field-nya sudah dikurasi aman.
+        RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+
         $query = User::query()
             ->with([
                 'unit:id,code,name',

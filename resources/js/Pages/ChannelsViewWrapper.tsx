@@ -182,22 +182,10 @@ export function ChannelsViewWrapper() {
   }
 
   const handleUploadFiles = async (formData: FormData): Promise<ChannelAttachment[]> => {
-    // Note: api.post stringifies JSON. For multipart we use raw fetch.
-    const res = await fetch('/uploads', {
-      method: 'POST',
-      body: formData,
-      credentials: 'same-origin',
-      headers: { Accept: 'application/json' },
-    })
-    if (!res.ok) {
-      let msg = `Upload failed (${res.status})`
-      try {
-        const body = await res.json() as { error?: string }
-        if (body.error) msg = body.error
-      } catch { /* noop */ }
-      throw new Error(msg)
-    }
-    const json = await res.json() as { data: ChannelAttachment[] }
+    // api.upload menangani multipart (skip Content-Type utk FormData) + header
+    // X-XSRF-TOKEN — raw fetch sebelumnya tanpa token CSRF sehingga POST /uploads
+    // kena 419 (audit 2026-06-10; pola sama dgn upload MonthlyReport/Assignment).
+    const json = await api.upload<{ data: ChannelAttachment[] }>('/uploads', formData)
     return json.data
   }
 

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\ConfirmsDestructiveRun;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
@@ -29,7 +30,12 @@ use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
  */
 class ImportKpiProgress extends Command
 {
-    protected $signature = 'kpi:import-progress {--dry-run : Parse + verify only, write nothing} {--path= : Folder containing the .xlsx files}';
+    use ConfirmsDestructiveRun;
+
+    protected $signature = 'kpi:import-progress
+        {--dry-run : Parse + verify only, write nothing}
+        {--path= : Folder containing the .xlsx files}
+        {--force : Lewati konfirmasi saat target DB produksi/remote}';
 
     protected $description = 'Import KPI realisasi (sheet "Progress") for DIR-KMR + DKSA/DAPN/DIMR into the Performance schema';
 
@@ -51,6 +57,12 @@ class ImportKpiProgress extends Command
 
     public function handle(): int
     {
+        // Mass updateOrInsert ke 3 tabel scorecard — pernah hang 12 jam saat
+        // jalan ke prod via proxy (memory project). Rem standar data-ops.
+        if (! $this->confirmDestructiveRun()) {
+            return self::FAILURE;
+        }
+
         @ini_set('memory_limit', '512M');
         $dry = (bool) $this->option('dry-run');
         $dir = $this->option('path') ?: base_path('docs/Real KPI Apr');

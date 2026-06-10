@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\ConfirmsDestructiveRun;
 use App\Models\Task;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -26,11 +27,19 @@ use Illuminate\Support\Facades\DB;
  */
 class BackfillTaskCompletion extends Command
 {
-    protected $signature = 'tasks:backfill-completion {--dry-run : Tampilkan jumlah tanpa menulis}';
+    use ConfirmsDestructiveRun;
+
+    protected $signature = 'tasks:backfill-completion
+        {--dry-run : Tampilkan jumlah tanpa menulis}
+        {--force : Lewati konfirmasi saat target DB produksi/remote}';
     protected $description = 'Isi actualCompletion untuk task COMPLETED yang masih NULL (data seed). Idempotent.';
 
     public function handle(): int
     {
+        if (! $this->confirmDestructiveRun()) {
+            return self::FAILURE;
+        }
+
         $query = Task::query()
             ->where('status', 'COMPLETED')
             ->whereNull('actualCompletion');
