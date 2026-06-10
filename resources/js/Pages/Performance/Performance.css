@@ -2309,3 +2309,73 @@
   .perf-subject--gauge { flex-direction: column; align-items: flex-start; }
   .perf-subject--gauge .ds-gauge { align-self: center; }
 }
+
+/* ═══ RONDE 5 — density & proporsi (feedback: "teks terlalu besar, banyak
+   area kosong, tidak proporsional"). Skala diturunkan ke proporsi Home:
+   angka besar ≤2.5rem, padding rapat, interior kartu terisi micro-viz. ═══ */
+
+/* Judul halaman & header lebih ramping. */
+.perf__title { font-size: 18px; }
+.perf__header { padding-bottom: 12px; margin-bottom: 12px; }
+.perf__section { margin-bottom: 12px; }
+
+/* Hero: proporsional, bukan dominan. */
+.perf-hero--rich {
+  grid-template-columns: minmax(230px, 1.05fr) minmax(230px, 1fr) auto;
+  gap: clamp(16px, 2.2vw, 36px);
+  padding: 14px 20px;
+}
+.perf-hero__name { font-size: 16px; }
+.perf-hero__eyebrow { font-size: 9.5px; }
+.perf-hero__numrow { margin-top: 2px; }
+.perf-hero__num { font-size: clamp(1.9rem, 2.3vw, 2.4rem); font-weight: var(--ds-weight-semibold); }
+.perf-hero__sub { font-size: 11.5px; }
+.perf-hero__divisions { gap: 7px; }
+
+/* Subject 3-zona: meta | meter perspektif | gauge. */
+.perf-subject--gauge {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.15fr) minmax(220px, 1fr) auto;
+  align-items: center;
+  gap: clamp(16px, 2.2vw, 36px);
+  padding: 14px 20px;
+}
+.perf-subject--gauge .perf-subject__meta { min-width: 0; }
+.perf-subject__name { font-size: 16px; }
+.perf-subject__perspectives { border-left: 1px solid var(--pfc-card-border); padding-left: clamp(12px, 2vw, 24px); }
+.perf-hero__divrow--static { cursor: default; padding: 1px 0; }
+@media (hover: hover) { .perf-hero__divrow--static:hover { background: transparent; } }
+
+@media (max-width: 1024px) { /* bp-allow: --bp-md */
+  .perf-subject--gauge { grid-template-columns: 1fr 1fr; }
+  .perf-subject--gauge .ds-gauge { grid-column: 1 / -1; justify-self: center; }
+}
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .perf-subject--gauge { grid-template-columns: 1fr; }
+  .perf-subject__perspectives { border-left: none; padding-left: 0; border-top: 1px solid var(--pfc-card-border); padding-top: 10px; }
+}
+
+/* Compare: skor & hero turun skala. */
+.perf-compare-card__score { font-size: 24px; }
+.perf-compare__hero-score-val { font-size: 26px; }
+.perf-compare__hero-name { font-size: 17px; }
+.perf-compare__hero { padding: 4px 2px 12px; }
+
+/* Key Insights: kolom tidak stretch ke tinggi kolom terpanjang (dulu kolom
+   "Needs Attention" 1 item = lautan beige kosong). */
+.perf-insight__cols { align-items: start; }
+.perf-insight__col { height: fit-content; }
+.perf-insight__head { margin-bottom: 8px; }
+.perf-insight__title { font-size: var(--ds-text-14); }
+
+/* Matriks & kartu kokpit lebih rapat. */
+.perf-matrix__cell { padding: 11px 12px; font-size: var(--ds-text-13); }
+.perf-matrix__division { padding: 11px 14px; }
+.perf-matrix__cell--total { font-size: var(--ds-text-14); }
+.perf-cockpit { gap: 10px; }
+.perf-cockpit__aside { gap: 10px; }
+.perf-exc { padding: 8px 10px; }
+.perf-card-head { margin-bottom: 8px; }
+
+/* Gauge label rapat. */
+.perf-subject--gauge .ds-gauge, .perf-hero__gauge .ds-gauge { margin: -4px 0; }

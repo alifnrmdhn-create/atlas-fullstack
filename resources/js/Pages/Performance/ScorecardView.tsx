@@ -1,7 +1,8 @@
 import { Head, Link, usePage } from '@inertiajs/react'
 import { Card, Pill, Gauge, Meter } from '../../design-system'
-import { scoreTone, fillRatio, formatNumber, formatPercent, formatPeriod, formatVal } from './_shared'
+import { scoreTone, fillRatio, formatNumber, formatPercent, formatPeriod } from './_shared'
 import { KpiTrendChart, type KpiTrendPayload } from './KpiTrendChart'
+import { ExceptionsCard, type ExceptionRow } from './ExceptionsCard'
 import './Performance.css'
 
 type RankItem = { rank: number; nama: string; kode?: string; sub?: string; nilai: number }
@@ -14,16 +15,8 @@ type MatrixRow = {
   nilai: number
   direktorat: string
   perspektif: Record<string, number | null>
-}
-
-type ExceptionRow = {
-  divisi: string
-  kpi: string
-  pct: number
-  sasaran: string
-  realisasi: string
-  satuan: string
-  bobot: number
+  onTarget: number
+  kpiTotal: number
 }
 
 type PageProps = {
@@ -112,7 +105,7 @@ export default function ScorecardView() {
   // informasi saat semua skor ~100% — bentuk ini menjawab "mana yang
   // menyimpang & di mana" tanpa drill-down per divisi.
   const soloDir = totalDirektorat === 1 ? direktoratGrid[0] : null
-  const soloBelow100 = soloDir ? soloDir.divisi.filter(d => d.nilai < 100).length : 0
+  const _soloBelow100 = soloDir ? soloDir.divisi.filter(d => d.nilai < 100).length : 0
 
   // Delta vs bulan berisi sebelumnya (dari payload trend).
   const soloDelta = (() => {
@@ -249,46 +242,7 @@ export default function ScorecardView() {
                 <span className="perf__section-label">This month</span>
                 <span className="perf-section-meta">across all divisions</span>
               </div>
-              <Card padding="md">
-                <div className="perf-card-head">
-                  <h2 className="perf-card-head__title">Needs attention</h2>
-                  <Pill tone={exceptions.length > 0 ? 'amber' : 'green'} variant="soft">
-                    {exceptions.length > 0
-                      ? `${exceptions.length} KPI below 100%`
-                      : 'all on target'}
-                  </Pill>
-                </div>
-                {exceptions.length === 0 ? (
-                  <p className="perf-empty">
-                    All {kpiTotals.total} division KPIs meet 100% of target this period.
-                  </p>
-                ) : (
-                  <div className="perf-exc-list">
-                    {exceptions.map(e => (
-                      <Link
-                        key={`${e.divisi}-${e.kpi}`}
-                        href={`/performance/divisi/${e.divisi.toLowerCase()}`}
-                        className="perf-exc"
-                        data-sev={e.pct < 80 ? 'red' : 'amber'}
-                      >
-                        <span className="perf-exc__divisi">{e.divisi}</span>
-                        <span className="perf-exc__main">
-                          <span className="perf-exc__kpi">{e.kpi}</span>
-                          <span className="perf-exc__detail">
-                            {e.realisasi === '—'
-                              ? 'not measured yet'
-                              : `${formatVal(e.realisasi, e.satuan)} of ${formatVal(e.sasaran, e.satuan)} target`}
-                            {' · '}weight {formatNumber(e.bobot, 0)}%
-                          </span>
-                        </span>
-                        <span className="perf-exc__pct" data-tone={scoreTone(e.pct)}>
-                          {e.realisasi === '—' ? 'N/A' : formatPercent(e.pct, 0)}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </Card>
+              <ExceptionsCard exceptions={exceptions} total={kpiTotals.total} />
 
               {trend && trend.series.length > 0 && (
                 <Card padding="md">
@@ -447,7 +401,7 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
       aria-label="Division by perspective achievement"
       // Jumlah kolom eksplisit — auto-fit membuat sel wrap ke baris implisit
       // saat sempit (mobile), bukan memicu scroll-x.
-      style={{ ['--matrix-cols' as never]: cols.length + 1 }}
+      style={{ ['--matrix-cols' as never]: cols.length + 2 }}
     >
       <div className="perf-matrix__row perf-matrix__row--head" role="row">
         <span className="perf-matrix__division" role="columnheader">Division</span>
@@ -455,6 +409,7 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
           <span key={c.key} className="perf-matrix__cell perf-matrix__cell--head" role="columnheader">{c.label}</span>
         ))}
         <span className="perf-matrix__cell perf-matrix__cell--head perf-matrix__cell--total" role="columnheader">Total</span>
+        <span className="perf-matrix__cell perf-matrix__cell--head" role="columnheader">On target</span>
       </div>
       {rows.map(r => (
         <Link
@@ -488,6 +443,14 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
             role="cell"
           >
             {formatPercent(r.nilai, 1)}
+          </span>
+          <span
+            className="perf-matrix__cell perf-matrix__cell--kpis"
+            data-tone={r.onTarget === r.kpiTotal ? 'green' : 'amber'}
+            style={{ ['--i' as never]: r.onTarget === r.kpiTotal ? 0.1 : 0.25 }}
+            role="cell"
+          >
+            {r.onTarget}/{r.kpiTotal}
           </span>
         </Link>
       ))}

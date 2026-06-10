@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Head, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
-import { Card, Pill, Gauge } from '../../design-system'
+import { Card, Pill, Gauge, Meter } from '../../design-system'
 import { scoreTone, realisasiPercent, formatNumber, formatPeriod } from './_shared'
 import { InsightPanel, type InsightPayload } from './InsightPanel'
 import { KpiScoreTable, type ScoreGroup } from './KpiScoreTable'
@@ -120,8 +120,9 @@ export default function KolegialDetailView() {
             </div>
           </header>
 
-          {/* ─── Subject card (instrumen: meta + gauge) ───────────── */}
-          <Card padding="lg" className="perf__section perf-subject perf-subject--gauge" data-tone={totalTone}>
+          {/* ─── Subject card 3-zona: meta | meter perspektif | gauge ──
+              (density pass: interior dulu kosong di tengah). */}
+          <Card padding="md" className="perf__section perf-subject perf-subject--gauge" data-tone={totalTone}>
             <div className="perf-subject__meta">
               <span className="perf-subject__eyebrow">{direktur.jabatan}</span>
               <div className="perf-subject__name">{direktur.nama}</div>
@@ -134,13 +135,23 @@ export default function KolegialDetailView() {
                 )}
               </div>
             </div>
+            <div className="perf-hero__divisions perf-subject__perspectives">
+              {kpiGroups.map(g => (
+                <div key={g.perspektif_key} className="perf-hero__divrow perf-hero__divrow--static">
+                  <span className="perf-hero__divcode" title={g.perspektif}>
+                    {g.perspektif === 'Internal Business Process' ? 'IBP' : g.perspektif}
+                  </span>
+                  <Meter value={Math.min(g.pct, 110)} max={110} target={100} tone={scoreTone(g.pct)} height={7} className="perf-hero__divbar" />
+                  <span className="perf-hero__divval" data-tone={scoreTone(g.pct)}>{formatNumber(g.pct, 1)}</span>
+                </div>
+              ))}
+            </div>
             <Gauge
               value={Math.min(totalSkor, 110)}
               max={110}
-              target={100}
               tone={totalTone}
-              size={168}
-              thickness={15}
+              size={118}
+              thickness={12}
               valueText={formatNumber(totalSkor, 1)}
               unit="%"
               label="Total score"

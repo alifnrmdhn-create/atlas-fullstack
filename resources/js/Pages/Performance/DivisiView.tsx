@@ -1,10 +1,11 @@
 import { Head, Link, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
-import { Card, Pill, Gauge } from '../../design-system'
+import { Card, Pill, Gauge, Meter } from '../../design-system'
 import { useState } from 'react'
 import { scoreTone, realisasiPercent, formatNumber, formatPercent, formatPeriod } from './_shared'
 import { KpiScoreTable, DeviationBar, type ScoreGroup } from './KpiScoreTable'
 import { InsightPanel, type InsightPayload } from './InsightPanel'
+import { ExceptionsCard, type ExceptionRow } from './ExceptionsCard'
 import './Performance.css'
 
 type KpiItem = {
@@ -81,6 +82,7 @@ type ComparisonProps = {
   mode: 'comparison'
   direktorat: Direktorat
   divisiList: DivisiCompare[]
+  exceptions: ExceptionRow[]
   periode: string
 }
 
@@ -129,7 +131,7 @@ export default function DivisiView() {
   return <SingleView {...props} />
 }
 
-function ComparisonView({ direktorat, divisiList, periode }: ComparisonProps) {
+function ComparisonView({ direktorat, divisiList, exceptions, periode }: ComparisonProps) {
   const navigate = useInertiaNavigate()
   const avgNilai = divisiList.length > 0
     ? divisiList.reduce((s, d) => s + d.nilai, 0) / divisiList.length
@@ -191,6 +193,14 @@ function ComparisonView({ direktorat, divisiList, periode }: ComparisonProps) {
                 <DivisiCompareCard key={div.kode} div={div} />
               ))}
             </div>
+          )}
+
+          {/* Density pass: ruang bawah halaman diisi daftar actionable
+              (komponen sama dgn Scorecard) alih-alih dibiarkan kosong. */}
+          {divisiList.length > 0 && (
+            <section className="perf__section" style={{ marginTop: 12 }}>
+              <ExceptionsCard exceptions={exceptions ?? []} />
+            </section>
           )}
 
           <p className="perf-footnote">Maximum KPI Division achievement: 110%</p>
@@ -275,9 +285,13 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
   const itemPct = (i: KpiItem) => realisasiPercent(i.sasaran, i.realisasi, i.polaritas)
   const attentionCount = kpiItems.filter(i => itemPct(i) < 100).length
 
+  // Grup per perspektif tanpa filter — untuk meter di subject card.
+  const groupsAll = groupByPerspektif(kpiItems)
+  const tableGroupsAll = groupsAll.map(g => ({ key: g.perspektif, label: g.perspektif, pct: g.pct }))
+
   // Triage pipeline → bentuk tabel scorecard (KpiScoreTable, sama dgn
   // Directorate KPI). Grup kosong di-drop.
-  const tableGroups: ScoreGroup[] = groupByPerspektif(kpiItems)
+  const tableGroups: ScoreGroup[] = groupsAll
     .map(g => {
       let items = attentionOnly ? g.items.filter(i => itemPct(i) < 100) : g.items
       if (lowestFirst) items = [...items].sort((a, b) => itemPct(a) - itemPct(b))
@@ -325,8 +339,8 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
             </div>
           </header>
 
-          {/* ─── Subject card (instrumen: meta + gauge) ───────────── */}
-          <Card padding="lg" className="perf__section perf-subject perf-subject--gauge" data-tone={tone}>
+          {/* ─── Subject card 3-zona: meta | meter perspektif | gauge ── */}
+          <Card padding="md" className="perf__section perf-subject perf-subject--gauge" data-tone={tone}>
             <div className="perf-subject__meta">
               <span className="perf-subject__eyebrow">Division</span>
               <div className="perf-subject__name">{divisi.nama}</div>
@@ -349,13 +363,23 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                 )}
               </div>
             </div>
+            <div className="perf-hero__divisions perf-subject__perspectives">
+              {tableGroupsAll.map(g => (
+                <div key={g.key} className="perf-hero__divrow perf-hero__divrow--static">
+                  <span className="perf-hero__divcode" title={g.label}>
+                    {g.label === 'Internal Business Process' ? 'IBP' : g.label}
+                  </span>
+                  <Meter value={Math.min(g.pct, 110)} max={110} target={100} tone={scoreTone(g.pct)} height={7} className="perf-hero__divbar" />
+                  <span className="perf-hero__divval" data-tone={scoreTone(g.pct)}>{formatNumber(g.pct, 1)}</span>
+                </div>
+              ))}
+            </div>
             <Gauge
               value={Math.min(divisi.nilai, 110)}
               max={110}
-              target={100}
               tone={tone}
-              size={168}
-              thickness={15}
+              size={118}
+              thickness={12}
               valueText={formatNumber(divisi.nilai, 1)}
               unit="%"
               label={`Score · ${periodeLabel}`}

@@ -187,6 +187,7 @@ class PerformanceController extends Controller
             foreach ($dir['divisi'] as $div) {
                 $items = $this->getDivisiKpi($div['kode'], $periode);
                 $perAgg = [];
+                $divOnTarget = 0;
                 foreach ($items as $k) {
                     $b = (float) $k['bobot'];
                     $s = (float) $k['skor'];
@@ -194,6 +195,7 @@ class PerformanceController extends Controller
                     $kpiTotals['total']++;
                     if ($pct >= 100) {
                         $kpiTotals['onTarget']++;
+                        $divOnTarget++;
                     } else {
                         $exceptions[] = [
                             'divisi'    => $div['kode'],
@@ -219,6 +221,8 @@ class PerformanceController extends Controller
                     'nilai' => $div['nilai'],
                     'direktorat' => $dir['kode'],
                     'perspektif' => $cells,
+                    'onTarget' => $divOnTarget,
+                    'kpiTotal' => count($items),
                 ];
             }
         }
@@ -314,11 +318,13 @@ class PerformanceController extends Controller
                     ? ['kode' => $directorate->code, 'nama' => $directorate->name, 'nilai' => 0.0]
                     : ['kode' => '—', 'nama' => 'Directorate not detected', 'nilai' => 0.0],
                 'divisiList' => [],
+                'exceptions' => [],
                 'periode' => $periode,
             ]);
         }
 
         $divisiList = [];
+        $exceptions = [];
         foreach ($gridDir['divisi'] as $idx => $div) {
             $kpiItems = $this->getDivisiKpi($div['kode'], $periode);
 
@@ -331,7 +337,22 @@ class PerformanceController extends Controller
                 $bobot = (float) ($k['bobot'] ?? 0);
                 $skor  = (float) ($k['skor'] ?? 0);
                 $pct   = $bobot > 0 ? ($skor / $bobot) * 100 : 0;
-                if ($pct >= 95) $onTarget++; else $atRisk++;
+                // Ambang disamakan dgn Scorecard/matriks: on target = ≥100%
+                // (dulu ≥95 → kartu bilang 13/14, matriks 12/14).
+                if ($pct >= 100) $onTarget++; else $atRisk++;
+                // Pengecualian lintas-divisi (density pass: isi ruang bawah
+                // halaman comparison dengan daftar yang actionable).
+                if ($pct < 100) {
+                    $exceptions[] = [
+                        'divisi'    => $div['kode'],
+                        'kpi'       => $k['nama'],
+                        'pct'       => round($pct, 1),
+                        'sasaran'   => $k['sasaran'],
+                        'realisasi' => $k['realisasi'],
+                        'satuan'    => $k['satuan'],
+                        'bobot'     => $bobot,
+                    ];
+                }
                 $p = $k['perspektif'];
                 $perAgg[$p]['b'] = ($perAgg[$p]['b'] ?? 0) + $bobot;
                 $perAgg[$p]['s'] = ($perAgg[$p]['s'] ?? 0) + $skor;
@@ -371,6 +392,7 @@ class PerformanceController extends Controller
                 'nilai' => $gridDir['nilai'],
             ],
             'divisiList' => $divisiList,
+            'exceptions' => collect($exceptions)->sortBy('pct')->values()->all(),
             'periode' => $periode,
         ]);
     }
