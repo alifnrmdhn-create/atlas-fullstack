@@ -76,6 +76,21 @@ class RiskReportController extends Controller
         ];
     }
 
+    /**
+     * Gate BACA: unit sama, atau KADIV/Admin ke atas — mirror
+     * MonthlyReportController::assertReportAccess (kedua modul dikonsumsi
+     * bersama oleh halaman Monthly Report DIMR, semantik pembaca harus sama).
+     * Audit 2026-06-10: show/ytd/index dulu tanpa gate sama sekali — read IDOR
+     * atas strategi/governance/loss events/KRI unit mana pun via id.
+     */
+    private function assertReportReadAccess(User $user, RiskMonthlyReport $report): void
+    {
+        $role = strtoupper($user->roleType ?? '');
+        if (RolePolicy::isAdminOrAbove($role) || $role === 'KADIV') return;
+        if ($user->unitId && (int) $user->unitId === (int) $report->unitId) return;
+        abort(403, 'You do not have access to this report.');
+    }
+
     // ── Pages ────────────────────────────────────────────────────────────────
 
     public function index(Request $request)
@@ -88,6 +103,14 @@ class RiskReportController extends Controller
             ])
             ->withCount(['riskSnapshots', 'lossEvents'])
             ->orderByDesc('year')->orderByDesc('month');
+
+        // Scoping list (mirror gate baca): non-KADIV/non-admin hanya melihat
+        // laporan unitnya sendiri.
+        $user = $request->user();
+        $role = strtoupper($user->roleType ?? '');
+        if (! RolePolicy::isAdminOrAbove($role) && $role !== 'KADIV') {
+            $query->where('unitId', (int) $user->unitId);
+        }
 
         if ($request->year)   $query->where('year', $request->year);
         if ($request->month)  $query->where('month', $request->month);
@@ -108,6 +131,7 @@ class RiskReportController extends Controller
     public function show(Request $request, int $id)
     {
         $report = RiskMonthlyReport::with($this->baseWith())->findOrFail($id);
+        $this->assertReportReadAccess($request->user(), $report);
         if ($request->expectsJson()) {
             return response()->json(['data' => $report]);
         }
@@ -117,9 +141,10 @@ class RiskReportController extends Controller
 
     // ── JSON endpoints ────────────────────────────────────────────────────────
 
-    public function ytd(int $id)
+    public function ytd(Request $request, int $id)
     {
         $report = RiskMonthlyReport::select('year', 'unitId')->findOrFail($id);
+        $this->assertReportReadAccess($request->user(), $report);
 
         $yearReports = RiskMonthlyReport::where('unitId', $report->unitId)
             ->where('year', $report->year)
@@ -155,6 +180,11 @@ class RiskReportController extends Controller
             'year' => 'required|integer|min:2020|max:2100',
             'unitId' => 'required|integer',
         ]);
+
+        // unitId datang dari body request — wajib dalam scope tulis user
+        // (audit 2026-06-10: dulu dipercaya mentah, user mana pun bisa membuat
+        // laporan risiko atas nama unit lain).
+        $this->assertCanWriteUnit($request->user(), (int) $data['unitId']);
 
         $existing = RiskMonthlyReport::where('unitId', $data['unitId'])
             ->where('month', $data['month'])
@@ -377,6 +407,12 @@ class RiskReportController extends Controller
     public function submit(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $report = RiskMonthlyReport::findOrFail($id);
+
+        // Gate tulis yang sama dengan update — sebelumnya submit hanya cek
+        // status DRAFT, user mana pun bisa men-submit laporan unit lain
+        // (audit 2026-06-10, melengkapi fix update 2026-06-10 sebelumnya).
+        $this->assertCanWriteUnit($request->user(), (int) $report->unitId);
+
         if ($report->status !== 'DRAFT') {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Only DRAFT reports can be submitted.'], 422);

@@ -38,8 +38,9 @@ class ExecutiveSummaryController extends Controller
         // Mirror gating sidebar (AppShell: NI.executive superadmin-only) + BOD —
         // sebelumnya route tanpa gate: role mana pun bisa membuka snapshot KPI
         // direktorat + leaderboard BOD via URL langsung (audit 2026-06-10).
+        // NB: RolePolicy::norm me-LOWERCASE — bandingkan dengan 'bod'.
         $role = RolePolicy::norm($user->roleType);
-        abort_unless(RolePolicy::isAdminOrAbove($role) || $role === 'BOD', 403);
+        abort_unless(RolePolicy::isAdminOrAbove($role) || $role === 'bod', 403);
 
         $periode = $request->query('periode') ?? now()->format('Y-m');
 

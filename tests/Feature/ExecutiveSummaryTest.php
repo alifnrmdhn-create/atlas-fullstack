@@ -56,6 +56,25 @@ class ExecutiveSummaryTest extends TestCase
         $this->get('/executive')->assertRedirect('/login');
     }
 
+    /**
+     * Gate audit 2026-06-10: /executive hanya admin-or-above + BOD (mirror nav
+     * superadmin-only). Regression guard ganda: BOD JANGAN ikut terblokir —
+     * RolePolicy::norm me-lowercase, perbandingan 'BOD' uppercase = always-false.
+     */
+    public function test_executive_gate_blocks_non_executive_allows_bod(): void
+    {
+        $makeUser = fn (string $slug, string $role) => User::create([
+            'name' => $slug, 'email' => "{$slug}@ptpn.test", 'userId' => $slug,
+            'passwordHash' => Hash::make('password-123'), 'roleType' => $role,
+            'isActive' => true, 'unitId' => $this->admin->unitId,
+            'directorateId' => $this->directorate->id,
+        ]);
+
+        $this->actingAs($makeUser('officer-exec', 'OFFICER'))->get('/executive')->assertForbidden();
+        $this->actingAs($makeUser('kadiv-exec', 'KADIV'))->get('/executive')->assertForbidden();
+        $this->actingAs($makeUser('bod-exec', 'BOD'))->get('/executive')->assertOk();
+    }
+
     public function test_authenticated_user_can_view_executive_summary(): void
     {
         DirektoratScorecard::create([
