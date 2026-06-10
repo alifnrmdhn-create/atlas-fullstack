@@ -11,6 +11,7 @@ use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -402,28 +403,45 @@ class ChannelController extends Controller
             );
         }
 
-        return $query->get()->map(function ($ch) use ($userId, $isAdmin) {
-            $membership = $ch->members->first();
-            $lastMsg = ChannelMessage::query()
-                ->where('channelId', $ch->id)
-                ->whereNull('deletedForEveryoneAt')
-                ->whereNull('parentMessageId')
-                ->orderBy('createdAt', 'desc')
-                ->first(['id', 'content', 'createdAt', 'userId']);
+        $channels = $query->get();
+        $channelIds = $channels->pluck('id')->all();
 
-            $unreadCount = 0;
-            if ($membership) {
-                $cutoff = $membership->lastViewedAt ?? $membership->joinedAt;
-                if ($cutoff) {
-                    $unreadCount = ChannelMessage::query()
-                        ->where('channelId', $ch->id)
-                        ->where('userId', '!=', $userId)
-                        ->where('createdAt', '>', $cutoff)
-                        ->whereNull('deletedForEveryoneAt')
-                        ->whereNull('parentMessageId')
-                        ->count();
-                }
-            }
+        // Batch anti-N+1 (audit 2026-06-10): sebelumnya lastMessage + unreadCount
+        // di-query PER CHANNEL di dalam map (2N query per loadOverview; semua user
+        // login pagi = beban DB terbesar). Kini 2 query agregat utk seluruh daftar.
+
+        // 1 query: pesan terakhir per channel via DISTINCT ON (PostgreSQL).
+        // Tetap lewat Eloquent supaya cast createdAt (Carbon) identik dgn sebelumnya.
+        $lastMsgs = $channelIds === [] ? collect() : ChannelMessage::query()
+            ->selectRaw('DISTINCT ON ("channelId") "id", "channelId", "content", "createdAt", "userId"')
+            ->whereIn('channelId', $channelIds)
+            ->whereNull('deletedForEveryoneAt')
+            ->whereNull('parentMessageId')
+            ->orderBy('channelId')
+            ->orderByDesc('createdAt')
+            ->get()
+            ->keyBy('channelId');
+
+        // 1 query: unread per channel. Cutoff per-membership (lastViewedAt ??
+        // joinedAt) ikut di JOIN — coalesce NULL > NULL = false, jadi membership
+        // tanpa cutoff otomatis 0 (sama dgn perilaku lama).
+        $unreadCounts = $channelIds === [] ? collect() : DB::table('ChannelMessage as m')
+            ->join('ChannelMember as cm', fn ($j) => $j
+                ->on('cm.channelId', '=', 'm.channelId')
+                ->where('cm.userId', '=', $userId))
+            ->whereIn('m.channelId', $channelIds)
+            ->where('m.userId', '!=', $userId)
+            ->whereNull('m.deletedForEveryoneAt')
+            ->whereNull('m.parentMessageId')
+            ->whereRaw('m."createdAt" > coalesce(cm."lastViewedAt", cm."joinedAt")')
+            ->groupBy('m.channelId')
+            ->selectRaw('m."channelId", count(*) as cnt')
+            ->pluck('cnt', 'channelId');
+
+        return $channels->map(function ($ch) use ($userId, $isAdmin, $lastMsgs, $unreadCounts) {
+            $membership = $ch->members->first();
+            $lastMsg = $lastMsgs->get($ch->id);
+            $unreadCount = $membership ? (int) ($unreadCounts->get($ch->id) ?? 0) : 0;
 
             return [
                 'id' => $ch->id,
