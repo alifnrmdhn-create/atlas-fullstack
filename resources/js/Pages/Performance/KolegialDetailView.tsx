@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Head, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
-import { Card, Pill } from '../../design-system'
-import { scoreTone, fillRatio, realisasiPercent, formatNumber, formatPeriod } from './_shared'
+import { Card, Pill, Gauge } from '../../design-system'
+import { scoreTone, realisasiPercent, formatNumber, formatPeriod } from './_shared'
 import { InsightPanel, type InsightPayload } from './InsightPanel'
 import { KpiScoreTable, type ScoreGroup } from './KpiScoreTable'
 import './Performance.css'
@@ -62,7 +62,6 @@ export default function KolegialDetailView() {
 
   const totalSkor = kpiGroups.reduce((sum, g) => sum + g.items.reduce((s, i) => s + i.skor, 0), 0)
   const totalTone = scoreTone(totalSkor)
-  const totalBar = fillRatio(totalSkor) * 100
   const totalKpi = kpiGroups.reduce((n, g) => n + g.items.length, 0)
   const periodeLabel = formatPeriod(periode)
 
@@ -121,31 +120,31 @@ export default function KolegialDetailView() {
             </div>
           </header>
 
-          {/* ─── Subject card ─────────────────────── */}
-          <Card padding="lg" className="perf__section perf-subject" data-tone={totalTone}>
-            <div className="perf-subject__row">
-              <div className="perf-subject__meta">
-                <span className="perf-subject__eyebrow">{direktur.jabatan}</span>
-                <div className="perf-subject__name">{direktur.nama}</div>
-                <div className="perf-subject__chips">
-                  <Pill variant="mono">{direktur.kode}</Pill>
-                  <Pill tone="neutral" variant="soft">{periodeLabel}</Pill>
-                  <Pill tone="neutral" variant="soft">{totalKpi} KPI items</Pill>
-                  {attentionCount > 0 && (
-                    <Pill tone="amber" variant="soft">{attentionCount} below target</Pill>
-                  )}
-                </div>
-              </div>
-              <div className="perf-subject__score">
-                <span className="perf-subject__score-value" data-tone={totalTone}>
-                  {formatNumber(totalSkor)}<span style={{ fontSize: 18, color: 'var(--ds-text-tertiary)', marginLeft: 4 }}>%</span>
-                </span>
-                <span className="perf-subject__score-label">Total score</span>
+          {/* ─── Subject card (instrumen: meta + gauge) ───────────── */}
+          <Card padding="lg" className="perf__section perf-subject perf-subject--gauge" data-tone={totalTone}>
+            <div className="perf-subject__meta">
+              <span className="perf-subject__eyebrow">{direktur.jabatan}</span>
+              <div className="perf-subject__name">{direktur.nama}</div>
+              <div className="perf-subject__chips">
+                <Pill variant="mono">{direktur.kode}</Pill>
+                <Pill tone="neutral" variant="soft">{periodeLabel}</Pill>
+                <Pill tone="neutral" variant="soft">{totalKpi} KPI items</Pill>
+                {attentionCount > 0 && (
+                  <Pill tone="amber" variant="soft">{attentionCount} below target</Pill>
+                )}
               </div>
             </div>
-            <div className="perf-subject__bar">
-              <div className="perf-subject__bar-fill" data-tone={totalTone} style={{ width: `${totalBar}%` }} />
-            </div>
+            <Gauge
+              value={Math.min(totalSkor, 110)}
+              max={110}
+              target={100}
+              tone={totalTone}
+              size={168}
+              thickness={15}
+              valueText={formatNumber(totalSkor, 1)}
+              unit="%"
+              label="Total score"
+            />
           </Card>
 
           {/* ─── Insight Utama (auto-derived) ───── */}

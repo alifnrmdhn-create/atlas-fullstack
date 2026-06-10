@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react'
-import { Card, Pill } from '../../design-system'
+import { Card, Pill, Gauge, Meter } from '../../design-system'
 import { scoreTone, fillRatio, formatNumber, formatPercent, formatPeriod, formatVal } from './_shared'
 import { KpiTrendChart, type KpiTrendPayload } from './KpiTrendChart'
 import './Performance.css'
@@ -35,6 +35,15 @@ type PageProps = {
   matrix: MatrixRow[]
   exceptions: ExceptionRow[]
   kpiTotals: { total: number; onTarget: number }
+}
+
+/**
+ * Intensitas tint heatmap dari deviasi terhadap 100% — biar matriks "hidup"
+ * walau semua hijau (110% jadi blok pekat, 100,5% nyaris bening, 97% amber
+ * pekat). Tanpa ini semua sel ter-tint rata = kembali terasa "standard".
+ */
+function cellIntensity(v: number): number {
+  return Math.min(Math.max(Math.abs(v - 100) / 12, 0.1), 0.85)
 }
 
 // Urutan + label pendek kolom perspektif BSC di matriks.
@@ -174,38 +183,52 @@ export default function ScorecardView() {
               perspektif mana); hero = verdict ber-gradient ala Home. */}
           {soloDir ? (
             <>
-            <Card padding="none" className="perf__section perf-hero" data-tone={scoreTone(soloDir.nilai)}>
-              <div className="perf-hero__main">
+            <Card padding="none" className="perf__section perf-hero perf-hero--rich" data-tone={scoreTone(soloDir.nilai)}>
+              {/* Zona 1 — verdict: angka gradient + delta + per-divisi mini-bar
+                  (mirror persis kartu "KPI Achievement" di Home). */}
+              <div className="perf-hero__verdict">
                 <span className="perf-hero__eyebrow">Directorate scorecard · {periodeLabel}</span>
                 <h2 className="perf-hero__name">{soloDir.nama}</h2>
-                <div className="perf-hero__stats">
-                  <div className="perf-hero__stat" data-tone={kpiTotals.onTarget === kpiTotals.total ? 'green' : 'green'}>
-                    <span className="perf-hero__stat-val" data-tone="green">{kpiTotals.onTarget}/{kpiTotals.total}</span>
-                    <span className="perf-hero__stat-lbl">KPIs on target</span>
-                  </div>
-                  {exceptions.length > 0 && (
-                    <div className="perf-hero__stat" data-tone="amber">
-                      <span className="perf-hero__stat-val" data-tone="amber">{exceptions.length}</span>
-                      <span className="perf-hero__stat-lbl">KPI below 100%</span>
-                    </div>
-                  )}
-                  <div className="perf-hero__stat">
-                    <span className="perf-hero__stat-val">{soloDir.divisi.length}</span>
-                    <span className="perf-hero__stat-lbl">divisions · {soloBelow100 > 0 ? `${soloBelow100} below 100%` : 'all ≥100%'}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="perf-hero__score">
-                <span className="perf-hero__num" data-tone={scoreTone(soloDir.nilai)}>
-                  {formatNumber(soloDir.nilai, 1)}<span className="perf-hero__num-unit">%</span>
-                </span>
-                {soloDelta ? (
-                  <span className="perf__header-delta" data-tone={soloDelta.value >= 0 ? 'green' : 'red'}>
-                    {soloDelta.value >= 0 ? '▲' : '▼'} {formatPercent(Math.abs(soloDelta.value), 1)} vs {soloDelta.vs}
+                <div className="perf-hero__numrow">
+                  <span className="perf-hero__num" data-tone={scoreTone(soloDir.nilai)}>
+                    {formatNumber(soloDir.nilai, 1)}<span className="perf-hero__num-unit">%</span>
                   </span>
-                ) : (
-                  <span className="perf-hero__sub">Directorate score</span>
-                )}
+                  {soloDelta && (
+                    <span className="perf__header-delta" data-tone={soloDelta.value >= 0 ? 'green' : 'red'}>
+                      {soloDelta.value >= 0 ? '▲' : '▼'} {formatPercent(Math.abs(soloDelta.value), 1)} vs {soloDelta.vs}
+                    </span>
+                  )}
+                </div>
+                <span className="perf-hero__sub">vs target 100% · {periodeLabel}</span>
+              </div>
+
+              {/* Zona 2 — mini-bar per divisi (Meter, target tick 100). */}
+              <div className="perf-hero__divisions">
+                {[...soloDir.divisi].sort((a, b) => b.nilai - a.nilai).map(d => (
+                  <Link
+                    key={d.kode}
+                    href={`/performance/divisi/${d.kode.toLowerCase()}`}
+                    className="perf-hero__divrow"
+                  >
+                    <span className="perf-hero__divcode">{d.kode.replace('-HLD', '')}</span>
+                    <Meter value={Math.min(d.nilai, 110)} max={110} target={100} tone={scoreTone(d.nilai)} height={7} className="perf-hero__divbar" />
+                    <span className="perf-hero__divval" data-tone={scoreTone(d.nilai)}>{formatNumber(d.nilai, 1)}</span>
+                  </Link>
+                ))}
+              </div>
+
+              {/* Zona 3 — gauge speedometer cakupan KPI on-target. */}
+              <div className="perf-hero__gauge">
+                <Gauge
+                  value={kpiTotals.onTarget}
+                  max={kpiTotals.total || 1}
+                  tone={kpiTotals.onTarget === kpiTotals.total ? 'green' : 'amber'}
+                  size={148}
+                  thickness={14}
+                  valueText={`${kpiTotals.onTarget}`}
+                  unit={`/${kpiTotals.total}`}
+                  label="KPIs on target"
+                />
               </div>
             </Card>
 
@@ -451,13 +474,19 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
                 key={c.key}
                 className="perf-matrix__cell"
                 data-tone={v == null ? undefined : scoreTone(v)}
+                style={v == null ? undefined : ({ ['--i' as never]: cellIntensity(v) })}
                 role="cell"
               >
                 {v == null ? '—' : formatPercent(v, 1)}
               </span>
             )
           })}
-          <span className="perf-matrix__cell perf-matrix__cell--total" data-tone={scoreTone(r.nilai)} role="cell">
+          <span
+            className="perf-matrix__cell perf-matrix__cell--total"
+            data-tone={scoreTone(r.nilai)}
+            style={{ ['--i' as never]: cellIntensity(r.nilai) }}
+            role="cell"
+          >
             {formatPercent(r.nilai, 1)}
           </span>
         </Link>

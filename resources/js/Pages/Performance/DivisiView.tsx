@@ -1,8 +1,8 @@
 import { Head, Link, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
-import { Card, Pill } from '../../design-system'
+import { Card, Pill, Gauge } from '../../design-system'
 import { useState } from 'react'
-import { scoreTone, fillRatio, realisasiPercent, formatNumber, formatPercent, formatPeriod } from './_shared'
+import { scoreTone, realisasiPercent, formatNumber, formatPercent, formatPeriod } from './_shared'
 import { KpiScoreTable, DeviationBar, type ScoreGroup } from './KpiScoreTable'
 import { InsightPanel, type InsightPayload } from './InsightPanel'
 import './Performance.css'
@@ -270,7 +270,6 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
   const [lowestFirst, setLowestFirst] = useState(false)
 
   const tone = scoreTone(divisi.nilai)
-  const bar = fillRatio(divisi.nilai) * 100
   const periodeLabel = formatPeriod(periode)
 
   const itemPct = (i: KpiItem) => realisasiPercent(i.sasaran, i.realisasi, i.polaritas)
@@ -326,41 +325,41 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
             </div>
           </header>
 
-          {/* ─── Subject card ─────────────────────── */}
-          <Card padding="lg" className="perf__section perf-subject" data-tone={tone}>
-            <div className="perf-subject__row">
-              <div className="perf-subject__meta">
-                <span className="perf-subject__eyebrow">Division</span>
-                <div className="perf-subject__name">{divisi.nama}</div>
-                <div className="perf-subject__jabatan">
-                  Part of{' '}
-                  <Link
-                    href={`/performance/kolegial/${direktorat.kode.toLowerCase()}`}
-                    style={{ color: 'inherit', textDecoration: 'underline' }}
-                  >
-                    {direktorat.nama}
-                  </Link>
-                </div>
-                <div className="perf-subject__chips">
-                  <Pill variant="mono">{divisi.kode}</Pill>
-                  <Pill tone="neutral" variant="soft">{kpiItems.length} KPI items</Pill>
-                  <Pill tone="neutral" variant="soft">Rank #{divisi.rank} of {divisi.totalDivisi} divisions</Pill>
-                  <Pill tone="neutral" variant="soft">Directorate {formatPercent(direktorat.nilai)}</Pill>
-                  {attentionCount > 0 && (
-                    <Pill tone="amber" variant="soft">{attentionCount} below target</Pill>
-                  )}
-                </div>
+          {/* ─── Subject card (instrumen: meta + gauge) ───────────── */}
+          <Card padding="lg" className="perf__section perf-subject perf-subject--gauge" data-tone={tone}>
+            <div className="perf-subject__meta">
+              <span className="perf-subject__eyebrow">Division</span>
+              <div className="perf-subject__name">{divisi.nama}</div>
+              <div className="perf-subject__jabatan">
+                Part of{' '}
+                <Link
+                  href={`/performance/kolegial/${direktorat.kode.toLowerCase()}`}
+                  style={{ color: 'inherit', textDecoration: 'underline' }}
+                >
+                  {direktorat.nama}
+                </Link>
               </div>
-              <div className="perf-subject__score">
-                <span className="perf-subject__score-value" data-tone={tone}>
-                  {formatNumber(divisi.nilai)}<span style={{ fontSize: 18, color: 'var(--ds-text-tertiary)', marginLeft: 4 }}>%</span>
-                </span>
-                <span className="perf-subject__score-label">Score {periodeLabel}</span>
+              <div className="perf-subject__chips">
+                <Pill variant="mono">{divisi.kode}</Pill>
+                <Pill tone="neutral" variant="soft">{kpiItems.length} KPI items</Pill>
+                <Pill tone="neutral" variant="soft">Rank #{divisi.rank} of {divisi.totalDivisi} divisions</Pill>
+                <Pill tone="neutral" variant="soft">Directorate {formatPercent(direktorat.nilai)}</Pill>
+                {attentionCount > 0 && (
+                  <Pill tone="amber" variant="soft">{attentionCount} below target</Pill>
+                )}
               </div>
             </div>
-            <div className="perf-subject__bar">
-              <div className="perf-subject__bar-fill" data-tone={tone} style={{ width: `${bar}%` }} />
-            </div>
+            <Gauge
+              value={Math.min(divisi.nilai, 110)}
+              max={110}
+              target={100}
+              tone={tone}
+              size={168}
+              thickness={15}
+              valueText={formatNumber(divisi.nilai, 1)}
+              unit="%"
+              label={`Score · ${periodeLabel}`}
+            />
           </Card>
 
           {/* ─── Insight Utama (auto-derived) ───── */}

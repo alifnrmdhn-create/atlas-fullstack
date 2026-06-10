@@ -2187,3 +2187,125 @@
 }
 .perf-compare__hero-score-val[data-tone="amber"] { background-image: var(--pfc-grad-amber); }
 .perf-compare__hero-score-val[data-tone="red"]   { background-image: var(--pfc-grad-red); }
+
+/* ═══ RONDE 4 — match Home cockpit sungguhan (gauge + mini-bar + heatmap) ═══
+   Referensi: HomeView.css kartu "KPI Achievement" (angka+mini-bar divisi) +
+   "Execution Health" (gauge) + "Program Summary" (heatmap blok). Sebelumnya
+   gradient/shadow saja → masih "standard" karena tak ada micro-viz nyata. */
+
+/* Top accent gradient bar — signature kartu Home (feedback_home_wow_craft_bar). */
+.perf-hero,
+.perf-cockpit > section > .perf-matrix-card,
+.perf-cockpit__aside > .ds-card,
+.perf-subject {
+  position: relative;
+  overflow: hidden;
+}
+.perf-hero::before,
+.perf-subject::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 2;
+  background: linear-gradient(90deg, #34D399, #059669);
+}
+.perf-hero[data-tone="amber"]::before,
+.perf-subject[data-tone="amber"]::before { background: linear-gradient(90deg, #FBBF24, #D97706); }
+.perf-hero[data-tone="red"]::before,
+.perf-subject[data-tone="red"]::before { background: linear-gradient(90deg, #FB7185, #DC2626); }
+
+/* ── Hero rich: verdict | divisions | gauge ──────────────────── */
+
+.perf-hero--rich {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.2fr) minmax(220px, 1fr) auto;
+  align-items: center;
+  gap: clamp(20px, 3vw, 48px);
+  padding: 22px 28px;
+}
+
+.perf-hero__verdict { display: flex; flex-direction: column; gap: 3px; min-width: 0; position: relative; z-index: 1; }
+
+.perf-hero__numrow { display: flex; align-items: baseline; gap: 12px; margin-top: 4px; }
+.perf-hero__num {
+  font-size: clamp(2.8rem, 4.2vw, 4rem);
+  font-weight: var(--ds-weight-bold);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  background-image: var(--pfc-grad-green);
+}
+.perf-hero__num[data-tone="amber"] { background-image: var(--pfc-grad-amber); }
+.perf-hero__num[data-tone="red"]   { background-image: var(--pfc-grad-red); }
+.perf-hero__num-unit { font-size: 0.4em; -webkit-text-fill-color: var(--ds-text-tertiary); font-weight: var(--ds-weight-semibold); }
+
+/* Divisi mini-bars (mirror kartu KPI Achievement Home). */
+.perf-hero__divisions {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  position: relative; z-index: 1;
+  padding-left: clamp(0px, 2vw, 28px);
+  border-left: 1px solid var(--pfc-card-border);
+}
+.perf-hero__divrow {
+  display: grid;
+  grid-template-columns: 52px 1fr 52px;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 2px 4px;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+@media (hover: hover) { .perf-hero__divrow:hover { background: var(--ds-surface-hover); } }
+.perf-hero__divcode { font-size: 11px; font-weight: var(--ds-weight-semibold); color: var(--ds-text-secondary); letter-spacing: -0.01em; }
+.perf-hero__divbar { width: 100%; }
+.perf-hero__divval { font-size: var(--ds-text-13); font-weight: var(--ds-weight-semibold); font-variant-numeric: tabular-nums; text-align: right; }
+.perf-hero__divval[data-tone="green"] { color: var(--tone-green); }
+.perf-hero__divval[data-tone="amber"] { color: var(--tone-amber); }
+.perf-hero__divval[data-tone="red"]   { color: var(--tone-red); }
+
+.perf-hero__gauge { position: relative; z-index: 1; justify-self: end; }
+
+@media (max-width: 1024px) { /* bp-allow: --bp-md */
+  .perf-hero--rich { grid-template-columns: 1fr 1fr; }
+  .perf-hero__gauge { grid-column: 1 / -1; justify-self: center; }
+}
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .perf-hero--rich { grid-template-columns: 1fr; }
+  .perf-hero__divisions { border-left: none; padding-left: 0; border-top: 1px solid var(--pfc-card-border); padding-top: 12px; }
+}
+
+/* ── Matriks → heatmap blok intensitas (mirror Program Summary Home) ── */
+
+.perf-matrix__cell[data-tone="green"] { background: color-mix(in srgb, var(--tone-green) calc(var(--i, 0.15) * 100%), var(--ds-surface-card)); color: var(--ds-text-primary); }
+.perf-matrix__cell[data-tone="amber"] { background: color-mix(in srgb, var(--tone-amber) calc(var(--i, 0.2) * 100%), var(--ds-surface-card)); color: var(--ds-text-primary); }
+.perf-matrix__cell[data-tone="red"]   { background: color-mix(in srgb, var(--tone-red) calc(var(--i, 0.2) * 100%), var(--ds-surface-card)); color: var(--ds-text-primary); }
+.perf-matrix__row:not(.perf-matrix__row--head) { border-bottom-color: transparent; }
+.perf-matrix__cell { border-left: 2px solid var(--ds-surface-card); }
+.perf-matrix__row { gap: 0; }
+
+/* Aside cards: top accent halus netral. */
+.perf-cockpit__aside > .ds-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tone-green) 60%, transparent), transparent);
+}
+
+/* Subject card sebagai instrumen — meta kiri + gauge kanan (pola Home). */
+.perf-subject--gauge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+}
+.perf-subject--gauge .perf-subject__meta { flex: 1; min-width: 0; }
+.perf-subject--gauge .ds-gauge { flex-shrink: 0; }
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .perf-subject--gauge { flex-direction: column; align-items: flex-start; }
+  .perf-subject--gauge .ds-gauge { align-self: center; }
+}
