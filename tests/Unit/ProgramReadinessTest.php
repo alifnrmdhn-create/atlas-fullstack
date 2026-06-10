@@ -165,12 +165,20 @@ class ProgramReadinessTest extends TestCase
         $this->assertTrue($r['hasKpi']);
     }
 
-    public function test_readiness_appears_in_toArray_for_api_response(): void
+    /**
+     * Kontrak serialisasi BERUBAH (audit 2026-06-10): readiness TIDAK lagi di
+     * $appends global — accessor-nya fallback ke 4 query exists() per program,
+     * sehingga list 97 program = 388 query terukur. Sekarang: toArray() polos
+     * TANPA readiness (jaga N+1 tidak balik), dan append('readiness') eksplisit
+     * (pola ProgramController::show) tetap menghasilkan struktur lengkap.
+     */
+    public function test_readiness_not_in_bare_toArray_but_present_when_appended(): void
     {
         $program = $this->newProgram();
-        $payload = $program->toArray();
 
-        $this->assertArrayHasKey('readiness', $payload);
+        $this->assertArrayNotHasKey('readiness', $program->toArray());
+
+        $payload = $program->fresh()->append('readiness')->toArray();
         $this->assertIsArray($payload['readiness']);
         $this->assertArrayHasKey('hasWorkstream', $payload['readiness']);
         $this->assertArrayHasKey('isReady', $payload['readiness']);

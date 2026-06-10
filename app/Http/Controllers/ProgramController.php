@@ -97,6 +97,10 @@ class ProgramController extends Controller
         // Inject computed approval-flow fields. Dilakukan controller-level
         // (bukan model accessor) supaya tidak menambah query di endpoint list
         // yang serialize banyak program sekaligus — di sini cost-nya tertanggung.
+        // `readiness` ikut pola yang sama: hanya detail yang memakainya (checklist
+        // aktivasi PDV), dan findOrFail sudah eager-load relasi yang dibutuhkan
+        // sehingga append di sini gratis (nol query tambahan).
+        $program->append('readiness');
         $payload = $program->toArray();
         $payload['pendingReviewer'] = $this->resolvePendingReviewer($program);
         $payload['pendingSinceAt'] = $this->resolvePendingSinceAt($program);

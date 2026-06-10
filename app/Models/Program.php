@@ -19,7 +19,12 @@ class Program extends Model
     const UPDATED_AT = 'updatedAt';
 
     protected $guarded = ['id'];
-    protected $appends = ['picPersonIds', 'workstreamCount', 'readiness'];
+    // `readiness` SENGAJA tidak di $appends (audit 2026-06-10): accessor-nya
+    // fallback ke 4 query exists() per program saat relasi belum loaded →
+    // serialisasi list 97 program = 388 query (terukur). Satu-satunya konsumen
+    // FE adalah detail (ProgramDetailView), jadi di-append eksplisit di
+    // ProgramController::show — di sana findOrFail sudah eager-load semuanya.
+    protected $appends = ['picPersonIds', 'workstreamCount'];
     protected $hidden  = ['coPics'];
 
     /** Kolom pemilik yang dipakai untuk user-scope filter. */

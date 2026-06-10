@@ -525,5 +525,12 @@ class WorkflowMutationSmokeTest extends TestCase
         // picPersonIds dari entity_pics (accessor)
         $this->assertEquals([$this->teammate->id], $detail['picPersonIds']);
         $this->assertEquals([$this->admin->id], $ws['picPersonIds']);
+
+        // readiness WAJIB ada di payload DETAIL (di-append eksplisit di
+        // ProgramController::show sejak dikeluarkan dari $appends global —
+        // fix N+1 388-query di list, audit 2026-06-10). PDV memakai ini
+        // untuk checklist aktivasi.
+        $this->assertArrayHasKey('readiness', $detail);
+        $this->assertArrayHasKey('isReady', $detail['readiness']);
     }
 }
