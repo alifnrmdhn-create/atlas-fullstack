@@ -8,7 +8,7 @@ import {
 } from 'react'
 import type { Dispatch, FormEvent, ReactNode, SetStateAction } from 'react'
 import { router } from '@inertiajs/react'
-import { api, sessionStorage } from '../lib/api'
+import { api, AUTH_EXPIRED_EVENT } from '../lib/api'
 import { useAuth as useInertiaAuth } from '../hooks/useAuth'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useStableCallback } from '../hooks/useStableCallback'
@@ -472,7 +472,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }
 
   const signOutToEntry = (message?: string) => {
-    sessionStorage.clear()
     resetWorkspaceState()
     setCurrentUser(null)
     setAuthStatus('signed_out')
@@ -923,8 +922,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const detail = event instanceof CustomEvent ? (event.detail as { message?: string } | undefined) : undefined
       signOutToEntry(detail?.message ?? 'Sesi berakhir. Silakan masuk kembali.')
     }
-    window.addEventListener(sessionStorage.eventName, handleExpired)
-    return () => window.removeEventListener(sessionStorage.eventName, handleExpired)
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleExpired)
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handleExpired)
   }, [])
 
   useEffect(() => {

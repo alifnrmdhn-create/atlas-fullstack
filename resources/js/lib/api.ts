@@ -109,7 +109,7 @@ async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
             const onLoginPage = typeof window !== 'undefined'
                 && window.location.pathname.startsWith('/login')
             if (!onLoginPage) {
-                window.dispatchEvent(new CustomEvent('atlas:auth-expired', {
+                window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT, {
                     detail: { message, status: response.status }
                 }))
             }
@@ -141,14 +141,11 @@ export const api = {
     }),
 }
 
-// Kompatibilitas dengan kode lama yang masih import sessionStorage
-// Di Laravel session auth, frontend tidak perlu manage token — hanya stub agar kompat.
-export const sessionStorage = {
-    eventName: 'atlas:auth-expired',
-    getToken: () => null,
-    setToken: (_: string) => { /* noop — Laravel handle cookie sendiri */ },
-    clear: () => { /* noop */ },
-}
+// Nama event sesi-berakhir — satu sumber untuk dispatcher (di request()) dan
+// listener (workspace provider). Dulu dibungkus stub bernama `sessionStorage`
+// (sisa era Express token-auth) yang membayangi window.sessionStorage di
+// importer-nya — foot-gun yang dihapus audit 2026-06-11.
+export const AUTH_EXPIRED_EVENT = 'atlas:auth-expired'
 
 // Field labels untuk Zod-style error extraction (kompat dengan kode lama)
 const FIELD_LABELS: Record<string, string> = {

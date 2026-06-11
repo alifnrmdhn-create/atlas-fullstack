@@ -5,7 +5,7 @@ import type { ComponentType, ErrorInfo, ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers'
 import { RealtimeProvider } from './contexts/RealtimeProvider'
-import { WorkspaceProvider } from './context/workspace'
+import { WorkspaceProvider } from './contexts/workspace'
 import { AppShell } from './layouts/AppShell'
 
 class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; stack: string }> {

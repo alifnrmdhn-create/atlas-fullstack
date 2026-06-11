@@ -75,7 +75,10 @@ try {
   netLog.length = 0
   await page.send('Runtime.evaluate', { expression: `document.querySelector('a[href="/execution"]').click()` })
   await waitFor(page, () => !!document.querySelector('.workboard-v2, .workboard-workspace'), 15000, 'workboard shell')
-  await sleep(2500)
+  // Tunggu KARTU render (bukan sleep tetap): /tasks bisa >2.5s saat server
+  // sibuk — sleep tetap membuat assertion kartu & freshness flaky.
+  await waitFor(page, () => document.querySelectorAll('[class*="work-card"]').length > 0, 30000, 'workboard cards')
+  await sleep(800)
   const wbReqs = [...netLog]
   await shot(page, join(outDir, 'sweep-workboard.png'))
   expectHit(wbReqs, 'Workboard', '/tasks')

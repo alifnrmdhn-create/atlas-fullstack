@@ -43,11 +43,6 @@ class WorkspaceController extends Controller
         private ScopeResolver $scopeResolver,
     ) {}
 
-    public function page(string $component): Response
-    {
-        return Inertia::render($component);
-    }
-
     public function workspaceOverview(Request $request): JsonResponse
     {
         $orgScope = OrgScope::forUser($request->user());
