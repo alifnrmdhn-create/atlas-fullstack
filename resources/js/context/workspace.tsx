@@ -399,6 +399,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // Lebih sempit dari overviewStatus.loading — feed pesan tidak perlu menunggu
   // 12 request overview lain selesai, cukup `/channels` saja (penyebab blank ~5s).
   const [channelsLoaded, setChannelsLoaded] = useState(false)
+  const sliceLoadedAtRef = useRef<Partial<Record<string, number>>>({})
+  const sliceInflightRef = useRef<Partial<Record<string, Promise<boolean>>>>({})
   const [boardStatus, setBoardStatus] = useState({ saving: false, message: null as string | null })
   const [taskActionStatus, setTaskActionStatus] = useState({ saving: false, message: null as string | null })
 
@@ -464,6 +466,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setSelectedProgramId(null); setSelectedTaskId(null); setSelectedWorkstreamId(null)
     setChannelMembers([]); setMessages([]); setThreadParent(null); setThreadReplies([])
     setProgramDetail(null); setWorkstreamDetail(null); setTaskDetail(null)
+    sliceLoadedAtRef.current = {}; sliceInflightRef.current = {}
     setOverviewStatus({ loading: false, refreshing: false, message: null })
   }
 
@@ -509,64 +512,153 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  // ── Data loading ─────────────────────────────────────────
+  // ── Data loading (route-scoped — audit Task 2.3, 2026-06-11) ──────────────
+  // Dulu: 13 request paralel route-agnostic per mount + tiap 5 menit — user di
+  // /channels ikut menarik /tasks (endpoint terberat, root cause historis
+  // thread-contention FrankenPHP). Sekarang kebutuhan slice dideklarasikan per
+  // route: mount/refresh hanya mengambil slice milik route aktif + set global
+  // untuk shell, dan perpindahan route menarik slice yang belum ada atau
+  // kedaluwarsa (>5 menit) via listener router.on('navigate').
+  type SliceKey =
+    | 'dashboard' | 'channels' | 'programs' | 'workGroups' | 'kpis' | 'blockers'
+    | 'presence' | 'notifications' | 'savedSearches' | 'systemStatus'
+    | 'myWork' | 'apms' | 'programSummary'
+
+  const SLICE_STALE_MS = 5 * 60 * 1000
+
+  // Selalu dimuat — kebutuhan shell global (AppShell): badge unread Channels
+  // (channels), bell notifikasi (notifications), badge sidebar Programs /
+  // Workboard (programs.length / myWork.tasks.length).
+  const GLOBAL_SLICES: SliceKey[] = ['channels', 'programs', 'notifications', 'myWork']
+
+  // Kebutuhan per route — diturunkan dari peta konsumen useWorkspace() per
+  // halaman (diverifikasi destructure-level, 2026-06-11). Route yang tidak
+  // terdaftar = global saja (halaman tsb fetch datanya sendiri, mis.
+  // Performance/Assignments/Schedule/admin).
+  // NB URL ≠ nama file (legacy Indonesia): Workboard=/execution, Inbox=/fokus,
+  // Assignment=/penugasan — lihat import map AppShell. Jangan tebak dari nama view.
+  const ROUTE_SLICES: Array<{ test: (p: string) => boolean; slices: SliceKey[] }> = [
+    { test: (p) => p === '/' || p === '/home', slices: ['programSummary'] },
+    { test: (p) => p === '/fokus', slices: ['programSummary'] },
+    { test: (p) => p === '/programs', slices: ['dashboard', 'apms', 'programSummary'] },
+    { test: (p) => p.startsWith('/programs/'), slices: ['apms'] },
+    { test: (p) => p === '/execution' || p.startsWith('/execution/'), slices: ['workGroups', 'blockers'] },
+    { test: (p) => p === '/channels' || p.startsWith('/channels/'), slices: ['workGroups', 'presence'] },
+    { test: (p) => p === '/goals', slices: ['dashboard', 'kpis'] },
+    { test: (p) => p === '/reports', slices: ['dashboard', 'apms'] },
+    { test: (p) => p === '/roadmap', slices: ['dashboard'] },
+    { test: (p) => p === '/presence' || p === '/activity' || p === '/jadwal', slices: ['presence'] },
+    { test: (p) => p === '/search', slices: ['savedSearches'] },
+    { test: (p) => p === '/settings', slices: ['systemStatus'] },
+  ]
+
+  const neededSlicesFor = (path: string): SliceKey[] => {
+    const keys = new Set<SliceKey>(GLOBAL_SLICES)
+    for (const entry of ROUTE_SLICES) {
+      if (entry.test(path)) entry.slices.forEach((slice) => keys.add(slice))
+    }
+    return [...keys]
+  }
+
+  // Satu fetcher per slice. Error ditelan per-request (mirror allSettled lama)
+  // dan mengembalikan boolean sukses; hasil di-apply BEGITU resolve (tanpa
+  // barrier) sehingga halaman unblock saat datanya sendiri tiba. Request
+  // konkuren untuk slice yang sama di-dedupe via inflight ref.
+  const fetchSlice = (key: SliceKey): Promise<boolean> => {
+    const inflight = sliceInflightRef.current[key]
+    if (inflight) return inflight
+
+    const track = <T,>(p: Promise<T>, apply: (v: T) => void): Promise<boolean> =>
+      p.then((v) => { apply(v); return true }).catch(() => false)
+
+    let job: Promise<boolean>
+    switch (key) {
+      case 'dashboard':
+        job = track(api.get<DashboardApiPayload>('/workspace/overview'), (v) => setDashboard(normalizeDashboardPayload(v)))
+        break
+      case 'channels':
+        job = track(api.get<CollectionResponse<ChannelSummary>>('/channels'), (v) => {
+          const loadedChannels = v.data
+          // Override unreadCount to 0 for the currently open channel — user is actively watching it
+          const patched = loadedChannels.map((c) =>
+            c.id === selectedChannelId ? { ...c, unreadCount: 0 } : c
+          )
+          setChannels(patched)
+          setSelectedChannelId((cur) => {
+            // Validate saved/current channel still exists in the list
+            if (cur != null && loadedChannels.some((c) => c.id === cur)) return cur
+            return loadedChannels[0]?.id ?? null
+          })
+          // Unblock fetch pesan channel SEKARANG — jangan tunggu slice lain.
+          setChannelsLoaded(true)
+        })
+        break
+      case 'programs':
+        job = track(api.get<CollectionResponse<Program>>('/programs'), (v) => setPrograms(v.data))
+        break
+      case 'workGroups':
+        // /tasks = endpoint terberat (ratusan WorkItem × 3 relasi eager-load).
+        // Timeout dinaikkan + status terpisah supaya Workboard bisa membedakan
+        // gagal vs kosong (bug "board kosong diam-diam", audit 2026-06-04).
+        setWorkGroupsStatus((cur) => ({ ...cur, loading: true, failed: false }))
+        job = api.get<TasksResponse>('/tasks', { timeoutMs: 30_000 })
+          .then((v) => { setWorkGroups(v.groups); setWorkGroupsStatus({ loading: false, failed: false }); return true })
+          .catch(() => { setWorkGroupsStatus({ loading: false, failed: true }); return false })
+        break
+      case 'kpis':
+        job = track(api.get<CollectionResponse<Kpi>>('/kpis'), (v) => setKpis(v.data))
+        break
+      case 'blockers':
+        job = track(api.get<CollectionResponse<Blocker>>('/blockers'), (v) => setBlockers(v.data))
+        break
+      case 'presence':
+        job = track(api.get<{ users: PresenceUser[] }>('/users/presence'), (v) => setPresence(v.users))
+        break
+      case 'notifications':
+        job = track(api.get<NotificationsResponse>('/notifications?read=all'), (v) => setNotifications(v.notifications))
+        break
+      case 'savedSearches':
+        job = track(api.get<{ data: SavedSearch[] }>('/search/saved'), (v) => setSavedSearches(v.data))
+        break
+      case 'systemStatus':
+        job = track(api.get<SystemStatus>('/system/status'), (v) => setSystemStatus(v))
+        break
+      case 'myWork':
+        job = track(api.get<{ data: MyWorkPayload }>('/my-work'), (v) => setMyWork(v.data))
+        break
+      case 'apms':
+        job = track(api.get<ApmsKpiResponse>('/apms/kpi'), (v) => {
+          setApmsKpis(v.data)
+          setApmsConnected(v.meta.connected)
+          setApmsLinkedPrograms(v.linkedPrograms ?? {})
+          setApmsLastFetchedAt(new Date().toISOString())
+        })
+        break
+      case 'programSummary':
+        job = track(api.get<ProgramSummaryPayload>('/organization/program-summary'), (v) => setProgramSummary(v))
+        break
+    }
+
+    const done = job.then((ok) => {
+      if (ok) sliceLoadedAtRef.current[key] = Date.now()
+      sliceInflightRef.current[key] = undefined
+      return ok
+    })
+    sliceInflightRef.current[key] = done
+    return done
+  }
+
   const loadOverview = useStableCallback(async (mode: 'initial' | 'refresh' = 'refresh') => {
     setOverviewStatus({ loading: mode === 'initial', refreshing: mode === 'refresh', message: null })
 
     try {
-      // Terapkan tiap respons begitu ia resolve (TANPA barrier). Halaman unblock
-      // segera setelah DATA-nya sendiri tiba — Home tidak lagi menunggu request
-      // paling lambat di batch (mis. /channels) selesai. `track` menelan error per
-      // request (mirror perilaku allSettled lama) dan mengembalikan boolean sukses.
-      const track = <T,>(p: Promise<T>, apply: (v: T) => void): Promise<boolean> =>
-        p.then((v) => { apply(v); return true }).catch(() => false)
+      const keys = neededSlicesFor(window.location.pathname)
+      const oks = await Promise.all(keys.map((k) => fetchSlice(k)))
 
-      const dashP = track(api.get<DashboardApiPayload>('/workspace/overview'), (v) => setDashboard(normalizeDashboardPayload(v)))
-      const chP = track(api.get<CollectionResponse<ChannelSummary>>('/channels'), (v) => {
-        const loadedChannels = v.data
-        // Override unreadCount to 0 for the currently open channel — user is actively watching it
-        const patched = loadedChannels.map((c) =>
-          c.id === selectedChannelId ? { ...c, unreadCount: 0 } : c
-        )
-        setChannels(patched)
-        setSelectedChannelId((cur) => {
-          // Validate saved/current channel still exists in the list
-          if (cur != null && loadedChannels.some((c) => c.id === cur)) return cur
-          // Fall back to first channel
-          return loadedChannels[0]?.id ?? null
-        })
-        // Unblock the channel-message fetch SEKARANG — jangan tunggu 12 request lain.
-        setChannelsLoaded(true)
-      })
-      const progP = track(api.get<CollectionResponse<Program>>('/programs'), (v) => setPrograms(v.data))
-      // /tasks = endpoint terberat (ratusan WorkItem × 3 relasi eager-load).
-      // Timeout default 15s sering kalah saat 13 request overview ini berebut
-      // worker FrankenPHP di prod → di-abort → board kosong TANPA error (karena
-      // `track` menelan kegagalannya). Naikkan timeout + lacak status terpisah.
-      setWorkGroupsStatus((s) => ({ ...s, loading: true, failed: false }))
-      const wiP = api.get<TasksResponse>('/tasks', { timeoutMs: 30_000 })
-        .then((v) => { setWorkGroups(v.groups); setWorkGroupsStatus({ loading: false, failed: false }); return true })
-        .catch(() => { setWorkGroupsStatus({ loading: false, failed: true }); return false })
-      const kpiP = track(api.get<CollectionResponse<Kpi>>('/kpis'), (v) => setKpis(v.data))
-      const blkP = track(api.get<CollectionResponse<Blocker>>('/blockers'), (v) => setBlockers(v.data))
-      const presP = track(api.get<{ users: PresenceUser[] }>('/users/presence'), (v) => setPresence(v.users))
-      const notifP = track(api.get<NotificationsResponse>('/notifications?read=all'), (v) => setNotifications(v.notifications))
-      const ssP = track(api.get<{ data: SavedSearch[] }>('/search/saved'), (v) => setSavedSearches(v.data))
-      const sysP = track(api.get<SystemStatus>('/system/status'), (v) => setSystemStatus(v))
-      const mwP = track(api.get<{ data: MyWorkPayload }>('/my-work'), (v) => setMyWork(v.data))
-      const apmsP = track(api.get<ApmsKpiResponse>('/apms/kpi'), (v) => {
-        setApmsKpis(v.data)
-        setApmsConnected(v.meta.connected)
-        setApmsLinkedPrograms(v.linkedPrograms ?? {})
-        setApmsLastFetchedAt(new Date().toISOString())
-      })
-      const psP = track(api.get<ProgramSummaryPayload>('/organization/program-summary'), (v) => setProgramSummary(v))
-
-      const oks = await Promise.all([dashP, chP, progP, wiP, kpiP, blkP, presP, notifP, ssP, sysP, mwP, apmsP, psP])
-      const [dashOk, , progOk] = oks
-      const psOk = oks[12]
-
-      const hasCoreData = dashOk || psOk || progOk
+      // "Core" = bukti workspace hidup. programs selalu ada di set global;
+      // dashboard/programSummary ikut dihitung bila route memuatnya.
+      const hasCoreData = keys.some((k, i) =>
+        oks[i] && (k === 'programs' || k === 'dashboard' || k === 'programSummary'))
       const failedCount = oks.filter((ok) => !ok).length
       setOverviewStatus({
         loading: false,
@@ -580,9 +672,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } finally {
       setOverviewStatus((cur) => ({ ...cur, loading: false, refreshing: false }))
       // Jaring pengaman: walau `/channels` gagal, jangan biarkan gate channel
-      // ter-blokir permanen (mirror perilaku lama yang bersandar overview.loading).
+      // ter-blokir permanen (channels ∈ GLOBAL_SLICES, selalu ikut di-fetch).
       setChannelsLoaded(true)
     }
+  })
+
+  // Perpindahan route (SPA navigate): tarik slice yang baru dibutuhkan dan
+  // belum pernah dimuat / sudah kedaluwarsa — tanpa memuat ulang sisanya.
+  const topUpSlicesForRoute = useStableCallback((path: string) => {
+    if (authStatus !== 'signed_in') return
+    const now = Date.now()
+    const stale = neededSlicesFor(path).filter(
+      (k) => now - (sliceLoadedAtRef.current[k] ?? 0) > SLICE_STALE_MS,
+    )
+    if (stale.length) void Promise.all(stale.map((k) => fetchSlice(k)))
   })
 
   // Retry terarah untuk /tasks saja — dipakai tombol "Coba lagi" di Workboard
@@ -826,6 +929,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authStatus !== 'signed_in') return
     void loadOverview('initial')
+  }, [authStatus])
+
+  // Top-up slice saat berpindah halaman (Inertia client-side navigation).
+  useEffect(() => {
+    if (authStatus !== 'signed_in') return
+    return router.on('navigate', (event) => {
+      const url = new URL(event.detail.page.url, window.location.origin)
+      topUpSlicesForRoute(url.pathname)
+    })
   }, [authStatus])
 
   useEffect(() => {
