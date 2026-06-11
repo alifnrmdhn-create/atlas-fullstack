@@ -48,8 +48,9 @@ type ChannelDetailResponse = {
   channel: { id: number; name: string; type: 'PUBLIC' | 'PRIVATE' }
   members: ChannelMember[]
 }
+// `data` (list flat) dihapus dari respons /tasks (audit 2026-06-11 Task 2.8) —
+// duplikat persis isi groups, FE tak pernah membacanya; payload terpangkas 2×.
 type TasksResponse = {
-  data: Task[]
   groups: WorkGroup[]
   total: number
 }

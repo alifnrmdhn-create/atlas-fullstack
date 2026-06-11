@@ -55,7 +55,7 @@ class WorkboardAuthScopeTest extends TestCase
 
     public function test_workboard_index_is_scoped_to_own_directorate(): void
     {
-        $ids = $this->actingAs($this->kadivA)->getJson('/tasks')->assertOk()->json('data.*.id');
+        $ids = collect($this->actingAs($this->kadivA)->getJson('/tasks')->assertOk()->json('groups.*.items.*.id'))->flatten()->all();
 
         $this->assertContains($this->a['task'], $ids, 'KADIV harus melihat task direktoratnya sendiri.');
         $this->assertNotContains($this->b['task'], $ids, 'KADIV TIDAK boleh melihat task direktorat lain.');
@@ -63,7 +63,7 @@ class WorkboardAuthScopeTest extends TestCase
 
     public function test_workboard_index_executive_sees_all_directorates(): void
     {
-        $ids = $this->actingAs($this->adminA)->getJson('/tasks')->assertOk()->json('data.*.id');
+        $ids = collect($this->actingAs($this->adminA)->getJson('/tasks')->assertOk()->json('groups.*.items.*.id'))->flatten()->all();
 
         $this->assertContains($this->a['task'], $ids);
         $this->assertContains($this->b['task'], $ids, 'Executive (SUPERADMIN) harus tetap melihat lintas-direktorat.');

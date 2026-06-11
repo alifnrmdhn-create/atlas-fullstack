@@ -32,6 +32,16 @@ class TaskController extends Controller
         $scope = OrgScope::forUser($user);
 
         $query = Task::query()
+            // Kolom board saja (kontrak FE `type Task` di types.ts) — tanpa
+            // text/jsonb berat (description/output/plannedWeeks/actualWeeks/
+            // dependsOnIds/picUnitIds); detail lengkap via GET /tasks/{id}.
+            // Audit 2026-06-11 Task 2.8: payload 283 task 830KB → dipangkas.
+            ->select([
+                'id', 'code', 'initiativeId', 'title', 'assignedTo', 'createdBy',
+                'createdByUnitId', 'status', 'priority', 'percentComplete',
+                'startDate', 'targetCompletion', 'actualCompletion',
+                'healthStatus', 'isBlocked', 'blockedReason', 'createdAt', 'updatedAt',
+            ])
             ->with([
                 'workstream:id,code,name,programId',
                 'workstream.program:id,code,name,healthStatus,approvalStatus,ownerUnitId,startDate,targetEndDate,actualEndDate',
@@ -56,8 +66,9 @@ class TaskController extends Controller
 
         $tasks = $query->get();
 
+        // Tanpa key `data`: dulu seluruh list diserialisasikan DUA KALI (flat +
+        // grouped) padahal FE hanya membaca `groups` — payload 2× gratis.
         return response()->json([
-            'data' => $tasks,
             'groups' => $tasks
                 ->groupBy('status')
                 ->map(fn ($items, $status) => [

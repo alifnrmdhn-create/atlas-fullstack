@@ -251,9 +251,11 @@ class WorkspaceEndpointSmokeTest extends TestCase
             ->assertOk()
             ->assertJsonStructure(['data' => ['role', 'tasks', 'blockers', 'programs']]);
 
+        // `data` flat dihapus dari /tasks (duplikat groups — audit 2026-06-11).
         $this->getJson('/tasks')
             ->assertOk()
-            ->assertJsonStructure(['data', 'groups', 'total']);
+            ->assertJsonStructure(['groups', 'total'])
+            ->assertJsonMissingPath('data');
 
         $this->getJson('/workstreams')
             ->assertOk()
