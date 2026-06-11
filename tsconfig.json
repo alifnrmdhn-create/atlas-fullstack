@@ -1,5 +1,11 @@
 {
     "compilerOptions": {
+        // Audit 2026-06-11 Task 2.9b: dinyalakan setelah terukur 0 error di
+        // seluruh codebase (canary test membuktikan flag benar-benar aktif) —
+        // disiplin null-safety/no-any kode existing ternyata sudah strict-clean.
+        // noUnusedLocals/Parameters tetap false: domain itu dipegang ESLint
+        // (@typescript-eslint/no-unused-vars + konvensi prefiks `_`).
+        "strict": true,
         "target": "es2023",
         "lib": ["ES2023", "DOM", "DOM.Iterable"],
         "module": "esnext",
