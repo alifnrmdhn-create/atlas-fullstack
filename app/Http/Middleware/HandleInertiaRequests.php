@@ -78,6 +78,15 @@ class HandleInertiaRequests extends Middleware
                     'ttlDays'      => (int) config('atlas-thresholds.autosave.ttl_days', 7),
                     'maxPayloadKb' => (int) config('atlas-thresholds.autosave.max_payload_kb', 256),
                 ],
+                // Audit 2026-06-11 (temuan A5): dulu dead config — bisa diedit
+                // admin via /admin/thresholds tapi nol konsumen, warna aging
+                // hardcoded di AgingIndicator. WAJIB setting() (bukan config())
+                // supaya override admin di SystemSetting benar-benar efektif.
+                'escalationAging' => [
+                    'yellow' => (int) setting('escalation_aging.yellow_after_days'),
+                    'orange' => (int) setting('escalation_aging.orange_after_days'),
+                    'red'    => (int) setting('escalation_aging.red_after_days'),
+                ],
             ],
         ];
     }

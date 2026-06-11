@@ -10,6 +10,7 @@
  * tidak render sama sekali (silent skip — bukan disabled).
  */
 import { useEffect, useId, useState } from 'react'
+import { usePage } from '@inertiajs/react'
 import { api } from '../lib/api'
 import { useFeatureFlag } from '../hooks/useFeatureFlag'
 import { useOnboardingTour } from '../hooks/useOnboardingTour'
@@ -232,6 +233,13 @@ export function EscalationTriagePanel({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Threshold aging dari server (config + override admin /admin/thresholds) —
+  // dulu AgingIndicator selalu jatuh ke default hardcoded-nya sehingga knob
+  // admin tanpa efek (audit temuan A5). undefined → default komponen.
+  const escalationAging = (usePage().props as {
+    thresholds?: { escalationAging?: { yellow: number; orange: number; red: number } }
+  }).thresholds?.escalationAging
+
   // Trigger tour saat panel pertama kali dibuka
   useOnboardingTour('triage-panel', { trigger: true })
 
@@ -285,7 +293,7 @@ export function EscalationTriagePanel({
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span className={`badge badge--${statusToTone(request.status)}`}>{statusLabel(request.status)}</span>
-        <AgingIndicator days={request.agingDays} />
+        <AgingIndicator days={request.agingDays} thresholds={escalationAging} />
         {request.linkedProgram && (
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             Program: {request.linkedProgram.code}
