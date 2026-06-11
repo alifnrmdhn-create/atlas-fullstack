@@ -228,8 +228,8 @@ export default function ScorecardView() {
             <div className="perf-cockpit perf__section">
             <section>
               <div className="perf-section-head">
-                <span className="perf__section-label">Division × BSC Perspective</span>
-                <span className="perf-section-meta">click a row to drill down</span>
+                <span className="perf__section-label">BSC Perspective × Division</span>
+                <span className="perf-section-meta">click a division to drill down</span>
               </div>
               <Card padding="none" className="perf-matrix-card">
                 <ScoreMatrix rows={matrix} />
@@ -388,45 +388,47 @@ export default function ScorecardView() {
 }
 
 /**
- * Matriks divisi × perspektif BSC — heatmap kecil yang menempatkan kelemahan
- * secara spasial. Sel = achievement tertimbang perspektif itu; tint mengikuti
- * tone (merah <80 · amber <100 · hijau ≥100). Baris klik → halaman divisi.
+ * Matriks perspektif BSC × divisi — TRANSPOSED (2026-06-11): perspektif jadi
+ * BARIS (jumlahnya tetap 4), divisi jadi KOLOM (3–6). Bentuk lama 7-kolom
+ * (divisi=baris) butuh ±860px dan memotong kolom kesimpulan Total/On-target
+ * saat panel konteks terbuka; bentuk ini hanya butuh ±410px untuk 3 divisi.
+ * Sel = achievement tertimbang; tint per tone + intensitas deviasi-dari-100.
+ * Header kolom (kode divisi) klik → halaman divisi.
  */
 function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
-  const cols = MATRIX_COLS.filter(c => rows.some(r => r.perspektif[c.key] != null))
+  const perspectives = MATRIX_COLS.filter(c => rows.some(r => r.perspektif[c.key] != null))
   return (
     <div
-      className="perf-matrix"
+      className="perf-matrix perf-matrix--transposed"
       role="table"
-      aria-label="Division by perspective achievement"
+      aria-label="BSC perspective by division achievement"
       // Jumlah kolom eksplisit — auto-fit membuat sel wrap ke baris implisit
-      // saat sempit (mobile), bukan memicu scroll-x.
-      style={{ ['--matrix-cols' as never]: cols.length + 2 }}
+      // saat sempit, bukan memicu scroll-x.
+      style={{ ['--matrix-cols' as never]: rows.length }}
     >
       <div className="perf-matrix__row perf-matrix__row--head" role="row">
-        <span className="perf-matrix__division" role="columnheader">Division</span>
-        {cols.map(c => (
-          <span key={c.key} className="perf-matrix__cell perf-matrix__cell--head" role="columnheader">{c.label}</span>
+        <span className="perf-matrix__rowlabel" role="columnheader">Perspective</span>
+        {rows.map(r => (
+          <Link
+            key={r.kode}
+            href={`/performance/divisi/${r.kode.replace('-HLD', '').toLowerCase()}`}
+            className="perf-matrix__cell perf-matrix__cell--head perf-matrix__cell--divhead"
+            role="columnheader"
+            title={r.nama}
+          >
+            {r.kode.replace('-HLD', '')}
+          </Link>
         ))}
-        <span className="perf-matrix__cell perf-matrix__cell--head perf-matrix__cell--total" role="columnheader">Total</span>
-        <span className="perf-matrix__cell perf-matrix__cell--head" role="columnheader">On target</span>
       </div>
-      {rows.map(r => (
-        <Link
-          key={r.kode}
-          href={`/performance/divisi/${r.kode.replace('-HLD', '').toLowerCase()}`}
-          className="perf-matrix__row"
-          role="row"
-        >
-          <span className="perf-matrix__division" role="cell">
-            <span className="perf-matrix__division-code">{r.kode}</span>
-            <span className="perf-matrix__division-name">{r.nama}</span>
-          </span>
-          {cols.map(c => {
-            const v = r.perspektif[c.key]
+
+      {perspectives.map(p => (
+        <div key={p.key} className="perf-matrix__row" role="row">
+          <span className="perf-matrix__rowlabel" role="cell" title={p.key}>{p.label}</span>
+          {rows.map(r => {
+            const v = r.perspektif[p.key]
             return (
               <span
-                key={c.key}
+                key={r.kode}
                 className="perf-matrix__cell"
                 data-tone={v == null ? undefined : scoreTone(v)}
                 style={v == null ? undefined : ({ ['--i' as never]: cellIntensity(v) })}
@@ -436,7 +438,14 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
               </span>
             )
           })}
+        </div>
+      ))}
+
+      <div className="perf-matrix__row perf-matrix__row--total" role="row">
+        <span className="perf-matrix__rowlabel" role="cell">Total</span>
+        {rows.map(r => (
           <span
+            key={r.kode}
             className="perf-matrix__cell perf-matrix__cell--total"
             data-tone={scoreTone(r.nilai)}
             style={{ ['--i' as never]: cellIntensity(r.nilai) }}
@@ -444,7 +453,14 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
           >
             {formatPercent(r.nilai, 1)}
           </span>
+        ))}
+      </div>
+
+      <div className="perf-matrix__row" role="row">
+        <span className="perf-matrix__rowlabel" role="cell">On target</span>
+        {rows.map(r => (
           <span
+            key={r.kode}
             className="perf-matrix__cell perf-matrix__cell--kpis"
             data-tone={r.onTarget === r.kpiTotal ? 'green' : 'amber'}
             style={{ ['--i' as never]: r.onTarget === r.kpiTotal ? 0.1 : 0.25 }}
@@ -452,8 +468,8 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
           >
             {r.onTarget}/{r.kpiTotal}
           </span>
-        </Link>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }

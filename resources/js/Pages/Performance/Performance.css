@@ -1648,10 +1648,12 @@
 }
 .perf-matrix__cell--total { font-weight: var(--ds-weight-bold); }
 
-/* Phone: matriks = scroll-x (pakem CLAUDE.md §7 untuk matriks). */
+/* Phone: matriks = scroll-x (pakem CLAUDE.md §7 untuk matriks).
+   Transposed (ronde 7): natural ±410px utk 3 divisi — scroll-x tinggal
+   jaring pengaman untuk direktorat ber-divisi banyak. */
 @media (max-width: 640px) { /* bp-allow: --bp-sm */
   .perf-matrix-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .perf-matrix { min-width: 660px; }
+  .perf-matrix { min-width: 400px; }
 }
 
 /* ── Daftar pengecualian (Needs attention) ───────────────── */
@@ -2406,3 +2408,62 @@
 /* (3) Chip divisi di Needs-attention: muat kode panjang tanpa terpotong. */
 .perf-exc__divisi { min-width: 52px; width: auto; padding: 3px 8px; }
 .perf-exc { grid-template-columns: auto minmax(0, 1fr) auto; }
+
+/* ═══ RONDE 7 — transpose matriks + container query (rekomendasi A+C) ═══ */
+
+/* (A) Matriks transposed: perspektif = baris, divisi = kolom. Lebar natural
+   ±410px utk 3 divisi — muat di kolom kokpit walau panel konteks terbuka
+   (bentuk lama 7-kolom butuh ±860px → kolom Total/On-target terpotong). */
+.perf-matrix--transposed { min-width: 0; }
+.perf-matrix--transposed .perf-matrix__row {
+  grid-template-columns: minmax(104px, 1.1fr) repeat(var(--matrix-cols, 3), minmax(92px, 1fr));
+}
+
+.perf-matrix__rowlabel {
+  padding: 11px 14px;
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.perf-matrix__row--head .perf-matrix__rowlabel {
+  font-size: 10px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+a.perf-matrix__cell--divhead {
+  text-decoration: none;
+  color: var(--ds-text-primary);
+  font-size: var(--ds-text-13);
+  letter-spacing: 0;
+  text-transform: none;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+@media (hover: hover) {
+  a.perf-matrix__cell--divhead:hover {
+    background: var(--ds-surface-hover);
+    text-decoration: underline;
+  }
+}
+
+.perf-matrix__row--total { border-top: 1px solid var(--ds-border-default); }
+.perf-matrix__row--total .perf-matrix__rowlabel { font-weight: var(--ds-weight-semibold); color: var(--ds-text-primary); }
+
+/* (C) Container query — lebar yang menentukan layout adalah KONTEN
+   (sidebar/panel konteks buka-tutup), bukan viewport. @media buta terhadap
+   panel: jendela 2000px dgn panel terbuka = konten ±1430px tapi @media tetap
+   melihat 2000. Kokpit & hero melipat berdasar lebar kontainer halaman. */
+.perf__inner { container-type: inline-size; container-name: perfpage; }
+
+@container perfpage (max-width: 960px) {
+  .perf-cockpit { grid-template-columns: 1fr; }
+  .perf-hero--rich { grid-template-columns: 1fr 1fr; }
+  .perf-hero__gauge { grid-column: 1 / -1; justify-self: center; }
+  .perf-subject--gauge { grid-template-columns: 1fr 1fr; }
+  .perf-subject--gauge .ds-gauge { grid-column: 1 / -1; justify-self: center; }
+}
