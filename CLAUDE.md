@@ -7,9 +7,9 @@
 ATLAS = Advanced Transformation & Leadership Alignment System.
 Platform manajemen program kerja PTPN III dengan fokus PDCA (Plan-Do-Check-Act).
 
-**Stack**: Laravel 11 + Inertia.js + React 18 + TypeScript + PostgreSQL.
+**Stack**: Laravel 13 + Inertia.js + React 19 + TypeScript (strict) + PostgreSQL.
 **Schema**: PostgreSQL `ptpn_kmr_app` (search_path).
-**Realtime**: Custom SSE via `RealtimeController` + `BroadcastEvent` table.
+**Realtime**: polling 2 detik via `RealtimeController` + `BroadcastEvent` table (SSE di-drop 2026-05-19, jangan re-introduce — lihat memory `project_sse_dropped_polling_only`).
 
 ## Arsitektur PDCA
 
@@ -101,15 +101,17 @@ Aturan eksekusi:
 
 Lihat `NAMING_CONVENTION.md` untuk detail lengkap.
 
-## Testing
+## Testing & CI
 
 ```bash
-php artisan test                                    # full suite
+bash scripts/setup-test-db.sh                       # sekali: buat DB ptpn_kmr_test + schema
+php artisan test                                    # full suite (baseline: 270 pass, 0 fail)
 php artisan test --filter="OrgChainServiceTest"     # specific
-php artisan test --filter="EscalationFlowTest"      # E2E pilot flow
+npm run check                                       # typecheck + lint + audit routes/breakpoints + build
+node scripts/route-scope-sweep.mjs                  # smoke assertion route-scoped loader (butuh dev server :9000)
 ```
 
-Tests baseline: 147/148 passing (1 pre-existing KPI decimal serialization di WorkflowMutationSmokeTest — assertJsonPath strict-equal `'95.000000'` vs serialized `95`, tidak terkait fitur).
+CI GitHub Actions (sejak 2026-06-10) menjalankan `php artisan test` + typecheck/lint/audit/build pada setiap push/PR — suite WAJIB hijau, tidak ada lagi "pre-existing fail" yang ditoleransi. Backup DB prod harian via workflow `db-backup.yml` (artifact GitHub, retensi 30 hari).
 
 ## Convention Pegangan
 

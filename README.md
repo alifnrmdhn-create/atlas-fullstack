@@ -30,8 +30,10 @@ DB_PORT=5432
 DB_DATABASE=atlas
 DB_USERNAME=postgres
 DB_PASSWORD=
-DB_SCHEMA=public
+DB_SCHEMA=ptpn_kmr_app
 ```
+
+The application schema is `ptpn_kmr_app` (set as PostgreSQL `search_path`).
 
 Then migrate and seed as needed:
 
@@ -55,20 +57,29 @@ PHP_BIN=/opt/homebrew/bin/php npm run dev
 ## Verification
 
 ```bash
+bash scripts/setup-test-db.sh   # once: creates the ptpn_kmr_test database + schema
 php artisan test
 npm run check
 ```
 
-`npm run check` runs TypeScript, frontend route audit, and a production Vite build.
+`npm run check` runs the TypeScript typecheck (strict), ESLint, the frontend
+route and breakpoint audits, and a production Vite build. The same gates run
+in CI (GitHub Actions) on every push and pull request.
 
 ## Deployment
 
-The deployment contract is documented in `deploy/README.md`. Production must use PostgreSQL and a DTDI-approved Laravel runtime, without MAMP paths, SQLite artifacts, or files from the previous stack.
+Production runs on Railway (`atlas-ptpn.up.railway.app`) built via Nixpacks —
+see `nixpacks.toml` for the build and boot contract (migrate, storage:link,
+config/route/view cache, scheduler loop, FrankenPHP). Uploads persist on a
+Railway volume mounted at `/app/storage/app`; daily database backups run via
+the `db-backup.yml` GitHub Actions workflow. `deploy/README.md` documents an
+older Render-based contract kept for reference only.
 
 ## Architecture Notes
 
 - Backend: Laravel with session authentication and PostgreSQL persistence.
 - Frontend: React pages resolved through Inertia.
 - Frontend API calls use same-origin Laravel routes, not a separate Express API.
-- Local sessions default to file storage to avoid requiring a separate `sessions` table.
+- Sessions are stored in the database (`SESSION_DRIVER=database`, `sessions` table migration included).
 - PostgreSQL is the only configured application database connection.
+- Realtime is polling-based (`/realtime/poll` every 2s); SSE was deliberately removed.
