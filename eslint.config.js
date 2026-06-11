@@ -56,13 +56,4 @@ export default tseslint.config(
             'no-empty': ['error', { allowEmptyCatch: true }],
         },
     },
-    {
-        // useEffectEvent dipakai sebagai idiom "stable callback" yang dipanggil
-        // dari handler & dishare via context — melanggar semantik resmi effect
-        // event (40 temuan, semuanya kelas yang sama). Refactor idiom ini =
-        // bagian Task 2.3 (loadOverview route-scoped); sampai itu, rule off
-        // KHUSUS file ini supaya tetap bermakna di file lain.
-        files: ['resources/js/context/workspace.tsx'],
-        rules: { 'react-hooks/rules-of-hooks': 'off' },
-    },
 )

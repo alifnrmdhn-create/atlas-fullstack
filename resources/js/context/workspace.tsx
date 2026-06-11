@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useEffect,
-  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -12,6 +11,7 @@ import { router } from '@inertiajs/react'
 import { api, sessionStorage } from '../lib/api'
 import { useAuth as useInertiaAuth } from '../hooks/useAuth'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
+import { useStableCallback } from '../hooks/useStableCallback'
 import { useRealtimeEvents } from '../hooks/useRealtimeEvents'
 import type {
   AuthUser,
@@ -510,7 +510,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }
 
   // ── Data loading ─────────────────────────────────────────
-  const loadOverview = useEffectEvent(async (mode: 'initial' | 'refresh' = 'refresh') => {
+  const loadOverview = useStableCallback(async (mode: 'initial' | 'refresh' = 'refresh') => {
     setOverviewStatus({ loading: mode === 'initial', refreshing: mode === 'refresh', message: null })
 
     try {
@@ -587,7 +587,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // Retry terarah untuk /tasks saja — dipakai tombol "Coba lagi" di Workboard
   // ketika fetch task gagal, tanpa memuat ulang 13 request overview lainnya.
-  const reloadTasks = useEffectEvent(async () => {
+  const reloadTasks = useStableCallback(async () => {
     setWorkGroupsStatus({ loading: true, failed: false })
     try {
       const v = await api.get<TasksResponse>('/tasks', { timeoutMs: 30_000 })
@@ -598,7 +598,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const refreshChannel = useEffectEvent(async (
+  const refreshChannel = useStableCallback(async (
     channelId: number,
     threadId?: number | null,
     silent = false,
@@ -650,7 +650,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (!silent) setChannelStatus({ loading: false, message: ok ? null : 'Channel tidak dapat dimuat.' })
   })
 
-  const loadProgramDetail = useEffectEvent(async (programId: number, silent = false) => {
+  const loadProgramDetail = useStableCallback(async (programId: number, silent = false) => {
     if (!silent) setProgramDetailStatus({ loading: true, message: null })
     try {
       const payload = await api.get<ProgramDetailResponse>(`/programs/${programId}`)
@@ -665,7 +665,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const loadWorkstreamDetail = useEffectEvent(async (workstreamId: number, silent = false) => {
+  const loadWorkstreamDetail = useStableCallback(async (workstreamId: number, silent = false) => {
     if (!silent) setWorkstreamDetailStatus({ loading: true, message: null })
     try {
       const payload = await api.get<WorkstreamDetailResponse>(`/workstreams/${workstreamId}`)
@@ -676,7 +676,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const loadTaskDetail = useEffectEvent(async (taskId: number, silent = false) => {
+  const loadTaskDetail = useStableCallback(async (taskId: number, silent = false) => {
     if (!silent) setTaskDetailStatus({ loading: true, message: null })
     try {
       const payload = await api.get<TaskDetailResponse>(`/tasks/${taskId}`)
@@ -687,7 +687,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const runSearch = useEffectEvent(async (searchQuery: string, type = 'ALL') => {
+  const runSearch = useStableCallback(async (searchQuery: string, type = 'ALL') => {
     if (!searchQuery.trim()) {
       setSearchResults([]); setSearchTotal(0); setSearchError(null); return
     }
@@ -901,7 +901,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [authStatus])
 
   // Realtime SSE
-  const handleRealtimeSnapshot = useEffectEvent((snapshot: RealtimeSnapshot) => {
+  const handleRealtimeSnapshot = useStableCallback((snapshot: RealtimeSnapshot) => {
     setChannels(snapshot.channels)
     setPresence(snapshot.presence)
     setNotifications(snapshot.notifications.notifications)
@@ -909,7 +909,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   })
 
   // ── Channel message event handlers ───────────────────────
-  const handleMessageCreated = useEffectEvent((event: { channelId: number; message: ChannelMessage & { author?: { name?: string; roleType?: string } } }) => {
+  const handleMessageCreated = useStableCallback((event: { channelId: number; message: ChannelMessage & { author?: { name?: string; roleType?: string } } }) => {
     // Normalize: backend sends author relationship, frontend uses authorName/authorRole
     const msg: ChannelMessage = {
       ...event.message,
@@ -977,7 +977,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }, 2000)
   })
 
-  const handleMessageDeleted = useEffectEvent((event: { channelId: number; messageId: number; parentMessageId?: number; newReplyCount?: number }) => {
+  const handleMessageDeleted = useStableCallback((event: { channelId: number; messageId: number; parentMessageId?: number; newReplyCount?: number }) => {
     if (event.channelId !== selectedChannelId) return
     setMessages((prev) => prev
       .filter((m) => m.id !== event.messageId)
@@ -1002,7 +1002,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const handleReactionChanged = useEffectEvent((event: { channelId: number; messageId: number; reactions: Record<string, number[]> }) => {
+  const handleReactionChanged = useStableCallback((event: { channelId: number; messageId: number; reactions: Record<string, number[]> }) => {
     if (event.channelId !== selectedChannelId) return
     const patch = (m: ChannelMessage) => m.id === event.messageId ? { ...m, reactions: event.reactions } : m
     setMessages((prev) => prev.map(patch))
@@ -1010,7 +1010,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (threadParent?.id === event.messageId) setThreadParent((p) => p ? { ...p, reactions: event.reactions } : p)
   })
 
-  const handleThreadReply = useEffectEvent((event: { channelId: number; parentId: number; reply: ChannelMessage; newReplyCount: number }) => {
+  const handleThreadReply = useStableCallback((event: { channelId: number; parentId: number; reply: ChannelMessage; newReplyCount: number }) => {
     if (event.channelId !== selectedChannelId) return
     // Use authoritative newReplyCount from server — avoids double-increment
     // (optimistic +1 in wrapper is overwritten with the definitive value)
@@ -1026,7 +1026,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const handleMessageUpdated = useEffectEvent((event: { channelId: number; message: ChannelMessage & { author?: { name?: string; roleType?: string } } }) => {
+  const handleMessageUpdated = useStableCallback((event: { channelId: number; message: ChannelMessage & { author?: { name?: string; roleType?: string } } }) => {
     const msg: ChannelMessage = {
       ...event.message,
       reactions: event.message.reactions ?? {},
@@ -1056,7 +1056,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (threadParent?.id === msg.id) setThreadParent((p) => p ? { ...p, ...msg } : p)
   })
 
-  const handleMessagePinned = useEffectEvent((event: { channelId: number; messageId: number; isPinned: boolean }) => {
+  const handleMessagePinned = useStableCallback((event: { channelId: number; messageId: number; isPinned: boolean }) => {
     if (event.channelId !== selectedChannelId) return
     const patch = (m: ChannelMessage) => m.id === event.messageId ? { ...m, isPinned: event.isPinned } : m
     setMessages((prev) => prev.map(patch))
@@ -1066,7 +1066,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const handleChannelCreated = useEffectEvent((event: { channel: ChannelSummary }) => {
+  const handleChannelCreated = useStableCallback((event: { channel: ChannelSummary }) => {
     setChannels((prev) => {
       if (prev.some((c) => c.id === event.channel.id)) return prev
       const isDm = event.channel.isDirectMessage ?? /^dm-\d+-\d+$/.test(event.channel.name ?? '')
@@ -1081,18 +1081,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     })
   })
 
-  const handleChannelUpdated = useEffectEvent((event: { channel: ChannelSummary }) => {
+  const handleChannelUpdated = useStableCallback((event: { channel: ChannelSummary }) => {
     setChannels((prev) => prev.map((c) =>
       c.id === event.channel.id ? { ...c, ...event.channel } : c
     ))
   })
 
-  const handleChannelArchived = useEffectEvent((event: { channelId: number }) => {
+  const handleChannelArchived = useStableCallback((event: { channelId: number }) => {
     setChannels((prev) => prev.filter((c) => c.id !== event.channelId))
     if (selectedChannelId === event.channelId) setSelectedChannelId(null)
   })
 
-  const handleTypingStart = useEffectEvent((event: { channelId: number; userId: number; userName: string }) => {
+  const handleTypingStart = useStableCallback((event: { channelId: number; userId: number; userName: string }) => {
     const key = `${event.channelId}:${event.userId}`
     // Reset auto-clear timer each time the user fires a typing event
     const existing = typingTimersRef.current.get(key)
@@ -1117,7 +1117,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     })
   })
 
-  const handleTypingStop = useEffectEvent((event: { channelId: number; userId: number }) => {
+  const handleTypingStop = useStableCallback((event: { channelId: number; userId: number }) => {
     const key = `${event.channelId}:${event.userId}`
     const existing = typingTimersRef.current.get(key)
     if (existing) { clearTimeout(existing); typingTimersRef.current.delete(key) }
@@ -1144,7 +1144,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // ── Realtime subscriptions ───────────────────────────────
-  const scheduleDomainRefresh = useEffectEvent(() => {
+  const scheduleDomainRefresh = useStableCallback(() => {
     if (authStatus !== 'signed_in') return
     if (domainRefreshTimerRef.current) return
     domainRefreshTimerRef.current = setTimeout(() => {
@@ -1156,7 +1156,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }, 600)
   })
 
-  const handleNotificationCreated = useEffectEvent((event: { notification: NotificationItem }) => {
+  const handleNotificationCreated = useStableCallback((event: { notification: NotificationItem }) => {
     setNotifications((prev) => {
       if (prev.some((n) => n.id === event.notification.id)) return prev
       return [event.notification, ...prev]
@@ -1168,7 +1168,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     })
   })
 
-  const handlePresenceUpdated = useEffectEvent((event: { userId: number; status: string; statusEmoji?: string; statusMessage?: string; lastActivityAt: string }) => {
+  const handlePresenceUpdated = useStableCallback((event: { userId: number; status: string; statusEmoji?: string; statusMessage?: string; lastActivityAt: string }) => {
     setPresence((prev) => prev.map((p) => {
       if (p.userId !== event.userId) return p
       return {
@@ -1181,19 +1181,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }))
   })
 
-  const handlePresenceActivity = useEffectEvent((event: { userId: number; lastActivityAt: string }) => {
+  const handlePresenceActivity = useStableCallback((event: { userId: number; lastActivityAt: string }) => {
     setPresence((prev) => prev.map((p) =>
       p.userId === event.userId ? { ...p, lastActivityAt: event.lastActivityAt } : p
     ))
   })
 
-  const handleDomainChanged = useEffectEvent(() => {
+  const handleDomainChanged = useStableCallback(() => {
     scheduleDomainRefresh()
   })
 
   // Sprint 3 — Bridge blocker SSE event ke window event agar PicaCompositePanel
   // (dan komponen lain) bisa subscribe tanpa harus tap workspace context.
-  const handleBlockerChanged = useEffectEvent((data: unknown) => {
+  const handleBlockerChanged = useStableCallback((data: unknown) => {
     scheduleDomainRefresh()
     const event = realtimePayload<{ id: number; action: string }>(data)
     if (event && typeof window !== 'undefined') {
@@ -1201,17 +1201,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const handleMeetingChanged = useEffectEvent(() => {
+  const handleMeetingChanged = useStableCallback(() => {
     scheduleDomainRefresh()
     setMeetingRefreshKey((k) => k + 1)
   })
 
-  const handleGridChanged = useEffectEvent(() => {
+  const handleGridChanged = useStableCallback(() => {
     scheduleDomainRefresh()
     setGridRefreshTick((k) => k + 1)
   })
 
-  const handleAssignmentChanged = useEffectEvent(() => {
+  const handleAssignmentChanged = useStableCallback(() => {
     scheduleDomainRefresh()
     setAssignmentRefreshTick((k) => k + 1)
   })
