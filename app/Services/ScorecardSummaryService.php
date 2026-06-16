@@ -9,6 +9,7 @@ use App\Models\DivisiScorecard;
 use App\Models\OrganizationalUnit;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Phase 2 — DB-backed scorecard reads, scoped to viewer's org level.
@@ -137,7 +138,23 @@ class ScorecardSummaryService
      *   grid?: array<int, array{kode: string, nama: string, nilai: float, divisi: array<int, array{kode: string, nama: string, nilai: float}>}>,
      * }
      */
+    /**
+     * Snapshot Home — di-cache 5 menit per-user (scale-readiness S3.3).
+     *
+     * Dulu dihitung ulang TIAP hit `/` (Home = halaman terpadat). Data scorecard
+     * mendarat bulanan & lag kalender (sangat stabil), jadi TTL pendek sudah
+     * memangkas mayoritas recompute tanpa staleness terasa. Key per-user karena
+     * scope-dependent; periode 'auto' (resolved di dalam) atau eksplisit.
+     * Self-healing: import KPI bulanan ter-refleksi ≤5 menit.
+     */
     public function homeSnapshot(?User $user = null, ?string $periode = null): array
+    {
+        $cacheKey = 'home-snapshot:' . ($user?->id ?? 'guest') . ':' . ($periode ?? 'auto');
+
+        return Cache::remember($cacheKey, now()->addMinutes(5), fn () => $this->computeHomeSnapshot($user, $periode));
+    }
+
+    private function computeHomeSnapshot(?User $user, ?string $periode): array
     {
         // Scorecard data lands monthly and lags the calendar, so the current
         // month is usually still empty. Resolve to the latest period that
