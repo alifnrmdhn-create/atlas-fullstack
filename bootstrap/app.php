@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            // throttle:web (scale-readiness S2.4) — DULU dalam grup, setelah
+            // StartSession (user ter-resolve → key per-user). Generous; tolak
+            // runaway sebelum kerja berat. Lihat AppServiceProvider::configureRateLimiting.
+            'throttle:web',
             // Correlation id + konteks request di semua log (scale-readiness S0).
             // Sebelum Inertia supaya rendering Inertia ikut ber-konteks.
             \App\Http\Middleware\LogRequestContext::class,
