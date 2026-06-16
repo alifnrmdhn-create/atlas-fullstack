@@ -360,19 +360,22 @@ class MonthlyReportController extends Controller
         $file = $request->file('file');
         $storedName = 'report-' . time() . '-' . bin2hex(random_bytes(8)) . '.' . $file->getClientOriginalExtension();
         $storedPath = "reports/{$storedName}";
-        Storage::disk('local')->putFileAs('reports', $file, $storedName);
+        $disk = config('uploads.private_disk');
 
-        $fullPath = Storage::disk('local')->path($storedPath);
-
+        // Parse DULU dari file temp upload (getRealPath = selalu lokal, valid utk
+        // PhpSpreadsheet apa pun disk tujuannya) — JANGAN ->path() disk tujuan,
+        // yang tak ada di S3 (scale-readiness S1.4). Hanya simpan bila parse sukses,
+        // jadi tak perlu hapus-saat-gagal.
         try {
-            $metrics = $this->parseExcel($fullPath);
+            $metrics = $this->parseExcel($file->getRealPath());
         } catch (\Exception $e) {
-            Storage::disk('local')->delete($storedPath);
             if ($request->expectsJson()) {
                 return response()->json(['message' => $e->getMessage()], 422);
             }
             return back()->withErrors([$e->getMessage()]);
         }
+
+        Storage::disk($disk)->putFileAs('reports', $file, $storedName);
 
         DB::transaction(function () use ($report, $metrics, $storedName, $storedPath, $file, $request) {
             MonthlyReportMetric::where('reportId', $report->id)->delete();

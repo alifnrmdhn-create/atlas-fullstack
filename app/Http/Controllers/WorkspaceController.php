@@ -1241,7 +1241,11 @@ class WorkspaceController extends Controller
 
         $attachments = [];
         foreach ($request->file('files') as $file) {
-            $path = $file->store('uploads', 'public');
+            // Disk config-driven (scale-readiness S1.4) — default 'public', flip
+            // ke s3 saat multi-replica. URL tetap /storage/* untuk disk lokal;
+            // untuk s3, Storage::url() menghasilkan URL bucket (perlu penyesuaian
+            // saat provision — ditandai di config/uploads.php).
+            $path = $file->store('uploads', config('uploads.public_disk'));
             $attachments[] = [
                 'url'  => '/storage/' . $path,
                 'name' => $file->getClientOriginalName(),

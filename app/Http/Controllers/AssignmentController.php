@@ -253,7 +253,9 @@ class AssignmentController extends Controller
         $storedName = time() . '-' . bin2hex(random_bytes(8)) . "-{$safeName}" . ($ext ? ".{$ext}" : '');
 
         $relativePath = "assignments/{$id}/{$storedName}";
-        Storage::disk('local')->putFileAs("assignments/{$id}", $file, $storedName);
+        // Disk config-driven (scale-readiness S1.4) — default 'local', flip ke s3
+        // saat multi-replica (volume lokal tak share-able antar-replica).
+        Storage::disk(config('uploads.private_disk'))->putFileAs("assignments/{$id}", $file, $storedName);
 
         $attachment = AssignmentAttachment::create([
             'assignmentId' => $id,
@@ -313,7 +315,7 @@ class AssignmentController extends Controller
             abort(400, 'This attachment is not a file.');
         }
 
-        return Storage::disk('local')->download($att->filepath, $att->originalName ?? $att->filename);
+        return Storage::disk(config('uploads.private_disk'))->download($att->filepath, $att->originalName ?? $att->filename);
     }
 
     public function destroyAttachment(Request $request, int $id, int $attId): JsonResponse|RedirectResponse
@@ -328,7 +330,7 @@ class AssignmentController extends Controller
 
         // Best effort: hapus file fisik
         if ($att->type === 'FILE' && $att->filepath) {
-            rescue(fn () => Storage::disk('local')->delete($att->filepath));
+            rescue(fn () => Storage::disk(config('uploads.private_disk'))->delete($att->filepath));
         }
 
         $att->delete();
