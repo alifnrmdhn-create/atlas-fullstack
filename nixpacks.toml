@@ -42,4 +42,9 @@ cmds = [
 #                           → kegagalan scheduled command tak terlihat siapa pun); --whisper
 #                           sudah meredam noise per-menit, yang lolos hanya output command & error.
 #   6. frankenphp foreground (main process)
-cmd = "php artisan migrate --force --isolated && mkdir -p storage/app/public && php artisan storage:link --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && (php artisan atlas:cleanup-broadcast-events || true) && (while true; do php artisan schedule:work --whisper; sleep 2; done &) && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT"
+#
+# PHP_INI_SCAN_DIR (leading ':' = APPEND ke default) memuat php-conf/*.ini —
+# menaikkan upload_max_filesize/post_max_size dari default 2M/8M (yang menolak
+# foto HP 2-5MB diam-diam) agar selaras validasi app 10MB (audit 2026-06-17).
+# Berlaku utk artisan (nix PHP) DAN frankenphp (embedded PHP) — sistem ini sama.
+cmd = "export PHP_INI_SCAN_DIR=\":/app/php-conf\" && php artisan migrate --force --isolated && mkdir -p storage/app/public && php artisan storage:link --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && (php artisan atlas:cleanup-broadcast-events || true) && (while true; do php artisan schedule:work --whisper; sleep 2; done &) && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT"
