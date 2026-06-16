@@ -43,9 +43,9 @@ cmds = [
 #                           sudah meredam noise per-menit, yang lolos hanya output command & error.
 #   6. frankenphp foreground (main process)
 #
-# PHP_INI_SCAN_DIR: APPEND php-conf/ ke nilai EXISTING (${PHP_INI_SCAN_DIR}) —
-# JANGAN timpa: nix-PHP memuat ekstensi (PDO/mbstring/iconv) via scan-dir itu;
-# menimpanya = "Class PDO not found" → boot crash (insiden 2026-06-17, prod 502).
-# php-conf/uploads.ini menaikkan upload_max_filesize/post_max_size dari default
-# 2M/8M (menolak foto HP 2-5MB diam-diam) agar selaras validasi app 10MB.
-cmd = "export PHP_INI_SCAN_DIR=\"${PHP_INI_SCAN_DIR}:/app/php-conf\" && php artisan migrate --force --isolated && mkdir -p storage/app/public && php artisan storage:link --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && (php artisan atlas:cleanup-broadcast-events || true) && (while true; do php artisan schedule:work --whisper; sleep 2; done &) && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT"
+# CATATAN upload limit (insiden 2026-06-17): mengubah PHP_INI_SCAN_DIR di sini
+# MEMECAH boot — nix-PHP memuat ekstensi (PDO/mbstring/iconv) via scan-dir, dan
+# ${PHP_INI_SCAN_DIR} KOSONG di shell start, jadi set/append apa pun menimpanya →
+# "Class PDO not found" crash. Batas upload (foto HP >2MB) BELUM diperbaiki di
+# sini; cari mekanisme lain yang tak menyentuh scan-dir (lihat php-conf/uploads.ini).
+cmd = "php artisan migrate --force --isolated && mkdir -p storage/app/public && php artisan storage:link --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && (php artisan atlas:cleanup-broadcast-events || true) && (while true; do php artisan schedule:work --whisper; sleep 2; done &) && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT"
