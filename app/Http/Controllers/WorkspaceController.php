@@ -1237,7 +1237,15 @@ class WorkspaceController extends Controller
 
     public function upload(Request $request): JsonResponse
     {
-        $request->validate(['files' => 'required|array', 'files.*' => 'file|max:10240']);
+        // Allowlist MIME (audit 2026-06-16): /uploads menyimpan ke disk PUBLIK &
+        // mengembalikan URL same-origin → tanpa allowlist, .html/.svg/.js =
+        // stored-XSS. mimetypes: cek konten (bukan ekstensi); daftar di
+        // config/uploads.php sengaja tanpa svg/html/js.
+        $allowed = implode(',', config('uploads.public_mimetypes', []));
+        $request->validate([
+            'files' => 'required|array',
+            'files.*' => "file|max:10240|mimetypes:{$allowed}",
+        ]);
 
         $attachments = [];
         foreach ($request->file('files') as $file) {

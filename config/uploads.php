@@ -27,4 +27,30 @@ return [
 
     'public_disk' => env('UPLOAD_PUBLIC_DISK', 'public'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Allowlist MIME untuk upload PUBLIK (/uploads — lampiran channel/avatar)
+    |--------------------------------------------------------------------------
+    |
+    | Audit 2026-06-16: /uploads dulu tanpa allowlist → file disimpan ke disk
+    | publik & dikembalikan sebagai URL same-origin /storage/* → user bisa
+    | upload .html/.svg/.js dan dapat stored-XSS. Allowlist EKSPLISIT (bukan
+    | prefix 'image/' yang mengizinkan image/svg+xml — SVG bisa memuat script).
+    | Tanpa svg, html, js. Validasi via aturan `mimetypes:` (cek konten, bukan
+    | sekadar ekstensi).
+    |
+    */
+    'public_mimetypes' => [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain', 'text/csv',
+        'application/zip',
+    ],
+
 ];
