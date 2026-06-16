@@ -64,6 +64,23 @@ class TaskController extends Controller
             });
         }
 
+        // Cap pertumbuhan board (scale-readiness S2.2): COMPLETED/CANCELLED yang
+        // selesai lebih lama dari window tidak dimuat default — board butuh kerja
+        // aktif + capaian terkini, bukan histori bertahun. Status aktif selalu
+        // dimuat. actualCompletion NULL (tak ber-tanggal) tak disembunyikan.
+        // ?scope=all → histori penuh.
+        if ($request->query('scope') !== 'all') {
+            $windowDays = (int) config('atlas-thresholds.workboard.completed_window_days', 90);
+            if ($windowDays > 0) {
+                $cutoff = now()->subDays($windowDays);
+                $query->where(function ($q) use ($cutoff) {
+                    $q->whereNotIn('status', ['COMPLETED', 'CANCELLED'])
+                      ->orWhere('actualCompletion', '>=', $cutoff)
+                      ->orWhereNull('actualCompletion');
+                });
+            }
+        }
+
         $tasks = $query->get();
 
         // Tanpa key `data`: dulu seluruh list diserialisasikan DUA KALI (flat +

@@ -151,6 +151,15 @@ return [
         'max_payload_kb' => env('ATLAS_AUTOSAVE_MAX_KB',      256),
     ],
 
+    // ── Workboard (scale-readiness S2.2) ──────────────────────────────────────
+    'workboard' => [
+        // Task COMPLETED/CANCELLED dengan actualCompletion lebih lama dari ini
+        // tidak dimuat di GET /tasks default — board butuh kerja aktif + capaian
+        // terkini, bukan histori bertahun (cap pertumbuhan endpoint terpanas).
+        // Histori penuh tetap bisa via ?scope=all. Status aktif selalu dimuat.
+        'completed_window_days' => env('ATLAS_WORKBOARD_COMPLETED_DAYS', 90),
+    ],
+
     // ── Retensi data (scale-readiness S3.1) ───────────────────────────────────
     // Tabel append-only yang dulu tumbuh selamanya (hanya broadcast_events &
     // FormDraft yang di-prune). Command harian atlas:prune-old-records menghapus
