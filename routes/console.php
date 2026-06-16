@@ -54,3 +54,12 @@ Schedule::command('atlas:cleanup-form-drafts')
     ->withoutOverlapping()
     ->onOneServer()
     ->runInBackground();
+
+// Scale-readiness S3.1 — Prune tabel append-only lewat retensi (Notification/
+// UserSession/WorkItemStatusLog). Harian jam 03:15 (setelah form-drafts, masih
+// jam sepi). Retensi dari config atlas-thresholds.retention.
+Schedule::command('atlas:prune-old-records')
+    ->dailyAt('03:15')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground();

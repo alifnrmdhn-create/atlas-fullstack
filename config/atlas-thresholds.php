@@ -151,6 +151,21 @@ return [
         'max_payload_kb' => env('ATLAS_AUTOSAVE_MAX_KB',      256),
     ],
 
+    // ── Retensi data (scale-readiness S3.1) ───────────────────────────────────
+    // Tabel append-only yang dulu tumbuh selamanya (hanya broadcast_events &
+    // FormDraft yang di-prune). Command harian atlas:prune-old-records menghapus
+    // record lewat retensi. position_history SENGAJA tidak di-prune (audit SK).
+    'retention' => [
+        // Notifikasi yang sudah dibaca/dismiss lewat N hari (yang expired dihapus
+        // tanpa menunggu N). Inbox tetap relevan, histori lama dibuang.
+        'notifications_days' => env('ATLAS_RETAIN_NOTIFICATIONS_DAYS', 90),
+        // Sesi user yang sudah ditutup (endedAt) lewat N hari — analitik presence
+        // jangka pendek; histori jauh tak terpakai.
+        'user_sessions_days' => env('ATLAS_RETAIN_SESSIONS_DAYS', 60),
+        // Log perubahan status task — data audit, retensi konservatif (1 tahun).
+        'status_logs_days'   => env('ATLAS_RETAIN_STATUS_LOGS_DAYS', 365),
+    ],
+
     // ── Strategic pillars (Charter View — Mei 2026) ───────────────────────────
     // Empat pilar strategis PTPN III. Source of truth untuk dropdown label di
     // frontend (di-share via Inertia) dan validasi `pilarStrategis` di
