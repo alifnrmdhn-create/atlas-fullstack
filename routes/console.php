@@ -12,20 +12,30 @@ Artisan::command('inspire', function () {
 // Port dari backend/src/routes/realtime.ts (Node.js setInterval).
 // Jalankan scheduler di production via cron:
 //   * * * * * cd /path/to/atlas-fullstack && php artisan schedule:run >> /dev/null 2>&1
+//
+// onOneServer() (scale-readiness S1.1): scheduler-loop jalan di SETIAP replica
+// (nixpacks `while true; schedule:work`). Tanpa ini, di N-replica tiap command
+// jalan N× → notifikasi dobel, compute-health balapan. onOneServer pakai lock
+// atomik di cache store SHARED (CACHE_STORE=database, S1.3) → hanya 1 replica
+// yang eksekusi tiap tick; sisanya skip. withoutOverlapping tetap mencegah
+// tumpang-tindih antar-tick di replica yang sama.
 
 Schedule::command('atlas:check-reminders')
     ->everyMinute()
     ->withoutOverlapping()
+    ->onOneServer()
     ->runInBackground();
 
 Schedule::command('atlas:ghost-cleanup')
     ->everyFiveMinutes()
     ->withoutOverlapping()
+    ->onOneServer()
     ->runInBackground();
 
 Schedule::command('atlas:cleanup-broadcast-events')
     ->everyMinute()
     ->withoutOverlapping()
+    ->onOneServer()
     ->runInBackground();
 
 // Sprint 5 — Re-compute auto health untuk semua program aktif tiap 30 menit.
@@ -34,6 +44,7 @@ Schedule::command('atlas:cleanup-broadcast-events')
 Schedule::command('atlas:compute-health')
     ->everyThirtyMinutes()
     ->withoutOverlapping()
+    ->onOneServer()
     ->runInBackground();
 
 // Sprint 6 — Hapus form drafts yang lewat TTL (default 7 hari). Cukup harian
@@ -41,4 +52,5 @@ Schedule::command('atlas:compute-health')
 Schedule::command('atlas:cleanup-form-drafts')
     ->dailyAt('03:00')
     ->withoutOverlapping()
+    ->onOneServer()
     ->runInBackground();
