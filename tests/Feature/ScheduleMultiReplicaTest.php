@@ -27,8 +27,13 @@ class ScheduleMultiReplicaTest extends TestCase
 
     public function test_database_cache_store_provides_atomic_lock(): void
     {
+        // Lock atomik tersedia (jaminan onOneServer lintas-replica). Mutual
+        // exclusion penuh (replica B terblokir saat A pegang) TAK bisa diuji di
+        // sini: RefreshDatabase membungkus test dalam transaksi, dan unique-
+        // violation lock meng-abort transaksi (SQLSTATE 25P02). Bukti mutual
+        // exclusion = scripts/validate-multi-replica.mjs (di luar transaksi).
         $lock = Cache::store('database')->lock('multi_replica_probe', 10);
-        $this->assertTrue($lock->get(), 'Database cache store harus menyediakan lock atomik (lintas-replica).');
+        $this->assertTrue($lock->get(), 'Database cache store harus menyediakan lock atomik.');
         $lock->release();
     }
 
