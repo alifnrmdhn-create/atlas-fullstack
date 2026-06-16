@@ -72,8 +72,9 @@ Production runs on Railway (`atlas-ptpn.up.railway.app`) built via Nixpacks —
 see `nixpacks.toml` for the build and boot contract (migrate, storage:link,
 config/route/view cache, scheduler loop, FrankenPHP). Uploads persist on a
 Railway volume mounted at `/app/storage/app`; daily database backups run via
-the `db-backup.yml` GitHub Actions workflow. `deploy/README.md` documents an
-older Render-based contract kept for reference only.
+the `db-backup.yml` GitHub Actions workflow. `deploy/README.md` documents the
+generic runtime/deployment contract (portable to other hosts); `HANDOVER.md`
+covers handover specifics including the code-vs-data distinction.
 
 ## Architecture Notes
 

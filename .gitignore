@@ -17,6 +17,7 @@
 /node_modules
 /public/build
 /public/hot
+/public/hot.disabled-*
 /public/storage
 /storage/*.key
 /storage/pail
