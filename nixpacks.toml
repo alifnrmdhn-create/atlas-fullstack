@@ -20,7 +20,15 @@ cmds = [
 # (tiap stream menahan thread 90s). Setelah refactor ke polling murni, tiap request
 # short-lived (<100ms) — thread cepat balik ke pool, default thread count cukup.
 # Boot sequence:
-#   1. migrate            — idempotent, aman tiap deploy
+#   1. migrate --isolated — idempotent + lock atomik (scale-readiness S1.2): di
+#                           rolling-deploy multi-replica, tiap container boot &
+#                           jalankan migrate. --isolated (lock via cache store =
+#                           database, S1.3) memastikan HANYA 1 container migrasi;
+#                           sisanya skip seketika → tak ada race migrasi.
+#                           CAVEAT env baru/fresh DB: cache_locks belum ada saat
+#                           migrate pertama → jalankan `php artisan migrate` sekali
+#                           manual dulu (atau first deploy single-replica), baru
+#                           deploy multi-replica.
 #   2. storage persisten  — volume Railway di-mount di /app/storage/app (2026-06-10;
 #                           sebelumnya ephemeral: upload hilang tiap redeploy).
 #                           mkdir target dulu (volume baru = kosong) lalu storage:link
@@ -34,4 +42,4 @@ cmds = [
 #                           → kegagalan scheduled command tak terlihat siapa pun); --whisper
 #                           sudah meredam noise per-menit, yang lolos hanya output command & error.
 #   6. frankenphp foreground (main process)
-cmd = "php artisan migrate --force && mkdir -p storage/app/public && php artisan storage:link --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && (php artisan atlas:cleanup-broadcast-events || true) && (while true; do php artisan schedule:work --whisper; sleep 2; done &) && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT"
+cmd = "php artisan migrate --force --isolated && mkdir -p storage/app/public && php artisan storage:link --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && (php artisan atlas:cleanup-broadcast-events || true) && (while true; do php artisan schedule:work --whisper; sleep 2; done &) && exec /app/bin/frankenphp php-server -r public/ --listen :$PORT"
