@@ -5,11 +5,12 @@ namespace Tests\Feature;
 use Tests\TestCase;
 
 /**
- * Mengunci konsistensi batas upload (audit 2026-06-17): php-conf/uploads.ini
- * (dimuat via PHP_INI_SCAN_DIR di nixpacks) menaikkan upload_max_filesize/
- * post_max_size dari default PHP 2M/8M agar SELARAS validasi app (max:10240 KB
- * = 10MB/file). Tanpa ini, foto HP 2-5MB ditolak PHP diam-diam ("files failed
- * to upload"). Regresi yang dijaga: ini dihapus/diturunkan di bawah validasi app.
+ * Mengunci konsistensi batas upload (audit 2026-06-17): public/.user.ini
+ * (PHP_INI_PERDIR — dibaca PHP per-direktori dari document root, TANPA menyentuh
+ * boot/scan-dir/ekstensi) menaikkan upload_max_filesize/post_max_size dari
+ * default PHP 2M/8M agar SELARAS validasi app (max:10240 KB = 10MB/file). Tanpa
+ * ini, foto HP 2-5MB ditolak PHP diam-diam ("files failed to upload"). Regresi
+ * yang dijaga: file dihapus/diturunkan di bawah validasi app.
  */
 class UploadLimitConsistencyTest extends TestCase
 {
@@ -17,8 +18,8 @@ class UploadLimitConsistencyTest extends TestCase
 
     public function test_php_ini_overrides_cover_app_upload_validation(): void
     {
-        $path = base_path('php-conf/uploads.ini');
-        $this->assertFileExists($path, 'php-conf/uploads.ini wajib ada (dimuat via PHP_INI_SCAN_DIR).');
+        $path = public_path('.user.ini');
+        $this->assertFileExists($path, 'public/.user.ini wajib ada (PHP_INI_PERDIR batas upload).');
 
         $ini = parse_ini_file($path);
 
