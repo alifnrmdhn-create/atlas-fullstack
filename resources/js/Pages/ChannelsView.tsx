@@ -7,6 +7,7 @@ import { useEscKey } from '../hooks/useEscKey'
 import { extractErrorMessage } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { formatRoleLabel } from '../lib/roleLabel'
+import { compressImageFile, MAX_UPLOAD_BYTES } from '../lib/imageCompress'
 import { getProgramHealthDisplay, getProgramDisplayStatus } from '../lib/programStatus'
 import { useInlineToast } from '../components/InlineToast'
 import { PageHeader } from '../design-system'
@@ -881,8 +882,24 @@ export function ChannelsView({
     setUploadError(null)
     setUploadingFiles(true)
     try {
+      // Kompres gambar besar di browser (foto HP 2-5MB → <2MB) supaya lolos
+      // batas upload server (audit 2026-06-17). Non-gambar diteruskan apa adanya.
+      const processed = await Promise.all(files.map((f) => compressImageFile(f)))
+
+      // Guard pesan jelas: yang tetap di atas batas server (mis. PDF besar yang
+      // tak bisa dikompres) ditolak di sini, bukan gagal membingungkan di server.
+      const tooBig = processed.find((f) => f.size > MAX_UPLOAD_BYTES)
+      if (tooBig) {
+        const mb = (tooBig.size / (1024 * 1024)).toFixed(1)
+        setUploadError(`File "${tooBig.name}" terlalu besar (${mb} MB, maks 2 MB). Perkecil dulu.`)
+        return
+      }
+
+      // 'files[]' (BUKAN 'files') — tanpa bracket, PHP terima sbg file tunggal →
+      // validasi server `files: array` gagal "files must be an array" (bug yang
+      // bikin upload single-file selalu 422; ketahuan dari verifikasi browser 2026-06-17).
       const formData = new FormData()
-      files.forEach((f) => formData.append('files', f))
+      processed.forEach((f) => formData.append('files[]', f))
       const result = await onUploadFiles(formData)
       setPendingAttachments((prev) => [...prev, ...result])
     } catch (err) {
