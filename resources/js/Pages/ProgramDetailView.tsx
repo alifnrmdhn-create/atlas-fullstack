@@ -1054,7 +1054,9 @@ export function ProgramDetailView() {
       await api.put(`/programs/${numId}`, {
         code: epForm.code.trim(),
         name: epForm.name.trim(),
-        description: epForm.description.trim() || undefined,
+        // null (bukan undefined) supaya deskripsi BISA dikosongkan — undefined di-drop
+        // klien sehingga deskripsi lama bertahan. BE update() menerima nullable.
+        description: epForm.description.trim() || null,
         status: epForm.status, priority: epForm.priority,
         startDate: epForm.startDate, targetEndDate: epForm.targetEndDate,
         linkedChannelId: channelNum,

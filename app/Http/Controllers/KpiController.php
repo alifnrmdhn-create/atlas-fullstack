@@ -6,6 +6,7 @@ use App\Models\KpiDefinition;
 use App\Models\KpiValue;
 use App\Models\KpiValueRevision;
 use App\Models\Program;
+use App\Services\BroadcastService;
 use App\Services\ProgramHealthService;
 use App\Services\ProgramService;
 use App\Support\RolePolicy;
@@ -225,10 +226,32 @@ class KpiController extends Controller
             );
         });
 
-        // Update KPI actualValue + trigger health
-        $kpi->update(['actualValue' => $data['actualValue'], 'lastMeasuredDate' => $data['measurementDate']]);
+        // FIX (audit 2026-06-17): rollup actualValue/lastMeasuredDate dari pengukuran
+        // dengan measurementDate TERBARU, bukan dari payload mentah. Tanpa ini,
+        // back-fill nilai bertanggal lama menimpa actualValue terkini → health
+        // dihitung atas realisasi usang (actualValue satu-satunya field yang dibaca
+        // ProgramHealthService::kpiStatus).
+        $latest = KpiValue::query()
+            ->where('kpiDefinitionId', $id)
+            ->orderByDesc('measurementDate')
+            ->first(['actualValue', 'measurementDate']);
+        if ($latest) {
+            $kpi->update([
+                'actualValue'      => $latest->actualValue,
+                'lastMeasuredDate' => $latest->measurementDate,
+            ]);
+        }
         if ($kpi->programId) {
             rescue(fn () => $this->healthService->recompute($kpi->programId));
+        }
+
+        // FIX (audit 2026-06-17): pancarkan broadcast supaya layar lain (dashboard,
+        // badge health program) refresh via polling 2s. Sebelumnya nilai KPI berubah
+        // & health re-compute tapi tak ada BroadcastEvent → hanya terlihat saat
+        // reload manual (FE sudah punya handler 'kpi:changed' & 'program:changed').
+        BroadcastService::kpi($id, 'value-recorded', $kpi->programId ? ['programId' => (int) $kpi->programId] : []);
+        if ($kpi->programId) {
+            BroadcastService::program((int) $kpi->programId, 'health-recomputed');
         }
 
         if ($request->expectsJson()) {

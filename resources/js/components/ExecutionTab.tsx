@@ -185,14 +185,22 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
   // Reset actualWeeks ke auto-derive
   const handleResetActualWeeks = useCallback(
     async (stepId: number) => {
+      // Snapshot SEBELUM optimistic update untuk rollback. FIX (audit 2026-06-17):
+      // dulu mengandalkan "SSE tick" untuk refresh — padahal SSE sudah di-drop
+      // (polling-only) & ExecutionTab tak punya subscription realtime → kalau PATCH
+      // gagal, UI menampilkan "reset ke auto" palsu yang tak pernah terkoreksi.
+      const step = grid?.phases.flatMap((p) => p.steps).concat(grid?.unphasedSteps ?? []).find((s) => s.id === stepId)
+      const prevWeeks = step?.actualWeeks ?? []
+      const prevDerived = step?.actualDerived ?? true
+
       updateStepInGrid(stepId, (s) => ({ ...s, actualWeeks: [], actualDerived: true }))
       try {
         await api.patch(`/tasks/${stepId}`, { actualWeeks: null })
       } catch {
-        // Grid akan di-refresh oleh SSE tick, tidak perlu rollback manual
+        updateStepInGrid(stepId, (s) => ({ ...s, actualWeeks: prevWeeks, actualDerived: prevDerived }))
       }
     },
-    [updateStepInGrid],
+    [grid, updateStepInGrid],
   )
 
   const visibleWorkstreams = useMemo(

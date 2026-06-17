@@ -144,6 +144,11 @@ class TaskController extends Controller
         if (!OrgScope::forUser($request->user())->coversUnit($ownerUnitId)) {
             abort(403, 'You do not have access to create a work item in another unit\'s program.');
         }
+        // PENDING-lock (audit 2026-06-17): jangan tambah task saat program di-review.
+        \App\Services\ProgramService::assertProgramNotUnderApproval(
+            Workstream::query()->where('id', (int) $data['workstreamId'])->value('programId'),
+            $request->user(),
+        );
 
         // Rename for table column
         if (isset($data['workstreamId'])) {
@@ -196,7 +201,10 @@ class TaskController extends Controller
         $this->assertCanModifyTask(Task::findOrFail($id), $request->user());
 
         $data = $request->validate([
-            'status'         => 'required|string',
+            // Selaras dengan store() (audit 2026-06-17): dulu 'required|string' bebas
+            // — bertumpu penuh pada guard TRANSITIONS di service. Validasi enum di
+            // controller = lapisan defensif eksplisit.
+            'status'         => 'required|in:BACKLOG,READY,IN_PROGRESS,IN_REVIEW,BLOCKED,COMPLETED',
             'note'           => 'nullable|string|max:2000',
             'blockedReason'  => 'nullable|string|max:2000',
             'percentComplete' => 'nullable|integer|min:0|max:100',
@@ -282,6 +290,11 @@ class TaskController extends Controller
         $this->assertCanModifyTask($task, $request->user());
 
         $workstreamId = $task->initiativeId;
+        // PENDING-lock (audit 2026-06-17): jangan hapus task saat program di-review.
+        \App\Services\ProgramService::assertProgramNotUnderApproval(
+            Workstream::query()->where('id', (int) $workstreamId)->value('programId'),
+            $request->user(),
+        );
         $this->taskService->delete($id, $request->user()->id);
         $this->taskService->recomputeWorkstreamProgress($workstreamId);
 

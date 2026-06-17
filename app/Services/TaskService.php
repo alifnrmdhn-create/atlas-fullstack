@@ -419,8 +419,11 @@ class TaskService
      *  lintas Charter & Program Detail. */
     public function recomputeWorkstreamProgress(int $workstreamId): void
     {
+        // Skip CANCELLED — selaras dengan recomputeProgramProgress (audit 2026-06-17).
+        // Tanpa ini, task batal ikut menyeret rata-rata progress workstream turun.
         $avg = Task::query()
             ->where('initiativeId', $workstreamId)
+            ->whereNotIn('status', ['CANCELLED'])
             ->avg('percentComplete');
 
         if ($avg !== null) {

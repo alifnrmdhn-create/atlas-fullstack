@@ -20,6 +20,11 @@ class PhaseController extends Controller
             abort(403, 'You do not have permission to create a phase.');
         }
         $this->assertUnitScope($this->ownerUnitForWorkstream($id), $request->user());
+        // PENDING-lock (audit 2026-06-17): jangan ubah struktur saat program di-review.
+        \App\Services\ProgramService::assertProgramNotUnderApproval(
+            Workstream::query()->where('id', $id)->value('programId'),
+            $request->user(),
+        );
 
         $data = $request->validate([
             'name' => 'required|string|max:120',
@@ -97,6 +102,11 @@ class PhaseController extends Controller
         }
         $phase = Phase::findOrFail($id);
         $this->assertUnitScope($this->ownerUnitForWorkstream((int) $phase->initiativeId), $request->user());
+        // PENDING-lock (audit 2026-06-17): jangan hapus struktur saat program di-review.
+        \App\Services\ProgramService::assertProgramNotUnderApproval(
+            Workstream::query()->where('id', (int) $phase->initiativeId)->value('programId'),
+            $request->user(),
+        );
 
         Phase::destroy($id);
 

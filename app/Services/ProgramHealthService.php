@@ -39,22 +39,17 @@ class ProgramHealthService
             return 'GREEN';
         }
 
-        [$workstreams, $kpis] = [
-            Workstream::query()
-                ->where('programId', $programId)
-                ->whereNotIn('status', ['COMPLETED', 'CANCELLED'])
-                ->get(['healthStatus', 'status']),
+        $kpis = KpiDefinition::query()
+            ->where('programId', $programId)
+            ->whereNotNull('actualValue')
+            ->get(['actualValue', 'targetValue', 'warningThreshold', 'criticalThreshold']);
 
-            KpiDefinition::query()
-                ->where('programId', $programId)
-                ->whereNotNull('actualValue')
-                ->get(['actualValue', 'targetValue', 'warningThreshold', 'criticalThreshold']),
-        ];
-
-        // Workstream signal
-        $wsHealth = 'GREEN';
-        if ($workstreams->contains('healthStatus', 'RED')) $wsHealth = 'RED';
-        elseif ($workstreams->contains('healthStatus', 'YELLOW')) $wsHealth = 'YELLOW';
+        // Workstream signal — FIX (audit 2026-06-17): dulu membaca Workstream.healthStatus
+        // sebagai sinyal #1, padahal kolom itu TIDAK PERNAH di-recompute (snapshot beku
+        // dari seeder) → health program sebagian macet, kontradiktif dengan prinsip
+        // "derived from real execution". Sekarang di-derive LIVE dari overdue ratio
+        // task per-workstream + di-persist balik (supaya ExecutionGrid juga fresh).
+        $wsHealth = $this->deriveWorkstreamHealth($programId);
 
         // KPI signal
         $kpiHealth = 'GREEN';
@@ -108,6 +103,54 @@ class ProgramHealthService
         if (! $lastActivated) return false;
         // Pakai isFuture() — Carbon 3 diffInDays returns signed float, abs lebih jelas.
         return $lastActivated->copy()->addDays($days)->isFuture();
+    }
+
+    /**
+     * Derive + persist healthStatus tiap workstream (non-completed) dari overdue
+     * ratio task-nya, lalu kembalikan worst sebagai sinyal level-program. Threshold
+     * sama dengan computeTaskOverdueHealth supaya konsisten. Audit 2026-06-17:
+     * menggantikan pembacaan kolom Workstream.healthStatus yang tak pernah di-update.
+     */
+    private function deriveWorkstreamHealth(int $programId): string
+    {
+        $workstreams = Workstream::query()
+            ->where('programId', $programId)
+            ->whereNotIn('status', ['COMPLETED', 'CANCELLED'])
+            ->get(['id', 'healthStatus']);
+
+        if ($workstreams->isEmpty()) return 'GREEN';
+
+        $now = now();
+        $redThreshold = (float) setting('auto_health.red_overdue_ratio', 0.30);
+        $yellowThreshold = (float) setting('auto_health.yellow_overdue_ratio', 0.10);
+
+        // Task open (punya target) untuk semua workstream ini, di-group per workstream.
+        $tasksByWs = Task::query()
+            ->whereIn('initiativeId', $workstreams->pluck('id'))
+            ->whereNotIn('status', ['COMPLETED', 'DONE', 'CANCELLED'])
+            ->whereNotNull('targetCompletion')
+            ->get(['initiativeId', 'targetCompletion'])
+            ->groupBy('initiativeId');
+
+        $worst = 'GREEN';
+        foreach ($workstreams as $ws) {
+            $tasks = $tasksByWs->get($ws->id);
+            $health = 'GREEN';
+            if ($tasks && $tasks->isNotEmpty()) {
+                $overdue = $tasks->filter(fn ($t) => $t->targetCompletion < $now)->count();
+                $ratio = $overdue / $tasks->count();
+                if ($ratio >= $redThreshold) $health = 'RED';
+                elseif ($ratio >= $yellowThreshold) $health = 'YELLOW';
+            }
+
+            // Persist hanya bila berubah — hindari write berlebih, jaga ExecutionGrid fresh.
+            if ($ws->healthStatus !== $health) {
+                Workstream::query()->where('id', $ws->id)->update(['healthStatus' => $health]);
+            }
+            $worst = $this->worst($worst, $health);
+        }
+
+        return $worst;
     }
 
     /** Sprint 5 — task overdue ratio signal. */

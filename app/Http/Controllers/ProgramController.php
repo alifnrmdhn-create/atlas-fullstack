@@ -288,7 +288,7 @@ class ProgramController extends Controller
             'strategicObjective' => 'nullable|string|max:1000',
             'startDate' => 'required|date',
             'targetEndDate' => 'required|date|after:startDate',
-            'status' => 'nullable|string|max:40',
+            'status' => 'nullable|in:PLANNING,IN_PROGRESS,ON_HOLD,COMPLETED,CANCELLED',
             'priority' => 'in:LOW,MEDIUM,HIGH,CRITICAL',
             'ownerId' => 'nullable|integer|exists:User,id',
             'ownerUnitId' => 'nullable|integer|exists:OrganizationalUnit,id',
@@ -345,6 +345,11 @@ class ProgramController extends Controller
             // 'sometimes|required' = boleh tidak dikirim, tapi kalau dikirim tidak
             // boleh kosong. Sinkron dengan FE yang punya HTML `required` di input.
             'name' => 'sometimes|required|string|min:1|max:200',
+            // FIX (audit 2026-06-17): `code` & `status` dulu tidak ada di validator →
+            // field "Kode" & "Status operasional" di modal edit tampak editable tapi
+            // di-drop diam-diam (no-op senyap). Sekarang divalidasi & tersimpan.
+            'code' => 'sometimes|required|string|max:40|unique:Program,code,' . $id,
+            'status' => 'sometimes|in:PLANNING,IN_PROGRESS,ON_HOLD,COMPLETED,CANCELLED',
             'description' => 'nullable|string|max:2000',
             'strategicObjective' => 'nullable|string|max:1000',
             'startDate' => 'sometimes|date',
@@ -434,7 +439,17 @@ class ProgramController extends Controller
             return $this->validationError($request, "No {$targetRole} found in your reporting line — ask an admin to fix your organization chain before submitting.");
         }
 
-        $program->update(['approvalStatus' => $nextStatus, 'rejectionNote' => null, 'submittedById' => $user->id]);
+        // Atomic guard (audit 2026-06-17): conditional update mencegah double-submit
+        // konkuren — dua request membaca DRAFT bersamaan, hanya satu yang menulis &
+        // mem-broadcast/notify; yang kalah race dapat 422 "refresh".
+        $affected = Program::query()
+            ->where('id', $id)
+            ->where('approvalStatus', $prevStatus)
+            ->update(['approvalStatus' => $nextStatus, 'rejectionNote' => null, 'submittedById' => $user->id, 'updatedAt' => now()]);
+        if (!$affected) {
+            return $this->validationError($request, 'The program status just changed — please refresh and try again.');
+        }
+        $program->approvalStatus = $nextStatus;
         ProgramApprovalLog::record($id, 'SUBMITTED', $prevStatus, $nextStatus, $user->id, $user->name);
         BroadcastService::program($id, 'updated', ['approvalStatus' => $nextStatus]);
 
@@ -474,7 +489,15 @@ class ProgramController extends Controller
             return $this->validationError($request, 'The program was just rejected — the PIC must revise and resubmit it before activation.');
         }
         $prevStatus = $program->approvalStatus;
-        $program->update(['approvalStatus' => 'ACTIVE', 'rejectionNote' => null]);
+        // Atomic guard (audit 2026-06-17): cegah double-activate konkuren.
+        $affected = Program::query()
+            ->where('id', $id)
+            ->where('approvalStatus', $prevStatus)
+            ->update(['approvalStatus' => 'ACTIVE', 'rejectionNote' => null, 'updatedAt' => now()]);
+        if (!$affected) {
+            return $this->validationError($request, 'The program status just changed — please refresh and try again.');
+        }
+        $program->approvalStatus = 'ACTIVE';
         ProgramApprovalLog::record($id, 'ACTIVATED', $prevStatus, 'ACTIVE', $request->user()->id, $request->user()->name);
         BroadcastService::program($id, 'approved');
 
@@ -829,22 +852,43 @@ class ProgramController extends Controller
 
         if ($prevStatus === 'PENDING_KASUB' && $role === 'KASUBDIV') {
             $this->assertIsLegitimateReviewer($program, $user, 'KASUBDIV');
-            $program->update(['approvalStatus' => 'PENDING_KADIV']);
-            ProgramApprovalLog::record($id, 'APPROVED', $prevStatus, 'PENDING_KADIV', $user->id, $user->name);
-            // Escalate to KADIV — notify next-stage reviewers. Use submitter's
-            // org chain (bukan KASUBDIV-nya sendiri) supaya KADIV yang tepat di
-            // hierarki PIC yang dapat ping, bukan KADIV-nya KASUBDIV.
+
+            // Anti-deadlock (audit 2026-06-17): escalation ke KADIV — kalau rantai
+            // submitter tak punya KADIV aktif, program akan nyangkut di PENDING_KADIV
+            // tanpa siapa pun bisa approve. Tolak di muka (mirror guard di submit()).
+            // Pakai org chain submitter (bukan KASUBDIV-nya) supaya KADIV yang tepat
+            // di hierarki PIC yang dapat ping.
             $submitter = $program->submittedById ? User::find($program->submittedById) : $user;
+            $kadivIds = $this->resolveReviewerIds($submitter ?? $user, 'KADIV');
+            if ($kadivIds === []) {
+                return $this->validationError($request, 'No KADIV found in the reporting line — ask an admin to fix the organization chain before approving.');
+            }
+
+            // Atomic guard: hanya satu approver konkuren yang menulis transisi.
+            $affected = Program::query()
+                ->where('id', $id)->where('approvalStatus', 'PENDING_KASUB')
+                ->update(['approvalStatus' => 'PENDING_KADIV', 'updatedAt' => now()]);
+            if (!$affected) {
+                return $this->validationError($request, 'The program status just changed — please refresh and try again.');
+            }
+            $program->approvalStatus = 'PENDING_KADIV';
+            ProgramApprovalLog::record($id, 'APPROVED', $prevStatus, 'PENDING_KADIV', $user->id, $user->name);
             $this->notifyApprovalEvent(
                 program: $program,
-                recipientIds: $this->resolveReviewerIds($submitter ?? $user, 'KADIV'),
+                recipientIds: $kadivIds,
                 type: 'PROGRAM_NEEDS_APPROVAL',
                 message: "Program \"{$program->name}\" is ready for KADIV approval.",
                 excludeUserId: $user->id,
             );
         } elseif ($prevStatus === 'PENDING_KADIV' && in_array($role, ['KADIV', 'ADMIN', 'SUPERADMIN'], true)) {
             $this->assertIsLegitimateReviewer($program, $user, 'KADIV');
-            $program->update(['approvalStatus' => 'ACTIVE']);
+            $affected = Program::query()
+                ->where('id', $id)->where('approvalStatus', 'PENDING_KADIV')
+                ->update(['approvalStatus' => 'ACTIVE', 'updatedAt' => now()]);
+            if (!$affected) {
+                return $this->validationError($request, 'The program status just changed — please refresh and try again.');
+            }
+            $program->approvalStatus = 'ACTIVE';
             ProgramApprovalLog::record($id, 'APPROVED', $prevStatus, 'ACTIVE', $user->id, $user->name);
             // Sprint 5 — Plan→Do handoff (KADIV approval triggers ACTIVE)
             $this->notifyProgramActivation($program, $user);
@@ -880,7 +924,14 @@ class ProgramController extends Controller
         );
 
         $prevStatus = $program->approvalStatus;
-        $program->update(['approvalStatus' => 'DRAFT', 'rejectionNote' => $data['note']]);
+        // Atomic guard (audit 2026-06-17): cegah reject ganda / reject-race-approve.
+        $affected = Program::query()
+            ->where('id', $id)->where('approvalStatus', $prevStatus)
+            ->update(['approvalStatus' => 'DRAFT', 'rejectionNote' => $data['note'], 'updatedAt' => now()]);
+        if (!$affected) {
+            return $this->validationError($request, 'The program status just changed — please refresh and try again.');
+        }
+        $program->approvalStatus = 'DRAFT';
         ProgramApprovalLog::record($id, 'REJECTED', $prevStatus, 'DRAFT', $request->user()->id, $request->user()->name, $data['note']);
         BroadcastService::program($id, 'rejected');
 
@@ -936,7 +987,14 @@ class ProgramController extends Controller
         $reviewerRole = $prevStatus === 'PENDING_KADIV' ? 'KADIV' : 'KASUBDIV';
         $reviewerIds = $this->resolveReviewerIds($submitter ?? $user, $reviewerRole);
 
-        $program->update(['approvalStatus' => 'DRAFT', 'rejectionNote' => null]);
+        // Atomic guard (audit 2026-06-17): cegah withdraw-race-approve.
+        $affected = Program::query()
+            ->where('id', $id)->where('approvalStatus', $prevStatus)
+            ->update(['approvalStatus' => 'DRAFT', 'rejectionNote' => null, 'updatedAt' => now()]);
+        if (!$affected) {
+            return $this->validationError($request, 'The program status just changed — please refresh and try again.');
+        }
+        $program->approvalStatus = 'DRAFT';
         ProgramApprovalLog::record($id, 'WITHDRAWN', $prevStatus, 'DRAFT', $user->id, $user->name);
         BroadcastService::program($id, 'updated', ['approvalStatus' => 'DRAFT']);
 
@@ -1006,9 +1064,24 @@ class ProgramController extends Controller
         }
     }
 
+    /**
+     * Authz untuk mutasi KPI program (link/unlink/internal). Audit 2026-06-17:
+     * dulu cuma assertAccess (cek akses BACA) → BOD (read-only) & non-owner bisa
+     * menulis KPI-link/internal-KPI (yang menggerakkan health & %achievement),
+     * padahal FE berasumsi backend mem-403-kannya. Sekarang pakai gate
+     * edit-program yang sama dengan update(): blok BOD, blok KADIV luar-direktorat,
+     * hormati kepemilikan/stakeholder.
+     */
+    private function assertCanEditProgram(int $id): Program
+    {
+        $program = Program::findOrFail($id);
+        Gate::authorize('edit-program', $program);
+        return $program;
+    }
+
     public function addKpiLink(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        $this->programService->assertAccess($request->user(), $id);
+        $this->assertCanEditProgram($id);
 
         $data = $request->validate([
             'apmsKpiCode' => 'required|string|max:30',
@@ -1035,7 +1108,7 @@ class ProgramController extends Controller
 
     public function removeKpiLink(Request $request, int $id, string $code): JsonResponse|RedirectResponse
     {
-        $this->programService->assertAccess($request->user(), $id);
+        $this->assertCanEditProgram($id);
 
         ProgramKpiLink::query()
             ->where('programId', $id)
@@ -1261,7 +1334,7 @@ class ProgramController extends Controller
 
     public function storeKpiInternal(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        $this->programService->assertAccess($request->user(), $id);
+        $this->assertCanEditProgram($id);
 
         $data = $request->validate([
             'code'            => 'required|string|min:2|max:40|unique:KpiDefinition,code',

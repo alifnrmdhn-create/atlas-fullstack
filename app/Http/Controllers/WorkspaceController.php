@@ -820,6 +820,8 @@ class WorkspaceController extends Controller
         // sama sekali — siapa pun bisa menambah workstream di program manapun).
         $ownerUnitId = $this->ownerUnitForProgram((int) $data['programId']);
         $this->assertCanMutateWorkstream($ownerUnitId, $request->user());
+        // PENDING-lock (audit 2026-06-17): jangan ubah struktur saat program di-review.
+        \App\Services\ProgramService::assertProgramNotUnderApproval((int) $data['programId'], $request->user());
 
         $picPersonIds = $data['picPersonIds'] ?? [];
         unset($data['picPersonIds']);
@@ -895,6 +897,8 @@ class WorkspaceController extends Controller
         // meng-cascade ke phase/task + recompute health program induk).
         $this->assertCanMutateWorkstream($this->ownerUnitForWorkstream($id), $request->user());
         $programId = Workstream::find($id)?->programId;
+        // PENDING-lock (audit 2026-06-17): jangan hapus struktur saat program di-review.
+        \App\Services\ProgramService::assertProgramNotUnderApproval($programId, $request->user());
         Workstream::destroy($id);
         if ($programId) rescue(fn () => $this->healthService->recompute($programId));
         return response()->json(['ok' => true]);

@@ -10,6 +10,7 @@ use App\Models\EntityPic;
 use App\Models\Program;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\RolePolicy;
 use App\Models\Workstream;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -285,6 +286,26 @@ class ProgramService
 
         if (!$hit) {
             abort(403, 'You do not have access to this program');
+        }
+    }
+
+    /**
+     * Guard struktur saat program menunggu approval. Audit 2026-06-17: lock
+     * "PENDING terkunci" dulu hanya di field program-level (ProgramController::update);
+     * CRUD Workstream/Phase/Task tetap terbuka → reviewer me-review snapshot yang
+     * bisa berubah di bawahnya. Non-admin tak boleh ubah struktur saat PENDING —
+     * jalur benar = withdraw → revisi → resubmit. Param untyped supaya aman menerima
+     * hasil ->value('programId') (int/string/null).
+     */
+    public static function assertProgramNotUnderApproval($programId, User $user): void
+    {
+        $programId = $programId !== null ? (int) $programId : null;
+        if (!$programId) return;
+        if (RolePolicy::isAdminOrAbove($user->roleType)) return;
+
+        $status = Program::query()->where('id', $programId)->value('approvalStatus');
+        if (in_array($status, ['PENDING_KASUB', 'PENDING_KADIV'], true)) {
+            abort(422, 'The program is under approval — its structure cannot be changed until a decision is made.');
         }
     }
 
