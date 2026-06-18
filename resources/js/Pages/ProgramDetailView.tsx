@@ -95,6 +95,7 @@ type WorkstreamRow = {
   startDate: string | null; targetCompletion: string
   description?: string; picPersonIds?: number[]; primaryPicPersonId?: number | null
   picPersons?: Array<{ id: number; name: string }>
+  ownerId?: number | null
   budgetIdr?: number | null
   budgetSpent?: number | null
 }
@@ -110,6 +111,7 @@ type TaskItem = {
 
 type PhaseItem = {
   id: number; code: string; order: number; name: string; status: string; tasks: TaskItem[]
+  startWeek?: string | null; endWeek?: string | null
 }
 
 type WorkstreamDetail = {
@@ -1077,6 +1079,7 @@ export function ProgramDetailView() {
   const [ciForm, setCiForm] = useState({
     name: '', description: '', status: 'BACKLOG', priority: 'MEDIUM',
     startDate: '', targetCompletion: '',
+    budgetIdr: '', budgetSpent: '',
   })
   const [ciSaving, setCiSaving] = useState(false)
   const [ciError, setCiError] = useState<string | null>(null)
@@ -1091,7 +1094,7 @@ export function ProgramDetailView() {
   const [eiPicSearch, setEiPicSearch] = useState('')
   const triggerCiClose = useCallback(() => closeOverlay('create-ini', () => {
     setShowCreateIni(false); setCiError(null); setCiPicIds([]); setCiPicSearch(''); setCiPrimaryPicId(null)
-    setCiForm({ name: '', description: '', status: 'BACKLOG', priority: 'MEDIUM', startDate: '', targetCompletion: '' })
+    setCiForm({ name: '', description: '', status: 'BACKLOG', priority: 'MEDIUM', startDate: '', targetCompletion: '', budgetIdr: '', budgetSpent: '' })
   }), [closeOverlay])
   const ciClosing = closingOverlay === 'create-ini'
   const createWorkstreamDialogRef = useDialogFocus<HTMLDivElement>(showCreateIni || ciClosing)
@@ -1101,6 +1104,7 @@ export function ProgramDetailView() {
     const ciDirty = ciForm.name !== '' || ciForm.description !== '' ||
       ciForm.startDate !== '' || ciForm.targetCompletion !== '' ||
       ciForm.status !== 'BACKLOG' || ciForm.priority !== 'MEDIUM' ||
+      ciForm.budgetIdr !== '' || ciForm.budgetSpent !== '' ||
       ciPicIds.length > 0 || ciOwnerId !== null
     if (ciDirty && !window.confirm('Discard unsaved changes?')) return
     triggerCiClose()
@@ -1118,6 +1122,8 @@ export function ProgramDetailView() {
         startDate: ciForm.startDate || undefined,
         targetCompletion: ciForm.targetCompletion,
         ownerId: ciOwnerId ?? currentUser?.id ?? undefined,
+        budgetIdr: ciForm.budgetIdr === '' ? null : Number(ciForm.budgetIdr),
+        budgetSpent: ciForm.budgetSpent === '' ? null : Number(ciForm.budgetSpent),
         picPersonIds: ciPicIds.length > 0 ? ciPicIds : undefined,
         primaryPicPersonId: ciPrimaryPicId ?? (ciPicIds[0] ?? undefined),
       })
@@ -1136,6 +1142,8 @@ export function ProgramDetailView() {
   const [eiForm, setEiForm] = useState({
     name: '', description: '', status: 'BACKLOG', priority: 'MEDIUM',
     startDate: '', targetCompletion: '',
+    ownerId: null as number | null,
+    budgetIdr: '', budgetSpent: '',
   })
   const [eiSaving, setEiSaving] = useState(false)
   const [eiError, setEiError] = useState<string | null>(null)
@@ -1153,6 +1161,9 @@ export function ProgramDetailView() {
       eiForm.priority !== editIni.priority ||
       eiForm.startDate !== (editIni.startDate?.slice(0, 10) ?? '') ||
       eiForm.targetCompletion !== (editIni.targetCompletion?.slice(0, 10) ?? '') ||
+      eiForm.ownerId !== (editIni.ownerId ?? null) ||
+      eiForm.budgetIdr !== (editIni.budgetIdr != null ? String(Number(editIni.budgetIdr)) : '') ||
+      eiForm.budgetSpent !== (editIni.budgetSpent != null ? String(Number(editIni.budgetSpent)) : '') ||
       eiPicIds.length !== (editIni.picPersonIds?.length ?? 0) ||
       eiPicIds.some(id => !(editIni.picPersonIds ?? []).includes(id)) ||
       eiPrimaryPicId !== (editIni.primaryPicPersonId ?? null)
@@ -1168,6 +1179,9 @@ export function ProgramDetailView() {
       status: ini.status, priority: ini.priority,
       startDate: ini.startDate?.slice(0, 10) ?? '',
       targetCompletion: ini.targetCompletion?.slice(0, 10) ?? '',
+      ownerId: ini.ownerId ?? null,
+      budgetIdr: ini.budgetIdr != null ? String(Number(ini.budgetIdr)) : '',
+      budgetSpent: ini.budgetSpent != null ? String(Number(ini.budgetSpent)) : '',
     })
     setEiPicIds(ini.picPersonIds ?? [])
     setEiPrimaryPicId(ini.primaryPicPersonId ?? (ini.picPersonIds?.[0] ?? null))
@@ -1190,6 +1204,9 @@ export function ProgramDetailView() {
         status: eiForm.status, priority: eiForm.priority,
         startDate: eiForm.startDate || undefined,
         targetCompletion: eiForm.targetCompletion,
+        ownerId: eiForm.ownerId ?? undefined,
+        budgetIdr: eiForm.budgetIdr === '' ? null : Number(eiForm.budgetIdr),
+        budgetSpent: eiForm.budgetSpent === '' ? null : Number(eiForm.budgetSpent),
         picPersonIds: eiPicIds.length > 0 ? eiPicIds : undefined,
         primaryPicPersonId: eiPrimaryPicId ?? (eiPicIds[0] ?? undefined),
       })
@@ -1225,12 +1242,12 @@ export function ProgramDetailView() {
   // ── Edit Phase (Tugas) modal ─────────────────────────────────────────
   const [editPhase, setEditPhase] = useState<PhaseItem | null>(null)
   const [showEditPhase, setShowEditPhase] = useState(false)
-  const [ephForm, setEphForm] = useState({ name: '', description: '', status: 'PLANNING' })
+  const [ephForm, setEphForm] = useState({ name: '', description: '', status: 'PLANNING', startWeek: '', endWeek: '' })
   const [ephSaving, setEphSaving] = useState(false)
   const [ephError, setEphError] = useState<string | null>(null)
   const triggerEphClose = useCallback(() => closeOverlay('edit-phase', () => {
     setShowEditPhase(false); setEditPhase(null); setEphError(null)
-    setEphForm({ name: '', description: '', status: 'PLANNING' })
+    setEphForm({ name: '', description: '', status: 'PLANNING', startWeek: '', endWeek: '' })
   }), [closeOverlay])
   const ephClosing = closingOverlay === 'edit-phase'
   const editPhaseDialogRef = useDialogFocus<HTMLDivElement>(showEditPhase || ephClosing)
@@ -1240,6 +1257,8 @@ export function ProgramDetailView() {
     const ephDirty = !!editPhase && (
       ephForm.name !== editPhase.name ||
       ephForm.status !== editPhase.status ||
+      ephForm.startWeek !== (editPhase.startWeek ?? '') ||
+      ephForm.endWeek !== (editPhase.endWeek ?? '') ||
       ephForm.description !== ''
     )
     if (ephDirty && !window.confirm('Discard unsaved changes?')) return
@@ -1248,7 +1267,7 @@ export function ProgramDetailView() {
 
   const openEditPhase = (phase: PhaseItem) => {
     setEditPhase(phase)
-    setEphForm({ name: phase.name, description: '', status: phase.status })
+    setEphForm({ name: phase.name, description: '', status: phase.status, startWeek: phase.startWeek ?? '', endWeek: phase.endWeek ?? '' })
     setShowEditPhase(true)
   }
 
@@ -1261,6 +1280,8 @@ export function ProgramDetailView() {
         name: ephForm.name.trim(),
         description: ephForm.description.trim() || undefined,
         status: ephForm.status,
+        startWeek: ephForm.startWeek || null,
+        endWeek: ephForm.endWeek || null,
       })
       triggerEphClose()
       void reloadIniDetail(selectedIniId)
@@ -1293,19 +1314,19 @@ export function ProgramDetailView() {
   // ── Create Phase (Tugas) modal ────────────────────────────────────────
   const [showCreatePhase, setShowCreatePhase] = useState(false)
   const [cpWorkstreamId, setCpWorkstreamId] = useState<number | null>(null)
-  const [cpForm, setCpForm] = useState({ name: '', description: '', status: 'PLANNING' })
+  const [cpForm, setCpForm] = useState({ name: '', description: '', status: 'PLANNING', startWeek: '', endWeek: '' })
   const [cpSaving, setCpSaving] = useState(false)
   const [cpError, setCpError] = useState<string | null>(null)
   const triggerCpClose = useCallback(() => closeOverlay('create-phase', () => {
     setShowCreatePhase(false); setCpError(null); setCpWorkstreamId(null)
-    setCpForm({ name: '', description: '', status: 'PLANNING' })
+    setCpForm({ name: '', description: '', status: 'PLANNING', startWeek: '', endWeek: '' })
   }), [closeOverlay])
   const cpClosing = closingOverlay === 'create-phase'
   const createPhaseDialogRef = useDialogFocus<HTMLDivElement>(showCreatePhase || cpClosing)
   const createPhaseTitleId = useId()
   useEscKey(() => {
     if (cpSaving) return
-    const cpDirty = cpForm.name !== '' || cpForm.description !== '' || cpForm.status !== 'PLANNING'
+    const cpDirty = cpForm.name !== '' || cpForm.description !== '' || cpForm.status !== 'PLANNING' || cpForm.startWeek !== '' || cpForm.endWeek !== ''
     if (cpDirty && !window.confirm('Discard unsaved changes?')) return
     triggerCpClose()
   }, showCreatePhase || cpClosing)
@@ -1336,6 +1357,8 @@ export function ProgramDetailView() {
         name: cpForm.name.trim(),
         description: cpForm.description.trim() || undefined,
         status: cpForm.status,
+        startWeek: cpForm.startWeek || null,
+        endWeek: cpForm.endWeek || null,
       })
       triggerCpClose()
       void reloadIniDetail(cpWorkstreamId)
@@ -4054,6 +4077,25 @@ export function ProgramDetailView() {
                   </div>
                 </div>
                 <div className="form-field">
+                  <label>Priority</label>
+                  <select className="form-input" onChange={e => setCiForm(f => ({ ...f, priority: e.target.value }))} value={ciForm.priority}>
+                    <option value="CRITICAL">Critical</option>
+                    <option value="HIGH">High</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="LOW">Low</option>
+                  </select>
+                </div>
+                <div className="prog-form-grid prog-form-grid--equal">
+                  <div className="form-field">
+                    <label>Anggaran (IDR)</label>
+                    <input min={0} onChange={e => setCiForm(f => ({ ...f, budgetIdr: e.target.value }))} type="number" value={ciForm.budgetIdr} />
+                  </div>
+                  <div className="form-field">
+                    <label>Realisasi (IDR)</label>
+                    <input min={0} onChange={e => setCiForm(f => ({ ...f, budgetSpent: e.target.value }))} type="number" value={ciForm.budgetSpent} />
+                  </div>
+                </div>
+                <div className="form-field">
                   <label>
                     Workstream Owner
                     <span className="form-field__hint"> · reviewer for tasks entering IN_REVIEW</span>
@@ -4185,6 +4227,38 @@ export function ProgramDetailView() {
                     {!eiForm.targetCompletion && <span className="form-field__hint form-field__hint--warn">Date invalid or not set</span>}
                   </div>
                 </div>
+                <div className="form-field">
+                  <label>Priority</label>
+                  <select className="form-input" onChange={e => setEiForm(f => ({ ...f, priority: e.target.value }))} value={eiForm.priority}>
+                    <option value="CRITICAL">Critical</option>
+                    <option value="HIGH">High</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="LOW">Low</option>
+                  </select>
+                </div>
+                <div className="prog-form-grid prog-form-grid--equal">
+                  <div className="form-field">
+                    <label>Anggaran (IDR)</label>
+                    <input min={0} onChange={e => setEiForm(f => ({ ...f, budgetIdr: e.target.value }))} type="number" value={eiForm.budgetIdr} />
+                  </div>
+                  <div className="form-field">
+                    <label>Realisasi (IDR)</label>
+                    <input min={0} onChange={e => setEiForm(f => ({ ...f, budgetSpent: e.target.value }))} type="number" value={eiForm.budgetSpent} />
+                  </div>
+                </div>
+                <div className="form-field">
+                  <label>
+                    Workstream Owner
+                    <span className="form-field__hint"> · reviewer for tasks entering IN_REVIEW</span>
+                  </label>
+                  <UserPicker
+                    currentUserId={currentUser?.id}
+                    onChange={id => setEiForm(f => ({ ...f, ownerId: id }))}
+                    options={userDirectory.length > 0 ? userDirectory : (currentUser ? [{ id: currentUser.id, name: currentUser.name, positionTitle: null }] : [])}
+                    placeholder="Select workstream owner…"
+                    value={eiForm.ownerId}
+                  />
+                </div>
                 <div className="ws-pic-section">
                   <label className="ws-pic-section__label">Assignee</label>
                   <input
@@ -4273,6 +4347,24 @@ export function ProgramDetailView() {
                   <label>Description</label>
                   <textarea className="composer__input prog-modal-textarea" maxLength={400} onChange={e => setEphForm(f => ({ ...f, description: e.target.value }))} rows={2} value={ephForm.description} />
                 </div>
+                <div className="form-field">
+                  <label>Status</label>
+                  <select className="form-input" onChange={e => setEphForm(f => ({ ...f, status: e.target.value }))} value={ephForm.status}>
+                    <option value="PLANNING">Planning</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="COMPLETED">Completed</option>
+                  </select>
+                </div>
+                <div className="prog-form-grid prog-form-grid--equal">
+                  <div className="form-field">
+                    <label>Minggu mulai</label>
+                    <input onChange={e => setEphForm(f => ({ ...f, startWeek: e.target.value }))} type="week" value={ephForm.startWeek} />
+                  </div>
+                  <div className="form-field">
+                    <label>Minggu selesai</label>
+                    <input onChange={e => setEphForm(f => ({ ...f, endWeek: e.target.value }))} type="week" value={ephForm.endWeek} />
+                  </div>
+                </div>
               </div>
               <div className="modal__footer">
                 <button className="btn btn--ghost" disabled={ephSaving} onClick={triggerEphClose} type="button">Cancel</button>
@@ -4326,6 +4418,16 @@ export function ProgramDetailView() {
                     rows={2}
                     value={cpForm.description}
                   />
+                </div>
+                <div className="prog-form-grid prog-form-grid--equal">
+                  <div className="form-field">
+                    <label>Minggu mulai</label>
+                    <input onChange={e => setCpForm(f => ({ ...f, startWeek: e.target.value }))} type="week" value={cpForm.startWeek} />
+                  </div>
+                  <div className="form-field">
+                    <label>Minggu selesai</label>
+                    <input onChange={e => setCpForm(f => ({ ...f, endWeek: e.target.value }))} type="week" value={cpForm.endWeek} />
+                  </div>
                 </div>
               </div>
               <div className="modal__footer">

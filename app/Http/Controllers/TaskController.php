@@ -180,7 +180,12 @@ class TaskController extends Controller
             'estimatedHours' => 'nullable|numeric',
             'phaseId' => 'nullable|integer',
             'letterIndex' => 'nullable|string|max:5',
+            // FIX (audit 2026-06-17): plannedWeeks dulu tak ada di validator →
+            // editor "Weekly Plan" di Task Detail (kirim plannedWeeks) gagal senyap.
+            'plannedWeeks' => 'nullable|array',
+            'plannedWeeks.*' => 'string|max:10',
             'actualWeeks' => 'nullable|array',
+            'actualWeeks.*' => 'string|max:10',
             'picPersonIds' => 'nullable|array',
             'picUnitIds' => 'nullable|array',
         ]);

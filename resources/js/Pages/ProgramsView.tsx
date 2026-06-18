@@ -702,16 +702,18 @@ export function ProgramsView() {
     try {
       await api.put(`/programs/${editProgram.id}`, {
         name: editProgram.name.trim(),
-        description: editProgram.description.trim() || undefined,
+        // null (bukan undefined) supaya field nullable BISA dikosongkan — undefined
+        // di-drop klien sehingga nilai lama bertahan (audit 2026-06-17).
+        description: editProgram.description.trim() || null,
         status: editProgram.status,
         priority: editProgram.priority,
         startDate: editProgram.startDate,
         targetEndDate: editProgram.targetEndDate,
         ...(editProgram.ownerId != null ? { ownerId: editProgram.ownerId } : {}),
-        kelompok: editProgram.kelompok || undefined,
-        pilarStrategis: editProgram.pilarStrategis || undefined,
-        progresTerkini: editProgram.progresTerkini.trim() || undefined,
-        dukunganDibutuhkan: editProgram.dukunganDibutuhkan.trim() || undefined,
+        kelompok: editProgram.kelompok || null,
+        pilarStrategis: editProgram.pilarStrategis || null,
+        progresTerkini: editProgram.progresTerkini.trim() || null,
+        dukunganDibutuhkan: editProgram.dukunganDibutuhkan.trim() || null,
       })
       closeEditProgram()
       await loadOverview('refresh')

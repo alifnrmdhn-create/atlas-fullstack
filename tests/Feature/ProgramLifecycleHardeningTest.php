@@ -199,6 +199,52 @@ class ProgramLifecycleHardeningTest extends TestCase
         $this->assertSame('RED', Program::find($id)->healthStatus);
     }
 
+    // ── plannedWeeks editable (timeline Plan) ─────────────────────────────────
+
+    public function test_planned_weeks_editable_and_clearable(): void
+    {
+        [$dir, $unit] = $this->makeDirectorate('DIR-A', 'DIV-A');
+        $admin = $this->makeUser('admin-a', 'SUPERADMIN', $unit->id, $dir->id);
+        $id = $this->createProgram($admin);
+        $wsId = (int) $this->actingAs($admin)->postJson('/workstreams', [
+            'programId' => $id, 'name' => 'WS', 'priority' => 'HIGH',
+            'targetCompletion' => now()->addWeeks(2)->toDateString(), 'ownerId' => $admin->id,
+        ])->assertCreated()->json('data.id');
+        $taskId = (int) $this->actingAs($admin)->postJson('/tasks', [
+            'title' => 'Task', 'workstreamId' => $wsId,
+            'targetCompletion' => now()->addWeek()->toDateString(), 'priority' => 'MEDIUM',
+        ])->assertCreated()->json('data.id');
+
+        // Editor "Weekly Plan" (PATCH plannedWeeks) — dulu di-drop senyap, kini tersimpan.
+        $this->actingAs($admin)->patchJson("/tasks/{$taskId}", ['plannedWeeks' => ['2026-W10', '2026-W11']])
+            ->assertSuccessful();
+        $this->assertSame(['2026-W10', '2026-W11'], Task::find($taskId)->plannedWeeks);
+
+        // Bisa dikosongkan.
+        $this->actingAs($admin)->patchJson("/tasks/{$taskId}", ['plannedWeeks' => []])->assertSuccessful();
+        $this->assertSame([], Task::find($taskId)->plannedWeeks);
+    }
+
+    // ── apmsKpiCodes ter-link saat create ─────────────────────────────────────
+
+    public function test_create_program_links_selected_apms_kpi(): void
+    {
+        [$dir, $unit] = $this->makeDirectorate('DIR-A', 'DIV-A');
+        $admin = $this->makeUser('admin-a', 'SUPERADMIN', $unit->id, $dir->id);
+
+        $id = (int) $this->actingAs($admin)->postJson('/programs', [
+            'name' => 'Program KPI', 'startDate' => now()->toDateString(),
+            'targetEndDate' => now()->addMonths(2)->toDateString(), 'ownerId' => $admin->id,
+            'apmsKpiCodes' => ['KPI-1', 'KPI-2'],
+        ])->assertCreated()->json('data.id');
+
+        // Dulu apmsKpiCodes di-drop senyap (validator + create) → tak ada link. Kini ter-link.
+        $this->assertSame(
+            ['KPI-1', 'KPI-2'],
+            \App\Models\ProgramKpiLink::where('programId', $id)->orderBy('apmsKpiCode')->pluck('apmsKpiCode')->all(),
+        );
+    }
+
     // ── helper ────────────────────────────────────────────────────────────────
 
     private function createProgram(\App\Models\User $owner): int

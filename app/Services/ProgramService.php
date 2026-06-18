@@ -8,6 +8,7 @@ use App\Models\Blocker;
 use App\Models\Channel;
 use App\Models\EntityPic;
 use App\Models\Program;
+use App\Models\ProgramKpiLink;
 use App\Models\Task;
 use App\Models\User;
 use App\Support\RolePolicy;
@@ -357,7 +358,10 @@ class ProgramService
         $code = 'PRG-' . strtoupper(substr(md5(uniqid()), 0, 6));
         $ownerId = $data['ownerId'] ?? $user->id;
         $picPersonIds = $data['picPersonIds'] ?? [];
-        unset($data['ownerId'], $data['picPersonIds']);
+        // FIX (audit 2026-06-17): apmsKpiCodes dari wizard "Buat Program" dulu di-drop
+        // (store validator tak terima + create tak proses) → KPI terpilih hilang.
+        $apmsKpiCodes = $data['apmsKpiCodes'] ?? [];
+        unset($data['ownerId'], $data['picPersonIds'], $data['apmsKpiCodes']);
 
         $program = Program::create([
             ...$data,
@@ -370,6 +374,14 @@ class ProgramService
         ]);
 
         $this->syncProgramPics($program, $picPersonIds);
+
+        // Link KPI APMS yang dipilih di wizard (idempotent per kode).
+        foreach (array_unique(array_filter($apmsKpiCodes)) as $apmsKpiCode) {
+            ProgramKpiLink::firstOrCreate([
+                'programId'   => $program->id,
+                'apmsKpiCode' => $apmsKpiCode,
+            ]);
+        }
 
         return $program->fresh(['coPics']);
     }

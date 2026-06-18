@@ -737,7 +737,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
   const [blForm, setBlForm] = useState({ code: '', title: '', severity: 'HIGH', description: '', assignedTo: '' })
   const [blSaving, setBlSaving] = useState(false)
   const [blError, setBlError] = useState<string | null>(null)
-  const [blEditTarget, setBlEditTarget] = useState<{ id: number; title: string; description: string; severity: string } | null>(null)
+  const [blEditTarget, setBlEditTarget] = useState<{ id: number; title: string; description: string; severity: string; assignedTo: number | null } | null>(null)
   const [blEditSaving, setBlEditSaving] = useState(false)
   const [blStatusTarget, setBlStatusTarget] = useState<{ id: number; status: string; resolution: string } | null>(null)
   const [blStatusSaving, setBlStatusSaving] = useState(false)
@@ -760,7 +760,8 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
     const dirty = !!orig && !!blEditTarget && (
       blEditTarget.title !== orig.title ||
       blEditTarget.description !== (orig.description ?? '') ||
-      blEditTarget.severity !== orig.severity
+      blEditTarget.severity !== orig.severity ||
+      blEditTarget.assignedTo !== (orig.assignedTo ?? null)
     )
     if (dirty && !confirmDiscard()) return
     setBlEditTarget(null)
@@ -951,6 +952,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
         title: blEditTarget.title.trim(),
         description: blEditTarget.description.trim() || undefined,
         severity: blEditTarget.severity,
+        assignedTo: blEditTarget.assignedTo,
       })
       setBlEditTarget(null)
       await loadDetail(true)
@@ -1774,6 +1776,16 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                             <option value="CRITICAL">Critical</option><option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option>
                           </select>
                           <textarea className="wid-input" disabled={blEditSaving} onChange={e => setBlEditTarget(t => t ? { ...t, description: e.target.value } : t)} rows={2} style={{ resize: 'vertical' }} value={blEditTarget.description} />
+                          <UserPicker
+                            allowClear
+                            clearLabel="— Remove assignee —"
+                            disabled={blEditSaving}
+                            inputClassName="wid-input"
+                            onChange={id => setBlEditTarget(t => t ? { ...t, assignedTo: id } : t)}
+                            options={assignUsers}
+                            placeholder="Assignee (optional)"
+                            value={blEditTarget.assignedTo}
+                          />
                           <div className="wid-form__actions">
                             <button className="wid-btn wid-btn--primary" disabled={blEditSaving} type="submit">{blEditSaving ? '…' : 'Save'}</button>
                             <button className="wid-btn" onClick={() => setBlEditTarget(null)} type="button">Cancel</button>
@@ -1817,7 +1829,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                     )}
                     {!roleAccess.isMonitoringOnly && (
                       <div className="wid-bl-actions">
-                        <button className="wid-bl-actionbtn" onClick={() => setBlEditTarget(t => t?.id === bl.id ? null : { id: bl.id, title: bl.title, description: bl.description ?? '', severity: bl.severity })} title="Edit" type="button">
+                        <button className="wid-bl-actionbtn" onClick={() => setBlEditTarget(t => t?.id === bl.id ? null : { id: bl.id, title: bl.title, description: bl.description ?? '', severity: bl.severity, assignedTo: bl.assignedTo ?? null })} title="Edit" type="button">
                           <svg fill="none" height="12" viewBox="0 0 12 12" width="12"><path d="M8.5 1.5a1.06 1.06 0 0 1 1.5 1.5L3.5 9.5l-3 1 1-3 6.5-6z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.3"/></svg>
                         </button>
                         <button className="wid-bl-actionbtn" onClick={() => setBlStatusTarget(t => t?.id === bl.id ? null : { id: bl.id, status: bl.status, resolution: '' })} title="Change status" type="button">

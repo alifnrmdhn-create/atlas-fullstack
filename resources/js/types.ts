@@ -354,6 +354,7 @@ export type TaskDetail = {
     description?: string
     status: string
     severity: string
+    assignedTo?: number | null
   }>
   subTasks: Array<{
     id: number

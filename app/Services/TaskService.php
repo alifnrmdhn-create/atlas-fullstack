@@ -99,8 +99,12 @@ class TaskService
 
         $task = Task::findOrFail($id);
 
-        // Re-derive plannedWeeks if dates change
-        if (isset($data['startDate']) || isset($data['targetCompletion'])) {
+        // Re-derive plannedWeeks if dates change — KECUALI plannedWeeks dikirim
+        // eksplisit (editor "Weekly Plan" di Task Detail). FIX (audit 2026-06-17):
+        // plan manual menang & tidak ditimpa auto-derive; TaskPlanningPanel yang
+        // tak mengirim plannedWeeks tetap auto-derive saat tanggal berubah.
+        if (!array_key_exists('plannedWeeks', $data)
+            && (isset($data['startDate']) || isset($data['targetCompletion']))) {
             $start = isset($data['startDate'])
                 ? ($data['startDate'] ? new \DateTime($data['startDate']) : null)
                 : ($task->startDate ? $task->startDate->toDateTime() : null);

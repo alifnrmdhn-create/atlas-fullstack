@@ -296,6 +296,10 @@ class ProgramController extends Controller
             'picPersonIds' => 'nullable|array',
             'picPersonIds.*' => 'integer|exists:User,id',
             'hasNoApmsKpi' => 'nullable|boolean',
+            // FIX (audit 2026-06-17): apmsKpiCodes dari wizard create dulu tak ada di
+            // validator → KPI APMS terpilih di-drop senyap. Kini diterima & di-link.
+            'apmsKpiCodes' => 'nullable|array',
+            'apmsKpiCodes.*' => 'string|max:30',
             'kelompok' => 'nullable|in:SCORECARD,NON_SCORECARD',
             'pilarStrategis' => 'nullable|in:' . implode(',', array_keys(config('atlas-thresholds.pillars', []))),
             'progresTerkini' => 'nullable|string|max:2000',
