@@ -1,0 +1,114 @@
+# ATLAS — Docker Compose (pola shared-volume, mirror erin-v2 / Aplikasi Hukum).
+#
+#   - app (php-fpm) + webserver (nginx). Code di-BAKE ke image saat
+#     `docker compose build`; TIDAK ada dev server Vite & TIDAK ada live-edit
+#     (ubah kode → build lagi). Live-edit frontend = dev native (`npm run main-dev`).
+#   - app & webserver SHARE volume `app_code` di /var/www/html. Entrypoint app
+#     rsync code dari /app-tmp (di image) → volume tiap boot, jadi nginx + php-fpm
+#     melihat code + public/ yang SAMA (wajib agar FastCGI SCRIPT_FILENAME valid
+#     di kedua container). nginx baca read-only.
+#   - DB = PostgreSQL di HOST (Laragon). DB_HOST=host.docker.internal mengalahkan
+#     127.0.0.1 di .env karena OS-env menang atas Laravel Dotenv (immutable).
+#     Schema/data dipakai apa adanya dari host (DB `atlas-fullstack`, schema
+#     `ptpn_kmr_app`); entrypoint hanya menjalankan `migrate --force` (apply
+#     migrasi yang belum jalan) — TIDAK seed.
+#   - TANPA WebSocket/Reverb (ATLAS realtime = polling 2s + scheduler).
+#
+# Akses: http://localhost:8080
+#
+# Build & jalankan:
+#   docker compose up -d --build
+# Stop:
+#   docker compose down
+#
+# ── Ingin DB ter-bundel (tidak pakai Postgres host)? ─────────────────────────
+# Uncomment service `db` + volume `pgdata` di bawah, ganti `DB_HOST` di service
+# app jadi `db`, lalu `depends_on: [db]`. Schema ptpn_kmr_app dibuat otomatis
+# oleh entrypoint sebelum migrate; user login di-seed lewat entrypoint? TIDAK —
+# entrypoint.sh prod tidak seed. Untuk DB kosong + seed jalankan manual:
+#   docker compose exec app php artisan db:seed --force
+
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: php-base
+        container_name: atlas_app
+        restart: unless-stopped
+        env_file:
+            # Coolify menulis .env di sebelah compose; di luar Coolify pakai .env
+            # repo. `required: false` → aman bila file belum ada saat build.
+            - path: .env
+              required: false
+        environment:
+            # Menang atas .env (Laravel Dotenv tak menimpa OS-env): arahkan DB ke
+            # Postgres di HOST. Ganti ke `db` bila pakai service db ter-bundel.
+            DB_HOST: host.docker.internal
+        extra_hosts:
+            # Linux: petakan host.docker.internal ke gateway host (Docker Desktop
+            # Win/Mac sudah otomatis, baris ini no-op di sana tapi aman).
+            - "host.docker.internal:host-gateway"
+        volumes:
+            # Shared dgn webserver: berisi code + public/ (Vite) hasil rsync dari
+            # /app-tmp saat boot (lihat docker/entrypoint.sh). bootstrap/cache ikut
+            # di sini (di-rebuild entrypoint tiap boot — tak perlu persist).
+            - app_code:/var/www/html
+            # Upload user (disk privat 'local' = storage/app) + log. NAMED VOLUME,
+            # BUKAN bind ./storage — supaya DURABLE lintas redeploy. Entrypoint
+            # rsync --exclude 'storage' (volume ini tak pernah ditimpa kode baru).
+            - app_storage:/var/www/html/storage
+        networks:
+            - atlas
+        healthcheck:
+            test: ["CMD-SHELL", "php-fpm -t || exit 1"]
+            interval: 60s
+            timeout: 30s
+            retries: 5
+            start_period: 60s
+
+    webserver:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: nginx-prod
+        container_name: atlas_nginx
+        restart: unless-stopped
+        ports:
+            # Akses lokal di http://localhost:8080. Pakai 8080 (bukan 80) agar
+            # tak bentrok Laragon/Apache yang sering memegang :80 di Windows.
+            # Deploy di balik Coolify/Traefik? HAPUS blok `ports` ini (proxy yang
+            # pegang :80/:443 & route domain), pakai `expose: ["80"]` saja.
+            - "8080:80"
+        expose:
+            - "80"
+        depends_on:
+            - app
+        volumes:
+            # Lihat code/public/ yang sama dgn app (read-only).
+            - app_code:/var/www/html:ro
+        networks:
+            - atlas
+
+    # ── Postgres ter-bundel (opsional — lihat catatan di header) ──────────────
+    # db:
+    #     image: postgres:16-alpine
+    #     container_name: atlas_db
+    #     restart: unless-stopped
+    #     environment:
+    #         POSTGRES_DB: ${DB_DATABASE:-atlas-fullstack}
+    #         POSTGRES_USER: ${DB_USERNAME:-postgres}
+    #         POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    #     volumes:
+    #         - pgdata:/var/lib/postgresql/data
+    #     networks:
+    #         - atlas
+
+volumes:
+    app_code:
+    app_storage:
+    # pgdata:
+
+networks:
+    atlas:
+        driver: bridge

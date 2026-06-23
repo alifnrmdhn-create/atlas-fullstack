@@ -1,0 +1,44 @@
+# Build-context ignore (berlaku utk `docker build`). Aman: yg di-exclude adalah
+# artefak yg DI-REGENERASI saat build (vendor via composer install, node_modules
+# via npm ci, public/build via vite) atau rahasia/junk yg tak boleh ikut ke image
+# (.env, .git, log).
+.git
+.gitattributes
+.gitignore
+.github
+
+# Dependencies — di-install ulang di dalam image
+node_modules
+vendor
+
+# Secrets & env — .env di-bind/baca runtime via env_file, jangan bake ke image
+.env
+.env.*
+!.env.example
+
+# Build output — vite build dijalankan di dalam image
+public/build
+public/hot
+public/storage
+
+# Runtime/storage cache (jangan bake ke image)
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*.php
+
+# Test & tooling artifacts
+tests
+playwright-report
+test-results
+.phpunit.result.cache
+.phpunit.cache
+
+# Editor / OS
+.idea
+.vscode
+.DS_Store
+*.log
+npm-debug.log*
+yarn-error.log*
