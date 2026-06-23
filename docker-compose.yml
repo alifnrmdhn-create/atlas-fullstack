@@ -37,7 +37,7 @@ services:
         container_name: atlas_app
         restart: unless-stopped
         env_file:
-            # Coolify menulis .env di sebelah compose; di luar Coolify pakai .env
+            # Coolify menulis .env sebelah compose; di luar Coolify pakai .env
             # repo. `required: false` → aman bila file belum ada saat build.
             - path: .env
               required: false
