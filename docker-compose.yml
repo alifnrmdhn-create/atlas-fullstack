@@ -7,19 +7,19 @@
 #     rsync code dari /app-tmp (di image) → volume tiap boot, jadi nginx + php-fpm
 #     melihat code + public/ yang SAMA (wajib agar FastCGI SCRIPT_FILENAME valid
 #     di kedua container). nginx baca read-only.
-#   - DB = PostgreSQL di HOST (Laragon). DB_HOST=host.docker.internal mengalahkan
-#     127.0.0.1 di .env karena OS-env menang atas Laravel Dotenv (immutable).
-#     Schema/data dipakai apa adanya dari host (DB `atlas-fullstack`, schema
-#     `ptpn_kmr_app`); entrypoint hanya menjalankan `migrate --force` (apply
-#     migrasi yang belum jalan) — TIDAK seed.
+#   - DB = PostgreSQL EKSTERNAL, dibaca dari `.env`. JANGAN hardcode DB_HOST di
+#     compose — biar env yang menentukan target. Di Coolify: isi DB_* di
+#     Environment Variables (arahkan ke Postgres service Coolify / DB managed).
+#     Run lokal ke Postgres host (Laragon): set DB_HOST=host.docker.internal di
+#     .env. Entrypoint hanya `migrate --force` (apply migrasi pending) — TIDAK seed.
 #   - TANPA WebSocket/Reverb (ATLAS realtime = polling 2s + scheduler).
 #
-# Akses: http://localhost:8080
+# Deploy (Coolify): Traefik route domain ke service `webserver` lewat port 80
+# yang di-EXPOSE & terminasi HTTPS — JANGAN publish host port di sini.
 #
-# Build & jalankan:
-#   docker compose up -d --build
-# Stop:
-#   docker compose down
+# Run lokal (akses http://localhost:8080): tambahkan sementara ke `webserver`:
+#     ports: ["8080:80"]
+#   lalu: docker compose up -d --build   (stop: docker compose down)
 #
 # ── Ingin DB ter-bundel (tidak pakai Postgres host)? ─────────────────────────
 # Uncomment service `db` + volume `pgdata` di bawah, ganti `DB_HOST` di service
@@ -41,14 +41,10 @@ services:
             # repo. `required: false` → aman bila file belum ada saat build.
             - path: .env
               required: false
-        environment:
-            # Menang atas .env (Laravel Dotenv tak menimpa OS-env): arahkan DB ke
-            # Postgres di HOST. Ganti ke `db` bila pakai service db ter-bundel.
-            DB_HOST: host.docker.internal
-        extra_hosts:
-            # Linux: petakan host.docker.internal ke gateway host (Docker Desktop
-            # Win/Mac sudah otomatis, baris ini no-op di sana tapi aman).
-            - "host.docker.internal:host-gateway"
+        # DB_HOST dkk DARI .env (di Coolify: Environment Variables). TIDAK
+        # di-override di sini supaya env deploy yang menentukan DB target.
+        # Run lokal ke Postgres host? set DB_HOST=host.docker.internal di .env
+        # dan tambah `extra_hosts: ["host.docker.internal:host-gateway"]` (Linux).
         volumes:
             # Shared dgn webserver: berisi code + public/ (Vite) hasil rsync dari
             # /app-tmp saat boot (lihat docker/entrypoint.sh). bootstrap/cache ikut
@@ -74,12 +70,10 @@ services:
             target: nginx-prod
         container_name: atlas_nginx
         restart: unless-stopped
-        ports:
-            # Akses lokal di http://localhost:8080. Pakai 8080 (bukan 80) agar
-            # tak bentrok Laragon/Apache yang sering memegang :80 di Windows.
-            # Deploy di balik Coolify/Traefik? HAPUS blok `ports` ini (proxy yang
-            # pegang :80/:443 & route domain), pakai `expose: ["80"]` saja.
-            - "8080:80"
+        # Coolify/Traefik route domain ke service ini lewat port 80 yang
+        # di-EXPOSE & terminasi HTTPS — JANGAN publish host port (bentrok "port
+        # is already allocated" karena :8080/:80 host dipegang Coolify).
+        # Run lokal? tambah sementara: ports: ["8080:80"].
         expose:
             - "80"
         depends_on:
