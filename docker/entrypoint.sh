@@ -25,7 +25,31 @@ if [ -d /app-tmp ]; then
         --exclude '.git' \
         /app-tmp/ /var/www/html/
     mkdir -p /var/www/html/public
-    rsync -a --delete --exclude 'storage' /app-tmp/public/ /var/www/html/public/
+    # public non-build → bersih dgn --delete, tapi JANGAN sentuh symlink storage
+    # (dibuat runtime oleh storage:link) maupun dir build (ditangani terpisah).
+    rsync -a --delete --exclude 'storage' --exclude 'build' \
+        /app-tmp/public/ /var/www/html/public/
+    # public/build → OVERLAY tanpa --delete. Aset Vite content-hashed, jadi build
+    # LAMA sengaja DIPERTAHANKAN: HTML lama yg masih nyangkut (browser cache /
+    # service worker) tetap me-resolve aset-nya → tak ada 404 "/build/assets/
+    # app-<hash>.css" saat/seusai deploy (akar masalah refresh intermiten).
+    # manifest.json ketimpa (path sama) → HTML baru tetap menunjuk hash baru.
+    # Catatan: aset numpuk lintas deploy (kecil); prune berkala bila perlu.
+    mkdir -p /var/www/html/public/build
+    rsync -a /app-tmp/public/build/ /var/www/html/public/build/
+
+    # ── Stamp build-id ke service worker ─────────────────────────────────────
+    # public/sw.js statik → bytes-nya tak pernah berubah antar-deploy → browser
+    # tak pernah update SW → cache shell basi tak pernah di-purge & kadang
+    # menyajikan HTML lama yg menunjuk hash aset yg sudah tiada → 404. Stamp hash
+    # manifest ke placeholder __BUILD_ID__ supaya sw.js berubah HANYA saat aset
+    # berubah (bukan tiap restart container, krn manifest sama → hash sama) →
+    # browser update SW → `activate` purge cache lama. Lihat public/sw.js.
+    if [ -f /var/www/html/public/sw.js ] && [ -f /var/www/html/public/build/manifest.json ]; then
+        BUILD_ID="$(md5sum /var/www/html/public/build/manifest.json | cut -c1-12)"
+        sed -i "s/__BUILD_ID__/${BUILD_ID}/g" /var/www/html/public/sw.js
+        echo "[entrypoint] Service worker stamped build-id ${BUILD_ID}."
+    fi
 fi
 
 cd /var/www/html
