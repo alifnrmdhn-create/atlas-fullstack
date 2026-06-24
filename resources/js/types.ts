@@ -363,7 +363,7 @@ export type TaskDetail = {
     isCompleted: boolean
     dueDate?: string
   }>
-  workstream?: { id: number; name: string; program?: { id: number; code: string; name: string; approvalStatus?: string } }
+  workstream?: { id: number; name: string; program?: { id: number; code: string; name: string; approvalStatus?: string; ownerId?: number | null } }
   plannedWeeks?: string[] | null
   actualWeeks?: string[] | null
   picUnitIds?: number[] | null

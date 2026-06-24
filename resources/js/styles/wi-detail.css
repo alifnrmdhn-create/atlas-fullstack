@@ -6070,6 +6070,27 @@ select.wid-input {
 .wid-ren-actions .profile-save-btn { font-size: 12px; padding: 5px 14px; }
 .wid-ren-actions .btn--ghost { font-size: 12px; padding: 5px 10px; }
 
+/* Weekly Realization editor (catatan 24 Jun 2026 opsi B) — input realisasi di
+   Task Detail; tab Timeline read-only menampilkannya. */
+.wid-ren-auto-note { font-size: 11.5px; color: var(--text-muted); margin: 0; line-height: 1.5; }
+.wid-ren-hint { font-size: 11px; color: var(--text-muted); margin: 0; }
+.wid-ren-weeks--toggle { gap: 5px; }
+.wid-ren-week-chip--toggle {
+  cursor: pointer;
+  background: var(--surface-1, transparent);
+  color: var(--text-muted);
+  border: 1px solid var(--panel-border);
+  transition: background .12s, color .12s, border-color .12s;
+}
+.wid-ren-week-chip--toggle.is-planned { border-style: dashed; }
+.wid-ren-week-chip--toggle:hover { border-color: var(--text-muted); }
+.wid-ren-week-chip--toggle.is-on {
+  background: var(--green-subtle, color-mix(in srgb, var(--green) 14%, transparent));
+  color: var(--green, #2e7d32);
+  border-color: color-mix(in srgb, var(--green) 40%, transparent);
+  border-style: solid;
+}
+
 /* ── PIC Unit/Person section ──────────────────────────────────────────── */
 .wid-pic-group { display: flex; flex-direction: column; gap: 4px; }
 .wid-pic-chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-start; }
