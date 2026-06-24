@@ -70,6 +70,15 @@ services:
             target: nginx-prod
         container_name: atlas_nginx
         restart: unless-stopped
+        # Traefik WAJIB meraih container ini lewat network `coolify` (tempat proxy
+        # Coolify/Traefik berada). Tanpa label ini — karena container nempel di
+        # banyak network sekaligus (atlas + coolify) — Traefik bisa memilih lalu
+        # MENYIMPAN IP dari network yang salah (atlas); IP itu jadi basi tiap
+        # container di-recreate saat deploy → request mati di Traefik (tak pernah
+        # sampai nginx) → 504 "Gateway Timeout" untuk SEMUA request sampai
+        # `docker restart coolify-proxy`. Inilah akar "harus 2x redeploy baru normal".
+        labels:
+            - "traefik.docker.network=coolify"
         # Coolify/Traefik route domain ke service ini lewat port 80 yang
         # di-EXPOSE & terminasi HTTPS — JANGAN publish host port (bentrok "port
         # is already allocated" karena :8080/:80 host dipegang Coolify).
