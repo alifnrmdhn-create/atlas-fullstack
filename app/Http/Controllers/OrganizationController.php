@@ -275,6 +275,9 @@ class OrganizationController extends Controller
     {
         RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
         $data = $request->validate([
+            // 'code' sebelumnya tak divalidasi → field dibuang diam-diam, edit Code
+            // tak pernah tersimpan. Unique kecuali record sendiri.
+            'code' => 'sometimes|string|min:2|max:40|unique:Position,code,' . $id,
             'name' => 'sometimes|string|min:2|max:120',
             'levelCode' => 'sometimes|string|max:20',
             'roleType' => 'sometimes|string',
