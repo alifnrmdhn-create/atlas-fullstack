@@ -16,6 +16,7 @@ type UserRecord = {
   nik?: string
   name: string
   email: string
+  phone?: string
   roleType: string
   isActive: boolean
   positionTitle?: string
@@ -89,6 +90,15 @@ export function AdminUsersView() {
   const [skNumber, setSkNumber] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+
+  // Edit user modal state
+  const [editTarget, setEditTarget] = useState<UserRecord | null>(null)
+  const editUserDialogRef = useDialogFocus<HTMLDivElement>(editTarget !== null)
+  const editUserTitleId = useId()
+  const editUserDescId = useId()
+  const [euForm, setEuForm] = useState({ name: '', email: '', userId: '', nik: '', phone: '', password: '' })
+  const [euSaving, setEuSaving] = useState(false)
+  const [euError, setEuError] = useState<string | null>(null)
 
   const isAuthorized =
     ['admin', 'superadmin', 'ADMIN', 'SUPERADMIN'].includes(currentUser?.roleType ?? '')
@@ -232,6 +242,48 @@ export function AdminUsersView() {
     }
   }
 
+  const openEditUser = (user: UserRecord) => {
+    setEditTarget(user)
+    setEuForm({
+      name: user.name ?? '',
+      email: user.email ?? '',
+      userId: user.userId ?? '',
+      nik: user.nik ?? '',
+      phone: user.phone ?? '',
+      password: '',
+    })
+    setEuError(null)
+  }
+
+  const closeEditUser = () => { setEditTarget(null); setEuError(null) }
+  useEscKey(closeEditUser, editTarget !== null)
+
+  const handleEditUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editTarget) return
+    setEuSaving(true)
+    setEuError(null)
+    try {
+      // Field opsional (userId/nik/phone) hanya dikirim bila terisi — kosongkan =
+      // biarkan apa adanya, hindari bentrok unique pada string kosong.
+      const payload: Record<string, string> = {
+        name: euForm.name.trim(),
+        email: euForm.email.trim(),
+      }
+      if (euForm.userId.trim()) payload.userId = euForm.userId.trim()
+      if (euForm.nik.trim()) payload.nik = euForm.nik.trim()
+      if (euForm.phone.trim()) payload.phone = euForm.phone.trim()
+      if (euForm.password.trim()) payload.password = euForm.password
+      await api.patch(`/users/${editTarget.id}`, payload)
+      closeEditUser()
+      loadUsers()
+    } catch (err) {
+      setEuError(err instanceof Error ? err.message : 'Failed to save changes.')
+    } finally {
+      setEuSaving(false)
+    }
+  }
+
   if (!isAuthorized) {
     return (
       <div className="ds admin-v2 view-admin-users ds-stagger">
@@ -356,6 +408,9 @@ export function AdminUsersView() {
                   </td>
                   <td>
                     <div className="admin-row-actions">
+                      <button className="btn btn--sm btn--ghost" onClick={() => openEditUser(user)}>
+                        Edit
+                      </button>
                       <button className="btn btn--sm btn--ghost" onClick={() => openMutasi(user)}>
                         Transfer
                       </button>
@@ -487,6 +542,80 @@ export function AdminUsersView() {
                 <button className="btn btn--ghost" type="button" onClick={closeCreateUser} disabled={cuSaving}>Cancel</button>
                 <button className="profile-save-btn" type="submit" disabled={cuSaving || !cuForm.name.trim() || !cuForm.email.trim()}>
                   {cuSaving ? 'Creating…' : 'Add User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* Edit User Modal — portal-mounted. */}
+      {editTarget && createPortal(
+        <div className="modal-backdrop" onClick={closeEditUser}>
+          <div aria-describedby={editUserDescId} aria-labelledby={editUserTitleId} aria-modal="true" className="modal modal--wide" ref={editUserDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
+            <div className="modal__header">
+              <div className="modal-headcopy">
+                <span className="modal-kicker">User Management</span>
+                <h3 className="modal__title" id={editUserTitleId}>Edit User</h3>
+                <p className="modal-subtitle" id={editUserDescId}>
+                  Update the account identity (name, login ID, NIK, contact) or reset the password. Role, position, and unit are changed via Transfer.
+                </p>
+              </div>
+              <button className="modal__close" onClick={closeEditUser} type="button">
+                <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
+              </button>
+            </div>
+            <form onSubmit={handleEditUser}>
+              <div className="modal__body">
+                {euError && (
+                  <div className="inline-notice inline-notice--error admin-inline-error">{euError}</div>
+                )}
+                <section className="modal-section">
+                  <div className="modal-section__intro">
+                    <h4>User Identity</h4>
+                    <p>These fields drive the directory and login identity for <strong>{editTarget.name}</strong>.</p>
+                  </div>
+                  <div className="admin-form-grid admin-form-grid--2">
+                    <div className="modal-field">
+                      <label className="modal-label">Full Name <span className="admin-required">*</span></label>
+                      <input className="form-input" required minLength={1} type="text" value={euForm.name} onChange={e => setEuForm(f => ({ ...f, name: e.target.value }))} />
+                    </div>
+                    <div className="modal-field">
+                      <label className="modal-label">Email <span className="admin-required">*</span></label>
+                      <input className="form-input" required type="email" value={euForm.email} onChange={e => setEuForm(f => ({ ...f, email: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="admin-form-grid admin-form-grid--3">
+                    <div className="modal-field">
+                      <label className="modal-label">Login ID</label>
+                      <input className="form-input" type="text" placeholder="e.g. nama.lengkap" value={euForm.userId} onChange={e => setEuForm(f => ({ ...f, userId: e.target.value }))} />
+                    </div>
+                    <div className="modal-field">
+                      <label className="modal-label">NIK</label>
+                      <input className="form-input" type="text" placeholder="Employee identification number" value={euForm.nik} onChange={e => setEuForm(f => ({ ...f, nik: e.target.value }))} />
+                    </div>
+                    <div className="modal-field">
+                      <label className="modal-label">Phone</label>
+                      <input className="form-input" type="text" placeholder="+62…" value={euForm.phone} onChange={e => setEuForm(f => ({ ...f, phone: e.target.value }))} />
+                    </div>
+                  </div>
+                </section>
+                <section className="modal-section modal-section--soft">
+                  <div className="modal-section__intro">
+                    <h4>Reset Password</h4>
+                    <p>Leave blank to keep the current password. Minimum 6 characters; share the new password with the user securely.</p>
+                  </div>
+                  <div className="modal-field">
+                    <label className="modal-label">New Password</label>
+                    <input className="form-input" type="text" autoComplete="new-password" placeholder="Leave blank to keep unchanged" value={euForm.password} onChange={e => setEuForm(f => ({ ...f, password: e.target.value }))} />
+                  </div>
+                </section>
+              </div>
+              <div className="modal__footer">
+                <button className="btn btn--ghost" type="button" onClick={closeEditUser} disabled={euSaving}>Cancel</button>
+                <button className="profile-save-btn" type="submit" disabled={euSaving || !euForm.name.trim() || !euForm.email.trim()}>
+                  {euSaving ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>
             </form>

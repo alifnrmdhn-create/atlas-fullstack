@@ -693,10 +693,24 @@ class WorkspaceController extends Controller
             'mutationType' => 'nullable|string|max:80',
             'mutationReason' => 'nullable|string|max:500',
             'skNumber' => 'nullable|string|max:120',
+            // Edit identitas akun (admin self-service): nama, NIK/login, kontak,
+            // dan reset password. roleType TIDAK diubah di sini — itu mengikuti
+            // jabatan via Transfer (positionId), supaya tak jadi jalur eskalasi.
+            'name' => 'sometimes|string|max:120',
+            'email' => 'sometimes|email|max:160|unique:User,email,' . $id,
+            'userId' => 'sometimes|nullable|string|max:80|unique:User,userId,' . $id,
+            'nik' => 'sometimes|nullable|string|max:80|unique:User,nik,' . $id,
+            'phone' => 'sometimes|nullable|string|max:40',
+            'password' => 'sometimes|nullable|string|min:6|max:200',
         ]);
 
         $user = User::findOrFail($id);
-        $update = collect($data)->only(['isActive', 'positionId'])->all();
+        $update = collect($data)->only(['isActive', 'positionId', 'name', 'email', 'userId', 'nik', 'phone'])->all();
+
+        // Reset password hanya bila diisi (kolom auth = passwordHash).
+        if (! empty($data['password'])) {
+            $update['passwordHash'] = Hash::make($data['password']);
+        }
 
         $positionChanged = array_key_exists('positionId', $data)
             && $data['positionId']
