@@ -1047,15 +1047,21 @@ export function InboxView() {
 
   const role = currentUser?.roleType?.toUpperCase() ?? ''
   const isStrategic = role === 'BOD' || role === 'KADIV'
+  // Default Focus = program terkait user. Role strategis bisa beralih ke
+  // portfolio divisi (at-risk) lewat toggle (catatan 24 Jun 2026).
+  const [programScope, setProgramScope] = useState<'mine' | 'division'>('mine')
 
   // ── Data from /api/my-work (personal assignments) ─────────────────────────
   const myTasks = myWork?.tasks ?? []
   const myBlockers = myWork?.blockers ?? []
   const focusPolicy = myWork?.focusPolicy ?? DEFAULT_FOCUS_POLICY
 
-  // ── At-risk programs: role-aware source ────────────────────────────────────
-  // BOD/KADIV: see ALL at-risk programs in their scope (portfolio view)
-  // Others: see only programs they own
+  // ── At-risk programs: scope-aware source ──────────────────────────────────
+  // Default ("mine"): hanya program TERKAIT user — owner/co-PIC/owner workstream/
+  // assignee task/member channel (myWork.programs, di-resolve BE via
+  // MembershipResolver). Ini default semua role, termasuk BOD/KADIV (catatan
+  // 24 Jun 2026: "cukup yang terkait dengan program user terkait saja").
+  // Role strategis bisa beralih ke "division" = portfolio at-risk se-scope.
   //
   // ACTIVE-only filter: "perlu dipantau sebelum memburuk" cuma make sense untuk
   // program yang sedang berjalan. DRAFT/PENDING_*/COMPLETED tidak relevan —
@@ -1063,9 +1069,10 @@ export function InboxView() {
   // mereka di feed at-risk = noise (PIC PENDING tidak bisa "intervensi" apa-apa,
   // mereka menunggu approval; program COMPLETED ya sudah selesai).
   const isActive = (p: Program) => p.approvalStatus === 'ACTIVE'
-  const myAtRisk = isStrategic
-    ? programs.filter(p => isActive(p) && (p.healthStatus === 'RED' || p.healthStatus === 'YELLOW'))
-    : (myWork?.programs ?? []).filter(isActive)
+  const minePrograms = (myWork?.programs ?? []).filter(isActive)
+  const divisionAtRisk = programs.filter(p => isActive(p) && (p.healthStatus === 'RED' || p.healthStatus === 'YELLOW'))
+  const showDivisionPrograms = isStrategic && programScope === 'division'
+  const myAtRisk = showDivisionPrograms ? divisionAtRisk : minePrograms
 
   // ── Notifications ──────────────────────────────────────────────────────────
   const MENTION_TYPES = new Set(['MENTION', 'APPROVAL', 'DM_RECEIVED'])
@@ -1377,6 +1384,30 @@ export function InboxView() {
             </button>
           ))}
         </div>
+
+        {/* ── 2b. Program scope toggle — strategis: My programs ⟷ Division ── */}
+        {isStrategic && (
+          <div className="fokus-scope-strip" aria-label="Program scope">
+            <button
+              aria-pressed={programScope === 'mine'}
+              className={`fokus-scope-pill${programScope === 'mine' ? ' is-active' : ''}`}
+              onClick={() => setProgramScope('mine')}
+              type="button"
+            >
+              <span>My programs</span>
+              <strong>{minePrograms.length}</strong>
+            </button>
+            <button
+              aria-pressed={programScope === 'division'}
+              className={`fokus-scope-pill${programScope === 'division' ? ' is-active' : ''}`}
+              onClick={() => setProgramScope('division')}
+              type="button"
+            >
+              <span>Division at-risk</span>
+              <strong>{divisionAtRisk.length}</strong>
+            </button>
+          </div>
+        )}
 
         {/* ── 3. SEKARANG — top item as hero card ── */}
         {nowItem && (

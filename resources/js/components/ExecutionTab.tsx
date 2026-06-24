@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api } from '../lib/api'
 import type { ExecutionGridData, ExecutionWorkstreamSummary } from '../types'
 import { useWorkspace } from '../hooks/useWorkspace'
-import { useRoleAccess } from '../hooks/useRoleAccess'
 import { ExecutionGrid } from './ExecutionGrid'
 import { SectionState, SkeletonStack } from './ui'
 
@@ -88,9 +87,10 @@ function exportGridCSV(grid: ExecutionGridData, programName?: string) {
 
 export function ExecutionTab({ programId, programName, approvalStatus }: Props) {
   const inPlanning = approvalStatus != null && approvalStatus !== 'ACTIVE' && approvalStatus !== 'COMPLETED'
-  // BOD = monitoring-only: backend menolak edit actualWeeks (assertCanModifyTask),
-  // jadi jangan tampilkan sel "Real" sebagai editable supaya tak kena 403.
-  const { isMonitoringOnly } = useRoleAccess()
+  // Tab "Schedule/Jadwal" = READ-ONLY (catatan 24 Jun 2026: "info schedule
+  // sebaiknya hanya tampilan, otomatis berubah dari update workboard"). Baris
+  // "Real" di-derive otomatis dari status/percentComplete task (Workboard) di
+  // ExecutionGridController — tidak ada lagi override manual per-minggu.
   const { gridRefreshTick, currentUser } = useWorkspace()
   const [workstreams, setWorkstreams] = useState<ExecutionWorkstreamSummary[] | null>(null)
   const [activeId, setActiveId] = useState<number | null>(null)
@@ -145,64 +145,6 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
     return () => { cancelled = true }
   }, [programId, activeId, gridRefreshTick])
 
-  const updateStepInGrid = useCallback(
-    (stepId: number, updater: (s: ExecutionGridData['phases'][number]['steps'][number]) => ExecutionGridData['phases'][number]['steps'][number]) => {
-      setGrid((prev) => {
-        if (!prev) return prev
-        const map = (steps: ExecutionGridData['phases'][number]['steps']) =>
-          steps.map((s) => s.id === stepId ? updater(s) : s)
-        return {
-          ...prev,
-          phases: prev.phases.map((p) => ({ ...p, steps: map(p.steps) })),
-          unphasedSteps: map(prev.unphasedSteps),
-        }
-      })
-    },
-    [],
-  )
-
-  // Toggle satu minggu di/dari actualWeeks
-  const handleToggleActualWeek = useCallback(
-    async (stepId: number, week: string, currentActualWeeks: string[]) => {
-      const step = grid?.phases.flatMap((p) => p.steps).concat(grid?.unphasedSteps ?? []).find((s) => s.id === stepId)
-      const wasStored = !step?.actualDerived
-
-      const next = currentActualWeeks.includes(week)
-        ? currentActualWeeks.filter((w) => w !== week)
-        : [...currentActualWeeks, week].sort()
-
-      updateStepInGrid(stepId, (s) => ({ ...s, actualWeeks: next, actualDerived: false }))
-
-      try {
-        await api.patch(`/tasks/${stepId}`, { actualWeeks: next.length > 0 ? next : null })
-      } catch {
-        updateStepInGrid(stepId, (s) => ({ ...s, actualWeeks: currentActualWeeks, actualDerived: !wasStored }))
-      }
-    },
-    [grid, updateStepInGrid],
-  )
-
-  // Reset actualWeeks ke auto-derive
-  const handleResetActualWeeks = useCallback(
-    async (stepId: number) => {
-      // Snapshot SEBELUM optimistic update untuk rollback. FIX (audit 2026-06-17):
-      // dulu mengandalkan "SSE tick" untuk refresh — padahal SSE sudah di-drop
-      // (polling-only) & ExecutionTab tak punya subscription realtime → kalau PATCH
-      // gagal, UI menampilkan "reset ke auto" palsu yang tak pernah terkoreksi.
-      const step = grid?.phases.flatMap((p) => p.steps).concat(grid?.unphasedSteps ?? []).find((s) => s.id === stepId)
-      const prevWeeks = step?.actualWeeks ?? []
-      const prevDerived = step?.actualDerived ?? true
-
-      updateStepInGrid(stepId, (s) => ({ ...s, actualWeeks: [], actualDerived: true }))
-      try {
-        await api.patch(`/tasks/${stepId}`, { actualWeeks: null })
-      } catch {
-        updateStepInGrid(stepId, (s) => ({ ...s, actualWeeks: prevWeeks, actualDerived: prevDerived }))
-      }
-    },
-    [grid, updateStepInGrid],
-  )
-
   const visibleWorkstreams = useMemo(
     () => (workstreams ?? []).filter((w) => !myOnly || w.ownerId === currentUser?.id),
     [workstreams, myOnly, currentUser?.id],
@@ -248,7 +190,7 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
         <div>
           <h3 className="section-title">Execution Grid — {programName ?? `Program #${programId}`}</h3>
           <p className="section-subtitle">
-            Weekly Plan vs Actual (Real) table. Click a Real cell to enter actuals manually.
+            Weekly Plan vs Actual (Real) table. The Real row updates automatically from task status in the Workboard.
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -330,15 +272,11 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
           {inPlanning && (
             <div className="exec-planning-notice">
               <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="12" aria-hidden="true"><circle cx="7" cy="7" r="5.5"/><path d="M7 4.5v3M7 9v.5"/></svg>
-              The <strong>Real</strong> column becomes active once the program enters the Execution phase.
+              The <strong>Real</strong> row fills in automatically from task progress once the program enters the Execution phase.
               For now, only the <strong>Plan</strong> can be set up.
             </div>
           )}
-          <ExecutionGrid
-            data={grid}
-            onToggleActualWeek={inPlanning || isMonitoringOnly ? undefined : handleToggleActualWeek}
-            onResetActualWeeks={inPlanning || isMonitoringOnly ? undefined : handleResetActualWeeks}
-          />
+          <ExecutionGrid data={grid} />
         </>
       )}
     </div>

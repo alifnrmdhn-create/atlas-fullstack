@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\MembershipResolver;
 use App\Auth\OrgScope;
 use App\Auth\ScopeResolver;
 use App\Models\Assignment;
@@ -149,7 +150,7 @@ class WorkspaceController extends Controller
         ]);
     }
 
-    public function myWork(Request $request): JsonResponse
+    public function myWork(Request $request, MembershipResolver $membership): JsonResponse
     {
         $user = $request->user();
 
@@ -176,8 +177,12 @@ class WorkspaceController extends Controller
                 ->orderByDesc('createdAt')
                 ->limit(30)
                 ->get(),
+            // Focus = "program terkait user", bukan hanya yang dia owner (catatan
+            // 24 Jun 2026). MembershipResolver = definisi kanonik partisipasi:
+            // owner + co-PIC + owner workstream + assignee task + member channel.
+            // Selaras dengan scope yang dipakai ProgramService::listForUser.
             'programs' => Program::query()
-                ->where('ownerId', $user->id)
+                ->whereIn('id', $membership->getProgramIdsViaMembership($user->id))
                 ->whereNull('archivedAt')
                 ->orderByDesc('createdAt')
                 ->limit(30)

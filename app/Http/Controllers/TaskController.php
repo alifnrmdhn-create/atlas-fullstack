@@ -169,7 +169,8 @@ class TaskController extends Controller
 
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        $this->assertCanModifyTask(Task::findOrFail($id), $request->user());
+        $existing = Task::findOrFail($id);
+        $this->assertCanModifyTask($existing, $request->user());
 
         $data = $request->validate([
             'title' => 'sometimes|string|min:2|max:200',
@@ -190,6 +191,14 @@ class TaskController extends Controller
             'picUnitIds' => 'nullable|array',
         ]);
 
+        // Realisasi (actualWeeks) = pelaporan progres → tunduk pada gate ketat
+        // yang sama dengan status/progress (catatan PIC 24 Jun 2026): hanya PIC,
+        // owner program, atau admin. Field struktural lain (judul/plan/tenggat/
+        // PIC) tetap boleh oleh manajer se-scope lewat assertCanModifyTask.
+        if (array_key_exists('actualWeeks', $data)) {
+            $this->assertCanUpdateProgress($existing, $request->user());
+        }
+
         $task = $this->taskService->update($id, $data);
         $this->triggerHealth($id);
         BroadcastService::task($id, 'updated');
@@ -203,7 +212,7 @@ class TaskController extends Controller
 
     public function updateStatus(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        $this->assertCanModifyTask(Task::findOrFail($id), $request->user());
+        $this->assertCanUpdateProgress(Task::findOrFail($id), $request->user());
 
         $data = $request->validate([
             // Selaras dengan store() (audit 2026-06-17): dulu 'required|string' bebas
@@ -249,7 +258,7 @@ class TaskController extends Controller
 
     public function updateProgress(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        $this->assertCanModifyTask(Task::findOrFail($id), $request->user());
+        $this->assertCanUpdateProgress(Task::findOrFail($id), $request->user());
 
         $data = $request->validate([
             'percentComplete' => 'required|integer|min:0|max:100',
@@ -404,6 +413,39 @@ class TaskController extends Controller
         }
 
         abort(403, 'You do not have access to this work item.');
+    }
+
+    /**
+     * Gate KETAT khusus update STATUS & PROGRESS (catatan PIC, 24 Jun 2026):
+     * "edit status progress sebaiknya hanya bisa dilakukan oleh PIC". Progres
+     * pekerjaan hanya boleh diubah oleh PIC (assignedTo), owner program, atau
+     * admin — BUKAN siapa pun yang scope unit-nya mencakup program (coversUnit).
+     * Edit STRUKTURAL (assign/planning/destroy/subtask) tetap pakai
+     * assertCanModifyTask yang lebih longgar supaya atasan tetap bisa menata
+     * pekerjaan tanpa mengklaim progres anggota.
+     */
+    private function assertCanUpdateProgress(Task $task, User $user): void
+    {
+        if (RolePolicy::isReadOnly($user->roleType)) {
+            abort(403, 'Your role is not allowed to perform this action.');
+        }
+        if (RolePolicy::isAdminOrAbove($user->roleType)) return;
+        if ($task->assignedTo === $user->id) return;
+        if ($this->programOwnerForTask($task) === $user->id) return;
+
+        abort(403, 'Only the assigned PIC or the program owner can update this work item\'s progress.');
+    }
+
+    /**
+     * Owner program (Program.ownerId) lewat query Workstream terpisah — alasan
+     * sama dengan ownerUnitForWorkstream: findOrFail() tidak eager-load ownerId.
+     */
+    private function programOwnerForTask(Task $task): ?int
+    {
+        $ownerId = Workstream::query()
+            ->with('program:id,ownerId')
+            ->find((int) $task->initiativeId)?->program?->ownerId;
+        return $ownerId !== null ? (int) $ownerId : null;
     }
 
     /**

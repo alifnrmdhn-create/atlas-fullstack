@@ -364,6 +364,66 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
     }
   }
 
+  // ── Realisasi (actualWeeks) editor ────────────────────────────────
+  // Input realisasi mingguan ditaruh DI SINI (sisi Workboard), bukan di tab
+  // Timeline yang kini read-only (catatan 24 Jun 2026 opsi B). actualWeeks =
+  // null → AUTO (derive dari progress); array → override manual (boleh non-
+  // kontigu / minggu terlambat). Tunduk gate canReportProgress (PIC/owner/admin).
+  const [realEditing, setRealEditing] = useState(false)
+  const [realDraft, setRealDraft] = useState<string[]>([])
+  const [realSaving, setRealSaving] = useState(false)
+  const realIsManual = (detail?.actualWeeks ?? null) !== null
+
+  // Kandidat minggu = awal plan s.d. maks(akhir plan, akhir realisasi, minggu
+  // berjalan) — supaya realisasi yang terlambat tetap bisa dipilih.
+  const realCandidateWeeks = useMemo(() => {
+    const planned = detail?.plannedWeeks ?? []
+    const actual = detail?.actualWeeks ?? []
+    const nowW = dateToIsoWeek(new Date())
+    const pool = [...planned, ...actual, nowW].filter(Boolean)
+    if (pool.length === 0) return [] as string[]
+    const sorted = [...new Set(pool)].sort()
+    const start = planned.length > 0 ? [...planned].sort()[0] : sorted[0]
+    const end = sorted[sorted.length - 1]
+    return weeksInRange(start, end)
+  }, [detail?.plannedWeeks, detail?.actualWeeks])
+
+  const openRealEditor = () => {
+    if (!detail) return
+    setRealDraft(detail.actualWeeks ?? [])
+    setRealEditing(true)
+  }
+  const toggleRealWeek = (w: string) => {
+    setRealDraft(prev => prev.includes(w) ? prev.filter(x => x !== w) : [...prev, w].sort())
+  }
+  const saveReal = async () => {
+    if (!id) return
+    setRealSaving(true)
+    try {
+      // Kosong → null = kembalikan ke AUTO (derive dari progress).
+      await api.patch(`/tasks/${id}`, { actualWeeks: realDraft.length > 0 ? realDraft : null })
+      await loadDetail(true)
+      setRealEditing(false)
+    } catch (err) {
+      showToast(extractErr(err, 'Failed to save realization.'), 'error')
+    } finally {
+      setRealSaving(false)
+    }
+  }
+  const resetRealToAuto = async () => {
+    if (!id) return
+    setRealSaving(true)
+    try {
+      await api.patch(`/tasks/${id}`, { actualWeeks: null })
+      await loadDetail(true)
+      setRealEditing(false)
+    } catch (err) {
+      showToast(extractErr(err, 'Failed to reset realization.'), 'error')
+    } finally {
+      setRealSaving(false)
+    }
+  }
+
   // ── PIC Unit/Person ───────────────────────────────────────────────
   type OrgUnit = { id: number; code: string; name: string }
   const [orgUnits, setOrgUnits] = useState<OrgUnit[]>([])
@@ -516,8 +576,24 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
     : !detail?.targetCompletion ? 'Set a target completion before starting the task'
     : ''
 
+  // Catatan PIC (24 Jun 2026): progres/status/realisasi hanya boleh diubah oleh
+  // PIC, owner program, atau admin (backend menolak 403 utk manajer se-divisi).
+  // Gate FE supaya kontrol yang pasti gagal tak ditampilkan/diaktifkan.
+  const isTaskPic = !!detail?.assignee && detail.assignee.id === currentUser?.id
+  const isProgramOwner = !!detail?.workstream?.program?.ownerId
+    && detail.workstream.program.ownerId === currentUser?.id
+  const isAdminRole = roleAccess.role === 'SUPERADMIN' || roleAccess.role === 'ADMIN'
+  const canReportProgress = !roleAccess.isMonitoringOnly && (isTaskPic || isProgramOwner || isAdminRole)
+  const progressBlockReason = !canReportProgress
+    ? 'Only the assigned PIC or program owner can update progress'
+    : startBlockReason
+
   const commitProgress = async () => {
     if (!id || !detail) return
+    if (!canReportProgress) {
+      showToast('Only the assigned PIC or program owner can update progress.', 'error')
+      return
+    }
     if (actionStatus.saving) return // guard double-submit
     if (editDraft.percentComplete === detail.percentComplete) return // tidak berubah
     if (isRegressing && !regressNote.trim()) {
@@ -1456,8 +1532,8 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
               onMouseUp={onSliderCommit}
               onTouchEnd={onSliderCommit}
               onKeyUp={onSliderCommit}
-              disabled={!canStart}
-              title={!canStart ? startBlockReason : undefined}
+              disabled={!canStart || !canReportProgress}
+              title={progressBlockReason || undefined}
               step={1}
               style={{
                 '--wid-slider-pct': `${editDraft.percentComplete}%`,
@@ -1472,8 +1548,8 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
             />
             <span className="wid-ms-pct" key={editDraft.percentComplete}>{editDraft.percentComplete}%</span>
           </div>
-          {!canStart && (
-            <span className="wid-ms-hint" role="note">⚠ {startBlockReason}.</span>
+          {progressBlockReason && (
+            <span className="wid-ms-hint" role="note">⚠ {progressBlockReason}.</span>
           )}
           {isRegressing && (
             <div className="wid-ms-field wid-ms-regress">
@@ -2350,6 +2426,65 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                             <button className="btn btn--ghost" disabled={renSaving} onClick={() => void clearRen()} type="button">Delete</button>
                           )}
                           <button className="btn btn--ghost" disabled={renSaving} onClick={() => setRenEditing(false)} type="button">Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Weekly Realization block — input realisasi di sisi Workboard;
+                    tab Timeline read-only menampilkannya (catatan 24 Jun opsi B). */}
+                {canReportProgress && !inPlanning && (
+                  <div className="wid-info-footer__block wid-info-footer__block--full">
+                    <p className="wid-info-footer__block-title">Weekly Realization</p>
+                    {!realEditing ? (
+                      <div className="wid-ren-view">
+                        {realIsManual && (detail?.actualWeeks ?? []).length > 0 ? (
+                          <div className="wid-ren-weeks">
+                            {(detail!.actualWeeks!).map(w => (
+                              <span className="wid-ren-week-chip" key={w}>{formatWeekLabel(w)}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="wid-ren-auto-note">
+                            Auto — derived from progress ({detail?.percentComplete ?? 0}%). Shown read-only on the program Timeline.
+                          </p>
+                        )}
+                        {realCandidateWeeks.length > 0 && (
+                          <button className="btn btn--ghost wid-ren-edit-btn" onClick={openRealEditor} type="button">
+                            {realIsManual ? 'Edit realization' : 'Set manually'}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="wid-ren-editor">
+                        <p className="wid-ren-hint">Pick the weeks actually worked (can be non-contiguous). Clearing all reverts to auto.</p>
+                        <div className="wid-ren-weeks wid-ren-weeks--toggle">
+                          {realCandidateWeeks.map(w => {
+                            const on = realDraft.includes(w)
+                            const planned = (detail?.plannedWeeks ?? []).includes(w)
+                            return (
+                              <button
+                                aria-pressed={on}
+                                className={`wid-ren-week-chip wid-ren-week-chip--toggle${on ? ' is-on' : ''}${planned ? ' is-planned' : ''}`}
+                                key={w}
+                                onClick={() => toggleRealWeek(w)}
+                                title={planned ? 'Planned week' : undefined}
+                                type="button"
+                              >
+                                {formatWeekLabel(w)}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        <div className="wid-ren-actions">
+                          <button className="profile-save-btn" disabled={realSaving} onClick={() => void saveReal()} type="button">
+                            {realSaving ? 'Saving…' : 'Save'}
+                          </button>
+                          {realIsManual && (
+                            <button className="btn btn--ghost" disabled={realSaving} onClick={() => void resetRealToAuto()} type="button">Reset to auto</button>
+                          )}
+                          <button className="btn btn--ghost" disabled={realSaving} onClick={() => setRealEditing(false)} type="button">Cancel</button>
                         </div>
                       </div>
                     )}

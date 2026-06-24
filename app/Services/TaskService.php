@@ -49,7 +49,7 @@ class TaskService
         return Task::query()
             ->with([
                 'workstream:id,name,programId,code',
-                'workstream.program:id,code,name,approvalStatus',
+                'workstream.program:id,code,name,approvalStatus,ownerId',
                 'assignee:id,name,avatarUrl',
                 'blockers',
                 'entityPics',
