@@ -69,6 +69,7 @@ import './styles/topbar-extras.css'
 import './styles/command-palette.css'
 import './styles/sidebar-rail.css'
 import './styles/context-panel.css'
+import './styles/icing.css' // PREVIEW: lapisan finishing aditif (hapus baris ini + file untuk revert)
 
 import { hydrateThemePreference } from './lib/theme'
 
