@@ -18,7 +18,7 @@ use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
  *
  * Source layout (1-indexed cols): 1 Perspektif · 2 Strategic Objective ·
  * 4 Indicator · 5 Satuan · 6 Bobot · 7 Polaritas · 8 Target FY, then monthly
- * triplets Target/Realisasi/Nilai — Jan 9/10/11 … Apr 18/19/20.
+ * triplets Target/Realisasi/Nilai — Jan 9/10/11 … Apr 18/19/20 … Mei 21/22/23.
  *
  * Data-quality rules (from the s.d.-April analysis):
  *  - "Nilai" is a formula with business nuances (e.g. ROI scores 110 against a
@@ -45,6 +45,7 @@ class ImportKpiProgress extends Command
         'Feb' => [12, 13, 14, 2],
         'Mar' => [15, 16, 17, 3],
         'Apr' => [18, 19, 20, 4],
+        'Mei' => [21, 22, 23, 5],
     ];
 
     private const DIRECTORATE_ID = 5;   // DIR-KMR
@@ -113,7 +114,7 @@ class ImportKpiProgress extends Command
                     } else {
                         $this->writeDivisi($scope['unit_id'], $kpis, $periods);
                     }
-                    $this->writeRollup($scope, $kpis);
+                    $this->writeRollup($scope, $kpis, $sheetTotals);
                 }
 
                 $report[$scope['label']] = $this->summarise($kpis, $sheetTotals);
@@ -158,7 +159,7 @@ class ImportKpiProgress extends Command
         };
 
         $kpis = [];
-        $sheetTotals = ['Jan' => null, 'Feb' => null, 'Mar' => null, 'Apr' => null];
+        $sheetTotals = array_fill_keys(array_keys(self::MONTHS), null);
         $persp = null;
         $sobj = null;
         $urut = 0;
@@ -284,11 +285,15 @@ class ImportKpiProgress extends Command
         }
     }
 
-    private function writeRollup(array $scope, array $kpis): void
+    private function writeRollup(array $scope, array $kpis, array $sheetTotals): void
     {
         $skipped = [];
         foreach (self::MONTHS as $m => [, , , $pnum]) {
-            $nilai = $this->rollup($kpis, $m);
+            // The scorecard headline = the workbook's OWN bottom total row (the
+            // green "Nilai" cell), which is the directorate/divisi source of
+            // truth (e.g. DIR-KMR Mei = 103.75). Fall back to our weighted mean
+            // only if the sheet has no total for that month.
+            $nilai = $sheetTotals[$m] ?? $this->rollup($kpis, $m);
             if ($nilai === null) continue;
 
             $coverage = 0.0;
@@ -377,12 +382,13 @@ class ImportKpiProgress extends Command
     /** @return array<int,int> period number (1-4) → performance_periods.id */
     private function ensurePeriods(): array
     {
-        $labels = [1 => 'Jan 2026', 2 => 'Feb 2026', 3 => 'Mar 2026', 4 => 'Apr 2026'];
+        $labels = [1 => 'Jan 2026', 2 => 'Feb 2026', 3 => 'Mar 2026', 4 => 'Apr 2026', 5 => 'Mei 2026'];
+        $latest = max(array_keys($labels));
         $ids = [];
         foreach ($labels as $bulan => $label) {
             DB::table('performance_periods')->updateOrInsert(
                 ['tahun' => self::TAHUN, 'bulan' => $bulan],
-                ['label' => $label, 'is_active' => $bulan === 4, 'updated_at' => now(), 'created_at' => now()],
+                ['label' => $label, 'is_active' => $bulan === $latest, 'updated_at' => now(), 'created_at' => now()],
             );
             $ids[$bulan] = DB::table('performance_periods')
                 ->where('tahun', self::TAHUN)->where('bulan', $bulan)->value('id');
