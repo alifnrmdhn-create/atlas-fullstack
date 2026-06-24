@@ -123,8 +123,8 @@
 .profile-v2 .pv-hero__avatar[data-tone="amber"]  { background: color-mix(in srgb, var(--yellow) 24%, var(--surface-1)); color: var(--yellow); }
 .profile-v2 .pv-hero__avatar[data-tone="yellow"] { background: color-mix(in srgb, var(--yellow) 24%, var(--surface-1)); color: var(--yellow); }
 .profile-v2 .pv-hero__avatar[data-tone="red"]    { background: color-mix(in srgb, var(--red) 22%, var(--surface-1));    color: var(--red); }
-.profile-v2 .pv-hero__avatar[data-tone="blue"]   { background: color-mix(in srgb, #6366F1 22%, var(--surface-1));        color: #4F46E5; }
-.profile-v2 .pv-hero__avatar[data-tone="purple"] { background: color-mix(in srgb, #A855F7 22%, var(--surface-1));        color: #7E22CE; }
+.profile-v2 .pv-hero__avatar[data-tone="blue"]   { background: color-mix(in srgb, #6366F1 22%, var(--surface-1));        color: var(--blue); }
+.profile-v2 .pv-hero__avatar[data-tone="purple"] { background: color-mix(in srgb, #A855F7 22%, var(--surface-1));        color: var(--purple); }
 
 .profile-v2 .pv-hero__body {
   display: flex;
@@ -314,12 +314,12 @@
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 12px -6px rgba(31, 107, 53, 0.45);
+  box-shadow: 0 4px 12px -6px rgba(31, 107, 53, 0.45); /* dark-allow: green glow on brand-green button */
   transition: transform 120ms ease, box-shadow 120ms ease, opacity 160ms ease;
 }
 .profile-v2 .pv-form__save:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px -6px rgba(31, 107, 53, 0.55);
+  box-shadow: 0 6px 16px -6px rgba(31, 107, 53, 0.55); /* dark-allow: green glow on brand-green button */
 }
 .profile-v2 .pv-form__save:disabled {
   background: var(--surface-2);
@@ -458,7 +458,7 @@
 .profile-v2 .pv-range-chip.is-active {
   background: var(--app-bg);
   color: var(--text-strong);
-  box-shadow: 0 1px 2px rgba(15,20,40,0.06);
+  box-shadow: 0 1px 2px rgba(15,20,40,0.06); /* dark-allow: subtle 1px active-chip elevation, neutral */
 }
 
 /* ─── ACTIVITY CHART ─────────────────────────────────────── */
@@ -625,7 +625,7 @@
 .profile-v2 .profile-role-badge[data-tone="amber"]  { background: color-mix(in srgb, var(--yellow) 14%, var(--app-bg)); color: var(--yellow); border-color: color-mix(in srgb, var(--yellow) 22%, transparent); }
 .profile-v2 .profile-role-badge[data-tone="yellow"] { background: color-mix(in srgb, var(--yellow) 14%, var(--app-bg)); color: var(--yellow); border-color: color-mix(in srgb, var(--yellow) 22%, transparent); }
 .profile-v2 .profile-role-badge[data-tone="red"]    { background: color-mix(in srgb, var(--red) 12%, var(--app-bg));    color: var(--red);    border-color: color-mix(in srgb, var(--red) 22%, transparent); }
-.profile-v2 .profile-role-badge[data-tone="blue"]   { background: color-mix(in srgb, #6366F1 12%, var(--app-bg));        color: #4F46E5;       border-color: color-mix(in srgb, #6366F1 22%, transparent); }
+.profile-v2 .profile-role-badge[data-tone="blue"]   { background: color-mix(in srgb, #6366F1 12%, var(--app-bg));        color: var(--blue);       border-color: color-mix(in srgb, var(--blue) 22%, transparent); }
 .profile-v2 .profile-role-badge[data-tone="gray"]   { background: var(--surface-1); color: var(--text-muted); }
 
 /* ─── ORG NODE (used inside hierarki) ────────────────────── */
@@ -661,7 +661,7 @@
 .profile-v2 .org-node__avatar[data-tone="amber"]  { background: color-mix(in srgb, var(--yellow) 14%, var(--surface-1)); color: var(--yellow); }
 .profile-v2 .org-node__avatar[data-tone="yellow"] { background: color-mix(in srgb, var(--yellow) 14%, var(--surface-1)); color: var(--yellow); }
 .profile-v2 .org-node__avatar[data-tone="red"]    { background: color-mix(in srgb, var(--red) 14%, var(--surface-1));    color: var(--red); }
-.profile-v2 .org-node__avatar[data-tone="blue"]   { background: color-mix(in srgb, #6366F1 14%, var(--surface-1));        color: #4F46E5; }
+.profile-v2 .org-node__avatar[data-tone="blue"]   { background: color-mix(in srgb, #6366F1 14%, var(--surface-1));        color: var(--blue); }
 .profile-v2 .org-node__avatar--self { background: var(--indigo); color: var(--text-inverse); }
 .profile-v2 .org-node__info { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .profile-v2 .org-node__name { font-size: 13px; font-weight: 600; color: var(--text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

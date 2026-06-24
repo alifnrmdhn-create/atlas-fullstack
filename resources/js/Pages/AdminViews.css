@@ -156,7 +156,7 @@
 .admin-v2 .admin-create-btn {
   height: 32px;
   padding: 0 14px;
-  background: var(--ds-brand-600);
+  background: var(--ds-cta-fill);
   color: var(--ds-text-on-brand);
   border: 0;
   border-radius: var(--ds-radius-md);
@@ -170,7 +170,7 @@
 
 .admin-v2 .toolbar-action-btn:hover,
 .admin-v2 .admin-create-btn:hover {
-  background: var(--ds-brand-700);
+  background: var(--ds-cta-fill-hover);
 }
 
 /* Generic .btn / .btn--ghost / .btn--primary inside admin */
@@ -196,14 +196,14 @@
 }
 
 .admin-v2 .btn--primary {
-  background: var(--ds-brand-600);
+  background: var(--ds-cta-fill);
   color: var(--ds-text-on-brand);
-  border-color: var(--ds-brand-600);
+  border-color: var(--ds-cta-fill);
 }
 
 .admin-v2 .btn--primary:hover:not(:disabled) {
-  background: var(--ds-brand-700);
-  border-color: var(--ds-brand-700);
+  background: var(--ds-cta-fill-hover);
+  border-color: var(--ds-cta-fill-hover);
 }
 
 .admin-v2 .btn--ghost {
@@ -579,8 +579,8 @@
 .admin-v2 [data-tone="amber"]  { background: var(--ds-amber-50); color: var(--tone-amber); }
 .admin-v2 [data-tone="yellow"] { background: var(--ds-amber-50); color: var(--tone-amber); }
 .admin-v2 [data-tone="red"]    { background: var(--ds-red-50); color: var(--tone-red); }
-.admin-v2 [data-tone="blue"]   { background: #EEF2FF; color: #4338CA; }
-.admin-v2 [data-tone="purple"] { background: #FAF5FF; color: #7E22CE; }
+.admin-v2 [data-tone="blue"]   { background: var(--blue-dim); color: var(--blue-ink); }
+.admin-v2 [data-tone="purple"] { background: var(--purple-dim); color: var(--purple-ink); }
 .admin-v2 [data-tone="gray"]   { background: var(--ds-neutral-100); color: var(--ds-text-secondary); }
 
 /* ─── Phone (≤640) ─────────────────────────────────────────

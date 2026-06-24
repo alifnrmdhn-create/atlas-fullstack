@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { HealthPill, SectionState } from '../components/ui'
+import i18n from '../lib/i18n'
 
 type ReportTab = 'kpi' | 'leaderboard'
 
@@ -16,12 +18,13 @@ function getApmsStatusClass(pct: number): 'on-track' | 'at-risk' | 'off-track' {
 }
 
 function getApmsStatusLabel(pct: number): string {
-  if (pct >= 100) return 'On Track'
-  if (pct >= 80) return 'At Risk'
-  return 'Off Track'
+  if (pct >= 100) return i18n.t('On Track')
+  if (pct >= 80) return i18n.t('At Risk')
+  return i18n.t('Off Track')
 }
 
 export function ReportsView() {
+  const { t } = useTranslation()
   const {
     apmsKpis, apmsConnected, apmsLinkedPrograms,
     dashboard, normalizeHealthStatus, currentUser,
@@ -49,15 +52,15 @@ export function ReportsView() {
     // sudah dapat view-enter). Halaman sekarang konsisten dengan pages lain.
     <div className="ds reports-v2 view-reports ds-stagger">
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Analytics</h2>
+        <h2 className="view-toolbar__title">{t('Analytics')}</h2>
         <div className="view-toolbar__sep" />
         <span className="view-toolbar__subtitle">
-          {isStrategic ? 'APMS KPI achievement and team performance scores.' : 'Individual KPI achievement and performance scores.'}
+          {isStrategic ? t('APMS KPI achievement and team performance scores.') : t('Individual KPI achievement and performance scores.')}
         </span>
         <div className="view-toggle">
           {([
-            ['kpi', 'KPI', apmsKpis.length || null],
-            ['leaderboard', 'Leaderboard', null],
+            ['kpi', t('KPI'), apmsKpis.length || null],
+            ['leaderboard', t('Leaderboard'), null],
           ] as [ReportTab, string, number | null][]).map(([key, label, count]) => (
             <button
               key={key}
@@ -76,7 +79,7 @@ export function ReportsView() {
             <span
               className={`text-xs reports-live-state ${apmsConnected ? 'reports-live-state--connected' : ''}`}
             >
-              {apmsConnected ? '● Live AGHRIS' : '○ Not connected to AGHRIS'}
+              {apmsConnected ? t('● Live AGHRIS') : t('○ Not connected to AGHRIS')}
             </span>
           </div>
         </div>
@@ -91,7 +94,7 @@ export function ReportsView() {
             {/* Filter periode */}
             <div className="apms-filter-bar">
               <div className="apms-filter-group">
-                <label className="apms-filter-label">Year</label>
+                <label className="apms-filter-label">{t('Year')}</label>
                 <select
                   className="apms-filter-select"
                   value={filterTahun}
@@ -101,7 +104,7 @@ export function ReportsView() {
                 </select>
               </div>
               <div className="apms-filter-group">
-                <label className="apms-filter-label">Month</label>
+                <label className="apms-filter-label">{t('Month')}</label>
                 <select
                   className="apms-filter-select"
                   value={filterBulan}
@@ -111,7 +114,7 @@ export function ReportsView() {
                 </select>
               </div>
               <span className="text-xs text-muted reports-period-note">
-                Period: {MONTHS[filterBulan - 1]} {filterTahun}
+                {t('Period: {{month}} {{year}}', { month: MONTHS[filterBulan - 1], year: filterTahun })}
               </span>
             </div>
 
@@ -119,19 +122,19 @@ export function ReportsView() {
             {apmsKpis.length > 0 && (
               <div className="apms-summary-cards">
                 <div className="apms-summary-card">
-                  <span className="apms-summary-card__label">Actual {MONTHS[filterBulan - 1]}</span>
+                  <span className="apms-summary-card__label">{t('Actual {{month}}', { month: MONTHS[filterBulan - 1] })}</span>
                   <span className="apms-summary-card__value">{realisasiBulanIni}</span>
                 </div>
                 <div className="apms-summary-card">
-                  <span className="apms-summary-card__label">Total KPI</span>
+                  <span className="apms-summary-card__label">{t('Total KPI')}</span>
                   <span className="apms-summary-card__value">{apmsKpis.length}</span>
                 </div>
                 <div className="apms-summary-card">
-                  <span className="apms-summary-card__label">Total Weight</span>
+                  <span className="apms-summary-card__label">{t('Total Weight')}</span>
                   <span className="apms-summary-card__value">{totalBobot}%</span>
                 </div>
                 <div className="apms-summary-card">
-                  <span className="apms-summary-card__label">Total Score</span>
+                  <span className="apms-summary-card__label">{t('Total Score')}</span>
                   <span className="apms-summary-card__value apms-summary-card__value--success">
                     {totalSkor.toFixed(2)}
                   </span>
@@ -142,28 +145,28 @@ export function ReportsView() {
             {/* KPI table */}
             <div className="panel">
               <div className="panel__header">
-                <h3 className="panel__title">KPI Individual — {MONTHS[filterBulan - 1]} {filterTahun}</h3>
-                <span className="text-xs text-muted">Source: AGHRIS / APMS</span>
+                <h3 className="panel__title">{t('KPI Individual — {{month}} {{year}}', { month: MONTHS[filterBulan - 1], year: filterTahun })}</h3>
+                <span className="text-xs text-muted">{t('Source: AGHRIS / APMS')}</span>
               </div>
 
               {apmsKpis.length === 0 ? (
                 <SectionState
                   icon="🔗"
-                  title="Not connected to AGHRIS"
-                  text="Individual KPI data will appear here once the AGHRIS integration is configured (APMS_BASE_URL + APMS_API_KEY)."
+                  title={t('Not connected to AGHRIS')}
+                  text={t('Individual KPI data will appear here once the AGHRIS integration is configured (APMS_BASE_URL + APMS_API_KEY).')}
                 />
               ) : (
                 <table className="apms-kpi-table">
                   <thead>
                     <tr>
-                      <th>Code</th>
-                      <th>KPI Name</th>
-                      <th className="apms-kpi-table__head--center">Weight</th>
-                      <th className="apms-kpi-table__head--right">Target</th>
-                      <th className="apms-kpi-table__head--right">Actual</th>
-                      <th className="apms-kpi-table__head--right">Score</th>
-                      <th>Status</th>
-                      <th>Related Program</th>
+                      <th>{t('Code')}</th>
+                      <th>{t('KPI Name')}</th>
+                      <th className="apms-kpi-table__head--center">{t('Weight')}</th>
+                      <th className="apms-kpi-table__head--right">{t('Target')}</th>
+                      <th className="apms-kpi-table__head--right">{t('Actual')}</th>
+                      <th className="apms-kpi-table__head--right">{t('Score')}</th>
+                      <th>{t('Status')}</th>
+                      <th>{t('Related Program')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -222,11 +225,11 @@ export function ReportsView() {
           <div className="reports-leaderboard">
             <div className="panel">
               <div className="panel__header">
-                <h3 className="panel__title">Score Leaderboard</h3>
-                <span className="text-muted text-xs">Berdasarkan skor ownership & delivery program</span>
+                <h3 className="panel__title">{t('Score Leaderboard')}</h3>
+                <span className="text-muted text-xs">{t('Based on program ownership & delivery score')}</span>
               </div>
               {leaderboard.length === 0 ? (
-                <SectionState title="No leaderboard data yet" text="Scores will appear once data is loaded from the backend." compact />
+                <SectionState title={t('No leaderboard data yet')} text={t('Scores will appear once data is loaded from the backend.')} compact />
               ) : (
                 <div className="leaderboard-list">
                   {[...leaderboard]

@@ -7,6 +7,7 @@ use App\Auth\OrgScope;
 use App\Auth\ScopeResolver;
 use App\Models\Assignment;
 use App\Models\Blocker;
+use App\Models\EscalationRequest;
 use App\Models\Channel;
 use App\Models\ChannelMember;
 use App\Models\ChannelMessage;
@@ -186,6 +187,39 @@ class WorkspaceController extends Controller
                 ->whereNull('archivedAt')
                 ->orderByDesc('createdAt')
                 ->limit(30)
+                ->get(),
+            // Action item rapat & assignment milik user — kini ikut mesin scoring
+            // Focus (bukan lagi cuma "due hari ini" via /inbox/today). Window:
+            // belum-selesai DAN (due ≤7 hari ke depan / overdue / belum ber-due).
+            // Scoring FE yang menentukan bucket Now/Today/Can Wait.
+            'actionItems' => MeetingActionItem::query()
+                ->where('assignedToId', $user->id)
+                ->where('status', '!=', 'COMPLETED')
+                ->where(fn ($q) => $q
+                    ->whereNull('dueDate')
+                    ->orWhere('dueDate', '<=', now()->addDays(7)->endOfDay()))
+                ->orderByRaw('"dueDate" IS NULL, "dueDate" ASC')
+                ->limit(25)
+                ->get(['id', 'title', 'status', 'dueDate', 'meetingId']),
+            'assignments' => Assignment::query()
+                ->where('assigneeId', $user->id)
+                ->whereNotIn('status', ['SELESAI', 'DITOLAK', 'DIBATALKAN', 'COMPLETED', 'CANCELLED'])
+                ->where(fn ($q) => $q
+                    ->whereNull('dueDate')
+                    ->orWhere('dueDate', '<=', now()->addDays(7)->endOfDay()))
+                ->orderByRaw('"dueDate" IS NULL, "dueDate" ASC')
+                ->limit(25)
+                ->get(['id', 'code', 'title', 'status', 'priority', 'dueDate', 'relatedProgramId']),
+            // Escalation yang user (sebagai atasan) sudah COMMIT tapi belum resolve —
+            // menutup open-loop: muncul lagi di Focus saat commitmentDueDate mendekat,
+            // bisa di-Resolve langsung dari panel triage. (lihat #3 audit Focus Jun 2026)
+            'committedEscalations' => EscalationRequest::query()
+                ->with(['linkedProgram:id,code,name', 'requester:id,name', 'escalatedTo:id,name'])
+                ->where('escalatedToId', $user->id)
+                ->whereIn('status', ['COMMITTED', 'IN_PROGRESS'])
+                ->whereNotNull('commitmentDueDate')
+                ->orderBy('commitmentDueDate')
+                ->limit(25)
                 ->get(),
         ]]);
     }

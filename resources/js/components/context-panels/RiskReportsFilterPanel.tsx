@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { router, usePage } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
 import { Calendar } from 'lucide-react'
+import i18n from '../../lib/i18n'
 
 /**
  * Risk Reports filter panel.
@@ -17,11 +19,13 @@ import { Calendar } from 'lucide-react'
 const CURRENT_YEAR = new Date().getFullYear()
 const YEARS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2]
 
-const STATUS_OPTIONS: Array<{ value: string; label: string; tone: 'gray' | 'amber' | 'green' }> = [
-  { value: 'DRAFT', label: 'Draft', tone: 'gray' },
-  { value: 'SUBMITTED', label: 'Submitted', tone: 'amber' },
-  { value: 'APPROVED', label: 'Approved', tone: 'green' },
-]
+function statusOptions(): Array<{ value: string; label: string; tone: 'gray' | 'amber' | 'green' }> {
+  return [
+    { value: 'DRAFT', label: i18n.t('Draft'), tone: 'gray' },
+    { value: 'SUBMITTED', label: i18n.t('Submitted'), tone: 'amber' },
+    { value: 'APPROVED', label: i18n.t('Approved'), tone: 'green' },
+  ]
+}
 
 function readQuery(): URLSearchParams {
   if (typeof window === 'undefined') return new URLSearchParams()
@@ -36,10 +40,11 @@ function readYear(): number {
 
 function readStatus(): string {
   const raw = readQuery().get('status') ?? ''
-  return STATUS_OPTIONS.some((o) => o.value === raw) ? raw : 'all'
+  return statusOptions().some((o) => o.value === raw) ? raw : 'all'
 }
 
 export function RiskReportsFilterPanel() {
+  const { t } = useTranslation()
   const { url } = usePage()
   const [year, setYear] = useState<number>(() => readYear())
   const [status, setStatus] = useState<string>(() => readStatus())
@@ -88,10 +93,10 @@ export function RiskReportsFilterPanel() {
           <span className="context-panel__section-icon" aria-hidden="true">
             <Calendar size={13} />
           </span>
-          <h3 className="context-panel__section-title">Year</h3>
+          <h3 className="context-panel__section-title">{t('Year')}</h3>
           {hasActive ? (
             <button type="button" className="context-panel__reset" onClick={reset}>
-              Reset
+              {t('Reset')}
             </button>
           ) : null}
         </header>
@@ -113,7 +118,7 @@ export function RiskReportsFilterPanel() {
 
       <section className="context-panel__section">
         <header className="context-panel__section-header">
-          <h3 className="context-panel__section-title">Status</h3>
+          <h3 className="context-panel__section-title">{t('Status')}</h3>
         </header>
         <div className="context-panel__section-body">
           <label className="context-panel__check">
@@ -123,9 +128,9 @@ export function RiskReportsFilterPanel() {
               checked={status === 'all'}
               onChange={() => setStatusAndPush('all')}
             />
-            <span className="context-panel__check-label">All</span>
+            <span className="context-panel__check-label">{t('All')}</span>
           </label>
-          {STATUS_OPTIONS.map((opt) => (
+          {statusOptions().map((opt) => (
             <label key={opt.value} className="context-panel__check">
               <input
                 type="radio"

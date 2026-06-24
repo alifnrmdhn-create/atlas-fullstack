@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Auth\OrgScope;
 use App\Models\Blocker;
+use App\Models\Comment;
 use App\Models\SubTask;
 use App\Models\Task;
 use App\Models\User;
@@ -105,7 +106,30 @@ class TaskController extends Controller
         if ($request->expectsJson()) {
             return response()->json(['data' => [
                 ...$task->toArray(),
-                'comments' => [],
+                // Komentar diskusi task. Dulu hardcode [] (regresi) → pesan yang
+                // sudah tersimpan via POST /tasks/{id}/comments tak pernah muncul
+                // setelah reload. Flat array sesuai CommentItem (CommentThreadList
+                // menyaring top-level via parentCommentId & menampilkan authorName).
+                'comments' => Comment::query()
+                    ->where('entityType', 'TASK')
+                    ->where('entityId', $id)
+                    ->with('author:id,name,roleType,positionTitle')
+                    ->orderBy('createdAt')
+                    ->get()
+                    ->map(function (Comment $c) {
+                        $arr = $c->toArray();
+                        $arr['authorName'] = $c->author?->name;
+                        $arr['authorRole'] = $c->author?->positionTitle ?? $c->author?->roleType;
+                        // reactions kolom nullable → cast 'array' bisa null. FE
+                        // (CommentThreadList) mengakses reactions[':thumbsup:'] →
+                        // crash kalau null. Jamin selalu objek (kontrak CommentItem
+                        // = Record<string, number[]>). Sama untuk replyCount.
+                        $arr['reactions'] = (object) ($c->reactions ?? []);
+                        $arr['replyCount'] = (int) ($c->replyCount ?? 0);
+                        unset($arr['author']);
+                        return $arr;
+                    })
+                    ->values(),
                 'subTasks' => SubTask::query()->where('workItemId', $id)->get(),
             ]]);
         }

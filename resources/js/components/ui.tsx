@@ -1,6 +1,8 @@
 // @refresh reset
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 import type { CommentItem, PresenceUser } from '../types'
 import { useEscKey } from '../hooks/useEscKey'
 
@@ -122,6 +124,7 @@ function describeArc(cx: number, cy: number, radius: number, startAngle: number,
 }
 
 export function PanelHeader({ title, subtitle, onClose }: { title: string; subtitle: string; onClose?: () => void }) {
+  const { t } = useTranslation()
   return (
     <div className="panel-header">
       <div>
@@ -129,7 +132,7 @@ export function PanelHeader({ title, subtitle, onClose }: { title: string; subti
         <p>{subtitle}</p>
       </div>
       {onClose && (
-        <button className="panel-close-btn" onClick={onClose} title="Close panel (Esc)" type="button">
+        <button className="panel-close-btn" onClick={onClose} title={t('Close panel (Esc)')} type="button">
           <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg>
           <kbd>Esc</kbd>
         </button>
@@ -151,10 +154,11 @@ export function CommentThreadList({
   onDelete?: (commentId: number) => void
   currentUserId?: number
 }) {
+  const { t } = useTranslation()
   const topLevelComments = comments.filter((comment) => !comment.parentCommentId)
 
   if (topLevelComments.length === 0) {
-    return <SectionState title="No notes yet" text="Write a decision, follow-up, or escalation note below." compact />
+    return <SectionState title={t('No notes yet')} text={t('Write a decision, follow-up, or escalation note below.')} compact />
   }
 
   const canDelete = (comment: CommentItem) => !!onDelete && (comment.createdBy === currentUserId)
@@ -165,8 +169,8 @@ export function CommentThreadList({
         <article className="comment-card" key={comment.id}>
           <div className="message-card__meta">
             <div>
-              <strong>{comment.authorName ?? 'Unknown'}</strong>
-              <span>{comment.authorRole ?? 'Contributor'}</span>
+              <strong>{comment.authorName ?? t('Unknown')}</strong>
+              <span>{comment.authorRole ?? t('Contributor')}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>{formatDate(comment.createdAt)}</span>
@@ -175,7 +179,7 @@ export function CommentThreadList({
                   className="ghost-button"
                   onClick={() => onDelete!(comment.id)}
                   style={{ fontSize: 10, color: 'var(--text-muted)', padding: '0 4px' }}
-                  title="Delete comment"
+                  title={t('Delete comment')}
                   type="button"
                 >
                   ✕
@@ -186,13 +190,13 @@ export function CommentThreadList({
           <RichTextPreview emptyText="" value={comment.commentText} />
           <div className="message-card__actions">
             <button className="ghost-button" onClick={() => onReact(comment.id)} type="button">
-              👍 {comment.reactions[':thumbsup:']?.length ?? 0}
+              👍 {comment.reactions?.[':thumbsup:']?.length ?? 0}
             </button>
             <button className="ghost-button" onClick={() => onReply(comment.id)} type="button">
-              Reply {comment.replyCount > 0 ? `(${comment.replyCount})` : ''}
+              {t('Reply')} {comment.replyCount > 0 ? `(${comment.replyCount})` : ''}
             </button>
-            {comment.isPinned ? <span className="subtle">Pinned</span> : null}
-            {comment.isEdited ? <span className="subtle">Edited</span> : null}
+            {comment.isPinned ? <span className="subtle">{t('Pinned')}</span> : null}
+            {comment.isEdited ? <span className="subtle">{t('Edited')}</span> : null}
           </div>
 
           {comments.filter((reply) => reply.parentCommentId === comment.id).length > 0 ? (
@@ -203,8 +207,8 @@ export function CommentThreadList({
                   <article className="comment-reply" key={reply.id}>
                     <div className="message-card__meta">
                       <div>
-                        <strong>{reply.authorName ?? 'Unknown'}</strong>
-                        <span>{reply.authorRole ?? 'Contributor'}</span>
+                        <strong>{reply.authorName ?? t('Unknown')}</strong>
+                        <span>{reply.authorRole ?? t('Contributor')}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span>{formatDate(reply.createdAt)}</span>
@@ -213,7 +217,7 @@ export function CommentThreadList({
                             className="ghost-button"
                             onClick={() => onDelete!(reply.id)}
                             style={{ fontSize: 10, color: 'var(--text-muted)', padding: '0 4px' }}
-                            title="Delete comment"
+                            title={t('Delete comment')}
                             type="button"
                           >
                             ✕
@@ -224,7 +228,7 @@ export function CommentThreadList({
                     <RichTextPreview emptyText="" value={reply.commentText} />
                     <div className="message-card__actions">
                       <button className="ghost-button" onClick={() => onReact(reply.id)} type="button">
-                        👍 {reply.reactions[':thumbsup:']?.length ?? 0}
+                        👍 {reply.reactions?.[':thumbsup:']?.length ?? 0}
                       </button>
                     </div>
                   </article>
@@ -333,6 +337,7 @@ export function RiskBar({
   max?: number
   label?: string
 }) {
+  const { t } = useTranslation()
   const pct = Math.round(clamp((value / max) * 100, 0, 100))
   const tone = value >= 15 ? 'critical' : value >= 8 ? 'warn' : 'positive'
 
@@ -343,7 +348,7 @@ export function RiskBar({
       </div>
       <div className="risk-bar__meta">
         <strong>{value}</strong>
-        <span>{label ?? `Risk ${pct}%`}</span>
+        <span>{label ?? t('Risk {{pct}}%', { pct })}</span>
       </div>
     </div>
   )
@@ -385,16 +390,18 @@ export function Metric({ label, value }: { label: string; value: string }) {
   )
 }
 
-const HEALTH_LABELS: Record<string, string> = {
-  GREEN:   'On Track',
-  YELLOW:  'At Risk',
-  RED:     'Delayed',
-  OVERDUE: 'Overdue',
+function healthLabels(): Record<string, string> {
+  return {
+    GREEN:   i18n.t('On Track'),
+    YELLOW:  i18n.t('At Risk'),
+    RED:     i18n.t('Delayed'),
+    OVERDUE: i18n.t('Overdue'),
+  }
 }
 export function HealthPill({ status, title }: { status: 'GREEN' | 'YELLOW' | 'RED' | 'OVERDUE'; title?: string }) {
   return (
     <span className={`health-pill health-pill--${status.toLowerCase()}`} title={title}>
-      {HEALTH_LABELS[status] ?? status}
+      {healthLabels()[status] ?? status}
     </span>
   )
 }
@@ -423,11 +430,13 @@ export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
   )
 }
 
-const PRESENCE_STATUS_LABEL: Record<string, string> = {
-  ONLINE: 'Online',
-  AWAY: 'Away',
-  DO_NOT_DISTURB: 'Heads-down',
-  OFFLINE: 'Offline',
+function presenceStatusLabels(): Record<string, string> {
+  return {
+    ONLINE: i18n.t('Online'),
+    AWAY: i18n.t('Away'),
+    DO_NOT_DISTURB: i18n.t('Heads-down'),
+    OFFLINE: i18n.t('Offline'),
+  }
 }
 
 const ACTIVE_THRESHOLD_MS  = 5  * 60_000  // 5 min  → ONLINE demoted to away
@@ -466,13 +475,13 @@ type TimeAge = 'fresh' | 'today' | 'old'
 export function formatRelativeTime(isoString: string): { text: string; age: TimeAge } {
   const diff = Date.now() - new Date(isoString).getTime()
   const seconds = Math.floor(diff / 1000)
-  if (seconds < 60)  return { text: 'just now', age: 'fresh' }
+  if (seconds < 60)  return { text: i18n.t('just now'), age: 'fresh' }
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60)  return { text: `${minutes}m ago`, age: 'fresh' }
+  if (minutes < 60)  return { text: i18n.t('{{count}}m ago', { count: minutes }), age: 'fresh' }
   const hours = Math.floor(minutes / 60)
-  if (hours < 24)    return { text: `${hours}h ago`, age: 'today' }
+  if (hours < 24)    return { text: i18n.t('{{count}}h ago', { count: hours }), age: 'today' }
   const days = Math.floor(hours / 24)
-  if (days < 7)      return { text: `${days}d ago`, age: 'old' }
+  if (days < 7)      return { text: i18n.t('{{count}}d ago', { count: days }), age: 'old' }
   return { text: new Date(isoString).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }), age: 'old' }
 }
 
@@ -508,15 +517,16 @@ export function PresenceRow({
   highlightQuery?: string
   isFlashing?: boolean
 }) {
+  const { t } = useTranslation()
   const slug = effectivePresenceSlug(presence.status, presence.lastActivityAt)
   const isOffline = presence.status === 'OFFLINE'
   const { text: timeText, age } = formatRelativeTime(presence.lastActivityAt)
 
   const statusLine = presence.statusMessage
     ? `${presence.statusEmoji ? resolveEmoji(presence.statusEmoji) + ' ' : ''}${presence.statusMessage}`
-    : `${PRESENCE_STATUS_LABEL[presence.status]}`
+    : `${presenceStatusLabels()[presence.status]}`
 
-  const userName = presence.user?.name ?? 'User'
+  const userName = presence.user?.name ?? t('User')
   const avatarEl = <UserAvatar avatarUrl={presence.user?.avatarUrl} name={userName} />
 
   const subParts = [
@@ -562,7 +572,7 @@ export function PresenceRow({
         <button
           className="presence-row__dm-btn"
           onClick={(e) => { e.stopPropagation(); onDm(presence.userId) }}
-          title={`Message ${userName}`}
+          title={t('Message {{name}}', { name: userName })}
           type="button"
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -760,6 +770,7 @@ export function SidePanel({
   footer?: ReactNode
   width?: number
 }) {
+  const { t } = useTranslation()
   useEscKey(onClose, open)
 
   if (!open) return null
@@ -782,7 +793,7 @@ export function SidePanel({
             type="button"
             className="side-panel__close"
             onClick={onClose}
-            aria-label="Close panel"
+            aria-label={t('Close panel')}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M2 2 12 12M12 2 2 12" />
@@ -814,15 +825,16 @@ export function AgingIndicator({
   showText?: boolean
   className?: string
 }) {
+  const { t } = useTranslation()
   const tone =
     days >= thresholds.red    ? 'red'    :
     days >= thresholds.orange ? 'orange' :
     days >= thresholds.yellow ? 'yellow' : 'green'
-  const label = days === 0 ? 'just now' : `${days}d`
+  const label = days === 0 ? t('just now') : `${days}d`
   return (
     <span
       className={`aging-indicator aging-indicator--${tone} ${className}`.trim()}
-      title={`Aging: ${days} days`}
+      title={t('Aging: {{count}} days', { count: days })}
     >
       <span className="aging-indicator__dot" aria-hidden="true" />
       {showText && <span className="aging-indicator__label">{label}</span>}
@@ -836,7 +848,7 @@ export function AgingIndicator({
 export function ForecastBadge({
   value,
   status,
-  method = 'Linear estimate based on YTD achievement. Does not account for seasonality. To be refined in Sprint 6.',
+  method,
   className = '',
 }: {
   value: number | string
@@ -844,13 +856,15 @@ export function ForecastBadge({
   method?: string
   className?: string
 }) {
+  const { t } = useTranslation()
+  const tooltip = method ?? t('Linear estimate based on YTD achievement. Does not account for seasonality. To be refined in Sprint 6.')
   return (
     <span
       className={`forecast-badge forecast-badge--${status} ${className}`.trim()}
-      title={method}
+      title={tooltip}
     >
       <span className="forecast-badge__icon" aria-hidden="true">↗</span>
-      <span className="forecast-badge__label">Forecast {typeof value === 'number' ? value.toFixed(1) : value}</span>
+      <span className="forecast-badge__label">{t('Forecast {{value}}', { value: typeof value === 'number' ? value.toFixed(1) : value })}</span>
     </span>
   )
 }
@@ -867,10 +881,11 @@ export function DataSourceBadge({
   tooltip?: string
   className?: string
 }) {
-  const label = type === 'dummy' ? 'Demo' : type === 'partial' ? 'Partial' : 'Live'
+  const { t } = useTranslation()
+  const label = type === 'dummy' ? t('Demo') : type === 'partial' ? t('Partial') : t('Live')
   const defaultTooltip = type === 'dummy'
-    ? 'Demo data. Real-data integration in Sprint 6 milestone.'
-    : type === 'partial' ? 'Partly real data, partly demo.' : 'Live data from the system.'
+    ? t('Demo data. Real-data integration in Sprint 6 milestone.')
+    : type === 'partial' ? t('Partly real data, partly demo.') : t('Live data from the system.')
   return (
     <span
       className={`data-source-badge data-source-badge--${type} ${className}`.trim()}
@@ -908,21 +923,22 @@ export function ComposerModeToggle({
   mode: 'edit' | 'preview'
   onModeChange: (mode: 'edit' | 'preview') => void
 }) {
+  const { t } = useTranslation()
   return (
-    <div className="composer-mode-toggle" role="tablist" aria-label="Composer mode">
+    <div className="composer-mode-toggle" role="tablist" aria-label={t('Composer mode')}>
       <button
         className={`ghost-button ghost-button--chip ${mode === 'edit' ? 'is-active' : ''}`}
         onClick={() => onModeChange('edit')}
         type="button"
       >
-        Edit
+        {t('Edit')}
       </button>
       <button
         className={`ghost-button ghost-button--chip ${mode === 'preview' ? 'is-active' : ''}`}
         onClick={() => onModeChange('preview')}
         type="button"
       >
-        Preview
+        {t('Preview')}
       </button>
     </div>
   )
@@ -1370,7 +1386,7 @@ function renderToken(token: string, key: number, opts: RichOpts): ReactNode {
 
 export function RichTextPreview({
   value,
-  emptyText = 'Nothing to preview yet.',
+  emptyText,
   compact = false,
   mentionNames,
   currentUserName,
@@ -1383,12 +1399,13 @@ export function RichTextPreview({
   currentUserName?: string
   taskCodes?: string[]
 }) {
+  const { t } = useTranslation()
   const trimmed = value.trim()
 
   if (!trimmed) {
     return (
       <div className={`rich-preview rich-preview--empty ${compact ? 'rich-preview--compact' : ''}`.trim()}>
-        <p>{emptyText}</p>
+        <p>{emptyText ?? t('Nothing to preview yet.')}</p>
       </div>
     )
   }

@@ -26,20 +26,18 @@ export type TopbarAction = {
 
 /** Map active route → contextual action.
  *
- * NOTE: Pages can also render their own primary CTA in their page header
- * (e.g., ProgramsView). When a page owns its CTA, omit the route here. */
-export const TOPBAR_ACTIONS: Record<string, TopbarAction> = {
-  '/execution': { id: 'task.new', label: 'New Task', icon: 'Plus' },
-  '/penugasan': { id: 'assignment.new', label: 'New Assignment', icon: 'Plus' },
-  '/jadwal': { id: 'meeting.new', label: 'New Meeting', icon: 'Plus' },
-  '/laporan-bulanan': { id: 'report.new', label: 'New Report', icon: 'Plus' },
-  '/performance/scorecard': { id: 'scorecard.export', label: 'Export', icon: 'Download' },
-  '/performance/kolegial': { id: 'kolegial.export', label: 'Export', icon: 'Download' },
-  '/performance/divisi': { id: 'divisi.export', label: 'Export', icon: 'Download' },
-  '/admin/users': { id: 'user.new', label: 'New User', icon: 'Plus' },
-  '/admin/orgs': { id: 'org.new', label: 'New Company', icon: 'Plus' },
-  '/admin/positions': { id: 'position.new', label: 'New Position', icon: 'Plus' },
-  '/admin/roles': { id: 'role.new', label: 'New Role', icon: 'Plus' },
-}
+ * KONVENSI (2026-06-25): KOSONG dengan sengaja. Setiap halaman MEMILIKI CTA-nya
+ * sendiri di page header/toolbar (pola "page owns its CTA", lihat ProgramsView /
+ * WorkboardView / AssignmentsView / ScheduleView). Tombol kontekstual yang
+ * persistent di topbar terasa lepas dari konten — itulah cacat desain yang
+ * dibereskan di sini. Sebelumnya peta ini juga menampung:
+ *   - create (penugasan/jadwal/laporan/admin): sebagian besar MATI (tak ada
+ *     listener) atau ganda dengan tombol in-page → dipindah/dihapus.
+ *   - performance export (scorecard/kolegial/divisi): MATI total (tak pernah
+ *     ada handler `*.export`) → dihapus. Bila export dibutuhkan, render tombol
+ *     in-page yang benar-benar tersambung, jangan kembalikan ke topbar.
+ *
+ * Jangan tambah entri baru di sini tanpa alasan kuat — default = page owns CTA. */
+export const TOPBAR_ACTIONS: Record<string, TopbarAction> = {}
 
 export const TOPBAR_ACTION_EVENT = 'atlas:topbar-action'

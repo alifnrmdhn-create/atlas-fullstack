@@ -1,14 +1,19 @@
+import { useTranslation } from 'react-i18next'
+import i18n from '../../../lib/i18n'
 import type { CharterStatus, CharterHealth } from '../../../types/charter'
 
 type Props = {
   status: CharterStatus
 }
 
-const HEALTH_LABEL: Record<CharterHealth, string> = {
-  ON_TRACK:  'On Track',
-  AT_RISK:   'At Risk',
-  TERLAMBAT: 'Delayed',
-  COMPLETED: 'Completed',
+const healthLabel = (health: CharterHealth): string => {
+  const LABELS: Record<CharterHealth, string> = {
+    ON_TRACK:  i18n.t('On Track'),
+    AT_RISK:   i18n.t('At Risk'),
+    TERLAMBAT: i18n.t('Delayed'),
+    COMPLETED: i18n.t('Completed'),
+  }
+  return LABELS[health]
 }
 
 /**
@@ -22,6 +27,7 @@ const HEALTH_LABEL: Record<CharterHealth, string> = {
  * "—" tidak informatif untuk user yang mau pantau progres.
  */
 export function StatusPanel({ status }: Props) {
+  const { t } = useTranslation()
   const tone = status.health.toLowerCase()
   const activityRatio = status.totalCount > 0 ? status.completedCount / status.totalCount : 0
   const activityPct = Math.round(activityRatio * 100)
@@ -30,7 +36,7 @@ export function StatusPanel({ status }: Props) {
   const hasAchievement = status.achievementPct !== null
   const hasTasks = status.totalCount > 0
   const displayPct = hasAchievement ? status.achievementPct! : (hasTasks ? activityPct : null)
-  const displayLabel = hasAchievement ? '% Achievement' : (hasTasks ? '% Activities Done' : '% Progress')
+  const displayLabel = hasAchievement ? t('% Achievement') : (hasTasks ? t('% Activities Done') : t('% Progress'))
   return (
     <div className="cs-status">
       <div className="cs-status__head">
@@ -50,14 +56,14 @@ export function StatusPanel({ status }: Props) {
       </div>
       <div className="cs-status__health-row">
         <span className={`cs-status__dot cs-status__dot--${tone}`} />
-        <span className="cs-status__health-label">{HEALTH_LABEL[status.health]}</span>
+        <span className="cs-status__health-label">{healthLabel(status.health)}</span>
       </div>
       {status.totalCount > 0 && (
         <div className="cs-status__breakdown">
           <span className="cs-status__breakdown-num">{status.completedCount}</span>
           <span className="cs-status__breakdown-sep">/</span>
           <span className="cs-status__breakdown-total">{status.totalCount}</span>
-          <span className="cs-status__breakdown-label">activities done</span>
+          <span className="cs-status__breakdown-label">{t('activities done')}</span>
           {/* Mini progress ratio activity completion — visual untuk tracking. */}
           <div className="cs-status__activity-track" role="presentation" aria-hidden="true">
             <div

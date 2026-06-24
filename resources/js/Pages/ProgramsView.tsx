@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useId, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 import { usePage, router } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
@@ -72,44 +74,48 @@ const VALID_SEVERITIES = new Set(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'])
 const PORTFOLIO_PAGE_SIZE = 20
 
 // Label chip filter window tenggat (deep-link ?deadline=), selaras bar "Deadlines" di Home.
-const DEADLINE_LABEL: Record<string, string> = {
-  overdue: 'Overdue', le30: '≤30 days', le60: '31–60 days', le90: '61–90 days', gt90: '90+ days',
-}
+const deadlineLabel = (): Record<string, string> => ({
+  overdue: i18n.t('Overdue'),
+  le30: i18n.t('≤30 days'),
+  le60: i18n.t('31–60 days'),
+  le90: i18n.t('61–90 days'),
+  gt90: i18n.t('90+ days'),
+})
 
 const approvalBadge = (prog: { approvalStatus?: string | null; rejectionNote?: string | null }) => {
   // Rejected = DRAFT + rejectionNote populated. The literal 'REJECTED' status
   // never persists (BE reverts to DRAFT) — must check the compound or the
   // badge never renders. Check FIRST so DRAFT case below doesn't shadow it.
   if (prog.approvalStatus === 'DRAFT' && prog.rejectionNote) {
-    return { label: 'Rejected', tone: 'red' as const }
+    return { label: i18n.t('Rejected'), tone: 'red' as const }
   }
   switch (prog.approvalStatus) {
     case 'DRAFT':
-      return { label: 'Draft', tone: 'yellow' as const }
+      return { label: i18n.t('Draft'), tone: 'yellow' as const }
     case 'PENDING_KASUB':
-      return { label: 'Pend. Kasub', tone: 'blue' as const }
+      return { label: i18n.t('Pend. Kasub'), tone: 'blue' as const }
     case 'PENDING_KADIV':
-      return { label: 'Pend. Kadiv', tone: 'blue' as const }
+      return { label: i18n.t('Pend. Kadiv'), tone: 'blue' as const }
     case 'ACTIVE':
       // "Berjalan" badge konsisten dengan Board/Table tab yang pakai
       // getProgramDisplayStatus helper. Memberi sinyal jelas "ini sudah lewat
       // approval phase" — tanpa ini row ACTIVE tampil identik dengan PENDING
       // (kedua-duanya cuma punya health pill).
-      return { label: 'Active', tone: 'green' as const }
+      return { label: i18n.t('Active'), tone: 'green' as const }
     default:
       return null
   }
 }
 
 const healthStatusLabel = (status: 'GREEN' | 'YELLOW' | 'RED') => {
-  if (status === 'GREEN') return 'On Track'
-  if (status === 'YELLOW') return 'At Risk'
-  return 'Delayed'
+  if (status === 'GREEN') return i18n.t('On Track')
+  if (status === 'YELLOW') return i18n.t('At Risk')
+  return i18n.t('Delayed')
 }
 
 const workstreamSummaryLabel = (count: number | undefined | null) => {
-  if (!count || count <= 0) return 'No workstreams yet'
-  return `${count} workstream`
+  if (!count || count <= 0) return i18n.t('No workstreams yet')
+  return i18n.t('{{count}} workstream', { count })
 }
 
 // ── Peta Programs — portfolio scatter ────────────────────────────────────
@@ -140,6 +146,7 @@ function ProgramScatter({ programs, onOpen }: {
   programs: ScatterProg[]
   onOpen: (id: number) => void
 }) {
+  const { t } = useTranslation()
   const [hoveredId, setHoveredId] = useState<number | null>(null)
 
   // Geometri plot — viewBox tetap, scale 100% via CSS.
@@ -209,7 +216,7 @@ function ProgramScatter({ programs, onOpen }: {
         viewBox={`0 0 ${W} ${H}`}
         className="program-scatter__svg"
         role="img"
-        aria-label={`Map of ${programs.length} programs: ${zoneCounts.danger} in danger zone, ${zoneCounts.push} push to finish, ${zoneCounts.early} early stage, ${zoneCounts.safe} safe`}
+        aria-label={t('Map of {{count}} programs: {{danger}} in danger zone, {{push}} push to finish, {{early}} early stage, {{safe}} safe', { count: programs.length, danger: zoneCounts.danger, push: zoneCounts.push, early: zoneCounts.early, safe: zoneCounts.safe })}
         onMouseLeave={() => setHoveredId(null)}
       >
         <defs>
@@ -240,8 +247,8 @@ function ProgramScatter({ programs, onOpen }: {
         <text x={ML} y={H - MB + 30} className="program-scatter__axt">0%</text>
         <text x={midX} y={H - MB + 30} textAnchor="middle" className="program-scatter__axt">50%</text>
         <text x={W - MR} y={H - MB + 30} textAnchor="end" className="program-scatter__axt">100%</text>
-        <text x={(ML + W - MR) / 2} y={H - 8} textAnchor="middle" className="program-scatter__axlabel">Execution progress →</text>
-        <text x={18} y={(MT + H - MB) / 2} className="program-scatter__axlabel" transform={`rotate(-90 18 ${(MT + H - MB) / 2})`} textAnchor="middle">↑ Time pressure</text>
+        <text x={(ML + W - MR) / 2} y={H - 8} textAnchor="middle" className="program-scatter__axlabel">{t('Execution progress →')}</text>
+        <text x={18} y={(MT + H - MB) / 2} className="program-scatter__axlabel" transform={`rotate(-90 18 ${(MT + H - MB) / 2})`} textAnchor="middle">{t('↑ Time pressure')}</text>
 
         {/* Titik program */}
         {dots.map(d => {
@@ -263,7 +270,7 @@ function ProgramScatter({ programs, onOpen }: {
               onClick={() => onOpen(d.id)}
               tabIndex={0}
               role="button"
-              aria-label={`${d.code} ${d.name}, progress ${d.progressPercent}%`}
+              aria-label={t('{{code}} {{name}}, progress {{percent}}%', { code: d.code, name: d.name, percent: d.progressPercent })}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(d.id) } }}
             >
               <title>{d.code} · {d.name} — {d.progressPercent}%</title>
@@ -274,16 +281,16 @@ function ProgramScatter({ programs, onOpen }: {
         {/* Label kuadran + populasi — di atas titik, halo (paint-order) biar terbaca */}
         <g pointerEvents="none">
           <text x={ML + 12} y={MT + 20} className="program-scatter__zone program-scatter__zone--danger">
-            Danger Zone <tspan className="program-scatter__zone-n">{zoneCounts.danger}</tspan>
+            {t('Danger Zone')} <tspan className="program-scatter__zone-n">{zoneCounts.danger}</tspan>
           </text>
           <text x={W - MR - 12} y={MT + 20} textAnchor="end" className="program-scatter__zone program-scatter__zone--push">
-            <tspan className="program-scatter__zone-n">{zoneCounts.push}</tspan> Push to Finish
+            <tspan className="program-scatter__zone-n">{zoneCounts.push}</tspan> {t('Push to Finish')}
           </text>
           <text x={ML + 12} y={H - MB - 12} className="program-scatter__zone program-scatter__zone--early">
-            Early Stage <tspan className="program-scatter__zone-n">{zoneCounts.early}</tspan>
+            {t('Early Stage')} <tspan className="program-scatter__zone-n">{zoneCounts.early}</tspan>
           </text>
           <text x={W - MR - 12} y={H - MB - 12} textAnchor="end" className="program-scatter__zone program-scatter__zone--safe">
-            <tspan className="program-scatter__zone-n">{zoneCounts.safe}</tspan> Safe
+            <tspan className="program-scatter__zone-n">{zoneCounts.safe}</tspan> {t('Safe')}
           </text>
         </g>
 
@@ -292,11 +299,11 @@ function ProgramScatter({ programs, onOpen }: {
           const lx = flip ? hovered.x - labelW - 12 : hovered.x + 12
           const ly = Math.min(Math.max(hovered.y - 30, MT + 4), H - MB - 70)
           const daysTxt = hovered.completed
-            ? 'Completed'
-            : hovered.days == null ? 'No deadline'
-            : hovered.days < 0 ? `${Math.abs(hovered.days)} days overdue`
-            : hovered.days === 0 ? 'Due today'
-            : `${hovered.days} days left`
+            ? t('Completed')
+            : hovered.days == null ? t('No deadline')
+            : hovered.days < 0 ? t('{{count}} days overdue', { count: Math.abs(hovered.days) })
+            : hovered.days === 0 ? t('Due today')
+            : t('{{count}} days left', { count: hovered.days })
           const name = hovered.name.length > 42 ? hovered.name.slice(0, 41) + '…' : hovered.name
           return (
             <g className="program-scatter__tip" pointerEvents="none">
@@ -312,11 +319,11 @@ function ProgramScatter({ programs, onOpen }: {
       </svg>
 
       <div className="program-scatter__legend">
-        <span className="program-scatter__legend-item"><i style={{ background: SCATTER_HEX.GREEN }} /> On Track</span>
-        <span className="program-scatter__legend-item"><i style={{ background: SCATTER_HEX.YELLOW }} /> At Risk</span>
-        <span className="program-scatter__legend-item"><i style={{ background: SCATTER_HEX.RED }} /> Delayed</span>
-        <span className="program-scatter__legend-item"><i style={{ background: SCATTER_HEX.SELESAI }} /> Completed</span>
-        <span className="program-scatter__legend-hint">Click a point to open the program</span>
+        <span className="program-scatter__legend-item"><i style={{ background: SCATTER_HEX.GREEN }} /> {t('On Track')}</span>
+        <span className="program-scatter__legend-item"><i style={{ background: SCATTER_HEX.YELLOW }} /> {t('At Risk')}</span>
+        <span className="program-scatter__legend-item"><i style={{ background: SCATTER_HEX.RED }} /> {t('Delayed')}</span>
+        <span className="program-scatter__legend-item"><i style={{ background: SCATTER_HEX.SELESAI }} /> {t('Completed')}</span>
+        <span className="program-scatter__legend-hint">{t('Click a point to open the program')}</span>
       </div>
     </div>
   )
@@ -328,6 +335,7 @@ function ProgramScatter({ programs, onOpen }: {
 function Pager({ page, pageCount, total, pageSize, onPage }: {
   page: number; pageCount: number; total: number; pageSize: number; onPage: (p: number) => void
 }) {
+  const { t } = useTranslation()
   if (pageCount <= 1) return null
   const from = (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
@@ -338,15 +346,15 @@ function Pager({ page, pageCount, total, pageSize, onPage }: {
     else if (nums[nums.length - 1] !== 'gap') nums.push('gap')
   }
   return (
-    <nav className="programs-pager" aria-label="Program pagination">
+    <nav className="programs-pager" aria-label={t('Program pagination')}>
       <span className="programs-pager__range">
-        Showing <strong>{from}–{to}</strong> of <strong>{total}</strong> programs
+        {t('Showing {{from}}–{{to}} of {{total}} programs', { from, to, total })}
       </span>
       <div className="programs-pager__nav">
         <button
           type="button" className="programs-pager__btn"
           disabled={page <= 1} onClick={() => onPage(page - 1)}
-          aria-label="Previous page"
+          aria-label={t('Previous page')}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 3 5 7l4 4" /></svg>
         </button>
@@ -366,7 +374,7 @@ function Pager({ page, pageCount, total, pageSize, onPage }: {
         <button
           type="button" className="programs-pager__btn"
           disabled={page >= pageCount} onClick={() => onPage(page + 1)}
-          aria-label="Next page"
+          aria-label={t('Next page')}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 3 4 4-4 4" /></svg>
         </button>
@@ -385,6 +393,7 @@ export function ProgramsView() {
     currentUser, apmsKpis, programSummary,
   } = useWorkspace()
 
+  const { t } = useTranslation()
   const navigate = useInertiaNavigate()
   const role = currentUser?.roleType?.toUpperCase() ?? ''
   const roleAccess = useRoleAccess()
@@ -409,7 +418,7 @@ export function ProgramsView() {
       // Stale guard: kalau set-nya >30 detik lalu, user mungkin navigated
       // lewat jalan lain — skip supaya tidak muncul toast nyasar.
       if (Date.now() - payload.at > 30_000) return
-      toast.show(`Program "${payload.name}" approved · the PIC has been notified`, 'success')
+      toast.show(t('Program "{{name}}" approved · the PIC has been notified', { name: payload.name }), 'success')
     } catch { /* malformed payload — silent skip */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -425,6 +434,10 @@ export function ProgramsView() {
   const [laneSearch, setLaneSearch] = useState('')
   const [portfolioSearch, setPortfolioSearch] = useState('')
   const [approvalFilter, setApprovalFilter] = useState<'all' | 'needs_action'>('all')
+  // "Mine" = program di mana user adalah PIC utama (owner) atau co-PIC (picPersons).
+  // Client-side & ortogonal terhadap scope org server (yang sudah membatasi list
+  // ke sub-divisi). Memberi Kasub/Kadiv jalan cepat menyaring ke beban pribadi.
+  const [mineOnly, setMineOnly] = useState(false)
   const [portfolioPage, setPortfolioPage] = useState(1)
 
   // ── URL-driven filters from Context Panel (M6.1) ───────────────────────────
@@ -635,7 +648,7 @@ export function ProgramsView() {
       await exportProgramsCharterBatch(payloads)
       closeBatchExport()
     } catch (e: unknown) {
-      setBatchError(extractErrorMessage(e, 'Failed to generate batch PPTX.'))
+      setBatchError(extractErrorMessage(e, t('Failed to generate batch PPTX.')))
     } finally {
       setBatchExporting(false)
     }
@@ -718,7 +731,7 @@ export function ProgramsView() {
       closeEditProgram()
       await loadOverview('refresh')
     } catch (err: unknown) {
-      setEpError((err as { message?: string })?.message ?? 'Failed to save changes.')
+      setEpError((err as { message?: string })?.message ?? t('Failed to save changes.'))
     } finally {
       setEpSaving(false)
     }
@@ -741,7 +754,7 @@ export function ProgramsView() {
       closeArchiveModal()
       await loadOverview('refresh')
     } catch (err: unknown) {
-      setArchiveError((err as { message?: string })?.message ?? 'Failed to archive program.')
+      setArchiveError((err as { message?: string })?.message ?? t('Failed to archive program.'))
     } finally {
       setArchiveSaving(false)
     }
@@ -784,7 +797,7 @@ export function ProgramsView() {
       loadArchivedPrograms()
       await loadOverview('refresh')
     } catch (err: unknown) {
-      setRestoreError((err as { message?: string })?.message ?? 'Failed to restore program.')
+      setRestoreError((err as { message?: string })?.message ?? t('Failed to restore program.'))
     } finally {
       setRestoreSaving(false)
     }
@@ -884,7 +897,7 @@ export function ProgramsView() {
       })
       const newId = res?.data?.id
       closeCpModal()
-      toast.show(`Program "${programName}" created — open the detail page to continue setup`, 'success')
+      toast.show(t('Program "{{name}}" created — open the detail page to continue setup', { name: programName }), 'success')
       // Refresh sidebar context + program list di belakang, lalu navigasi user
       // ke detail page untuk lanjut setup checklist.
       void loadOverview('refresh')
@@ -892,7 +905,7 @@ export function ProgramsView() {
         navigate(`/programs/${newId}`)
       }
     } catch (err: unknown) {
-      const msg = (err as { message?: string })?.message ?? 'Failed to create program.'
+      const msg = (err as { message?: string })?.message ?? t('Failed to create program.')
       setCpError(msg)
       toast.show(msg, 'error')
     } finally {
@@ -935,11 +948,11 @@ export function ProgramsView() {
     Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
 
   const formatDaysLabel = (days: number) => {
-    if (days < 0) return { label: `${Math.abs(days)} days overdue`, color: 'var(--red)', tone: 'critical' as const }
-    if (days === 0) return { label: 'today', color: 'var(--red)', tone: 'critical' as const }
-    if (days <= 14) return { label: `${days} days left`, color: 'var(--yellow)', tone: 'warning' as const }
-    if (days <= 30) return { label: `${days} days left`, color: 'var(--blue)', tone: 'notice' as const }
-    return { label: `${days} days left`, color: 'var(--text-muted)', tone: 'muted' as const }
+    if (days < 0) return { label: t('{{count}} days overdue', { count: Math.abs(days) }), color: 'var(--red)', tone: 'critical' as const }
+    if (days === 0) return { label: t('today'), color: 'var(--red)', tone: 'critical' as const }
+    if (days <= 14) return { label: t('{{count}} days left', { count: days }), color: 'var(--yellow)', tone: 'warning' as const }
+    if (days <= 30) return { label: t('{{count}} days left', { count: days }), color: 'var(--blue)', tone: 'notice' as const }
+    return { label: t('{{count}} days left', { count: days }), color: 'var(--text-muted)', tone: 'muted' as const }
   }
 
   // Programs where the current user needs to take action (approve or submit)
@@ -979,12 +992,19 @@ export function ProgramsView() {
     return true
   }
 
+  // PIC = owner (PIC utama) atau salah satu picPersons (co-PIC).
+  const isMineProgram = (p: typeof programs[number]) => {
+    const meId = currentUser?.id
+    if (meId == null) return false
+    return p.owner?.id === meId || (p.picPersons ?? []).some(pic => pic.id === meId)
+  }
   const filteredPortfolio = programs.filter(p => {
     const matchesSearch = !portfolioSearch ||
       p.name.toLowerCase().includes(portfolioSearch.toLowerCase()) ||
       p.code.toLowerCase().includes(portfolioSearch.toLowerCase())
     const matchesApproval = approvalFilter === 'all' || needsActionPrograms.some(n => n.id === p.id)
-    return matchesSearch && matchesApproval && matchesUrlStatus(p) && matchesDeepFilters(p)
+    const matchesMine = !mineOnly || isMineProgram(p)
+    return matchesSearch && matchesApproval && matchesMine && matchesUrlStatus(p) && matchesDeepFilters(p)
   })
 
   // ── Paginasi (List & Table) ───────────────────────────────────────────
@@ -997,7 +1017,7 @@ export function ProgramsView() {
   )
   // Reset ke halaman 1 saat filter/search/URL berubah supaya tidak nyangkut di
   // halaman kosong. `url` mencakup chip status & stale.
-  useEffect(() => { setPortfolioPage(1) }, [portfolioSearch, approvalFilter, url])
+  useEffect(() => { setPortfolioPage(1) }, [portfolioSearch, approvalFilter, mineOnly, url])
   const goToPage = useCallback((p: number) => {
     setPortfolioPage(p)
     // Naik ke atas daftar saat ganti halaman — tanpa ini fokus tetap di pager bawah.
@@ -1009,6 +1029,7 @@ export function ProgramsView() {
   const filteredLane = programs.filter(p =>
     (!laneSearch || p.name.toLowerCase().includes(laneSearch.toLowerCase()) ||
      p.code.toLowerCase().includes(laneSearch.toLowerCase())) &&
+    (!mineOnly || isMineProgram(p)) &&
     matchesUrlStatus(p) && matchesDeepFilters(p)
   )
   const filteredTimeline = timelineData.filter(p =>
@@ -1040,7 +1061,7 @@ export function ProgramsView() {
   } else {
     laneGroups = ['GREEN', 'YELLOW', 'RED'].map(h => ({
       key: h,
-      label: h === 'GREEN' ? 'On Track' : h === 'YELLOW' ? 'At Risk' : 'Delayed',
+      label: h === 'GREEN' ? t('On Track') : h === 'YELLOW' ? t('At Risk') : t('Delayed'),
       tone: h.toLowerCase(),
       items: filteredLane.filter(p => normalizeHealthStatus(p.healthStatus) === h).sort(byUrgency),
     })).filter(g => g.items.length > 0)
@@ -1088,21 +1109,21 @@ export function ProgramsView() {
       <div className="programs-v2__inner ds-stagger">
       {/* ── Page header (design-system PageHeader) ─────────────────────────── */}
       <PageHeader
-        title="Programs"
-        subtitle={programs.length === 0 ? 'No programs yet' : 'Work program portfolio & health'}
+        title={t('Programs')}
+        subtitle={programs.length === 0 ? t('No programs yet') : t('Work program portfolio & health')}
         actions={
           <>
             {roleAccess.isMonitoringOnly && (
-              <span className="role-monitoring-badge">Monitoring</span>
+              <span className="role-monitoring-badge">{t('Monitoring')}</span>
             )}
             {programs.length > 0 && (
               <button
                 className="programs-v2__cta programs-v2__cta--secondary"
                 onClick={() => setShowBatchExport(true)}
                 type="button"
-                title="Export Charter PPTX for several programs at once (MRC / board meetings)"
+                title={t('Export Charter PPTX for several programs at once (MRC / board meetings)')}
               >
-                Export Charter PPTX
+                {t('Export Charter PPTX')}
               </button>
             )}
             {roleAccess.canCreateProgram && (
@@ -1111,7 +1132,7 @@ export function ProgramsView() {
                 onClick={openCreateProgramModal}
                 type="button"
               >
-                New Program
+                {t('New Program')}
               </button>
             )}
           </>
@@ -1120,23 +1141,23 @@ export function ProgramsView() {
 
 
       {/* ── Tabs ────────────────────────────────────────────────────────── */}
-      <nav className="programs-v2__tabs scroll-tabs" role="tablist" aria-label="Program views">
+      <nav className="programs-v2__tabs scroll-tabs" role="tablist" aria-label={t('Program views')}>
         {([
           ['portfolio', 'Portfolio'],
           ['timeline',  'Timeline'],
           ['monitoring', 'Monitoring'],
           ['pulse',     'Pulse'],
-        ] as [ProgramTab, string][]).map(([t, label]) => (
+        ] as [ProgramTab, string][]).map(([tabKey, label]) => (
           <button
-            key={t}
+            key={tabKey}
             role="tab"
-            aria-selected={tab === t}
-            className={`programs-v2__tab${tab === t ? ' programs-v2__tab--active' : ''}`}
-            onClick={() => setTab(t)}
+            aria-selected={tab === tabKey}
+            className={`programs-v2__tab${tab === tabKey ? ' programs-v2__tab--active' : ''}`}
+            onClick={() => setTab(tabKey)}
             type="button"
           >
-            <span>{label}</span>
-            {t === 'pulse' && totalIssues > 0 && (
+            <span>{t(label)}</span>
+            {tabKey === 'pulse' && totalIssues > 0 && (
               <span className="programs-v2__tab-count">{totalIssues}</span>
             )}
           </button>
@@ -1149,7 +1170,7 @@ export function ProgramsView() {
             onClick={() => setTab('archive')}
             type="button"
           >
-            <span>Archive</span>
+            <span>{t('Archive')}</span>
           </button>
         )}
       </nav>
@@ -1157,11 +1178,24 @@ export function ProgramsView() {
       {/* ── Controls bar — filters left, view+search right ──────────────── */}
       {(tab === 'portfolio' || tab === 'timeline') && (
         <div className="programs-controls">
-          <div className="programs-controls__filters" role="group" aria-label="Filter program">
+          <div className="programs-controls__filters" role="group" aria-label={t('Filter programs')}>
+            {currentUser?.id != null && (
+              <button
+                type="button"
+                className={`programs-filter-chip programs-filter-chip--mine${mineOnly ? ' programs-filter-chip--active' : ''}`}
+                aria-pressed={mineOnly}
+                onClick={() => setMineOnly(v => !v)}
+                title={t('Show only programs where you are the PIC or a co-PIC')}
+              >
+                <span className="programs-filter-chip__dot" aria-hidden="true" />
+                {t('Mine')}
+                <span className="programs-filter-chip__count">{programs.filter(isMineProgram).length}</span>
+              </button>
+            )}
             {([
-              ['GREEN',  'On Track',  'green',  healthMix.green],
-              ['YELLOW', 'At Risk',   'amber',  healthMix.yellow],
-              ['RED',    'Delayed',   'red',    healthMix.red],
+              ['GREEN',  t('On Track'),  'green',  healthMix.green],
+              ['YELLOW', t('At Risk'),   'amber',  healthMix.yellow],
+              ['RED',    t('Delayed'),   'red',    healthMix.red],
             ] as const).map(([tone, label, toneClass, count]) => {
               const active = urlStatusFilter.has(tone)
               return (
@@ -1184,7 +1218,7 @@ export function ProgramsView() {
               aria-pressed={urlStaleOnly}
               onClick={toggleStaleFilter}
             >
-              Stale &gt;30 days
+              {t('Stale >30 days')}
             </button>
             {tab === 'portfolio' && needsActionPrograms.length > 0 && (
               <button
@@ -1194,7 +1228,7 @@ export function ProgramsView() {
                 onClick={() => setApprovalFilter(f => f === 'needs_action' ? 'all' : 'needs_action')}
               >
                 <span className="programs-filter-chip__dot" aria-hidden="true" />
-                Needs Approval
+                {t('Needs Approval')}
                 <span className="programs-filter-chip__count">{needsActionPrograms.length}</span>
               </button>
             )}
@@ -1206,7 +1240,7 @@ export function ProgramsView() {
               onClick={() => (urlCompletedOnly ? clearParam('completed') : router.visit(`/programs?${(() => { const pr = new URLSearchParams(url.split('?')[1] ?? ''); pr.set('completed', '1'); return pr.toString() })()}`, { preserveState: true, preserveScroll: true, replace: true }))}
             >
               <span className="programs-filter-chip__dot" aria-hidden="true" />
-              Completed
+              {t('Completed')}
               <span className="programs-filter-chip__count">
                 {programs.filter(p => p.status === 'COMPLETED' || p.approvalStatus === 'COMPLETED').length}
               </span>
@@ -1215,19 +1249,19 @@ export function ProgramsView() {
             {Array.from(urlDivisionFilter).map(code => (
               <button key={`div-${code}`} type="button" className="programs-filter-chip programs-filter-chip--active programs-filter-chip--removable"
                 aria-pressed onClick={() => toggleMultiParam('division', code)}>
-                Division: {code} <span className="programs-filter-chip__x" aria-hidden>×</span>
+                {t('Division: {{code}}', { code })} <span className="programs-filter-chip__x" aria-hidden>×</span>
               </button>
             ))}
             {Array.from(urlDeadlineFilter).map(b => (
               <button key={`dl-${b}`} type="button" className="programs-filter-chip programs-filter-chip--active programs-filter-chip--removable"
                 aria-pressed onClick={() => toggleMultiParam('deadline', b)}>
-                {DEADLINE_LABEL[b] ?? b} <span className="programs-filter-chip__x" aria-hidden>×</span>
+                {deadlineLabel()[b] ?? b} <span className="programs-filter-chip__x" aria-hidden>×</span>
               </button>
             ))}
             {Array.from(urlProgressFilter).map(b => (
               <button key={`pg-${b}`} type="button" className="programs-filter-chip programs-filter-chip--active programs-filter-chip--removable"
                 aria-pressed onClick={() => toggleMultiParam('progress', b)}>
-                {b === 'early' ? 'Early' : b === 'mid' ? 'Mid' : 'Final'} progress <span className="programs-filter-chip__x" aria-hidden>×</span>
+                {b === 'early' ? t('Early progress') : b === 'mid' ? t('Mid progress') : t('Final progress')} <span className="programs-filter-chip__x" aria-hidden>×</span>
               </button>
             ))}
             {(urlStatusFilter.size > 0 || urlStaleOnly || approvalFilter === 'needs_action' || urlCompletedOnly || urlDivisionFilter.size > 0 || urlDeadlineFilter.size > 0 || urlProgressFilter.size > 0) && (
@@ -1239,7 +1273,7 @@ export function ProgramsView() {
                   resetFilters()
                 }}
               >
-                Reset
+                {t('Reset')}
               </button>
             )}
           </div>
@@ -1251,7 +1285,7 @@ export function ProgramsView() {
                   {(['list', 'kanban', 'table', 'map'] as PortfolioView[]).map(mode => (
                     <button key={mode} className={`view-toggle-btn${portfolioView === mode ? ' active' : ''}`}
                       onClick={() => setPortfolioView(mode)}>
-                      {mode === 'list' ? 'List' : mode === 'kanban' ? 'Board' : mode === 'table' ? 'Table' : 'Map'}
+                      {mode === 'list' ? t('List') : mode === 'kanban' ? t('Board') : mode === 'table' ? t('Table') : t('Map')}
                     </button>
                   ))}
                 </div>
@@ -1261,21 +1295,21 @@ export function ProgramsView() {
                     <path d="m9.5 9.5 3 3" />
                   </svg>
                   <input className="programs-search__input" value={portfolioSearch}
-                    onChange={e => setPortfolioSearch(e.target.value)} placeholder="Search programs…" />
+                    onChange={e => setPortfolioSearch(e.target.value)} placeholder={t('Search programs…')} />
                 </div>
               </>
             )}
             {tab === 'timeline' && (
               <>
                 <div className="view-toggle">
-                  <button className={`view-toggle-btn${timelineView === 'lanes' ? ' active' : ''}`} onClick={() => setTimelineView('lanes')}>Lanes</button>
-                  <button className={`view-toggle-btn${timelineView === 'gantt' ? ' active' : ''}`} onClick={() => setTimelineView('gantt')}>Gantt</button>
+                  <button className={`view-toggle-btn${timelineView === 'lanes' ? ' active' : ''}`} onClick={() => setTimelineView('lanes')}>{t('Lanes')}</button>
+                  <button className={`view-toggle-btn${timelineView === 'gantt' ? ' active' : ''}`} onClick={() => setTimelineView('gantt')}>{t('Gantt')}</button>
                 </div>
                 {timelineView === 'lanes' && (
                   <div className="view-toggle">
                     {(['status', 'priority', 'health'] as LaneGrouping[]).map(g => (
                       <button key={g} className={`view-toggle-btn${laneGrouping === g ? ' active' : ''}`} onClick={() => setLaneGrouping(g)}>
-                        {g === 'status' ? 'Status' : g === 'priority' ? 'Priority' : 'Health'}
+                        {g === 'status' ? t('Status') : g === 'priority' ? t('Priority') : t('Health')}
                       </button>
                     ))}
                   </div>
@@ -1286,7 +1320,7 @@ export function ProgramsView() {
                   <path d="m9.5 9.5 3 3" />
                 </svg>
                 <input className="programs-search__input" value={laneSearch}
-                  onChange={e => setLaneSearch(e.target.value)} placeholder="Search programs…" />
+                  onChange={e => setLaneSearch(e.target.value)} placeholder={t('Search programs…')} />
               </div>
             </>
           )}
@@ -1309,10 +1343,10 @@ export function ProgramsView() {
                     <div className="program-roster">
                       <div className="program-roster__header" aria-hidden="true">
                         <div className="program-roster__header-main">
-                          <span>Program</span>
-                          <span>Status</span>
-                          <span>Progress</span>
-                          <span>PIC</span>
+                          <span>{t('Program')}</span>
+                          <span>{t('Status')}</span>
+                          <span>{t('Progress')}</span>
+                          <span>{t('PIC')}</span>
                         </div>
                         {/* Spacer mengikuti area Charter btn + kebab di row, supaya
                             kolom header benar-benar align dengan kolom konten. */}
@@ -1354,7 +1388,7 @@ export function ProgramsView() {
                                     )}
                                     {bCount > 0 && (
                                       <span className="program-row__badge program-row__badge--blocker">
-                                        {bCount} blocker
+                                        {t('{{count}} blocker', { count: bCount })}
                                       </span>
                                     )}
                                     {approvalInfo && (
@@ -1367,7 +1401,7 @@ export function ProgramsView() {
                               </div>
                               <div className="program-row__state">
                                 <span className={`program-row__status-pill program-row__status-pill--${isCompleted ? 'green' : healthTone}`}>
-                                  {isCompleted ? 'Completed' : healthLabel}
+                                  {isCompleted ? t('Completed') : healthLabel}
                                 </span>
                               </div>
                               <div className="program-row__progress">
@@ -1381,7 +1415,7 @@ export function ProgramsView() {
                                     </span>
                                   </div>
                                 ) : (
-                                  <span className="program-row__progress-empty">{progStatus === 'PLANNING' ? 'Not started' : 'In progress'}</span>
+                                  <span className="program-row__progress-empty">{progStatus === 'PLANNING' ? t('Not started') : t('In progress')}</span>
                                 )}
                               </div>
                               <div className="program-row__owner-block">
@@ -1394,7 +1428,7 @@ export function ProgramsView() {
                                   </>
                                 ) : (
                                   <span className="program-row__owner program-row__owner--empty">
-                                    Not assigned
+                                    {t('Not assigned')}
                                   </span>
                                 )}
                                 {(prog.picPersons ?? []).length > 0 && (
@@ -1411,10 +1445,10 @@ export function ProgramsView() {
                               className="program-row__charter-btn"
                               onClick={e => { e.stopPropagation(); navigate(`/programs/${prog.id}/charter`) }}
                               type="button"
-                              title="View as Charter (single-page, read-only)"
-                              aria-label={`View ${prog.code} as Charter`}
+                              title={t('View as Charter (single-page, read-only)')}
+                              aria-label={t('View {{code}} as Charter', { code: prog.code })}
                             >
-                              Charter
+                              {t('Charter')}
                               <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10" aria-hidden="true">
                                 <path d="M3 6h6M6 3l3 3-3 3" />
                               </svg>
@@ -1439,7 +1473,7 @@ export function ProgramsView() {
                                   })
                                 }}
                                 type="button"
-                                aria-label="Program actions"
+                                aria-label={t('Program actions')}
                                 tabIndex={!showActions ? -1 : undefined}
                               >
                                 ···
@@ -1466,8 +1500,8 @@ export function ProgramsView() {
                           <path d="m20 20-4-4" />
                         </svg>
                       }
-                      title="No results"
-                      text={`No programs match "${portfolioSearch}".`}
+                      title={t('No results')}
+                      text={t('No programs match "{{query}}".', { query: portfolioSearch })}
                     />
                   ) : (
                     <SectionState
@@ -1477,8 +1511,8 @@ export function ProgramsView() {
                           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                         </svg>
                       }
-                      title="Portfolio empty"
-                      text="Programs appear once data loads."
+                      title={t('Portfolio empty')}
+                      text={t('Programs appear once data loads.')}
                     />
                   )}
                 </div>
@@ -1538,7 +1572,7 @@ export function ProgramsView() {
                               </button>
                             )
                           })}
-                          {items.length === 0 && <div className="kanban-col__empty">No programs</div>}
+                          {items.length === 0 && <div className="kanban-col__empty">{t('No programs')}</div>}
                         </div>
                       </div>
                     )
@@ -1550,20 +1584,20 @@ export function ProgramsView() {
                 <div className="panel">
                   <div className="panel__header">
                     <div>
-                      <h3 className="panel__title">Portfolio Table</h3>
-                      <p className="panel__sub">Status, progress, blockers, and health per program.</p>
+                      <h3 className="panel__title">{t('Portfolio Table')}</h3>
+                      <p className="panel__sub">{t('Status, progress, blockers, and health per program.')}</p>
                     </div>
                   </div>
                   <table className="gov-table">
                     <thead>
                       <tr>
-                        <th>Program</th>
-                        <th>Status</th>
-                        <th>Progress</th>
-                        <th>Deadline</th>
-                        <th>Blocker</th>
-                        <th>Health</th>
-                        <th>KPI</th>
+                        <th>{t('Program')}</th>
+                        <th>{t('Status')}</th>
+                        <th>{t('Progress')}</th>
+                        <th>{t('Deadline')}</th>
+                        <th>{t('Blocker')}</th>
+                        <th>{t('Health')}</th>
+                        <th>{t('KPI')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1604,7 +1638,7 @@ export function ProgramsView() {
                             <td>
                               {(prog.kpiCount ?? 0) === 0 ? (
                                 <span className="program-tone-chip program-tone-chip--yellow program-tone-chip--compact">
-                                  No KPI
+                                  {t('No KPI')}
                                 </span>
                               ) : (
                                 <span className="program-table-count program-table-count--empty">{prog.kpiCount}</span>
@@ -1653,10 +1687,10 @@ export function ProgramsView() {
                           <path d="m20 20-4-4" />
                         </svg>
                       }
-                      title={portfolioSearch ? 'No results' : 'Portfolio empty'}
+                      title={portfolioSearch ? t('No results') : t('Portfolio empty')}
                       text={portfolioSearch
-                        ? `No programs match "${portfolioSearch}".`
-                        : 'Programs appear once data loads.'}
+                        ? t('No programs match "{{query}}".', { query: portfolioSearch })
+                        : t('Programs appear once data loads.')}
                     />
                   )}
                 </div>
@@ -1672,16 +1706,16 @@ export function ProgramsView() {
               {timelineView === 'lanes' && (
                 <div className="roadmap-body">
                   {laneGroups.length === 0 ? (
-                    <p className="text-sm text-muted roadmap-empty">No matching programs.</p>
+                    <p className="text-sm text-muted roadmap-empty">{t('No matching programs.')}</p>
                   ) : (
                     <>
                       <div className="roadmap-head" aria-hidden="true">
                         <span className="roadmap-head__code" />
-                        <span className="roadmap-head__title">Program</span>
-                        <span className="roadmap-head__progress">Progress</span>
+                        <span className="roadmap-head__title">{t('Program')}</span>
+                        <span className="roadmap-head__progress">{t('Progress')}</span>
                         <span className="roadmap-head__pct">%</span>
                         <span className="roadmap-head__risk" />
-                        <span className="roadmap-head__owner">Owner</span>
+                        <span className="roadmap-head__owner">{t('Owner')}</span>
                       </div>
                       {laneGroups.map(group => {
                         const collapsed = isLaneCollapsed(group)
@@ -1724,7 +1758,7 @@ export function ProgramsView() {
                                   ) : <span className="roadmap-bar__owner-placeholder" />}
                                   {(prog.kpiCount ?? 0) === 0 && (
                                     <span className="program-tone-chip program-tone-chip--yellow program-tone-chip--compact">
-                                      No KPI
+                                      {t('No KPI')}
                                     </span>
                                   )}
                                 </button>
@@ -1744,19 +1778,19 @@ export function ProgramsView() {
               {timelineView === 'gantt' && (
                 <div className="roadmap-body roadmap-body--timeline">
                   {timelineLoading ? (
-                    <p className="text-sm text-muted roadmap-empty">Loading timeline…</p>
+                    <p className="text-sm text-muted roadmap-empty">{t('Loading timeline…')}</p>
                   ) : timelineError ? (
                     <div className="roadmap-empty roadmap-empty--error" role="alert">
-                      <p className="text-sm">Failed to load program timeline.</p>
+                      <p className="text-sm">{t('Failed to load program timeline.')}</p>
                       <p className="text-xs text-muted">{timelineError}</p>
                       <button type="button" className="btn btn--ghost btn--sm" onClick={loadTimeline}>
-                        Try again
+                        {t('Try again')}
                       </button>
                     </div>
                   ) : (
                     <TimelineGantt
                       programs={filteredTimeline}
-                      emptyText="No programs to display."
+                      emptyText={t('No programs to display.')}
                       onOpenProgram={(id) => navigate(`/programs/${id}`)}
                     />
                   )}
@@ -1781,7 +1815,7 @@ export function ProgramsView() {
                   <button
                     className={`program-filter-pill${pulseFilter === 'all' ? ' program-filter-pill--active' : ''}`}
                     onClick={() => setPulseFilter('all')}
-                    type="button">All Programs</button>
+                    type="button">{t('All Programs')}</button>
                   {programs.map(p => (
                     <button key={p.id}
                       className={`program-filter-pill${pulseFilter === p.id ? ' program-filter-pill--active' : ''}`}
@@ -1794,7 +1828,7 @@ export function ProgramsView() {
               {pulseLoading ? (
                 <div className="section-block"><SkeletonStack lines={[90, 75, 60, 80]} /></div>
               ) : !pulse ? (
-                <SectionState icon="⚡" title="Unable to load pulse data" text="Try refreshing the page." />
+                <SectionState icon="⚡" title={t('Unable to load pulse data')} text={t('Try refreshing the page.')} />
               ) : (
                 <div className="pulse-stack">
 
@@ -1802,11 +1836,11 @@ export function ProgramsView() {
                   <div className="section-block">
                     <div className="section-header">
                       <div>
-                        <h3 className="section-title">Active Blockers</h3>
-                        <p className="section-subtitle">All open blockers halting execution.</p>
+                        <h3 className="section-title">{t('Active Blockers')}</h3>
+                        <p className="section-subtitle">{t('All open blockers halting execution.')}</p>
                       </div>
                       <span className={`section-badge${blockers.length > 0 ? ' section-badge--red' : ''}`}>
-                        {blockers.length} open
+                        {t('{{count}} open', { count: blockers.length })}
                       </span>
                     </div>
                     {blockers.length === 0 ? (
@@ -1817,8 +1851,8 @@ export function ProgramsView() {
       <path d="M5 12l5 5L20 7" />
     </svg>
   }
-  title="No active blockers"
-  text="All blockers resolved."
+  title={t('No active blockers')}
+  text={t('All blockers resolved.')}
 />
                     ) : (
                       <div className="program-list-stack program-list-stack--tight">
@@ -1838,14 +1872,14 @@ export function ProgramsView() {
                                 </div>
                               </div>
                               <span className="blocker-item__age">
-                                {Math.round(b.daysOpen) === 0 ? 'Today' : `${Math.round(b.daysOpen)}d`}
+                                {Math.round(b.daysOpen) === 0 ? t('Today') : t('{{count}}d', { count: Math.round(b.daysOpen) })}
                               </span>
                               <button
                                 className="btn btn--ghost blocker-item__action"
                                 onClick={() => navigate(`/execution/tasks/${b.task!.id}`)}
                                 type="button"
                               >
-                                Open →
+                                {t('Open →')}
                               </button>
                             </div>
                           )
@@ -1858,11 +1892,11 @@ export function ProgramsView() {
                   <div className="section-block">
                     <div className="section-header">
                       <div>
-                        <h3 className="section-title">At-Risk Workstreams</h3>
-                        <p className="section-subtitle">Deadline ≤30 days with progress below 70%.</p>
+                        <h3 className="section-title">{t('At-Risk Workstreams')}</h3>
+                        <p className="section-subtitle">{t('Deadline ≤30 days with progress below 70%.')}</p>
                       </div>
                       <span className={`section-badge${atRisk.length > 0 ? ' section-badge--yellow' : ''}`}>
-                        {atRisk.length} workstream
+                        {t('{{count}} workstream', { count: atRisk.length })}
                       </span>
                     </div>
                     {atRisk.length === 0 ? (
@@ -1873,8 +1907,8 @@ export function ProgramsView() {
       <path d="M5 12l5 5L20 7" />
     </svg>
   }
-  title="No at-risk workstreams"
-  text="All workstreams on target."
+  title={t('No at-risk workstreams')}
+  text={t('All workstreams on target.')}
 />
                     ) : (
                       <div className="program-list-stack program-list-stack--tight">
@@ -1900,7 +1934,7 @@ export function ProgramsView() {
                                 <span className="pulse-item__progress-value">{ini.progressPercent}%</span>
                               </div>
                               <span className={`pulse-item__state pulse-item__state--${urgencyTone}`}>
-                                {Math.round(ini.daysRemaining) <= 0 ? 'Overdue' : `${Math.round(ini.daysRemaining)}d left`}
+                                {Math.round(ini.daysRemaining) <= 0 ? t('Overdue') : t('{{count}}d left', { count: Math.round(ini.daysRemaining) })}
                               </span>
                             </div>
                           )
@@ -1913,10 +1947,10 @@ export function ProgramsView() {
                   <div className="section-block">
                     <div className="section-header">
                       <div>
-                        <h3 className="section-title">Stagnant Tasks</h3>
-                        <p className="section-subtitle">Active tasks with no update in the last 7 days.</p>
+                        <h3 className="section-title">{t('Stagnant Tasks')}</h3>
+                        <p className="section-subtitle">{t('Active tasks with no update in the last 7 days.')}</p>
                       </div>
-                      <span className="section-badge">{stagnant.length} item</span>
+                      <span className="section-badge">{t('{{count}} item', { count: stagnant.length })}</span>
                     </div>
                     {stagnant.length === 0 ? (
                       <SectionState
@@ -1926,8 +1960,8 @@ export function ProgramsView() {
       <path d="M5 12l5 5L20 7" />
     </svg>
   }
-  title="Nothing stagnant"
-  text="All tasks moving."
+  title={t('Nothing stagnant')}
+  text={t('All tasks moving.')}
 />
                     ) : (
                       <div className="program-list-stack program-list-stack--tight">
@@ -1941,21 +1975,21 @@ export function ProgramsView() {
                                   {w.title}
                                 </div>
                                 <div className="pulse-item__meta">
-                                  {w.workstream.program.code} › {w.workstream.name} · {w.assignee?.name ?? 'Unassigned'}
+                                  {w.workstream.program.code} › {w.workstream.name} · {w.assignee?.name ?? t('Unassigned')}
                                 </div>
                               </div>
                               <span className="pulse-item__metric">
                                 {w.percentComplete}%
                               </span>
                               <span className={`pulse-item__state pulse-item__state--${staleTone}`}>
-                                Stagnant {Math.round(w.stagnantDays)}d
+                                {t('Stagnant {{count}}d', { count: Math.round(w.stagnantDays) })}
                               </span>
                               <button
                                 className="btn btn--ghost blocker-item__action"
                                 onClick={() => navigate(`/execution/tasks/${w.id}`)}
                                 type="button"
                               >
-                                Open →
+                                {t('Open →')}
                               </button>
                             </div>
                           )
@@ -1982,24 +2016,24 @@ export function ProgramsView() {
           <div aria-describedby={createProgramDescId} aria-labelledby={createProgramTitleId} aria-modal="true" className="modal modal--wide" ref={createProgramDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="program-modal-head">
-                <span className="program-modal-kicker">Program Settings</span>
-                <h3 className="modal__title program-modal-title" id={createProgramTitleId}>{cpStep === 1 ? 'New Program' : 'KPI Impact'}</h3>
+                <span className="program-modal-kicker">{t('Program Settings')}</span>
+                <h3 className="modal__title program-modal-title" id={createProgramTitleId}>{cpStep === 1 ? t('New Program') : t('KPI Impact')}</h3>
                 <p className="program-modal-subtitle" id={createProgramDescId}>
                   {cpStep === 1
-                    ? 'Set the identity, initial status, and timeline so the program reads clearly in the roster.'
-                    : 'Link the program to the most-affected APMS KPIs, or mark it as an internal target if there is no APMS reference yet.'}
+                    ? t('Set the identity, initial status, and timeline so the program reads clearly in the roster.')
+                    : t('Link the program to the most-affected APMS KPIs, or mark it as an internal target if there is no APMS reference yet.')}
                 </p>
                 <div className="program-modal-stepper">
                   {[1, 2].map(s => (
                     <span key={s} className={`program-modal-step${cpStep >= s ? ' program-modal-step--active' : ''}`} />
                   ))}
                   <span className="program-modal-step-label">
-                    Step {cpStep} of 2
+                    {t('Step {{step}} of 2', { step: cpStep })}
                   </span>
                 </div>
               </div>
               <button
-                aria-label="Close"
+                aria-label={t('Close')}
                 className="modal__close"
                 disabled={cpSaving}
                 onClick={closeCpModal}
@@ -2017,12 +2051,12 @@ export function ProgramsView() {
                 <div className="modal__body program-modal-body">
                   <section className="program-modal-section">
                     <div className="program-modal-section__intro">
-                      <h4>Core identity</h4>
-                      <p>This information appears in the portfolio roster and on the program detail page.</p>
+                      <h4>{t('Core identity')}</h4>
+                      <p>{t('This information appears in the portfolio roster and on the program detail page.')}</p>
                     </div>
                     <div className="program-form-grid program-form-grid--title">
                       <div className="form-field">
-                        <label>Code <span className="form-field__required">*</span></label>
+                        <label>{t('Code')} <span className="form-field__required">*</span></label>
                         <input
                           maxLength={40}
                           minLength={3}
@@ -2030,7 +2064,7 @@ export function ProgramsView() {
                             setCpCodeManuallyEdited(true)
                             setCpForm(f => ({ ...f, code: e.target.value.toUpperCase() }))
                           }}
-                          placeholder="Auto-generated from the name"
+                          placeholder={t('Auto-generated from the name')}
                           required
                           type="text"
                           value={cpForm.code}
@@ -2038,11 +2072,11 @@ export function ProgramsView() {
                         <p className="form-field__hint">
                           {cpForm.code
                             ? <span className="form-field__hint--preview">{cpForm.code}</span>
-                            : 'Filled in automatically as you type the name'}
+                            : t('Filled in automatically as you type the name')}
                         </p>
                       </div>
                       <div className="form-field">
-                        <label>Program Name <span className="form-field__required">*</span></label>
+                        <label>{t('Program Name')} <span className="form-field__required">*</span></label>
                         <input
                           maxLength={120}
                           minLength={3}
@@ -2055,7 +2089,7 @@ export function ProgramsView() {
                               code: cpCodeManuallyEdited ? f.code : suggestCode(name, divisiCode),
                             }))
                           }}
-                          placeholder="Program name"
+                          placeholder={t('Program name')}
                           required
                           type="text"
                           value={cpForm.name}
@@ -2063,12 +2097,12 @@ export function ProgramsView() {
                       </div>
                     </div>
                     <div className="form-field">
-                      <label>Description</label>
+                      <label>{t('Description')}</label>
                       <textarea
                         className="composer__input program-modal-textarea"
                         maxLength={400}
                         onChange={e => setCpForm(f => ({ ...f, description: e.target.value }))}
-                        placeholder="Brief description (optional)"
+                        placeholder={t('Brief description (optional)')}
                         rows={2}
                         value={cpForm.description}
                       />
@@ -2077,25 +2111,25 @@ export function ProgramsView() {
 
                   <section className="program-modal-section">
                     <div className="program-modal-section__intro">
-                      <h4>Execution rhythm</h4>
-                      <p>Set priority and timing so progress can be tracked from the start.</p>
+                      <h4>{t('Execution rhythm')}</h4>
+                      <p>{t('Set priority and timing so progress can be tracked from the start.')}</p>
                     </div>
                     <div className="form-field">
-                      <label>Priority</label>
+                      <label>{t('Priority')}</label>
                       <select
                         className="form-input"
                         onChange={e => setCpForm(f => ({ ...f, priority: e.target.value }))}
                         value={cpForm.priority}
                       >
-                        <option value="CRITICAL">Critical</option>
-                        <option value="HIGH">High</option>
-                        <option value="MEDIUM">Medium</option>
-                        <option value="LOW">Low</option>
+                        <option value="CRITICAL">{t('Critical')}</option>
+                        <option value="HIGH">{t('High')}</option>
+                        <option value="MEDIUM">{t('Medium')}</option>
+                        <option value="LOW">{t('Low')}</option>
                       </select>
                     </div>
                     <div className="program-form-grid program-form-grid--equal">
                       <div className="form-field">
-                        <label>Start Date <span className="form-field__required">*</span></label>
+                        <label>{t('Start Date')} <span className="form-field__required">*</span></label>
                         <input
                           onChange={e => {
                             const newStart = e.target.value
@@ -2118,7 +2152,7 @@ export function ProgramsView() {
                         />
                       </div>
                       <div className="form-field">
-                        <label>Target Completion <span className="form-field__required">*</span></label>
+                        <label>{t('Target Completion')} <span className="form-field__required">*</span></label>
                         <input
                           min={cpForm.startDate || undefined}
                           onChange={e => setCpForm(f => ({ ...f, targetEndDate: e.target.value }))}
@@ -2128,7 +2162,7 @@ export function ProgramsView() {
                         />
                         {cpForm.startDate && cpForm.targetEndDate && cpForm.targetEndDate < cpForm.startDate && (
                           <p className="form-field__hint" style={{ color: 'var(--red)' }}>
-                            Target Completion must be after Start Date.
+                            {t('Target Completion must be after Start Date.')}
                           </p>
                         )}
                       </div>
@@ -2142,31 +2176,31 @@ export function ProgramsView() {
                       sebelumnya. */}
                   <section className="program-modal-section">
                     <div className="program-modal-section__intro">
-                      <h4>Strategic context &amp; owner</h4>
-                      <p>Map the program to AGHRIS pillars and who is responsible. Editable later from the detail page.</p>
+                      <h4>{t('Strategic context & owner')}</h4>
+                      <p>{t('Map the program to AGHRIS pillars and who is responsible. Editable later from the detail page.')}</p>
                     </div>
                     <div className="program-form-grid program-form-grid--equal">
                       <div className="form-field">
-                        <label>Group</label>
+                        <label>{t('Group')}</label>
                         <select
                           className="form-input"
                           onChange={e => setCpForm(f => ({ ...f, kelompok: e.target.value }))}
                           value={cpForm.kelompok}
                         >
-                          <option value="">— Select group —</option>
-                          <option value="SCORECARD">Scorecard</option>
-                          <option value="NON_SCORECARD">Non Scorecard</option>
+                          <option value="">{t('— Select group —')}</option>
+                          <option value="SCORECARD">{t('Scorecard')}</option>
+                          <option value="NON_SCORECARD">{t('Non Scorecard')}</option>
                         </select>
                       </div>
                       {showPillarField && (
                         <div className="form-field">
-                          <label>Strategic Pillar</label>
+                          <label>{t('Strategic Pillar')}</label>
                           <select
                             className="form-input"
                             onChange={e => setCpForm(f => ({ ...f, pilarStrategis: e.target.value }))}
                             value={cpForm.pilarStrategis}
                           >
-                            <option value="">— Select pillar —</option>
+                            <option value="">{t('— Select pillar —')}</option>
                             {Object.entries(pillarOptions).map(([value, label]) => (
                               <option key={value} value={value}>{label}</option>
                             ))}
@@ -2176,7 +2210,7 @@ export function ProgramsView() {
                     </div>
 
                   <div className="form-field">
-                    <label>Lead PIC</label>
+                    <label>{t('Lead PIC')}</label>
                     {cpUserDirectory.length === 0 ? (
                       <button
                         className="btn btn--ghost btn--sm"
@@ -2187,7 +2221,7 @@ export function ProgramsView() {
                         }}
                         type="button"
                       >
-                        Select lead PIC…
+                        {t('Select lead PIC…')}
                       </button>
                     ) : (
                       <select
@@ -2205,7 +2239,7 @@ export function ProgramsView() {
                   </div>
                   {cpUnits.length > 0 && (
                     <div className="form-field">
-                      <label>Owner Division</label>
+                      <label>{t('Owner Division')}</label>
                       <select
                         className="form-input"
                         onChange={e => {
@@ -2218,7 +2252,7 @@ export function ProgramsView() {
                         }}
                         value={cpOwnerUnitId ?? currentUser?.unit?.id ?? ''}
                       >
-                        <option value="">— Auto (from your unit) —</option>
+                        <option value="">{t('— Auto (from your unit) —')}</option>
                         {cpUnits.map(u => (
                           <option key={u.id} value={u.id}>
                             {u.code} — {u.name}
@@ -2226,7 +2260,7 @@ export function ProgramsView() {
                         ))}
                       </select>
                       <p className="form-field__hint">
-                        Default: your division ({currentUser?.unit?.code ?? 'unknown'})
+                        {t('Default: your division ({{code}})', { code: currentUser?.unit?.code ?? t('unknown') })}
                       </p>
                     </div>
                   )}
@@ -2239,14 +2273,14 @@ export function ProgramsView() {
                     onClick={closeCpModal}
                     type="button"
                   >
-                    Cancel
+                    {t('Cancel')}
                   </button>
                   <button
                     className="profile-save-btn"
                     disabled={!cpForm.code.trim() || !cpForm.name.trim() || !cpForm.startDate || !cpForm.targetEndDate}
                     type="submit"
                   >
-                    Next →
+                    {t('Next →')}
                   </button>
                 </div>
               </form>
@@ -2269,17 +2303,16 @@ export function ProgramsView() {
                     )}
                     <section className="program-modal-section program-modal-section--soft">
                       <div className="program-modal-section__intro">
-                        <h4>KPI Mapping</h4>
+                        <h4>{t('KPI Mapping')}</h4>
                         <p className="program-modal-copy">
-                          Which APMS KPIs does the <strong>{cpForm.name}</strong> program affect?
-                          This helps track the program's contribution to AGHRIS targets.
+                          {t('Which APMS KPIs does the {{name}} program affect? This helps track the program\'s contribution to AGHRIS targets.', { name: cpForm.name })}
                         </p>
                       </div>
 
                       {/* Mutually exclusive choice — radio group lebih akurat dari
                           checkbox optional. User pilih sumber KPI dulu, baru lihat
                           UI yang relevan (search atau note). */}
-                      <div className="program-kpi-mode" role="radiogroup" aria-label="Program KPI source">
+                      <div className="program-kpi-mode" role="radiogroup" aria-label={t('Program KPI source')}>
                         <label className={`program-kpi-mode__opt${!cpHasNoApmsKpi ? ' is-active' : ''}`}>
                           <input
                             type="radio"
@@ -2288,8 +2321,8 @@ export function ProgramsView() {
                             onChange={() => setCpHasNoApmsKpi(false)}
                           />
                           <div className="program-kpi-mode__body">
-                            <span className="program-kpi-mode__title">Link to APMS KPI</span>
-                            <span className="program-kpi-mode__hint">Select one or more APMS KPIs that this program directly affects.</span>
+                            <span className="program-kpi-mode__title">{t('Link to APMS KPI')}</span>
+                            <span className="program-kpi-mode__hint">{t('Select one or more APMS KPIs that this program directly affects.')}</span>
                           </div>
                         </label>
                         <label className={`program-kpi-mode__opt${cpHasNoApmsKpi ? ' is-active' : ''}`}>
@@ -2303,8 +2336,8 @@ export function ProgramsView() {
                             }}
                           />
                           <div className="program-kpi-mode__body">
-                            <span className="program-kpi-mode__title">Set your own internal KPI</span>
-                            <span className="program-kpi-mode__hint">No APMS reference for this program — define an internal target later.</span>
+                            <span className="program-kpi-mode__title">{t('Set your own internal KPI')}</span>
+                            <span className="program-kpi-mode__hint">{t('No APMS reference for this program — define an internal target later.')}</span>
                           </div>
                         </label>
                       </div>
@@ -2314,7 +2347,7 @@ export function ProgramsView() {
                           <input
                             className="kpi-link-input"
                             type="text"
-                            placeholder="Search APMS KPI by code or name…"
+                            placeholder={t('Search APMS KPI by code or name…')}
                             value={cpKpiSearch}
                             onChange={e => { setCpKpiSearch(e.target.value); setCpKpiDropdownOpen(true) }}
                             onFocus={() => setCpKpiDropdownOpen(true)}
@@ -2336,22 +2369,22 @@ export function ProgramsView() {
                                 >
                                   <span className="code-badge prog-kpi-dropdown__code">{k.kode}</span>
                                   <span className="prog-kpi-dropdown__name">{k.nama}</span>
-                                  <span className="prog-kpi-dropdown__weight">weight {k.bobot}%</span>
+                                  <span className="prog-kpi-dropdown__weight">{t('weight {{weight}}%', { weight: k.bobot })}</span>
                                 </button>
                               ))}
                             </div>
                           )}
                           {cpKpiDropdownOpen && cpKpiSearch.length > 0 && cpKpiResults.length === 0 && (
                             <div className="prog-kpi-dropdown prog-kpi-dropdown--empty">
-                              No matching KPIs.
+                              {t('No matching KPIs.')}
                             </div>
                           )}
                         </div>
                       )}
 
                       <div className="program-modal-selection-meta">
-                        <span>{cpKpiCodes.length} KPI selected</span>
-                        {!cpHasNoApmsKpi && <span>Select at least 1 primary KPI before creating the program.</span>}
+                        <span>{t('{{count}} KPI selected', { count: cpKpiCodes.length })}</span>
+                        {!cpHasNoApmsKpi && <span>{t('Select at least 1 primary KPI before creating the program.')}</span>}
                       </div>
 
                       {cpKpiCodes.length > 0 ? (
@@ -2373,14 +2406,14 @@ export function ProgramsView() {
                         </div>
                       ) : (
                         <div className="program-modal-empty">
-                          No KPI selected yet. Use the search above to link the most relevant APMS KPIs.
+                          {t('No KPI selected yet. Use the search above to link the most relevant APMS KPIs.')}
                         </div>
                       )}
                     </section>
 
                     {cpHasNoApmsKpi && (
                       <div className="program-kpi-note">
-                        After the program is created, define internal KPIs from the <strong>APMS KPI</strong> tab on the detail page.
+                        {t('After the program is created, define internal KPIs from the APMS KPI tab on the detail page.')}
                       </div>
                     )}
                   </div>
@@ -2391,14 +2424,14 @@ export function ProgramsView() {
                       onClick={() => setCpStep(1)}
                       type="button"
                     >
-                      ← Back
+                      {t('← Back')}
                     </button>
                     <button
                       className="profile-save-btn"
                       disabled={cpSaving || (!cpHasNoApmsKpi && cpKpiCodes.length === 0)}
                       type="submit"
                     >
-                      {cpSaving ? 'Saving…' : 'Create Program'}
+                      {cpSaving ? t('Saving…') : t('Create Program')}
                     </button>
                   </div>
                 </form>
@@ -2415,19 +2448,19 @@ export function ProgramsView() {
           <div className="section-block">
             <div className="section-header">
               <div>
-                <h3 className="section-title">Archived Programs</h3>
-                <p className="section-subtitle">Archived programs. Data stays intact and can be restored anytime.</p>
+                <h3 className="section-title">{t('Archived Programs')}</h3>
+                <p className="section-subtitle">{t('Archived programs. Data stays intact and can be restored anytime.')}</p>
               </div>
-              <span className="section-badge">{archivedPrograms.length} program</span>
+              <span className="section-badge">{t('{{count}} program', { count: archivedPrograms.length })}</span>
             </div>
             {archivedLoading ? (
               <SkeletonStack lines={[90, 75, 60]} />
             ) : archivedError ? (
               <div className="roadmap-empty roadmap-empty--error" role="alert">
-                <p className="text-sm">Failed to load archived programs.</p>
+                <p className="text-sm">{t('Failed to load archived programs.')}</p>
                 <p className="text-xs text-muted">{archivedError}</p>
                 <button type="button" className="btn btn--ghost btn--sm" onClick={loadArchivedPrograms}>
-                  Try again
+                  {t('Try again')}
                 </button>
               </div>
             ) : archivedPrograms.length === 0 ? (
@@ -2440,8 +2473,8 @@ export function ProgramsView() {
       <path d="M10 13h4" />
     </svg>
   }
-  title="No archive"
-  text="No programs archived yet."
+  title={t('No archive')}
+  text={t('No programs archived yet.')}
 />
             ) : (
               <div className="program-roster">
@@ -2453,11 +2486,12 @@ export function ProgramsView() {
                         <div className="program-row__info">
                           <strong>{prog.name}</strong>
                           <div className="program-row__meta">
-                            <span className="program-row__meta-primary">{prog.workstreamCount} workstream</span>
+                            <span className="program-row__meta-primary">{t('{{count}} workstream', { count: prog.workstreamCount })}</span>
                             <span className="program-row__meta-sep">•</span>
                             <span className="program-row__meta-primary">
-                              Archived {new Date(prog.archivedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                              {prog.archivedByName ? ` by ${prog.archivedByName}` : ''}
+                              {prog.archivedByName
+                                ? t('Archived {{date}} by {{name}}', { date: new Date(prog.archivedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }), name: prog.archivedByName })
+                                : t('Archived {{date}}', { date: new Date(prog.archivedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) })}
                             </span>
                           </div>
                         </div>
@@ -2468,7 +2502,7 @@ export function ProgramsView() {
                       onClick={() => setRestoreTarget({ id: prog.id, name: prog.name })}
                       type="button"
                     >
-                      Restore
+                      {t('Restore')}
                     </button>
                   </div>
                 ))}
@@ -2487,10 +2521,10 @@ export function ProgramsView() {
           <div aria-labelledby={editProgramTitleId} aria-modal="true" className="modal" ref={editProgramDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={editProgramTitleId}>Edit Program</h3>
-                <p className="modal-subtitle">Update program details. Changes save immediately.</p>
+                <h3 className="modal__title" id={editProgramTitleId}>{t('Edit Program')}</h3>
+                <p className="modal-subtitle">{t('Update program details. Changes save immediately.')}</p>
               </div>
-              <button aria-label="Close" className="modal__close" disabled={epSaving} onClick={closeEditProgram} type="button">
+              <button aria-label={t('Close')} className="modal__close" disabled={epSaving} onClick={closeEditProgram} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -2499,55 +2533,55 @@ export function ProgramsView() {
                 <div className="modal__body">
                   {epError && <div className="prog-modal-error">{epError}</div>}
                   <div className="form-field">
-                    <label>Program Name <span className="form-field__required">*</span></label>
+                    <label>{t('Program Name')} <span className="form-field__required">*</span></label>
                     <input autoFocus maxLength={120} minLength={3} onChange={e => setEditProgram(p => p ? { ...p, name: e.target.value } : p)} required type="text" value={editProgram.name} />
                   </div>
                   <div className="form-field">
-                    <label>Description</label>
+                    <label>{t('Description')}</label>
                     <textarea className="composer__input prog-modal-textarea" maxLength={400} onChange={e => setEditProgram(p => p ? { ...p, description: e.target.value } : p)} rows={2} value={editProgram.description} />
                   </div>
                   {editProgram.approvalStatus === 'ACTIVE' && (
                     <div className="form-field">
-                      <label>Operational status</label>
+                      <label>{t('Operational status')}</label>
                       <select className="form-input" onChange={e => setEditProgram(p => p ? { ...p, status: e.target.value } : p)} value={editProgram.status}>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="ON_HOLD">On Hold</option>
-                        <option value="COMPLETED">Completed</option>
-                        <option value="CANCELLED">Cancelled</option>
+                        <option value="IN_PROGRESS">{t('In Progress')}</option>
+                        <option value="ON_HOLD">{t('On Hold')}</option>
+                        <option value="COMPLETED">{t('Completed')}</option>
+                        <option value="CANCELLED">{t('Cancelled')}</option>
                       </select>
                     </div>
                   )}
                   <div className="form-field">
-                    <label>Priority</label>
+                    <label>{t('Priority')}</label>
                     <select className="form-input" onChange={e => setEditProgram(p => p ? { ...p, priority: e.target.value } : p)} value={editProgram.priority}>
-                      <option value="CRITICAL">Critical</option>
-                      <option value="HIGH">High</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="LOW">Low</option>
+                      <option value="CRITICAL">{t('Critical')}</option>
+                      <option value="HIGH">{t('High')}</option>
+                      <option value="MEDIUM">{t('Medium')}</option>
+                      <option value="LOW">{t('Low')}</option>
                     </select>
                   </div>
                   <div className="prog-form-grid prog-form-grid--equal">
                     <div className="form-field">
-                      <label>Start Date</label>
+                      <label>{t('Start Date')}</label>
                       <input onChange={e => setEditProgram(p => p ? { ...p, startDate: e.target.value } : p)} type="date" value={editProgram.startDate} />
                     </div>
                     <div className="form-field">
-                      <label>Target Completion</label>
+                      <label>{t('Target Completion')}</label>
                       <input onChange={e => setEditProgram(p => p ? { ...p, targetEndDate: e.target.value } : p)} type="date" value={editProgram.targetEndDate} />
                     </div>
                   </div>
                   <div className="form-field">
-                    <label>Lead PIC</label>
+                    <label>{t('Lead PIC')}</label>
                     {epDirLoading ? (
-                      <p className="form-hint text-muted">Loading user directory…</p>
+                      <p className="form-hint text-muted">{t('Loading user directory…')}</p>
                     ) : epUserDirectory.length === 0 ? (
-                      <p className="form-hint text-muted">Failed to load user directory.</p>
+                      <p className="form-hint text-muted">{t('Failed to load user directory.')}</p>
                     ) : (
                       <UserPicker
                         currentUserId={currentUser?.id}
                         onChange={id => setEditProgram(p => p ? { ...p, ownerId: id } : p)}
                         options={epUserDirectory}
-                        placeholder="Select lead PIC…"
+                        placeholder={t('Select lead PIC…')}
                         value={editProgram.ownerId ?? currentUser?.id ?? null}
                       />
                     )}
@@ -2555,26 +2589,26 @@ export function ProgramsView() {
 
                   <div className="prog-form-grid prog-form-grid--equal">
                     <div className="form-field">
-                      <label>Group</label>
+                      <label>{t('Group')}</label>
                       <select
                         className="form-input"
                         onChange={e => setEditProgram(p => p ? { ...p, kelompok: e.target.value } : p)}
                         value={editProgram.kelompok}
                       >
-                        <option value="">— Select group —</option>
-                        <option value="SCORECARD">Scorecard</option>
-                        <option value="NON_SCORECARD">Non Scorecard</option>
+                        <option value="">{t('— Select group —')}</option>
+                        <option value="SCORECARD">{t('Scorecard')}</option>
+                        <option value="NON_SCORECARD">{t('Non Scorecard')}</option>
                       </select>
                     </div>
                     {showPillarField && (
                       <div className="form-field">
-                        <label>Strategic Pillar</label>
+                        <label>{t('Strategic Pillar')}</label>
                         <select
                           className="form-input"
                           onChange={e => setEditProgram(p => p ? { ...p, pilarStrategis: e.target.value } : p)}
                           value={editProgram.pilarStrategis}
                         >
-                          <option value="">— Select pillar —</option>
+                          <option value="">{t('— Select pillar —')}</option>
                           {Object.entries(pillarOptions).map(([value, label]) => (
                             <option key={value} value={value}>{label}</option>
                           ))}
@@ -2584,33 +2618,33 @@ export function ProgramsView() {
                   </div>
 
                   <div className="form-field">
-                    <label>Current Progress</label>
+                    <label>{t('Current Progress')}</label>
                     <textarea
                       className="composer__input prog-modal-textarea"
                       maxLength={2000}
                       onChange={e => setEditProgram(p => p ? { ...p, progresTerkini: e.target.value } : p)}
-                      placeholder="What is done or in progress?"
+                      placeholder={t('What is done or in progress?')}
                       rows={3}
                       value={editProgram.progresTerkini}
                     />
                   </div>
 
                   <div className="form-field">
-                    <label>Support Needed</label>
+                    <label>{t('Support Needed')}</label>
                     <textarea
                       className="composer__input prog-modal-textarea"
                       maxLength={2000}
                       onChange={e => setEditProgram(p => p ? { ...p, dukunganDibutuhkan: e.target.value } : p)}
-                      placeholder="Support, escalation, or decisions needed"
+                      placeholder={t('Support, escalation, or decisions needed')}
                       rows={2}
                       value={editProgram.dukunganDibutuhkan}
                     />
                   </div>
                 </div>
                 <div className="modal__footer">
-                  <button className="btn btn--ghost" disabled={epSaving} onClick={closeEditProgram} type="button">Cancel</button>
+                  <button className="btn btn--ghost" disabled={epSaving} onClick={closeEditProgram} type="button">{t('Cancel')}</button>
                   <button className="profile-save-btn" disabled={epSaving || !editProgram.name.trim()} type="submit">
-                    {epSaving ? 'Saving…' : 'Save Changes'}
+                    {epSaving ? t('Saving…') : t('Save Changes')}
                   </button>
                 </div>
               </form>
@@ -2629,7 +2663,7 @@ export function ProgramsView() {
           <div aria-labelledby={archiveTitleId} aria-modal="true" className="modal modal--warning" ref={archiveDialogRef} role="alertdialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={archiveTitleId}>Archive Program?</h3>
+                <h3 className="modal__title" id={archiveTitleId}>{t('Archive Program?')}</h3>
               </div>
             </div>
             <div className="modal__body">
@@ -2637,17 +2671,17 @@ export function ProgramsView() {
               <div className="confirm-warning-box">
                 <svg className="confirm-warning-box__icon" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="20"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
                 <div>
-                  <p className="confirm-warning-box__title">This program will be hidden from all views.</p>
+                  <p className="confirm-warning-box__title">{t('This program will be hidden from all views.')}</p>
                   <p className="confirm-warning-box__body">
-                    <strong>{archiveTarget?.name}</strong> and all its workstreams, tasks, and related data are <em>not deleted</em> — only archived. Superadmin and KADIV can restore it anytime.
+                    {t('{{name}} and all its workstreams, tasks, and related data are not deleted — only archived. Superadmin and KADIV can restore it anytime.', { name: archiveTarget?.name ?? '' })}
                   </p>
                 </div>
               </div>
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" disabled={archiveSaving} onClick={closeArchiveModal} type="button">Cancel</button>
+              <button className="btn btn--ghost" disabled={archiveSaving} onClick={closeArchiveModal} type="button">{t('Cancel')}</button>
               <button className="btn btn--danger" disabled={archiveSaving} onClick={() => void submitArchive()} type="button">
-                {archiveSaving ? 'Archiving…' : 'Yes, Archive'}
+                {archiveSaving ? t('Archiving…') : t('Yes, Archive')}
               </button>
             </div>
           </div>
@@ -2664,17 +2698,17 @@ export function ProgramsView() {
           <div aria-labelledby={restoreTitleId} aria-modal="true" className="modal" ref={restoreDialogRef} role="alertdialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={restoreTitleId}>Restore Program?</h3>
+                <h3 className="modal__title" id={restoreTitleId}>{t('Restore Program?')}</h3>
               </div>
             </div>
             <div className="modal__body">
               {restoreError && <div className="prog-modal-error">{restoreError}</div>}
-              <p>Program <strong>{restoreTarget?.name}</strong> will be restored and reappear in all views.</p>
+              <p>{t('Program {{name}} will be restored and reappear in all views.', { name: restoreTarget?.name ?? '' })}</p>
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" disabled={restoreSaving} onClick={closeRestoreModal} type="button">Cancel</button>
+              <button className="btn btn--ghost" disabled={restoreSaving} onClick={closeRestoreModal} type="button">{t('Cancel')}</button>
               <button className="profile-save-btn" disabled={restoreSaving} onClick={() => void submitRestore()} type="button">
-                {restoreSaving ? 'Restoring…' : 'Yes, Restore'}
+                {restoreSaving ? t('Restoring…') : t('Yes, Restore')}
               </button>
             </div>
           </div>
@@ -2701,9 +2735,9 @@ export function ProgramsView() {
           >
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={batchTitleId}>Export Charter PPTX</h3>
+                <h3 className="modal__title" id={batchTitleId}>{t('Export Charter PPTX')}</h3>
                 <p className="modal__subtitle">
-                  Select several programs — 1 PPTX file, 1 slide per program.
+                  {t('Select several programs — 1 PPTX file, 1 slide per program.')}
                 </p>
               </div>
               <button
@@ -2711,7 +2745,7 @@ export function ProgramsView() {
                 className="modal__close"
                 onClick={closeBatchExport}
                 disabled={batchExporting}
-                aria-label="Close"
+                aria-label={t('Close')}
               >
                 ×
               </button>
@@ -2720,7 +2754,7 @@ export function ProgramsView() {
               <input
                 type="search"
                 className="form-input batch-export__search"
-                placeholder="Search by program code or name…"
+                placeholder={t('Search by program code or name…')}
                 value={batchSearch}
                 onChange={e => setBatchSearch(e.target.value)}
                 disabled={batchExporting}
@@ -2733,21 +2767,21 @@ export function ProgramsView() {
                     checked={batchAllVisibleSelected}
                     onChange={toggleBatchAll}
                     disabled={batchExporting || batchFilteredPrograms.length === 0}
-                    aria-label="Select all visible programs"
+                    aria-label={t('Select all visible programs')}
                   />
                   <span className="batch-export__head-label">
-                    {batchAllVisibleSelected ? 'Clear' : 'Select all'}
+                    {batchAllVisibleSelected ? t('Clear') : t('Select all')}
                     {' '}({batchFilteredPrograms.length})
                   </span>
                   <span className="batch-export__head-counter">
-                    {batchSelectedIds.size} selected
+                    {t('{{count}} selected', { count: batchSelectedIds.size })}
                   </span>
                 </label>
                 {batchFilteredPrograms.length === 0 ? (
                   <div className="batch-export__empty">
                     {batchSearch
-                      ? `No programs match "${batchSearch}".`
-                      : 'No programs yet.'}
+                      ? t('No programs match "{{query}}".', { query: batchSearch })
+                      : t('No programs yet.')}
                   </div>
                 ) : batchFilteredPrograms.map(p => {
                   const selected = batchSelectedIds.has(p.id)
@@ -2779,7 +2813,7 @@ export function ProgramsView() {
                 onClick={closeBatchExport}
                 disabled={batchExporting}
               >
-                Cancel
+                {t('Cancel')}
               </button>
               <button
                 type="button"
@@ -2788,10 +2822,10 @@ export function ProgramsView() {
                 disabled={batchSelectedIds.size === 0 || batchExporting}
               >
                 {batchExporting
-                  ? `Preparing ${batchSelectedIds.size} programs…`
+                  ? t('Preparing {{count}} programs…', { count: batchSelectedIds.size })
                   : batchSelectedIds.size === 0
-                    ? 'Select at least 1 program'
-                    : `Export ${batchSelectedIds.size} programs →`}
+                    ? t('Select at least 1 program')
+                    : t('Export {{count}} programs →', { count: batchSelectedIds.size })}
               </button>
             </div>
           </div>
@@ -2810,13 +2844,13 @@ export function ProgramsView() {
             {roleAccess.canEditProgram(kebabMenu.isOwner) && (
               <button className="kebab-menu__item" onClick={() => { openEditProgram(kebabMenu.prog); closeKebab() }} type="button">
                 <svg fill="none" height="13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="13"><path d="M11.5 2.5a2.121 2.121 0 1 1 3 3L6 14H2v-4L11.5 2.5Z"/></svg>
-                Edit
+                {t('Edit')}
               </button>
             )}
             {roleAccess.canArchiveProgram(kebabMenu.isOwner) && (
               <button className="kebab-menu__item kebab-menu__item--danger" onClick={() => { setArchiveTarget({ id: kebabMenu.progId, name: kebabMenu.progName }); closeKebab() }} type="button">
                 <svg fill="none" height="13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="13"><rect height="3" rx="0.5" width="12" x="2" y="2"/><path d="M3.5 5v8a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V5M6.5 8h3"/></svg>
-                Archive
+                {t('Archive')}
               </button>
             )}
           </div>

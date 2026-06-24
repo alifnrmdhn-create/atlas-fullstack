@@ -1160,9 +1160,9 @@
   --auth-org-pill-border: rgba(74,222,128,0.24);
 }
 /* Teks panel kiri = terang (override --text-* yang gelap di light mode) */
-.auth-panel { color: #E6F0EA; }
-.auth-panel__wordmark { color: #F1F5F9; }
-.auth-panel__headline { color: #F4F8F5; }
-.auth-panel__org strong { color: #E6F0EA; }
+.auth-panel { color: #E6F0EA; } /* dark-allow: teks terang di panel brand dark-green, gelap di dua theme */
+.auth-panel__wordmark { color: #F1F5F9; } /* dark-allow: panel brand dark-green */
+.auth-panel__headline { color: #F4F8F5; } /* dark-allow: panel brand dark-green */
+.auth-panel__org strong { color: #E6F0EA; } /* dark-allow: panel brand dark-green */
 /* peta lebih terbaca sebagai outline terang di panel gelap */
 .auth-panel__map { filter: brightness(1.7) saturate(0.7); }

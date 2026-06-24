@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Avatar, formatRelativeTime, effectivePresenceSlug } from '../components/ui'
 import { api } from '../lib/api'
 import { useWorkspace } from '../hooks/useWorkspace'
+import i18n from '../lib/i18n'
 
 // ── Types ────────────────────────────────────────────────────
 type RangeOption = '7d' | '30d' | '90d'
@@ -85,16 +87,17 @@ function formatDateShort(isoDate: string): string {
 }
 
 function endReasonLabel(reason: string | null): string {
-  if (reason === 'logout')         return 'Logout'
-  if (reason === 'disconnect')     return 'Tab closed'
-  if (reason === 'idle')           return 'Idle'
-  if (reason === 'server_restart') return 'Server restart'
+  if (reason === 'logout')         return i18n.t('Logout')
+  if (reason === 'disconnect')     return i18n.t('Tab closed')
+  if (reason === 'idle')           return i18n.t('Idle')
+  if (reason === 'server_restart') return i18n.t('Server restart')
   return reason ?? '—'
 }
 
 // ── Daily bar chart ───────────────────────────────────────────
 function DailyBars({ data, maxMs }: { data: DailyEntry[]; maxMs: number }) {
-  if (data.length === 0) return <div className="activity-daily-empty">No daily data yet</div>
+  const { t } = useTranslation()
+  if (data.length === 0) return <div className="activity-daily-empty">{t('No daily data yet')}</div>
   return (
     <div className="activity-daily-bars">
       {data.map(entry => {
@@ -114,6 +117,7 @@ function DailyBars({ data, maxMs }: { data: DailyEntry[]; maxMs: number }) {
 
 // ── Detail panel ─────────────────────────────────────────────
 function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) {
+  const { t } = useTranslation()
   const [detail, setDetail] = useState<ActivityDetail | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -135,7 +139,7 @@ function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) 
 
   if (!detail) return (
     <div className="activity-detail-panel activity-detail-panel--empty">
-      <span>Failed to load data</span>
+      <span>{t('Failed to load data')}</span>
     </div>
   )
 
@@ -161,21 +165,21 @@ function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) 
       {/* Stats grid */}
       <div className="activity-detail-stats">
         <div className="activity-detail-stat">
-          <div className="activity-detail-stat__label">Total active</div>
+          <div className="activity-detail-stat__label">{t('Total active')}</div>
           <div className="activity-detail-stat__value activity-detail-stat__value--primary">
             {formatDuration(detail.totalDurationMs)}
           </div>
         </div>
         <div className="activity-detail-stat">
-          <div className="activity-detail-stat__label">Session count</div>
+          <div className="activity-detail-stat__label">{t('Session count')}</div>
           <div className="activity-detail-stat__value">{detail.sessionCount}</div>
         </div>
         <div className="activity-detail-stat">
-          <div className="activity-detail-stat__label">Avg. session</div>
+          <div className="activity-detail-stat__label">{t('Avg. session')}</div>
           <div className="activity-detail-stat__value">{formatDuration(detail.avgSessionDurationMs)}</div>
         </div>
         <div className="activity-detail-stat">
-          <div className="activity-detail-stat__label">Last active</div>
+          <div className="activity-detail-stat__label">{t('Last active')}</div>
           <div className="activity-detail-stat__value">{lastActiveText}</div>
         </div>
       </div>
@@ -183,7 +187,7 @@ function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) 
       {/* Daily breakdown */}
       {detail.dailyBreakdown.length > 0 && (
         <div className="activity-detail-section">
-          <div className="activity-detail-section__title">Daily activity</div>
+          <div className="activity-detail-section__title">{t('Daily activity')}</div>
           <DailyBars data={detail.dailyBreakdown} maxMs={maxDailyMs} />
         </div>
       )}
@@ -191,7 +195,7 @@ function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) 
       {/* Recent sessions */}
       {detail.sessions.length > 0 && (
         <div className="activity-detail-section">
-          <div className="activity-detail-section__title">Session history</div>
+          <div className="activity-detail-section__title">{t('Session history')}</div>
           <div className="activity-sessions-list">
             {detail.sessions.slice(0, 20).map(s => (
               <div className="activity-session-row" key={s.id}>
@@ -200,7 +204,7 @@ function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) 
                   <span className="activity-session-row__range">
                     {formatTime(s.startedAt)}
                     {' → '}
-                    {s.endedAt ? formatTime(s.endedAt) : <em>active</em>}
+                    {s.endedAt ? formatTime(s.endedAt) : <em>{t('active')}</em>}
                   </span>
                 </div>
                 <div className="activity-session-row__right">
@@ -228,6 +232,7 @@ function LeaderRow({
   onClick: () => void
   presenceMap: Map<number, { status: string; lastActivityAt: string }>
 }) {
+  const { t } = useTranslation()
   const barPct = maxMs > 0 && user.totalDurationMs > 0
     ? Math.max(2, Math.round((user.totalDurationMs / maxMs) * 100))
     : 0
@@ -259,7 +264,7 @@ function LeaderRow({
         </span>
       </span>
       <span className="activity-leader-row__dur">
-        {user.totalDurationMs > 0 ? formatDuration(user.totalDurationMs, 'compact') : <em className="activity-leader-row__no-data">Just online</em>}
+        {user.totalDurationMs > 0 ? formatDuration(user.totalDurationMs, 'compact') : <em className="activity-leader-row__no-data">{t('Just online')}</em>}
       </span>
       <span className="activity-leader-row__bar-wrap">
         <span className="activity-leader-row__bar" style={{ width: `${barPct}%` }} />
@@ -272,6 +277,7 @@ function LeaderRow({
 
 // ── Main component ────────────────────────────────────────────
 export function ActivityView() {
+  const { t } = useTranslation()
   const { presence } = useWorkspace()
   const [range, setRange]               = useState<RangeOption>('7d')
   const [users, setUsers]               = useState<ActivityUser[]>([])
@@ -333,7 +339,7 @@ export function ActivityView() {
 
   const maxMs = Math.max(...users.map(u => u.totalDurationMs), 1)
 
-  const rangeLabels: Record<RangeOption, string> = { '7d': '7 Days', '30d': '30 Days', '90d': '90 Days' }
+  const rangeLabels: Record<RangeOption, string> = { '7d': t('7 Days'), '30d': t('30 Days'), '90d': t('90 Days') }
 
   return (
     // Phase 6 motion consistency: tambah ds + view-* + ds-stagger ke wrapper
@@ -357,13 +363,13 @@ export function ActivityView() {
         <div className="activity-controls__right">
           {lastFetched && (
             <span className="activity-controls__updated">
-              Updated {lastFetched.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+              {t('Updated {{time}}', { time: lastFetched.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) })}
             </span>
           )}
           <button
             className="activity-refresh-btn"
             onClick={() => fetchLeaderboard(range)}
-            title="Refresh data"
+            title={t('Refresh data')}
             type="button"
           >
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
@@ -381,11 +387,11 @@ export function ActivityView() {
           <div className="activity-leader-header">
             <span className="activity-leader-header__rank">#</span>
             <span className="activity-leader-header__avatar" />
-            <span className="activity-leader-header__info">User</span>
-            <span className="activity-leader-header__dur">Active duration</span>
+            <span className="activity-leader-header__info">{t('User')}</span>
+            <span className="activity-leader-header__dur">{t('Active duration')}</span>
             <span className="activity-leader-header__bar-wrap" />
-            <span className="activity-leader-header__sessions">Sessions</span>
-            <span className="activity-leader-header__last">Last active</span>
+            <span className="activity-leader-header__sessions">{t('Sessions')}</span>
+            <span className="activity-leader-header__last">{t('Last active')}</span>
           </div>
 
           {loading && (
@@ -411,8 +417,8 @@ export function ActivityView() {
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 6v6l4 2" strokeLinecap="round" />
               </svg>
-              <p>No activity data for this period yet.</p>
-              <span>Data starts recording once users actively use ATLAS.</span>
+              <p>{t('No activity data for this period yet.')}</p>
+              <span>{t('Data starts recording once users actively use ATLAS.')}</span>
             </div>
           )}
 
@@ -440,7 +446,7 @@ export function ActivityView() {
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
-              <p>Click a user's name<br />to view activity details</p>
+              <p>{t("Click a user's name")}<br />{t('to view activity details')}</p>
             </div>
           )}
         </aside>

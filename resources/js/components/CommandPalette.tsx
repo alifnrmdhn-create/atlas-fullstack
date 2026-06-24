@@ -6,6 +6,7 @@ import {
   Search, Sun, Moon, ArrowRight, Plus, Download,
   CheckSquare, Layers, GitBranch, CalendarDays, AlertTriangle, MessageSquare,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useEscKey } from '../hooks/useEscKey'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
@@ -53,6 +54,7 @@ const MIN_QUERY = 2
  */
 export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: Props) {
   const { openTaskWorkspace, openProgramWorkspace } = useWorkspace()
+  const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [searching, setSearching] = useState(false)
@@ -133,19 +135,19 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
       className="cmdk-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label="Command palette"
+      aria-label={t('Command palette')}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <Command className="cmdk-root" loop label="Command palette">
+      <Command className="cmdk-root" loop label={t('Command palette')}>
         <div className="cmdk-input-wrap">
           <Search size={15} aria-hidden="true" className="cmdk-input-icon" />
           <Command.Input
             className="cmdk-input"
             value={query}
             onValueChange={setQuery}
-            placeholder="Type a page, action, or search…"
+            placeholder={t('Type a page, action, or search…')}
             autoFocus
           />
           <kbd className="cmdk-input-kbd">ESC</kbd>
@@ -153,12 +155,12 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
 
         <Command.List className="cmdk-list">
           <Command.Empty className="cmdk-empty">
-            No results for "{trimmed}"
+            {t('No results for "{{query}}"', { query: trimmed })}
           </Command.Empty>
 
           {/* Results — live workspace search, shown first so Enter hits the top match */}
           {hasQuery ? (
-            <Command.Group heading="Results" className="cmdk-group">
+            <Command.Group heading={t('Results')} className="cmdk-group">
               {searching && results.length === 0 ? (
                 <Command.Item
                   className="cmdk-item"
@@ -166,7 +168,7 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
                   disabled
                 >
                   <Search size={13} className="cmdk-item-icon" aria-hidden="true" />
-                  <span className="cmdk-item-label">Searching…</span>
+                  <span className="cmdk-item-label">{t('Searching…')}</span>
                 </Command.Item>
               ) : null}
               {results.map((result) => {
@@ -183,7 +185,7 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
                   >
                     <Icon size={13} className="cmdk-item-icon" aria-hidden="true" />
                     <span className="cmdk-item-label">{result.title}</span>
-                    <span className="cmdk-item-meta">{meta.label}</span>
+                    <span className="cmdk-item-meta">{t(meta.label)}</span>
                   </Command.Item>
                 )
               })}
@@ -191,25 +193,25 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
           ) : null}
 
           {/* Navigation */}
-          <Command.Group heading="Navigation" className="cmdk-group">
+          <Command.Group heading={t('Navigation')} className="cmdk-group">
             {NAV_SECTIONS.flatMap((section) =>
               section.items.map((item) => (
                 <Command.Item
                   key={item.path}
                   className="cmdk-item"
-                  value={`${item.label} ${section.label} ${item.path}`}
+                  value={`${t(item.label)} ${t(section.label)} ${item.label} ${section.label} ${item.path}`}
                   onSelect={() => navigate(item.path)}
                 >
                   <ArrowRight size={13} className="cmdk-item-icon" aria-hidden="true" />
-                  <span className="cmdk-item-label">{item.label}</span>
-                  <span className="cmdk-item-meta">{section.label}</span>
+                  <span className="cmdk-item-label">{t(item.label)}</span>
+                  <span className="cmdk-item-meta">{t(section.label)}</span>
                 </Command.Item>
               )),
             )}
           </Command.Group>
 
           {/* Actions */}
-          <Command.Group heading="Actions" className="cmdk-group">
+          <Command.Group heading={t('Actions')} className="cmdk-group">
             <Command.Item
               className="cmdk-item"
               value="toggle theme dark light mode tema gelap terang"
@@ -224,9 +226,9 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
                 <Moon size={13} className="cmdk-item-icon" aria-hidden="true" />
               )}
               <span className="cmdk-item-label">
-                {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
+                {resolvedTheme === 'dark' ? t('Light mode') : t('Dark mode')}
               </span>
-              <span className="cmdk-item-meta">Toggle theme</span>
+              <span className="cmdk-item-meta">{t('Toggle theme')}</span>
             </Command.Item>
 
             {Object.entries(TOPBAR_ACTIONS).map(([page, action]) => {
@@ -235,11 +237,11 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
                 <Command.Item
                   key={`${page}::${action.id}`}
                   className="cmdk-item"
-                  value={`${action.label} ${page} ${action.id}`}
+                  value={`${t(action.label)} ${action.label} ${page} ${action.id}`}
                   onSelect={() => dispatchAction(action.id, page)}
                 >
                   <Icon size={13} className="cmdk-item-icon" aria-hidden="true" />
-                  <span className="cmdk-item-label">{action.label}</span>
+                  <span className="cmdk-item-label">{t(action.label)}</span>
                   <span className="cmdk-item-meta">{page}</span>
                 </Command.Item>
               )
@@ -248,7 +250,7 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
 
           {/* Search — deep view escape hatch for filters/operators/saved searches */}
           {trimmed.length > 0 ? (
-            <Command.Group heading="Search" className="cmdk-group">
+            <Command.Group heading={t('Search')} className="cmdk-group">
               <Command.Item
                 className="cmdk-item"
                 value={`__search__ ${trimmed}`}
@@ -256,9 +258,9 @@ export function CommandPalette({ open, onClose, resolvedTheme, onToggleTheme }: 
               >
                 <Search size={13} className="cmdk-item-icon" aria-hidden="true" />
                 <span className="cmdk-item-label">
-                  See all results for "<strong>{trimmed}</strong>"
+                  {t('See all results for')} "<strong>{trimmed}</strong>"
                 </span>
-                <span className="cmdk-item-meta">Search</span>
+                <span className="cmdk-item-meta">{t('Search')}</span>
               </Command.Item>
             </Command.Group>
           ) : null}

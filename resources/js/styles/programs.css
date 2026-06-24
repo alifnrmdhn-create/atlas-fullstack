@@ -675,7 +675,7 @@
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  box-shadow: var(--panel-shadow-md);
   min-width: 140px;
   padding: 4px;
   display: flex;
@@ -710,7 +710,7 @@
   background: var(--surface-2, rgba(0,0,0,0.05));
 }
 .kebab-menu__item--danger { color: var(--red, #c0392b); }
-.kebab-menu__item--danger:hover { background: rgba(192,57,43,0.06); }
+.kebab-menu__item--danger:hover { background: color-mix(in srgb, var(--red) 6%, transparent); }
 
 /* ── Archive tab ────────────────────────────────────────────────────────── */
 .view-toggle-btn--muted {
@@ -737,8 +737,8 @@
   display: flex;
   gap: 12px;
   padding: 14px 16px;
-  background: rgba(200, 80, 30, 0.05);
-  border: 1px solid rgba(200, 80, 30, 0.18);
+  background: color-mix(in srgb, var(--orange) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--orange) 22%, var(--panel-border));
   border-radius: 8px;
   margin-bottom: 4px;
 }
@@ -1487,7 +1487,7 @@
   padding: 0 4px;
   border-radius: 8px;
   background: var(--yellow);
-  color: #fff;
+  color: var(--text-inverse);
   font-size: 10px;
   font-weight: 600;
   line-height: 1;

@@ -1,5 +1,7 @@
 import { useState, useEffect, useId, useRef } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 import { usePage, Link } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
@@ -7,17 +9,21 @@ import {
   HealthPill,
   SectionState,
 } from '../components/ui'
-import type { Task } from '../types'
+import type { Task, Program } from '../types'
 import { api } from '../lib/api'
 import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import { TaskDetailModal } from '../components/TaskDetailModal'
-import { PageHeader } from '../design-system'
+import { ConditionReportModal } from '../components/ConditionReportModal'
+import type { HealthAtTime } from '../components/ConditionReportModal'
+import { getProgramHealthDisplay } from '../lib/programStatus'
+import { PageHeader, Button } from '../design-system'
+import { Plus } from 'lucide-react'
 import './WorkboardView.css'
 
-type BoardMode = 'kanban' | 'list' | 'blockers'
+type BoardMode = 'kanban' | 'by-program' | 'list' | 'blockers'
 type TimeFilter = 'week' | 'overdue' | 'in-flight' | 'all'
 
 // Lane Workboard — restructure 2026-05-25 (hapus drag, posisi mengikuti progress):
@@ -28,24 +34,24 @@ type TimeFilter = 'week' | 'overdue' | 'in-flight' | 'all'
 //   Status underlying ditampilkan sebagai badge dalam lane (READY → "Siap").
 // - Perpindahan lane di-derive dari progress (lihat TaskService::updateProgress).
 type Lane = { key: string; label: string; statuses: string[]; hint: string }
-const LANES: Lane[] = [
+const getLanes = (): Lane[] => [
   {
     key: 'todo',
-    label: 'Not Started',
+    label: i18n.t('Not Started'),
     statuses: ['BACKLOG', 'READY'],
-    hint: 'Task not started yet. Enter progress in the card detail to begin.',
+    hint: i18n.t('Task not started yet. Enter progress in the card detail to begin.'),
   },
   {
     key: 'doing',
-    label: 'In Progress',
+    label: i18n.t('In Progress'),
     statuses: ['IN_PROGRESS', 'IN_REVIEW', 'BLOCKED'],
-    hint: 'Task is actively being worked on or blocked.',
+    hint: i18n.t('Task is actively being worked on or blocked.'),
   },
   {
     key: 'done',
-    label: 'Completed',
+    label: i18n.t('Completed'),
     statuses: ['COMPLETED'],
-    hint: 'Task done (100% progress or approved by reviewer).',
+    hint: i18n.t('Task done (100% progress or approved by reviewer).'),
   },
 ]
 const statusSlug = (status: string) => status.toLowerCase()
@@ -54,9 +60,9 @@ const statusSlug = (status: string) => status.toLowerCase()
 // sendiri di CardFace (Terhambat / Tepat waktu), jadi di-skip di sini.
 // Catatan: Execution TIDAK punya review/approval (beda dgn Assignments), jadi
 // tidak ada badge "Menunggu Review". IN_REVIEW = status legacy yang dinormalisasi.
-const STATUS_BADGE_ID: Record<string, string> = {
-  READY: 'Ready',
-}
+const getStatusBadgeId = (): Record<string, string> => ({
+  READY: i18n.t('Ready'),
+})
 
 // Time-based filter helpers (Daily PIC Workspace)
 function taskIsOverdue(t: Task): boolean {
@@ -78,27 +84,39 @@ function taskDueToday(t: Task): boolean {
 function taskInFlight(t: Task): boolean {
   return t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW'
 }
-const TIME_FILTER_LABELS: Record<TimeFilter, string> = {
-  week: 'Active This Week',
-  overdue: 'Overdue',
-  'in-flight': 'In Progress',
-  all: 'All',
-}
+const getTimeFilterLabels = (): Record<TimeFilter, string> => ({
+  week: i18n.t('Active This Week'),
+  overdue: i18n.t('Overdue'),
+  'in-flight': i18n.t('In Progress'),
+  all: i18n.t('All'),
+})
 
 // ── Sub-components for smooth DnD ──────────────────────────────────────────
 
 /** Pure presentational card — no DnD hooks. Used inside DragOverlay. */
 function CardFace({
-  item, className, normalizeHealthStatus,
+  item, className, normalizeHealthStatus, showProgCode = true, showWorkstream = true,
 }: {
   item: Task
   className?: string
   normalizeHealthStatus: (h: string) => 'GREEN' | 'YELLOW' | 'RED'
+  // By-program view sudah menampilkan kode program di header section, jadi
+  // konteks kode di kartu anak redundan → sembunyikan (cukup nama workstream).
+  showProgCode?: boolean
+  // Nama workstream disembunyikan bila program hanya punya 1 workstream
+  // (label identik di tiap kartu = noise). Tetap tampil bila >1 (diskriminatif).
+  showWorkstream?: boolean
 }) {
+  const { t } = useTranslation()
+  const statusBadgeId = getStatusBadgeId()
   const health = normalizeHealthStatus(item.healthStatus ?? 'GREEN')
   const statusClass = health === 'GREEN' ? 'on-track' : health === 'YELLOW' ? 'at-risk' : 'off-track'
-  const progCode = item.workstream?.program?.code
-  const iniName  = item.workstream?.name
+  const progCode = showProgCode ? item.workstream?.program?.code : undefined
+  const iniName  = showWorkstream ? item.workstream?.name : undefined
+  const assigneeName = item.assignee?.name
+  const assigneeInitials = assigneeName
+    ? assigneeName.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+    : ''
   return (
     <div className={['work-card', item.isBlocked ? 'work-card--blocked' : '', className ?? ''].filter(Boolean).join(' ')}>
       <div className="work-card__head">
@@ -120,20 +138,25 @@ function CardFace({
         {item.isBlocked ? (
           <span
             className="work-card__blocked"
-            title={item.blockedReason ?? 'Task blocked — needs intervention'}
-          >⚠ Blocked</span>
-        ) : STATUS_BADGE_ID[item.status] ? (
+            title={item.blockedReason ?? t('Task blocked — needs intervention')}
+          >⚠ {t('Blocked')}</span>
+        ) : statusBadgeId[item.status] ? (
           <span className={`work-card__status-badge work-card__status-badge--${statusSlug(item.status)}`}>
-            {STATUS_BADGE_ID[item.status]}
+            {statusBadgeId[item.status]}
           </span>
         ) : null}
         {item.status === 'COMPLETED' && item.targetCompletion && item.actualCompletion && (
           <span className={`work-card__ontime work-card__ontime--${new Date(item.actualCompletion) <= new Date(item.targetCompletion) ? 'ok' : 'late'}`}>
-            {new Date(item.actualCompletion) <= new Date(item.targetCompletion) ? '✓ On time' : '⚠ Late'}
+            {new Date(item.actualCompletion) <= new Date(item.targetCompletion) ? `✓ ${t('On time')}` : `⚠ ${t('Late')}`}
           </span>
         )}
         <span className="work-card__footer-meta">
-          {item.percentComplete}%{item.assignee ? ` · ${item.assignee.name.split(' ')[0]}` : ''}
+          <span className="work-card__pct">{item.percentComplete}%</span>
+          {assigneeName && (
+            <span className="work-card__avatar" title={assigneeName} aria-label={assigneeName}>
+              {assigneeInitials}
+            </span>
+          )}
         </span>
       </div>
     </div>
@@ -142,11 +165,13 @@ function CardFace({
 
 /** Clickable board card (no drag) — buka rincian kartu untuk ubah progress/status. */
 function BoardCard({
-  item, onClick, normalizeHealthStatus,
+  item, onClick, normalizeHealthStatus, showProgCode = true, showWorkstream = true,
 }: {
   item: Task
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
   normalizeHealthStatus: (h: string) => 'GREEN' | 'YELLOW' | 'RED'
+  showProgCode?: boolean
+  showWorkstream?: boolean
 }) {
   return (
     <button
@@ -154,12 +179,15 @@ function BoardCard({
       onClick={onClick}
       className="work-card-shell work-card-shell--clickable"
     >
-      <CardFace item={item} normalizeHealthStatus={normalizeHealthStatus} />
+      <CardFace item={item} normalizeHealthStatus={normalizeHealthStatus} showProgCode={showProgCode} showWorkstream={showWorkstream} />
     </button>
   )
 }
 
 export function WorkboardView() {
+  const { t } = useTranslation()
+  const LANES = getLanes()
+  const TIME_FILTER_LABELS = getTimeFilterLabels()
   const {
     workGroups, workGroupsStatus, reloadTasks, blockers, programs,
     boardStatus,
@@ -189,6 +217,23 @@ export function WorkboardView() {
     if (aid) setBoardFilterAssigneeId(Number(aid))
     const uid = params.get('ownerUnitId')
     if (uid) setBoardFilterOwnerUnitId(Number(uid))
+  }, [url])
+
+  // ?report={programId} — one-door entry from Programs. Separate + reactive so
+  // an SPA re-nav to a different program re-triggers (the one-shot ref above
+  // would swallow it). Permission is enforced by the modal via the server's
+  // `canReport` (reflection-meta) — the lean `programs` prop here can't reliably
+  // tell whether the user is a PIC, so we don't gate client-side.
+  const handledReportRef = useRef<string | null>(null)
+  useEffect(() => {
+    const report = new URLSearchParams(url.split('?')[1] ?? '').get('report')
+    if (!report) { handledReportRef.current = null; return }
+    if (handledReportRef.current === report) return
+    handledReportRef.current = report
+    const rid = Number(report)
+    setBoardMode('by-program')
+    setBoardFilterProgramId(rid)
+    setConditionProgramId(rid)
   }, [url])
 
   // Default myItemsOnly respects role: KADIV/KASUBDIV/BOD default to full view.
@@ -230,7 +275,30 @@ export function WorkboardView() {
     })
   }
 
-  const [boardMode, setBoardMode] = useState<BoardMode>('kanban')
+  // By Program: program On Track / Completed dilipat default (fokus ke yang
+  // genting — At Risk/Terlambat tetap terbuka). Map pid→isCollapsed berisi
+  // override eksplisit user; default di-derive dari health (green/completed).
+  const [progCollapseOverride, setProgCollapseOverride] = useState<Record<number, boolean>>({})
+  const defaultProgCollapsed = (slug?: string) => slug === 'green' || slug === 'completed'
+  // Lane Completed dilipat default per program; expand on-demand (done = arsip,
+  // bukan aksi harian → beri ruang ke In Progress / Not Started).
+  const [expandedDoneLanes, setExpandedDoneLanes] = useState<Set<number>>(() => new Set())
+  const toggleDoneLane = (pid: number) => setExpandedDoneLanes((prev) => {
+    const next = new Set(prev)
+    if (next.has(pid)) next.delete(pid); else next.add(pid)
+    return next
+  })
+
+  // Default = By Program: unit akuntabilitas PIC adalah program (health,
+  // % achievement, Report Condition semua di level program), bukan tumpukan
+  // task lepas. Buka langsung ke konteks program. Board/List/Blockers tetap
+  // tersedia sebagai mode alternatif.
+  const [boardMode, setBoardMode] = useState<BoardMode>('by-program')
+
+  // One-door condition reporting (modal target) + session memory of what the
+  // user just reported per program (immediate badge feedback, no full reload).
+  const [conditionProgramId, setConditionProgramId] = useState<number | null>(null)
+  const [reportedThisSession, setReportedThisSession] = useState<Record<number, HealthAtTime>>({})
 
   // Fix 4: rollback error banner
   const [rollbackError, setRollbackError] = useState<string | null>(null)
@@ -365,6 +433,50 @@ export function WorkboardView() {
     ).filter(matchesTimeFilter),
   }))
 
+  // ── By-Program view: group the user's in-scope tasks under their program,
+  //    enriched with program metadata (health/progress/PIC) from the programs
+  //    prop. Intentionally ignores the time-filter — a program command view
+  //    shows the whole program, not just this week's slice. ──
+  const programById = new Map<number, Program>(programs.map(p => [p.id, p]))
+  const REPORT_LABEL: Record<HealthAtTime, string> = {
+    on_track: t('On Track'), at_risk: t('At Risk'), terlambat: t('Delayed'), overdue: t('Overdue'),
+  }
+  const isAdminRole = ['SUPERADMIN', 'ADMIN'].includes(roleAccess.role ?? '')
+  const canReportFor = (p?: Program) => {
+    if (!p) return false
+    if (isAdminRole) return true
+    if (p.owner?.id === currentUser?.id) return true
+    return (p.picPersons ?? []).some(pic => pic.id === currentUser?.id)
+  }
+  const programSections = (() => {
+    const groups = new Map<number, Task[]>()
+    for (const item of scopedItems) {
+      const pid = item.workstream?.program?.id
+      if (pid == null) continue
+      if (!groups.has(pid)) groups.set(pid, [])
+      groups.get(pid)!.push(item)
+    }
+    // A PIC must be able to report on their own program even when it has no
+    // tasks in the current scope — otherwise the in-view Report button is
+    // unreachable and they'd be forced to the deep-link. Bounded to the user's
+    // own programs (owner/co-PIC), so admins don't get every program injected.
+    const meId = currentUser?.id
+    if (meId != null) {
+      for (const pr of programs) {
+        const mine = pr.owner?.id === meId || (pr.picPersons ?? []).some(pic => pic.id === meId)
+        if (mine && !groups.has(pr.id)) groups.set(pr.id, [])
+      }
+    }
+    const rank = (h?: string) => (h === 'RED' ? 0 : h === 'YELLOW' ? 1 : 2)
+    return Array.from(groups.entries())
+      .map(([pid, items]) => ({ program: programById.get(pid), pid, items }))
+      .sort((a, b) => {
+        const ra = rank(a.program?.healthStatus), rb = rank(b.program?.healthStatus)
+        if (ra !== rb) return ra - rb
+        return (a.program?.code ?? '').localeCompare(b.program?.code ?? '')
+      })
+  })()
+
   // Bedakan "fetch /tasks gagal/masih jalan" dari "sukses tapi nol task" —
   // tanpa ini board menampilkan "No tasks match the current filter" yang
   // menyesatkan padahal datanya gagal dimuat (lihat bug board kosong di prod).
@@ -443,7 +555,7 @@ export function WorkboardView() {
     if (wiSaving) return
     const wiDirty = wiForm.workstreamId !== '' || wiForm.title !== '' || wiForm.description !== '' ||
       wiForm.status !== 'BACKLOG' || wiForm.priority !== 'MEDIUM' || wiForm.assignedTo !== ''
-    if (wiDirty && !window.confirm('Discard unsaved changes?')) return
+    if (wiDirty && !window.confirm(t('Discard unsaved changes?'))) return
     closeWIOverlay('create-wi', () => { setShowCreateWI(false); setWiError(null) })
   }, showCreateWI || closingWIOverlay === 'create-wi')
 
@@ -491,11 +603,44 @@ export function WorkboardView() {
       closeCreateWI()
       await loadOverview('refresh')
     } catch (err: unknown) {
-      setWiError((err as { message?: string })?.message ?? 'Failed to create task.')
+      setWiError((err as { message?: string })?.message ?? t('Failed to create task.'))
     } finally {
       setWiSaving(false)
     }
   }
+
+  // Attention Queue — task paling kritis. Di By Program dirender di ATAS daftar
+  // program (triage dulu, baru detail); di mode lain tetap di bawah board.
+  const attentionPanel = criticalItems.length > 0 ? (
+    <div className="panel attention-panel">
+      <div className="panel__header">
+        <h3 className="panel__title">{t('Attention Queue')}</h3>
+        <span className="badge">{t('Top {{count}}', { count: criticalItems.length })}</span>
+      </div>
+      <div className="wi-list">
+        {criticalItems.map((item) => (
+          <button
+            className="wi-list-row"
+            key={item.id}
+            onClick={(e) => openTaskModal(item.id, e)}
+          >
+            <div className="wi-list-row__left">
+              <span className="code-badge">{item.code}</span>
+              <div>
+                <strong>{item.title}</strong>
+                <span className="text-muted text-sm">{t('{{percent}}% complete', { percent: item.percentComplete })}</span>
+              </div>
+            </div>
+            <div className="wi-list-row__right">
+              <span className={`priority-badge priority-badge--${item.priority.toLowerCase()}`}>{item.priority}</span>
+              {item.isBlocked ? <span className="severity-badge severity-badge--high">{t('BLOCKED')}</span> : null}
+              <HealthPill status={normalizeHealthStatus(item.healthStatus)} />
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  ) : null
 
   return (
     <div className="ds workboard-v2 view-workboard">
@@ -504,66 +649,82 @@ export function WorkboardView() {
           jadi tidak ter-scope ke containing block animasi. Modal-safe. */}
       <div className="workboard-v2__inner ds-stagger">
       {/* ── Page header (design-system PageHeader — standardisasi 2026-05-26) ──
-          "+ Task Baru" content button dihapus 2026-05-24 — duplikat dgn topbar
-          action (topbar-config.ts:32). Single CTA per page. */}
+          CTA "New Task" hidup DI HALAMAN (page owns its CTA), bukan di topbar —
+          selaras ProgramsView; /execution sengaja dikeluarkan dari TOPBAR_ACTIONS
+          (lihat catatan di topbar-config.ts). Tombol di-gate utk peran non-
+          monitoring (read-only direktorat tak membuat tugas). */}
       <PageHeader
-        title="Workboard"
+        title={t('Workboard')}
         subtitle={
           roleAccess.isMonitoringOnly
-            ? 'Track Program tasks & blockers across your directorate.'
+            ? t('Track Program tasks & blockers across your directorate.')
             : roleAccess.isOfficer
-            ? 'Program tasks assigned to you.'
-            : 'Tasks from work Programs — part of the approved plan.'
+            ? t('Program tasks assigned to you.')
+            : t('Tasks from work Programs — part of the approved plan.')
         }
         actions={
-          boardStatus.message ? (
-            <div className={`board-status-msg${boardStatus.message.includes('failed') ? ' board-status-msg--error' : ''}`}>
-              {boardStatus.saving ? <span className="spinner" /> : null}
-              {boardStatus.message}
-            </div>
-          ) : null
+          <>
+            {boardStatus.message ? (
+              <div className={`board-status-msg${boardStatus.message.includes('failed') ? ' board-status-msg--error' : ''}`}>
+                {boardStatus.saving ? <span className="spinner" /> : null}
+                {boardStatus.message}
+              </div>
+            ) : null}
+            {!roleAccess.isMonitoringOnly && (
+              <Button
+                variant="primary"
+                size="sm"
+                iconLeft={<Plus size={15} aria-hidden="true" />}
+                onClick={() => void openCreateWI()}
+              >
+                {t('New Task')}
+              </Button>
+            )}
+          </>
         }
       />
 
       {/* ── Filters + state row: toggles + selects + stats ── */}
       <div className="view-toolbar wb-toolbar-filters">
         <div className="view-toggle">
-          {(['kanban', 'list', 'blockers'] as BoardMode[]).map(mode => (
+          {(['kanban', 'by-program', 'list', 'blockers'] as BoardMode[]).map(mode => (
             <button className={`view-toggle-btn${boardMode === mode ? ' active' : ''}`} key={mode} onClick={() => setBoardMode(mode)}>
-              {mode === 'kanban' ? '⬜ Board' : mode === 'list' ? '≡ List' : '⚑ Blockers'}
+              {mode === 'kanban' ? `⬜ ${t('Board')}` : mode === 'by-program' ? `▤ ${t('By Program')}` : mode === 'list' ? `≡ ${t('List')}` : `⚑ ${t('Blockers')}`}
             </button>
           ))}
         </div>
         {/* BOD: monitoring badge only — no filter toggle */}
         {roleAccess.isMonitoringOnly ? (
-          <span className="role-monitoring-badge">Monitoring</span>
+          <span className="role-monitoring-badge">{t('Monitoring')}</span>
         ) : (
           <div className="view-toggle wb-view-toggle">
             <button
               className={`view-toggle-btn${effectiveMyItemsOnly ? ' active' : ''}`}
               onClick={() => setEffectiveMyItemsOnly(true)}
             >
-              My Tasks
+              {t('My Tasks')}
             </button>
             <button
               className={`view-toggle-btn${!effectiveMyItemsOnly ? ' active' : ''}`}
               onClick={() => setEffectiveMyItemsOnly(false)}
               disabled={roleAccess.myItemsLocked}
-              title={roleAccess.myItemsLocked ? 'Support mode: view is limited to your tasks' : undefined}
+              title={roleAccess.myItemsLocked ? t('Support mode: view is limited to your tasks') : t('Show tasks across your team')}
             >
-              All
+              {t('Team')}
             </button>
           </div>
         )}
-        {/* Daily PIC Workspace: time filter chips */}
-        {!roleAccess.isMonitoringOnly && (
+        {/* Daily PIC Workspace: time filter chips. Disembunyikan di By Program —
+            view itu sengaja menampilkan seluruh program (mengabaikan time
+            filter), jadi chip ini akan jadi dead control di sana. */}
+        {!roleAccess.isMonitoringOnly && boardMode !== 'by-program' && (
           <div className="view-toggle wb-time-filter">
             {(['week', 'overdue', 'in-flight', 'all'] as TimeFilter[]).map(tf => (
               <button
                 key={tf}
                 className={`view-toggle-btn${timeFilter === tf ? ' active' : ''}`}
                 onClick={() => setTimeFilter(tf)}
-                title={tf === 'week' ? 'In-flight + due ≤ 7 days + overdue' : undefined}
+                title={tf === 'week' ? t('In-flight + due ≤ 7 days + overdue') : undefined}
               >
                 {TIME_FILTER_LABELS[tf]}
               </button>
@@ -576,7 +737,7 @@ export function WorkboardView() {
           value={boardFilterProgramId ?? ''}
           onChange={e => setBoardFilterProgramId(e.target.value ? Number(e.target.value) : null)}
         >
-          <option value="">All Programs</option>
+          <option value="">{t('All Programs')}</option>
           {programs.map(p => (
             <option key={p.id} value={p.id}>{p.code} — {p.name}</option>
           ))}
@@ -587,9 +748,9 @@ export function WorkboardView() {
           value={boardFilterWorkstreamId ?? ''}
           onChange={e => setBoardFilterWorkstreamId(e.target.value ? Number(e.target.value) : null)}
           disabled={workstreamOptions.length === 0}
-          title="Filter by workstream / workstream"
+          title={t('Filter by workstream')}
         >
-          <option value="">All Workstreams</option>
+          <option value="">{t('All Workstreams')}</option>
           {workstreamOptions.map(ini => (
             <option key={ini.id} value={ini.id}>{ini.name}</option>
           ))}
@@ -601,44 +762,44 @@ export function WorkboardView() {
               className={`wb-summary-stat wb-summary-stat--overdue${overdueCount === 0 ? ' is-zero' : ''}${timeFilter === 'overdue' ? ' is-active' : ''}`}
               onClick={() => overdueCount > 0 && setTimeFilter('overdue')}
               disabled={overdueCount === 0}
-              title="Task past due & not completed"
+              title={t('Task past due & not completed')}
             >
               <span className="wb-summary-stat__num">{overdueCount}</span>
-              <em>overdue</em>
+              <em>{t('overdue')}</em>
             </button>
             <button
               type="button"
               className={`wb-summary-stat wb-summary-stat--today${dueTodayCount === 0 ? ' is-zero' : ''}`}
               onClick={() => dueTodayCount > 0 && setTimeFilter('week')}
               disabled={dueTodayCount === 0}
-              title="Tasks due today"
+              title={t('Tasks due today')}
             >
               <span className="wb-summary-stat__num">{dueTodayCount}</span>
-              <em>today</em>
+              <em>{t('today')}</em>
             </button>
             <button
               type="button"
               className={`wb-summary-stat wb-summary-stat--week${dueWeekCount === 0 ? ' is-zero' : ''}`}
               onClick={() => dueWeekCount > 0 && setTimeFilter('week')}
               disabled={dueWeekCount === 0}
-              title="Tasks due in the next 7 days"
+              title={t('Tasks due in the next 7 days')}
             >
               <span className="wb-summary-stat__num">{dueWeekCount}</span>
-              <em>7 days</em>
+              <em>{t('due soon')}</em>
             </button>
             <span className="wb-summary-stat">
               <span className="wb-summary-stat__num">{inFlightCount}</span>
-              <em>in progress</em>
+              <em>{t('in progress')}</em>
             </span>
             {blockedCount > 0 && (
               <span className="wb-summary-stat wb-stats__blocked">
                 <span className="wb-summary-stat__num">{blockedCount}</span>
-                <em>blocked</em>
+                <em>{t('blocked')}</em>
               </span>
             )}
             <span className="wb-summary-stat">
               <span className="wb-summary-stat__num">{completedCount}</span>
-              <em>completed</em>
+              <em>{t('completed')}</em>
             </span>
           </div>
         </div>
@@ -649,8 +810,8 @@ export function WorkboardView() {
         <div className="board-rollback-banner" role="alert">
           <span className="board-rollback-banner__icon">⚠</span>
           <span className="board-rollback-banner__msg">{rollbackError}</span>
-          <span className="board-rollback-banner__sub">Card was returned to its original position.</span>
-          <button className="board-rollback-banner__close" onClick={() => setRollbackError(null)} aria-label="Close">×</button>
+          <span className="board-rollback-banner__sub">{t('Card was returned to its original position.')}</span>
+          <button className="board-rollback-banner__close" onClick={() => setRollbackError(null)} aria-label={t('Close')}>×</button>
         </div>
       ) : null}
 
@@ -658,15 +819,15 @@ export function WorkboardView() {
         {/* ── Main board ───────────────────────── */}
         <div className="workboard-main">
           {boardLoading && (
-            <SectionState icon="⏳" title="Loading tasks…" text="Fetching Program tasks across your directorate." />
+            <SectionState icon="⏳" title={t('Loading tasks…')} text={t('Fetching Program tasks across your directorate.')} />
           )}
           {boardLoadFailed && (
             <SectionState
               tone="warning"
               icon="⚠️"
-              title="Couldn't load tasks"
-              text="The task list failed to load (the request may have timed out). Your data is safe — this is a loading issue, not missing tasks."
-              cta={{ label: 'Try again', onClick: () => void reloadTasks() }}
+              title={t("Couldn't load tasks")}
+              text={t('The task list failed to load (the request may have timed out). Your data is safe — this is a loading issue, not missing tasks.')}
+              cta={{ label: t('Try again'), onClick: () => void reloadTasks() }}
             />
           )}
           {boardReady && boardMode === 'kanban' && allItems.length === 0 ? (
@@ -674,15 +835,15 @@ export function WorkboardView() {
               icon="✨"
               title={
                 effectiveMyItemsOnly
-                  ? (timeFilter === 'week' ? "You're free this week" : 'No active tasks')
-                  : 'No tasks match the current filter'
+                  ? (timeFilter === 'week' ? t("You're free this week") : t('No active tasks'))
+                  : t('No tasks match the current filter')
               }
               text={
                 effectiveMyItemsOnly && timeFilter === 'week'
-                  ? "No overdue, due-in-7-days, or in-flight tasks assigned to you. Click 'All' to see everything, or toggle to team tasks."
+                  ? t("No overdue, due-in-7-days, or in-flight tasks assigned to you. Click 'All' to see everything, or toggle to team tasks.")
                   : effectiveMyItemsOnly
-                  ? "None of your tasks match. Try changing the time filter or toggle to 'All'."
-                  : "No tasks match the current filter. Change the time preset or the program/workstream filter."
+                  ? t("None of your tasks match. Try changing the time filter or toggle to 'All'.")
+                  : t("No tasks match the current filter. Change the time preset or the program/workstream filter.")
               }
             />
           ) : null}
@@ -705,7 +866,7 @@ export function WorkboardView() {
                       className={`kanban-col__header kanban-col__header--toggle kanban-col__header--${lane.key}`}
                       onClick={() => toggleCollapsedCol(lane.key)}
                       aria-expanded={!isCollapsed}
-                      title={isCollapsed ? 'Expand lane' : 'Collapse lane'}
+                      title={isCollapsed ? t('Expand lane') : t('Collapse lane')}
                     >
                       <div className="kanban-col__label-row">
                         <span className="kanban-col__caret" aria-hidden="true">{isCollapsed ? '▸' : '▾'}</span>
@@ -713,7 +874,7 @@ export function WorkboardView() {
                         <span
                           className="kanban-col__info"
                           title={lane.hint}
-                          aria-label={`About the ${lane.label} lane`}
+                          aria-label={t('About the {{lane}} lane', { lane: lane.label })}
                         >ⓘ</span>
                       </div>
                       <span className="section-badge">{items.length}</span>
@@ -739,11 +900,136 @@ export function WorkboardView() {
             </div>
           )}
 
+          {boardReady && boardMode === 'by-program' && programSections.length === 0 ? (
+            <SectionState icon="✨" title={t('No programs match the current filter')} text={t('Adjust the program / workstream filter, or toggle to All tasks.')} />
+          ) : null}
+          {boardReady && boardMode === 'by-program' && programSections.length > 0 && attentionPanel}
+          {boardReady && boardMode === 'by-program' && programSections.length > 0 && (
+            <div className="wb-prog-list">
+              {programSections.map(({ program, pid, items }) => {
+                const cond = program ? getProgramHealthDisplay(program) : null
+                const reported = reportedThisSession[pid]
+                const done = items.filter(i => i.status === 'COMPLETED').length
+                const overdue = items.filter(taskIsOverdue).length
+                const collapsed = progCollapseOverride[pid] ?? defaultProgCollapsed(cond?.slug)
+                const doneExpanded = expandedDoneLanes.has(pid)
+                // Nama workstream cuma berguna bila program punya >1 workstream.
+                const multiWorkstream = new Set(items.map(i => i.workstream?.id).filter(Boolean)).size > 1
+                const lanes = LANES.map(lane => ({ lane, items: items.filter(i => lane.statuses.includes(i.status)) }))
+                // Lebar kolom: lane kosong → ramping; lane Completed terlipat →
+                // ramping; sisanya (In Progress) ambil ruang terbesar.
+                const laneCols = lanes
+                  .map(l => {
+                    if (l.items.length === 0) return 'minmax(96px, 0.34fr)'
+                    if (l.lane.key === 'done' && !doneExpanded) return 'minmax(132px, 0.42fr)'
+                    return 'minmax(0, 1fr)'
+                  })
+                  .join(' ')
+                return (
+                  <section className={`wb-prog${collapsed ? ' wb-prog--collapsed' : ''}`} key={pid}>
+                    <header className="wb-prog__head">
+                      <div className="wb-prog__id">
+                        <div className="wb-prog__title-row">
+                          <button
+                            type="button"
+                            className="wb-prog__toggle"
+                            onClick={() => setProgCollapseOverride(prev => ({ ...prev, [pid]: !collapsed }))}
+                            aria-expanded={!collapsed}
+                            title={collapsed ? t('Expand program') : t('Collapse program')}
+                          >
+                            <span className="wb-prog__caret" aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
+                          </button>
+                          <span className="wb-prog__code">{program?.code ?? `#${pid}`}</span>
+                          {cond && <span className={`wb-prog__cond wb-prog__cond--${cond.slug}`}>{cond.label}</span>}
+                          {reported && (
+                            <span className="wb-prog__reported" title={t('What you reported this week')}>
+                              {t('Reported')}: {REPORT_LABEL[reported]}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="wb-prog__name">{program?.name ?? t('Unknown program')}</h3>
+                      </div>
+                      <div className="wb-prog__metrics">
+                        <div className="wb-prog__progress">
+                          <div className="progress-bar-track wb-prog__progress-track">
+                            <div className="progress-bar-fill" style={{ width: `${program?.progressPercent ?? 0}%` }} />
+                          </div>
+                          <span className="wb-prog__progress-val">{program?.progressPercent ?? 0}%</span>
+                        </div>
+                        <div className="wb-prog__counts">
+                          <span>{t('{{count}} tasks', { count: items.length })}</span>
+                          <span className="wb-prog__count-done">{done} {t('done')}</span>
+                          {overdue > 0 && <span className="wb-prog__count-overdue">{overdue} {t('overdue')}</span>}
+                        </div>
+                      </div>
+                      <div className="wb-prog__actions">
+                        {canReportFor(program) && (
+                          <button type="button" className="btn btn--primary btn--sm" onClick={() => setConditionProgramId(pid)}>
+                            {t('Report Condition')}
+                          </button>
+                        )}
+                        <Link href={`/programs/${pid}`} className="btn btn--sm wb-prog__plan-link">
+                          {t('Edit plan')} →
+                        </Link>
+                      </div>
+                    </header>
+                    {!collapsed && (
+                    <div className="wb-prog__lanes" style={{ '--wb-lane-cols': laneCols } as React.CSSProperties}>
+                      {lanes.map(({ lane, items: laneItems }) => {
+                        const isDone = lane.key === 'done'
+                        const isEmpty = laneItems.length === 0
+                        const foldDone = isDone && !doneExpanded && laneItems.length > 0
+                        return (
+                          <div
+                            className={`wb-prog__lane${isEmpty ? ' wb-prog__lane--empty' : ''}${foldDone ? ' wb-prog__lane--folded' : ''}`}
+                            key={lane.key}
+                          >
+                            {isDone && laneItems.length > 0 ? (
+                              <button
+                                type="button"
+                                className="wb-prog__lane-head wb-prog__lane-head--toggle"
+                                onClick={() => toggleDoneLane(pid)}
+                                aria-expanded={doneExpanded}
+                                title={doneExpanded ? t('Collapse completed') : t('Show completed')}
+                              >
+                                <span className="wb-prog__lane-caret" aria-hidden="true">{doneExpanded ? '▾' : '▸'}</span>
+                                <span>{lane.label}</span>
+                                <span className="section-badge">{laneItems.length}</span>
+                              </button>
+                            ) : (
+                              <div className="wb-prog__lane-head">
+                                <span>{lane.label}</span>
+                                <span className="section-badge">{laneItems.length}</span>
+                              </div>
+                            )}
+                            {foldDone ? (
+                              <button type="button" className="wb-prog__lane-fold" onClick={() => toggleDoneLane(pid)}>
+                                {t('Show {{count}} completed', { count: laneItems.length })}
+                              </button>
+                            ) : (
+                              <div className="wb-prog__lane-body">
+                                {laneItems.map(item => (
+                                  <BoardCard key={item.id} item={item} onClick={(e) => openTaskModal(item.id, e)} normalizeHealthStatus={normalizeHealthStatus} showProgCode={false} showWorkstream={multiWorkstream} />
+                                ))}
+                                {isEmpty && <div className="wb-prog__lane-empty" aria-hidden="true">—</div>}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    )}
+                  </section>
+                )
+              })}
+            </div>
+          )}
+
           {boardReady && boardMode === 'list' && (
             <div className="panel">
               <div className="panel__header">
-                <h3 className="panel__title">{myItemsOnly ? 'My Tasks' : 'All Tasks'}</h3>
-                <span className="badge">{allItems.length} tasks</span>
+                <h3 className="panel__title">{myItemsOnly ? t('My Tasks') : t('All Tasks')}</h3>
+                <span className="badge">{t('{{count}} tasks', { count: allItems.length })}</span>
               </div>
               <div className="wi-list">
                 {allItems.map((item) => (
@@ -756,7 +1042,7 @@ export function WorkboardView() {
                       <span className="code-badge">{item.code}</span>
                       <div>
                         <strong>{item.title}</strong>
-                        <span className="text-muted text-sm">{item.workstream?.name ?? 'No workstream yet'}</span>
+                        <span className="text-muted text-sm">{item.workstream?.name ?? t('No workstream yet')}</span>
                       </div>
                     </div>
                     <div className="wi-list-row__right">
@@ -780,8 +1066,8 @@ export function WorkboardView() {
           {boardReady && boardMode === 'blockers' && (
             <div className="panel">
               <div className="panel__header">
-                <h3 className="panel__title">Blocker Tracker</h3>
-                <span className="badge badge--red">{blockers.length} blockers</span>
+                <h3 className="panel__title">{t('Blocker Tracker')}</h3>
+                <span className="badge badge--red">{t('{{count}} blockers', { count: blockers.length })}</span>
               </div>
               {blockers.length > 0 ? (
                 <div className="blocker-list">
@@ -801,40 +1087,14 @@ export function WorkboardView() {
                   ))}
                 </div>
               ) : (
-                <SectionState icon="✅" title="No blockers" text="No blockers recorded at this time." />
+                <SectionState icon="✅" title={t('No blockers')} text={t('No blockers recorded at this time.')} />
               )}
             </div>
           )}
 
-          {/* Attention queue */}
-          <div className="panel attention-panel">
-            <div className="panel__header">
-              <h3 className="panel__title">Attention Queue</h3>
-              <span className="badge">Top {criticalItems.length}</span>
-            </div>
-            <div className="wi-list">
-              {criticalItems.map((item) => (
-                <button
-                  className="wi-list-row"
-                  key={item.id}
-                  onClick={(e) => openTaskModal(item.id, e)}
-                >
-                  <div className="wi-list-row__left">
-                    <span className="code-badge">{item.code}</span>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <span className="text-muted text-sm">{item.percentComplete}% complete</span>
-                    </div>
-                  </div>
-                  <div className="wi-list-row__right">
-                    <span className={`priority-badge priority-badge--${item.priority.toLowerCase()}`}>{item.priority}</span>
-                    {item.isBlocked ? <span className="severity-badge severity-badge--high">BLOCKED</span> : null}
-                    <HealthPill status={normalizeHealthStatus(item.healthStatus)} />
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Attention Queue — di bawah board untuk mode Board/List/Blockers.
+              Di By Program panel ini dirender di atas daftar program. */}
+          {boardReady && boardMode !== 'by-program' && attentionPanel}
         </div>
 
       </div>
@@ -849,17 +1109,17 @@ export function WorkboardView() {
           <div aria-describedby={createTaskDescId} aria-labelledby={createTaskTitleId} aria-modal="true" className="modal modal--wide" ref={createTaskDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Execution</span>
-                <h3 className="modal__title" id={createTaskTitleId}>New Task</h3>
+                <span className="modal-kicker">{t('Execution')}</span>
+                <h3 className="modal__title" id={createTaskTitleId}>{t('New Task')}</h3>
                 <p className="modal-subtitle" id={createTaskDescId}>
-                  Create a new work item with clear workstream context, priority, and owner so execution stays tidy.
+                  {t('Create a new work item with clear workstream context, priority, and owner so execution stays tidy.')}
                 </p>
                 <p className="modal-cross-hint">
-                  Not part of a Program? Create it as an <Link href="/penugasan">Assignment →</Link>
+                  {t('Not part of a Program? Create it as an')} <Link href="/penugasan">{t('Assignment →')}</Link>
                 </p>
               </div>
               <button
-                aria-label="Close"
+                aria-label={t('Close')}
                 className="modal__close"
                 disabled={wiSaving}
                 onClick={closeCreateWI}
@@ -875,18 +1135,18 @@ export function WorkboardView() {
                 {wiError && <div className="wb-modal-error">{wiError}</div>}
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>Work Context</h4>
-                    <p>Link the task to the right workstream and give it a title specific enough for the action owner.</p>
+                    <h4>{t('Work Context')}</h4>
+                    <p>{t('Link the task to the right workstream and give it a title specific enough for the action owner.')}</p>
                   </div>
                   <div className="form-field">
-                    <label>Workstream <span className="form-field__required">*</span></label>
+                    <label>{t('Workstream')} <span className="form-field__required">*</span></label>
                     <select
                       className="form-input"
                       onChange={e => setWiForm(f => ({ ...f, workstreamId: e.target.value }))}
                       required
                       value={wiForm.workstreamId}
                     >
-                      <option value="">Select a workstream…</option>
+                      <option value="">{t('Select a workstream…')}</option>
                       {wiWorkstreams.map(ini => (
                         <option key={ini.id} value={ini.id}>
                           {ini.program ? `${ini.program.code} › ` : ''}{ini.name}
@@ -895,24 +1155,24 @@ export function WorkboardView() {
                     </select>
                   </div>
                   <div className="form-field">
-                    <label>Title <span className="form-field__required">*</span></label>
+                    <label>{t('Title')} <span className="form-field__required">*</span></label>
                     <input
                       maxLength={120}
                       minLength={3}
                       onChange={e => setWiForm(f => ({ ...f, title: e.target.value }))}
-                      placeholder="Task title"
+                      placeholder={t('Task title')}
                       required
                       type="text"
                       value={wiForm.title}
                     />
                   </div>
                   <div className="form-field">
-                    <label>Description</label>
+                    <label>{t('Description')}</label>
                     <textarea
                       className="composer__input wb-modal-textarea"
                       maxLength={400}
                       onChange={e => setWiForm(f => ({ ...f, description: e.target.value }))}
-                      placeholder="Brief description (optional)"
+                      placeholder={t('Brief description (optional)')}
                       rows={2}
                       value={wiForm.description}
                     />
@@ -920,39 +1180,39 @@ export function WorkboardView() {
                 </section>
                 <section className="modal-section modal-section--soft">
                   <div className="modal-section__intro">
-                    <h4>Execution</h4>
-                    <p>Set the initial status and assignee so this item is ready to track from the board.</p>
+                    <h4>{t('Execution')}</h4>
+                    <p>{t('Set the initial status and assignee so this item is ready to track from the board.')}</p>
                   </div>
                   <div className="form-field">
-                    <label>Status</label>
+                    <label>{t('Status')}</label>
                     <select
                       className="form-input"
                       onChange={e => setWiForm(f => ({ ...f, status: e.target.value }))}
                       value={wiForm.status}
                     >
-                      <option value="BACKLOG">Backlog</option>
-                      <option value="READY">Ready</option>
-                      <option value="IN_PROGRESS">In Progress</option>
-                      <option value="BLOCKED">Blocked</option>
-                      <option value="IN_REVIEW">In Review</option>
-                      <option value="COMPLETED">Completed</option>
+                      <option value="BACKLOG">{t('Backlog')}</option>
+                      <option value="READY">{t('Ready')}</option>
+                      <option value="IN_PROGRESS">{t('In Progress')}</option>
+                      <option value="BLOCKED">{t('Blocked')}</option>
+                      <option value="IN_REVIEW">{t('In Review')}</option>
+                      <option value="COMPLETED">{t('Completed')}</option>
                     </select>
                   </div>
                   <div className="form-field">
-                    <label>Assignee</label>
+                    <label>{t('Assignee')}</label>
                     <select
                       className="form-input"
                       onChange={e => setWiForm(f => ({ ...f, assignedTo: e.target.value }))}
                       value={wiForm.assignedTo}
                     >
-                      <option value="">— Unassigned —</option>
+                      <option value="">{t('— Unassigned —')}</option>
                       {wiUsers.map(u => (
                         <option key={u.id} value={u.id}>{u.name}{u.positionTitle ? ` · ${u.positionTitle}` : ''}</option>
                       ))}
                     </select>
                   </div>
                   <div className="form-field">
-                    <label>Deadline <span className="form-field__required">*</span></label>
+                    <label>{t('Deadline')} <span className="form-field__required">*</span></label>
                     <input
                       className="form-input"
                       onChange={e => setWiForm(f => ({ ...f, targetCompletion: e.target.value }))}
@@ -970,14 +1230,14 @@ export function WorkboardView() {
                   onClick={closeCreateWI}
                   type="button"
                 >
-                  Cancel
+                  {t('Cancel')}
                 </button>
                 <button
                   className="profile-save-btn"
                   disabled={wiSaving || !wiForm.workstreamId || !wiForm.title.trim() || !wiForm.targetCompletion}
                   type="submit"
                 >
-                  {wiSaving ? 'Saving…' : 'Create Task'}
+                  {wiSaving ? t('Saving…') : t('Create Task')}
                 </button>
               </div>
             </form>
@@ -995,6 +1255,25 @@ export function WorkboardView() {
           onClose={closeTaskModal}
         />
       )}
+
+      {conditionProgramId !== null && (() => {
+        const pid = conditionProgramId
+        const prog = programById.get(pid)
+        const cond = prog ? getProgramHealthDisplay(prog) : null
+        return (
+          <ConditionReportModal
+            programId={pid}
+            programCode={prog?.code ?? `#${pid}`}
+            programName={prog?.name ?? ''}
+            autoHealthLabel={cond?.label}
+            onClose={() => setConditionProgramId(null)}
+            onSaved={(_period, health) => {
+              setReportedThisSession(prev => ({ ...prev, [pid]: health }))
+              void loadOverview('refresh')
+            }}
+          />
+        )
+      })()}
     </div>
   )
 }

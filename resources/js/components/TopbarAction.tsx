@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react'
 import { Plus, Download, Share2, Filter } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { TopbarAction as TopbarActionConfig } from '../lib/topbar-config'
 import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 
@@ -17,12 +18,13 @@ type Props = {
  * listen for.
  */
 export function TopbarAction({ action, page }: Props) {
+  const { t } = useTranslation()
   const Icon = action.icon ? ICONS[action.icon] : null
 
   const content = (
     <>
       {Icon ? <Icon size={14} aria-hidden="true" /> : null}
-      <span>{action.label}</span>
+      <span>{t(action.label)}</span>
     </>
   )
 

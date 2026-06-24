@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { InlineNotice, SectionState, SkeletonBlock, SkeletonStack } from '../components/ui'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
+import i18n from '../lib/i18n'
 import './SmallPagesViews.css'
 
 const SEARCH_PRESETS = [
@@ -13,14 +15,15 @@ const SEARCH_PRESETS = [
   'type:work_items',
 ]
 
-const SEARCH_OPERATORS = [
-  { op: 'from:', desc: 'Filter by author' },
-  { op: 'in:', desc: 'Limit to channel/area' },
-  { op: 'type:', desc: 'Focus on result type' },
-  { op: 'during:', desc: 'Filter by date range' },
+const getSearchOperators = () => [
+  { op: 'from:', desc: i18n.t('Filter by author') },
+  { op: 'in:', desc: i18n.t('Limit to channel/area') },
+  { op: 'type:', desc: i18n.t('Focus on result type') },
+  { op: 'during:', desc: i18n.t('Filter by date range') },
 ]
 
 export function SearchView() {
+  const { t } = useTranslation()
   const {
     searchResults, searchTotal, query, setQuery,
     searching, searchError, savedSearches,
@@ -84,20 +87,20 @@ export function SearchView() {
       {/* `ds-stagger`: motion standardization (no inline modal). */}
       <div className="search-v2__inner ds-stagger">
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Search & Discovery</h2>
+        <h2 className="view-toolbar__title">{t('Search & Discovery')}</h2>
         <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Find programs, messages, and documents across the workspace.</span>
+        <span className="view-toolbar__subtitle">{t('Find programs, messages, and documents across the workspace.')}</span>
         {searchTotal > 0 && (
           <>
             <div className="view-toolbar__sep" />
             <div className="view-toolbar__right">
               <div className="view-toolbar__stats">
-                <span>{searchTotal} <em>results</em></span>
-                {resultMix.tasks > 0 && <span>{resultMix.tasks} <em>task</em></span>}
-                {resultMix.programs > 0 && <span>{resultMix.programs} <em>program</em></span>}
-                {resultMix.meetings > 0 && <span>{resultMix.meetings} <em>meeting</em></span>}
-                {resultMix.comments > 0 && <span>{resultMix.comments} <em>comments</em></span>}
-                {resultMix.messages > 0 && <span>{resultMix.messages} <em>messages</em></span>}
+                <span>{searchTotal} <em>{t('results')}</em></span>
+                {resultMix.tasks > 0 && <span>{resultMix.tasks} <em>{t('task')}</em></span>}
+                {resultMix.programs > 0 && <span>{resultMix.programs} <em>{t('program')}</em></span>}
+                {resultMix.meetings > 0 && <span>{resultMix.meetings} <em>{t('meeting')}</em></span>}
+                {resultMix.comments > 0 && <span>{resultMix.comments} <em>{t('comments')}</em></span>}
+                {resultMix.messages > 0 && <span>{resultMix.messages} <em>{t('messages')}</em></span>}
               </div>
             </div>
           </>
@@ -119,7 +122,7 @@ export function SearchView() {
                     autoFocus
                     className="search-form__input"
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search messages, tasks, comments…"
+                    placeholder={t('Search messages, tasks, comments…')}
                     value={query}
                   />
                 </div>
@@ -128,20 +131,20 @@ export function SearchView() {
                   onChange={(e) => setSearchType(e.target.value)}
                   value={searchType}
                 >
-                  <option value="ALL">All</option>
-                  <option value="CHANNEL_MESSAGES">Messages</option>
-                  <option value="COMMENTS">Comments</option>
-                  <option value="TASKS">Tasks</option>
-                  <option value="PROGRAMS">Programs</option>
-                  <option value="MEETINGS">Meetings</option>
+                  <option value="ALL">{t('All')}</option>
+                  <option value="CHANNEL_MESSAGES">{t('Messages')}</option>
+                  <option value="COMMENTS">{t('Comments')}</option>
+                  <option value="TASKS">{t('Tasks')}</option>
+                  <option value="PROGRAMS">{t('Programs')}</option>
+                  <option value="MEETINGS">{t('Meetings')}</option>
                 </select>
-                <button className="search-form__submit" type="submit">Search</button>
+                <button className="search-form__submit" type="submit">{t('Search')}</button>
               </div>
             </form>
 
             {/* Suggested presets */}
             <div className="search-presets">
-              <span className="search-presets__label">Suggested:</span>
+              <span className="search-presets__label">{t('Suggested:')}</span>
               {SEARCH_PRESETS.map((preset) => (
                 <button
                   className="search-preset-chip"
@@ -157,20 +160,20 @@ export function SearchView() {
             {/* Hint / result meta */}
             <div className="search-meta">
               {searching ? (
-                <span className="search-hint">Searching…</span>
+                <span className="search-hint">{t('Searching…')}</span>
               ) : searchResults.length > 0 ? (
                 <div className="search-mix">
-                  <span className="search-hint">{searchTotal} results</span>
-                  <span className="search-mix__stat">{resultMix.tasks} task</span>
-                  <span className="search-mix__stat">{resultMix.programs} program</span>
-                  <span className="search-mix__stat">{resultMix.meetings} meeting</span>
-                  <span className="search-mix__stat">{resultMix.comments} comments</span>
-                  <span className="search-mix__stat">{resultMix.messages} messages</span>
+                  <span className="search-hint">{t('{{count}} results', { count: searchTotal })}</span>
+                  <span className="search-mix__stat">{t('{{count}} task', { count: resultMix.tasks })}</span>
+                  <span className="search-mix__stat">{t('{{count}} program', { count: resultMix.programs })}</span>
+                  <span className="search-mix__stat">{t('{{count}} meeting', { count: resultMix.meetings })}</span>
+                  <span className="search-mix__stat">{t('{{count}} comments', { count: resultMix.comments })}</span>
+                  <span className="search-mix__stat">{t('{{count}} messages', { count: resultMix.messages })}</span>
                 </div>
               ) : query ? (
-                <span className="search-hint">No results for "{query}"</span>
+                <span className="search-hint">{t('No results for "{{query}}"', { query })}</span>
               ) : (
-                <span className="search-hint">Type and press Enter to search</span>
+                <span className="search-hint">{t('Type and press Enter to search')}</span>
               )}
             </div>
 
@@ -189,8 +192,8 @@ export function SearchView() {
                   <circle cx="10.5" cy="10.5" r="6.5" />
                   <path strokeLinecap="round" d="m15.5 15.5 5 5" />
                 </svg>
-                <div className="empty-state-title">Search across ATLAS</div>
-                <div className="empty-state-desc">Programs, tasks, messages, blockers — find it all here.</div>
+                <div className="empty-state-title">{t('Search across ATLAS')}</div>
+                <div className="empty-state-desc">{t('Programs, tasks, messages, blockers — find it all here.')}</div>
               </div>
             )}
 
@@ -219,7 +222,7 @@ export function SearchView() {
                     </div>
                     <p className="search-result__snippet">{result.snippet}</p>
                     <div className="search-result__meta">
-                      <span>{result.author ?? 'Unknown'}</span>
+                      <span>{result.author ?? t('Unknown')}</span>
                       <span>·</span>
                       <time>{formatDate(result.createdAt)}</time>
                     </div>
@@ -236,7 +239,7 @@ export function SearchView() {
           {/* Saved Searches */}
           <div className="section-block">
             <div className="section-header">
-              <h3 className="section-title" style={{ fontSize: 13 }}>Saved Searches</h3>
+              <h3 className="section-title" style={{ fontSize: 13 }}>{t('Saved Searches')}</h3>
               <span className="section-badge">{savedSearches.length}</span>
             </div>
             {savedSearches.length > 0 ? (
@@ -251,8 +254,8 @@ export function SearchView() {
                     <div className="saved-item__top">
                       <strong style={{ fontSize: 13 }}>{ss.name}</strong>
                       {ss.isShared
-                        ? <span className="status-badge leading">Shared</span>
-                        : <span className="status-badge muted">Personal</span>
+                        ? <span className="status-badge leading">{t('Shared')}</span>
+                        : <span className="status-badge muted">{t('Personal')}</span>
                       }
                     </div>
                     {ss.description && (
@@ -263,17 +266,17 @@ export function SearchView() {
                 ))}
               </div>
             ) : (
-              <SectionState title="No saved searches yet" text="Save searches you use often." compact />
+              <SectionState title={t('No saved searches yet')} text={t('Save searches you use often.')} compact />
             )}
           </div>
 
           {/* Search Operators */}
           <div className="section-block">
             <div className="section-header">
-              <h3 className="section-title" style={{ fontSize: 13 }}>Search Operators</h3>
+              <h3 className="section-title" style={{ fontSize: 13 }}>{t('Search Operators')}</h3>
             </div>
             <div className="operator-list">
-              {SEARCH_OPERATORS.map(({ op, desc }) => (
+              {getSearchOperators().map(({ op, desc }) => (
                 <div className="operator-row" key={op}>
                   <code className="op-chip">{op}</code>
                   <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{desc}</span>

@@ -2,7 +2,7 @@
  *
  * Scope: prefixed with --ds-* to coexist with legacy tokens.css.
  * Principles:
- *   - One typeface (IBM Plex Sans + Plex Mono)
+ *   - Public Sans (brand sans, self-hosted) + Geist Mono (code/ID)
  *   - Tight type scale (7 sizes)
  *   - Neutral-led palette, semantic colors only for status
  *   - Hairline borders, no ambient shadows
@@ -14,8 +14,8 @@
 
 :root {
   /* ─── Typography ─────────────────────────────────────────── */
-  --ds-font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --ds-font-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', 'JetBrains Mono', monospace;
+  --ds-font-sans: 'Public Sans Variable', 'Public Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --ds-font-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, 'SFMono-Regular', 'JetBrains Mono', monospace;
 
   /* Size scale — 11 / 13 / 14 / 16 / 20 / 28 / 40 px */
   --ds-text-11: 0.6875rem;  /* meta, code tokens */
@@ -63,6 +63,12 @@
   --ds-brand-500: #2E8B4E;
   --ds-brand-600: #1F6B35;  /* primary brand */
   --ds-brand-700: #185627;
+
+  /* CTA fill — SOLID button background (white text on top). Semantic, dedicated:
+     brand-600/700 flip to bright mint in dark mode for ink/dot/accent use, which
+     washes out as a button fill. Buttons MUST point here, not at brand-600. */
+  --ds-cta-fill:        var(--ds-brand-600);
+  --ds-cta-fill-hover:  var(--ds-brand-700);
 
   /* ─── Color: Semantic (status only — not decoration) ─────── */
   --ds-red-50:    #FEF2F2;
@@ -191,6 +197,20 @@
   --ds-red-50:    rgba(220,38,38,0.14);
   --ds-amber-50:  rgba(217,119,6,0.14);
   --ds-green-50:  rgba(22,163,74,0.14);
+
+  /* Brand scale — light tints/inks would leak light surfaces on dark (soft-brand
+   * Pill bg/dot/text). Mirror the status-tint treatment: tint backdrops + bright
+   * ink. brand-500 (CTA fill) reads on black already, left unchanged. */
+  --ds-brand-50:  rgba(46,139,78,0.16);
+  --ds-brand-100: rgba(46,139,78,0.26);
+  --ds-brand-600: #34D399;
+  --ds-brand-700: #6EE7B7;
+
+  /* CTA fill (dark) — stays a SOLID saturated green so white text reads (mint
+     brand-600 above is ink-only). brand-500 #2E8B4E ≈ 4.3:1 vs white; hover a
+     touch brighter for feedback while staying AA-large. */
+  --ds-cta-fill:        var(--ds-brand-500);
+  --ds-cta-fill-hover:  #34A05E;
 
   /* Tone foreground (dark) — lebih terang agar kontras di atas permukaan gelap. */
   --tone-red:     #F87171;

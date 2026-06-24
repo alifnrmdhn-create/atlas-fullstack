@@ -39,7 +39,7 @@
   gap: 6px;
   padding: 7px 14px;
   background: var(--brand-strong, #16a34a);
-  color: #fff;
+  color: var(--text-inverse);
   border: 0;
   border-radius: 6px;
   font-size: 12.5px;
@@ -248,11 +248,11 @@
 }
 .exec-perhatian-card__badge[data-status='amber'] {
   background: var(--amber-strong, #d97706);
-  color: #fff;
+  color: var(--text-inverse);
 }
 .exec-perhatian-card__badge[data-status='red'] {
   background: var(--red-strong, #dc2626);
-  color: #fff;
+  color: var(--text-inverse);
 }
 .exec-perhatian-card__deadline {
   font-size: 11px;

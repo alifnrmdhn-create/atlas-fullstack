@@ -17,6 +17,9 @@
  * Sekarang component pure presentational; parent yang track lifecycle.
  */
 
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
+
 interface Props {
     savedAt: Date
     source?: 'server' | 'local'
@@ -31,12 +34,12 @@ interface Props {
 
 function formatTime(d: Date): string {
     const minutes = Math.floor((Date.now() - d.getTime()) / 60_000)
-    if (minutes < 1)  return 'a few seconds ago'
-    if (minutes < 60) return `${minutes}m ago`
+    if (minutes < 1)  return i18n.t('a few seconds ago')
+    if (minutes < 60) return i18n.t('{{count}}m ago', { count: minutes })
     const hours = Math.floor(minutes / 60)
-    if (hours < 24)   return `${hours}h ago`
+    if (hours < 24)   return i18n.t('{{count}}h ago', { count: hours })
     const days = Math.floor(hours / 24)
-    return `${days}d ago`
+    return i18n.t('{{count}}d ago', { count: days })
 }
 
 export function DraftRestoreBanner({
@@ -50,6 +53,7 @@ export function DraftRestoreBanner({
     discardRemainingMs,
     discardTotalMs,
 }: Props) {
+    const { t } = useTranslation()
     if (discardPending) {
         const seconds = Math.ceil(discardRemainingMs / 1000)
         const progressPct = Math.max(0, Math.min(100, (discardRemainingMs / discardTotalMs) * 100))
@@ -62,7 +66,7 @@ export function DraftRestoreBanner({
                     />
                 </div>
                 <span className="draft-restore-banner__text">
-                    Draft will be deleted in {seconds}s…
+                    {t('Draft will be deleted in {{seconds}}s…', { seconds })}
                 </span>
                 <div className="draft-restore-banner__actions">
                     <button
@@ -70,7 +74,7 @@ export function DraftRestoreBanner({
                         className="draft-restore-banner__btn draft-restore-banner__btn--primary"
                         onClick={onCancelDiscard}
                     >
-                        Undo
+                        {t('Undo')}
                     </button>
                 </div>
             </div>
@@ -81,8 +85,8 @@ export function DraftRestoreBanner({
         <div className="draft-restore-banner" role="status">
             <span className="draft-restore-banner__icon" aria-hidden="true">↺</span>
             <span className="draft-restore-banner__text">
-                Recover draft from <strong>{formatTime(savedAt)}</strong>
-                {source === 'local' ? ' (local backup)' : ''}.
+                {t('Recover draft from')} <strong>{formatTime(savedAt)}</strong>
+                {source === 'local' ? t(' (local backup)') : ''}.
             </span>
             <div className="draft-restore-banner__actions">
                 <button
@@ -90,21 +94,21 @@ export function DraftRestoreBanner({
                     className="draft-restore-banner__btn draft-restore-banner__btn--primary"
                     onClick={onRestore}
                 >
-                    Restore
+                    {t('Restore')}
                 </button>
                 <button
                     type="button"
                     className="draft-restore-banner__btn draft-restore-banner__btn--ghost"
                     onClick={onStartDiscard}
                 >
-                    Discard draft
+                    {t('Discard draft')}
                 </button>
                 {onDismiss && (
                     <button
                         type="button"
                         className="draft-restore-banner__dismiss"
                         onClick={onDismiss}
-                        aria-label="Close"
+                        aria-label={t('Close')}
                     >
                         ×
                     </button>

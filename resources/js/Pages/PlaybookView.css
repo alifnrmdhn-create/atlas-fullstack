@@ -395,12 +395,12 @@
   margin-right: 6px;
   vertical-align: 0.06em;
   flex-shrink: 0;
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.05) inset;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.05) inset; /* dark-allow: faint inset on dot; dark covered by [data-theme=dark] override below */
 }
-.pb-body .pb-dot--green { background: #16a34a; }
-.pb-body .pb-dot--amber { background: #f59e0b; }
-.pb-body .pb-dot--red   { background: #dc2626; }
-.pb-body .pb-dot--blue  { background: #2563eb; }
+.pb-body .pb-dot--green { background: var(--green); }
+.pb-body .pb-dot--amber { background: var(--yellow); }
+.pb-body .pb-dot--red   { background: var(--red); }
+.pb-body .pb-dot--blue  { background: var(--blue); }
 [data-theme="dark"] .pb-body .pb-dot {
   box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.08) inset;
 }
@@ -875,13 +875,13 @@
 .pb-mermaid svg g.tier1 text,    .pb-mermaid svg g.tier1 tspan,    .pb-mermaid svg g.tier1 .nodeLabel,    .pb-mermaid svg g.tier1 foreignObject *,
 .pb-mermaid svg g.tier2 text,    .pb-mermaid svg g.tier2 tspan,    .pb-mermaid svg g.tier2 .nodeLabel,    .pb-mermaid svg g.tier2 foreignObject *,
 .pb-mermaid svg g.tier3 text,    .pb-mermaid svg g.tier3 tspan,    .pb-mermaid svg g.tier3 .nodeLabel,    .pb-mermaid svg g.tier3 foreignObject * {
-  fill: #ffffff !important;
-  color: #ffffff !important;
+  fill: var(--text-inverse) !important;
+  color: var(--text-inverse) !important;
 }
 
 /* make edge labels clean */
 .pb-mermaid svg .edgeLabel .label {
-  background: #f8faf8 !important;
+  background: var(--surface-1) !important;
   padding: 1px 5px;
   border-radius: 3px;
   font-size: 11px !important;
@@ -891,7 +891,7 @@
   display: inline-block;
   width: 20px;
   height: 20px;
-  border: 2px solid #d4e3d4;
+  border: 2px solid var(--panel-border);
   border-top-color: #2d6a4f;
   border-radius: 50%;
   animation: pb-spin 0.7s linear infinite;
@@ -908,8 +908,11 @@
   padding: 0.5rem;
 }
 
-/* Dark mode: mermaid surface inherits transparent — only text fill needs override
- * so SVG labels read against the dark canvas. */
-[data-theme="dark"] .pb-mermaid svg text {
-  fill: var(--text, #f3f4f6) !important;
+/* Dark mode: node fills & label inks are produced natively by mermaid — it is
+ * re-initialized with the dark palette and the classDef source is rewritten to
+ * dark tints (see initMermaid + adaptMermaidForDark in PlaybookView.tsx). No
+ * blanket text-fill override here, so per-node colors (incl. white text on solid
+ * status fills) stay intact. Edge-label chrome only: */
+[data-theme="dark"] .pb-mermaid svg .edgeLabel .label {
+  background: var(--surface-1) !important;
 }

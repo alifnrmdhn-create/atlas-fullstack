@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useActiveNav } from '../hooks/useActiveNav'
 import { resolveContextPanel } from '../lib/context-panel-config'
@@ -32,6 +33,7 @@ function writeCollapsed(path: string, value: boolean) {
 }
 
 export function ContextPanel() {
+  const { t } = useTranslation()
   const { activePath, pathname } = useActiveNav()
   const def = resolveContextPanel(activePath, pathname)
 
@@ -57,7 +59,7 @@ export function ContextPanel() {
   return (
     <aside
       className={`context-panel${collapsed ? ' context-panel--collapsed' : ''}`}
-      aria-label={title}
+      aria-label={t(title)}
     >
       <div className="context-panel__header">
         {collapsed ? (
@@ -65,20 +67,20 @@ export function ContextPanel() {
             type="button"
             className="context-panel__expand-btn"
             onClick={toggle}
-            aria-label="Open panel"
-            title="Open panel"
+            aria-label={t('Open panel')}
+            title={t('Open panel')}
           >
             <ChevronRight size={14} />
           </button>
         ) : (
           <>
-            <h2 className="context-panel__title">{title}</h2>
+            <h2 className="context-panel__title">{t(title)}</h2>
             <button
               type="button"
               className="context-panel__collapse-btn"
               onClick={toggle}
-              aria-label="Close panel"
-              title="Close panel"
+              aria-label={t('Close panel')}
+              title={t('Close panel')}
             >
               <ChevronLeft size={14} />
             </button>

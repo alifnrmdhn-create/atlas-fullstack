@@ -211,7 +211,7 @@
 .workboard-v2 .toolbar-action-btn {
   height: 32px;
   padding: 0 14px;
-  background: var(--ds-brand-600);
+  background: var(--ds-cta-fill);
   color: var(--ds-text-on-brand);
   border: 0;
   border-radius: var(--ds-radius-md);
@@ -224,7 +224,7 @@
 }
 
 .workboard-v2 .toolbar-action-btn:hover {
-  background: var(--ds-brand-700);
+  background: var(--ds-cta-fill-hover);
 }
 
 /* ─── Board status / rollback ───────────────────────────── */
@@ -281,7 +281,7 @@
 }
 
 .workboard-v2 .board-rollback-banner__close:hover {
-  background: rgba(220, 38, 38, 0.1);
+  background: var(--red-dim);
 }
 
 /* ─── Workspace + main ──────────────────────────────────── */
@@ -373,9 +373,9 @@
 }
 
 .workboard-v2 .kanban-col__header--backlog::before     { background: var(--ds-neutral-300); }
-.workboard-v2 .kanban-col__header--ready::before       { background: #6366F1; }
+.workboard-v2 .kanban-col__header--ready::before       { background: var(--blue); }
 .workboard-v2 .kanban-col__header--in_progress::before { background: var(--ds-amber-500); }
-.workboard-v2 .kanban-col__header--in_review::before   { background: #A855F7; }
+.workboard-v2 .kanban-col__header--in_review::before   { background: var(--purple); }
 .workboard-v2 .kanban-col__header--blocked::before     { background: var(--ds-red-500); }
 .workboard-v2 .kanban-col__header--completed::before   { background: var(--ds-green-500); }
 /* Lane variants — 3-lane restructure 2026-05-25 */
@@ -474,7 +474,7 @@
  * for daily-use kanban interaction. */
 .workboard-v2 .work-card:hover {
   border-color: var(--ds-border-strong);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--ds-shadow-popover);
   transform: translateY(-1px);
 }
 
@@ -485,12 +485,11 @@
 
 .workboard-v2 .work-card--blocked:hover {
   box-shadow: inset 2px 0 0 0 var(--ds-red-500),
-              0 2px 4px rgba(0, 0, 0, 0.06),
-              0 1px 2px rgba(0, 0, 0, 0.04);
+              var(--ds-shadow-popover);
 }
 
 .workboard-v2 .work-card--drag-overlay {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  box-shadow: var(--ds-shadow-modal);
   cursor: grabbing;
   transform: rotate(1deg);
 }
@@ -512,7 +511,7 @@
 
 .workboard-v2 .work-card__dot--low      { background: var(--ds-neutral-400); }
 .workboard-v2 .work-card__dot--medium   { background: var(--ds-amber-500); }
-.workboard-v2 .work-card__dot--high     { background: #EA580C; }
+.workboard-v2 .work-card__dot--high     { background: var(--orange); }
 .workboard-v2 .work-card__dot--critical { background: var(--ds-red-500); }
 
 .workboard-v2 .work-card__title {
@@ -585,7 +584,41 @@
   color: var(--ds-text-tertiary);
 }
 
+/* Footer meta: persen + avatar assignee (ganti teks nama-depan → avatar inisial,
+ * lebih cepat dipindai). */
+.workboard-v2 .work-card__footer-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+}
+.workboard-v2 .work-card__pct {
+  font-size: 11px;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.workboard-v2 .work-card__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--ds-neutral-100);
+  border: 1px solid var(--ds-border-subtle);
+  font-size: 9px;
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: .01em;
+  color: var(--ds-text-secondary);
+  flex-shrink: 0;
+}
+
 /* ─── List view (when boardMode === 'list') ─────────────── */
+
+/* Attention Queue: jarak dari board (saat di bawah) & dari daftar program
+ * (saat di atas, By Program) — workboard-main tak punya gap antar-blok. */
+.workboard-v2 .attention-panel { margin-top: 16px; margin-bottom: 16px; }
 
 .workboard-v2 .panel {
   background: var(--ds-surface-card);
@@ -698,14 +731,17 @@
   gap: 6px;
   align-items: stretch;
 }
+/* Tiap stat = chip berbatas tipis supaya angka + label terbaca sebagai satu
+ * unit. Sebelumnya gap antar-stat (6px) ~ gap angka↔label (4px) → "5 7 days"
+ * terbaca menyatu seperti dua angka. */
 .workboard-v2 .wb-summary-stat {
   display: inline-flex;
   align-items: baseline;
-  gap: 4px;
-  padding: 4px 8px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 6px;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--ds-neutral-50, rgba(0, 0, 0, .02));
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-md, 8px);
   font-size: 12px;
   color: var(--text-secondary, #6b7280);
   cursor: default;
@@ -802,7 +838,7 @@
 .task-detail-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: color-mix(in srgb, #000 45%, transparent);
+  background: var(--scrim);
   backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
@@ -1317,4 +1353,236 @@
   .workboard-v2 .kanban-col__header:hover { background: transparent; }
   .workboard-v2 .work-card:active { transform: scale(0.99); transition: transform .08s ease; }
   .workboard-v2 .wi-list-row:active { background: color-mix(in srgb, var(--ds-text-primary) 6%, transparent); }
+}
+
+/* ── By-Program view (one-door Workboard, 2026-06-24) ──────────────────────
+   Program-grouped board: each section = program header (auto health badge +
+   reported condition + progress + actions) over 3 compact lanes. */
+.workboard-v2 .wb-prog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workboard-v2 .wb-prog {
+  border: 1px solid var(--ds-border-tertiary, rgba(0, 0, 0, .08));
+  border-radius: 12px;
+  background: var(--ds-surface, #fff);
+  overflow: hidden;
+}
+
+.workboard-v2 .wb-prog__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ds-border-tertiary, rgba(0, 0, 0, .06));
+  background: var(--ds-surface-subtle, var(--ds-neutral-50, rgba(0, 0, 0, .015)));
+}
+
+.workboard-v2 .wb-prog__id { flex: 1 1 240px; min-width: 0; }
+.workboard-v2 .wb-prog__title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.workboard-v2 .wb-prog__code {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--ds-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.workboard-v2 .wb-prog__name {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ds-text-primary);
+}
+
+/* Condition pill — the 4 statuses, surfaced on the header. */
+.workboard-v2 .wb-prog__cond {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.workboard-v2 .wb-prog__cond--green     { background: color-mix(in srgb, var(--ds-green-500) 13%, transparent); border-color: color-mix(in srgb, var(--ds-green-500) 45%, transparent); color: var(--tone-green); }
+.workboard-v2 .wb-prog__cond--yellow    { background: color-mix(in srgb, var(--ds-amber-500) 16%, transparent); border-color: color-mix(in srgb, var(--ds-amber-500) 45%, transparent); color: var(--tone-amber); }
+.workboard-v2 .wb-prog__cond--red,
+.workboard-v2 .wb-prog__cond--overdue   { background: color-mix(in srgb, var(--ds-red-500) 13%, transparent); border-color: color-mix(in srgb, var(--ds-red-500) 45%, transparent); color: var(--tone-red); }
+.workboard-v2 .wb-prog__cond--completed { background: var(--ds-neutral-100, rgba(0,0,0,.06)); border-color: var(--ds-border-tertiary); color: var(--ds-text-secondary); }
+
+.workboard-v2 .wb-prog__reported {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--ds-brand-500, #2E8B4E) 12%, transparent);
+  color: var(--ds-brand-700, var(--ds-text-primary));
+  border: 1px dashed color-mix(in srgb, var(--ds-brand-500, #2E8B4E) 45%, transparent);
+}
+
+.workboard-v2 .wb-prog__metrics {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 0 1 auto;
+}
+.workboard-v2 .wb-prog__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+.workboard-v2 .wb-prog__progress-track { width: 90px; }
+.workboard-v2 .wb-prog__progress-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.workboard-v2 .wb-prog__counts {
+  display: flex;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--ds-text-secondary);
+}
+.workboard-v2 .wb-prog__count-done { color: var(--tone-green); }
+.workboard-v2 .wb-prog__count-overdue { color: var(--tone-red); font-weight: 600; }
+
+.workboard-v2 .wb-prog__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.workboard-v2 .wb-prog__plan-link {
+  color: var(--ds-text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.workboard-v2 .wb-prog__plan-link:hover { color: var(--ds-text-primary); }
+
+/* 3 compact lanes */
+.workboard-v2 .wb-prog__lanes {
+  display: grid;
+  /* Lebar kolom dari inline --wb-lane-cols (lane kosong dikolapskan). Memakai
+   * var, bukan grid-template-columns inline langsung, supaya media query stack
+   * (≤1024) tetap bisa menang atas inline style. */
+  grid-template-columns: var(--wb-lane-cols, repeat(3, 1fr));
+  gap: 1px;
+  background: var(--ds-border-tertiary, rgba(0, 0, 0, .06));
+}
+.workboard-v2 .wb-prog__lane { background: var(--ds-surface, #fff); padding: 10px 12px 14px; min-width: 0; }
+.workboard-v2 .wb-prog__lane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--ds-text-secondary);
+}
+.workboard-v2 .wb-prog__lane-body { display: flex; flex-direction: column; gap: 8px; }
+.workboard-v2 .wb-prog__lane-empty {
+  padding: 12px 0;
+  text-align: center;
+  color: var(--ds-text-tertiary, var(--ds-text-secondary));
+  font-size: 12px;
+  opacity: .5;
+}
+/* Lane tanpa kartu dikolapskan ke kolom ramping (lebar dari inline grid-cols
+ * di JSX). Redupkan head & rapatkan padding supaya tidak menarik perhatian. */
+.workboard-v2 .wb-prog__lane--empty { padding-left: 10px; padding-right: 10px; }
+.workboard-v2 .wb-prog__lane--empty .wb-prog__lane-head { opacity: .55; }
+.workboard-v2 .wb-prog__lane--empty .wb-prog__lane-empty { padding: 6px 0; }
+
+/* ── Program collapse toggle (By Program; On Track/Completed dilipat default) ── */
+.workboard-v2 .wb-prog__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin-right: 1px;
+  margin-left: -3px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--ds-text-tertiary);
+  flex-shrink: 0;
+}
+.workboard-v2 .wb-prog__toggle:hover { background: var(--ds-neutral-100); color: var(--ds-text-secondary); }
+.workboard-v2 .wb-prog__caret { font-size: 10px; line-height: 1; }
+/* Program terlipat = baris ringkas (header saja, lanes tak dirender). */
+.workboard-v2 .wb-prog--collapsed .wb-prog__head { border-bottom: 0; }
+.workboard-v2 .wb-prog--collapsed .wb-prog__name {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ds-text-secondary);
+}
+
+/* ── Lane Completed: head sebagai toggle + tombol fold ── */
+.workboard-v2 .wb-prog__lane-head--toggle {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 5px;
+  padding: 0;
+  margin-bottom: 8px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--ds-text-secondary);
+}
+.workboard-v2 .wb-prog__lane-head--toggle:hover { color: var(--ds-text-primary); }
+.workboard-v2 .wb-prog__lane-head--toggle .section-badge { margin-left: auto; }
+.workboard-v2 .wb-prog__lane-caret { font-size: 9px; color: var(--ds-text-tertiary); }
+.workboard-v2 .wb-prog__lane-fold {
+  width: 100%;
+  padding: 10px 8px;
+  background: transparent;
+  border: 1px dashed var(--ds-border-subtle);
+  border-radius: 6px;
+  color: var(--ds-text-tertiary);
+  font-family: var(--ds-font-sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: color var(--ds-duration-fast) var(--ds-ease-standard),
+              border-color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.workboard-v2 .wb-prog__lane-fold:hover {
+  color: var(--tone-green);
+  border-color: color-mix(in srgb, var(--ds-green-500) 40%, transparent);
+}
+
+/* Stack lanes on narrow viewports */
+@media (max-width: 1024px) { /* bp-allow: matches sidebar collapse tier */
+  .workboard-v2 .wb-prog__lanes { grid-template-columns: 1fr; }
+  .workboard-v2 .wb-prog__metrics { flex-basis: 100%; }
+}
+@media (max-width: 640px) {
+  .workboard-v2 .wb-prog__head { gap: 10px; }
+  .workboard-v2 .wb-prog__actions { width: 100%; }
+  .workboard-v2 .wb-prog__actions .btn { flex: 1; }
 }

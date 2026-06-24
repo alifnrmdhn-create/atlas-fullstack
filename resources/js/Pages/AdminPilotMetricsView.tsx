@@ -4,6 +4,7 @@
  */
 import { usePage } from '@inertiajs/react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import './AdminViews.css'
 
@@ -59,6 +60,7 @@ function MetricCard({
   suffix?: string
   helper?: string
 }) {
+  const { t } = useTranslation()
   const tone = comparison === 'pass' ? 'green' : comparison === 'fail' ? 'red' : 'muted'
   return (
     <div className="pilot-card">
@@ -69,7 +71,7 @@ function MetricCard({
           {value !== null && suffix ? <span className="pilot-card__suffix"> {suffix}</span> : null}
         </span>
         {target !== undefined && (
-          <span className="pilot-card__target">target: {target}{suffix ? ` ${suffix}` : ''}</span>
+          <span className="pilot-card__target">{t('target')}: {target}{suffix ? ` ${suffix}` : ''}</span>
         )}
       </div>
       {helper && <span className="pilot-card__helper">{helper}</span>}
@@ -78,6 +80,7 @@ function MetricCard({
 }
 
 export default function AdminPilotMetricsView() {
+  const { t } = useTranslation()
   const { metrics: initial, criteria } = usePage<PageProps>().props
   const [metrics, setMetrics] = useState<Metrics>(initial)
   const [refreshing, setRefreshing] = useState(false)
@@ -102,10 +105,10 @@ export default function AdminPilotMetricsView() {
   return (
     <div className="ds admin-v2 view-pilot-metrics ds-stagger">
       <div className="perf-toolbar">
-        <span className="perf-toolbar__title">Pilot DKM — Metrics Dashboard</span>
+        <span className="perf-toolbar__title">{t('Pilot DKM — Metrics Dashboard')}</span>
         <div className="perf-toolbar__sep" />
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          Last computed: {formatDate(metrics.computedAt)}
+          {t('Last computed')}: {formatDate(metrics.computedAt)}
         </span>
         <div className="perf-toolbar__right">
           <button
@@ -114,7 +117,7 @@ export default function AdminPilotMetricsView() {
             onClick={() => void refresh()}
             disabled={refreshing}
           >
-            {refreshing ? 'Loading…' : '↻ Refresh'}
+            {refreshing ? t('Loading…') : `↻ ${t('Refresh')}`}
           </button>
         </div>
       </div>
@@ -127,9 +130,9 @@ export default function AdminPilotMetricsView() {
         {/* Summary banner */}
         <div className="pilot-banner">
           <div>
-            <span className="pilot-banner__label">Pilot status</span>
+            <span className="pilot-banner__label">{t('Pilot status')}</span>
             <span className="pilot-banner__value">
-              {evalTotal === 0 ? 'No data yet' : `${passCount}/${evalTotal} criteria met`}
+              {evalTotal === 0 ? t('No data yet') : t('{{passCount}}/{{evalTotal}} criteria met', { passCount, evalTotal })}
             </span>
           </div>
           {metrics.directorate && (
@@ -138,42 +141,42 @@ export default function AdminPilotMetricsView() {
             </span>
           )}
           <span className="pilot-banner__users">
-            {metrics.totalUsers} active users · {metrics.totalEscalations} total escalations
+            {t('{{users}} active users · {{escalations}} total escalations', { users: metrics.totalUsers, escalations: metrics.totalEscalations })}
           </span>
         </div>
 
         {/* Metric cards */}
         <div className="pilot-cards-grid">
           <MetricCard
-            label="Avg Time-to-Disposition"
+            label={t('Avg Time-to-Disposition')}
             value={metrics.avgDispositionDays}
             target={criteria.avg_time_to_disposition_days}
             comparison={dispositionCmp}
-            suffix="days"
-            helper="REQUESTED → COMMITTED/DECLINED. Faster is better."
+            suffix={t('days')}
+            helper={t('REQUESTED → COMMITTED/DECLINED. Faster is better.')}
           />
           <MetricCard
-            label="Hit Rate (CLEARED)"
+            label={t('Hit Rate (CLEARED)')}
             value={metrics.hitRatePct}
             target={criteria.min_hit_rate_aggregate_pct}
             comparison={hitRateCmp}
             suffix="%"
-            helper="% of escalations successfully cleared out of the total."
+            helper={t('% of escalations successfully cleared out of the total.')}
           />
           <MetricCard
-            label="Active Users"
+            label={t('Active Users')}
             value={metrics.activeUsersPct}
             target={criteria.min_active_users_pct}
             comparison={activeUsersCmp}
             suffix="%"
-            helper="% of DKM users who have created or dispositioned an escalation."
+            helper={t('% of DKM users who have created or dispositioned an escalation.')}
           />
         </div>
 
         {/* Status breakdown */}
         {Object.keys(metrics.statusBreakdown).length > 0 && (
           <div className="pilot-section">
-            <h3 className="pilot-section__title">Escalation Status Distribution</h3>
+            <h3 className="pilot-section__title">{t('Escalation Status Distribution')}</h3>
             <div className="pilot-status-grid">
               {Object.entries(metrics.statusBreakdown).map(([status, count]) => (
                 <div key={status} className="pilot-status-item">
@@ -187,8 +190,8 @@ export default function AdminPilotMetricsView() {
 
         {criteria.evaluation_period_weeks && (
           <p className="pilot-footer-note">
-            Evaluation window: {criteria.evaluation_period_weeks} weeks since pilot release.
-            Success criteria are configured in <code>config/atlas-thresholds.php</code>.
+            {t('Evaluation window: {{weeks}} weeks since pilot release.', { weeks: criteria.evaluation_period_weeks })}{' '}
+            {t('Success criteria are configured in')} <code>config/atlas-thresholds.php</code>.
           </p>
         )}
       </div>

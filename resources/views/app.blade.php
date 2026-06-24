@@ -15,10 +15,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
-    {{-- Fonts: preconnect + parallel link. Avoids render-blocking @import inside CSS. --}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap">
+    {{-- Fonts self-hosted via @fontsource (Public Sans + Geist Mono), di-bundle di app.tsx. Tanpa CDN call. --}}
 
     @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.tsx'])

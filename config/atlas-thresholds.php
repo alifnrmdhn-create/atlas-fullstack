@@ -38,6 +38,14 @@ return [
         'stale_after_days' => env('ATLAS_PROGRESS_STALE_DAYS', 7),
     ],
 
+    // ── Focus disposition (Jun 2026) ──────────────────────────────────────────
+    // Berapa hari item "Needs Action" yang sudah ditindaklanjuti atasan
+    // (support/reroute/handled) disembunyikan dari Focus sebelum muncul lagi bila
+    // sinyalnya masih ada. Re-nudge yang disengaja, bukan permanen.
+    'focus' => [
+        'disposition_mute_days' => env('ATLAS_FOCUS_MUTE_DAYS', 7),
+    ],
+
     // ── Refleksi Mingguan (May 2026) ──────────────────────────────────────────
     // Cadence wajib mingguan: data posisi s.d. Jumat, deadline submit Sabtu
     // 12:00 WIB. Setelah deadline submit tetap diizinkan tapi di-flag isLate.

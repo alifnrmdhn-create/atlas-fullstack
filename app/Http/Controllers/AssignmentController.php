@@ -156,9 +156,16 @@ class AssignmentController extends Controller
      * Kirim notifikasi ke pihak yang harus bertindak setelah transisi:
      *  - masuk/maju review (IN_REVIEW) → reviewer giliran sekarang
      *  - RETURN (kembali DIKERJAKAN)   → PIC (assignee), perlu revisi
+     *  - REOPEN (kembali DIKERJAKAN)   → PIC, penugasan dibuka lagi
      *  - REJECT (REJECTED)            → PIC, ditolak
+     *  - CANCEL (DIBATALKAN)          → PIC, dibatalkan
      *  - approve final (SELESAI)      → PIC, disetujui & selesai
      * Lewati bila penerima = aktor (mis. self-assign yang submit→selesai sendiri).
+     *
+     * Tiap kejadian punya TYPE sendiri supaya label/ikon di lonceng akurat —
+     * dulu CANCEL & REOPEN tidak menotifikasi sama sekali (PIC tak tahu) dan
+     * notifikasi assignment lama ter-seed sbg TASK_ASSIGNED generik (audit notif
+     * 2026-06-24).
      */
     private function notifyAfterTransition(Assignment $a, string $action, int $actorId): void
     {
@@ -174,6 +181,14 @@ class AssignmentController extends Controller
             $recipientId = $a->assigneeId;
             $type = 'ASSIGNMENT_RETURNED';
             $message = "Assignment returned for revision: {$a->title}";
+        } elseif ($a->status === AssignmentService::STATUS_DIKERJAKAN && $action === 'REOPEN') {
+            $recipientId = $a->assigneeId;
+            $type = 'ASSIGNMENT_REOPENED';
+            $message = "Assignment reopened — please continue: {$a->title}";
+        } elseif ($a->status === AssignmentService::STATUS_DIBATALKAN) {
+            $recipientId = $a->assigneeId;
+            $type = 'ASSIGNMENT_CANCELLED';
+            $message = "Assignment cancelled: {$a->title}";
         } elseif ($a->status === AssignmentService::STATUS_REJECTED) {
             $recipientId = $a->assigneeId;
             $type = 'ASSIGNMENT_REJECTED';

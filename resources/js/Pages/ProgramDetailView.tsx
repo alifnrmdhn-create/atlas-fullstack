@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useId, useRef } from 'react'
 import { createPortal, flushSync } from 'react-dom'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 import { usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api, ApiRequestError, extractErrorMessage } from '../lib/api'
@@ -67,11 +69,11 @@ const daysUntil = (dateStr: string): number => {
 }
 
 const formatDaysLabel = (days: number): { label: string; color: string; tone: 'critical' | 'warning' | 'notice' | 'muted' } => {
-  if (days < 0) return { label: `${Math.abs(days)} days overdue`, color: 'var(--red)', tone: 'critical' }
-  if (days === 0) return { label: 'Today', color: 'var(--yellow)', tone: 'warning' }
-  if (days <= 7) return { label: `${days} days left`, color: 'var(--yellow)', tone: 'warning' }
-  if (days <= 30) return { label: `${days} days left`, color: 'var(--blue)', tone: 'notice' }
-  return { label: `${days} days left`, color: 'var(--text-muted)', tone: 'muted' }
+  if (days < 0) return { label: i18n.t('{{count}} days overdue', { count: Math.abs(days) }), color: 'var(--red)', tone: 'critical' }
+  if (days === 0) return { label: i18n.t('Today'), color: 'var(--yellow)', tone: 'warning' }
+  if (days <= 7) return { label: i18n.t('{{count}} days left', { count: days }), color: 'var(--yellow)', tone: 'warning' }
+  if (days <= 30) return { label: i18n.t('{{count}} days left', { count: days }), color: 'var(--blue)', tone: 'notice' }
+  return { label: i18n.t('{{count}} days left', { count: days }), color: 'var(--text-muted)', tone: 'muted' }
 }
 
 const fmtDateShort = (iso: string | null | undefined): string => {
@@ -133,15 +135,16 @@ type WorkstreamDetail = {
  * jawab" konsisten dengan field di planning panel (bukan "PIC").
  */
 function TaskPicChip({ picPersons }: { picPersons?: Array<{ id: number; name: string }> }) {
+  const { t } = useTranslation()
   const list = picPersons ?? []
   if (list.length === 0) {
     return (
-      <span className="wi-row__pic wi-row__pic--empty" title="No owner assigned">
+      <span className="wi-row__pic wi-row__pic--empty" title={t('No owner assigned')}>
         <svg aria-hidden="true" fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 12 12" width="11">
           <circle cx="6" cy="4" r="2"/>
           <path d="M2.5 10c.6-1.8 2-2.6 3.5-2.6S9 8.2 9.5 10"/>
         </svg>
-        <span className="wi-row__pic-name">Unassigned</span>
+        <span className="wi-row__pic-name">{t('Unassigned')}</span>
       </span>
     )
   }
@@ -151,7 +154,7 @@ function TaskPicChip({ picPersons }: { picPersons?: Array<{ id: number; name: st
   return (
     <span
       className="wi-row__pic"
-      title={`Person in charge: ${list.map(p => p.name).join(', ')}`}
+      title={t('Person in charge: {{names}}', { names: list.map(p => p.name).join(', ') })}
     >
       <span className="wi-row__pic-avatar" aria-hidden="true">{initials}</span>
       <span className="wi-row__pic-name">{primary.name}</span>
@@ -163,6 +166,7 @@ function TaskPicChip({ picPersons }: { picPersons?: Array<{ id: number; name: st
 // ── Component ──────────────────────────────────────────────────────────────
 
 export function ProgramDetailView() {
+  const { t } = useTranslation()
   const page = usePage<{ program?: { id: number } }>()
   const numId = Number(page.props.program?.id)
   const navigate = useInertiaNavigate()
@@ -234,7 +238,7 @@ export function ProgramDetailView() {
           setDetail(null)
           setDetailError('notfound')
         } else {
-          setDetailError(extractErrorMessage(err, 'Failed to load this program.'))
+          setDetailError(extractErrorMessage(err, t('Failed to load this program.')))
         }
       }
     } finally {
@@ -318,7 +322,9 @@ export function ProgramDetailView() {
   // Flag per-session: kalau user sudah klik "Buang draf", jangan re-apply prefill
   // saat modal dibuka ulang. Tanpa flag ini, prefill bakal kembali, autosave
   // save ulang, dan draft "muncul lagi" terus — cycle yang user keluhkan.
-  const [draftDiscarded, setDraftDiscarded] = useState(false)
+  // `draftDiscarded` value no longer read (openProgressForm now navigates to
+  // Workboard); the setter still drives the inline meeting-reflection draft flow.
+  const [, setDraftDiscarded] = useState(false)
   // Section "Detail tindak lanjut" — opsional, collapsed default. Auto-expand
   // kalau prefill mengisi kendala (dari blocker), atau user sudah pernah ketik
   // di salah satu field opsional.
@@ -332,70 +338,14 @@ export function ProgramDetailView() {
   const [draftDiscardRemainingMs, setDraftDiscardRemainingMs] = useState(0)
   const draftDiscardTimerRef = useRef<number | null>(null)
   const draftDiscardCommitRef = useRef<() => void>(() => {})
+  // One-door (2026-06-24): condition reporting (4-status + PICA + KPI actuals)
+  // now lives in the Workboard. These buttons deep-link there with the program
+  // focused and the Report Condition modal open — Programs stays Plan + recap.
+  // The inline reflection modal below remains only for the "reflect from a
+  // meeting action" flow (sessionStorage path), which opens it directly.
   const openProgressForm = useCallback(() => {
-    // Form open logic — 3 mode:
-    // 1. EDIT (hasSubmitted=true): populate dari existing log → user lihat
-    //    isi refleksi sebelumnya, bisa revisi. Sebelumnya bug: form kosong,
-    //    user pikir start fresh padahal updateOrCreate akan replace.
-    // 2. NEW with prefill (first submit, ada blocker): isi suggested defaults.
-    // 3. NEW empty (first submit + user sudah discard prefill).
-    // Period selalu lock ke meta.weekIso (server timezone WIB).
-    let shouldExpandOptional = false
-    setProgressForm(f => {
-      const meta = reflectionMeta
-      if (!meta || meta.exempt) {
-        return { ...f, period: meta?.weekIso || f.period }
-      }
-
-      // EDIT mode — load existing log content
-      if (meta.hasSubmitted && meta.existing) {
-        const ex = meta.existing
-        shouldExpandOptional = !!(
-          (ex.kendala ?? '').trim() ||
-          (ex.correctiveAction ?? '').trim() ||
-          (ex.nextStep ?? '').trim() ||
-          (ex.dukunganDibutuhkan ?? '').trim()
-        )
-        return {
-          ...f,
-          period: meta.weekIso,
-          healthAtTime: ex.healthAtTime,
-          narrative: ex.narrative,
-          kendala: ex.kendala ?? '',
-          correctiveAction: ex.correctiveAction ?? '',
-          nextStep: ex.nextStep ?? '',
-          dukunganDibutuhkan: ex.dukunganDibutuhkan ?? '',
-        }
-      }
-
-      // NEW mode — null-safe field check + auto-expand optional kalau ada isi
-      const fKendala = (f.kendala ?? '').trim()
-      const fCorrective = (f.correctiveAction ?? '').trim()
-      const fNextStep = (f.nextStep ?? '').trim()
-      const fDukungan = (f.dukunganDibutuhkan ?? '').trim()
-      const fNarrative = (f.narrative ?? '').trim()
-      shouldExpandOptional = !!(fKendala || fCorrective || fNextStep || fDukungan)
-
-      if (draftDiscarded) {
-        return { ...f, period: meta.weekIso }
-      }
-      const pf = meta.prefill
-      const pfKendala = (pf.kendala ?? '').trim()
-      const pfNarrative = pf.narrative ?? ''
-      // Kalau prefill mengisi kendala (dari blocker open), expand juga supaya
-      // user langsung lihat konteks yang sistem siapkan.
-      if (pfKendala && !fKendala) shouldExpandOptional = true
-      return {
-        ...f,
-        period: meta.weekIso,
-        healthAtTime: f.healthAtTime || pf.healthAtTime,
-        narrative: fNarrative ? f.narrative : pfNarrative,
-        kendala: fKendala ? f.kendala : (pf.kendala ?? ''),
-      }
-    })
-    setOptionalExpanded(shouldExpandOptional)
-    setShowProgressForm(true)
-  }, [reflectionMeta, draftDiscarded])
+    navigate(`/execution?report=${numId}`)
+  }, [navigate, numId])
 
   // Commit actual discard — dipanggil saat countdown habis ATAU saat modal
   // ditutup mid-pending (preserve user intent). Ref dipakai supaya callback
@@ -690,10 +640,8 @@ export function ProgramDetailView() {
   // Edit state — saat user klik pencil di KPI row. Form fields shared dengan
   // create flow (kpiInternal), tapi submit via PATCH /kpis/{id} bukan POST.
   const [editingKpiId, setEditingKpiId] = useState<number | null>(null)
-  const [recordingKpiId, setRecordingKpiId] = useState<number | null>(null)
-  const [kpiActual, setKpiActual] = useState({ measurementDate: new Date().toISOString().slice(0, 10), actualValue: '', statusNotes: '' })
-  const [kpiActualSaving, setKpiActualSaving] = useState(false)
-  const [kpiActualError, setKpiActualError] = useState<string | null>(null)
+  // KPI actual recording moved to the Workboard Report Condition modal
+  // (one-door, 2026-06-24). The KPI tab here is target/link management + recap.
 
   const loadKpiLinks = useCallback(async () => {
     if (!numId) return
@@ -722,7 +670,7 @@ export function ProgramDetailView() {
       // di ProgramsView/HomeFocus terupdate (dua-duanya kebutuhan terpisah).
       await Promise.all([loadKpiLinks(), loadDetail(true), loadOverview('refresh')])
     } catch (e: unknown) {
-      setKpiLinkError(extractErrorMessage(e, 'Failed to add KPI link.'))
+      setKpiLinkError(extractErrorMessage(e, t('Failed to add KPI link.')))
     } finally {
       setKpiLinkSaving(false)
     }
@@ -733,7 +681,7 @@ export function ProgramDetailView() {
       await api.delete(`/programs/${numId}/kpi-links/${code}`)
       await Promise.all([loadKpiLinks(), loadDetail(true), loadOverview('refresh')])
     } catch (err) {
-      showToast(extractErr(err, 'Failed to remove KPI link.'), 'error')
+      showToast(extractErr(err, t('Failed to remove KPI link.')), 'error')
     }
   }
 
@@ -773,7 +721,7 @@ export function ProgramDetailView() {
       // loadOverview → kpiCount di ProgramsView terupdate.
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (e: unknown) {
-      setKpiInternalError(extractErrorMessage(e, editingKpiId ? 'Failed to update KPI.' : 'Failed to create internal KPI.'))
+      setKpiInternalError(extractErrorMessage(e, editingKpiId ? t('Failed to update KPI.') : t('Failed to create internal KPI.')))
     } finally {
       setKpiInternalSaving(false)
     }
@@ -790,30 +738,6 @@ export function ProgramDetailView() {
     })
     setShowKpiInternalForm(true)
     setKpiInternalError(null)
-  }
-
-  const submitKpiActual = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!recordingKpiId) return
-    setKpiActualSaving(true)
-    setKpiActualError(null)
-    try {
-      await api.post(`/kpis/${recordingKpiId}/values`, {
-        measurementDate: kpiActual.measurementDate,
-        actualValue: Number(kpiActual.actualValue),
-        statusNotes: kpiActual.statusNotes || undefined,
-      })
-      setRecordingKpiId(null)
-      setKpiActual({ measurementDate: new Date().toISOString().slice(0, 10), actualValue: '', statusNotes: '' })
-      // loadDetail → detail.kpis refresh actualValue;
-      // loadOverview → workspace programs[id].healthStatus refresh (BE auto-
-      // recompute health via ProgramHealthService setelah simpan actual).
-      await Promise.all([loadDetail(true), loadOverview('refresh')])
-    } catch (e: unknown) {
-      setKpiActualError(extractErrorMessage(e, 'Failed to save KPI actual.'))
-    } finally {
-      setKpiActualSaving(false)
-    }
   }
 
   const linkedCodes = new Set(kpiLinks.map(l => l.apmsKpiCode))
@@ -873,27 +797,26 @@ export function ProgramDetailView() {
     const key = `atlas:progress-log-prefill.${numId}`
     const raw = sessionStorage.getItem(key)
     if (!raw) return
-    // Gate: hanya owner/admin yang boleh auto-open (sama dengan tombol manual).
+    // Gate: owner + co-PIC + admin (sejajar canWriteReflection & BE storeProgressLog).
     const role = (currentUser.roleType ?? '').toUpperCase()
-    const eligible = detail.ownerId === currentUser.id || ['SUPERADMIN', 'ADMIN'].includes(role)
+    const eligible = detail.ownerId === currentUser.id ||
+      (detail.picPersonIds ?? []).includes(currentUser.id) ||
+      ['SUPERADMIN', 'ADMIN'].includes(role)
     if (!eligible) {
       // Consume sessionStorage tetap supaya tidak menumpuk di session berikutnya.
       sessionStorage.removeItem(key)
       return
     }
     try {
-      const ctx = JSON.parse(raw) as { narrative?: string; kendala?: string; meetingTitle?: string; meetingDate?: string }
-      setProgressForm(f => ({
-        ...f,
-        narrative: ctx.narrative ?? f.narrative,
-        kendala: ctx.kendala ?? f.kendala,
-      }))
-      setShowProgressForm(true)
-      sessionStorage.removeItem(key)
+      // One-door: the meeting→reflection bridge hands off to the Workboard
+      // Report Condition modal. The prefill stays in sessionStorage — the modal
+      // consumes it (narrative/kendala) and clears the key on open.
+      JSON.parse(raw) // validate shape; malformed → cleared in catch
+      navigate(`/execution?report=${numId}`)
     } catch {
       sessionStorage.removeItem(key)
     }
-  }, [numId, detail, currentUser])
+  }, [numId, detail, currentUser, navigate])
 
   // ── Identitas Strategis (Charter View Phase 1) ────────────────────────
   // Inline editable: pilarStrategis (5-value enum) + strategicObjective
@@ -927,7 +850,7 @@ export function ProgramDetailView() {
       await loadDetail(true)
       return true
     } catch (err: unknown) {
-      setStrategicError(extractErrorMessage(err, 'Failed to save.'))
+      setStrategicError(extractErrorMessage(err, t('Failed to save.')))
       return false
     } finally {
       setStrategicSaving(false)
@@ -1016,7 +939,7 @@ export function ProgramDetailView() {
       epPicIds.some(id => !(detail.picPersonIds ?? []).includes(id)) ||
       epOwnerId !== detail.ownerId
     )
-    if (epDirty && !window.confirm('Discard unsaved changes?')) return
+    if (epDirty && !window.confirm(t('Discard unsaved changes?'))) return
     triggerEpClose()
   }, showEdit || epClosing)
 
@@ -1068,7 +991,7 @@ export function ProgramDetailView() {
       triggerEpClose()
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err: unknown) {
-      setEpError(extractErrorMessage(err, 'Failed to save.'))
+      setEpError(extractErrorMessage(err, t('Failed to save.')))
     } finally {
       setEpSaving(false)
     }
@@ -1106,7 +1029,7 @@ export function ProgramDetailView() {
       ciForm.status !== 'BACKLOG' || ciForm.priority !== 'MEDIUM' ||
       ciForm.budgetIdr !== '' || ciForm.budgetSpent !== '' ||
       ciPicIds.length > 0 || ciOwnerId !== null
-    if (ciDirty && !window.confirm('Discard unsaved changes?')) return
+    if (ciDirty && !window.confirm(t('Discard unsaved changes?'))) return
     triggerCiClose()
   }, showCreateIni || ciClosing)
 
@@ -1130,7 +1053,7 @@ export function ProgramDetailView() {
       triggerCiClose()
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err: unknown) {
-      setCiError(extractErrorMessage(err, 'Failed to create workstream.'))
+      setCiError(extractErrorMessage(err, t('Failed to create workstream.')))
     } finally {
       setCiSaving(false)
     }
@@ -1168,7 +1091,7 @@ export function ProgramDetailView() {
       eiPicIds.some(id => !(editIni.picPersonIds ?? []).includes(id)) ||
       eiPrimaryPicId !== (editIni.primaryPicPersonId ?? null)
     )
-    if (eiDirty && !window.confirm('Discard unsaved changes?')) return
+    if (eiDirty && !window.confirm(t('Discard unsaved changes?'))) return
     triggerEiClose()
   }, showEditIni || eiClosing)
 
@@ -1213,7 +1136,7 @@ export function ProgramDetailView() {
       triggerEiClose()
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err: unknown) {
-      setEiError(extractErrorMessage(err, 'Failed to save.'))
+      setEiError(extractErrorMessage(err, t('Failed to save.')))
     } finally {
       setEiSaving(false)
     }
@@ -1233,7 +1156,7 @@ export function ProgramDetailView() {
       if (selectedIniId === iniId) setSelectedIniId(null)
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err) {
-      setDelIniError(extractErr(err, 'Failed to delete workstream.'))
+      setDelIniError(extractErr(err, t('Failed to delete workstream.')))
     } finally {
       setDelIniSaving(false)
     }
@@ -1261,7 +1184,7 @@ export function ProgramDetailView() {
       ephForm.endWeek !== (editPhase.endWeek ?? '') ||
       ephForm.description !== ''
     )
-    if (ephDirty && !window.confirm('Discard unsaved changes?')) return
+    if (ephDirty && !window.confirm(t('Discard unsaved changes?'))) return
     triggerEphClose()
   }, showEditPhase || ephClosing)
 
@@ -1286,7 +1209,7 @@ export function ProgramDetailView() {
       triggerEphClose()
       void reloadIniDetail(selectedIniId)
     } catch (err: unknown) {
-      setEphError(extractErrorMessage(err, 'Failed to save.'))
+      setEphError(extractErrorMessage(err, t('Failed to save.')))
     } finally {
       setEphSaving(false)
     }
@@ -1305,7 +1228,7 @@ export function ProgramDetailView() {
       setConfirmDelPhaseId(null)
       void reloadIniDetail(selectedIniId)
     } catch (err: unknown) {
-      setDelPhaseError(extractErrorMessage(err, 'Failed to delete task.'))
+      setDelPhaseError(extractErrorMessage(err, t('Failed to delete task.')))
     } finally {
       setDelPhaseSaving(false)
     }
@@ -1327,7 +1250,7 @@ export function ProgramDetailView() {
   useEscKey(() => {
     if (cpSaving) return
     const cpDirty = cpForm.name !== '' || cpForm.description !== '' || cpForm.status !== 'PLANNING' || cpForm.startWeek !== '' || cpForm.endWeek !== ''
-    if (cpDirty && !window.confirm('Discard unsaved changes?')) return
+    if (cpDirty && !window.confirm(t('Discard unsaved changes?'))) return
     triggerCpClose()
   }, showCreatePhase || cpClosing)
 
@@ -1363,7 +1286,7 @@ export function ProgramDetailView() {
       triggerCpClose()
       void reloadIniDetail(cpWorkstreamId)
     } catch (err: unknown) {
-      setCpError(extractErrorMessage(err, 'Failed to create phase.'))
+      setCpError(extractErrorMessage(err, t('Failed to create phase.')))
     } finally {
       setCpSaving(false)
     }
@@ -1391,7 +1314,7 @@ export function ProgramDetailView() {
     const cstDirty = cstForm.title !== '' || cstForm.description !== '' ||
       cstForm.priority !== 'MEDIUM' || cstForm.startDate !== '' ||
       cstForm.targetCompletion !== '' || cstForm.assignedTo !== null
-    if (cstDirty && !window.confirm('Discard unsaved changes?')) return
+    if (cstDirty && !window.confirm(t('Discard unsaved changes?'))) return
     triggerCstClose()
   }, showCreateSubTask || cstClosing)
 
@@ -1414,7 +1337,7 @@ export function ProgramDetailView() {
       triggerCstClose()
       void reloadIniDetail(cstWorkstreamId)
     } catch (err: unknown) {
-      setCstError(extractErrorMessage(err, 'Failed to create task.'))
+      setCstError(extractErrorMessage(err, t('Failed to create task.')))
     } finally {
       setCstSaving(false)
     }
@@ -1442,7 +1365,7 @@ export function ProgramDetailView() {
 
   useEscKey(() => {
     if (approvalLoading) return
-    if (approvalModal === 'reject' && rejectNote !== '' && !window.confirm('Discard the note you have typed?')) return
+    if (approvalModal === 'reject' && rejectNote !== '' && !window.confirm(t('Discard the note you have typed?'))) return
     setApprovalModal(null); setRejectNote(''); setApprovalError(null)
   }, approvalModal !== null)
 
@@ -1453,7 +1376,7 @@ export function ProgramDetailView() {
       setApprovalModal(null)
       await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
     } catch (e: unknown) {
-      setApprovalError(extractErrorMessage(e, 'Failed to submit for approval.'))
+      setApprovalError(extractErrorMessage(e, t('Failed to submit for approval.')))
     } finally { setApprovalLoading(false) }
   }
 
@@ -1463,7 +1386,7 @@ export function ProgramDetailView() {
       await api.post(`/programs/${numId}/activate`, {})
       await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
     } catch (e: unknown) {
-      setApprovalError(extractErrorMessage(e, 'Failed to activate program.'))
+      setApprovalError(extractErrorMessage(e, t('Failed to activate program.')))
     } finally { setApprovalLoading(false) }
   }
 
@@ -1490,7 +1413,7 @@ export function ProgramDetailView() {
       // Redirect ke /programs setelah 2.5 detik
       setTimeout(() => navigate('/programs'), 2500)
     } catch (e: unknown) {
-      setApprovalError(extractErrorMessage(e, 'Failed to approve program.'))
+      setApprovalError(extractErrorMessage(e, t('Failed to approve program.')))
     } finally { setApprovalLoading(false) }
   }
 
@@ -1502,7 +1425,7 @@ export function ProgramDetailView() {
       setApprovalModal(null); setRejectNote('')
       await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
     } catch (e: unknown) {
-      setApprovalError(extractErrorMessage(e, 'Failed to reject program.'))
+      setApprovalError(extractErrorMessage(e, t('Failed to reject program.')))
     } finally { setApprovalLoading(false) }
   }
 
@@ -1513,7 +1436,7 @@ export function ProgramDetailView() {
       setApprovalModal(null)
       await Promise.all([loadDetail(true), loadOverview('refresh'), loadApprovalLog()])
     } catch (e: unknown) {
-      setApprovalError(extractErrorMessage(e, 'Failed to withdraw submission.'))
+      setApprovalError(extractErrorMessage(e, t('Failed to withdraw submission.')))
     } finally { setApprovalLoading(false) }
   }
 
@@ -1528,22 +1451,22 @@ export function ProgramDetailView() {
       (detail.picPersonIds ?? []).includes(currentUser.id)
     : false
 
-  // Refleksi mingguan: BE strict owner-only (ProgramController::storeProgressLog
-  // 2026-05-21). Co-PIC & submitter yang bukan owner TIDAK boleh submit —
-  // accountability statement harus dari satu suara. Admin tetap diizinkan
-  // sebagai escape hatch (data correction).
-  // Gate ini lebih sempit dari `isOwner` di atas (yang merangkul co-PIC).
+  // Entry-point ke pelaporan kondisi (kini navigate ke Workboard, bukan modal
+  // inline). Disamakan dengan BE storeProgressLog (2026-06-24): owner + co-PIC
+  // (picPersons) + admin. Sebelumnya owner-only → co-PIC tak punya jalur dari
+  // Program padahal berhak & bisa di Workboard.
   const canWriteReflection = detail && currentUser
     ? detail.ownerId === currentUser.id ||
+      (detail.picPersonIds ?? []).includes(currentUser.id) ||
       ['SUPERADMIN', 'ADMIN'].includes((currentUser.roleType ?? '').toUpperCase())
     : false
 
   const tabDefs: [DetailTab, string][] = [
-    ['ringkasan',  'Summary'],
-    ['workstream', 'Structure'],
-    ['execution',  'Schedule'],
-    ['blocker',    'Blockers'],
-    ['kpi',        'KPI APMS'],
+    ['ringkasan',  t('Summary')],
+    ['workstream', t('Structure')],
+    ['execution',  t('Schedule')],
+    ['blocker',    t('Blockers')],
+    ['kpi',        t('KPI APMS')],
   ]
 
   // ── Approval log section (extracted) ─────────────────────────────────
@@ -1553,10 +1476,10 @@ export function ProgramDetailView() {
   const renderApprovalLogSection = () => {
     if (!(approvalLog.length > 0 || approvalLogLoading)) return null
     const actionLabel: Record<string, string> = {
-      SUBMITTED: 'Submitted', APPROVED: 'Approved',
-      REJECTED: 'Rejected', ACTIVATED: 'Activated', COMPLETED: 'Completed',
-      WITHDRAWN: 'Withdrawn',
-      COMMITMENT_CHANGED: 'Commitment changed',
+      SUBMITTED: t('Submitted'), APPROVED: t('Approved'),
+      REJECTED: t('Rejected'), ACTIVATED: t('Activated'), COMPLETED: t('Completed'),
+      WITHDRAWN: t('Withdrawn'),
+      COMMITMENT_CHANGED: t('Commitment changed'),
     }
     const actionTone: Record<string, string> = {
       SUBMITTED: 'info', APPROVED: 'positive',
@@ -1567,10 +1490,10 @@ export function ProgramDetailView() {
     return (
       <div className="wi-section">
         <div className="wi-section__header">
-          <h3 className="wi-section__title">Approval history</h3>
+          <h3 className="wi-section__title">{t('Approval history')}</h3>
         </div>
         {approvalLogLoading && approvalLog.length === 0 ? (
-          <div className="prog-approval-log-skeleton" aria-label="Loading approval history">
+          <div className="prog-approval-log-skeleton" aria-label={t('Loading approval history')}>
             <div className="prog-approval-log-skeleton__entry">
               <SkeletonBlock width="55%" height={14} />
               <SkeletonBlock width="40%" height={11} />
@@ -1624,8 +1547,8 @@ export function ProgramDetailView() {
                   aria-expanded={approvalLogExpanded}
                 >
                   {approvalLogExpanded
-                    ? 'Hide old history'
-                    : `View ${hiddenCount} more entries`}
+                    ? t('Hide old history')
+                    : t('View {{count}} more entries', { count: hiddenCount })}
                 </button>
               )}
             </div>
@@ -1660,7 +1583,7 @@ export function ProgramDetailView() {
           <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="14" aria-hidden="true">
             <path d="M8 2 3 7l5 5" />
           </svg>
-          Programs
+          {t('Programs')}
         </button>
         {detail && (
           <>
@@ -1687,7 +1610,7 @@ export function ProgramDetailView() {
                 {detail.priority}
               </span>
               {detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote && (
-                <span className="prog-approval-pill prog-approval-pill--danger">Rejected</span>
+                <span className="prog-approval-pill prog-approval-pill--danger">{t('Rejected')}</span>
               )}
             </div>
             {/* View switchers + lifecycle/approval actions — sebaris di title row.
@@ -1703,15 +1626,15 @@ export function ProgramDetailView() {
                   <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10">
                     <path d="M2 10 10 2M5 2h5v5" />
                   </svg>
-                  Board
+                  {t('Board')}
                 </button>
                 <button
                   className="icon-btn wi-detail-header__board-btn charter-link"
                   onClick={() => navigate(`/programs/${numId}/charter`)}
                   type="button"
-                  title="Open Charter view (single-page, read-only)"
+                  title={t('Open Charter view (single-page, read-only)')}
                 >
-                  Charter
+                  {t('Charter')}
                   <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10">
                     <path d="M3 6h6M6 3l3 3-3 3" />
                   </svg>
@@ -1730,19 +1653,19 @@ export function ProgramDetailView() {
                     ) &&
                     !['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') && (
                     <button className="btn btn--ghost wi-detail-header__btn" onClick={openEdit} type="button">
-                      Edit
+                      {t('Edit')}
                     </button>
                   )}
                   {detail.approvalStatus === 'PENDING_KASUB' && roleAccess.canApproveAsKasub && (
                     <>
-                      <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Reject</button>
-                      <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Approve</button>
+                      <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">{t('Reject')}</button>
+                      <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">{t('Approve')}</button>
                     </>
                   )}
                   {detail.approvalStatus === 'PENDING_KADIV' && roleAccess.canApproveAsKadiv && (
                     <>
-                      <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">Reject</button>
-                      <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">Approve</button>
+                      <button className="btn btn--ghost wi-detail-header__btn wi-detail-header__btn--danger" disabled={approvalLoading} onClick={() => setApprovalModal('reject')} type="button">{t('Reject')}</button>
+                      <button className="btn btn--primary wi-detail-header__btn" disabled={approvalLoading} onClick={() => setApprovalModal('approve')} type="button">{t('Approve')}</button>
                     </>
                   )}
                   {['PENDING_KASUB', 'PENDING_KADIV'].includes(detail.approvalStatus ?? '') &&
@@ -1755,7 +1678,7 @@ export function ProgramDetailView() {
                       onClick={() => setApprovalModal('withdraw')}
                       type="button"
                     >
-                      Tarik kembali
+                      {t('Withdraw')}
                     </button>
                   )}
                 </div>
@@ -1768,12 +1691,12 @@ export function ProgramDetailView() {
             <p className="prog-hero__subtitle">{detail.description}</p>
           )}
           {detail.approvalStatus === 'DRAFT' && detail.rejectionNote && (
-            <p className="prog-approval-note">Rejection note: {detail.rejectionNote}</p>
+            <p className="prog-approval-note">{t('Rejection note:')} {detail.rejectionNote}</p>
           )}
           {approvedSuccess && (
             <div className="prog-approval-success-banner">
               <span className="prog-approval-success-banner__icon">✓</span>
-              <span>Program approved! Redirecting to the program list…</span>
+              <span>{t('Program approved! Redirecting to the program list…')}</span>
             </div>
           )}
 
@@ -1800,15 +1723,15 @@ export function ProgramDetailView() {
               <header className="prog-hero">
                 <div className="prog-hero__col">
                   <div className="prog-hero__label-row">
-                    <span className="prog-hero__label">Strategic Objective</span>
-                    {strategicSaving && <span className="prog-hero__edit-status">Saving…</span>}
+                    <span className="prog-hero__label">{t('Strategic Objective')}</span>
+                    {strategicSaving && <span className="prog-hero__edit-status">{t('Saving…')}</span>}
                     {canEditStrategicHero && !strategicEditing && (
                       <button
                         type="button"
                         className="prog-hero__edit-btn"
                         onClick={() => setStrategicEditing(true)}
-                        title="Edit Strategic Objective &amp; Strategic Pillar"
-                        aria-label="Edit strategic identity"
+                        title={t('Edit Strategic Objective & Strategic Pillar')}
+                        aria-label={t('Edit strategic identity')}
                       >
                         <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="11" aria-hidden="true">
                           <path d="M8 2l2 2-6 6L2 10l0-2z"/>
@@ -1835,7 +1758,7 @@ export function ProgramDetailView() {
                             el.style.height = `${Math.min(el.scrollHeight, 200)}px`
                           }
                         }}
-                        placeholder="e.g. Effectiveness of Government Funding Oversight"
+                        placeholder={t('e.g. Effectiveness of Government Funding Oversight')}
                         disabled={strategicSaving}
                         autoFocus
                       />
@@ -1845,9 +1768,9 @@ export function ProgramDetailView() {
                           value={strategicForm.pilarStrategis}
                           onChange={e => setStrategicForm(f => ({ ...f, pilarStrategis: e.target.value }))}
                           disabled={strategicSaving}
-                          aria-label="Strategic Pillar"
+                          aria-label={t('Strategic Pillar')}
                         >
-                          <option value="">— Select pillar —</option>
+                          <option value="">{t('— Select pillar —')}</option>
                           {Object.entries(pillarOptions).map(([value, label]) => (
                             <option key={value} value={value}>{label}</option>
                           ))}
@@ -1868,7 +1791,7 @@ export function ProgramDetailView() {
                           }}
                           disabled={strategicSaving}
                         >
-                          {strategicSaving ? 'Saving…' : 'Save'}
+                          {strategicSaving ? t('Saving…') : t('Save')}
                         </button>
                         <button
                           type="button"
@@ -1883,7 +1806,7 @@ export function ProgramDetailView() {
                           }}
                           disabled={strategicSaving}
                         >
-                          Cancel
+                          {t('Cancel')}
                         </button>
                       </div>
                     </div>
@@ -1894,7 +1817,7 @@ export function ProgramDetailView() {
                           {detail.strategicObjective}
                         </div>
                       ) : (
-                        <div className="prog-hero__so prog-hero__so--empty">Not set</div>
+                        <div className="prog-hero__so prog-hero__so--empty">{t('Not set')}</div>
                       )}
                       {pillarLabel && (
                         <span className="prog-hero__pillar">{pillarLabel}</span>
@@ -1904,14 +1827,14 @@ export function ProgramDetailView() {
                 </div>
 
                 <div className="prog-hero__col">
-                  <div className="prog-hero__label">PIC Utama</div>
+                  <div className="prog-hero__label">{t('Main PIC')}</div>
                   {(() => {
                     // detail.owner punya positionTitle + unit (eager-loaded di
                     // findOrFail), programSummary.owner cuma id/name. Prefer
                     // detail kalau ada supaya subline jabatan · divisi tampil.
                     const owner = detail.owner ?? programSummary?.owner ?? null
                     if (!owner) {
-                      return <div className="prog-hero__value prog-hero__so--empty">Not set</div>
+                      return <div className="prog-hero__value prog-hero__so--empty">{t('Not set')}</div>
                     }
                     const role = owner.positionTitle ?? null
                     const unit = owner.unit?.name ?? null
@@ -1930,7 +1853,7 @@ export function ProgramDetailView() {
                         )}
                         {supportCount > 0 && (
                           <div className="prog-hero__sub prog-hero__sub--accent">
-                            +{supportCount} tim pendukung
+                            {t('+{{count}} support team', { count: supportCount })}
                           </div>
                         )}
                       </>
@@ -1939,7 +1862,7 @@ export function ProgramDetailView() {
                 </div>
 
                 <div className="prog-hero__col">
-                  <div className="prog-hero__label">Period</div>
+                  <div className="prog-hero__label">{t('Period')}</div>
                   <div className="prog-hero__value">
                     {startStr} → {endStr}
                   </div>
@@ -1951,17 +1874,17 @@ export function ProgramDetailView() {
                 </div>
 
                 <div className="prog-hero__col prog-hero__col--status">
-                  <div className="prog-hero__label">Status</div>
+                  <div className="prog-hero__label">{t('Status')}</div>
                   <div className="prog-hero__status-stack">
                     <HealthPill
                       status={normalizeHealthStatus(detail.healthStatus)}
                       title={detail.autoHealthComputedAt
-                        ? `Auto-derived dari workstream + KPI + task overdue + open blockers. Last computed: ${new Date(detail.autoHealthComputedAt).toLocaleString('en-US')}`
+                        ? t('Auto-derived from workstream + KPI + overdue tasks + open blockers. Last computed: {{date}}', { date: new Date(detail.autoHealthComputedAt).toLocaleString('en-US') })
                         : undefined}
                     />
                     {detail.kelompok && (
                       <span className={`prog-detail-header__kelompok prog-detail-header__kelompok--${detail.kelompok === 'SCORECARD' ? 'scorecard' : 'non'}`}>
-                        {detail.kelompok === 'SCORECARD' ? 'Scorecard' : 'Non Scorecard'}
+                        {detail.kelompok === 'SCORECARD' ? t('Scorecard') : t('Non Scorecard')}
                       </span>
                     )}
                   </div>
@@ -1973,15 +1896,15 @@ export function ProgramDetailView() {
       ) : detailError && detailError !== 'notfound' ? (
         <div className="prog-title-row">
           <div className="wi-detail-titlebar__empty" role="alert">
-            <p>Couldn't load this program. Your data is safe — this is a loading issue, not a missing program.</p>
+            <p>{t("Couldn't load this program. Your data is safe — this is a loading issue, not a missing program.")}</p>
             <button type="button" className="btn btn--ghost" onClick={() => void loadDetail()}>
-              Try again
+              {t('Try again')}
             </button>
           </div>
         </div>
       ) : (
         <div className="prog-title-row">
-          <p className="wi-detail-titlebar__empty">Program not found.</p>
+          <p className="wi-detail-titlebar__empty">{t('Program not found.')}</p>
         </div>
       )}
 
@@ -1999,7 +1922,7 @@ export function ProgramDetailView() {
         else if (inDone) phase = 'done'
         else if (!inPlanning) return null
 
-        const label = phase === 'planning' ? 'Planning Phase' : phase === 'execution' ? 'Execution Phase' : 'Completed'
+        const label = phase === 'planning' ? t('Planning Phase') : phase === 'execution' ? t('Execution Phase') : t('Completed')
         // Icon set: planning (file), planning-ready (check), pending (clock),
         // rejected (alert), execution (play), done (check).
         const planningIcon = phase === 'planning'
@@ -2025,21 +1948,21 @@ export function ProgramDetailView() {
         let hint: React.ReactNode = null
         if (phase === 'planning') {
           // isRejected dicek FIRST — DRAFT-with-note adalah special case dari DRAFT.
-          if (isRejected) hint = 'Needs revision — see the rejection note above.'
+          if (isRejected) hint = t('Needs revision — see the rejection note above.')
           else if (status === 'DRAFT') {
             hint = checklistDone
-              ? 'Checklist complete — click the button below to activate / submit for approval.'
-              : 'Complete the prep checklist, then activate the program.'
+              ? t('Checklist complete — click the button below to activate / submit for approval.')
+              : t('Complete the prep checklist, then activate the program.')
           }
-          else if (status === 'PENDING_KASUB') hint = 'Awaiting KASUBDIV approval. Structure & plan can still be refined; execution becomes active once approved.'
-          else if (status === 'PENDING_KADIV') hint = 'Awaiting KADIV approval. Structure & plan can still be refined; execution becomes active once approved.'
+          else if (status === 'PENDING_KASUB') hint = t('Awaiting KASUBDIV approval. Structure & plan can still be refined; execution becomes active once approved.')
+          else if (status === 'PENDING_KADIV') hint = t('Awaiting KADIV approval. Structure & plan can still be refined; execution becomes active once approved.')
         } else if (phase === 'execution') {
           const days = detail.targetEndDate ? daysUntil(detail.targetEndDate) : null
           const dl = days !== null ? formatDaysLabel(days) : null
-          hint = dl ? <>Target completion <strong>{dl.label}</strong></> : 'Execution underway.'
+          hint = dl ? <>{t('Target completion')} <strong>{dl.label}</strong></> : t('Execution underway.')
         } else if (phase === 'done') {
           const endDate = detail.actualEndDate ?? detail.targetEndDate
-          hint = endDate ? <>Closed {new Date(endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</> : null
+          hint = endDate ? <>{t('Closed {{date}}', { date: new Date(endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) })}</> : null
         }
 
         // Variant menentukan warna banner. "planning" punya 4 sub-state:
@@ -2088,9 +2011,9 @@ export function ProgramDetailView() {
               <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="14"><path d="M4 3v8l7-4z"/></svg>
             </span>
             <div className="prog-activation-banner__body">
-              <strong className="prog-activation-banner__title">New program active · ready to execute</strong>
+              <strong className="prog-activation-banner__title">{t('New program active · ready to execute')}</strong>
               <span className="prog-activation-banner__hint">
-                Pull daily tasks on the Board, log weekly reflections from the Summary.
+                {t('Pull daily tasks on the Board, log weekly reflections from the Summary.')}
               </span>
             </div>
             <div className="prog-activation-banner__actions">
@@ -2099,13 +2022,13 @@ export function ProgramDetailView() {
                 onClick={() => navigate(`/execution?programId=${numId}`)}
                 type="button"
               >
-                Open Board →
+                {t('Open Board →')}
               </button>
               <button
-                aria-label="Close hint"
+                aria-label={t('Close hint')}
                 className="prog-activation-banner__dismiss"
                 onClick={dismissActivationBanner}
-                title="Close (reappears in a new session)"
+                title={t('Close (reappears in a new session)')}
                 type="button"
               >
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
@@ -2174,14 +2097,14 @@ export function ProgramDetailView() {
                     : pct >= 80 ? 'GREEN'
                     : pct >= 50 ? 'YELLOW'
                     : 'RED'
-                  const toneLabel = tone === 'GREEN' ? 'On Track'
-                    : tone === 'YELLOW' ? 'At Risk'
-                    : tone === 'RED' ? 'Delayed'
+                  const toneLabel = tone === 'GREEN' ? t('On Track')
+                    : tone === 'YELLOW' ? t('At Risk')
+                    : tone === 'RED' ? t('Delayed')
                     : '—'
                   return (
                     <div className="wi-section">
                       <div className="wi-section__header">
-                        <h3 className="wi-section__title">Actual vs Plan</h3>
+                        <h3 className="wi-section__title">{t('Actual vs Plan')}</h3>
                         {tone !== 'NONE' && (
                           <span className={`prog-section-status prog-section-status--${tone.toLowerCase()}`}>
                             <span className={`prog-section-status__dot prog-section-status__dot--${tone.toLowerCase()}`} aria-hidden="true" />
@@ -2196,10 +2119,10 @@ export function ProgramDetailView() {
                           </div>
                           <div className="prog-achievement__caption">
                             <span className="prog-achievement__caption-line">
-                              Actual {ea.actualSoFar} / {ea.plannedSoFar} weeks that should be complete
+                              {t('Actual {{actual}} / {{planned}} weeks that should be complete', { actual: ea.actualSoFar, planned: ea.plannedSoFar })}
                             </span>
                             <span className="prog-achievement__caption-sub">
-                              Total program plan: {ea.plannedTotal} weeks · {ea.actualTotal} weeks completed
+                              {t('Total program plan: {{total}} weeks · {{done}} weeks completed', { total: ea.plannedTotal, done: ea.actualTotal })}
                             </span>
                           </div>
                         </div>
@@ -2215,7 +2138,7 @@ export function ProgramDetailView() {
                                 <li key={ws.id} className={`prog-achievement__ws prog-achievement__ws--${wsTone}`}>
                                   <span className="prog-achievement__ws-name">{ws.name}</span>
                                   <span className="prog-achievement__ws-stat">
-                                    {ws.actualSoFar}/{ws.plannedSoFar} wk
+                                    {t('{{actual}}/{{planned}} wk', { actual: ws.actualSoFar, planned: ws.plannedSoFar })}
                                     {wsPct != null && (
                                       <span className="prog-achievement__ws-pct"> · {wsPct}%</span>
                                     )}
@@ -2254,11 +2177,11 @@ export function ProgramDetailView() {
                     : 'GREEN'
                   // Vocabulary firm ATLAS: on_track / at_risk / terlambat
                   // (sama dengan health label di Charter & refleksi, BUKAN warna).
-                  const kpiHealthLabel = kpiHealth === 'RED' ? 'Delayed' : kpiHealth === 'YELLOW' ? 'At Risk' : 'On Track'
+                  const kpiHealthLabel = kpiHealth === 'RED' ? t('Delayed') : kpiHealth === 'YELLOW' ? t('At Risk') : t('On Track')
                   return (
                     <div className="wi-section">
                       <div className="wi-section__header">
-                        <h3 className="wi-section__title">KPI Internal</h3>
+                        <h3 className="wi-section__title">{t('KPI Internal')}</h3>
                         <span className={`prog-section-status prog-section-status--${kpiHealth.toLowerCase()}`}>
                           <span className={`prog-section-status__dot prog-section-status__dot--${kpiHealth.toLowerCase()}`} aria-hidden="true" />
                           {kpiHealthLabel}
@@ -2292,7 +2215,7 @@ export function ProgramDetailView() {
                                     </span>
                                   </>
                                 ) : (
-                                  <span className="program-kpi-health__empty">No data yet</span>
+                                  <span className="program-kpi-health__empty">{t('No data yet')}</span>
                                 )}
                               </div>
                             )
@@ -2300,12 +2223,12 @@ export function ProgramDetailView() {
                         </div>
                         {kpiHealth === 'RED' && (
                           <div className="program-kpi-health__notice program-kpi-health__notice--red">
-                            Perhatian: {kpiRedCount} indikator KPI di bawah ambang kritis — health program terpengaruh.
+                            {t('Attention: {{count}} KPI indicators are below the critical threshold — program health is affected.', { count: kpiRedCount })}
                           </div>
                         )}
                         {kpiHealth === 'YELLOW' && kpiRedCount === 0 && (
                           <div className="program-kpi-health__notice program-kpi-health__notice--yellow">
-                            {kpiYellowCount} indikator KPI mendekati ambang warning.
+                            {t('{{count}} KPI indicators are approaching the warning threshold.', { count: kpiYellowCount })}
                           </div>
                         )}
                       </div>
@@ -2327,8 +2250,8 @@ export function ProgramDetailView() {
                         </svg>
                       </span>
                       <div className="prog-ws-preview__empty-text">
-                        <p className="prog-ws-preview__empty-title">No workstreams yet</p>
-                        <p className="prog-ws-preview__empty-hint">Break the program into workstreams to start distributing tasks to the team.</p>
+                        <p className="prog-ws-preview__empty-title">{t('No workstreams yet')}</p>
+                        <p className="prog-ws-preview__empty-hint">{t('Break the program into workstreams to start distributing tasks to the team.')}</p>
                       </div>
                       <button
                         type="button"
@@ -2338,22 +2261,22 @@ export function ProgramDetailView() {
                           setShowCreateIni(true)
                         }}
                       >
-                        Buat workstream pertama →
+                        {t('Create the first workstream →')}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="wi-section prog-ws-preview">
                     <div className="wi-section__header">
-                      <h3 className="wi-section__title">Structure</h3>
+                      <h3 className="wi-section__title">{t('Structure')}</h3>
                       <button
                         type="button"
                         className="prog-ws-preview__more"
                         onClick={() => setActiveTab('workstream')}
                       >
                         {(detail.workstreams ?? []).length > 3
-                          ? `View all ${(detail.workstreams ?? []).length} →`
-                          : 'Detail →'}
+                          ? t('View all {{count}} →', { count: (detail.workstreams ?? []).length })
+                          : t('Details →')}
                       </button>
                     </div>
                     <ul className="prog-ws-preview__list">
@@ -2395,13 +2318,13 @@ export function ProgramDetailView() {
                   <div className="prog-blocker-callout prog-blocker-callout--error">
                     <div className="prog-blocker-callout__head">
                       <span className="prog-blocker-callout__icon">{PIcon.blocker}</span>
-                      <strong className="prog-blocker-callout__title">Failed to load blocker data</strong>
+                      <strong className="prog-blocker-callout__title">{t('Failed to load blocker data')}</strong>
                       <button
                         type="button"
                         className="prog-blocker-callout__link"
                         onClick={() => setActiveTab('blocker')}
                       >
-                        Try the Blockers tab →
+                        {t('Try the Blockers tab →')}
                       </button>
                     </div>
                   </div>
@@ -2410,13 +2333,13 @@ export function ProgramDetailView() {
                   <div className="prog-blocker-callout">
                     <div className="prog-blocker-callout__head">
                       <span className="prog-blocker-callout__icon">{PIcon.blocker}</span>
-                      <strong className="prog-blocker-callout__title">{blockers.length} active {blockers.length === 1 ? 'blocker' : 'blockers'}</strong>
+                      <strong className="prog-blocker-callout__title">{t('{{count}} active blocker', { count: blockers.length })}</strong>
                       <button
                         type="button"
                         className="prog-blocker-callout__link"
                         onClick={() => setActiveTab('blocker')}
                       >
-                        View all →
+                        {t('View all →')}
                       </button>
                     </div>
                     <div className="prog-blocker-callout__list">
@@ -2444,17 +2367,16 @@ export function ProgramDetailView() {
                 {detail.approvalStatus === 'ACTIVE' && progressLog.length > 0 && (
                   <div className="wi-section">
                     <div className="wi-section__header">
-                      <h3 className="wi-section__title">Reflection history</h3>
-                      {/* Tombol hanya untuk owner/admin — match BE strict
-                          owner-only restriction di storeProgressLog. Co-PIC
-                          lihat history tapi tidak bisa write. */}
+                      <h3 className="wi-section__title">{t('Reflection history')}</h3>
+                      {/* Owner + co-PIC + admin (canWriteReflection, sejajar BE).
+                          Tombol navigate ke Workboard untuk lapor kondisi. */}
                       {canWriteReflection && (
                         <button
                           type="button"
                           className="btn btn--ghost"
                           onClick={openProgressForm}
                         >
-                          + Weekly reflection
+                          {t('Report in Workboard →')}
                         </button>
                       )}
                     </div>
@@ -2462,7 +2384,7 @@ export function ProgramDetailView() {
                     <div className="prog-progress-log">
                         {progressLog.map(entry => {
                           const healthLabel: Record<string, string> = {
-                            on_track: 'On Track', at_risk: 'At Risk', terlambat: 'Delayed', overdue: 'Overdue',
+                            on_track: t('On Track'), at_risk: t('At Risk'), terlambat: t('Delayed'), overdue: t('Overdue'),
                           }
                           const healthTone: Record<string, string> = {
                             on_track: 'positive', at_risk: 'warning', terlambat: 'danger', overdue: 'danger',
@@ -2477,7 +2399,7 @@ export function ProgramDetailView() {
                                   {healthLabel[entry.healthAtTime] ?? entry.healthAtTime}
                                 </span>
                                 {entry.isLate && (
-                                  <span className="prog-progress-log__late" title="Submitted after the Saturday 12:00 deadline">Late</span>
+                                  <span className="prog-progress-log__late" title={t('Submitted after the Saturday 12:00 deadline')}>{t('Late')}</span>
                                 )}
                                 <span className="prog-progress-log__meta">{entry.createdByName} · {date}</span>
                               </div>
@@ -2485,32 +2407,32 @@ export function ProgramDetailView() {
                               {(entry.kendala || entry.correctiveAction || entry.nextStep || entry.dukunganDibutuhkan) && (
                                 <details className="prog-progress-log__details">
                                   <summary className="prog-progress-log__details-toggle">
-                                    Issues, follow-ups &amp; support details
+                                    {t('Issues, follow-ups & support details')}
                                   </summary>
                                   <div className="prog-progress-log__details-body">
                                     {entry.kendala && (
                                       <div className="prog-progress-log__kendala">
-                                        <strong>Issue:</strong> {entry.kendala}
+                                        <strong>{t('Issue:')}</strong> {entry.kendala}
                                       </div>
                                     )}
                                     {entry.correctiveAction && (
                                       <div className="prog-progress-log__corrective">
-                                        <strong>Corrective action:</strong> {entry.correctiveAction}
+                                        <strong>{t('Corrective action:')}</strong> {entry.correctiveAction}
                                       </div>
                                     )}
                                     {entry.nextStep && (
                                       <div className="prog-progress-log__nextstep">
-                                        <strong>Next step:</strong> {entry.nextStep}
+                                        <strong>{t('Next step:')}</strong> {entry.nextStep}
                                       </div>
                                     )}
                                     {entry.dukunganDibutuhkan && (
                                       <div className="prog-progress-log__support">
-                                        <strong>Support needed:</strong> {entry.dukunganDibutuhkan}
+                                        <strong>{t('Support needed:')}</strong> {entry.dukunganDibutuhkan}
                                         <div style={{ marginTop: 6 }}>
                                           <EscalationButton
                                             sourceType="PROGRESS_LOG"
                                             sourceId={entry.id}
-                                            prefillTitle={`Support for ${entry.period}`}
+                                            prefillTitle={t('Support for {{period}}', { period: entry.period })}
                                             prefillDescription={entry.dukunganDibutuhkan}
                                             linkedProgramId={numId}
                                             size="sm"
@@ -2549,9 +2471,9 @@ export function ProgramDetailView() {
                   // hasKpi memuaskan baik via KPI APMS link maupun KPI internal (lihat
                   // Program::getReadinessAttribute), jadi label memakai "KPI" generik.
                   const checks = [
-                    { done: !!(detail.description?.trim()), label: 'Program description filled', cta: openEdit },
-                    { done: !!detail.readiness?.hasWorkstream && !!detail.readiness?.hasTask, label: 'At least 1 workstream with 1 task', cta: () => setActiveTab('workstream') },
-                    { done: !!detail.readiness?.hasKpi, label: 'KPI linked (APMS or internal)', cta: () => setActiveTab('kpi') },
+                    { done: !!(detail.description?.trim()), label: t('Program description filled'), cta: openEdit },
+                    { done: !!detail.readiness?.hasWorkstream && !!detail.readiness?.hasTask, label: t('At least 1 workstream with 1 task'), cta: () => setActiveTab('workstream') },
+                    { done: !!detail.readiness?.hasKpi, label: t('KPI linked (APMS or internal)'), cta: () => setActiveTab('kpi') },
                   ]
                   const doneCount = checks.filter(c => c.done).length
                   const allDone = doneCount === checks.length
@@ -2581,15 +2503,15 @@ export function ProgramDetailView() {
                           <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 14 14" width="14"><path d="m2.5 7 3 3 6-7"/></svg>
                         </span>
                         <span className="prog-checklist-ribbon__label">
-                          {isInRevision ? 'Ready to resubmit' : 'Program ready to execute'}
+                          {isInRevision ? t('Ready to resubmit') : t('Program ready to execute')}
                         </span>
                         <span className="prog-checklist-ribbon__sep" aria-hidden="true">·</span>
                         <span className="prog-checklist-ribbon__hint">
                           {isInRevision
-                            ? `Resubmit to ${nextApprover} once the fixes are done.`
+                            ? t('Resubmit to {{approver}} once the fixes are done.', { approver: nextApprover })
                             : useActivate
-                              ? 'The team can start executing right after activation.'
-                              : `${nextApprover} approval is required before execution can begin.`}
+                              ? t('The team can start executing right after activation.')
+                              : t('{{approver}} approval is required before execution can begin.', { approver: nextApprover })}
                         </span>
                         <button
                           className="btn btn--primary prog-checklist-ribbon__cta"
@@ -2597,7 +2519,7 @@ export function ProgramDetailView() {
                           onClick={() => useActivate ? void activateProgram() : setApprovalModal('submit')}
                           type="button"
                         >
-                          {useActivate ? 'Start Execution →' : `Submit to ${nextApprover} →`}
+                          {useActivate ? t('Start Execution →') : t('Submit to {{approver}} →', { approver: nextApprover })}
                         </button>
                       </div>
                     )
@@ -2606,7 +2528,7 @@ export function ProgramDetailView() {
                   return (
                     <div className="prog-checklist">
                       <div className="prog-checklist__head">
-                        <span className="prog-checklist__title">Prepare the Program So the Team Can Start</span>
+                        <span className="prog-checklist__title">{t('Prepare the Program So the Team Can Start')}</span>
                         <span className="prog-checklist__count">{doneCount}/{checks.length}</span>
                       </div>
                       <div className="prog-checklist__track">
@@ -2623,7 +2545,7 @@ export function ProgramDetailView() {
                             </span>
                             <span className="prog-checklist__label">{c.label}</span>
                             {!c.done && c.cta && (
-                              <button className="prog-checklist__btn" onClick={c.cta} type="button">Complete →</button>
+                              <button className="prog-checklist__btn" onClick={c.cta} type="button">{t('Complete →')}</button>
                             )}
                           </li>
                         ))}
@@ -2663,15 +2585,15 @@ export function ProgramDetailView() {
                     if (!isActive || !reflectionMeta) return null
                     const m = reflectionMeta
                     if (m.exempt) {
-                      return { tone: 'exempt', icon: '⓵', text: 'Starts next week' }
+                      return { tone: 'exempt', icon: '⓵', text: t('Starts next week') }
                     }
                     if (m.hasSubmitted) {
                       // Bedakan submitted on-time vs late — sebelumnya keduanya tampil
                       // sama "Sudah masuk", info compliance hilang.
                       if (m.existing?.isLate) {
-                        return { tone: 'late', icon: '⚠', text: 'Submitted (late)' }
+                        return { tone: 'late', icon: '⚠', text: t('Submitted (late)') }
                       }
-                      return { tone: 'submitted', icon: '✓', text: 'Submitted this week' }
+                      return { tone: 'submitted', icon: '✓', text: t('Submitted this week') }
                     }
                     const fmtShort = (iso: string | null) => {
                       if (!iso) return ''
@@ -2684,22 +2606,22 @@ export function ProgramDetailView() {
                       const ms = new Date(m.deadline).getTime() - new Date(m.now).getTime()
                       if (ms <= 0) return ''
                       const mins = Math.floor(ms / 60000)
-                      if (mins < 60) return `${mins} min left`
+                      if (mins < 60) return t('{{count}} min left', { count: mins })
                       const hours = Math.floor(mins / 60)
                       const restMins = mins % 60
-                      return restMins > 0 ? `${hours}h ${restMins}m left` : `${hours} hr left`
+                      return restMins > 0 ? t('{{hours}}h {{mins}}m left', { hours, mins: restMins }) : t('{{count}} hr left', { count: hours })
                     }
                     switch (m.state) {
                       case 'OPEN':
-                        return { tone: 'open', icon: '⏱', text: `Deadline ${fmtShort(m.deadline)}` }
+                        return { tone: 'open', icon: '⏱', text: t('Deadline {{when}}', { when: fmtShort(m.deadline) }) }
                       case 'DUE_SOON':
-                        return { tone: 'due-soon', icon: '⏱', text: `Due ${fmtShort(m.deadline)}` }
+                        return { tone: 'due-soon', icon: '⏱', text: t('Due {{when}}', { when: fmtShort(m.deadline) }) }
                       case 'URGENT':
-                        return { tone: 'urgent', icon: '⚠', text: `Deadline ${fmtCountdown()}` }
+                        return { tone: 'urgent', icon: '⚠', text: t('Deadline {{when}}', { when: fmtCountdown() }) }
                       case 'LATE':
-                        return { tone: 'late', icon: '⚠', text: 'Late · can still submit' }
+                        return { tone: 'late', icon: '⚠', text: t('Late · can still submit') }
                       case 'MISSED':
-                        return { tone: 'missed', icon: '✕', text: 'Reflection missed this week' }
+                        return { tone: 'missed', icon: '✕', text: t('Reflection missed this week') }
                       default:
                         return null
                     }
@@ -2707,7 +2629,7 @@ export function ProgramDetailView() {
                   return (
                     <div className="prog-update-panel prog-update-panel--flat">
                       <div className="prog-update-panel__head">
-                        <span className="prog-update-panel__label">Reflection this week</span>
+                        <span className="prog-update-panel__label">{t('Reflection this week')}</span>
                         {latest && (
                           <span className="prog-update-panel__period">{formatPeriod(latest.createdAt)}</span>
                         )}
@@ -2721,32 +2643,30 @@ export function ProgramDetailView() {
                       {latest?.narrative ? (
                         <>
                           <p className="prog-update-panel__note">{latest.narrative}</p>
-                          {/* Edit/+ Refleksi hanya untuk owner/admin. Co-PIC
-                              & submitter (yang bukan owner) lihat narrative
-                              terakhir tapi tidak bisa edit — match BE strict
-                              owner-only di storeProgressLog. */}
+                          {/* Owner + co-PIC + admin (canWriteReflection). CTA
+                              navigate ke Workboard untuk lapor/perbarui kondisi. */}
                           {isActive && !reflectionMeta?.exempt && canWriteReflection && (
                             <button
                               type="button"
                               className="prog-update-panel__action"
                               onClick={openProgressForm}
                             >
-                              {reflectionMeta?.hasSubmitted ? 'Edit reflection' : '+ Weekly Reflection'}
+                              {reflectionMeta?.hasSubmitted ? t('Update in Workboard →') : t('Report in Workboard →')}
                             </button>
                           )}
                         </>
                       ) : isActive && !reflectionMeta?.exempt && canWriteReflection ? (
                         <div className="prog-update-panel__empty-state">
-                          <p className="prog-update-panel__empty">No reflection this week yet.</p>
+                          <p className="prog-update-panel__empty">{t('No reflection this week yet.')}</p>
                           <button
                             type="button"
                             className="prog-update-panel__action prog-update-panel__action--primary"
                             onClick={openProgressForm}
                           >
-                            + Weekly Reflection
+                            {t('Report in Workboard →')}
                           </button>
                           <span className="prog-update-panel__hint">
-                            Note your position & blockers — shows in Charter &amp; My KPI.
+                            {t('Note your position & blockers — shows in Charter & My KPI.')}
                           </span>
                         </div>
                       ) : isActive && !reflectionMeta?.exempt ? (
@@ -2754,15 +2674,15 @@ export function ProgramDetailView() {
                         // owner/admin → tampil empty state read-only (no CTA).
                         // Hindari "ghost button" yang nampak clickable padahal nanti 403.
                         <p className="prog-update-panel__empty">
-                          No reflection this week from the program PIC yet.
+                          {t('No reflection this week from the program PIC yet.')}
                         </p>
                       ) : isActive ? (
                         <p className="prog-update-panel__empty">
-                          The first reflection is due next week.
+                          {t('The first reflection is due next week.')}
                         </p>
                       ) : (
                         <p className="prog-update-panel__empty">
-                          Weekly reflections can be logged once the program is active.
+                          {t('Weekly reflections can be logged once the program is active.')}
                         </p>
                       )}
                     </div>
@@ -2788,12 +2708,12 @@ export function ProgramDetailView() {
                     : null
                   return (
                     <div className="prog-side-block">
-                      <div className="prog-side-block__label">Status Program</div>
+                      <div className="prog-side-block__label">{t('Program Status')}</div>
                       <div className="prog-side-block__lead">
                         <span className={`prog-side-block__dot prog-side-block__dot--${healthTone}`} aria-hidden="true" />
                         <span className="prog-side-block__lead-text">{disp.label}</span>
                         <span className="prog-side-block__sep" aria-hidden="true">·</span>
-                        <span className="prog-side-block__pct">{pct}% progress</span>
+                        <span className="prog-side-block__pct">{t('{{pct}}% progress', { pct })}</span>
                       </div>
                       {/* Mini-bar selalu render — even at 0% supaya progres
                           program tetap visible secara visual. Empty bar (0%)
@@ -2807,13 +2727,13 @@ export function ProgramDetailView() {
                       </div>
                       <div className="prog-side-block__meta">
                         {wsTotal > 0 && (
-                          <span>{wsDone}/{wsTotal} workstream selesai</span>
+                          <span>{t('{{done}}/{{total}} workstreams completed', { done: wsDone, total: wsTotal })}</span>
                         )}
                         {wsTotal > 0 && daysToTarget !== null && (
                           <span className="prog-side-block__sep" aria-hidden="true">·</span>
                         )}
                         {daysToTarget !== null && (
-                          <span>{daysToTarget} hari ke target</span>
+                          <span>{t('{{count}} days to target', { count: daysToTarget })}</span>
                         )}
                       </div>
                     </div>
@@ -2830,7 +2750,7 @@ export function ProgramDetailView() {
                 <div className="program-detail-section-title-row">
                   <h3 className="wi-section__title program-detail-section-title">
                     {PIcon.layers}
-                    Workstream
+                    {t('Workstream')}
                   </h3>
                   {/* Badge count dihilangkan saat <= 1 — info redundan karena list
                       langsung di bawah heading. Tampilkan hanya saat banyak supaya
@@ -2848,7 +2768,7 @@ export function ProgramDetailView() {
                     }
                     setShowCreateIni(true)
                   }} type="button">
-                    + Workstream Baru
+                    {t('+ New Workstream')}
                   </button>
                 )}
               </div>
@@ -2864,8 +2784,8 @@ export function ProgramDetailView() {
                       <rect x="14" y="14" width="7" height="7" rx="1" />
                     </svg>
                   }
-                  title="No workstreams yet"
-                  text="Pecah program menjadi workstream untuk mulai mendistribusikan task ke tim."
+                  title={t('No workstreams yet')}
+                  text={t('Break the program into workstreams to start distributing tasks to the team.')}
                 />
               ) : (
                 <div className="workstream-list">
@@ -2888,7 +2808,7 @@ export function ProgramDetailView() {
                             role="button"
                             tabIndex={0}
                             data-health={normalizeHealthStatus(ini.healthStatus).toLowerCase()}
-                            aria-label={`Workstream ${ini.name}, status: ${normalizeHealthStatus(ini.healthStatus)}`}
+                            aria-label={t('Workstream {{name}}, status: {{status}}', { name: ini.name, status: normalizeHealthStatus(ini.healthStatus) })}
                           >
                             {/* HealthPill (At Risk/On Track) dihilangkan dari row header.
                                 Status sudah dikomunikasikan via border-left accent yang
@@ -2912,7 +2832,7 @@ export function ProgramDetailView() {
                                   // Tidak tampil status problematik kalau workstream belum ada progress
                                   // sama sekali (0%). User baru bikin tidak perlu langsung dilabeli At Risk.
                                   if ((ini.progressPercent ?? 0) === 0) return null
-                                  const label = h === 'YELLOW' ? 'At Risk' : h === 'RED' ? 'Delayed' : 'Overdue'
+                                  const label = h === 'YELLOW' ? t('At Risk') : h === 'RED' ? t('Delayed') : t('Overdue')
                                   return (
                                     <span className={`workstream-row__health workstream-row__health--${h.toLowerCase()}`}>{label}</span>
                                   )
@@ -2934,7 +2854,7 @@ export function ProgramDetailView() {
                                         <span
                                           key={p.id}
                                           className={`workstream-row__pic-chip${p.id === primaryId ? ' workstream-row__pic-chip--primary' : ''}`}
-                                          title={p.id === primaryId ? 'Lead PIC' : 'PIC'}
+                                          title={p.id === primaryId ? t('Lead PIC') : t('PIC')}
                                         >
                                           {p.id === primaryId && <span className="workstream-row__pic-chip-star">★</span>}
                                           {p.name}
@@ -2948,9 +2868,9 @@ export function ProgramDetailView() {
                                 })()}
                               {ini.budgetIdr != null && (
                                 <span className="ws-budget">
-                                  Budget: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(ini.budgetIdr))}
+                                  {t('Budget:')} {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(ini.budgetIdr))}
                                   {ini.budgetSpent != null && ini.budgetSpent > 0 && (
-                                    <span className="ws-budget__spent"> · Spent: {Math.round(Number(ini.budgetSpent) / Number(ini.budgetIdr) * 100)}%</span>
+                                    <span className="ws-budget__spent"> · {t('Spent: {{pct}}%', { pct: Math.round(Number(ini.budgetSpent) / Number(ini.budgetIdr) * 100) })}</span>
                                   )}
                                 </span>
                               )}
@@ -2968,8 +2888,8 @@ export function ProgramDetailView() {
                                   className="ws-icon-btn"
                                   onClick={() => openEditIni(ini)}
                                   type="button"
-                                  title="Edit workstream"
-                                  aria-label="Edit workstream"
+                                  title={t('Edit workstream')}
+                                  aria-label={t('Edit workstream')}
                                 >
                                   <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="14"><path d="M9.5 2.5 11.5 4.5 4.5 11.5 2 12l.5-2.5z"/></svg>
                                 </button>
@@ -2977,8 +2897,8 @@ export function ProgramDetailView() {
                                   className={`ws-icon-btn ws-icon-btn--danger${isConfirmDel ? ' is-confirm' : ''}`}
                                   onClick={() => setConfirmDelIniId(isConfirmDel ? null : ini.id)}
                                   type="button"
-                                  title="Delete workstream"
-                                  aria-label="Delete workstream"
+                                  title={t('Delete workstream')}
+                                  aria-label={t('Delete workstream')}
                                 >
                                   <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="14"><path d="M3 4h8M5.5 4V2.5h3V4M4.5 4l.5 7.5h4l.5-7.5M6 6.5v3M8 6.5v3"/></svg>
                                 </button>
@@ -2987,7 +2907,7 @@ export function ProgramDetailView() {
                           </div>
                           {isConfirmDel && (
                             <div className="workstream-delete-confirm">
-                              <span className="workstream-delete-confirm__text">Delete this workstream?</span>
+                              <span className="workstream-delete-confirm__text">{t('Delete this workstream?')}</span>
                               {confirmDelIniId === ini.id && delIniError && (
                                 <span className="wid-form__error">{delIniError}</span>
                               )}
@@ -2997,7 +2917,7 @@ export function ProgramDetailView() {
                                 onClick={() => void submitDelIni(ini.id)}
                                 type="button"
                               >
-                                {delIniSaving ? '…' : 'Delete'}
+                                {delIniSaving ? '…' : t('Delete')}
                               </button>
                               <button
                                 className="btn btn--ghost workstream-row__action"
@@ -3005,7 +2925,7 @@ export function ProgramDetailView() {
                                 onClick={() => { setConfirmDelIniId(null); setDelIniError(null) }}
                                 type="button"
                               >
-                                Cancel
+                                {t('Cancel')}
                               </button>
                             </div>
                           )}
@@ -3035,8 +2955,8 @@ export function ProgramDetailView() {
                                     <div className="workstream-panel-info">
                                       {(doneCount > 0 || blockerCount > 0) && (
                                         <span className="workstream-panel-info__stats">
-                                          {doneCount > 0 && <span className="ws-stat ws-stat--done">{doneCount} Completed</span>}
-                                          {blockerCount > 0 && <span className="ws-stat ws-stat--blocker">{blockerCount} Blocker</span>}
+                                          {doneCount > 0 && <span className="ws-stat ws-stat--done">{t('{{count}} Completed', { count: doneCount })}</span>}
+                                          {blockerCount > 0 && <span className="ws-stat ws-stat--blocker">{t('{{count}} Blocker', { count: blockerCount })}</span>}
                                         </span>
                                       )}
                                       {iniDetail.description && (
@@ -3050,10 +2970,9 @@ export function ProgramDetailView() {
                                   {(iniDetail.phases ?? []).length === 0 && (iniDetail.tasks ?? []).length === 0 ? (
                                     <div className="workstream-empty-body">
                                       <p className="workstream-empty-body__text">
-                                        <strong>No phases &amp; tasks in this workstream yet.</strong>
+                                        <strong>{t('No phases & tasks in this workstream yet.')}</strong>
                                         <span className="workstream-empty-body__hint">
-                                          Start by adding the first phase to group steps,
-                                          or add a task directly if grouping isn't needed.
+                                          {t("Start by adding the first phase to group steps, or add a task directly if grouping isn't needed.")}
                                         </span>
                                       </p>
                                       {roleAccess.canCreateWorkstream && (
@@ -3062,7 +2981,7 @@ export function ProgramDetailView() {
                                           onClick={() => { setCpWorkstreamId(ini.id); setShowCreatePhase(true) }}
                                           type="button"
                                         >
-                                          + Add First Phase
+                                          {t('+ Add First Phase')}
                                         </button>
                                       )}
                                     </div>
@@ -3071,12 +2990,12 @@ export function ProgramDetailView() {
                                       {(iniDetail.phases ?? []).map((phase, idx) => (
                                         <div key={phase.id} className="phase-group">
                                           <div className="phase-group__header">
-                                            <span className="phase-group__eyebrow">Phase</span>
+                                            <span className="phase-group__eyebrow">{t('Phase')}</span>
                                             <span className="phase-group__order">{idx + 1}</span>
                                             <span className="phase-group__name">{phase.name}</span>
                                             {phase.tasks.length > 0 && (
                                               <span className="phase-group__count">
-                                                {phase.tasks.filter(t => t.status === 'COMPLETED' || t.percentComplete === 100).length}/{phase.tasks.length} done
+                                                {t('{{done}}/{{total}} done', { done: phase.tasks.filter(t => t.status === 'COMPLETED' || t.percentComplete === 100).length, total: phase.tasks.length })}
                                               </span>
                                             )}
                                             {!['PLANNING', 'BACKLOG', 'READY'].includes(phase.status) && (
@@ -3084,24 +3003,26 @@ export function ProgramDetailView() {
                                             )}
                                             {roleAccess.canCreateWorkstream && confirmDelPhaseId !== phase.id && (
                                               <div className="phase-group__actions" onClick={e => e.stopPropagation()}>
-                                                <button className="phase-group__action-btn" onClick={() => openEditPhase(phase)} title="Edit phase" type="button">✎</button>
-                                                <button className="phase-group__action-btn phase-group__action-btn--del" onClick={() => setConfirmDelPhaseId(phase.id)} title="Delete phase" type="button">×</button>
+                                                <button className="phase-group__action-btn" onClick={() => openEditPhase(phase)} title={t('Edit phase')} type="button">✎</button>
+                                                <button className="phase-group__action-btn phase-group__action-btn--del" onClick={() => setConfirmDelPhaseId(phase.id)} title={t('Delete phase')} type="button">×</button>
                                               </div>
                                             )}
                                             {confirmDelPhaseId === phase.id && (
                                               <div className="phase-group__del-confirm" onClick={e => e.stopPropagation()}>
                                                 {delPhaseError && <span className="wid-form__error">{delPhaseError}</span>}
                                                 <span className="phase-group__del-text">
-                                                  Delete this phase{phase.tasks.length > 0 ? ` along with its ${phase.tasks.length} task(s)` : ''}?
+                                                  {phase.tasks.length > 0
+                                                    ? t('Delete this phase along with its {{count}} task(s)?', { count: phase.tasks.length })
+                                                    : t('Delete this phase?')}
                                                 </span>
-                                                <button className="btn btn--danger phase-group__del-btn" disabled={delPhaseSaving} onClick={() => void submitDelPhase(phase.id)} type="button">{delPhaseSaving ? '…' : 'Delete'}</button>
-                                                <button className="btn btn--ghost phase-group__del-btn" disabled={delPhaseSaving} onClick={() => { setConfirmDelPhaseId(null); setDelPhaseError(null) }} type="button">Cancel</button>
+                                                <button className="btn btn--danger phase-group__del-btn" disabled={delPhaseSaving} onClick={() => void submitDelPhase(phase.id)} type="button">{delPhaseSaving ? '…' : t('Delete')}</button>
+                                                <button className="btn btn--ghost phase-group__del-btn" disabled={delPhaseSaving} onClick={() => { setConfirmDelPhaseId(null); setDelPhaseError(null) }} type="button">{t('Cancel')}</button>
                                               </div>
                                             )}
                                           </div>
                                           <div className="phase-group__tasks">
                                             {phase.tasks.length === 0 ? (
-                                              <p className="phase-group__empty">No tasks yet.</p>
+                                              <p className="phase-group__empty">{t('No tasks yet.')}</p>
                                             ) : (
                                               phase.tasks.map(item => (
                                                 <button
@@ -3111,7 +3032,7 @@ export function ProgramDetailView() {
                                                   type="button"
                                                 >
                                                   <div className="wi-row__info">
-                                                    {item.isBlocked && <span className="wi-row__blocker" title="Blocked" />}
+                                                    {item.isBlocked && <span className="wi-row__blocker" title={t('Blocked')} />}
                                                     <span className="code-badge">{item.code}</span>
                                                     <div className="wi-row__info-text">
                                                       <span className="wi-row__title">{item.title}</span>
@@ -3121,7 +3042,7 @@ export function ProgramDetailView() {
                                                         </span>
                                                       )}
                                                       {item.output && (
-                                                        <span className="wi-row__output" title={`Output: ${item.output}`}>
+                                                        <span className="wi-row__output" title={t('Output: {{output}}', { output: item.output })}>
                                                           → {item.output}
                                                         </span>
                                                       )}
@@ -3167,7 +3088,7 @@ export function ProgramDetailView() {
                                                 }}
                                                 type="button"
                                               >
-                                                + Add Task
+                                                {t('+ Add Task')}
                                               </button>
                                             )}
                                           </div>
@@ -3177,7 +3098,7 @@ export function ProgramDetailView() {
                                       {(iniDetail.tasks ?? []).filter(t => !t.phaseId).length > 0 && (
                                         <div className="phase-group">
                                           <div className="phase-group__header phase-group__header--unphased">
-                                            <span className="phase-group__name">Tasks without a phase</span>
+                                            <span className="phase-group__name">{t('Tasks without a phase')}</span>
                                           </div>
                                           <div className="phase-group__tasks">
                                             {(iniDetail.tasks ?? []).filter(t => !t.phaseId).map(item => (
@@ -3188,7 +3109,7 @@ export function ProgramDetailView() {
                                                 type="button"
                                               >
                                                 <div className="wi-row__info">
-                                                  {item.isBlocked && <span className="wi-row__blocker" title="Blocked" />}
+                                                  {item.isBlocked && <span className="wi-row__blocker" title={t('Blocked')} />}
                                                   <span className="code-badge">{item.code}</span>
                                                   <div className="wi-row__info-text">
                                                     <span className="wi-row__title">{item.title}</span>
@@ -3198,7 +3119,7 @@ export function ProgramDetailView() {
                                                       </span>
                                                     )}
                                                     {item.output && (
-                                                      <span className="wi-row__output" title={`Output: ${item.output}`}>
+                                                      <span className="wi-row__output" title={t('Output: {{output}}', { output: item.output })}>
                                                         → {item.output}
                                                       </span>
                                                     )}
@@ -3230,7 +3151,7 @@ export function ProgramDetailView() {
                                           onClick={() => { setCpWorkstreamId(ini.id); setShowCreatePhase(true) }}
                                           type="button"
                                         >
-                                          + Add Phase
+                                          {t('+ Add Phase')}
                                         </button>
                                       )}
 
@@ -3241,7 +3162,7 @@ export function ProgramDetailView() {
                                             onClick={() => setActiveTab('execution')}
                                             type="button"
                                           >
-                                            View full schedule →
+                                            {t('View full schedule →')}
                                           </button>
                                         </div>
                                       )}
@@ -3284,13 +3205,13 @@ export function ProgramDetailView() {
               <div className="program-detail-section-head">
                 <h3 className="wi-section__title program-detail-section-title">
                   {PIcon.blocker}
-                  Program Blockers
+                  {t('Program Blockers')}
                 </h3>
                 {/* Badge count: hide saat 0. "0 open" = noise tanpa info actionable.
                     Tampilkan hanya saat ada blocker aktif sebagai signal scan-cepat. */}
                 {blockers.length > 0 && (
                   <span className="section-badge section-badge--red">
-                    {blockers.length} open
+                    {t('{{count}} open', { count: blockers.length })}
                   </span>
                 )}
               </div>
@@ -3314,8 +3235,8 @@ export function ProgramDetailView() {
                         <path d="M12 7v5l3 2" />
                       </svg>
                     }
-                    title="No blockers reported"
-                    text="This tab becomes fully active once the program enters the Execution phase. The team reports blockers from tasks in progress."
+                    title={t('No blockers reported')}
+                    text={t('This tab becomes fully active once the program enters the Execution phase. The team reports blockers from tasks in progress.')}
                   />
                 ) : (
                   <SectionState
@@ -3325,8 +3246,8 @@ export function ProgramDetailView() {
                         <path d="M5 12l5 5L20 7" />
                       </svg>
                     }
-                    title="No active blockers"
-                    text="The program is running smoothly with no blockers. Status auto-updates when the team reports an obstacle from a task."
+                    title={t('No active blockers')}
+                    text={t('The program is running smoothly with no blockers. Status auto-updates when the team reports an obstacle from a task.')}
                   />
                 )
               })() : (
@@ -3345,15 +3266,15 @@ export function ProgramDetailView() {
                             {b.task.workstream.name} › {b.task.title}
                           </div>
                         </div>
-                        <span className="blocker-item__age" title="How long this blocker has been open">
-                          {b.daysOpen === 0 ? 'Today' : `${b.daysOpen} days`}
+                        <span className="blocker-item__age" title={t('How long this blocker has been open')}>
+                          {b.daysOpen === 0 ? t('Today') : t('{{count}} days', { count: b.daysOpen })}
                         </span>
                         <button
                           className="btn btn--ghost blocker-item__action"
                           onClick={() => navigate(`/execution/tasks/${b.task.id}`)}
                           type="button"
                         >
-                          Open task →
+                          {t('Open task →')}
                         </button>
                       </div>
                     )
@@ -3372,7 +3293,7 @@ export function ProgramDetailView() {
                 <div className="prog-kpi-head__title-row">
                   <h3 className="wi-section__title prog-kpi-head__title">
                     {PIcon.kpi}
-                    Related APMS KPIs
+                    {t('Related APMS KPIs')}
                   </h3>
                   {/* Badge count: hide saat 0 — redundant info ketika empty state
                       sudah komunikasi "Belum ada KPI yang terhubung". */}
@@ -3380,7 +3301,7 @@ export function ProgramDetailView() {
                     <span className="section-badge">{kpiLinks.length}</span>
                   )}
                   {detail?.hasNoApmsKpi && (
-                    <span className="prog-kpi-flag prog-kpi-flag--warning">No APMS KPI</span>
+                    <span className="prog-kpi-flag prog-kpi-flag--warning">{t('No APMS KPI')}</span>
                   )}
                   <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
                     {apmsLastFetchedAt && (() => {
@@ -3389,9 +3310,9 @@ export function ProgramDetailView() {
                       return (
                         <span
                           style={{ fontSize: 11.5, color: isStale ? 'var(--yellow)' : 'var(--text-muted)' }}
-                          title={`APMS data fetched ${new Date(apmsLastFetchedAt).toLocaleTimeString('en-US')}`}
+                          title={t('APMS data fetched {{time}}', { time: new Date(apmsLastFetchedAt).toLocaleTimeString('en-US') })}
                         >
-                          Synced {minsAgo < 1 ? 'just now' : `${minsAgo} min ago`}
+                          {minsAgo < 1 ? t('Synced just now') : t('Synced {{count}} min ago', { count: minsAgo })}
                         </span>
                       )
                     })()}
@@ -3399,19 +3320,19 @@ export function ProgramDetailView() {
                       type="button"
                       className="prog-kpi-sync-btn"
                       onClick={() => void refreshApmsKpis()}
-                      title="Re-sync KPI data from APMS/AGHRIS"
+                      title={t('Re-sync KPI data from APMS/AGHRIS')}
                     >
                       <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="11" aria-hidden="true">
                         <path d="M1.5 5a4.5 4.5 0 0 1 8-2.5L10.5 2M10.5 7a4.5 4.5 0 0 1-8 2.5L1.5 10M10.5 1.5v2.5h-2.5M3.5 8h-2v2.5"/>
                       </svg>
-                      Sync
+                      {t('Sync')}
                     </button>
                   </div>
                 </div>
                 <p className="prog-kpi-head__note">
                   {detail?.hasNoApmsKpi
-                    ? 'This program is marked as having no APMS KPI. Use the Internal KPIs below to record targets and actuals.'
-                    : 'Attribute the relevant AGHRIS KPI codes to this program. KPI data still comes from APMS.'}
+                    ? t('This program is marked as having no APMS KPI. Use the Internal KPIs below to record targets and actuals.')
+                    : t('Attribute the relevant AGHRIS KPI codes to this program. KPI data still comes from APMS.')}
                 </p>
               </div>
 
@@ -3421,7 +3342,7 @@ export function ProgramDetailView() {
                   <input
                     className="kpi-link-input"
                     type="text"
-                    placeholder="Search APMS KPI by code or name…"
+                    placeholder={t('Search APMS KPI by code or name…')}
                     value={kpiLinkSearch}
                     onChange={e => { setKpiLinkSearch(e.target.value); setKpiLinkDropdownOpen(true) }}
                     onFocus={() => setKpiLinkDropdownOpen(true)}
@@ -3448,7 +3369,7 @@ export function ProgramDetailView() {
                 )}
                 {kpiLinkDropdownOpen && kpiLinkSearch.length > 0 && kpiSearchResults.length === 0 && (
                   <div className="prog-kpi-dropdown prog-kpi-dropdown--empty">
-                    No matching KPIs.
+                    {t('No matching KPIs.')}
                   </div>
                 )}
               </div>
@@ -3461,8 +3382,8 @@ export function ProgramDetailView() {
               {kpiLinks.length === 0 ? (
                 <div className="prog-kpi-empty">
                   {detail?.hasNoApmsKpi
-                    ? 'This program is not linked to any APMS KPI. See the Internal KPI Targets section below to define the program metrics.'
-                    : 'Search APMS KPI by code or name above to link the program to relevant AGHRIS targets.'}
+                    ? t('This program is not linked to any APMS KPI. See the Internal KPI Targets section below to define the program metrics.')
+                    : t('Search APMS KPI by code or name above to link the program to relevant AGHRIS targets.')}
                 </div>
               ) : (
                 <div className="kpi-link-list prog-kpi-card-list">
@@ -3488,7 +3409,7 @@ export function ProgramDetailView() {
                             {displayName}
                           </span>
                           {displayBobot != null && (
-                            <span className="prog-kpi-card__weight">weight {displayBobot}%</span>
+                            <span className="prog-kpi-card__weight">{t('weight {{weight}}%', { weight: displayBobot })}</span>
                           )}
                           {apmsStatus && (
                             <span className={`prog-kpi-status prog-kpi-status--${apmsTone}`}>{apmsStatus}</span>
@@ -3496,7 +3417,7 @@ export function ProgramDetailView() {
                           <button
                             className="kpi-link-remove prog-kpi-card__remove"
                             onClick={() => void removeKpiLink(link.apmsKpiCode)}
-                            title="Remove link"
+                            title={t('Remove link')}
                             type="button"
                           >
                             ×
@@ -3512,12 +3433,12 @@ export function ProgramDetailView() {
                             </div>
                             <span className="prog-kpi-progress__meta">
                               {realisasi} / {sasaran} ({apmsAchievePct}%)
-                              {skor != null && <> · score {skor.toFixed(1)}</>}
+                              {skor != null && <> · {t('score {{score}}', { score: skor.toFixed(1) })}</>}
                             </span>
                           </div>
                         )}
                         {!meta && (
-                          <p className="prog-kpi-card__note">APMS data unavailable right now.</p>
+                          <p className="prog-kpi-card__note">{t('APMS data unavailable right now.')}</p>
                         )}
                       </div>
                     )
@@ -3531,10 +3452,10 @@ export function ProgramDetailView() {
                   <div className="prog-kpi-internal__copy">
                     <h4 className="wi-section__title" style={{ marginBottom: 2 }}>
                       {PIcon.chart}
-                      Internal KPI Targets
+                      {t('Internal KPI Targets')}
                     </h4>
                     <p className="prog-kpi-internal__desc">
-                      For programs that have no KPI in APMS.
+                      {t('For programs that have no KPI in APMS.')}
                     </p>
                     {(() => {
                       const kpis = detail?.kpis ?? []
@@ -3558,25 +3479,25 @@ export function ProgramDetailView() {
                           {counts.green > 0 && (
                             <span className="prog-kpi-summary-pill prog-kpi-summary-pill--green">
                               <span className="prog-kpi-summary-pill__dot" />
-                              {counts.green} on track
+                              {t('{{count}} on track', { count: counts.green })}
                             </span>
                           )}
                           {counts.yellow > 0 && (
                             <span className="prog-kpi-summary-pill prog-kpi-summary-pill--yellow">
                               <span className="prog-kpi-summary-pill__dot" />
-                              {counts.yellow} at risk
+                              {t('{{count}} at risk', { count: counts.yellow })}
                             </span>
                           )}
                           {counts.red > 0 && (
                             <span className="prog-kpi-summary-pill prog-kpi-summary-pill--red">
                               <span className="prog-kpi-summary-pill__dot" />
-                              {counts.red} off track
+                              {t('{{count}} off track', { count: counts.red })}
                             </span>
                           )}
                           {counts.unset > 0 && (
                             <span className="prog-kpi-summary-pill prog-kpi-summary-pill--muted">
                               <span className="prog-kpi-summary-pill__dot" />
-                              {counts.unset} not measured
+                              {t('{{count}} not measured', { count: counts.unset })}
                             </span>
                           )}
                         </div>
@@ -3596,7 +3517,7 @@ export function ProgramDetailView() {
                       setShowKpiInternalForm(v => !v)
                     }}
                   >
-                    {showKpiInternalForm ? 'Cancel' : '+ Create Target'}
+                    {showKpiInternalForm ? t('Cancel') : t('+ Create Target')}
                   </button>
                   )}
                 </div>
@@ -3611,17 +3532,17 @@ export function ProgramDetailView() {
                         Pada edit mode, code tetap immutable (BE patch endpoint
                         tidak terima field code). */}
                     <div className="form-field prog-form-field">
-                      <label>KPI Name <span className="form-field__required">*</span></label>
+                      <label>{t('KPI Name')} <span className="form-field__required">*</span></label>
                       <input
                         required minLength={2} maxLength={120}
-                        placeholder="Metric name"
+                        placeholder={t('Metric name')}
                         value={kpiInternal.name}
                         onChange={e => setKpiInternal(f => ({ ...f, name: e.target.value }))}
                       />
                     </div>
                     <div className="prog-form-grid prog-form-grid--triple">
                       <div className="form-field prog-form-field">
-                        <label>Target <span className="form-field__required">*</span></label>
+                        <label>{t('Target')} <span className="form-field__required">*</span></label>
                         <input
                           required type="number" step="any" placeholder="0"
                           value={kpiInternal.targetValue}
@@ -3629,24 +3550,24 @@ export function ProgramDetailView() {
                         />
                       </div>
                       <div className="form-field prog-form-field">
-                        <label>Unit</label>
+                        <label>{t('Unit')}</label>
                         <input
-                          maxLength={30} placeholder="%, unit, etc."
+                          maxLength={30} placeholder={t('%, unit, etc.')}
                           value={kpiInternal.unitOfMeasure}
                           onChange={e => setKpiInternal(f => ({ ...f, unitOfMeasure: e.target.value }))}
                         />
                       </div>
                       <div className="form-field prog-form-field">
-                        <label>Frequency</label>
+                        <label>{t('Frequency')}</label>
                         <select
                           className="form-input"
                           value={kpiInternal.reviewFrequency}
                           onChange={e => setKpiInternal(f => ({ ...f, reviewFrequency: e.target.value }))}
                         >
-                          <option value="WEEKLY">Weekly</option>
-                          <option value="MONTHLY">Monthly</option>
-                          <option value="QUARTERLY">Quarterly</option>
-                          <option value="ANNUALLY">Annually</option>
+                          <option value="WEEKLY">{t('Weekly')}</option>
+                          <option value="MONTHLY">{t('Monthly')}</option>
+                          <option value="QUARTERLY">{t('Quarterly')}</option>
+                          <option value="ANNUALLY">{t('Annually')}</option>
                         </select>
                       </div>
                     </div>
@@ -3656,7 +3577,7 @@ export function ProgramDetailView() {
                         type="submit"
                         disabled={kpiInternalSaving || !kpiInternal.name || !kpiInternal.targetValue}
                       >
-                        {kpiInternalSaving ? 'Saving…' : (editingKpiId ? 'Save Changes' : 'Save KPI')}
+                        {kpiInternalSaving ? t('Saving…') : (editingKpiId ? t('Save Changes') : t('Save KPI'))}
                       </button>
                     </div>
                   </form>
@@ -3671,7 +3592,6 @@ export function ProgramDetailView() {
                       const hasActual = kpi.actualValue != null
                       const kpiStatus = !hasActual ? 'UNSET' : actual >= warn ? 'GREEN' : actual >= crit ? 'YELLOW' : 'RED'
                       const kpiTone = kpiStatus === 'UNSET' ? 'muted' : kpiStatus.toLowerCase()
-                      const isRecording = recordingKpiId === kpi.id
                       // Color accent border-left berdasarkan status — memberikan
                       // signal visual cepat tanpa user perlu baca text status.
                       // Pattern Linear/Notion: row dengan colored stripe.
@@ -3684,11 +3604,11 @@ export function ProgramDetailView() {
                             <span className="code-badge">{kpi.code}</span>
                             <span className="prog-kpi-card__name">{kpi.name}</span>
                             {kpi.reviewFrequency && (
-                              <span className="prog-kpi-card__freq" title="Measurement frequency">
-                                {kpi.reviewFrequency === 'WEEKLY' ? 'Weekly'
-                                  : kpi.reviewFrequency === 'MONTHLY' ? 'Monthly'
-                                  : kpi.reviewFrequency === 'QUARTERLY' ? 'Quarterly'
-                                  : 'Annually'}
+                              <span className="prog-kpi-card__freq" title={t('Measurement frequency')}>
+                                {kpi.reviewFrequency === 'WEEKLY' ? t('Weekly')
+                                  : kpi.reviewFrequency === 'MONTHLY' ? t('Monthly')
+                                  : kpi.reviewFrequency === 'QUARTERLY' ? t('Quarterly')
+                                  : t('Annually')}
                               </span>
                             )}
                             <span className={`prog-kpi-status prog-kpi-status--${kpiTone}`}>
@@ -3702,8 +3622,8 @@ export function ProgramDetailView() {
                                 type="button"
                                 className="prog-kpi-card__edit"
                                 onClick={() => openEditKpi(kpi)}
-                                title="Edit KPI"
-                                aria-label="Edit KPI"
+                                title={t('Edit KPI')}
+                                aria-label={t('Edit KPI')}
                               >
                                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="12" aria-hidden="true">
                                   <path d="M9.5 2.5 11.5 4.5 4.5 11.5 2 12l.5-2.5z"/>
@@ -3714,20 +3634,21 @@ export function ProgramDetailView() {
                               <button
                                 type="button"
                                 className="btn btn--ghost prog-kpi-card__action"
-                                onClick={() => { setRecordingKpiId(isRecording ? null : kpi.id); setKpiActualError(null) }}
+                                onClick={() => navigate(`/execution?report=${numId}`)}
+                                title={t('KPI actuals are recorded in the Workboard')}
                               >
-                                {isRecording ? 'Cancel' : 'Record Actual'}
+                                {t('Record in Workboard →')}
                               </button>
                             ) : (
                               <span
                                 className="prog-kpi-card__action-locked"
-                                title="KPI actual values can be entered once the program enters the Execution phase"
+                                title={t('KPI actual values can be entered once the program enters the Execution phase')}
                               >
                                 <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="11" aria-hidden="true">
                                   <rect height="6" rx="1" width="8" x="2" y="5"/>
                                   <path d="M4 5V3.5a2 2 0 0 1 4 0V5"/>
                                 </svg>
-                                Planning
+                                {t('Planning')}
                               </span>
                             )}
                           </div>
@@ -3745,33 +3666,8 @@ export function ProgramDetailView() {
                           </div>
                           {kpi.lastMeasuredDate && (
                             <p className="prog-kpi-card__note">
-                              Last measured: {new Date(kpi.lastMeasuredDate).toLocaleDateString('en-US')}
+                              {t('Last measured: {{date}}', { date: new Date(kpi.lastMeasuredDate).toLocaleDateString('en-US') })}
                             </p>
-                          )}
-                          {/* Inline record actual form */}
-                          {isRecording && (
-                            <form className="prog-kpi-record-form" onSubmit={(e) => void submitKpiActual(e)}>
-                              {kpiActualError && <p className="prog-kpi-error prog-kpi-error--compact">{kpiActualError}</p>}
-                              <div className="prog-form-grid prog-form-grid--equal prog-form-grid--compact">
-                                <div className="form-field prog-form-field prog-form-field--compact">
-                                  <label>Measurement Date</label>
-                                  <input type="date" value={kpiActual.measurementDate} onChange={e => setKpiActual(f => ({ ...f, measurementDate: e.target.value }))} required />
-                                </div>
-                                <div className="form-field prog-form-field prog-form-field--compact">
-                                  <label>Actual Value{kpi.unitOfMeasure ? ` (${kpi.unitOfMeasure})` : ''}</label>
-                                  <input type="number" step="any" value={kpiActual.actualValue} onChange={e => setKpiActual(f => ({ ...f, actualValue: e.target.value }))} required placeholder="0" />
-                                </div>
-                              </div>
-                              <div className="form-field prog-form-field prog-form-field--compact">
-                                <label>Notes (optional)</label>
-                                <input maxLength={200} value={kpiActual.statusNotes} onChange={e => setKpiActual(f => ({ ...f, statusNotes: e.target.value }))} placeholder="Brief explanation…" />
-                              </div>
-                              <div className="prog-form-actions">
-                                <button className="profile-save-btn" type="submit" disabled={kpiActualSaving || !kpiActual.actualValue}>
-                                  {kpiActualSaving ? 'Saving…' : 'Save'}
-                                </button>
-                              </div>
-                            </form>
                           )}
                         </div>
                       )
@@ -3794,13 +3690,13 @@ export function ProgramDetailView() {
           <div aria-describedby={editProgramDescId} aria-labelledby={editProgramTitleId} aria-modal="true" className="modal modal--wide" ref={editProgramDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">{programSummary?.code ?? 'Program'}</span>
-                <h3 className="modal__title" id={editProgramTitleId}>Edit Program</h3>
+                <span className="modal-kicker">{programSummary?.code ?? t('Program')}</span>
+                <h3 className="modal__title" id={editProgramTitleId}>{t('Edit Program')}</h3>
                 <p className="modal-subtitle" id={editProgramDescId}>
-                  Perbarui identitas, status, dan target waktu program tanpa meninggalkan konteks detail yang sedang dibuka.
+                  {t('Update the program identity, status, and target dates without leaving the detail context you have open.')}
                 </p>
               </div>
-              <button aria-label="Close" className="modal__close" disabled={epSaving} onClick={triggerEpClose} type="button">
+              <button aria-label={t('Close')} className="modal__close" disabled={epSaving} onClick={triggerEpClose} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -3816,9 +3712,9 @@ export function ProgramDetailView() {
                       <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="14"><circle cx="7" cy="7" r="5.5"/><path d="M7 4.5v3M7 9.5h.01"/></svg>
                     </span>
                     <div className="prog-edit-commitment-hint__body">
-                      <strong>Program is active</strong>
+                      <strong>{t('Program is active')}</strong>
                       <span>
-                        Changes to <em>commitment</em> fields (target date, priority, budget, group, strategic pillar) are logged in the Approval History and KADIV is notified automatically. Detail fields (description, PIC, progress narrative) are free-edit without notification.
+                        {t('Changes to commitment fields (target date, priority, budget, group, strategic pillar) are logged in the Approval History and KADIV is notified automatically. Detail fields (description, PIC, progress narrative) are free-edit without notification.')}
                       </span>
                     </div>
                   </div>
@@ -3826,75 +3722,75 @@ export function ProgramDetailView() {
                 {epError && <div className="prog-modal-error">{epError}</div>}
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>Identitas Program</h4>
-                    <p>Tidy up the code, name, and short summary so the roster and reports stay easy to scan.</p>
+                    <h4>{t('Program Identity')}</h4>
+                    <p>{t('Tidy up the code, name, and short summary so the roster and reports stay easy to scan.')}</p>
                   </div>
                   <div className="prog-form-grid prog-form-grid--wide">
                     <div className="form-field">
-                      <label>Kode <span className="form-field__required">*</span></label>
+                      <label>{t('Code')} <span className="form-field__required">*</span></label>
                       <input maxLength={40} onChange={e => setEpForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} required type="text" value={epForm.code} />
                     </div>
                     <div className="form-field">
-                      <label>Program Name <span className="form-field__required">*</span></label>
+                      <label>{t('Program Name')} <span className="form-field__required">*</span></label>
                       <input maxLength={120} onChange={e => setEpForm(f => ({ ...f, name: e.target.value }))} required type="text" value={epForm.name} />
                     </div>
                   </div>
                   <div className="form-field">
-                    <label>Description</label>
+                    <label>{t('Description')}</label>
                     <textarea className="composer__input prog-modal-textarea" maxLength={400} onChange={e => setEpForm(f => ({ ...f, description: e.target.value }))} rows={2} value={epForm.description} />
                   </div>
                 </section>
                 <section className="modal-section modal-section--soft">
                   <div className="modal-section__intro">
-                    <h4>Priority &amp; Schedule</h4>
-                    <p>Align priority and time horizon with the latest situation.</p>
+                    <h4>{t('Priority & Schedule')}</h4>
+                    <p>{t('Align priority and time horizon with the latest situation.')}</p>
                   </div>
                   {detail?.approvalStatus === 'ACTIVE' && (
                     <div className="form-field">
-                      <label>Status operasional</label>
+                      <label>{t('Operational status')}</label>
                       <select className="form-input" onChange={e => setEpForm(f => ({ ...f, status: e.target.value }))} value={epForm.status}>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="ON_HOLD">On Hold</option>
-                        <option value="COMPLETED">Completed</option>
-                        <option value="CANCELLED">Cancelled</option>
+                        <option value="IN_PROGRESS">{t('In Progress')}</option>
+                        <option value="ON_HOLD">{t('On Hold')}</option>
+                        <option value="COMPLETED">{t('Completed')}</option>
+                        <option value="CANCELLED">{t('Cancelled')}</option>
                       </select>
                     </div>
                   )}
                   <div className="form-field">
-                    <label>Priority</label>
+                    <label>{t('Priority')}</label>
                     <select className="form-input" onChange={e => setEpForm(f => ({ ...f, priority: e.target.value }))} value={epForm.priority}>
-                      <option value="CRITICAL">Critical</option>
-                      <option value="HIGH">High</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="LOW">Low</option>
+                      <option value="CRITICAL">{t('Critical')}</option>
+                      <option value="HIGH">{t('High')}</option>
+                      <option value="MEDIUM">{t('Medium')}</option>
+                      <option value="LOW">{t('Low')}</option>
                     </select>
                   </div>
                   <div className="prog-form-grid prog-form-grid--equal">
                     <div className="form-field">
-                      <label>Start Date</label>
+                      <label>{t('Start Date')}</label>
                       <input onChange={e => setEpForm(f => ({ ...f, startDate: e.target.value }))} type="date" value={epForm.startDate} />
                     </div>
                     <div className="form-field">
-                      <label>Target Completion</label>
+                      <label>{t('Target Completion')}</label>
                       <input onChange={e => setEpForm(f => ({ ...f, targetEndDate: e.target.value }))} type="date" value={epForm.targetEndDate} />
                     </div>
                   </div>
                   <div className="form-field">
                     <label>
-                      Communication Channel
-                      <span className="form-field__hint"> · link to a channel so program updates also appear there</span>
+                      {t('Communication Channel')}
+                      <span className="form-field__hint">{t(' · link to a channel so program updates also appear there')}</span>
                     </label>
                     <select
                       className="form-input"
                       value={epForm.linkedChannelId === '' ? '' : String(epForm.linkedChannelId)}
                       onChange={e => setEpForm(f => ({ ...f, linkedChannelId: e.target.value }))}
                     >
-                      <option value="">— Tidak ditautkan —</option>
+                      <option value="">{t('— Not linked —')}</option>
                       {channels
                         .filter(c => !c.isDirectMessage)
                         .map(c => (
                           <option key={c.id} value={c.id}>
-                            #{c.name}{c.type === 'PRIVATE' ? ' (private)' : ''}
+                            #{c.name}{c.type === 'PRIVATE' ? t(' (private)') : ''}
                           </option>
                         ))}
                     </select>
@@ -3902,11 +3798,11 @@ export function ProgramDetailView() {
                 </section>
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>PIC &amp; Team</h4>
-                    <p>Set who is responsible for this program. The Main PIC has full rights; the PIC Team can also edit.</p>
+                    <h4>{t('PIC & Team')}</h4>
+                    <p>{t('Set who is responsible for this program. The Main PIC has full rights; the PIC Team can also edit.')}</p>
                   </div>
                   {userDirectory.length === 0 ? (
-                    <p className="wi-sidebar-value" style={{ color: 'var(--text-muted)', fontSize: 12 }}>Loading user list…</p>
+                    <p className="wi-sidebar-value" style={{ color: 'var(--text-muted)', fontSize: 12 }}>{t('Loading user list…')}</p>
                   ) : (
                     <>
                       {(() => {
@@ -3934,7 +3830,7 @@ export function ProgramDetailView() {
                         }
                         return (
                           <div className="form-field" style={{ marginBottom: 14 }}>
-                            <label>PIC Utama</label>
+                            <label>{t('Main PIC')}</label>
                             {!epOwnerEditing ? (
                               <div className="prog-owner-current">
                                 <div className="prog-owner-current__info">
@@ -3948,7 +3844,7 @@ export function ProgramDetailView() {
                                   onClick={() => { setEpOwnerEditing(true); setEpOwnerQuery('') }}
                                   type="button"
                                 >
-                                  Ganti
+                                  {t('Change')}
                                 </button>
                               </div>
                             ) : (
@@ -3968,12 +3864,12 @@ export function ProgramDetailView() {
                                         setEpOwnerEditing(false); setEpOwnerQuery('')
                                       }
                                     }}
-                                    placeholder="Search new lead PIC…"
+                                    placeholder={t('Search new lead PIC…')}
                                     type="text"
                                     value={epOwnerQuery}
                                   />
                                   <button
-                                    aria-label="Cancel change lead PIC"
+                                    aria-label={t('Cancel change lead PIC')}
                                     className="prog-pic-searchbox__cancel"
                                     onClick={() => { setEpOwnerEditing(false); setEpOwnerQuery('') }}
                                     type="button"
@@ -3982,7 +3878,7 @@ export function ProgramDetailView() {
                                   </button>
                                 </div>
                                 {ownerFiltered.length === 0 ? (
-                                  <p className="prog-pic-empty">No matching names.</p>
+                                  <p className="prog-pic-empty">{t('No matching names.')}</p>
                                 ) : (
                                   <ul className="prog-pic-results">
                                     {ownerFiltered.map(u => (
@@ -4006,7 +3902,7 @@ export function ProgramDetailView() {
                           </div>
                         )
                       })()}
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--text-muted)' }}>Tim PIC (co-PIC)</label>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--text-muted)' }}>{t('PIC Team (co-PIC)')}</label>
                       {(() => {
                         const ownerId = epOwnerId ?? detail?.ownerId ?? 0
                         const ownerInList = ownerId > 0 && epPicIds.includes(ownerId)
@@ -4025,9 +3921,9 @@ export function ProgramDetailView() {
                 </section>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" disabled={epSaving} onClick={triggerEpClose} type="button">Cancel</button>
+                <button className="btn btn--ghost" disabled={epSaving} onClick={triggerEpClose} type="button">{t('Cancel')}</button>
                 <button className="profile-save-btn" disabled={epSaving || !epForm.code.trim() || !epForm.name.trim()} type="submit">
-                  {epSaving ? 'Saving…' : 'Save Changes'}
+                  {epSaving ? t('Saving…') : t('Save Changes')}
                 </button>
               </div>
             </form>
@@ -4048,10 +3944,10 @@ export function ProgramDetailView() {
           >
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={createWorkstreamTitleId}>New Workstream</h3>
-                <p className="modal-subtitle">Add a workstream to this program.</p>
+                <h3 className="modal__title" id={createWorkstreamTitleId}>{t('New Workstream')}</h3>
+                <p className="modal-subtitle">{t('Add a workstream to this program.')}</p>
               </div>
-              <button aria-label="Close" className="modal__close" disabled={ciSaving} onClick={triggerCiClose} type="button">
+              <button aria-label={t('Close')} className="modal__close" disabled={ciSaving} onClick={triggerCiClose} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -4059,57 +3955,57 @@ export function ProgramDetailView() {
               <div className="modal__body">
                 {ciError && <div className="prog-modal-error">{ciError}</div>}
                 <div className="form-field">
-                  <label>Name <span className="form-field__required">*</span></label>
+                  <label>{t('Name')} <span className="form-field__required">*</span></label>
                   <input autoFocus maxLength={120} onChange={e => setCiForm(f => ({ ...f, name: e.target.value }))} required type="text" value={ciForm.name} />
                 </div>
                 <div className="form-field">
-                  <label>Description</label>
+                  <label>{t('Description')}</label>
                   <textarea className="composer__input prog-modal-textarea" maxLength={400} onChange={e => setCiForm(f => ({ ...f, description: e.target.value }))} rows={2} value={ciForm.description} />
                 </div>
                 <div className="prog-form-grid prog-form-grid--equal">
                   <div className="form-field">
-                    <label>Start Date</label>
+                    <label>{t('Start Date')}</label>
                     <input onChange={e => setCiForm(f => ({ ...f, startDate: e.target.value }))} type="date" value={ciForm.startDate} />
                   </div>
                   <div className="form-field">
-                    <label>Target Completion <span className="form-field__required">*</span></label>
+                    <label>{t('Target Completion')} <span className="form-field__required">*</span></label>
                     <input onChange={e => setCiForm(f => ({ ...f, targetCompletion: e.target.value }))} required type="date" value={ciForm.targetCompletion} />
                   </div>
                 </div>
                 <div className="form-field">
-                  <label>Priority</label>
+                  <label>{t('Priority')}</label>
                   <select className="form-input" onChange={e => setCiForm(f => ({ ...f, priority: e.target.value }))} value={ciForm.priority}>
-                    <option value="CRITICAL">Critical</option>
-                    <option value="HIGH">High</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="LOW">Low</option>
+                    <option value="CRITICAL">{t('Critical')}</option>
+                    <option value="HIGH">{t('High')}</option>
+                    <option value="MEDIUM">{t('Medium')}</option>
+                    <option value="LOW">{t('Low')}</option>
                   </select>
                 </div>
                 <div className="prog-form-grid prog-form-grid--equal">
                   <div className="form-field">
-                    <label>Anggaran (IDR)</label>
+                    <label>{t('Budget (IDR)')}</label>
                     <input min={0} onChange={e => setCiForm(f => ({ ...f, budgetIdr: e.target.value }))} type="number" value={ciForm.budgetIdr} />
                   </div>
                   <div className="form-field">
-                    <label>Realisasi (IDR)</label>
+                    <label>{t('Spent (IDR)')}</label>
                     <input min={0} onChange={e => setCiForm(f => ({ ...f, budgetSpent: e.target.value }))} type="number" value={ciForm.budgetSpent} />
                   </div>
                 </div>
                 <div className="form-field">
                   <label>
-                    Workstream Owner
-                    <span className="form-field__hint"> · reviewer for tasks entering IN_REVIEW</span>
+                    {t('Workstream Owner')}
+                    <span className="form-field__hint">{t(' · reviewer for tasks entering IN_REVIEW')}</span>
                   </label>
                   <UserPicker
                     currentUserId={currentUser?.id}
                     onChange={id => setCiOwnerId(id ?? currentUser?.id ?? null)}
                     options={userDirectory.length > 0 ? userDirectory : (currentUser ? [{ id: currentUser.id, name: currentUser.name, positionTitle: null }] : [])}
-                    placeholder="Select workstream owner…"
+                    placeholder={t('Select workstream owner…')}
                     value={ciOwnerId ?? currentUser?.id ?? null}
                   />
                 </div>
                 <div className="form-field">
-                  <label>Assignee</label>
+                  <label>{t('Assignee')}</label>
                   <div className="wid-pic-adder" style={{ position: 'relative' }}>
                     {ciPicIds.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
@@ -4132,7 +4028,7 @@ export function ProgramDetailView() {
                     <input
                       className="wid-pic-search"
                       onChange={e => setCiPicSearch(e.target.value)}
-                      placeholder="+ Search name..."
+                      placeholder={t('+ Search name...')}
                       style={{ width: '100%' }}
                       type="text"
                       value={ciPicSearch}
@@ -4162,9 +4058,9 @@ export function ProgramDetailView() {
                 </div>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" disabled={ciSaving} onClick={triggerCiClose} type="button">Cancel</button>
+                <button className="btn btn--ghost" disabled={ciSaving} onClick={triggerCiClose} type="button">{t('Cancel')}</button>
                 <button className="profile-save-btn" disabled={ciSaving || ciForm.name.trim().length < 3 || !ciForm.targetCompletion} type="submit">
-                  {ciSaving ? 'Saving…' : 'Create Workstream'}
+                  {ciSaving ? t('Saving…') : t('Create Workstream')}
                 </button>
               </div>
             </form>
@@ -4182,13 +4078,13 @@ export function ProgramDetailView() {
           <div aria-describedby={editWorkstreamDescId} aria-labelledby={editWorkstreamTitleId} aria-modal="true" className="modal modal--wide" ref={editWorkstreamDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">{programSummary?.code ?? 'Program'}</span>
-                <h3 className="modal__title" id={editWorkstreamTitleId}>Edit Workstream</h3>
+                <span className="modal-kicker">{programSummary?.code ?? t('Program')}</span>
+                <h3 className="modal__title" id={editWorkstreamTitleId}>{t('Edit Workstream')}</h3>
                 <p className="modal-subtitle" id={editWorkstreamDescId}>
-                  Sesuaikan narasi, prioritas, dan tenggat workstream agar tetap sinkron dengan ritme eksekusi program.
+                  {t('Adjust the workstream narrative, priority, and deadline to stay in sync with the program execution rhythm.')}
                 </p>
               </div>
-              <button aria-label="Close" className="modal__close" disabled={eiSaving} onClick={triggerEiClose} type="button">
+              <button aria-label={t('Close')} className="modal__close" disabled={eiSaving} onClick={triggerEiClose} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -4196,75 +4092,75 @@ export function ProgramDetailView() {
               <div className="modal__body modal__body--compact">
                 {eiError && <div className="prog-modal-error">{eiError}</div>}
                 <div className="form-field">
-                  <label>Name <span className="form-field__required">*</span></label>
+                  <label>{t('Name')} <span className="form-field__required">*</span></label>
                   <input maxLength={120} onChange={e => setEiForm(f => ({ ...f, name: e.target.value }))} required type="text" value={eiForm.name} />
                 </div>
                 <div className="form-field">
-                  <label>Description</label>
+                  <label>{t('Description')}</label>
                   <textarea className="composer__input prog-modal-textarea" maxLength={400} onChange={e => setEiForm(f => ({ ...f, description: e.target.value }))} rows={2} value={eiForm.description} />
                 </div>
                 {detail?.approvalStatus === 'ACTIVE' && (
                   <div className="form-field">
-                    <label>Status</label>
+                    <label>{t('Status')}</label>
                     <select className="form-input" onChange={e => setEiForm(f => ({ ...f, status: e.target.value }))} value={eiForm.status}>
-                      <option value="BACKLOG">Backlog</option>
-                      <option value="READY">Ready</option>
-                      <option value="IN_PROGRESS">In Progress</option>
-                      <option value="IN_REVIEW">In Review</option>
-                      <option value="BLOCKED">Blocked</option>
-                      <option value="COMPLETED">Completed</option>
+                      <option value="BACKLOG">{t('Backlog')}</option>
+                      <option value="READY">{t('Ready')}</option>
+                      <option value="IN_PROGRESS">{t('In Progress')}</option>
+                      <option value="IN_REVIEW">{t('In Review')}</option>
+                      <option value="BLOCKED">{t('Blocked')}</option>
+                      <option value="COMPLETED">{t('Completed')}</option>
                     </select>
                   </div>
                 )}
                 <div className="prog-form-grid prog-form-grid--equal">
                   <div className="form-field">
-                    <label>Start Date</label>
+                    <label>{t('Start Date')}</label>
                     <input onChange={e => setEiForm(f => ({ ...f, startDate: e.target.value }))} type="date" value={eiForm.startDate} />
                   </div>
                   <div className="form-field">
-                    <label>Target Completion <span className="form-field__required">*</span></label>
+                    <label>{t('Target Completion')} <span className="form-field__required">*</span></label>
                     <input onChange={e => setEiForm(f => ({ ...f, targetCompletion: e.target.value }))} required type="date" value={eiForm.targetCompletion} />
-                    {!eiForm.targetCompletion && <span className="form-field__hint form-field__hint--warn">Date invalid or not set</span>}
+                    {!eiForm.targetCompletion && <span className="form-field__hint form-field__hint--warn">{t('Date invalid or not set')}</span>}
                   </div>
                 </div>
                 <div className="form-field">
-                  <label>Priority</label>
+                  <label>{t('Priority')}</label>
                   <select className="form-input" onChange={e => setEiForm(f => ({ ...f, priority: e.target.value }))} value={eiForm.priority}>
-                    <option value="CRITICAL">Critical</option>
-                    <option value="HIGH">High</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="LOW">Low</option>
+                    <option value="CRITICAL">{t('Critical')}</option>
+                    <option value="HIGH">{t('High')}</option>
+                    <option value="MEDIUM">{t('Medium')}</option>
+                    <option value="LOW">{t('Low')}</option>
                   </select>
                 </div>
                 <div className="prog-form-grid prog-form-grid--equal">
                   <div className="form-field">
-                    <label>Anggaran (IDR)</label>
+                    <label>{t('Budget (IDR)')}</label>
                     <input min={0} onChange={e => setEiForm(f => ({ ...f, budgetIdr: e.target.value }))} type="number" value={eiForm.budgetIdr} />
                   </div>
                   <div className="form-field">
-                    <label>Realisasi (IDR)</label>
+                    <label>{t('Spent (IDR)')}</label>
                     <input min={0} onChange={e => setEiForm(f => ({ ...f, budgetSpent: e.target.value }))} type="number" value={eiForm.budgetSpent} />
                   </div>
                 </div>
                 <div className="form-field">
                   <label>
-                    Workstream Owner
-                    <span className="form-field__hint"> · reviewer for tasks entering IN_REVIEW</span>
+                    {t('Workstream Owner')}
+                    <span className="form-field__hint">{t(' · reviewer for tasks entering IN_REVIEW')}</span>
                   </label>
                   <UserPicker
                     currentUserId={currentUser?.id}
                     onChange={id => setEiForm(f => ({ ...f, ownerId: id }))}
                     options={userDirectory.length > 0 ? userDirectory : (currentUser ? [{ id: currentUser.id, name: currentUser.name, positionTitle: null }] : [])}
-                    placeholder="Select workstream owner…"
+                    placeholder={t('Select workstream owner…')}
                     value={eiForm.ownerId}
                   />
                 </div>
                 <div className="ws-pic-section">
-                  <label className="ws-pic-section__label">Assignee</label>
+                  <label className="ws-pic-section__label">{t('Assignee')}</label>
                   <input
                     className="ws-pic-section__search"
                     onChange={e => setEiPicSearch(e.target.value)}
-                    placeholder="Search name..."
+                    placeholder={t('Search name...')}
                     type="text"
                     value={eiPicSearch}
                   />
@@ -4294,7 +4190,7 @@ export function ProgramDetailView() {
                   </div>
                   {eiPicIds.length > 1 && (
                     <div className="ws-pic-primary">
-                      <label className="ws-pic-primary__label">PIC Utama</label>
+                      <label className="ws-pic-primary__label">{t('Main PIC')}</label>
                       <select
                         className="ws-pic-primary__select"
                         value={eiPrimaryPicId ?? eiPicIds[0]}
@@ -4302,7 +4198,7 @@ export function ProgramDetailView() {
                       >
                         {eiPicIds.map(uid => {
                           const u = userDirectory.find(x => x.id === uid)
-                          return <option key={uid} value={uid}>{u?.name ?? `User #${uid}`}</option>
+                          return <option key={uid} value={uid}>{u?.name ?? t('User #{{id}}', { id: uid })}</option>
                         })}
                       </select>
                     </div>
@@ -4310,9 +4206,9 @@ export function ProgramDetailView() {
                 </div>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" disabled={eiSaving} onClick={triggerEiClose} type="button">Cancel</button>
+                <button className="btn btn--ghost" disabled={eiSaving} onClick={triggerEiClose} type="button">{t('Cancel')}</button>
                 <button className="profile-save-btn" disabled={eiSaving || eiForm.name.trim().length < 3 || !eiForm.targetCompletion} type="submit">
-                  {eiSaving ? 'Saving…' : 'Save Changes'}
+                  {eiSaving ? t('Saving…') : t('Save Changes')}
                 </button>
               </div>
             </form>
@@ -4329,10 +4225,10 @@ export function ProgramDetailView() {
           <div aria-labelledby={editPhaseTitleId} aria-modal="true" className="modal" ref={editPhaseDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={editPhaseTitleId}>Edit Phase</h3>
+                <h3 className="modal__title" id={editPhaseTitleId}>{t('Edit Phase')}</h3>
                 <p className="modal-subtitle">{editPhase?.name}</p>
               </div>
-              <button aria-label="Close" className="modal__close" disabled={ephSaving} onClick={triggerEphClose} type="button">
+              <button aria-label={t('Close')} className="modal__close" disabled={ephSaving} onClick={triggerEphClose} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -4340,36 +4236,36 @@ export function ProgramDetailView() {
               <div className="modal__body">
                 {ephError && <div className="prog-modal-error">{ephError}</div>}
                 <div className="form-field">
-                  <label>Phase Name <span className="form-field__required">*</span></label>
+                  <label>{t('Phase Name')} <span className="form-field__required">*</span></label>
                   <input autoFocus maxLength={120} onChange={e => setEphForm(f => ({ ...f, name: e.target.value }))} required type="text" value={ephForm.name} />
                 </div>
                 <div className="form-field">
-                  <label>Description</label>
+                  <label>{t('Description')}</label>
                   <textarea className="composer__input prog-modal-textarea" maxLength={400} onChange={e => setEphForm(f => ({ ...f, description: e.target.value }))} rows={2} value={ephForm.description} />
                 </div>
                 <div className="form-field">
-                  <label>Status</label>
+                  <label>{t('Status')}</label>
                   <select className="form-input" onChange={e => setEphForm(f => ({ ...f, status: e.target.value }))} value={ephForm.status}>
-                    <option value="PLANNING">Planning</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="COMPLETED">Completed</option>
+                    <option value="PLANNING">{t('Planning')}</option>
+                    <option value="IN_PROGRESS">{t('In Progress')}</option>
+                    <option value="COMPLETED">{t('Completed')}</option>
                   </select>
                 </div>
                 <div className="prog-form-grid prog-form-grid--equal">
                   <div className="form-field">
-                    <label>Minggu mulai</label>
+                    <label>{t('Start week')}</label>
                     <input onChange={e => setEphForm(f => ({ ...f, startWeek: e.target.value }))} type="week" value={ephForm.startWeek} />
                   </div>
                   <div className="form-field">
-                    <label>Minggu selesai</label>
+                    <label>{t('End week')}</label>
                     <input onChange={e => setEphForm(f => ({ ...f, endWeek: e.target.value }))} type="week" value={ephForm.endWeek} />
                   </div>
                 </div>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" disabled={ephSaving} onClick={triggerEphClose} type="button">Cancel</button>
+                <button className="btn btn--ghost" disabled={ephSaving} onClick={triggerEphClose} type="button">{t('Cancel')}</button>
                 <button className="profile-save-btn" disabled={ephSaving || !ephForm.name.trim()} type="submit">
-                  {ephSaving ? 'Saving…' : 'Save Changes'}
+                  {ephSaving ? t('Saving…') : t('Save Changes')}
                 </button>
               </div>
             </form>
@@ -4387,10 +4283,10 @@ export function ProgramDetailView() {
           <div aria-labelledby={createPhaseTitleId} aria-modal="true" className="modal" ref={createPhaseDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={createPhaseTitleId}>New Phase</h3>
-                <p className="modal-subtitle">Add a phase (main stage) to this workstream.</p>
+                <h3 className="modal__title" id={createPhaseTitleId}>{t('New Phase')}</h3>
+                <p className="modal-subtitle">{t('Add a phase (main stage) to this workstream.')}</p>
               </div>
-              <button aria-label="Close" className="modal__close" disabled={cpSaving} onClick={triggerCpClose} type="button">
+              <button aria-label={t('Close')} className="modal__close" disabled={cpSaving} onClick={triggerCpClose} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -4398,19 +4294,19 @@ export function ProgramDetailView() {
               <div className="modal__body">
                 {cpError && <div className="prog-modal-error">{cpError}</div>}
                 <div className="form-field">
-                  <label>Phase Name <span className="form-field__required">*</span></label>
+                  <label>{t('Phase Name')} <span className="form-field__required">*</span></label>
                   <input
                     autoFocus
                     maxLength={120}
                     onChange={e => setCpForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="e.g. Debt Structure Mapping & Baseline Audit"
+                    placeholder={t('e.g. Debt Structure Mapping & Baseline Audit')}
                     required
                     type="text"
                     value={cpForm.name}
                   />
                 </div>
                 <div className="form-field">
-                  <label>Description</label>
+                  <label>{t('Description')}</label>
                   <textarea
                     className="composer__input prog-modal-textarea"
                     maxLength={400}
@@ -4421,19 +4317,19 @@ export function ProgramDetailView() {
                 </div>
                 <div className="prog-form-grid prog-form-grid--equal">
                   <div className="form-field">
-                    <label>Minggu mulai</label>
+                    <label>{t('Start week')}</label>
                     <input onChange={e => setCpForm(f => ({ ...f, startWeek: e.target.value }))} type="week" value={cpForm.startWeek} />
                   </div>
                   <div className="form-field">
-                    <label>Minggu selesai</label>
+                    <label>{t('End week')}</label>
                     <input onChange={e => setCpForm(f => ({ ...f, endWeek: e.target.value }))} type="week" value={cpForm.endWeek} />
                   </div>
                 </div>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" disabled={cpSaving} onClick={triggerCpClose} type="button">Cancel</button>
+                <button className="btn btn--ghost" disabled={cpSaving} onClick={triggerCpClose} type="button">{t('Cancel')}</button>
                 <button className="profile-save-btn" disabled={cpSaving || !cpForm.name.trim()} type="submit">
-                  {cpSaving ? 'Saving…' : 'Create Phase'}
+                  {cpSaving ? t('Saving…') : t('Create Phase')}
                 </button>
               </div>
             </form>
@@ -4451,10 +4347,10 @@ export function ProgramDetailView() {
           <div aria-labelledby={createSubTaskTitleId} aria-modal="true" className="modal" ref={createSubTaskDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={createSubTaskTitleId}>New Task</h3>
-                <p className="modal-subtitle">Add a task to this phase.</p>
+                <h3 className="modal__title" id={createSubTaskTitleId}>{t('New Task')}</h3>
+                <p className="modal-subtitle">{t('Add a task to this phase.')}</p>
               </div>
-              <button aria-label="Close" className="modal__close" disabled={cstSaving} onClick={triggerCstClose} type="button">
+              <button aria-label={t('Close')} className="modal__close" disabled={cstSaving} onClick={triggerCstClose} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
@@ -4462,19 +4358,19 @@ export function ProgramDetailView() {
               <div className="modal__body">
                 {cstError && <div className="prog-modal-error">{cstError}</div>}
                 <div className="form-field">
-                  <label>Title <span className="form-field__required">*</span></label>
+                  <label>{t('Title')} <span className="form-field__required">*</span></label>
                   <input
                     autoFocus
                     maxLength={120}
                     onChange={e => setCstForm(f => ({ ...f, title: e.target.value }))}
-                    placeholder="e.g. SGN debt structure mapping per creditor"
+                    placeholder={t('e.g. SGN debt structure mapping per creditor')}
                     required
                     type="text"
                     value={cstForm.title}
                   />
                 </div>
                 <div className="form-field">
-                  <label>Description</label>
+                  <label>{t('Description')}</label>
                   <textarea
                     className="composer__input prog-modal-textarea"
                     maxLength={400}
@@ -4485,11 +4381,11 @@ export function ProgramDetailView() {
                 </div>
                 <div className="prog-form-grid prog-form-grid--equal">
                   <div className="form-field">
-                    <label>Start Date</label>
+                    <label>{t('Start Date')}</label>
                     <input onChange={e => setCstForm(f => ({ ...f, startDate: e.target.value }))} type="date" value={cstForm.startDate} />
                   </div>
                   <div className="form-field">
-                    <label>Target Completion</label>
+                    <label>{t('Target Completion')}</label>
                     <input
                       min={cstForm.startDate || undefined}
                       onChange={e => setCstForm(f => ({ ...f, targetCompletion: e.target.value }))}
@@ -4499,14 +4395,14 @@ export function ProgramDetailView() {
                   </div>
                 </div>
                 <div className="form-field">
-                  <label>Assignee (PIC)</label>
+                  <label>{t('Assignee (PIC)')}</label>
                   <div className="wid-team-row__chips" style={{ paddingTop: 2 }}>
                     {cstForm.assignedTo ? (() => {
                       const person = cstDirectory.find(u => u.id === cstForm.assignedTo)
                       return (
                         <span className="wid-pic-chip">
                           {person?.name ?? `#${cstForm.assignedTo}`}
-                          <button aria-label="Remove PIC" className="wid-pic-chip__remove"
+                          <button aria-label={t('Remove PIC')} className="wid-pic-chip__remove"
                             disabled={cstSaving} onClick={() => setCstForm(f => ({ ...f, assignedTo: null }))} type="button">×</button>
                         </span>
                       )
@@ -4516,7 +4412,7 @@ export function ProgramDetailView() {
                         className="wid-pic-search"
                         disabled={cstSaving}
                         onChange={e => setCstPicSearch(e.target.value)}
-                        placeholder={cstForm.assignedTo ? 'Ganti…' : '+ Tugaskan…'}
+                        placeholder={cstForm.assignedTo ? t('Change…') : t('+ Assign…')}
                         value={cstPicSearch}
                       />
                       {cstPicSearch.length > 0 && (() => {
@@ -4540,9 +4436,9 @@ export function ProgramDetailView() {
                 </div>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" disabled={cstSaving} onClick={triggerCstClose} type="button">Cancel</button>
+                <button className="btn btn--ghost" disabled={cstSaving} onClick={triggerCstClose} type="button">{t('Cancel')}</button>
                 <button className="profile-save-btn" disabled={cstSaving || !cstForm.title.trim()} type="submit">
-                  {cstSaving ? 'Saving…' : 'Create Task'}
+                  {cstSaving ? t('Saving…') : t('Create Task')}
                 </button>
               </div>
             </form>
@@ -4575,21 +4471,21 @@ export function ProgramDetailView() {
             <>
               <div className="modal-header">
                 <div className="modal-headcopy">
-                  <span className="modal-kicker">Approval</span>
-                  <span className="modal-title">Submit to {approverRole}?</span>
+                  <span className="modal-kicker">{t('Approval')}</span>
+                  <span className="modal-title">{t('Submit to {{approver}}?', { approver: approverRole })}</span>
                   <p className="modal-subtitle">
-                    Program <strong>{detail?.name}</strong> will be sent to {approverRole} for review. Program content is locked until a decision is made.
+                    {t('Program')} <strong>{detail?.name}</strong> {t('will be sent to {{approver}} for review. Program content is locked until a decision is made.', { approver: approverRole })}
                   </p>
                 </div>
-                <button aria-label="Close" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
+                <button aria-label={t('Close')} className="modal__close" disabled={approvalLoading} onClick={close} type="button">
                   <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
                 </button>
               </div>
               {approvalError && <div className="modal-body"><p className="approval-modal__error">{approvalError}</p></div>}
               <div className="modal-footer">
-                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Cancel</button>
+                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">{t('Cancel')}</button>
                 <button className="btn btn--primary" disabled={approvalLoading} onClick={() => void submitForApproval()} type="button">
-                  {approvalLoading ? 'Submitting…' : `Submit to ${approverRole}`}
+                  {approvalLoading ? t('Submitting…') : t('Submit to {{approver}}', { approver: approverRole })}
                 </button>
               </div>
             </>
@@ -4599,21 +4495,21 @@ export function ProgramDetailView() {
             <>
               <div className="modal-header">
                 <div className="modal-headcopy">
-                  <span className="modal-kicker">Confirm</span>
-                  <span className="modal-title">Approve program?</span>
+                  <span className="modal-kicker">{t('Confirm')}</span>
+                  <span className="modal-title">{t('Approve program?')}</span>
                   <p className="modal-subtitle">
-                    Program <strong>{detail?.name}</strong> will be activated and enter the execution phase. This action cannot be undone.
+                    {t('Program')} <strong>{detail?.name}</strong> {t('will be activated and enter the execution phase. This action cannot be undone.')}
                   </p>
                 </div>
-                <button aria-label="Close" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
+                <button aria-label={t('Close')} className="modal__close" disabled={approvalLoading} onClick={close} type="button">
                   <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
                 </button>
               </div>
               {approvalError && <div className="modal-body"><p className="approval-modal__error">{approvalError}</p></div>}
               <div className="modal-footer">
-                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Cancel</button>
+                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">{t('Cancel')}</button>
                 <button className="btn btn--primary" disabled={approvalLoading} onClick={() => void submitApprove()} type="button">
-                  {approvalLoading ? 'Approving…' : 'Approve & Activate'}
+                  {approvalLoading ? t('Approving…') : t('Approve & Activate')}
                 </button>
               </div>
             </>
@@ -4623,25 +4519,25 @@ export function ProgramDetailView() {
             <>
               <div className="modal-header">
                 <div className="modal-headcopy">
-                  <span className="modal-kicker">Confirm</span>
-                  <span className="modal-title">Reject program?</span>
+                  <span className="modal-kicker">{t('Confirm')}</span>
+                  <span className="modal-title">{t('Reject program?')}</span>
                   <p className="modal-subtitle">
-                    The PIC of <strong>{detail?.name}</strong> will be notified and can fix it before resubmitting.
+                    {t('The PIC of')} <strong>{detail?.name}</strong> {t('will be notified and can fix it before resubmitting.')}
                   </p>
                 </div>
-                <button aria-label="Close" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
+                <button aria-label={t('Close')} className="modal__close" disabled={approvalLoading} onClick={close} type="button">
                   <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
                 </button>
               </div>
               <div className="modal-body">
                 <label className="approval-modal__field">
-                  <span className="approval-modal__field-label">Rejection reason <span className="approval-modal__field-required">*</span></span>
+                  <span className="approval-modal__field-label">{t('Rejection reason')} <span className="approval-modal__field-required">*</span></span>
                   <textarea
                     autoFocus
                     className="approval-modal__textarea"
                     maxLength={500}
                     onChange={e => setRejectNote(e.target.value)}
-                    placeholder="Write what needs fixing…"
+                    placeholder={t('Write what needs fixing…')}
                     rows={4}
                     value={rejectNote}
                   />
@@ -4650,9 +4546,9 @@ export function ProgramDetailView() {
                 {approvalError && <p className="approval-modal__error">{approvalError}</p>}
               </div>
               <div className="modal-footer">
-                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Cancel</button>
+                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">{t('Cancel')}</button>
                 <button className="btn btn--danger" disabled={approvalLoading || !rejectNote.trim()} onClick={() => void submitReject()} type="button">
-                  {approvalLoading ? 'Rejecting…' : 'Reject Program'}
+                  {approvalLoading ? t('Rejecting…') : t('Reject Program')}
                 </button>
               </div>
             </>
@@ -4662,23 +4558,23 @@ export function ProgramDetailView() {
             <>
               <div className="modal-header">
                 <div className="modal-headcopy">
-                  <span className="modal-kicker">Confirm</span>
-                  <span className="modal-title">Withdraw submission?</span>
+                  <span className="modal-kicker">{t('Confirm')}</span>
+                  <span className="modal-title">{t('Withdraw submission?')}</span>
                   <p className="modal-subtitle">
-                    Program <strong>{detail?.name}</strong> will return to Draft status.
-                    {detail?.pendingReviewer && <> {detail.pendingReviewer.name} will be notified that review is no longer needed.</>}
-                    {' '}You can resubmit anytime after the revision is done.
+                    {t('Program')} <strong>{detail?.name}</strong> {t('will return to Draft status.')}
+                    {detail?.pendingReviewer && <> {t('{{name}} will be notified that review is no longer needed.', { name: detail.pendingReviewer.name })}</>}
+                    {' '}{t('You can resubmit anytime after the revision is done.')}
                   </p>
                 </div>
-                <button aria-label="Close" className="modal__close" disabled={approvalLoading} onClick={close} type="button">
+                <button aria-label={t('Close')} className="modal__close" disabled={approvalLoading} onClick={close} type="button">
                   <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11"/></svg>
                 </button>
               </div>
               {approvalError && <div className="modal-body"><p className="approval-modal__error">{approvalError}</p></div>}
               <div className="modal-footer">
-                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">Cancel</button>
+                <button className="btn btn--ghost" disabled={approvalLoading} onClick={close} type="button">{t('Cancel')}</button>
                 <button className="btn btn--primary" disabled={approvalLoading} onClick={() => void submitWithdraw()} type="button">
-                  {approvalLoading ? 'Withdrawing…' : 'Yes, withdraw'}
+                  {approvalLoading ? t('Withdrawing…') : t('Yes, withdraw')}
                 </button>
               </div>
             </>
@@ -4712,18 +4608,18 @@ export function ProgramDetailView() {
             <div className="modal-headcopy">
               <span className="modal-kicker">{detail.code} · {periodToLabel(progressForm.period)}</span>
               <h3 className="modal__title" id={reflectionTitleId}>
-                {reflectionMeta?.hasSubmitted ? 'Edit Weekly Reflection' : 'Weekly Reflection'}
+                {reflectionMeta?.hasSubmitted ? t('Edit Weekly Reflection') : t('Weekly Reflection')}
               </h3>
               <p className="modal-subtitle" id={reflectionDescId}>
                 {reflectionMeta?.hasSubmitted && reflectionMeta.existing ? (
                   // Edit mode subtitle — context kapan & oleh siapa submission asli
-                  `Editing reflection by ${reflectionMeta.existing.createdByName ?? 'PIC'} · ${new Date(reflectionMeta.existing.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}.`
+                  t('Editing reflection by {{name}} · {{date}}.', { name: reflectionMeta.existing.createdByName ?? t('PIC'), date: new Date(reflectionMeta.existing.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) })
                 ) : reflectionMeta && !reflectionMeta.exempt && reflectionMeta.deadline ? (() => {
                   const d = new Date(reflectionMeta.deadline)
                   const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short' })
                   const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
-                  return `Position as of Friday · Submit deadline ${dateStr} at ${timeStr} WIB.`
-                })() : 'Position as of Friday · Reflective note for this week.'}
+                  return t('Position as of Friday · Submit deadline {{date}} at {{time}} WIB.', { date: dateStr, time: timeStr })
+                })() : t('Position as of Friday · Reflective note for this week.')}
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -4732,7 +4628,7 @@ export function ProgramDetailView() {
                 lastSavedAt={progressDraft.lastSavedAt}
               />
               <button
-                aria-label="Close"
+                aria-label={t('Close')}
                 className="modal__close"
                 disabled={progressFormSaving}
                 onClick={triggerProgressFormClose}
@@ -4757,8 +4653,8 @@ export function ProgramDetailView() {
                   </svg>
                 </div>
                 <div className="modal-success-overlay__text">
-                  <strong>Reflection saved</strong>
-                  <span>Position for this week is recorded.</span>
+                  <strong>{t('Reflection saved')}</strong>
+                  <span>{t('Position for this week is recorded.')}</span>
                 </div>
               </div>
             )}
@@ -4806,28 +4702,28 @@ export function ProgramDetailView() {
                 {/* ── Section 1: Posisi Minggu Ini (primary, always visible) ── */}
                 <div className="reflection-form__section">
                   <div className="reflection-form__section-head">
-                    <span className="reflection-form__section-title">Position This Week</span>
-                    <span className="reflection-form__section-sub">Status & short narrative</span>
+                    <span className="reflection-form__section-title">{t('Position This Week')}</span>
+                    <span className="reflection-form__section-sub">{t('Status & short narrative')}</span>
                   </div>
 
                   <div className="reflection-form__row">
-                    <label className="reflection-form__label" htmlFor="reflection-health">Health Status</label>
+                    <label className="reflection-form__label" htmlFor="reflection-health">{t('Health Status')}</label>
                     <select
                       id="reflection-health"
                       className="reflection-form__input"
                       value={progressForm.healthAtTime}
                       onChange={e => setProgressForm(f => ({ ...f, healthAtTime: e.target.value as ProgressLogEntry['healthAtTime'] }))}
                     >
-                      <option value="on_track">On Track</option>
-                      <option value="at_risk">At Risk</option>
-                      <option value="terlambat">Delayed</option>
-                      <option value="overdue">Overdue</option>
+                      <option value="on_track">{t('On Track')}</option>
+                      <option value="at_risk">{t('At Risk')}</option>
+                      <option value="terlambat">{t('Delayed')}</option>
+                      <option value="overdue">{t('Overdue')}</option>
                     </select>
                   </div>
 
                   <div className="reflection-form__row">
                     <label className="reflection-form__label" htmlFor="reflection-narrative">
-                      Current Progress <span className="reflection-form__required">*</span>
+                      {t('Current Progress')} <span className="reflection-form__required">*</span>
                     </label>
                     <textarea
                       id="reflection-narrative"
@@ -4835,7 +4731,7 @@ export function ProgramDetailView() {
                       rows={3}
                       value={progressForm.narrative}
                       onChange={e => setProgressForm(f => ({ ...f, narrative: e.target.value }))}
-                      placeholder="e.g. BCMS framework workshop completed with 3 stakeholders. Document draft 80% — KADIV review next week."
+                      placeholder={t('e.g. BCMS framework workshop completed with 3 stakeholders. Document draft 80% — KADIV review next week.')}
                       required
                     />
                   </div>
@@ -4843,8 +4739,8 @@ export function ProgramDetailView() {
                   {(detail.kpis ?? []).length > 0 && (
                     <div className="reflection-form__row">
                       <label className="reflection-form__label">
-                        KPI Actuals This Week
-                        <span className="reflection-form__hint">optional · fill only what changed</span>
+                        {t('KPI Actuals This Week')}
+                        <span className="reflection-form__hint">{t('optional · fill only what changed')}</span>
                       </label>
                       <div className="reflection-form__kpis">
                         {(detail.kpis ?? []).map(kpi => {
@@ -4857,8 +4753,8 @@ export function ProgramDetailView() {
                               <div className="reflection-form__kpi-meta">
                                 <span className="reflection-form__kpi-name">{kpi.name}</span>
                                 <span className="reflection-form__kpi-sub">
-                                  Target {targetLabel}
-                                  {lastActual ? ` · last ${lastActual}` : ' · no actual yet'}
+                                  {t('Target {{target}}', { target: targetLabel })}
+                                  {lastActual ? t(' · last {{value}}', { value: lastActual }) : t(' · no actual yet')}
                                 </span>
                               </div>
                               <input
@@ -4869,7 +4765,7 @@ export function ProgramDetailView() {
                                 value={weeklyKpiActuals[kpi.id] ?? ''}
                                 onChange={e => setWeeklyKpiActuals(s => ({ ...s, [kpi.id]: e.target.value }))}
                                 placeholder={lastActual ?? '—'}
-                                aria-label={`New actual for ${kpi.name}`}
+                                aria-label={t('New actual for {{name}}', { name: kpi.name })}
                               />
                             </div>
                           )
@@ -4895,58 +4791,58 @@ export function ProgramDetailView() {
                     <span className="reflection-form__section-toggle-icon" aria-hidden="true">
                       {optionalExpanded ? '−' : '+'}
                     </span>
-                    <span className="reflection-form__section-title">Follow-up Details</span>
-                    <span className="reflection-form__section-sub">Obstacles, corrective actions, next steps, support</span>
+                    <span className="reflection-form__section-title">{t('Follow-up Details')}</span>
+                    <span className="reflection-form__section-sub">{t('Obstacles, corrective actions, next steps, support')}</span>
                   </button>
 
                   {optionalExpanded && (
                     <div className="reflection-form__section-body" id="reflection-optional-body">
                       <div className="reflection-form__grid">
                         <div className="reflection-form__row">
-                          <label className="reflection-form__label" htmlFor="reflection-kendala">Obstacle</label>
+                          <label className="reflection-form__label" htmlFor="reflection-kendala">{t('Obstacle')}</label>
                           <textarea
                             id="reflection-kendala"
                             className="reflection-form__input reflection-form__textarea"
                             rows={2}
                             value={progressForm.kendala}
                             onChange={e => setProgressForm(f => ({ ...f, kendala: e.target.value }))}
-                            placeholder="e.g. The risk team lacks baseline data from the North Sumatra unit."
+                            placeholder={t('e.g. The risk team lacks baseline data from the North Sumatra unit.')}
                           />
                         </div>
 
                         <div className="reflection-form__row">
-                          <label className="reflection-form__label" htmlFor="reflection-corrective">Corrective Action</label>
+                          <label className="reflection-form__label" htmlFor="reflection-corrective">{t('Corrective Action')}</label>
                           <textarea
                             id="reflection-corrective"
                             className="reflection-form__input reflection-form__textarea"
                             rows={2}
                             value={progressForm.correctiveAction}
                             onChange={e => setProgressForm(f => ({ ...f, correctiveAction: e.target.value }))}
-                            placeholder="e.g. Escalate to the North Sumatra GM on Monday to speed up the data."
+                            placeholder={t('e.g. Escalate to the North Sumatra GM on Monday to speed up the data.')}
                           />
                         </div>
 
                         <div className="reflection-form__row">
-                          <label className="reflection-form__label" htmlFor="reflection-nextstep">Next Step</label>
+                          <label className="reflection-form__label" htmlFor="reflection-nextstep">{t('Next Step')}</label>
                           <textarea
                             id="reflection-nextstep"
                             className="reflection-form__input reflection-form__textarea"
                             rows={2}
                             value={progressForm.nextStep}
                             onChange={e => setProgressForm(f => ({ ...f, nextStep: e.target.value }))}
-                            placeholder="e.g. Finalize the draft + present to KADIV next week."
+                            placeholder={t('e.g. Finalize the draft + present to KADIV next week.')}
                           />
                         </div>
 
                         <div className="reflection-form__row">
-                          <label className="reflection-form__label" htmlFor="reflection-dukungan">Support Needed</label>
+                          <label className="reflection-form__label" htmlFor="reflection-dukungan">{t('Support Needed')}</label>
                           <textarea
                             id="reflection-dukungan"
                             className="reflection-form__input reflection-form__textarea"
                             rows={2}
                             value={progressForm.dukunganDibutuhkan}
                             onChange={e => setProgressForm(f => ({ ...f, dukunganDibutuhkan: e.target.value }))}
-                            placeholder="e.g. Budget approval for a consultant from the Director."
+                            placeholder={t('e.g. Budget approval for a consultant from the Director.')}
                           />
                         </div>
                       </div>
@@ -4956,7 +4852,7 @@ export function ProgramDetailView() {
 
                 {weeklyKpiErrors.length > 0 && (
                   <div className="reflection-form__error" role="alert">
-                    <strong>Reflection saved,</strong> but {weeklyKpiErrors.length} KPI failed to save:
+                    <strong>{t('Reflection saved,')}</strong> {t('but {{count}} KPI failed to save:', { count: weeklyKpiErrors.length })}
                     <ul>
                       {weeklyKpiErrors.map((msg, i) => <li key={i}>{msg}</li>)}
                     </ul>
@@ -4971,7 +4867,7 @@ export function ProgramDetailView() {
                 disabled={progressFormSaving}
                 onClick={triggerProgressFormClose}
               >
-                Cancel
+                {t('Cancel')}
               </button>
               <button
                 type="submit"
@@ -4989,14 +4885,14 @@ export function ProgramDetailView() {
                     >
                       <path d="M2.5 7.5l3 3 6-7" />
                     </svg>
-                    Saved
+                    {t('Saved')}
                   </>
                 ) : progressFormStatus === 'saving' ? (
-                  'Saving…'
+                  t('Saving…')
                 ) : reflectionMeta?.hasSubmitted ? (
-                  'Save Changes'
+                  t('Save Changes')
                 ) : (
-                  'Save Reflection'
+                  t('Save Reflection')
                 )}
               </button>
             </div>

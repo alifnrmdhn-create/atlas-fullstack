@@ -18,12 +18,12 @@ use Illuminate\Support\Facades\Cache;
  *  - Home dashboard (KPI Achievement column)
  *  - Performance / Scorecard page
  *
- * Scope rules (via OrgScope::forUser):
+ * Scope rules (via OrgScope::forUser + resolveOwnAnchor):
  *   - BOD / ADMIN / SUPERADMIN  → all 6 direktorat (portfolio-wide)
- *   - KADIV                     → only viewer's parent direktorat (1 row)
- *   - KASUBDIV                  → only viewer's parent direktorat (1 row,
- *                                   resolved from unitId → directorateId)
- *   - default                   → same as KASUBDIV via fallback
+ *   - viewer tied to a costed divisi (unitId has DivisiScorecard rows)
+ *                               → that divisi's own score (keputusan 2026-06-24)
+ *   - Direktur fungsional / pejabat tanpa divisi ber-skor
+ *                               → their parent direktorat (1 row)
  *
  * Periode: defaults to current month (YYYY-MM). Past periods accessible
  * by passing `$periode` arg explicitly.
@@ -156,16 +156,22 @@ class ScorecardSummaryService
 
     private function computeHomeSnapshot(?User $user, ?string $periode): array
     {
+        // Anchor = sumber HERO number + trend untuk viewer ini (divisi sendiri
+        // bila ber-skor, else direktorat induk, null utk portfolio). Dihitung
+        // sekali lalu diteruskan ke ketiga jalur (period-resolution, ownItem,
+        // trend) supaya hero == titik akhir sparkline == periode ter-resolve.
+        $anchor = $this->resolveOwnAnchor($user);
+
         // Scorecard data lands monthly and lags the calendar, so the current
         // month is usually still empty. Resolve to the latest period that
         // actually HAS data in the viewer's scope — otherwise Home shows a blank
         // KPI panel even when recent data exists (Home is make-or-break: a blank
         // panel reads as broken, not "no data yet").
-        $periode = $periode ?? $this->latestPeriodeWithData($user) ?? now()->format('Y-m');
+        $periode = $periode ?? $this->latestPeriodeWithData($user, $anchor) ?? now()->format('Y-m');
         $level = $this->resolveLevel($user);
 
-        // Resolve "ownItem" — user's own direktorat, when applicable
-        $ownItem = $this->resolveOwnItem($user, $periode);
+        // Resolve "ownItem" — viewer's own divisi/direktorat score, when applicable
+        $ownItem = $this->resolveOwnItem($anchor, $periode);
 
         $grid = null;
         if ($level === 'portfolio') {
@@ -200,16 +206,18 @@ class ScorecardSummaryService
 
         // KPI trend (last 6 months) + delta vs the previous period with data.
         // Powers the lagging-side sparkline + Delta indicator on Home.
-        // PENTING: kpiAvgSeries di-anchor agar cocok dengan ANGKA HERO yang
-        // ditampilkan FE (HomeView `kpiHeadline`), BUKAN selalu `avgItem`:
-        //   - level directorate/unit → series direktorat SENDIRI
-        //     (DirektoratScorecard) → titik akhir == ownItem.nilai (= hero).
-        //   - level portfolio        → rata-rata lintas direktorat dalam scope
+        // PENTING: kpiAvgSeries di-anchor (via $anchor) agar cocok dengan ANGKA
+        // HERO yang ditampilkan FE (HomeView `kpiHeadline`), BUKAN selalu `avgItem`:
+        //   - anchor divisi      → series DivisiScorecard divisi sendiri
+        //     → titik akhir == ownItem.nilai (= hero).
+        //   - anchor direktorat  → series DirektoratScorecard direktorat sendiri
+        //     → titik akhir == ownItem.nilai (= hero).
+        //   - anchor null (portfolio) → rata-rata lintas direktorat dalam scope
         //     → titik akhir == avgItem (ownItem null di portfolio).
         // `items` (divisi grid di level directorate) sengaja TIDAK dipakai untuk
         // series — itu hanya untuk breakdown/topItems. Jaga sinkron dengan
         // kpiAvgSeries() + HomeView.kpiHeadline kalau mengubah salah satunya.
-        $series   = $this->kpiAvgSeries($user, $periode, 6);
+        $series   = $this->kpiAvgSeries($user, $anchor, $periode, 6);
         $kpiTrend = array_map(fn ($s) => ['label' => $s['label'], 'avg' => $s['avg']], $series);
         $nonNull  = array_values(array_filter($series, fn ($s) => $s['avg'] !== null));
         $avgDelta = count($nonNull) >= 2
@@ -236,20 +244,27 @@ class ScorecardSummaryService
     }
 
     /**
-     * Latest periode (YYYY-MM, ≤ current month) that has scorecard data in the
-     * viewer's scope. Mirrors the table `homeSnapshot` reads `items` from:
-     * DivisiScorecard at directorate level, DirektoratScorecard otherwise.
-     * Returns null when the scope has no data at all (caller falls back to now).
+     * Latest periode (YYYY-MM, ≤ current month) that has scorecard data for the
+     * viewer's HERO anchor — so the resolved period always carries the hero
+     * number. Divisi anchor → DivisiScorecard divisi sendiri; direktorat anchor
+     * → DirektoratScorecard direktorat sendiri; null anchor (portfolio) → max
+     * across the scoped direktorat. Returns null when the anchor has no data at
+     * all (caller falls back to now).
      */
-    private function latestPeriodeWithData(?User $user): ?string
+    private function latestPeriodeWithData(?User $user, ?array $anchor): ?string
     {
         $now = now()->format('Y-m');
-        $query = DirektoratScorecard::query();
 
-        if ($this->resolveLevel($user) !== 'portfolio' && $user?->directorateId) {
-            // directorate/unit: anchor on the viewer's own directorate (its score
-            // is the KPI headline) so the resolved period always has the hero number.
-            $query->where('directorateId', $user->directorateId);
+        if ($anchor !== null && $anchor['type'] === 'divisi') {
+            return DivisiScorecard::query()
+                ->where('unitId', $anchor['unitId'])
+                ->where('periode', '<=', $now)
+                ->max('periode');
+        }
+
+        $query = DirektoratScorecard::query();
+        if ($anchor !== null && $anchor['type'] === 'direktorat') {
+            $query->where('directorateId', $anchor['directorateId']);
         } else {
             $ids = $this->resolveScopedDirectorateIds($user);
             if ($ids !== null) {
@@ -262,13 +277,14 @@ class ScorecardSummaryService
     }
 
     /**
-     * Average KPI nilai per month for the last $months periods, using the same
-     * table + scope as `homeSnapshot` items. Missing months yield avg=null so
-     * the frontend can gap-skip. Anchored at $endPeriode (the resolved period).
+     * Average KPI nilai per month for the last $months periods, anchored to the
+     * viewer's HERO source ($anchor) so the sparkline endpoint == hero. Missing
+     * months yield avg=null so the frontend can gap-skip. Anchored at $endPeriode
+     * (the resolved period).
      *
      * @return array<int, array{key: string, label: string, avg: ?float}>
      */
-    private function kpiAvgSeries(?User $user, string $endPeriode, int $months = 6): array
+    private function kpiAvgSeries(?User $user, ?array $anchor, string $endPeriode, int $months = 6): array
     {
         $months = max(2, min(12, $months));
         $end = Carbon::createFromFormat('Y-m', $endPeriode)->startOfMonth();
@@ -280,11 +296,17 @@ class ScorecardSummaryService
         }
         $keys = array_keys($labels);
 
-        if ($this->resolveLevel($user) !== 'portfolio' && $user?->directorateId) {
-            // directorate/unit: trend the viewer's OWN directorate series so the
-            // sparkline + delta match the ownItem headline (not the divisi average).
+        if ($anchor !== null && $anchor['type'] === 'divisi') {
+            // divisi anchor: trend the viewer's OWN divisi series so the
+            // sparkline + delta match the ownItem headline.
+            $rows = DivisiScorecard::query()
+                ->where('unitId', $anchor['unitId'])
+                ->whereIn('periode', $keys)
+                ->get(['periode', 'nilai']);
+        } elseif ($anchor !== null && $anchor['type'] === 'direktorat') {
+            // direktorat anchor: trend the viewer's OWN direktorat series.
             $rows = DirektoratScorecard::query()
-                ->where('directorateId', $user->directorateId)
+                ->where('directorateId', $anchor['directorateId'])
                 ->whereIn('periode', $keys)
                 ->get(['periode', 'nilai']);
         } else {
@@ -423,20 +445,66 @@ class ScorecardSummaryService
     }
 
     /**
-     * User's own direktorat snapshot, returned for header context in
-     * directorate-level renderings. Null for portfolio level (DIRUT
-     * sees all direktorat, no singular "own").
+     * Resolve the scorecard "anchor" for a viewer's HERO number + trend.
      *
+     * Keputusan 2026-06-24: user level divisi harus melihat skor DIVISINYA
+     * sendiri, bukan skor direktorat induk. Aturan:
+     *   - viewer terikat ke divisi ber-skor (unitId punya baris DivisiScorecard)
+     *       → anchor divisi (skor divisi sendiri)
+     *   - Direktur fungsional / pejabat tanpa divisi ber-skor (punya directorateId)
+     *       → anchor direktorat
+     *   - portfolio (DIRUT/ADMIN/SUPERADMIN) → null (tak ada "own" tunggal)
+     *
+     * @return ?array{type: string, unitId?: int, directorateId: ?int}
+     */
+    private function resolveOwnAnchor(?User $user): ?array
+    {
+        if ($user === null) return null;
+        if ($this->resolveLevel($user) === 'portfolio') return null;
+
+        if ($user->unitId && DivisiScorecard::query()->where('unitId', $user->unitId)->exists()) {
+            return [
+                'type'          => 'divisi',
+                'unitId'        => (int) $user->unitId,
+                'directorateId' => $user->directorateId ? (int) $user->directorateId : null,
+            ];
+        }
+
+        if ($user->directorateId) {
+            return ['type' => 'direktorat', 'directorateId' => (int) $user->directorateId];
+        }
+
+        return null;
+    }
+
+    /**
+     * Viewer's own divisi/direktorat snapshot (per $anchor), the KPI HERO number
+     * on Home. Null for portfolio (DIRUT sees all direktorat, no singular "own").
+     *
+     * @param  ?array{type: string, unitId?: int, directorateId: ?int}  $anchor
      * @return ?array{kode: string, nama: string, nilai: float}
      */
-    private function resolveOwnItem(?User $user, string $periode): ?array
+    private function resolveOwnItem(?array $anchor, string $periode): ?array
     {
-        if ($user === null || !$user->directorateId) return null;
+        if ($anchor === null) return null;
 
-        $level = $this->resolveLevel($user);
-        if ($level === 'portfolio') return null;
+        if ($anchor['type'] === 'divisi') {
+            $row = DivisiScorecard::query()
+                ->where('unitId', $anchor['unitId'])
+                ->where('periode', $periode)
+                ->with('unit:id,code,name')
+                ->first(['id', 'unitId', 'nilai']);
 
-        $directorate = Directorate::find($user->directorateId);
+            if ($row === null || $row->unit === null) return null;
+
+            return [
+                'kode'  => $row->unit->code,
+                'nama'  => $row->unit->name,
+                'nilai' => (float) $row->nilai,
+            ];
+        }
+
+        $directorate = Directorate::find($anchor['directorateId']);
         if (!$directorate) return null;
 
         $nilai = DirektoratScorecard::query()

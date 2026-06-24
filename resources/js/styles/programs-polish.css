@@ -73,7 +73,7 @@
   font-size: 12.5px !important;
   font-weight: 600 !important;
   background: var(--indigo) !important;
-  box-shadow: 0 3px 8px -4px rgba(31, 107, 53, 0.4);
+  box-shadow: 0 3px 8px -4px rgba(31, 107, 53, 0.4); /* dark-allow: glow brand-green di atas CTA hijau, identik dua theme */
 }
 .programs-v2 .programs-v2__cta:hover {
   background: var(--indigo-dark) !important;
@@ -2939,13 +2939,13 @@ select.prog-strategic__input {
 }
 .prog-update-panel__action--primary {
   background: var(--green);
-  color: #fff;
+  color: var(--text-inverse);
   border-color: var(--green);
 }
 .prog-update-panel__action--primary:hover {
   background: color-mix(in srgb, var(--green) 88%, #000);
   border-color: color-mix(in srgb, var(--green) 88%, #000);
-  color: #fff;
+  color: var(--text-inverse);
 }
 
 /* Saat sudah ada latest update, button muncul di bawah note — beri jarak

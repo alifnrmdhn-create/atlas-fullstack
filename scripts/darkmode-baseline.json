@@ -1,0 +1,10 @@
+{
+  "_comment": "Utang warna hardcoded (anti dark-mode) yang di-grandfather, per file. Turunkan saat migrasi sampai 0. Regenerate: node scripts/audit-darkmode.mjs --update-baseline",
+  "_totals": {
+    "css": 0,
+    "tsx": 0,
+    "leak": 0,
+    "all": 0
+  },
+  "counts": {}
+}

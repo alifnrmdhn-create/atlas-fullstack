@@ -99,11 +99,11 @@
 }
 
 .dimr-header__stat-val.kuadran5,
-.dimr-header__stat-val.kuadran\ 5 { color: #ef4444; }
+.dimr-header__stat-val.kuadran\ 5 { color: var(--red); }
 .dimr-header__stat-val.kuadran4,
-.dimr-header__stat-val.kuadran\ 4 { color: #f59e0b; }
+.dimr-header__stat-val.kuadran\ 4 { color: var(--yellow); }
 .dimr-header__stat-val.kuadran3,
-.dimr-header__stat-val.kuadran\ 3 { color: #22c55e; }
+.dimr-header__stat-val.kuadran\ 3 { color: var(--green); }
 .dimr-header__stat-val.kuadran2,
 .dimr-header__stat-val.kuadran\ 2 { color: var(--indigo, #1F6B35); }
 .dimr-header__stat-val.kuadran1,
@@ -149,10 +149,10 @@
   color: var(--text-muted);
 }
 
-.dimr-strip__card.danger  .dimr-strip__icon { color: #ef4444; }
-.dimr-strip__card.warning .dimr-strip__icon { color: #f59e0b; }
+.dimr-strip__card.danger  .dimr-strip__icon { color: var(--red); }
+.dimr-strip__card.warning .dimr-strip__icon { color: var(--yellow); }
 .dimr-strip__card.ok      .dimr-strip__icon { color: var(--green, #22c55e); }
-.dimr-strip__card.attention .dimr-strip__icon { color: #f97316; }
+.dimr-strip__card.attention .dimr-strip__icon { color: var(--orange); }
 .dimr-strip__card.info    .dimr-strip__icon { color: var(--text-muted); }
 
 .dimr-strip__num {
@@ -165,10 +165,10 @@
   color: var(--text-strong);
 }
 
-.dimr-strip__card.danger  .dimr-strip__num { color: #ef4444; }
-.dimr-strip__card.warning .dimr-strip__num { color: #f59e0b; }
+.dimr-strip__card.danger  .dimr-strip__num { color: var(--red); }
+.dimr-strip__card.warning .dimr-strip__num { color: var(--yellow); }
 .dimr-strip__card.ok      .dimr-strip__num { color: var(--green, #22c55e); }
-.dimr-strip__card.attention .dimr-strip__num { color: #f97316; }
+.dimr-strip__card.attention .dimr-strip__num { color: var(--orange); }
 .dimr-strip__card.info    .dimr-strip__num { color: var(--text-muted); }
 
 .dimr-strip__label {
@@ -301,11 +301,11 @@
   width: 3px;
 }
 
-.dimr-risk-card.level-LOW::before              { background: #22c55e; }
-.dimr-risk-card.level-LOW_TO_MODERATE::before  { background: #84cc16; }
-.dimr-risk-card.level-MODERATE::before         { background: #f59e0b; }
-.dimr-risk-card.level-MODERATE_TO_HIGH::before { background: #f97316; }
-.dimr-risk-card.level-HIGH::before             { background: #ef4444; }
+.dimr-risk-card.level-LOW::before              { background: var(--green); }
+.dimr-risk-card.level-LOW_TO_MODERATE::before  { background: #84cc16; /* dark-allow: lime = 5-band risk scale, distinct intermediate level, no token */ }
+.dimr-risk-card.level-MODERATE::before         { background: var(--yellow); }
+.dimr-risk-card.level-MODERATE_TO_HIGH::before { background: var(--orange); }
+.dimr-risk-card.level-HIGH::before             { background: var(--red); }
 
 .dimr-risk-card__num {
   width: 24px;
@@ -361,11 +361,11 @@
   flex-shrink: 0;
 }
 
-.dimr-risk-card__level-dot[data-level="low"] { background: #22c55e; }
-.dimr-risk-card__level-dot[data-level="low-to-moderate"] { background: #84cc16; }
-.dimr-risk-card__level-dot[data-level="moderate"] { background: #f59e0b; }
-.dimr-risk-card__level-dot[data-level="moderate-to-high"] { background: #f97316; }
-.dimr-risk-card__level-dot[data-level="high"] { background: #ef4444; }
+.dimr-risk-card__level-dot[data-level="low"] { background: var(--green); }
+.dimr-risk-card__level-dot[data-level="low-to-moderate"] { background: #84cc16; /* dark-allow: lime = 5-band risk scale, distinct intermediate level, no token */ }
+.dimr-risk-card__level-dot[data-level="moderate"] { background: var(--yellow); }
+.dimr-risk-card__level-dot[data-level="moderate-to-high"] { background: var(--orange); }
+.dimr-risk-card__level-dot[data-level="high"] { background: var(--red); }
 
 .dimr-risk-card__status-text {
   font-size: 11px;
@@ -373,8 +373,8 @@
   color: var(--text-muted);
 }
 
-.dimr-risk-card__status-text.open      { color: #f97316; }
-.dimr-risk-card__status-text.watchlist { color: #f59e0b; }
+.dimr-risk-card__status-text.open      { color: var(--orange); }
+.dimr-risk-card__status-text.watchlist { color: var(--yellow); }
 .dimr-risk-card__status-text.mitigated { color: var(--indigo, #1F6B35); }
 
 .dimr-risk-card__name {
@@ -422,11 +422,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-.dimr-risk-card__score[data-level="low"] { color: #22c55e; }
-.dimr-risk-card__score[data-level="low-to-moderate"] { color: #84cc16; }
-.dimr-risk-card__score[data-level="moderate"] { color: #f59e0b; }
-.dimr-risk-card__score[data-level="moderate-to-high"] { color: #f97316; }
-.dimr-risk-card__score[data-level="high"] { color: #ef4444; }
+.dimr-risk-card__score[data-level="low"] { color: var(--green); }
+.dimr-risk-card__score[data-level="low-to-moderate"] { color: #84cc16; /* dark-allow: lime = 5-band risk scale, distinct intermediate level, no token */ }
+.dimr-risk-card__score[data-level="moderate"] { color: var(--yellow); }
+.dimr-risk-card__score[data-level="moderate-to-high"] { color: var(--orange); }
+.dimr-risk-card__score[data-level="high"] { color: var(--red); }
 
 .dimr-risk-card__pd {
   font-size: 11px;
@@ -443,9 +443,9 @@
   gap: 2px;
 }
 
-.dimr-risk-card__change[data-change="improved"] { color: #22c55e; }
+.dimr-risk-card__change[data-change="improved"] { color: var(--green); }
 .dimr-risk-card__change[data-change="stable"] { color: var(--text-muted); }
-.dimr-risk-card__change[data-change="worsened"] { color: #ef4444; }
+.dimr-risk-card__change[data-change="worsened"] { color: var(--red); }
 
 /* ── Exposure Grid (Heatmap + RAS) ─────────────────────────────────────────── */
 
@@ -553,11 +553,11 @@
 .dimr-heatmap__cell:hover { filter: brightness(0.96); }
 
 /* 5-level zone colors — light backgrounds */
-.dimr-heatmap__cell.zone-low          { background: rgba(34,197,94,0.07);  border: 1px solid rgba(34,197,94,0.14); }
-.dimr-heatmap__cell.zone-low-moderate { background: rgba(132,204,22,0.08); border: 1px solid rgba(132,204,22,0.16); }
-.dimr-heatmap__cell.zone-moderate     { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.16); }
-.dimr-heatmap__cell.zone-mod-high     { background: rgba(249,115,22,0.10); border: 1px solid rgba(249,115,22,0.18); }
-.dimr-heatmap__cell.zone-high         { background: rgba(239,68,68,0.10);  border: 1px solid rgba(239,68,68,0.18); }
+.dimr-heatmap__cell.zone-low          { background: var(--green-dim);  border: 1px solid var(--green-subtle); }
+.dimr-heatmap__cell.zone-low-moderate { background: rgba(132,204,22,0.08); border: 1px solid rgba(132,204,22,0.16); /* dark-allow: lime = 5-band risk scale, distinct intermediate level, no token */ }
+.dimr-heatmap__cell.zone-moderate     { background: var(--yellow-dim); border: 1px solid var(--yellow-subtle); }
+.dimr-heatmap__cell.zone-mod-high     { background: var(--orange-dim); border: 1px solid var(--orange-subtle); }
+.dimr-heatmap__cell.zone-high         { background: var(--red-dim);  border: 1px solid var(--red-subtle); }
 
 .dimr-heatmap__dot {
   width: 22px;
@@ -568,9 +568,9 @@
   justify-content: center;
   font-size: 9px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-inverse);
   cursor: default;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15); /* dark-allow: small neutral drop shadow under colored dot, fine in both themes */
   transition: transform 0.12s;
   flex-shrink: 0;
 }
@@ -579,31 +579,31 @@
 .dimr-heatmap__legend-dot[data-level="low"],
 .dimr-mitig-card__level-dot[data-level="low"],
 .dimr-kri-group__dot[data-level="low"],
-.dimr-mitig-card__stripe[data-level="low"] { background: #22c55e; }
+.dimr-mitig-card__stripe[data-level="low"] { background: var(--green); }
 
 .dimr-heatmap__dot[data-level="low-to-moderate"],
 .dimr-heatmap__legend-dot[data-level="low-to-moderate"],
 .dimr-mitig-card__level-dot[data-level="low-to-moderate"],
 .dimr-kri-group__dot[data-level="low-to-moderate"],
-.dimr-mitig-card__stripe[data-level="low-to-moderate"] { background: #84cc16; }
+.dimr-mitig-card__stripe[data-level="low-to-moderate"] { background: #84cc16; /* dark-allow: lime = 5-band risk scale, distinct intermediate level, no token */ }
 
 .dimr-heatmap__dot[data-level="moderate"],
 .dimr-heatmap__legend-dot[data-level="moderate"],
 .dimr-mitig-card__level-dot[data-level="moderate"],
 .dimr-kri-group__dot[data-level="moderate"],
-.dimr-mitig-card__stripe[data-level="moderate"] { background: #f59e0b; }
+.dimr-mitig-card__stripe[data-level="moderate"] { background: var(--yellow); }
 
 .dimr-heatmap__dot[data-level="moderate-to-high"],
 .dimr-heatmap__legend-dot[data-level="moderate-to-high"],
 .dimr-mitig-card__level-dot[data-level="moderate-to-high"],
 .dimr-kri-group__dot[data-level="moderate-to-high"],
-.dimr-mitig-card__stripe[data-level="moderate-to-high"] { background: #f97316; }
+.dimr-mitig-card__stripe[data-level="moderate-to-high"] { background: var(--orange); }
 
 .dimr-heatmap__dot[data-level="high"],
 .dimr-heatmap__legend-dot[data-level="high"],
 .dimr-mitig-card__level-dot[data-level="high"],
 .dimr-kri-group__dot[data-level="high"],
-.dimr-mitig-card__stripe[data-level="high"] { background: #ef4444; }
+.dimr-mitig-card__stripe[data-level="high"] { background: var(--red); }
 
 .dimr-heatmap__dot:hover { transform: scale(1.2); z-index: 2; position: relative; }
 
@@ -672,8 +672,8 @@
   border-radius: 100px;
 }
 
-.dimr-ras__compliant.yes { color: var(--indigo, #1F6B35); background: rgba(31,107,53,0.08); border: 1px solid rgba(31,107,53,0.16); }
-.dimr-ras__compliant.no  { color: #ef4444; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.16); }
+.dimr-ras__compliant.yes { color: var(--indigo, #1F6B35); background: var(--indigo-dim); border: 1px solid var(--indigo-mid); }
+.dimr-ras__compliant.no  { color: var(--red); background: var(--red-dim); border: 1px solid var(--red-subtle); }
 
 .dimr-ras__stance {
   font-size: 12px;
@@ -681,10 +681,10 @@
 }
 
 .dimr-ras__stance-value { font-weight: 700; color: var(--text-strong); }
-.dimr-ras__stance-value[data-stance="intolerant"] { color: #ef4444; }
-.dimr-ras__stance-value[data-stance="conservative"] { color: #f97316; }
-.dimr-ras__stance-value[data-stance="moderate"] { color: #f59e0b; }
-.dimr-ras__stance-value[data-stance="strategic"] { color: #22c55e; }
+.dimr-ras__stance-value[data-stance="intolerant"] { color: var(--red); }
+.dimr-ras__stance-value[data-stance="conservative"] { color: var(--orange); }
+.dimr-ras__stance-value[data-stance="moderate"] { color: var(--yellow); }
+.dimr-ras__stance-value[data-stance="strategic"] { color: var(--green); }
 
 .dimr-ras__gauge-wrap { margin-bottom: 18px; }
 
@@ -713,7 +713,7 @@
 }
 
 .dimr-ras__gauge-fill.ok     { background: var(--indigo, #1F6B35); opacity: 0.7; }
-.dimr-ras__gauge-fill.breach { background: #ef4444; opacity: 0.7; }
+.dimr-ras__gauge-fill.breach { background: var(--red); opacity: 0.7; }
 
 .dimr-ras__gauge-marker {
   position: absolute;
@@ -724,8 +724,8 @@
   z-index: 2;
 }
 
-.dimr-ras__gauge-marker.appetite  { background: #f59e0b; }
-.dimr-ras__gauge-marker.tolerance { background: #f97316; }
+.dimr-ras__gauge-marker.appetite  { background: var(--yellow); }
+.dimr-ras__gauge-marker.tolerance { background: var(--orange); }
 
 .dimr-ras__gauge-marker::after {
   content: attr(data-label);
@@ -809,9 +809,9 @@
   border-radius: 50%;
 }
 
-.dimr-kri-legend__dot[data-status="normal"] { background: #22c55e; }
-.dimr-kri-legend__dot[data-status="warning"] { background: #f59e0b; }
-.dimr-kri-legend__dot[data-status="critical"] { background: #ef4444; }
+.dimr-kri-legend__dot[data-status="normal"] { background: var(--green); }
+.dimr-kri-legend__dot[data-status="warning"] { background: var(--yellow); }
+.dimr-kri-legend__dot[data-status="critical"] { background: var(--red); }
 
 .dimr-kri-groups {
   display: flex;
@@ -873,8 +873,8 @@
   transition: border-color 0.12s;
 }
 
-.dimr-kri-card.status-warning  { border-left: 3px solid #f59e0b; }
-.dimr-kri-card.status-critical { border-left: 3px solid #ef4444; }
+.dimr-kri-card.status-warning  { border-left: 3px solid var(--yellow); }
+.dimr-kri-card.status-critical { border-left: 3px solid var(--red); }
 .dimr-kri-card.status-normal   { border-left: 3px solid var(--indigo, #1F6B35); }
 
 .dimr-kri-card__header {
@@ -910,10 +910,10 @@
 
 .dimr-kri-card__badge.normal   { color: var(--indigo, #1F6B35); }
 .dimr-kri-card__badge.normal::before   { background: var(--indigo, #1F6B35); }
-.dimr-kri-card__badge.warning  { color: #f59e0b; }
-.dimr-kri-card__badge.warning::before  { background: #f59e0b; }
-.dimr-kri-card__badge.critical { color: #ef4444; }
-.dimr-kri-card__badge.critical::before { background: #ef4444; }
+.dimr-kri-card__badge.warning  { color: var(--yellow); }
+.dimr-kri-card__badge.warning::before  { background: var(--yellow); }
+.dimr-kri-card__badge.critical { color: var(--red); }
+.dimr-kri-card__badge.critical::before { background: var(--red); }
 
 .dimr-kri-card__name {
   font-size: 12px;
@@ -943,9 +943,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-.dimr-kri-card__actual[data-status="normal"] { color: #22c55e; }
-.dimr-kri-card__actual[data-status="warning"] { color: #f59e0b; }
-.dimr-kri-card__actual[data-status="critical"] { color: #ef4444; }
+.dimr-kri-card__actual[data-status="normal"] { color: var(--green); }
+.dimr-kri-card__actual[data-status="warning"] { color: var(--yellow); }
+.dimr-kri-card__actual[data-status="critical"] { color: var(--red); }
 
 .dimr-kri-card__unit {
   font-size: 11px;
@@ -969,9 +969,9 @@
   transition: width 0.4s ease;
 }
 
-.dimr-kri-card__threshold-fill[data-status="normal"] { background: #22c55e; }
-.dimr-kri-card__threshold-fill[data-status="warning"] { background: #f59e0b; }
-.dimr-kri-card__threshold-fill[data-status="critical"] { background: #ef4444; }
+.dimr-kri-card__threshold-fill[data-status="normal"] { background: var(--green); }
+.dimr-kri-card__threshold-fill[data-status="warning"] { background: var(--yellow); }
+.dimr-kri-card__threshold-fill[data-status="critical"] { background: var(--red); }
 
 .dimr-kri-card__threshold-labels {
   display: flex;
@@ -1005,9 +1005,9 @@
   margin-left: auto;
 }
 
-.dimr-kri-card__trend[data-trend="improving"] { color: #22c55e; }
-.dimr-kri-card__trend[data-trend="stable"] { color: #64748b; }
-.dimr-kri-card__trend[data-trend="worsening"] { color: #ef4444; }
+.dimr-kri-card__trend[data-trend="improving"] { color: var(--green); }
+.dimr-kri-card__trend[data-trend="stable"] { color: var(--gray); }
+.dimr-kri-card__trend[data-trend="worsening"] { color: var(--red); }
 
 .dimr-kri-card__notes {
   font-size: 11px;
@@ -1088,9 +1088,9 @@
 .dimr-mitig-card__overdue {
   font-size: 11px;
   font-weight: 600;
-  color: #f59e0b;
-  background: rgba(245,158,11,0.08);
-  border: 1px solid rgba(245,158,11,0.2);
+  color: var(--yellow);
+  background: var(--yellow-dim);
+  border: 1px solid var(--yellow-subtle);
   padding: 3px 10px;
   border-radius: 5px;
   white-space: nowrap;
@@ -1125,9 +1125,9 @@
   transition: width 0.5s ease;
 }
 
-.dimr-mitig-card__prog-fill[data-progress="high"] { background: #22c55e; }
-.dimr-mitig-card__prog-fill[data-progress="medium"] { background: #f59e0b; }
-.dimr-mitig-card__prog-fill[data-progress="low"] { background: #ef4444; }
+.dimr-mitig-card__prog-fill[data-progress="high"] { background: var(--green); }
+.dimr-mitig-card__prog-fill[data-progress="medium"] { background: var(--yellow); }
+.dimr-mitig-card__prog-fill[data-progress="low"] { background: var(--red); }
 
 .dimr-mitig-card__budget {
   display: flex;
@@ -1191,7 +1191,7 @@
   color: var(--text-strong);
 }
 
-.dimr-loss__summary-val.red   { color: #ef4444; }
+.dimr-loss__summary-val.red   { color: var(--red); }
 .dimr-loss__summary-val.green { color: var(--indigo, #1F6B35); }
 
 .dimr-loss__table-wrap {
@@ -1239,7 +1239,7 @@
 .dimr-loss__cell-impact {
   white-space: nowrap;
   font-weight: 700;
-  color: #ef4444;
+  color: var(--red);
 }
 
 .dimr-loss__cat-badge {
@@ -1267,21 +1267,21 @@
 }
 
 .dimr-loss__recovery[data-recovery="unrecovered"] {
-  color: #ef4444;
-  background: rgba(239,68,68,0.08);
-  border-color: rgba(239,68,68,0.16);
+  color: var(--red);
+  background: var(--red-dim);
+  border-color: var(--red-subtle);
 }
 
 .dimr-loss__recovery[data-recovery="partial"] {
-  color: #f59e0b;
-  background: rgba(245,158,11,0.08);
-  border-color: rgba(245,158,11,0.16);
+  color: var(--yellow);
+  background: var(--yellow-dim);
+  border-color: var(--yellow-subtle);
 }
 
 .dimr-loss__recovery[data-recovery="recovered"] {
-  color: #22c55e;
-  background: rgba(34,197,94,0.08);
-  border-color: rgba(34,197,94,0.16);
+  color: var(--green);
+  background: var(--green-dim);
+  border-color: var(--green-subtle);
 }
 
 /* ── Governance Grid ───────────────────────────────────────────────────────── */
@@ -1319,7 +1319,7 @@
 }
 
 .dimr-gov-card.ok   .dimr-gov-card__val { color: var(--indigo, #1F6B35); }
-.dimr-gov-card.warn .dimr-gov-card__val { color: #f59e0b; }
+.dimr-gov-card.warn .dimr-gov-card__val { color: var(--yellow); }
 
 .dimr-gov-card__target {
   font-size: 10px;
@@ -1379,7 +1379,7 @@
 /* ── Status badge shared ───────────────────────────────────────────────────── */
 
 .mrd-badge.pending_kasub,
-.mrd-badge.pending_kadiv { background: rgba(245,158,11,0.08); color: #f59e0b; border-color: rgba(245,158,11,0.2); }
+.mrd-badge.pending_kadiv { background: var(--yellow-dim); color: var(--yellow); border-color: var(--yellow-subtle); }
 
 /* Light mode quality pass: DIMR risk dashboard depth */
 :root:not([data-theme="dark"]) .dimr-view {
@@ -1630,7 +1630,7 @@
   background: var(--surface-0, #fff);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg, 12px);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+  box-shadow: var(--panel-shadow-xl);
   width: 100%; max-width: 480px;
   display: flex; flex-direction: column;
   max-height: calc(100vh - 48px);
@@ -1672,7 +1672,7 @@
 }
 .dimr-form-input:focus, .dimr-form-select:focus {
   outline: none; border-color: var(--green, #2e7d32);
-  box-shadow: 0 0 0 2px rgba(46,125,50,0.12);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--green) 18%, transparent);
 }
 .dimr-form-error {
   margin-top: 10px; font-size: var(--type-caption);
@@ -1720,7 +1720,7 @@
   text-align: right;
 }
 .dimr-kri-edit-table__input--aktual {
-  border-color: var(--green, #2e7d32); background: rgba(46,125,50,0.05);
+  border-color: var(--green, #2e7d32); background: color-mix(in srgb, var(--green) 8%, var(--surface-1));
 }
 .dimr-kri-edit-table__input:focus {
   outline: none; border-color: var(--green, #2e7d32);

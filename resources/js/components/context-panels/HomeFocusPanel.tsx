@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react'
 import { AlertCircle, Calendar, Pin, ArrowRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../../hooks/useWorkspace'
 
 /**
@@ -11,12 +12,13 @@ import { useWorkspace } from '../../hooks/useWorkspace'
  * placeholder zeros.
  */
 export function HomeFocusPanel() {
+  const { t } = useTranslation()
   const { programSummary } = useWorkspace()
 
   if (!programSummary) {
     return (
-      <Section icon={<AlertCircle size={13} />} title="Needs attention">
-        <p className="context-panel__empty">Loading summary…</p>
+      <Section icon={<AlertCircle size={13} />} title={t('Needs attention')}>
+        <p className="context-panel__empty">{t('Loading summary…')}</p>
       </Section>
     )
   }
@@ -29,42 +31,42 @@ export function HomeFocusPanel() {
 
   return (
     <>
-      <Section icon={<AlertCircle size={13} />} title="Needs attention" tone={hasAttention ? 'danger' : undefined}>
+      <Section icon={<AlertCircle size={13} />} title={t('Needs attention')} tone={hasAttention ? 'danger' : undefined}>
         {hasAttention ? (
           <>
             {terlambatCount > 0 ? (
               <FocusItem
-                label={`${terlambatCount} programs delayed`}
-                meta="needs intervention"
+                label={t('{{count}} programs delayed', { count: terlambatCount })}
+                meta={t('needs intervention')}
                 href="/programs?status=terlambat"
               />
             ) : null}
             {decisionCount > 0 ? (
               <FocusItem
-                label={`${decisionCount} items awaiting decision`}
-                meta="approval"
+                label={t('{{count}} items awaiting decision', { count: decisionCount })}
+                meta={t('approval')}
                 href="/fokus"
               />
             ) : null}
           </>
         ) : (
-          <p className="context-panel__empty">Nothing urgent today.</p>
+          <p className="context-panel__empty">{t('Nothing urgent today.')}</p>
         )}
       </Section>
 
-      <Section icon={<Calendar size={13} />} title="Today's schedule">
+      <Section icon={<Calendar size={13} />} title={t("Today's schedule")}>
         <p className="context-panel__empty">
-          No meetings scheduled.
+          {t('No meetings scheduled.')}
           <br />
           <Link href="/jadwal" className="context-panel__inline-link">
-            View calendar →
+            {t('View calendar →')}
           </Link>
         </p>
       </Section>
 
-      <Section icon={<Pin size={13} />} title="Pinned">
+      <Section icon={<Pin size={13} />} title={t('Pinned')}>
         <p className="context-panel__empty">
-          Pin a program or report from its detail page for quick access.
+          {t('Pin a program or report from its detail page for quick access.')}
         </p>
       </Section>
     </>

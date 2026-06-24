@@ -1,0 +1,99 @@
+/* ATLAS — "Icing" polish layer (PREVIEW ONLY)
+ * ------------------------------------------------------------------
+ * Sentuhan finishing aditif terinspirasi ERIN v2. Murni CSS, global,
+ * TANPA perubahan layout/IA/markup. Semua dikumpulkan di SATU file ini
+ * supaya gampang di-revert: hapus baris import di app.tsx + hapus file ini.
+ *
+ * Di-import PALING AKHIR → menang cascade untuk aturan generik, tapi
+ * selector spesifik per-halaman (specificity lebih tinggi) tetap menang
+ * di area yang memang sengaja custom.
+ *
+ * Inspired-by: erin-v2-fullstack/resources/css/app.css
+ *   (::selection brand tint, thin token scrollbars, dark top-edge highlight).
+ * ------------------------------------------------------------------ */
+
+/* 1 — Seleksi teks ber-tint brand (sebelumnya default browser biru).
+ *      Sinyal "dirawat" paling murah; terlihat saat user men-select teks. */
+::selection {
+  background-color: color-mix(in srgb, var(--ds-brand-600) 26%, transparent);
+  color: var(--ds-text-primary);
+}
+[data-theme="dark"] ::selection {
+  background-color: color-mix(in srgb, var(--ds-brand-500) 38%, transparent);
+  color: #ffffff;
+}
+
+/* 2 — Scrollbar tipis berbasis token (auto-flip light/dark karena skala
+ *      --ds-neutral-* di-invert di dark). Track transparan, thumb pill. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ds-neutral-300) transparent;
+}
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--ds-neutral-300);
+  border-radius: 9999px;
+  border: 2px solid transparent;   /* inset visual: thumb terlihat ramping */
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ds-neutral-400);
+  background-clip: padding-box;
+}
+
+/* 3 — Depth "diterangi dari atas" pada kartu, KHUSUS dark mode.
+ *      Trik Linear/Stripe: garis cahaya 1px di tepi atas → kartu terasa
+ *      terangkat tanpa drop-shadow. Light mode tetap FLAT (pakem ATLAS). */
+[data-theme="dark"] .ds-card {
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+/* 4 — Eyebrow / micro-label uppercase "bernapas" lebih lega.
+ *      ERIN pakai tracking 0.16em; ATLAS sebelumnya 0.04em (terlalu rapat).
+ *      Override token (dipakai a.l. di HomeView) → naik ke 0.085em. */
+:root {
+  --ds-tracking-wide: 0.085em;
+}
+
+/* 5 — Hover-affordance untuk .ds-card CLICKABLE — versi aman (TANPA transform
+ *      → bebas ghosting di scroll container, lihat feedback_no_transform_in_scroll).
+ *
+ *      Cakupan SENGAJA sempit: hanya .ds-card yang jadi <a>/<button>/role=button.
+ *      Kartu dengan hover bespoke (Home .hvc__hcard, WI .wid-parent-card,
+ *      Monthly .mrd-ops-card, dan .ds-list-row--interactive) specificity-nya
+ *      lebih tinggi → tetap menang, TIDAK berubah. Ini cuma jaring konsistensi
+ *      untuk .ds-card clickable yang polos (kini & nanti).
+ *
+ *      Gate @media (hover:hover): hindari sticky-hover di layar sentuh
+ *      (lihat feedback_touch_interaction_no_hover). */
+@media (hover: hover) {
+  a.ds-card,
+  button.ds-card,
+  .ds-card[role="button"] {
+    cursor: pointer;
+    transition: border-color 140ms var(--ds-ease-standard),
+                box-shadow   140ms var(--ds-ease-standard);
+  }
+  a.ds-card:hover,
+  button.ds-card:hover,
+  .ds-card[role="button"]:hover {
+    border-color: var(--ds-border-default);
+    box-shadow: var(--ds-shadow-popover);
+  }
+}
+
+/* 6 — Focus-visible ring KONSISTEN untuk .ds-card clickable (navigasi keyboard).
+ *      Primitive DS lain sudah beres: .ds-button & .ds-list-row--interactive
+ *      keduanya punya focus-visible sendiri (TIDAK disentuh, hindari dobel-ring).
+ *      GAP: .ds-card clickable cuma dapat outline default browser — tak konsisten,
+ *      sering "lepas" dari sudut rounded. Pakai token --ds-ring-focus (sudah ada;
+ *      auto-adapt light/dark, inner-gap mengikuti surface). HANYA state
+ *      :focus-visible → tampilan istirahat & hover tak berubah. Tidak di-gate
+ *      hover-media: keyboard focus relevan di semua perangkat. */
+a.ds-card:focus-visible,
+button.ds-card:focus-visible,
+.ds-card[role="button"]:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-ring-focus);
+}

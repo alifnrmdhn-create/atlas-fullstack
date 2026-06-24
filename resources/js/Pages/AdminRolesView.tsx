@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { formatRoleLabel } from '../lib/roleLabel'
+import i18n from '../lib/i18n'
 import './AdminViews.css'
 
 type RoleConfig = {
@@ -33,26 +35,30 @@ const PERM_MATRIX: PermRow[] = [
   { role: 'OFFICER',    viewAll: false, manageUsers: false, manageParams: false, createProgram: false, editProgram: false, viewReports: false },
 ]
 
-const PERM_COLUMNS: { key: keyof Omit<PermRow, 'role'>; label: string }[] = [
-  { key: 'viewAll',       label: 'View All'       },
-  { key: 'manageUsers',   label: 'Manage Users'   },
-  { key: 'manageParams',  label: 'Manage Params'  },
-  { key: 'createProgram', label: 'Create Program' },
-  { key: 'editProgram',   label: 'Edit Program'   },
-  { key: 'viewReports',   label: 'View Reports'   },
-]
+function getPermColumns(): { key: keyof Omit<PermRow, 'role'>; label: string }[] {
+  return [
+    { key: 'viewAll',       label: i18n.t('View All')       },
+    { key: 'manageUsers',   label: i18n.t('Manage Users')   },
+    { key: 'manageParams',  label: i18n.t('Manage Params')  },
+    { key: 'createProgram', label: i18n.t('Create Program') },
+    { key: 'editProgram',   label: i18n.t('Edit Program')   },
+    { key: 'viewReports',   label: i18n.t('View Reports')   },
+  ]
+}
 
 function PermCell({ value }: { value: boolean | 'own' }) {
+  const { t } = useTranslation()
   if (value === true) {
     return <span className="perm-matrix__check">✓</span>
   }
   if (value === 'own') {
-    return <span className="perm-matrix__check perm-matrix__check--own">✓ (own)</span>
+    return <span className="perm-matrix__check perm-matrix__check--own">{t('✓ (own)')}</span>
   }
   return <span className="perm-matrix__dash">–</span>
 }
 
 export function AdminRolesView() {
+  const { t } = useTranslation()
   const { currentUser } = useWorkspace()
   const isSuperAdmin = ['superadmin','SUPERADMIN'].includes(currentUser?.roleType ?? '')
 
@@ -107,7 +113,7 @@ export function AdminRolesView() {
       setTimeout(() => setSavedRole(null), 2000)
       setActiveRole(null)
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save')
+      setSaveError(err instanceof Error ? err.message : t('Failed to save'))
     } finally {
       setSavingRole(null)
     }
@@ -116,24 +122,24 @@ export function AdminRolesView() {
   return (
     <div className="ds admin-v2 view-admin-roles ds-stagger">
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Roles &amp; Permissions</h2>
+        <h2 className="view-toolbar__title">{t('Roles & Permissions')}</h2>
         <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Manage role configurations and view the system permission matrix.</span>
+        <span className="view-toolbar__subtitle">{t('Manage role configurations and view the system permission matrix.')}</span>
       </div>
 
       <div className="admin-roles-layout">
         {/* Left — Role List */}
         <div className="panel">
           <div className="panel__header">
-            <span className="panel__title text-sm">Role List</span>
+            <span className="panel__title text-sm">{t('Role List')}</span>
           </div>
           {loading ? (
             <div className="panel__body">
-              <span className="text-muted text-sm">Loading…</span>
+              <span className="text-muted text-sm">{t('Loading…')}</span>
             </div>
           ) : roleConfigs.length === 0 ? (
             <div className="panel__body">
-              <span className="text-muted text-sm">No role data.</span>
+              <span className="text-muted text-sm">{t('No role data.')}</span>
             </div>
           ) : (
             <ul className="roles-list">
@@ -179,7 +185,7 @@ export function AdminRolesView() {
                               onClick={() => handleDescSave(config.role)}
                               disabled={savingRole === config.role}
                             >
-                              {savingRole === config.role ? 'Saving…' : 'Save'}
+                              {savingRole === config.role ? t('Saving…') : t('Save')}
                             </button>
                             <button
                               className="btn btn--sm"
@@ -190,10 +196,10 @@ export function AdminRolesView() {
                               }}
                               disabled={savingRole === config.role}
                             >
-                              Cancel
+                              {t('Cancel')}
                             </button>
                             {savedRole === config.role && (
-                              <span className="badge badge--green text-xs">Saved</span>
+                              <span className="badge badge--green text-xs">{t('Saved')}</span>
                             )}
                             {saveError && activeRole === config.role && (
                               <span className="badge badge--red text-xs">{saveError}</span>
@@ -216,16 +222,16 @@ export function AdminRolesView() {
         {/* Right — Permission Matrix */}
         <div className="panel">
           <div className="panel__header">
-            <span className="panel__title text-sm">Permission Matrix</span>
+            <span className="panel__title text-sm">{t('Permission Matrix')}</span>
           </div>
           <div className="panel__body perm-matrix-wrap">
             <table className="perm-matrix">
               <thead>
                 <tr>
                   <th className="text-sm text-muted perm-matrix__header-cell perm-matrix__header-cell--role">
-                    Role
+                    {t('Role')}
                   </th>
-                  {PERM_COLUMNS.map((col) => (
+                  {getPermColumns().map((col) => (
                     <th
                       key={col.key}
                       className="text-xs text-muted perm-matrix__header-cell"
@@ -241,7 +247,7 @@ export function AdminRolesView() {
                     <td className="perm-matrix__role-cell">
                       <span className="code-badge text-xs">{row.role}</span>
                     </td>
-                    {PERM_COLUMNS.map((col) => (
+                    {getPermColumns().map((col) => (
                       <td key={col.key} className="perm-matrix__value-cell">
                         <PermCell value={row[col.key] as boolean | 'own'} />
                       </td>

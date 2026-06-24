@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { CharterPayload } from '../../../types/charter'
 
 type Props = {
@@ -11,6 +12,7 @@ type Props = {
  * stays light (no pptxgenjs in the page chunk).
  */
 export function ExportButton({ data }: Props) {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -22,7 +24,7 @@ export function ExportButton({ data }: Props) {
       await exportProgramCharter(data)
     } catch (err) {
       console.error('[charter] export failed', err)
-      setError(err instanceof Error ? err.message : 'Export failed.')
+      setError(err instanceof Error ? err.message : t('Export failed.'))
     } finally {
       setLoading(false)
     }
@@ -35,9 +37,9 @@ export function ExportButton({ data }: Props) {
         className="charter-export-button cs-export cs-export--ready"
         onClick={handleExport}
         disabled={loading}
-        title="Unduh Charter sebagai PPTX"
+        title={t('Download Charter as PPTX')}
       >
-        {loading ? 'Menyiapkan…' : 'Export PPTX'}
+        {loading ? t('Preparing…') : t('Export PPTX')}
       </button>
       {error && <span className="cs-export-error">{error}</span>}
     </div>

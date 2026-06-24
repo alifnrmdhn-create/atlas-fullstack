@@ -218,9 +218,22 @@ class OrgSummaryService
         // dan list ini dirender penuh di Inbox. Cap 10 lama bikin badge understate (mentok
         // 10 walau antrian lebih banyak) + Inbox memotong item. Sumbernya sudah ber-bound
         // natural (criticalBlockers limit 20, sisanya scoped), 50 = pagar realistis. (Jun 2026)
+        // Sembunyikan item yang sudah ditindaklanjuti user di Focus (disposition
+        // SUPPORTED/REROUTED/HANDLED) selama mute window. Lewat window, item muncul
+        // lagi bila sinyal masih ada — re-nudge yang disengaja. Key per (program, tag)
+        // supaya concern berbeda (approval vs blocker) di-track terpisah.
+        $muteDays = (int) config('atlas-thresholds.focus.disposition_mute_days', 7);
+        $dispositioned = \App\Models\FocusDisposition::query()
+            ->where('userId', $user->id)
+            ->where('createdAt', '>=', $now->copy()->subDays($muteDays))
+            ->get(['programId', 'tag'])
+            ->map(fn ($d) => "{$d->programId}:{$d->tag}")
+            ->flip();
+
         $needsAction = $pendingApproval
             ->concat($criticalBlockers)
             ->concat($needsSupport)
+            ->reject(fn ($item) => $dispositioned->has("{$item['id']}:{$item['tag']}"))
             ->unique('id')
             ->take(50)
             ->values();

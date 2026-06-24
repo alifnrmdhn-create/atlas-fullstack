@@ -2,8 +2,10 @@ import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useState, useEffect, useRef } from 'react'
-import type { Blocker, ChannelSummary, FocusPolicy, Meeting, MyWorkDecision, NotificationItem, Program, Task } from '../types'
+import type { Blocker, CommittedEscalation, FocusPolicy, Meeting, MyActionItem, MyAssignment, MyWorkDecision, NeedsActionItem, NotificationItem, Program, Task } from '../types'
 import { ActionPanel, actionPanelTitleFor } from '../components/ActionPanel'
+import { NeedsActionPanel } from '../components/NeedsActionPanel'
+import { FocusQuickPanel } from '../components/FocusQuickPanel'
 import { CollapsibleSection, AgingIndicator } from '../components/ui'
 import { getProgramDisplayStatus } from '../lib/programStatus'
 import { useFeatureFlag } from '../hooks/useFeatureFlag'
@@ -11,97 +13,6 @@ import { useOnboardingTour } from '../hooks/useOnboardingTour'
 import { EscalationTriagePanel, type EscalationRequest as EscalationRequestType } from '../components/Escalation'
 import { PageHeader } from '../design-system'
 import './FokusView.css'
-
-// Sprint 2 — Komitmen Hari Ini section
-type CommitmentItem = {
-  kind: 'task' | 'action_item' | 'assignment'
-  id: number
-  title: string
-  status: string
-  due: string
-  meetingId?: number
-}
-type CommitmentPayload = {
-  items: CommitmentItem[]
-  count: number
-  breakdown: { task: number; action_item: number; assignment: number }
-}
-
-function CommitmentTodaySection() {
-  const navigate = useInertiaNavigate()
-  const [data, setData] = useState<CommitmentPayload | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    api.get<CommitmentPayload>('/inbox/today')
-      .then(payload => { if (!cancelled) { setData(payload); setLoading(false) } })
-      .catch(err => { if (!cancelled) { setError(err?.message || 'Failed to load'); setLoading(false) } })
-    return () => { cancelled = true }
-  }, [])
-
-  const handleClick = (item: CommitmentItem) => {
-    if (item.kind === 'task') navigate(`/execution/tasks/${item.id}`)
-    else if (item.kind === 'assignment') navigate(`/penugasan`)
-    else if (item.kind === 'action_item' && item.meetingId) navigate(`/jadwal`)
-  }
-
-  const kindLabel: Record<CommitmentItem['kind'], string> = {
-    task: 'Task',
-    action_item: 'Action Item',
-    assignment: 'Assignment',
-  }
-
-  return (
-    <CollapsibleSection
-      title="Today's Commitments"
-      count={data?.count ?? 0}
-      summary={data ? `${data.breakdown.task} tasks · ${data.breakdown.action_item} actions · ${data.breakdown.assignment} assignments` : undefined}
-      defaultOpen
-      persistKey="inbox.commitment-today"
-    >
-      {loading && (
-        <div style={{ padding: '8px 0', fontSize: 12, color: 'var(--text-muted)' }}>Loading…</div>
-      )}
-      {error && (
-        <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--red, #c33)' }}>
-          Failed to load commitments: {error}
-        </div>
-      )}
-      {!loading && !error && data && data.items.length === 0 && (
-        <div style={{ padding: '12px', fontSize: 13, color: 'var(--text-muted)' }}>
-          No urgent commitments today. Nice — focus on what matters before it gets urgent.
-        </div>
-      )}
-      {!loading && !error && data && data.items.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {data.items.map(item => (
-            <button
-              key={`${item.kind}-${item.id}`}
-              type="button"
-              onClick={() => handleClick(item)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '8px 10px', border: '1px solid var(--panel-border)',
-                borderRadius: 8, background: 'var(--panel)', cursor: 'pointer',
-                textAlign: 'left', font: 'inherit', color: 'var(--text)',
-              }}
-            >
-              <span style={{
-                fontSize: 10, fontWeight: 700, padding: '2px 6px',
-                borderRadius: 4, background: 'var(--surface-2)', color: 'var(--text-muted)',
-                textTransform: 'uppercase', letterSpacing: '0.04em',
-              }}>{kindLabel[item.kind]}</span>
-              <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{item.title}</span>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.status}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </CollapsibleSection>
-  )
-}
 
 type FocusBlock = {
   id: number
@@ -155,51 +66,41 @@ function EscalationSections({ currentUserId }: { currentUserId: number }) {
 
   return (
     <>
-      <div data-tour="escalation-incoming">
-      <CollapsibleSection
-        title="My Clear the Path Requests"
-        count={incomingPending.length}
-        defaultOpen
-        persistKey="inbox.escalation-incoming"
-      >
-        {loading && incoming.length === 0 ? (
-          <div style={{ padding: '8px 0', fontSize: 12, color: 'var(--text-muted)' }}>Loading…</div>
-        ) : incomingPending.length === 0 ? (
-          <div style={{ padding: '12px', fontSize: 13, color: 'var(--text-muted)' }}>
-            No pending requests. Your team is running smoothly — nice.
-          </div>
-        ) : (
+      {/* Section disembunyikan saat kosong (anti "wall of empty headings" — audit
+          Focus Jun 2026). Hanya muncul kalau ada yang benar-benar perlu disposition. */}
+      {incomingPending.length > 0 && (
+        <div data-tour="escalation-incoming">
+        <CollapsibleSection
+          title="My Clear the Path Requests"
+          count={incomingPending.length}
+          defaultOpen
+          persistKey="inbox.escalation-incoming"
+        >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {incomingPending.map(req => (
               <EscalationRowButton key={req.id} request={req} onClick={() => setActiveTriage(req)} />
             ))}
           </div>
-        )}
-      </CollapsibleSection>
-      </div>
+        </CollapsibleSection>
+        </div>
+      )}
 
-      <div data-tour="escalation-mine">
-      <CollapsibleSection
-        title="Escalations I Raised"
-        count={mineActive.length}
-        defaultOpen={false}
-        persistKey="inbox.escalation-mine"
-      >
-        {loading && mine.length === 0 ? (
-          <div style={{ padding: '8px 0', fontSize: 12, color: 'var(--text-muted)' }}>Loading…</div>
-        ) : mineActive.length === 0 ? (
-          <div style={{ padding: '12px', fontSize: 13, color: 'var(--text-muted)' }}>
-            No active escalations from you.
-          </div>
-        ) : (
+      {mineActive.length > 0 && (
+        <div data-tour="escalation-mine">
+        <CollapsibleSection
+          title="Escalations I Raised"
+          count={mineActive.length}
+          defaultOpen={false}
+          persistKey="inbox.escalation-mine"
+        >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {mineActive.map(req => (
               <EscalationRowButton key={req.id} request={req} onClick={() => setActiveTriage(req)} showStatus />
             ))}
           </div>
-        )}
-      </CollapsibleSection>
-      </div>
+        </CollapsibleSection>
+        </div>
+      )}
 
       {activeTriage && (
         <EscalationTriagePanel
@@ -247,7 +148,7 @@ function EscalationRowButton({
   )
 }
 
-type FocusItemKind = 'task' | 'blocker' | 'program' | 'approval' | 'mention' | 'dm' | 'meeting' | 'focus' | 'notification'
+type FocusItemKind = 'task' | 'blocker' | 'program' | 'approval' | 'mention' | 'dm' | 'meeting' | 'focus' | 'notification' | 'action_item' | 'assignment' | 'escalation'
 type FocusScope = 'all' | 'action' | 'risk' | 'communication' | 'schedule'
 
 /**
@@ -326,6 +227,34 @@ function _todayLabel(): string {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
+
+// ── Snooze (anti Focus-fatigue) ──────────────────────────────────────────────
+const SNOOZE_KEY = 'atlas.focus.snoozed'
+
+/** Baca map snooze dari localStorage, buang entry yang sudah lewat. */
+function loadSnoozed(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(SNOOZE_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw) as Record<string, number>
+    const now = Date.now()
+    const fresh: Record<string, number> = {}
+    for (const [id, until] of Object.entries(parsed)) {
+      if (typeof until === 'number' && until > now) fresh[id] = until
+    }
+    return fresh
+  } catch {
+    return {}
+  }
+}
+
+/** Snooze sampai besok pukul 08:00 lokal (default "lihat lagi besok"). */
+function snoozeUntilTomorrow(): number {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  d.setHours(8, 0, 0, 0)
+  return d.getTime()
+}
 
 const PRIORITY_SCORE: Record<string, number> = {
   CRITICAL: 28,
@@ -677,6 +606,84 @@ function approvalFocusItem(program: ApprovalCandidate, role: string, policy: Foc
   }
 }
 
+function actionItemFocusItem(item: MyActionItem, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): FocusItem {
+  const due = dueLabel(item.dueDate, policy)
+  const dueDays = daysUntil(item.dueDate)
+  const urgency: Urgency =
+    dueDays !== null && dueDays < 0 ? 'critical' :
+    dueDays !== null && dueDays <= 1 ? 'warn' : 'info'
+  const score = 26 + dueScore(item.dueDate, policy) + (item.status === 'OPEN' ? 2 : 0)
+  return {
+    id: `action_item-${item.id}`,
+    kind: 'action_item',
+    section: 'assigned',
+    title: item.title,
+    meta: 'Meeting action item',
+    reason: due ?? 'Action item from a meeting awaiting follow-through',
+    roleCue: 'You own this meeting action item',
+    nextCue: due ? 'Close it before it slips' : 'Update or complete the action item',
+    actionLabel: 'Work on it →',
+    score,
+    urgency,
+    chip: due ?? item.status.replace(/_/g, ' '),
+    evidence: focusEvidence(['Meeting action', due, item.status === 'OPEN' ? 'Open' : null]),
+    entityId: item.id,
+  }
+}
+
+function assignmentFocusItem(item: MyAssignment, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): FocusItem {
+  const due = dueLabel(item.dueDate, policy)
+  const dueDays = daysUntil(item.dueDate)
+  const urgency: Urgency =
+    dueDays !== null && dueDays < 0 ? 'critical' :
+    dueDays !== null && dueDays <= 1 ? 'warn' :
+    item.priority === 'CRITICAL' || item.priority === 'HIGH' ? 'warn' : 'info'
+  const score = 24 + (PRIORITY_SCORE[item.priority] ?? 8) + dueScore(item.dueDate, policy)
+  return {
+    id: `assignment-${item.id}`,
+    kind: 'assignment',
+    section: 'assigned',
+    title: item.title,
+    meta: item.code,
+    reason: due ?? `${(item.priority ?? '').toLowerCase() || 'active'} priority assignment awaiting your action`,
+    roleCue: 'You are the assignee',
+    nextCue: due ? 'Acknowledge or complete before the deadline' : 'Acknowledge and start the assignment',
+    actionLabel: 'Open →',
+    score,
+    urgency,
+    chip: due ?? (item.priority === 'HIGH' || item.priority === 'CRITICAL' ? `${item.priority} priority` : item.status.replace(/_/g, ' ')),
+    evidence: focusEvidence(['Assignment', due, item.priority === 'HIGH' || item.priority === 'CRITICAL' ? `${item.priority} priority` : null]),
+    entityId: item.id,
+  }
+}
+
+/** Escalation yang user (atasan) commit tapi belum resolve — open-loop yang harus
+ *  ditutup. Klik → EscalationTriagePanel (Resolve inline). */
+function committedEscalationFocusItem(esc: CommittedEscalation, policy: FocusPolicy = DEFAULT_FOCUS_POLICY): FocusItem {
+  const due = dueLabel(esc.commitmentDueDate, policy)
+  const dueDays = daysUntil(esc.commitmentDueDate)
+  const urgency: Urgency =
+    dueDays !== null && dueDays < 0 ? 'critical' :
+    dueDays !== null && dueDays <= 1 ? 'warn' : 'info'
+  const score = 40 + dueScore(esc.commitmentDueDate, policy)
+  return {
+    id: `escalation-${esc.id}`,
+    kind: 'escalation',
+    section: 'blocker',
+    title: esc.title,
+    meta: esc.linkedProgram ? esc.linkedProgram.code : esc.code,
+    reason: due ? `You committed to clear this — ${due.toLowerCase()}` : 'You committed to clear this — follow through',
+    roleCue: 'You committed to clear this escalation',
+    nextCue: 'Resolve it or it stays an open promise to your team',
+    actionLabel: 'Resolve →',
+    score,
+    urgency,
+    chip: due ?? 'Committed',
+    evidence: focusEvidence(['Your commitment', due, esc.linkedProgram?.code ?? null]),
+    entityId: esc.id,
+  }
+}
+
 /**
  * Format notification.source jadi label human-friendly untuk card meta line.
  * Sebelumnya raw source bocor sebagai "program:24" / "channel:11" — confusing.
@@ -772,30 +779,6 @@ function notificationFocusItem(notification: NotificationItem, programs: Program
   }
 }
 
-function dmFocusItem(channel: ChannelSummary): FocusItem {
-  const partnerName = channel.description && channel.description !== 'Direct message' ? channel.description : channel.name
-  return {
-    id: `dm-${channel.id}`,
-    kind: 'dm',
-    section: 'mention',
-    title: partnerName,
-    meta: channel.lastMessage?.content ? channel.lastMessage.content.slice(0, 72) : 'Unread direct message',
-    reason: `${channel.unreadCount} unread direct message(s)`,
-    roleCue: 'You received a direct message',
-    nextCue: 'Reply to open the work context',
-    actionLabel: 'Reply →',
-    score: 58 + Math.min(18, channel.unreadCount * 4) + recencyScore(channel.lastMessage?.createdAt),
-    urgency: 'info',
-    chip: `${channel.unreadCount} new`,
-    evidence: focusEvidence([
-      `${channel.unreadCount} messages`,
-      recencyScore(channel.lastMessage?.createdAt) >= 10 ? 'New' : null,
-      'Communication',
-    ]),
-    channelId: channel.id,
-  }
-}
-
 function notificationGroupKey(notification: NotificationItem): string {
   if (notification.groupKey) return notification.groupKey
   const entity = notification.source.split('·').map(part => part.trim()).find(part => part.includes(':'))
@@ -831,7 +814,7 @@ function groupNotifications(items: NotificationItem[]): NotificationGroup[] {
 
 function focusItemMatchesScope(item: FocusItem, scope: FocusScope): boolean {
   if (scope === 'all') return true
-  if (scope === 'action') return item.kind === 'task' || item.kind === 'blocker' || item.kind === 'approval' || (item.kind === 'notification' && item.urgency !== 'info')
+  if (scope === 'action') return item.kind === 'task' || item.kind === 'blocker' || item.kind === 'approval' || item.kind === 'action_item' || item.kind === 'assignment' || item.kind === 'escalation' || (item.kind === 'notification' && item.urgency !== 'info')
   if (scope === 'risk') return item.kind === 'program' || item.kind === 'blocker' || item.urgency === 'critical' || item.urgency === 'warn'
   if (scope === 'communication') return item.kind === 'mention' || item.kind === 'dm' || (item.kind === 'notification' && item.section === 'mention')
   return item.kind === 'meeting' || item.kind === 'focus'
@@ -841,7 +824,10 @@ function focusItemMatchesScope(item: FocusItem, scope: FocusScope): boolean {
 function ctaFor(item: FocusItem): { label: string; primary: boolean } {
   if (item.kind === 'blocker')                       return { label: 'Handle',      primary: true  }
   if (item.kind === 'approval')                      return { label: 'Decide',      primary: true  }
+  if (item.kind === 'escalation')                    return { label: 'Resolve',     primary: item.urgency === 'critical' || item.urgency === 'warn' }
   if (item.kind === 'task')                          return { label: 'Work on it',  primary: item.urgency === 'critical' }
+  if (item.kind === 'action_item')                   return { label: 'Work on it',  primary: item.urgency === 'critical' }
+  if (item.kind === 'assignment')                    return { label: 'Open',        primary: item.urgency === 'critical' }
   if (item.kind === 'program')                       return { label: 'Review',      primary: false }
   if (item.kind === 'mention' || item.kind === 'dm') return { label: 'Reply',       primary: false }
   if (item.kind === 'meeting' || item.kind === 'focus') return { label: 'Open schedule', primary: false }
@@ -911,6 +897,39 @@ const KIND_ICON: Record<FocusItemKind, React.ReactNode> = {
       <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" />
     </svg>
   ),
+  action_item: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 4.5h10M3 8h10M3 11.5h6" />
+    </svg>
+  ),
+  assignment: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5.5 2.5h5a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z" />
+      <path d="M6.5 2.5V4h3V2.5M7 8.5l1 1 2-2.5" />
+    </svg>
+  ),
+  escalation: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 13V3M4 7l4-4 4 4" />
+    </svg>
+  ),
+}
+
+/** Tombol snooze (ikon bulan) — tunda item sampai besok. Icon-only, muted. */
+function SnoozeButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick() }}
+      title="Snooze until tomorrow"
+      aria-label="Snooze until tomorrow"
+      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, border: '1px solid var(--panel-border)', borderRadius: 8, background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0 }}
+    >
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M13.2 9.6A5.5 5.5 0 1 1 6.4 2.8a4.5 4.5 0 0 0 6.8 6.8z" />
+      </svg>
+    </button>
+  )
 }
 
 // ── Item presentation ──────────────────────────────────────────────────────
@@ -920,9 +939,11 @@ const KIND_ICON: Record<FocusItemKind, React.ReactNode> = {
 function FokusHeroCard({
   item,
   onAction,
+  onSnooze,
 }: {
   item: FocusItem
   onAction: (item: FocusItem, rank?: number) => void
+  onSnooze?: (item: FocusItem) => void
 }) {
   const cta = ctaFor(item)
   return (
@@ -940,13 +961,16 @@ function FokusHeroCard({
           <p className="fokus-hero-card__next">→ {item.nextCue}</p>
         )}
       </div>
-      <button
-        type="button"
-        className={`fokus-cta fokus-cta--lg${cta.primary ? ' fokus-cta--primary' : ''}`}
-        onClick={() => onAction(item, 1)}
-      >
-        {cta.label}
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        {onSnooze && <SnoozeButton onClick={() => onSnooze(item)} />}
+        <button
+          type="button"
+          className={`fokus-cta fokus-cta--lg${cta.primary ? ' fokus-cta--primary' : ''}`}
+          onClick={() => onAction(item, 1)}
+        >
+          {cta.label}
+        </button>
+      </div>
     </article>
   )
 }
@@ -960,11 +984,13 @@ function FokusItemRow({
   item,
   rank,
   onAction,
+  onSnooze,
   muted = false,
 }: {
   item: FocusItem
   rank: number
   onAction: (item: FocusItem, rank?: number) => void
+  onSnooze?: (item: FocusItem) => void
   muted?: boolean
 }) {
   const cta = ctaFor(item)
@@ -982,13 +1008,16 @@ function FokusItemRow({
           <span>{item.reason}</span>
         </div>
       </div>
-      <button
-        type="button"
-        className={`fokus-cta fokus-cta--sm${cta.primary ? ' fokus-cta--primary' : ''}`}
-        onClick={() => onAction(item, rank)}
-      >
-        {cta.label}
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        {onSnooze && <SnoozeButton onClick={() => onSnooze(item)} />}
+        <button
+          type="button"
+          className={`fokus-cta fokus-cta--sm${cta.primary ? ' fokus-cta--primary' : ''}`}
+          onClick={() => onAction(item, rank)}
+        >
+          {cta.label}
+        </button>
+      </div>
     </li>
   )
 }
@@ -998,7 +1027,7 @@ function FokusItemRow({
 export function InboxView() {
   const {
     notifications, markNotificationRead, loadOverview,
-    programs, myWork, channels, programSummary, openProgramWorkspace,
+    programs, myWork, programSummary,
     currentUser, setSelectedProgramId, setSelectedTaskId, setSelectedChannelId,
   } = useWorkspace()
   const navigate = useInertiaNavigate()
@@ -1036,6 +1065,21 @@ export function InboxView() {
     await loadOverview('refresh')
     navigateToNotifSource(group.latest.source)
   }
+  // Disposition panel untuk item "Needs Action" — menutup loop follow-up
+  // (Berikan dukungan / Teruskan ke atas / Tandai ditangani) alih-alih hanya
+  // melempar ke workspace program. `dismissedNeedsAction` menyembunyikan item
+  // secara optimistik setelah diaksi; backend menyembunyikannya permanen via
+  // FocusDisposition saat reload.
+  const [activeNeedsAction, setActiveNeedsAction] = useState<NeedsActionItem | null>(null)
+  const [dismissedNeedsAction, setDismissedNeedsAction] = useState<Set<string>>(new Set())
+  // Triage panel untuk escalation yang saya commit (Resolve inline) — menutup loop.
+  const [activeEscalationTriage, setActiveEscalationTriage] = useState<EscalationRequestType | null>(null)
+  // Quick-action panel (resolve blocker / log progress) inline tanpa pindah halaman.
+  const [activeQuick, setActiveQuick] = useState<{ kind: 'blocker' | 'task'; entityId: number; taskId?: number; title: string; prefillPercent: number } | null>(null)
+  // Snooze item feed ranked: { [focusItemId]: untilEpochMs }. Disimpan di
+  // localStorage supaya item yang sengaja ditunda tidak muncul lagi sampai waktunya
+  // (anti Focus-fatigue). Entry kedaluwarsa dibersihkan saat load.
+  const [snoozed, setSnoozed] = useState<Record<string, number>>(() => loadSnoozed())
   const [markingAll, setMarkingAll] = useState(false)
   const [toast, setToast] = useState<{ msg: string; tone: 'success' | 'error' } | null>(null)
   const toastTimerRef = useRef<number | null>(null)
@@ -1047,6 +1091,31 @@ export function InboxView() {
 
   const role = currentUser?.roleType?.toUpperCase() ?? ''
   const isStrategic = role === 'BOD' || role === 'KADIV'
+  // Hanya BOD read-only (memory project_officer_write_enabled). Sisanya boleh aksi
+  // inline (resolve blocker / log progress) langsung dari kartu Focus.
+  const canQuickAct = role !== 'BOD'
+
+  // Deep-link dari notifikasi Clear the Path: /fokus?escalation={id} → buka triage
+  // panel langsung. Tanpa ini, klik notif Clear the Path mendarat di Focus tanpa
+  // membuka apa pun (audit notif 2026-06-24). Pola StrictMode-safe: JANGAN hapus
+  // query secara sinkron — remount (StrictMode/HMR) memberi instance baru yang
+  // membaca ulang query; kalau sudah dihapus, fetch tak pernah jalan di instance
+  // hidup. Hapus param di dalam .then (setelah state ter-set).
+  useEffect(() => {
+    const escId = new URLSearchParams(window.location.search).get('escalation')
+    if (!escId) return
+    let active = true
+    void api.get<{ data: EscalationRequestType }>(`/escalations/${escId}`)
+      .then(r => {
+        if (!active) return
+        setActiveEscalationTriage(r.data)
+        const url = new URL(window.location.href)
+        url.searchParams.delete('escalation')
+        window.history.replaceState({}, '', url.pathname + url.search)
+      })
+      .catch(() => { /* tak punya akses / fitur off → abaikan diam-diam */ })
+    return () => { active = false }
+  }, [])
   // Default Focus = program terkait user. Role strategis bisa beralih ke
   // portfolio divisi (at-risk) lewat toggle (catatan 24 Jun 2026).
   const [programScope, setProgramScope] = useState<'mine' | 'division'>('mine')
@@ -1054,6 +1123,9 @@ export function InboxView() {
   // ── Data from /api/my-work (personal assignments) ─────────────────────────
   const myTasks = myWork?.tasks ?? []
   const myBlockers = myWork?.blockers ?? []
+  const myActionItems = myWork?.actionItems ?? []
+  const myAssignments = myWork?.assignments ?? []
+  const myCommittedEscalations = myWork?.committedEscalations ?? []
   const focusPolicy = myWork?.focusPolicy ?? DEFAULT_FOCUS_POLICY
 
   // ── At-risk programs: scope-aware source ──────────────────────────────────
@@ -1084,7 +1156,6 @@ export function InboxView() {
     n.state === 'UNREAD' && !MENTION_TYPES.has(n.type)
   )
 
-  const mentionGroups = groupNotifications(mentions)
   const _otherUnreadGroups = groupNotifications(otherUnread)
 
   const actionableOtherUnread = otherUnread.filter(n =>
@@ -1106,11 +1177,6 @@ export function InboxView() {
   })
   const pendingApprovalPrograms: ApprovalCandidate[] =
     explicitDecisionPrograms.length > 0 ? explicitDecisionPrograms : inferredDecisionPrograms
-
-  // ── DM channels dengan unread messages ────────────────────────────────────
-  const unreadDms = channels.filter(ch =>
-    ch.type === 'PRIVATE' && ch.name?.startsWith('dm-') && (ch.unreadCount ?? 0) > 0
-  )
 
   const [focusScope, setFocusScope] = useState<FocusScope>('all')
 
@@ -1207,17 +1273,19 @@ export function InboxView() {
       }
     })
 
-    const notificationItems = [
-      ...mentionGroups.map(group => notificationFocusItem(group.latest, programs)),
-      ...actionableOtherGroups.map(group => notificationFocusItem(group.latest, programs)),
-    ]
+    // Chat (channel mentions + DM) sengaja TIDAK masuk Focus — rumahnya di
+    // Channels (badge unread). Focus = komitmen + keputusan + notifikasi
+    // actionable (task/program/deadline/blocker/report), bukan percakapan.
+    const notificationItems = actionableOtherGroups.map(group => notificationFocusItem(group.latest, programs))
 
     return [
+      ...myCommittedEscalations.map(esc => committedEscalationFocusItem(esc, focusPolicy)),
       ...myBlockers.map(blocker => blockerFocusItem(blocker, focusPolicy)),
       ...myTasks.map(task => taskFocusItem(task, focusPolicy)),
+      ...myActionItems.map(item => actionItemFocusItem(item, focusPolicy)),
+      ...myAssignments.map(item => assignmentFocusItem(item, focusPolicy)),
       ...pendingApprovalPrograms.map(program => approvalFocusItem(program, role, focusPolicy)),
       ...myAtRisk.map(program => programFocusItem(program, isStrategic)),
-      ...unreadDms.map(dmFocusItem),
       ...notificationItems,
       ...meetingItems,
       ...focusBlockItems,
@@ -1227,11 +1295,15 @@ export function InboxView() {
   // Dedup: approval items already shown in ActionPanel don't need to appear in the focus list
   const actionPanelIds = new Set((programSummary?.needsAction ?? []).map(n => n.id))
   const deduplicatedItems = rankedFocusItems.filter(item =>
-    item.kind !== 'approval' || !actionPanelIds.has(item.entityId ?? -1)
+    (item.kind !== 'approval' || !actionPanelIds.has(item.entityId ?? -1)) &&
+    // Item yang di-snooze disembunyikan sampai waktunya.
+    !(snoozed[item.id] && snoozed[item.id] > Date.now())
   )
   const scopedRankedFocusItems = deduplicatedItems.filter(item => focusItemMatchesScope(item, focusScope))
 
-  const focusScopeOptions = (['all', 'action', 'risk', 'communication', 'schedule'] as FocusScope[]).map(scope => ({
+  // 'communication' (chat) sengaja dihilangkan dari filter Focus — DM & channel
+  // mention tak lagi disurface di sini (rumahnya Channels).
+  const focusScopeOptions = (['all', 'action', 'risk', 'schedule'] as FocusScope[]).map(scope => ({
     scope,
     label: FOCUS_SCOPE_LABEL[scope],
     count: scope === 'all'
@@ -1292,8 +1364,26 @@ export function InboxView() {
       void handleNotifClick(item.notificationId, item.source)
       return
     }
-    if (item.kind === 'task') { goToTask(item.entityId); return }
-    if (item.kind === 'blocker') { goToTask(item.taskId); return }
+    if (item.kind === 'task') {
+      if (canQuickAct && item.entityId) {
+        const prefill = myTasks.find(t => t.id === item.entityId)?.percentComplete ?? 0
+        setActiveQuick({ kind: 'task', entityId: item.entityId, title: item.title, prefillPercent: prefill })
+      } else goToTask(item.entityId)
+      return
+    }
+    if (item.kind === 'blocker') {
+      if (canQuickAct && item.entityId) {
+        setActiveQuick({ kind: 'blocker', entityId: item.entityId, taskId: item.taskId, title: item.title, prefillPercent: 0 })
+      } else goToTask(item.taskId)
+      return
+    }
+    if (item.kind === 'escalation') {
+      const esc = myCommittedEscalations.find(e => e.id === item.entityId)
+      if (esc) setActiveEscalationTriage(esc as unknown as EscalationRequestType)
+      return
+    }
+    if (item.kind === 'action_item') { navigate('/jadwal'); return }
+    if (item.kind === 'assignment') { navigate('/penugasan'); return }
     if (item.kind === 'program' || item.kind === 'approval') {
       if (item.entityId) goToProgram(item.entityId)
       return
@@ -1308,6 +1398,16 @@ export function InboxView() {
       return
     }
     navigate('/fokus')
+  }
+
+  const handleSnooze = (item: FocusItem) => {
+    const until = snoozeUntilTomorrow()
+    setSnoozed(prev => {
+      const next = { ...prev, [item.id]: until }
+      try { localStorage.setItem(SNOOZE_KEY, JSON.stringify(next)) } catch { /* ignore quota */ }
+      return next
+    })
+    showToast('Ditunda sampai besok.')
   }
 
   // ── Daily progress: completed today (status COMPLETED + updatedAt within today) ──
@@ -1326,6 +1426,11 @@ export function InboxView() {
   const laterItems = scopedRankedFocusItems.slice(6)
 
   const [laterOpen, setLaterOpen] = useState(false)
+
+  // Item Needs Action yang masih perlu ditindaklanjuti (yang sudah di-disposition
+  // disembunyikan optimistik via dismissedNeedsAction).
+  const visibleNeedsAction = (programSummary?.needsAction ?? [])
+    .filter(i => !dismissedNeedsAction.has(`${i.id}:${i.tag}`))
 
   return (
     <div className="ds fokus-v2 view-inbox">
@@ -1354,17 +1459,20 @@ export function InboxView() {
 
       <div className="fokus-page">
 
-        {/* ── 0a. Sprint 2 — Komitmen Hari Ini (data-driven dari /inbox/today) ── */}
-        <CommitmentTodaySection />
-
-        {/* ── 0b. Sprint 4 — Clear the Path sections (DKM pilot via feature flag) ── */}
+        {/* ── 0. Clear the Path: REQUESTED yang butuh disposition saya (DKM pilot) ──
+            Komitmen task/action-item/assignment kini menyatu di feed terprioritisasi
+            di bawah (Now/Today/Can Wait) — tidak ada lagi daftar "Today's Commitments"
+            terpisah yang menduplikasi task. */}
         {currentUser?.id && <EscalationSections currentUserId={currentUser.id} />}
 
         {/* ── 1. Eksekutif: Perlu Tindakan (program-level decisions) ── */}
-        {(programSummary?.needsAction.length ?? 0) > 0 && (
+        {visibleNeedsAction.length > 0 && (
           <ActionPanel
-            items={programSummary!.needsAction}
-            onOpen={openProgramWorkspace}
+            items={visibleNeedsAction}
+            onOpen={(id) => {
+              const found = visibleNeedsAction.find(i => i.id === id)
+              if (found) setActiveNeedsAction(found)
+            }}
             title={actionPanelTitleFor(programSummary!.scope)}
           />
         )}
@@ -1415,7 +1523,7 @@ export function InboxView() {
             <div className="fokus-bucket__head">
               <h3 className="fokus-bucket__label">Now</h3>
             </div>
-            <FokusHeroCard item={nowItem} onAction={handleFocusItemClick} />
+            <FokusHeroCard item={nowItem} onAction={handleFocusItemClick} onSnooze={handleSnooze} />
           </section>
         )}
 
@@ -1433,6 +1541,7 @@ export function InboxView() {
                   item={item}
                   rank={idx + 2}
                   onAction={handleFocusItemClick}
+                  onSnooze={handleSnooze}
                 />
               ))}
             </ul>
@@ -1460,6 +1569,7 @@ export function InboxView() {
                     item={item}
                     rank={idx + 7}
                     onAction={handleFocusItemClick}
+                    onSnooze={handleSnooze}
                     muted
                   />
                 ))}
@@ -1469,7 +1579,7 @@ export function InboxView() {
         )}
 
         {/* ── 6. Empty state ── */}
-        {nowItem == null && todayItems.length === 0 && laterItems.length === 0 && (programSummary?.needsAction.length ?? 0) === 0 && (
+        {nowItem == null && todayItems.length === 0 && laterItems.length === 0 && visibleNeedsAction.length === 0 && (
           <div className="fokus-zero">
             <div className="fokus-zero__check" aria-hidden="true">✓</div>
             <p className="fokus-zero__title">Your queue is clear</p>
@@ -1481,6 +1591,58 @@ export function InboxView() {
 
       </div>
       </div>
+
+      {activeNeedsAction && (
+        <NeedsActionPanel
+          item={activeNeedsAction}
+          onClose={() => setActiveNeedsAction(null)}
+          onActed={(programId, tag) => {
+            setDismissedNeedsAction(prev => new Set(prev).add(`${programId}:${tag}`))
+            setActiveNeedsAction(null)
+            showToast('Tindak lanjut tersimpan.')
+            void loadOverview('refresh')
+          }}
+        />
+      )}
+
+      {activeQuick && (
+        <FocusQuickPanel
+          kind={activeQuick.kind}
+          entityId={activeQuick.entityId}
+          title={activeQuick.title}
+          prefillPercent={activeQuick.prefillPercent}
+          onClose={() => setActiveQuick(null)}
+          onActed={() => {
+            setActiveQuick(null)
+            showToast(activeQuick.kind === 'blocker' ? 'Blocker resolved.' : 'Progress tersimpan.')
+            void loadOverview('refresh')
+          }}
+          onOpenDetail={() => {
+            const tid = activeQuick.kind === 'blocker' ? activeQuick.taskId : activeQuick.entityId
+            setActiveQuick(null)
+            goToTask(tid)
+          }}
+        />
+      )}
+
+      {activeEscalationTriage && currentUser?.id && (
+        <EscalationTriagePanel
+          request={activeEscalationTriage}
+          currentUserId={currentUser.id}
+          onClose={() => setActiveEscalationTriage(null)}
+          onUpdated={(next) => {
+            // Setelah Resolve/disposition, item committed keluar dari feed saat
+            // myWork di-refresh (status jadi CLEARED → tak lolos filter myWork).
+            if (['CLEARED', 'DECLINED', 'REROUTED'].includes(next.status)) {
+              setActiveEscalationTriage(null)
+              showToast('Escalation diperbarui.')
+            } else {
+              setActiveEscalationTriage(next)
+            }
+            void loadOverview('refresh')
+          }}
+        />
+      )}
 
       {toast && (
         <div className={`wid-toast wid-toast--${toast.tone}`} role="status" aria-live="polite">

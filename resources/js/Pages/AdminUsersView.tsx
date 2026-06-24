@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useId } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
@@ -54,6 +55,7 @@ const ROLE_BADGE: Record<string, string> = {
 const ROLE_OPTIONS = ['all', 'ADMIN', 'BOD', 'KADIV', 'KASUBDIV', 'ASISTEN', 'OFFICER']
 
 export function AdminUsersView() {
+  const { t } = useTranslation()
   const { currentUser } = useWorkspace()
 
   const [users, setUsers] = useState<UserRecord[]>([])
@@ -146,7 +148,7 @@ export function AdminUsersView() {
       closeCreateUser()
       loadUsers()
     } catch (err) {
-      setCuError(err instanceof Error ? err.message : 'Failed to create user.')
+      setCuError(err instanceof Error ? err.message : t('Failed to create user.'))
     } finally {
       setCuSaving(false)
     }
@@ -171,9 +173,9 @@ export function AdminUsersView() {
     setError(null)
     api.get<UsersResponse>(`/users${query ? `?${query}` : ''}`)
       .then(res => { setUsers(res.data); setTotal(res.total) })
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load user data.'))
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : t('Failed to load user data.')))
       .finally(() => setLoading(false))
-  }, [search, roleFilter, activeFilter, isAuthorized])
+  }, [search, roleFilter, activeFilter, isAuthorized, t])
 
   useEffect(() => { loadUsers() }, [loadUsers])
 
@@ -236,7 +238,7 @@ export function AdminUsersView() {
       loadUsers()
       closeMutasi()
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save transfer.')
+      setSaveError(err instanceof Error ? err.message : t('Failed to save transfer.'))
     } finally {
       setSaving(false)
     }
@@ -278,7 +280,7 @@ export function AdminUsersView() {
       closeEditUser()
       loadUsers()
     } catch (err) {
-      setEuError(err instanceof Error ? err.message : 'Failed to save changes.')
+      setEuError(err instanceof Error ? err.message : t('Failed to save changes.'))
     } finally {
       setEuSaving(false)
     }
@@ -289,7 +291,7 @@ export function AdminUsersView() {
       <div className="ds admin-v2 view-admin-users ds-stagger">
         <div className="panel">
           <p className="text-muted text-sm admin-state-copy admin-state-copy--center">
-            Access denied. This page is for admins and superadmins only.
+            {t('Access denied. This page is for admins and superadmins only.')}
           </p>
         </div>
       </div>
@@ -299,13 +301,13 @@ export function AdminUsersView() {
   return (
     <div className="ds admin-v2 view-admin-users">
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">User Management</h2>
+        <h2 className="view-toolbar__title">{t('User Management')}</h2>
         <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Manage workspace user accounts, roles, and access.</span>
+        <span className="view-toolbar__subtitle">{t('Manage workspace user accounts, roles, and access.')}</span>
         <input
           className="view-toolbar__search"
           type="text"
-          placeholder="Search name, email, or NIK…"
+          placeholder={t('Search name, email, or NIK…')}
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
@@ -315,7 +317,7 @@ export function AdminUsersView() {
           onChange={e => setRoleFilter(e.target.value)}
         >
           {ROLE_OPTIONS.map(r => (
-            <option key={r} value={r}>{r === 'all' ? 'All Roles' : formatRoleLabel(r)}</option>
+            <option key={r} value={r}>{r === 'all' ? t('All Roles') : formatRoleLabel(r)}</option>
           ))}
         </select>
         <div className="view-toggle admin-toolbar-toggle">
@@ -325,17 +327,17 @@ export function AdminUsersView() {
               className={`view-toggle-btn${activeFilter === val ? ' active' : ''}`}
               onClick={() => setActiveFilter(val)}
             >
-              {val === 'all' ? 'All' : val === 'active' ? 'Active' : 'Inactive'}
+              {val === 'all' ? t('All') : val === 'active' ? t('Active') : t('Inactive')}
             </button>
           ))}
         </div>
         <div className="view-toolbar__right">
           {!loading && (
             <div className="view-toolbar__stats">
-              <span>{total} <em>users</em></span>
+              <span>{total} <em>{t('users')}</em></span>
             </div>
           )}
-          <button className="toolbar-action-btn" onClick={openCreateUser}>+ Add User</button>
+          <button className="toolbar-action-btn" onClick={openCreateUser}>{t('+ Add User')}</button>
         </div>
       </div>
 
@@ -345,19 +347,19 @@ export function AdminUsersView() {
         )}
         {!error && !loading && users.length === 0 && (
           <p className="text-muted text-sm admin-state-copy admin-state-copy--center">
-            No users match the current filter.
+            {t('No users match the current filter.')}
           </p>
         )}
         {!error && (loading || users.length > 0) && (
           <table className="reports-table">
             <thead>
               <tr>
-                <th>Name / ID</th>
-                <th>Role</th>
-                <th>Position</th>
-                <th>Unit</th>
-                <th>Directorate</th>
-                <th>Status</th>
+                <th>{t('Name / ID')}</th>
+                <th>{t('Role')}</th>
+                <th>{t('Position')}</th>
+                <th>{t('Unit')}</th>
+                <th>{t('Directorate')}</th>
+                <th>{t('Status')}</th>
                 <th></th>
               </tr>
             </thead>
@@ -365,27 +367,27 @@ export function AdminUsersView() {
               {loading ? (
                 <tr>
                   <td colSpan={7} className="admin-table-placeholder">
-                    <span className="text-muted text-sm">Loading data…</span>
+                    <span className="text-muted text-sm">{t('Loading data…')}</span>
                   </td>
                 </tr>
               ) : users.map(user => (
                 <tr key={user.id}>
-                  <td data-label="Nama / ID">
+                  <td data-label={t('Name / ID')}>
                     <div className="admin-cell-stack">
                       <span className="text-strong admin-cell-title">{user.name}</span>
                       <span className="code-badge">{user.userId}</span>
                     </div>
                   </td>
-                  <td data-label="Role">
+                  <td data-label={t('Role')}>
                     <span className={`badge ${ROLE_BADGE[user.roleType] ?? ''}`}>{formatRoleLabel(user.roleType)}</span>
                   </td>
-                  <td data-label="Position">
+                  <td data-label={t('Position')}>
                     <div className="admin-cell-stack">
                       {user.position?.code && <span className="code-badge admin-code-badge--micro admin-code-badge--fit">{user.position.code}</span>}
                       <span className="text-sm text-muted">{user.position?.name ?? user.positionTitle ?? '–'}</span>
                     </div>
                   </td>
-                  <td data-label="Unit">
+                  <td data-label={t('Unit')}>
                     {user.unit
                       ? <div className="admin-cell-inline">
                           <span className="code-badge">{user.unit.code}</span>
@@ -393,7 +395,7 @@ export function AdminUsersView() {
                         </div>
                       : <span className="text-muted text-xs">–</span>}
                   </td>
-                  <td data-label="Directorate">
+                  <td data-label={t('Directorate')}>
                     {user.directorate
                       ? <div className="admin-cell-inline">
                           <span className="code-badge">{user.directorate.code}</span>
@@ -401,25 +403,25 @@ export function AdminUsersView() {
                         </div>
                       : <span className="text-muted text-xs">–</span>}
                   </td>
-                  <td data-label="Status">
+                  <td data-label={t('Status')}>
                     <span className={`badge ${user.isActive ? 'badge--green' : 'badge--red'}`}>
-                      {user.isActive ? 'Active' : 'Inactive'}
+                      {user.isActive ? t('Active') : t('Inactive')}
                     </span>
                   </td>
                   <td>
                     <div className="admin-row-actions">
                       <button className="btn btn--sm btn--ghost" onClick={() => openEditUser(user)}>
-                        Edit
+                        {t('Edit')}
                       </button>
                       <button className="btn btn--sm btn--ghost" onClick={() => openMutasi(user)}>
-                        Transfer
+                        {t('Transfer')}
                       </button>
                       <button
                         className={`btn btn--sm btn--ghost admin-row-status-btn ${user.isActive ? 'admin-row-status-btn--danger' : 'admin-row-status-btn--success'}`}
                         onClick={() => void handleToggleActive(user)}
-                        title={user.isActive ? 'Deactivate' : 'Activate'}
+                        title={user.isActive ? t('Deactivate') : t('Activate')}
                       >
-                        {user.isActive ? 'Deactivate' : 'Activate'}
+                        {user.isActive ? t('Deactivate') : t('Activate')}
                       </button>
                     </div>
                   </td>
@@ -436,10 +438,10 @@ export function AdminUsersView() {
           <div aria-describedby={createUserDescId} aria-labelledby={createUserTitleId} aria-modal="true" className="modal modal--wide" ref={createUserDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">User Management</span>
-                <h3 className="modal__title" id={createUserTitleId}>Add New User</h3>
+                <span className="modal-kicker">{t('User Management')}</span>
+                <h3 className="modal__title" id={createUserTitleId}>{t('Add New User')}</h3>
                 <p className="modal-subtitle" id={createUserDescId}>
-                  Fill in the basic identity, then link the user to the right role and position for more consistent provisioning.
+                  {t('Fill in the basic identity, then link the user to the right role and position for more consistent provisioning.')}
                 </p>
               </div>
               <button className="modal__close" onClick={closeCreateUser} type="button">
@@ -453,45 +455,45 @@ export function AdminUsersView() {
                 )}
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>User Identity</h4>
-                    <p>Enter the employee's basic details used across the directory, assignments, and pickers throughout the app.</p>
+                    <h4>{t('User Identity')}</h4>
+                    <p>{t("Enter the employee's basic details used across the directory, assignments, and pickers throughout the app.")}</p>
                   </div>
                   <div className="admin-form-grid admin-form-grid--2">
                     <div className="modal-field">
-                      <label className="modal-label">Full Name <span className="admin-required">*</span></label>
-                      <input className="form-input" required minLength={1} type="text" placeholder="Employee's full name" value={cuForm.name} onChange={e => setCuForm(f => ({ ...f, name: e.target.value }))} />
+                      <label className="modal-label">{t('Full Name')} <span className="admin-required">*</span></label>
+                      <input className="form-input" required minLength={1} type="text" placeholder={t("Employee's full name")} value={cuForm.name} onChange={e => setCuForm(f => ({ ...f, name: e.target.value }))} />
                     </div>
                     <div className="modal-field">
-                      <label className="modal-label">Email <span className="admin-required">*</span></label>
+                      <label className="modal-label">{t('Email')} <span className="admin-required">*</span></label>
                       <input className="form-input" required type="email" placeholder="email@perusahaan.co.id" value={cuForm.email} onChange={e => setCuForm(f => ({ ...f, email: e.target.value }))} />
                     </div>
                   </div>
                   <div className="admin-form-grid admin-form-grid--3">
                     <div className="modal-field">
-                      <label className="modal-label">Employee ID</label>
-                      <input className="form-input" type="text" placeholder="e.g. EMP-001" value={cuForm.userId} onChange={e => setCuForm(f => ({ ...f, userId: e.target.value }))} />
+                      <label className="modal-label">{t('Employee ID')}</label>
+                      <input className="form-input" type="text" placeholder={t('e.g. EMP-001')} value={cuForm.userId} onChange={e => setCuForm(f => ({ ...f, userId: e.target.value }))} />
                     </div>
                     <div className="modal-field">
-                      <label className="modal-label">NIK</label>
-                      <input className="form-input" type="text" placeholder="Employee identification number" value={cuForm.nik} onChange={e => setCuForm(f => ({ ...f, nik: e.target.value }))} />
+                      <label className="modal-label">{t('NIK')}</label>
+                      <input className="form-input" type="text" placeholder={t('Employee identification number')} value={cuForm.nik} onChange={e => setCuForm(f => ({ ...f, nik: e.target.value }))} />
                     </div>
                     <div className="modal-field">
-                      <label className="modal-label">Phone</label>
+                      <label className="modal-label">{t('Phone')}</label>
                       <input className="form-input" type="text" placeholder="+62…" value={cuForm.phone} onChange={e => setCuForm(f => ({ ...f, phone: e.target.value }))} />
                     </div>
                   </div>
                 </section>
                 <section className="modal-section modal-section--soft">
                   <div className="modal-section__intro">
-                    <h4>Role & Position</h4>
-                    <p>Use role for access rights, then link a position if you want the unit and organization structure to be resolved too.</p>
+                    <h4>{t('Role & Position')}</h4>
+                    <p>{t('Use role for access rights, then link a position if you want the unit and organization structure to be resolved too.')}</p>
                   </div>
                   <div className="modal-field">
-                    <label className="modal-label">Role <span className="admin-required">*</span></label>
+                    <label className="modal-label">{t('Role')} <span className="admin-required">*</span></label>
                     {cuSelectedPos ? (
                       <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span className={`badge ${ROLE_BADGE[cuForm.roleType] ?? ''}`}>{formatRoleLabel(cuForm.roleType)}</span>
-                        <span className="text-xs text-muted">follows the selected position</span>
+                        <span className="text-xs text-muted">{t('follows the selected position')}</span>
                       </div>
                     ) : (
                       <select className="form-input" value={cuForm.roleType} onChange={e => setCuForm(f => ({ ...f, roleType: e.target.value }))}>
@@ -502,11 +504,11 @@ export function AdminUsersView() {
                     )}
                   </div>
                   <div className="modal-field">
-                    <label className="modal-label">Position (optional)</label>
+                    <label className="modal-label">{t('Position (optional)')}</label>
                     <input
                       className="form-input"
                       type="text"
-                      placeholder="Type a position name or code…"
+                      placeholder={t('Type a position name or code…')}
                       value={cuPosSearch}
                       onChange={e => { setCuPosSearch(e.target.value); setCuSelectedPos(null) }}
                     />
@@ -534,14 +536,14 @@ export function AdminUsersView() {
                     )}
                   </div>
                   <div className="modal-helper-note">
-                    If a position is selected, role and unit are adjusted automatically. Default account password: <strong>DKMR2026</strong>.
+                    {t('If a position is selected, role and unit are adjusted automatically. Default account password:')} <strong>DKMR2026</strong>.
                   </div>
                 </section>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" type="button" onClick={closeCreateUser} disabled={cuSaving}>Cancel</button>
+                <button className="btn btn--ghost" type="button" onClick={closeCreateUser} disabled={cuSaving}>{t('Cancel')}</button>
                 <button className="profile-save-btn" type="submit" disabled={cuSaving || !cuForm.name.trim() || !cuForm.email.trim()}>
-                  {cuSaving ? 'Creating…' : 'Add User'}
+                  {cuSaving ? t('Creating…') : t('Add User')}
                 </button>
               </div>
             </form>
@@ -556,10 +558,10 @@ export function AdminUsersView() {
           <div aria-describedby={editUserDescId} aria-labelledby={editUserTitleId} aria-modal="true" className="modal modal--wide" ref={editUserDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">User Management</span>
-                <h3 className="modal__title" id={editUserTitleId}>Edit User</h3>
+                <span className="modal-kicker">{t('User Management')}</span>
+                <h3 className="modal__title" id={editUserTitleId}>{t('Edit User')}</h3>
                 <p className="modal-subtitle" id={editUserDescId}>
-                  Update the account identity (name, login ID, NIK, contact) or reset the password. Role, position, and unit are changed via Transfer.
+                  {t('Update the account identity (name, login ID, NIK, contact) or reset the password. Role, position, and unit are changed via Transfer.')}
                 </p>
               </div>
               <button className="modal__close" onClick={closeEditUser} type="button">
@@ -573,49 +575,49 @@ export function AdminUsersView() {
                 )}
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>User Identity</h4>
-                    <p>These fields drive the directory and login identity for <strong>{editTarget.name}</strong>.</p>
+                    <h4>{t('User Identity')}</h4>
+                    <p>{t('These fields drive the directory and login identity for')} <strong>{editTarget.name}</strong>.</p>
                   </div>
                   <div className="admin-form-grid admin-form-grid--2">
                     <div className="modal-field">
-                      <label className="modal-label">Full Name <span className="admin-required">*</span></label>
+                      <label className="modal-label">{t('Full Name')} <span className="admin-required">*</span></label>
                       <input className="form-input" required minLength={1} type="text" value={euForm.name} onChange={e => setEuForm(f => ({ ...f, name: e.target.value }))} />
                     </div>
                     <div className="modal-field">
-                      <label className="modal-label">Email <span className="admin-required">*</span></label>
+                      <label className="modal-label">{t('Email')} <span className="admin-required">*</span></label>
                       <input className="form-input" required type="email" value={euForm.email} onChange={e => setEuForm(f => ({ ...f, email: e.target.value }))} />
                     </div>
                   </div>
                   <div className="admin-form-grid admin-form-grid--3">
                     <div className="modal-field">
-                      <label className="modal-label">Login ID</label>
-                      <input className="form-input" type="text" placeholder="e.g. nama.lengkap" value={euForm.userId} onChange={e => setEuForm(f => ({ ...f, userId: e.target.value }))} />
+                      <label className="modal-label">{t('Login ID')}</label>
+                      <input className="form-input" type="text" placeholder={t('e.g. nama.lengkap')} value={euForm.userId} onChange={e => setEuForm(f => ({ ...f, userId: e.target.value }))} />
                     </div>
                     <div className="modal-field">
-                      <label className="modal-label">NIK</label>
-                      <input className="form-input" type="text" placeholder="Employee identification number" value={euForm.nik} onChange={e => setEuForm(f => ({ ...f, nik: e.target.value }))} />
+                      <label className="modal-label">{t('NIK')}</label>
+                      <input className="form-input" type="text" placeholder={t('Employee identification number')} value={euForm.nik} onChange={e => setEuForm(f => ({ ...f, nik: e.target.value }))} />
                     </div>
                     <div className="modal-field">
-                      <label className="modal-label">Phone</label>
+                      <label className="modal-label">{t('Phone')}</label>
                       <input className="form-input" type="text" placeholder="+62…" value={euForm.phone} onChange={e => setEuForm(f => ({ ...f, phone: e.target.value }))} />
                     </div>
                   </div>
                 </section>
                 <section className="modal-section modal-section--soft">
                   <div className="modal-section__intro">
-                    <h4>Reset Password</h4>
-                    <p>Leave blank to keep the current password. Minimum 6 characters; share the new password with the user securely.</p>
+                    <h4>{t('Reset Password')}</h4>
+                    <p>{t('Leave blank to keep the current password. Minimum 6 characters; share the new password with the user securely.')}</p>
                   </div>
                   <div className="modal-field">
-                    <label className="modal-label">New Password</label>
-                    <input className="form-input" type="text" autoComplete="new-password" placeholder="Leave blank to keep unchanged" value={euForm.password} onChange={e => setEuForm(f => ({ ...f, password: e.target.value }))} />
+                    <label className="modal-label">{t('New Password')}</label>
+                    <input className="form-input" type="text" autoComplete="new-password" placeholder={t('Leave blank to keep unchanged')} value={euForm.password} onChange={e => setEuForm(f => ({ ...f, password: e.target.value }))} />
                   </div>
                 </section>
               </div>
               <div className="modal__footer">
-                <button className="btn btn--ghost" type="button" onClick={closeEditUser} disabled={euSaving}>Cancel</button>
+                <button className="btn btn--ghost" type="button" onClick={closeEditUser} disabled={euSaving}>{t('Cancel')}</button>
                 <button className="profile-save-btn" type="submit" disabled={euSaving || !euForm.name.trim() || !euForm.email.trim()}>
-                  {euSaving ? 'Saving…' : 'Save Changes'}
+                  {euSaving ? t('Saving…') : t('Save Changes')}
                 </button>
               </div>
             </form>
@@ -630,10 +632,10 @@ export function AdminUsersView() {
           <div aria-describedby={mutasiDescId} aria-labelledby={mutasiTitleId} aria-modal="true" className="modal" ref={mutasiDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Organization Move</span>
-                <h3 className="modal__title" id={mutasiTitleId}>Position Transfer</h3>
+                <span className="modal-kicker">{t('Organization Move')}</span>
+                <h3 className="modal__title" id={mutasiTitleId}>{t('Position Transfer')}</h3>
                 <p className="modal-subtitle" id={mutasiDescId}>
-                  Move the user to a new position while recording the administrative reason and decree reference if needed.
+                  {t('Move the user to a new position while recording the administrative reason and decree reference if needed.')}
                 </p>
               </div>
               <button className="modal__close" onClick={closeMutasi} type="button"><svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg></button>
@@ -642,37 +644,37 @@ export function AdminUsersView() {
             <div className="modal__body">
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Transfer Subject</h4>
-                  <p>Confirm the person being moved and their current position are correct before choosing the new destination.</p>
+                  <h4>{t('Transfer Subject')}</h4>
+                  <p>{t('Confirm the person being moved and their current position are correct before choosing the new destination.')}</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Employee</label>
+                  <label className="modal-label">{t('Employee')}</label>
                   <div className="admin-cell-stack">
                     <span className="text-sm text-strong">{mutasiTarget.name}</span>
                     <span className="text-xs text-muted">{mutasiTarget.nik ?? mutasiTarget.userId}</span>
                   </div>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Current Position</label>
+                  <label className="modal-label">{t('Current Position')}</label>
                   {mutasiTarget.position
                     ? <div className="admin-cell-inline">
                         <span className="code-badge">{mutasiTarget.position.code}</span>
                         <span className="text-sm">{mutasiTarget.position.name}</span>
                       </div>
-                    : <span className="text-muted text-xs">{mutasiTarget.positionTitle ?? 'No position yet'}</span>}
+                    : <span className="text-muted text-xs">{mutasiTarget.positionTitle ?? t('No position yet')}</span>}
                 </div>
               </section>
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Destination Position</h4>
-                  <p>Search positions by name, code, or unit. If already held by someone else, a warning appears in the search results.</p>
+                  <h4>{t('Destination Position')}</h4>
+                  <p>{t('Search positions by name, code, or unit. If already held by someone else, a warning appears in the search results.')}</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">New Position</label>
+                  <label className="modal-label">{t('New Position')}</label>
                   <input
                     className="form-input"
                     type="text"
-                    placeholder="Type to search positions (name, code, or unit)…"
+                    placeholder={t('Type to search positions (name, code, or unit)…')}
                     value={posSearch}
                     onChange={e => setPosSearch(e.target.value)}
                     autoFocus
@@ -710,25 +712,25 @@ export function AdminUsersView() {
               </section>
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Administrative Notes</h4>
-                  <p>Add the decree number and transfer reason so the position-change trail stays documented.</p>
+                  <h4>{t('Administrative Notes')}</h4>
+                  <p>{t('Add the decree number and transfer reason so the position-change trail stays documented.')}</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Decree Number <span className="text-muted">(optional)</span></label>
+                  <label className="modal-label">{t('Decree Number')} <span className="text-muted">{t('(optional)')}</span></label>
                   <input
                     className="form-input"
                     type="text"
-                    placeholder="e.g. SK-001/DIR/2026"
+                    placeholder={t('e.g. SK-001/DIR/2026')}
                     value={skNumber}
                     onChange={e => setSkNumber(e.target.value)}
                   />
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Transfer Reason <span className="text-muted">(optional)</span></label>
+                  <label className="modal-label">{t('Transfer Reason')} <span className="text-muted">{t('(optional)')}</span></label>
                   <textarea
                     className="form-input admin-textarea-vertical"
                     rows={2}
-                    placeholder="e.g. Regular Q1 2026 transfer, promotion, etc."
+                    placeholder={t('e.g. Regular Q1 2026 transfer, promotion, etc.')}
                     value={mutationReason}
                     onChange={e => setMutationReason(e.target.value)}
                   />
@@ -740,13 +742,13 @@ export function AdminUsersView() {
             </div>
 
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={closeMutasi} disabled={saving}>Cancel</button>
+              <button className="btn btn--ghost" onClick={closeMutasi} disabled={saving}>{t('Cancel')}</button>
               <button
                 className="btn btn--primary"
                 onClick={handleMutasi}
                 disabled={saving || !selectedPos}
               >
-                {saving ? 'Saving…' : 'Save Transfer'}
+                {saving ? t('Saving…') : t('Save Transfer')}
               </button>
             </div>
           </div>

@@ -135,15 +135,15 @@
 /* Primary "Setujui" via .btn--primary */
 .program-detail-v2 .wi-detail-header__btn.btn--primary,
 .program-detail-v2 .btn--primary.wi-detail-header__btn {
-  background: var(--ds-brand-600);
+  background: var(--ds-cta-fill);
   color: var(--ds-text-on-brand);
-  border-color: var(--ds-brand-600);
+  border-color: var(--ds-cta-fill);
 }
 
 .program-detail-v2 .wi-detail-header__btn.btn--primary:hover:not(:disabled),
 .program-detail-v2 .btn--primary.wi-detail-header__btn:hover:not(:disabled) {
-  background: var(--ds-brand-700);
-  border-color: var(--ds-brand-700);
+  background: var(--ds-cta-fill-hover);
+  border-color: var(--ds-cta-fill-hover);
 }
 
 /* Ghost variant */

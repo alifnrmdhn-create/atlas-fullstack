@@ -545,7 +545,8 @@
 }
 
 .programs-v2 .programs-filter-chip--stale.programs-filter-chip--active,
-.programs-v2 .programs-filter-chip--neutral.programs-filter-chip--active {
+.programs-v2 .programs-filter-chip--neutral.programs-filter-chip--active,
+.programs-v2 .programs-filter-chip--mine.programs-filter-chip--active {
   background: var(--ds-neutral-100);
   border-color: var(--ds-text-secondary);
   color: var(--ds-text-primary);
@@ -741,7 +742,7 @@
 .programs-v2 .toolbar-action-btn {
   height: 32px;
   padding: 0 14px;
-  background: var(--ds-brand-600);
+  background: var(--ds-cta-fill);
   color: var(--ds-text-on-brand);
   border: 0;
   border-radius: var(--ds-radius-md);
@@ -754,7 +755,7 @@
 }
 
 .programs-v2 .toolbar-action-btn:hover {
-  background: var(--ds-brand-700);
+  background: var(--ds-cta-fill-hover);
 }
 
 /* ─── Sub-bar ───────────────────────────────────────────── */
@@ -815,7 +816,7 @@
   height: 16px;
   padding: 0 5px;
   border-radius: var(--ds-radius-pill);
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.4); /* dark-allow: veil count badge di atas fill amber active, identik dua theme */
   margin-left: 4px;
   font-size: 10px;
   font-weight: var(--ds-weight-semibold);
@@ -1714,9 +1715,9 @@
 }
 .programs-pager__num--active,
 .programs-pager__num--active:hover {
-  background: var(--ds-brand-600, var(--ds-green-500));
-  border-color: var(--ds-brand-600, var(--ds-green-500));
-  color: #fff;
+  background: var(--ds-cta-fill, var(--ds-green-500));
+  border-color: var(--ds-cta-fill, var(--ds-green-500));
+  color: var(--text-inverse);
 }
 .programs-pager__gap {
   min-width: 18px;

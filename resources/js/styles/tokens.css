@@ -106,8 +106,46 @@
   --bg-card: var(--panel);
   --bg-subtle: var(--surface-1);
   --border-color: var(--panel-border);
-  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'Geist Mono', 'JetBrains Mono', monospace;
+  /* Surfaces — these previously fell back to #fff and stayed WHITE in dark
+   * (e.g. .wb-prog__lane = var(--ds-surface, #fff) → putih di /execution). */
+  --ds-surface: var(--panel);
+  --ds-surface-subtle: var(--surface-1);
+  --bg-elevated: var(--panel);
+  --brand-tint: var(--indigo-dim);
+  --panel-bg-2: var(--surface-1);
+  --surface-raised: var(--panel);
+  --input-bg: var(--panel);
+  /* Borders — fell back to light gray / black-on-dark (invisible) */
+  --border-subtle: var(--panel-border-soft);
+  --ds-border-tertiary: var(--panel-border);
+  --color-border-tertiary: var(--panel-border);
+  --red-border: var(--red-subtle);
+  /* Text */
+  --color-text-muted: var(--text-muted);
+  --text-subtle: var(--text-muted);
+  /* Status aliases (-strong / -accent / -dark / brand / amber / warning) →
+   * theme-aware base tokens so dark mode tunes them automatically. */
+  --amber: var(--yellow);
+  --amber-strong: var(--yellow);
+  --warning: var(--yellow);
+  --yellow-dark: var(--yellow-ink);
+  --red-strong: var(--red);
+  --red-accent: var(--red);
+  --wi-danger-fg: var(--red);
+  --green-strong: var(--green);
+  --accent-green: var(--green);
+  --blue-strong: var(--blue);
+  --ptpn-blue: var(--blue);
+  --brand: var(--indigo);
+  --brand-strong: var(--indigo);
+  --brand-strong-hover: var(--indigo-dark);
+  --brand-soft: var(--indigo-dim);
+  --brand-dark: var(--green-ink);
+  --ds-green-700: var(--green-ink);
+  --ds-amber-700: var(--yellow-ink);
+  --ds-red-700: var(--red-ink);
+  --font-sans: 'Public Sans Variable', 'Public Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, 'SFMono-Regular', 'JetBrains Mono', monospace;
 
   /* PTPN brand colors */
   --ptpn-green: #2D8C3E;

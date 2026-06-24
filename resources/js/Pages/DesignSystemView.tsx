@@ -1,4 +1,5 @@
 import { Head } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
 import { Button, Pill, Card, CardHeader, CardTitle, CardDescription, Stat, ListRow } from '../design-system'
 
 /**
@@ -9,6 +10,7 @@ import { Button, Pill, Card, CardHeader, CardTitle, CardDescription, Stat, ListR
  * before rolling out to real pages.
  */
 export default function DesignSystemView() {
+  const { t } = useTranslation()
   return (
     <>
       <Head title="Design System" />
@@ -18,18 +20,18 @@ export default function DesignSystemView() {
       <div className="ds view-design-system ds-stagger" style={pageStyle}>
         <header style={headerStyle}>
           <div>
-            <h1 style={pageTitleStyle}>ATLAS Design System</h1>
+            <h1 style={pageTitleStyle}>{t('ATLAS Design System')}</h1>
             <p style={pageSubtitleStyle}>
-              Foundation primitives — IBM Plex Sans, neutral-led palette, hairline borders, no ambient shadows.
+              {t('Foundation primitives — IBM Plex Sans, neutral-led palette, hairline borders, no ambient shadows.')}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button variant="secondary" size="sm">Documentation</Button>
-            <Button variant="primary" size="sm">Adopt in Pages</Button>
+            <Button variant="secondary" size="sm">{t('Documentation')}</Button>
+            <Button variant="primary" size="sm">{t('Adopt in Pages')}</Button>
           </div>
         </header>
 
-        <Section title="Typography" description="7 sizes. Nothing in between.">
+        <Section title={t('Typography')} description={t('7 sizes. Nothing in between.')}>
           <Card padding="lg">
             <div style={typeRowStyle}>
               <span style={typeMetaStyle}>40 / 600</span>
@@ -78,48 +80,48 @@ export default function DesignSystemView() {
           </Card>
         </Section>
 
-        <Section title="Color" description="Neutral-led. Brand for active state. Semantics only for status.">
+        <Section title={t('Color')} description={t('Neutral-led. Brand for active state. Semantics only for status.')}>
           <Card padding="lg">
-            <SwatchRow label="Neutral" tokens={['neutral-0','neutral-50','neutral-100','neutral-200','neutral-300','neutral-400','neutral-500','neutral-600','neutral-700','neutral-800','neutral-900']} />
-            <SwatchRow label="Brand" tokens={['brand-50','brand-100','brand-500','brand-600','brand-700']} />
-            <SwatchRow label="Red (status)" tokens={['red-50','red-500','red-600']} />
-            <SwatchRow label="Amber (status)" tokens={['amber-50','amber-500','amber-600']} />
-            <SwatchRow label="Green (status)" tokens={['green-50','green-500','green-600']} />
+            <SwatchRow label={t('Neutral')} tokens={['neutral-0','neutral-50','neutral-100','neutral-200','neutral-300','neutral-400','neutral-500','neutral-600','neutral-700','neutral-800','neutral-900']} />
+            <SwatchRow label={t('Brand')} tokens={['brand-50','brand-100','brand-500','brand-600','brand-700']} />
+            <SwatchRow label={t('Red (status)')} tokens={['red-50','red-500','red-600']} />
+            <SwatchRow label={t('Amber (status)')} tokens={['amber-50','amber-500','amber-600']} />
+            <SwatchRow label={t('Green (status)')} tokens={['green-50','green-500','green-600']} />
           </Card>
         </Section>
 
-        <Section title="Button" description="4 variants · 2 sizes. Primary used max 1 per page.">
+        <Section title={t('Button')} description={t('4 variants · 2 sizes. Primary used max 1 per page.')}>
           <Card padding="lg">
-            <Group label="Variants (size md)">
-              <Button variant="primary">Create Program</Button>
-              <Button variant="secondary">Filter</Button>
-              <Button variant="ghost">Cancel</Button>
-              <Button variant="danger">Delete</Button>
-              <Button variant="secondary" disabled>Disabled</Button>
+            <Group label={t('Variants (size md)')}>
+              <Button variant="primary">{t('Create Program')}</Button>
+              <Button variant="secondary">{t('Filter')}</Button>
+              <Button variant="ghost">{t('Cancel')}</Button>
+              <Button variant="danger">{t('Delete')}</Button>
+              <Button variant="secondary" disabled>{t('Disabled')}</Button>
             </Group>
-            <Group label="Size sm">
-              <Button variant="primary" size="sm">Save</Button>
-              <Button variant="secondary" size="sm">Edit</Button>
-              <Button variant="ghost" size="sm">Close</Button>
+            <Group label={t('Size sm')}>
+              <Button variant="primary" size="sm">{t('Save')}</Button>
+              <Button variant="secondary" size="sm">{t('Edit')}</Button>
+              <Button variant="ghost" size="sm">{t('Close')}</Button>
             </Group>
           </Card>
         </Section>
 
-        <Section title="Pill" description="One primitive replaces 6+ legacy badge variants.">
+        <Section title={t('Pill')} description={t('One primitive replaces 6+ legacy badge variants.')}>
           <Card padding="lg">
-            <Group label="Outline + dot (status)">
-              <Pill tone="red" variant="outline" dot>Delayed</Pill>
-              <Pill tone="amber" variant="outline" dot>At Risk</Pill>
-              <Pill tone="green" variant="outline" dot>On Track</Pill>
-              <Pill tone="neutral" variant="outline" dot>Draft</Pill>
+            <Group label={t('Outline + dot (status)')}>
+              <Pill tone="red" variant="outline" dot>{t('Delayed')}</Pill>
+              <Pill tone="amber" variant="outline" dot>{t('At Risk')}</Pill>
+              <Pill tone="green" variant="outline" dot>{t('On Track')}</Pill>
+              <Pill tone="neutral" variant="outline" dot>{t('Draft')}</Pill>
             </Group>
-            <Group label="Soft (count, label, secondary)">
-              <Pill tone="brand" variant="soft">12 channels</Pill>
+            <Group label={t('Soft (count, label, secondary)')}>
+              <Pill tone="brand" variant="soft">{t('{{count}} channels', { count: 12 })}</Pill>
               <Pill tone="neutral" variant="soft">26</Pill>
-              <Pill tone="green" variant="soft">Approved</Pill>
-              <Pill tone="amber" variant="soft">Pending Review</Pill>
+              <Pill tone="green" variant="soft">{t('Approved')}</Pill>
+              <Pill tone="amber" variant="soft">{t('Pending Review')}</Pill>
             </Group>
-            <Group label="Mono (code, ID, token)">
+            <Group label={t('Mono (code, ID, token)')}>
               <Pill variant="mono">DKSA-PSG-001</Pill>
               <Pill variant="mono">WI-SGN-072</Pill>
               <Pill variant="mono">DIMR-HLD010301</Pill>
@@ -127,14 +129,14 @@ export default function DesignSystemView() {
           </Card>
         </Section>
 
-        <Section title="Stat" description="Hero number without a box. Wrap with a Card if you need a container.">
+        <Section title={t('Stat')} description={t('Hero number without a box. Wrap with a Card if you need a container.')}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--ds-space-4)' }}>
             <Card padding="lg">
               <Stat
                 size="hero"
                 tone="red"
                 value="3"
-                label="programs need a decision"
+                label={t('programs need a decision')}
                 caption="+2 vs 9 hours ago · DAPN, DKSA, DIMR"
               />
             </Card>
@@ -151,8 +153,8 @@ export default function DesignSystemView() {
               <Stat
                 size="md"
                 value="7"
-                label="Total Programs"
-                caption="4 pipeline"
+                label={t('Total Programs')}
+                caption={t('{{count}} pipeline', { count: 4 })}
               />
             </Card>
           </div>
@@ -160,28 +162,28 @@ export default function DesignSystemView() {
             <Card padding="lg">
               <CardHeader>
                 <div>
-                  <CardTitle>Summary inline</CardTitle>
-                  <CardDescription>Many Stats in one card — use a grid, not a border per item.</CardDescription>
+                  <CardTitle>{t('Summary inline')}</CardTitle>
+                  <CardDescription>{t('Many Stats in one card — use a grid, not a border per item.')}</CardDescription>
                 </div>
               </CardHeader>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--ds-space-6)' }}>
-                <Stat size="lg" value="7" label="Programs" />
-                <Stat size="lg" value="0" label="Completed" tone="neutral" />
-                <Stat size="lg" value="0" label="On Track" tone="green" />
-                <Stat size="lg" value="3" label="Delayed" tone="red" />
+                <Stat size="lg" value="7" label={t('Programs')} />
+                <Stat size="lg" value="0" label={t('Completed')} tone="neutral" />
+                <Stat size="lg" value="0" label={t('On Track')} tone="green" />
+                <Stat size="lg" value="3" label={t('Delayed')} tone="red" />
               </div>
             </Card>
           </div>
         </Section>
 
-        <Section title="ListRow" description="High density. 48px row, hairline divider, no decoration.">
+        <Section title={t('ListRow')} description={t('High density. 48px row, hairline divider, no decoration.')}>
           <Card padding="none">
             <ListRow
               leading={<Pill variant="mono">DKSA-PSG-001</Pill>}
               primary="Penyehatan PT Sinergi Gula Nusantara 2026"
               secondary="12 workstreams · 237 days left · 2 active blockers"
               middle={<MockProgress value={57} tone="red" />}
-              trailing={<><Pill tone="red" variant="outline" dot>Delayed</Pill><span>57%</span></>}
+              trailing={<><Pill tone="red" variant="outline" dot>{t('Delayed')}</Pill><span>57%</span></>}
               emphasis="danger"
               onClick={() => {}}
             />
@@ -190,7 +192,7 @@ export default function DesignSystemView() {
               primary="Konsolidasi Pelaporan Keuangan SGN ke Holding"
               secondary="2 workstreams · 237 days left"
               middle={<MockProgress value={75} tone="red" />}
-              trailing={<><Pill tone="red" variant="outline" dot>Delayed</Pill><span>75%</span></>}
+              trailing={<><Pill tone="red" variant="outline" dot>{t('Delayed')}</Pill><span>75%</span></>}
               emphasis="danger"
               onClick={() => {}}
             />
@@ -199,7 +201,7 @@ export default function DesignSystemView() {
               primary="Governance Manajemen Risiko MKSO SGN"
               secondary="1 workstream · 206 days left"
               middle={<MockProgress value={54} tone="amber" />}
-              trailing={<><Pill tone="amber" variant="outline" dot>At Risk</Pill><span>54%</span></>}
+              trailing={<><Pill tone="amber" variant="outline" dot>{t('At Risk')}</Pill><span>54%</span></>}
               emphasis="warning"
               onClick={() => {}}
             />
@@ -208,35 +210,35 @@ export default function DesignSystemView() {
               primary="Penyusunan RKO"
               secondary="1 workstream · 53 days left"
               middle={<MockProgress value={0} tone="neutral" />}
-              trailing={<><Pill tone="neutral" variant="outline" dot>Draft</Pill><span>0%</span></>}
+              trailing={<><Pill tone="neutral" variant="outline" dot>{t('Draft')}</Pill><span>0%</span></>}
               onClick={() => {}}
             />
           </Card>
         </Section>
 
-        <Section title="Card" description="Default + sunken. Choose padding via prop, do not hardcode.">
+        <Section title={t('Card')} description={t('Default + sunken. Choose padding via prop, do not hardcode.')}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             <Card padding="md">
               <CardHeader>
                 <div>
-                  <CardTitle>Default Card</CardTitle>
-                  <CardDescription>1px hairline border, no shadow.</CardDescription>
+                  <CardTitle>{t('Default Card')}</CardTitle>
+                  <CardDescription>{t('1px hairline border, no shadow.')}</CardDescription>
                 </div>
-                <Pill tone="green" variant="soft">active</Pill>
+                <Pill tone="green" variant="soft">{t('Active')}</Pill>
               </CardHeader>
               <p style={{ margin: 0, fontSize: 'var(--ds-text-14)', color: 'var(--ds-text-secondary)' }}>
-                Body content sits in default surface. Use sunken sibling for nested density.
+                {t('Body content sits in default surface. Use sunken sibling for nested density.')}
               </p>
             </Card>
             <Card padding="md" variant="sunken">
               <CardHeader>
                 <div>
-                  <CardTitle>Sunken Card</CardTitle>
-                  <CardDescription>For nested panels inside a Card.</CardDescription>
+                  <CardTitle>{t('Sunken Card')}</CardTitle>
+                  <CardDescription>{t('For nested panels inside a Card.')}</CardDescription>
                 </div>
               </CardHeader>
               <p style={{ margin: 0, fontSize: 'var(--ds-text-14)', color: 'var(--ds-text-secondary)' }}>
-                No border. Background tint suggests hierarchy without lines.
+                {t('No border. Background tint suggests hierarchy without lines.')}
               </p>
             </Card>
           </div>

@@ -2256,7 +2256,7 @@
   position: fixed;
   inset: 0;
   z-index: 9500;
-  background: rgba(0,0,0,0.88);
+  background: rgba(0,0,0,0.88); /* dark-allow: overlay lightbox gambar, gelap di dua theme */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2269,7 +2269,7 @@
   max-height: 80vh;
   object-fit: contain;
   border-radius: 8px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5); /* dark-allow: shadow gambar di overlay gelap */
   animation: lightbox-img-in 180ms var(--ease-enter);
 }
 .lightbox-close {
@@ -2280,29 +2280,29 @@
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: rgba(255,255,255,0.12);
-  color: #fff;
+  background: rgba(255,255,255,0.12); /* dark-allow: kontrol di atas overlay lightbox gelap */
+  color: #fff; /* dark-allow: ikon di atas overlay lightbox gelap */
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: background 120ms;
 }
-.lightbox-close:hover { background: rgba(255,255,255,0.22); }
+.lightbox-close:hover { background: rgba(255,255,255,0.22); /* dark-allow: hover kontrol overlay gelap */ }
 .lightbox-download {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 7px 16px;
   border-radius: 20px;
-  background: rgba(255,255,255,0.12);
-  color: #fff;
+  background: rgba(255,255,255,0.12); /* dark-allow: tombol di atas overlay lightbox gelap */
+  color: #fff; /* dark-allow: teks di atas overlay lightbox gelap */
   text-decoration: none;
   font-size: 13px;
   font-weight: 500;
   transition: background 120ms;
 }
-.lightbox-download:hover { background: rgba(255,255,255,0.22); }
+.lightbox-download:hover { background: rgba(255,255,255,0.22); /* dark-allow: hover tombol overlay gelap */ }
 
 /* In-channel search bar */
 .channel-search-bar {
@@ -3507,7 +3507,7 @@
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
   border-radius: 8px;
-  box-shadow: 0 6px 20px -4px rgb(0 0 0 / 0.12), 0 2px 6px -2px rgb(0 0 0 / 0.06);
+  box-shadow: var(--panel-shadow);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -8354,11 +8354,11 @@ select.profile-input:hover {
   justify-content: center;
   font-size: 14px;
 }
-.settings-theme-card__preview--light { background: #F4F6FB; color: #1F2937; }
-.settings-theme-card__preview--dark  { background: #111827; color: #F3F4F6; }
+.settings-theme-card__preview--light { background: #F4F6FB; color: #1F2937; /* dark-allow: swatch preview tema terang, harus konstan */ }
+.settings-theme-card__preview--dark  { background: #111827; color: #F3F4F6; /* dark-allow: swatch preview tema gelap, harus konstan */ }
 .settings-theme-card__preview--system {
-  background: linear-gradient(90deg, #F4F6FB 50%, #111827 50%);
-  color: #6B7280;
+  background: linear-gradient(90deg, #F4F6FB 50%, #111827 50%); /* dark-allow: swatch preview tema system (split light/dark), harus konstan */
+  color: #6B7280; /* dark-allow: label di atas swatch preview */
 }
 .settings-theme-card__label {
   font-size: 12px;
@@ -8948,7 +8948,7 @@ a svg,
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-lg, 10px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: var(--panel-shadow);
   z-index: 100;
   display: flex;
   flex-direction: column;

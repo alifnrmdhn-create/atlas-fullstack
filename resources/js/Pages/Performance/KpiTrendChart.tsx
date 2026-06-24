@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Bar, BarChart, CartesianGrid, Cell, Legend,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -6,6 +7,7 @@ import {
 import { formatPercent, scoreTone } from './_shared'
 
 /** Direktorat color palette — stable per-kode mapping. */
+// dark-allow: palet identitas direktorat (seri data), konsisten dua theme
 const DIRECTORATE_COLORS: Record<string, string> = {
   DIRUT:  '#0ea5e9',
   DBS:    '#a855f7',
@@ -16,6 +18,7 @@ const DIRECTORATE_COLORS: Record<string, string> = {
   'DIR-KMR': '#16a34a',
 }
 
+// dark-allow: palet seri data kategorikal (fallback), konsisten dua theme
 const DEFAULT_PALETTE = ['#0ea5e9', '#a855f7', '#f97316', '#22c55e', '#06b6d4', '#16a34a', '#ec4899', '#eab308']
 
 function colorFor(kode: string, idx: number): string {
@@ -40,6 +43,7 @@ type Props = {
  * jadi kita pivot dari format service (per-series values) ke per-periode.
  */
 export function KpiTrendChart({ trend, height = 260 }: Props) {
+  const { t } = useTranslation()
   const data = useMemo(() => {
     if (!trend.periodes.length || !trend.series.length) return []
     return trend.periodes.map((p, i) => {
@@ -54,7 +58,7 @@ export function KpiTrendChart({ trend, height = 260 }: Props) {
   if (data.length === 0) {
     return (
       <div className="kpi-trend-empty">
-        No scorecard data for this period yet.
+        {t('No scorecard data for this period yet.')}
       </div>
     )
   }
@@ -127,6 +131,7 @@ export function KpiTrendChart({ trend, height = 260 }: Props) {
  * — kondisi awal pilot (Mar–Apr) — alih-alih chart 6 slot yang 4-nya kosong.
  */
 function SparseTrendSummary({ trend }: { trend: KpiTrendPayload }) {
+  const { t } = useTranslation()
   const rows = trend.series.map(s => {
     const filled = s.values
       .map((v, i) => ({ v, label: trend.periodes[i]?.label ?? '' }))
@@ -137,7 +142,7 @@ function SparseTrendSummary({ trend }: { trend: KpiTrendPayload }) {
   }).filter(r => r.last !== null)
 
   if (rows.length === 0) {
-    return <div className="kpi-trend-empty">No scorecard data for this period yet.</div>
+    return <div className="kpi-trend-empty">{t('No scorecard data for this period yet.')}</div>
   }
 
   return (
@@ -156,14 +161,18 @@ function SparseTrendSummary({ trend }: { trend: KpiTrendPayload }) {
             </span>
             <span className="kpi-trend-sparse__delta" data-tone={deltaTone}>
               {delta == null
-                ? 'first month'
-                : `${delta >= 0 ? '▲' : '▼'} ${formatPercent(Math.abs(delta), 1)} vs ${r.prev!.label}`}
+                ? t('first month')
+                : t('{{arrow}} {{value}} vs {{period}}', {
+                    arrow: delta >= 0 ? '▲' : '▼',
+                    value: formatPercent(Math.abs(delta), 1),
+                    period: r.prev!.label,
+                  })}
             </span>
           </div>
         )
       })}
       <p className="kpi-trend-sparse__note">
-        Monthly trend chart appears once 4+ months of scorecard history are available.
+        {t('Monthly trend chart appears once 4+ months of scorecard history are available.')}
       </p>
     </div>
   )

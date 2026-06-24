@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Head, usePage } from '@inertiajs/react'
 import { Card, Pill } from '../design-system'
 import { scoreTone, fillRatio, formatPeriod } from './Performance/_shared'
@@ -44,6 +45,7 @@ type PageProps = {
 }
 
 export default function ExecutiveSummaryView() {
+  const { t } = useTranslation()
   const {
     direktoratGrid, trend, programStatusBreakdown,
     perhatianKhusus, insight, leaderboard, periode,
@@ -64,7 +66,7 @@ export default function ExecutiveSummaryView() {
         perhatianKhusus, insight, leaderboard, periode, periodeLabel,
       })
     } catch (err) {
-      setExportError(err instanceof Error ? err.message : 'Export failed')
+      setExportError(err instanceof Error ? err.message : t('Export failed'))
     } finally {
       setExporting(false)
     }
@@ -72,15 +74,15 @@ export default function ExecutiveSummaryView() {
 
   return (
     <>
-      <Head title="Executive Summary" />
+      <Head title={t('Executive Summary')} />
       <div className="page-shell">
         <div className="page-shell__inner">
           <div className="exec-page" data-exec-root>
             <header className="exec-page__head">
               <div>
-                <h1 className="exec-page__title">Executive Summary</h1>
+                <h1 className="exec-page__title">{t('Executive Summary')}</h1>
                 <p className="exec-page__lede">
-                  Program Monitoring · Period through {periodeLabel}
+                  {t('Program Monitoring · Period through {{period}}', { period: periodeLabel })}
                 </p>
               </div>
               <div className="exec-page__actions">
@@ -91,7 +93,7 @@ export default function ExecutiveSummaryView() {
                   onClick={handleExport}
                   disabled={exporting}
                 >
-                  {exporting ? 'Preparing PPTX…' : 'Export PPTX'}
+                  {exporting ? t('Preparing PPTX…') : t('Export PPTX')}
                 </button>
               </div>
             </header>
@@ -103,8 +105,8 @@ export default function ExecutiveSummaryView() {
             {/* ─── Hero: 4 angka capaian KPI ───────────────── */}
             <section className="exec-section">
               <div className="exec-section__head">
-                <span className="exec-section__label">KPI Target Achievement</span>
-                <span className="exec-section__meta">{direktoratGrid.length} directorates · aggregate score per month</span>
+                <span className="exec-section__label">{t('KPI Target Achievement')}</span>
+                <span className="exec-section__meta">{t('{{count}} directorates · aggregate score per month', { count: direktoratGrid.length })}</span>
               </div>
               <div className="exec-kpi-grid">
                 {direktoratGrid.slice(0, 6).map(d => {
@@ -143,32 +145,32 @@ export default function ExecutiveSummaryView() {
             {/* ─── Status Program 4-card ─────────────────── */}
             <section className="exec-section">
               <div className="exec-section__head">
-                <span className="exec-section__label">Program Status</span>
+                <span className="exec-section__label">{t('Program Status')}</span>
                 <span className="exec-section__meta">
-                  {programStatusBreakdown.total} active programs · breakdown by status
+                  {t('{{count}} active programs · breakdown by status', { count: programStatusBreakdown.total })}
                 </span>
               </div>
               <div className="exec-status-grid">
                 <StatusCard
-                  label="On Track"
+                  label={t('On Track')}
                   tone="green"
                   count={programStatusBreakdown.onTrack}
                   pct={programStatusBreakdown.pctOnTrack}
                 />
                 <StatusCard
-                  label="Completed"
+                  label={t('Completed')}
                   tone="blue"
                   count={programStatusBreakdown.completed}
                   pct={programStatusBreakdown.pctCompleted}
                 />
                 <StatusCard
-                  label="At Risk"
+                  label={t('At Risk')}
                   tone="amber"
                   count={programStatusBreakdown.atRisk}
                   pct={programStatusBreakdown.pctAtRisk}
                 />
                 <StatusCard
-                  label="Delayed"
+                  label={t('Delayed')}
                   tone="red"
                   count={programStatusBreakdown.terlambat}
                   pct={programStatusBreakdown.pctTerlambat}
@@ -179,8 +181,8 @@ export default function ExecutiveSummaryView() {
             {/* ─── Insight Utama (auto-derived KPI bullets) ─ */}
             <section className="exec-section">
               <div className="exec-section__head">
-                <span className="exec-section__label">KPI Achievement Highlights</span>
-                <span className="exec-section__meta">Auto-derived from actual vs target values</span>
+                <span className="exec-section__label">{t('KPI Achievement Highlights')}</span>
+                <span className="exec-section__meta">{t('Auto-derived from actual vs target values')}</span>
               </div>
               <InsightPanel insight={insight} />
             </section>
@@ -189,9 +191,9 @@ export default function ExecutiveSummaryView() {
             {perhatianKhusus.length > 0 && (
               <section className="exec-section">
                 <div className="exec-section__head">
-                  <span className="exec-section__label">Needs Attention</span>
+                  <span className="exec-section__label">{t('Needs Attention')}</span>
                   <span className="exec-section__meta">
-                    At Risk / Delayed programs · sorted by deadline priority
+                    {t('At Risk / Delayed programs · sorted by deadline priority')}
                   </span>
                 </div>
                 <div className="exec-perhatian-grid">
@@ -199,13 +201,13 @@ export default function ExecutiveSummaryView() {
                     <article key={p.id} className="exec-perhatian-card" data-status={p.status === 'Delayed' ? 'red' : 'amber'}>
                       <header className="exec-perhatian-card__head">
                         <span className="exec-perhatian-card__badge" data-status={p.status === 'Delayed' ? 'red' : 'amber'}>
-                          {p.status}
+                          {t(p.status)}
                         </span>
                         {p.deadline && (
                           <span className="exec-perhatian-card__deadline">
                             {p.deadline}
                             {p.daysLeft !== null && p.daysLeft >= 0 && (
-                              <span className="exec-perhatian-card__days"> · {p.daysLeft} days left</span>
+                              <span className="exec-perhatian-card__days"> · {t('{{count}} days left', { count: p.daysLeft })}</span>
                             )}
                           </span>
                         )}
@@ -216,7 +218,7 @@ export default function ExecutiveSummaryView() {
                       )}
                       {p.dukungan && (
                         <div className="exec-perhatian-card__dukungan">
-                          <span className="exec-perhatian-card__dukungan-label">Support needed</span>
+                          <span className="exec-perhatian-card__dukungan-label">{t('Support needed')}</span>
                           <p>{p.dukungan}</p>
                         </div>
                       )}
@@ -230,9 +232,9 @@ export default function ExecutiveSummaryView() {
             {trend && trend.series.length > 0 && (
               <section className="exec-section">
                 <div className="exec-section__head">
-                  <span className="exec-section__label">KPI Score Trend</span>
+                  <span className="exec-section__label">{t('KPI Score Trend')}</span>
                   <span className="exec-section__meta">
-                    Last 6 months · per directorate
+                    {t('Last 6 months · per directorate')}
                   </span>
                 </div>
                 <Card padding="md">
@@ -244,8 +246,8 @@ export default function ExecutiveSummaryView() {
             {/* ─── Leaderboard BOD ──────────────────────── */}
             <section className="exec-section">
               <div className="exec-section__head">
-                <span className="exec-section__label">KPI Leaderboard</span>
-                <span className="exec-section__meta">Top performers per BOD level</span>
+                <span className="exec-section__label">{t('KPI Leaderboard')}</span>
+                <span className="exec-section__meta">{t('Top performers per BOD level')}</span>
               </div>
               <LeaderboardSection topPerformers={leaderboard} periode={periodeLabel} />
             </section>

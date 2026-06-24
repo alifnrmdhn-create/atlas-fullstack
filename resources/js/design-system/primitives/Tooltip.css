@@ -21,7 +21,7 @@
   text-align: left;
   white-space: normal;
   pointer-events: none;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--panel-shadow-md);
   animation: ds-tip-in 120ms ease both;
 }
 

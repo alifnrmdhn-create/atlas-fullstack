@@ -264,7 +264,7 @@
 .cs-export--ready {
   background: var(--green);
   border-color: var(--green);
-  color: #fff;
+  color: var(--text-inverse);
   cursor: pointer;
   transition: background 140ms ease, box-shadow 140ms ease;
 }
@@ -671,7 +671,7 @@
   .page-shell__inner {
     padding: 0 !important;
     margin: 0 !important;
-    background: #fff !important;
+    background: #fff !important; /* dark-allow: print stylesheet forces light for PDF */
     min-height: 0 !important;
     width: 100% !important;
   }
@@ -687,7 +687,7 @@
 
   .charter-page {
     font-size: 9pt;
-    color: #1f2937;
+    color: #1f2937; /* dark-allow: print stylesheet forces light for PDF */
     gap: 10px;
   }
   .charter-section-title {
@@ -704,7 +704,7 @@
   .kpt-wrap {
     padding: 10px 12px;
     border-radius: 4px;
-    border: 1px solid #d1d5db;
+    border: 1px solid #d1d5db; /* dark-allow: print stylesheet forces light for PDF */
     box-shadow: none !important;
   }
   .atl-wrap,
@@ -714,8 +714,8 @@
 
   /* Pillar badge prints flat */
   .cs-header__pillar {
-    background: #e0e7ff !important;
-    color: #4338ca !important;
+    background: #e0e7ff !important; /* dark-allow: print stylesheet forces light for PDF */
+    color: #4338ca !important; /* dark-allow: print stylesheet forces light for PDF */
   }
 
   /* Keep activity table on one page if possible */

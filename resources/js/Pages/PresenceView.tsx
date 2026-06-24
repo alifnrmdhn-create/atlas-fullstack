@@ -8,6 +8,8 @@ import { api } from '../lib/api'
 import type { PresenceStatus, PresenceUser } from '../types'
 import { ActivityView } from './ActivityView'
 import { PageHeader } from '../design-system'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 import './PresenceView.css'
 
 type PresenceTab = 'kehadiran' | 'aktivitas'
@@ -52,10 +54,10 @@ function isActive(u: PresenceUser)    { return effectivePresenceSlug(u.status, u
 function isAvailable(u: PresenceUser) { return effectivePresenceSlug(u.status, u.lastActivityAt) === 'online' }
 
 function statusBadge(status: PresenceStatus) {
-  if (status === 'ONLINE')         return <span className="status-badge on-track">Online</span>
-  if (status === 'AWAY')           return <span className="status-badge at-risk">Away</span>
-  if (status === 'DO_NOT_DISTURB') return <span className="status-badge heads-down">Heads-down</span>
-  return <span className="status-badge offline">Offline</span>
+  if (status === 'ONLINE')         return <span className="status-badge on-track">{i18n.t('Online')}</span>
+  if (status === 'AWAY')           return <span className="status-badge at-risk">{i18n.t('Away')}</span>
+  if (status === 'DO_NOT_DISTURB') return <span className="status-badge heads-down">{i18n.t('Heads-down')}</span>
+  return <span className="status-badge offline">{i18n.t('Offline')}</span>
 }
 
 // ── Unit progress bar ────────────────────────────────────────
@@ -76,17 +78,19 @@ function UnitProgressBar({ users }: { users: PresenceUser[] }) {
 }
 
 function UnitStatBar({ users }: { users: PresenceUser[] }) {
+  const { t } = useTranslation()
   const active = users.filter(isActive).length
   return (
     <span className="unit-stat-bar">
-      {active > 0 && <><span className="unit-stat-bar__active">{active} active</span><span className="unit-stat-bar__sep">·</span></>}
-      <span className="unit-stat-bar__total">{users.length} members</span>
+      {active > 0 && <><span className="unit-stat-bar__active">{t('{{count}} active', { count: active })}</span><span className="unit-stat-bar__sep">·</span></>}
+      <span className="unit-stat-bar__total">{t('{{count}} members', { count: users.length })}</span>
     </span>
   )
 }
 
 // ── Emoji picker ─────────────────────────────────────────────
 function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEscKey(() => setOpen(false), open)
@@ -98,7 +102,7 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
   }, [open])
   return (
     <div className="emoji-picker-field" ref={ref}>
-      <button className="emoji-picker-field__trigger" onClick={() => setOpen(!open)} title="Select emoji" type="button">
+      <button className="emoji-picker-field__trigger" onClick={() => setOpen(!open)} title={t('Select emoji')} type="button">
         <span className="emoji-picker-field__display">
           {value ? resolveEmoji(value) : <span className="emoji-picker-field__placeholder">😊</span>}
         </span>
@@ -112,7 +116,7 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
           <div className="emoji-picker-popup__groups">
             {EMOJI_GROUPS.map(g => (
               <div className="emoji-picker-popup__group" key={g.label}>
-                <div className="emoji-picker-popup__group-label">{g.label}</div>
+                <div className="emoji-picker-popup__group-label">{t(g.label)}</div>
                 <div className="emoji-picker-popup__grid">
                   {g.emojis.map(e => (
                     <button className={`emoji-picker-popup__btn${value === e ? ' is-selected' : ''}`} key={e}
@@ -142,6 +146,7 @@ function HoverCard({
   onCancelClose: () => void
   anchorRect: DOMRect
 }) {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
 
   const cardWidth = 260
@@ -180,7 +185,7 @@ function HoverCard({
           <span className={`presence-dot presence-dot--${slug} presence-hover-card__dot`} />
         </div>
         <div className="presence-hover-card__meta">
-          <div className="presence-hover-card__name">{presence.user?.name ?? 'Unknown'}</div>
+          <div className="presence-hover-card__name">{presence.user?.name ?? t('Unknown')}</div>
           {presence.user?.positionTitle && (
             <div className="presence-hover-card__position">{presence.user.positionTitle}</div>
           )}
@@ -199,12 +204,12 @@ function HoverCard({
           <button
             className={`presence-hover-card__email-btn${copied ? ' is-copied' : ''}`}
             onClick={copyEmail}
-            title="Click to copy email"
+            title={t('Click to copy email')}
             type="button"
           >
             <span>{presence.user.email}</span>
             <span className="presence-hover-card__copy-hint">
-              {copied ? '✓ Copied!' : 'Copy'}
+              {copied ? t('✓ Copied!') : t('Copy')}
             </span>
           </button>
         )}
@@ -216,7 +221,7 @@ function HoverCard({
             </span>
           )}
         </div>
-        <div className="presence-hover-card__time">Active {timeText}</div>
+        <div className="presence-hover-card__time">{t('Active {{time}}', { time: timeText })}</div>
       </div>
 
       {presence.userId && (
@@ -229,7 +234,7 @@ function HoverCard({
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
               <path d="M14 2H2C1.45 2 1 2.45 1 3v9c0 .55.45 1 1 1h2v2.5l3.5-2.5H14c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
             </svg>
-            Send DM
+            {t('Send DM')}
           </button>
         </div>
       )}
@@ -251,7 +256,7 @@ function buildGroups(presence: PresenceUser[], sortMap: Map<string, SortMode>): 
 
   for (const u of presence) {
     const dirId   = u.user?.directorate?.id ?? null
-    const dirName = u.user?.directorate?.name ?? 'Other'
+    const dirName = u.user?.directorate?.name ?? i18n.t('Other')
     const dirKey  = dirId != null ? String(dirId) : '__none__'
     const unitId  = u.user?.unit?.id ?? null
 
@@ -264,7 +269,7 @@ function buildGroups(presence: PresenceUser[], sortMap: Map<string, SortMode>): 
       continue
     }
 
-    const unitName = u.user?.unit?.name ?? 'No Unit'
+    const unitName = u.user?.unit?.name ?? i18n.t('No Unit')
     const unitKey  = String(unitId)
     if (!dir.unitMap.has(unitKey)) dir.unitMap.set(unitKey, { unitId, unitName, users: [] })
     dir.unitMap.get(unitKey)!.users.push(u)
@@ -330,6 +335,7 @@ function Toast({ msg, isError, onDone }: { msg: string; isError?: boolean; onDon
 
 // ── Main view ────────────────────────────────────────────────
 export function PresenceView() {
+  const { t } = useTranslation()
   const { presence, currentUser, presenceDraft, setPresenceDraft, setPresence, setSelectedChannelId, setSelectedThreadId, loadOverview } = useWorkspace()
   const navigate  = useInertiaNavigate()
   const searchRef = useRef<HTMLInputElement>(null)
@@ -401,7 +407,7 @@ export function PresenceView() {
     e.preventDefault()
     if (isSubmitting) return
     if (isOooMissingDate) {
-      setToast({ msg: 'Enter a return date for Out of office first', error: true })
+      setToast({ msg: t('Enter a return date for Out of office first'), error: true })
       return
     }
     setIsSubmitting(true)
@@ -418,9 +424,9 @@ export function PresenceView() {
             : p
         ))
       }
-      setToast({ msg: 'Status updated successfully ✓', error: false })
+      setToast({ msg: t('Status updated successfully ✓'), error: false })
     } catch {
-      setToast({ msg: 'Failed to update status — try again', error: true })
+      setToast({ msg: t('Failed to update status — try again'), error: true })
     } finally {
       setIsSubmitting(false)
     }
@@ -556,7 +562,7 @@ export function PresenceView() {
   }
 
   const filterLabels: Record<FilterMode, string> = {
-    all: 'All', active: 'Active only', available: 'Available', mine: 'My unit',
+    all: t('All'), active: t('Active only'), available: t('Available'), mine: t('My unit'),
   }
 
   return (
@@ -566,22 +572,22 @@ export function PresenceView() {
       <div className="presence-v2__inner ds-stagger">
       {/* ── Page header (design-system PageHeader) ── */}
       <PageHeader
-        title="Presence"
+        title={t('Presence')}
         subtitle={
           activeTab === 'kehadiran'
-            ? 'Team presence status and activity in real time.'
-            : 'Active duration per user based on actual usage time.'
+            ? t('Team presence status and activity in real time.')
+            : t('Active duration per user based on actual usage time.')
         }
         actions={
           activeTab === 'kehadiran' ? (
             <div className="view-toolbar__stats presence-toolbar-stats">
-              <span className="presence-toolbar-stat presence-toolbar-stat--online">{online} <em>online</em></span>
+              <span className="presence-toolbar-stat presence-toolbar-stat--online">{online} <em>{t('online')}</em></span>
               <span className="presence-sep">·</span>
-              <span className="presence-toolbar-stat presence-toolbar-stat--away">{away} <em>away</em></span>
+              <span className="presence-toolbar-stat presence-toolbar-stat--away">{away} <em>{t('away')}</em></span>
               <span className="presence-sep">·</span>
-              <span className="presence-toolbar-stat presence-toolbar-stat--dnd">{dnd} <em>heads-down</em></span>
+              <span className="presence-toolbar-stat presence-toolbar-stat--dnd">{dnd} <em>{t('heads-down')}</em></span>
               <span className="presence-sep">·</span>
-              <span className="presence-toolbar-stat presence-toolbar-stat--offline">{offline} <em>offline</em></span>
+              <span className="presence-toolbar-stat presence-toolbar-stat--offline">{offline} <em>{t('offline')}</em></span>
             </div>
           ) : null
         }
@@ -598,7 +604,7 @@ export function PresenceView() {
             <circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.4"/>
             <path d="M2 14c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
           </svg>
-          Presence
+          {t('Presence')}
         </button>
         <button
           className={`presence-tab-btn${activeTab === 'aktivitas' ? ' is-active' : ''}`}
@@ -608,7 +614,7 @@ export function PresenceView() {
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
             <path d="M2 12l3-4 3 2 3-5 3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Activity
+          {t('Activity')}
         </button>
       </div>
 
@@ -626,7 +632,7 @@ export function PresenceView() {
           <input
             ref={searchRef}
             className="presence-search-wrap__input"
-            placeholder="Search name, unit, position… [/]"
+            placeholder={t('Search name, unit, position… [/]')}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
@@ -652,7 +658,7 @@ export function PresenceView() {
           <button
             className={`presence-density-btn${density === 'compact' ? ' is-active' : ''}`}
             onClick={() => setDensity(d => d === 'comfortable' ? 'compact' : 'comfortable')}
-            title={density === 'comfortable' ? 'Compact view' : 'Normal view'}
+            title={density === 'comfortable' ? t('Compact view') : t('Normal view')}
             type="button"
           >
             {density === 'comfortable'
@@ -683,7 +689,7 @@ export function PresenceView() {
 
           {!isLoadingPresence && filtered.length === 0 && presence.length > 0 && (
             <div className="section-block">
-              <SectionState title="No results" text="Try adjusting the filter or search query." />
+              <SectionState title={t('No results')} text={t('Try adjusting the filter or search query.')} />
             </div>
           )}
 
@@ -701,8 +707,8 @@ export function PresenceView() {
                   <span className="presence-directorate__chevron">{isDirCollapsed ? '▸' : '▾'}</span>
                   <span className="presence-directorate__name">{dir.dirName}</span>
                   <span className="presence-directorate__stats">
-                    {dirActiveCount > 0 && <span className="presence-dir-badge presence-dir-badge--active">{dirActiveCount} active</span>}
-                    <span className="presence-dir-badge">{dirTotalCount} members</span>
+                    {dirActiveCount > 0 && <span className="presence-dir-badge presence-dir-badge--active">{t('{{count}} active', { count: dirActiveCount })}</span>}
+                    <span className="presence-dir-badge">{t('{{count}} members', { count: dirTotalCount })}</span>
                   </span>
                 </button>
 
@@ -746,7 +752,7 @@ export function PresenceView() {
                             <button
                               className={`presence-unit__sort-btn${sortMode === 'name' ? ' is-active' : ''}`}
                               onClick={() => toggleUnitSort(uKey)}
-                              title={sortMode === 'status' ? 'Sort A→Z' : 'Sort by status'}
+                              title={sortMode === 'status' ? t('Sort A→Z') : t('Sort by status')}
                               type="button"
                             >
                               {sortMode === 'status'
@@ -781,12 +787,12 @@ export function PresenceView() {
                                     ))}
                                     {hiddenCount > 0 && !isOfflineExpanded && (
                                       <button className="presence-show-more" onClick={() => toggleExpandOffline(uKey)} type="button">
-                                        Show {hiddenCount} more offline
+                                        {t('Show {{count}} more offline', { count: hiddenCount })}
                                       </button>
                                     )}
                                     {isOfflineExpanded && offlineUsers.length > OFFLINE_SHOW_DEFAULT && (
                                       <button className="presence-show-more" onClick={() => toggleExpandOffline(uKey)} type="button">
-                                        Show less
+                                        {t('Show less')}
                                       </button>
                                     )}
                                   </>
@@ -819,7 +825,7 @@ export function PresenceView() {
           <div className="status-panel">
             {/* Header */}
             <div className="status-panel__header">
-              <span className="status-panel__title">My Status</span>
+              <span className="status-panel__title">{t('My Status')}</span>
               <span className={`status-panel__dot status-panel__dot--${presenceDraft.status.toLowerCase().replace('_', '-')}`} />
             </div>
 
@@ -830,14 +836,14 @@ export function PresenceView() {
               </span>
               <div className="status-panel__preview-text">
                 <span className="status-panel__preview-msg">
-                  {presenceDraft.statusMessage || <em className="status-panel__preview-empty">No message</em>}
+                  {presenceDraft.statusMessage || <em className="status-panel__preview-empty">{t('No message')}</em>}
                 </span>
                 {statusBadge(presenceDraft.status)}
               </div>
             </div>
 
             {/* Quick set */}
-            <div className="status-panel__section-label">Quick Set</div>
+            <div className="status-panel__section-label">{t('Quick Set')}</div>
             <div className="status-presets__list">
               {PRESETS.map(p => {
                 const isActive = presenceDraft.statusEmoji === p.emoji
@@ -849,7 +855,7 @@ export function PresenceView() {
                     key={p.message} onClick={() => applyPreset(p)} type="button"
                   >
                     <span className="status-preset-row__emoji">{p.emoji}</span>
-                    <span className="status-preset-row__label">{p.isOoo ? 'Out of office' : p.message}</span>
+                    <span className="status-preset-row__label">{p.isOoo ? t('Out of office') : t(p.message)}</span>
                     <span className={`status-preset-row__dot status-preset-row__dot--${statusSlug}`} />
                   </button>
                 )
@@ -859,7 +865,7 @@ export function PresenceView() {
             {/* OOO date picker */}
             {isOooActive && (
               <div className="ooo-date-wrap">
-                <label className="ooo-date-wrap__label">Return date</label>
+                <label className="ooo-date-wrap__label">{t('Return date')}</label>
                 <input
                   className="ooo-date-wrap__input"
                   type="date"
@@ -878,11 +884,11 @@ export function PresenceView() {
               {/* Status + Emoji on same row */}
               <div className="status-form__row">
                 <label className="status-form__label status-form__label--grow">
-                  Status
+                  {t('Status')}
                   {isOooActive ? (
-                    <div className="status-form__ooo-indicator" title="Status is set by the Out of office preset. Choose another status in Quick Set to exit OOO.">
+                    <div className="status-form__ooo-indicator" title={t('Status is set by the Out of office preset. Choose another status in Quick Set to exit OOO.')}>
                       <span className="status-form__ooo-indicator-emoji">🏖️</span>
-                      <span className="status-form__ooo-indicator-label">Out of office</span>
+                      <span className="status-form__ooo-indicator-label">{t('Out of office')}</span>
                     </div>
                   ) : (
                     <select
@@ -890,32 +896,32 @@ export function PresenceView() {
                       onChange={e => setPresenceDraft(cur => ({ ...cur, status: e.target.value as PresenceStatus }))}
                       value={presenceDraft.status === 'OFFLINE' ? 'ONLINE' : presenceDraft.status}
                     >
-                      <option value="ONLINE">🟢 Online</option>
-                      <option value="AWAY">🟡 Away</option>
-                      <option value="DO_NOT_DISTURB">🟣 Heads-down</option>
+                      <option value="ONLINE">🟢 {t('Online')}</option>
+                      <option value="AWAY">🟡 {t('Away')}</option>
+                      <option value="DO_NOT_DISTURB">🟣 {t('Heads-down')}</option>
                     </select>
                   )}
                 </label>
                 <label className="status-form__label">
-                  Emoji
+                  {t('Emoji')}
                   <EmojiPicker onChange={v => setPresenceDraft(cur => ({ ...cur, statusEmoji: v }))} value={presenceDraft.statusEmoji} />
                 </label>
               </div>
 
               <label className="status-form__label">
-                Status message
+                {t('Status message')}
                 <input
                   className="status-form__input"
                   maxLength={120}
                   onChange={e => setPresenceDraft(cur => ({ ...cur, statusMessage: e.target.value }))}
-                  placeholder="What are you up to?"
+                  placeholder={t('What are you up to?')}
                   value={presenceDraft.statusMessage}
                 />
               </label>
 
               <button className="presence-update-btn" disabled={isSubmitting || isOooMissingDate} type="submit">
                 {isSubmitting && <span className="presence-update-btn__spinner" />}
-                {isSubmitting ? 'Saving…' : isOooMissingDate ? 'Enter a return date first' : 'Update Status'}
+                {isSubmitting ? t('Saving…') : isOooMissingDate ? t('Enter a return date first') : t('Update Status')}
               </button>
             </form>
           </div>

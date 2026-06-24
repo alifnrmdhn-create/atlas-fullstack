@@ -12,6 +12,7 @@
  * highlight + offer refresh.
  */
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { CollapsibleSection } from './ui'
 import type { MeetingType } from '../types'
@@ -82,6 +83,8 @@ type Props = {
   onCreateActionItem?: (prefill: { title: string; description?: string; linkedWorkItemId?: number }) => void
 }
 
+// dark-allow: fill badge severity ber-teks putih — butuh fill gelap konsisten
+// dua theme (token status base jadi terang di dark → kontras teks putih pecah)
 const SEVERITY_COLOR: Record<BlockerSeverity, string> = {
   CRITICAL: '#c5302d',
   HIGH:     '#d97706',
@@ -93,6 +96,7 @@ const SEVERITY_COLOR: Record<BlockerSeverity, string> = {
 export function PicaCompositePanel({
   meetingId, meetingType, linkedProgramId, isOrganizer, onCreateActionItem,
 }: Props) {
+  const { t } = useTranslation()
   const isRelevant = meetingType === 'RAPAT_KOORDINASI' && Boolean(linkedProgramId)
   const [data, setData] = useState<PicaPayload['data']>(null)
   const [note, setNote] = useState<string | null>(null)
@@ -113,7 +117,7 @@ export function PicaCompositePanel({
       })
       .catch(err => {
         if (cancelled) return
-        setError(err?.message || 'Failed to load PICA context')
+        setError(err?.message || t('Failed to load PICA context'))
         setLoading(false)
       })
     return () => { cancelled = true }
@@ -136,13 +140,16 @@ export function PicaCompositePanel({
   }, [data])
 
   const summary = data
-    ? `${data.openBlockers.length} problem · ${data.continuity.unresolvedItems.length} action carryover`
+    ? t('{{problems}} problem · {{carryover}} action carryover', {
+        problems: data.openBlockers.length,
+        carryover: data.continuity.unresolvedItems.length,
+      })
     : undefined
 
   // Section header tetap visible meskipun collapsed (dari CollapsibleSection primitive)
   return (
     <CollapsibleSection
-      title="PICA — Meeting Discussion Material"
+      title={t('PICA — Meeting Discussion Material')}
       count={data ? data.openBlockers.length + data.continuity.unresolvedItems.length : undefined}
       summary={summary}
       defaultOpen={isRelevant}
@@ -150,7 +157,7 @@ export function PicaCompositePanel({
     >
       {loading && (
         <div style={{ padding: '12px 0', fontSize: 12, color: 'var(--text-muted)' }}>
-          Loading PICA context…
+          {t('Loading PICA context…')}
         </div>
       )}
 
@@ -162,7 +169,7 @@ export function PicaCompositePanel({
             onClick={() => setRefreshTick(t => t + 1)}
             style={{ marginLeft: 8, fontSize: 11, textDecoration: 'underline', background: 'none', border: 0, color: 'inherit', cursor: 'pointer' }}
           >
-            Try again
+            {t('Try again')}
           </button>
         </div>
       )}
@@ -182,10 +189,10 @@ export function PicaCompositePanel({
           ) : (
             <div className="pica-grid">
               <div className="pica-grid__head">
-                <div>Problem</div>
-                <div>Issue / Root Cause</div>
-                <div>Countermeasure</div>
-                <div>Action</div>
+                <div>{t('Problem')}</div>
+                <div>{t('Issue / Root Cause')}</div>
+                <div>{t('Countermeasure')}</div>
+                <div>{t('Action')}</div>
               </div>
               {data.openBlockers.map(b => (
                 <PicaRow
@@ -212,11 +219,12 @@ export function PicaCompositePanel({
 // ── Sub-components ─────────────────────────────────────────────────────────
 
 function ContinuitySection({ continuity }: { continuity: Continuity }) {
+  const { t } = useTranslation()
   if (!continuity.previousMeeting) {
     return (
       <div className="pica-continuity pica-continuity--empty">
-        <span className="pica-continuity__label">Continuity</span>
-        <span className="pica-continuity__text">This is the first coordination meeting for this program.</span>
+        <span className="pica-continuity__label">{t('Continuity')}</span>
+        <span className="pica-continuity__text">{t('This is the first coordination meeting for this program.')}</span>
       </div>
     )
   }
@@ -225,11 +233,15 @@ function ContinuitySection({ continuity }: { continuity: Continuity }) {
   return (
     <div className="pica-continuity">
       <div className="pica-continuity__head">
-        <span className="pica-continuity__label">Continuity from previous meeting</span>
+        <span className="pica-continuity__label">{t('Continuity from previous meeting')}</span>
         <span className="pica-continuity__meeting">{continuity.previousMeeting.title}</span>
         {rate !== null && (
           <span className={`pica-continuity__rate pica-continuity__rate--${rateColor}`}>
-            {rate}% complete ({continuity.totalItems - continuity.unresolvedItems.length}/{continuity.totalItems})
+            {t('{{rate}}% complete ({{done}}/{{total}})', {
+              rate,
+              done: continuity.totalItems - continuity.unresolvedItems.length,
+              total: continuity.totalItems,
+            })}
           </span>
         )}
       </div>
@@ -249,35 +261,37 @@ function ContinuitySection({ continuity }: { continuity: Continuity }) {
 }
 
 function EmptyPicaState({ hasContinuity }: { hasContinuity: boolean }) {
+  const { t } = useTranslation()
   return (
     <div className="pica-empty">
-      <strong>No open problems in this program.</strong>
+      <strong>{t('No open problems in this program.')}</strong>
       <p>
         {hasContinuity
-          ? 'The meeting agenda can focus on continuity items and strategic discussion.'
-          : 'Great — this is a good moment for strategic discussion or a preview of upcoming risks.'}
+          ? t('The meeting agenda can focus on continuity items and strategic discussion.')
+          : t('Great — this is a good moment for strategic discussion or a preview of upcoming risks.')}
       </p>
     </div>
   )
 }
 
 function ProgressLogContext({ log }: { log: ProgressLog }) {
+  const { t } = useTranslation()
   if (!log.kendala && !log.dukunganDibutuhkan) return null
   return (
     <div className="pica-progress-log">
       <div className="pica-progress-log__head">
-        <span className="pica-progress-log__label">Context from latest Progress Log</span>
-        <span className="pica-progress-log__period">Period {log.period}</span>
+        <span className="pica-progress-log__label">{t('Context from latest Progress Log')}</span>
+        <span className="pica-progress-log__period">{t('Period {{period}}', { period: log.period })}</span>
       </div>
       {log.kendala && (
         <div className="pica-progress-log__row">
-          <span className="pica-progress-log__row-label">Obstacle</span>
+          <span className="pica-progress-log__row-label">{t('Obstacle')}</span>
           <span>{log.kendala}</span>
         </div>
       )}
       {log.dukunganDibutuhkan && (
         <div className="pica-progress-log__row">
-          <span className="pica-progress-log__row-label">Support needed</span>
+          <span className="pica-progress-log__row-label">{t('Support needed')}</span>
           <span>{log.dukunganDibutuhkan}</span>
         </div>
       )}
@@ -297,6 +311,7 @@ function PicaRow({
   onCountermeasureSaved: () => void
   onCreateAction?: (prefill: { title: string; description?: string; linkedWorkItemId?: number }) => void
 }) {
+  const { t } = useTranslation()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(blocker.resolution ?? '')
   const [saving, setSaving] = useState(false)
@@ -318,9 +333,9 @@ function PicaRow({
     } catch (err) {
       const e = err as { status?: number; message?: string; data?: { currentResolution?: string } }
       if (e.status === 409) {
-        setConflictMsg(e.message || 'A newer version from a colleague was saved first.')
+        setConflictMsg(e.message || t('A newer version from a colleague was saved first.'))
       } else {
-        setConflictMsg(e.message || 'Failed to save')
+        setConflictMsg(e.message || t('Failed to save'))
       }
     } finally {
       setSaving(false)
@@ -343,7 +358,7 @@ function PicaRow({
         </div>
         <div className="pica-cell__title">{blocker.title}</div>
         {blocker.task && (
-          <div className="pica-cell__meta">Task: {blocker.task.title}</div>
+          <div className="pica-cell__meta">{t('Task: {{title}}', { title: blocker.task.title })}</div>
         )}
       </div>
 
@@ -351,7 +366,7 @@ function PicaRow({
       <div className="pica-cell pica-cell--issue">
         <div className="pica-cell__text">{issueText}</div>
         {!blocker.rootCause && fallbackKendala && (
-          <div className="pica-cell__meta-faint">from ProgressLog</div>
+          <div className="pica-cell__meta-faint">{t('from ProgressLog')}</div>
         )}
       </div>
 
@@ -360,14 +375,14 @@ function PicaRow({
         {!editing ? (
           <>
             <div className="pica-cell__text">
-              {blocker.resolution || <em style={{ color: 'var(--text-muted)' }}>No countermeasure yet</em>}
+              {blocker.resolution || <em style={{ color: 'var(--text-muted)' }}>{t('No countermeasure yet')}</em>}
             </div>
             <button
               type="button"
               className="pica-cell__edit-btn"
               onClick={() => setEditing(true)}
             >
-              {blocker.resolution ? 'Edit' : 'Write countermeasure'}
+              {blocker.resolution ? t('Edit') : t('Write countermeasure')}
             </button>
           </>
         ) : (
@@ -377,7 +392,7 @@ function PicaRow({
               onChange={e => setDraft(e.target.value)}
               maxLength={2000}
               rows={4}
-              placeholder="Write the corrective action…"
+              placeholder={t('Write the corrective action…')}
               className="pica-cell__textarea"
             />
             {conflictMsg && (
@@ -385,7 +400,7 @@ function PicaRow({
             )}
             <div className="pica-cell__editor-actions">
               <button type="button" onClick={handleCancel} disabled={saving} className="btn btn--ghost btn--sm">
-                Cancel
+                {t('Cancel')}
               </button>
               <button
                 type="button"
@@ -393,7 +408,7 @@ function PicaRow({
                 disabled={saving || draft.trim().length === 0}
                 className="btn btn--primary btn--sm"
               >
-                {saving ? 'Saving…' : 'Save'}
+                {saving ? t('Saving…') : t('Save')}
               </button>
             </div>
           </div>
@@ -407,20 +422,20 @@ function PicaRow({
             type="button"
             className="pica-cell__action-btn"
             onClick={() => onCreateAction?.({
-              title: `Follow-up: ${blocker.title}`,
+              title: t('Follow-up: {{title}}', { title: blocker.title }),
               description: blocker.resolution || blocker.description || undefined,
               linkedWorkItemId: blocker.workItemId,
             })}
           >
-            + Create Action Item
+            {t('+ Create Action Item')}
           </button>
         ) : (
           <span className="pica-cell__hint">
-            {isOrganizer ? '—' : 'Organizer only'}
+            {isOrganizer ? '—' : t('Organizer only')}
           </span>
         )}
         {blocker.assignee && (
-          <div className="pica-cell__meta-faint">Assignee: {blocker.assignee.name}</div>
+          <div className="pica-cell__meta-faint">{t('Assignee: {{name}}', { name: blocker.assignee.name })}</div>
         )}
       </div>
     </div>

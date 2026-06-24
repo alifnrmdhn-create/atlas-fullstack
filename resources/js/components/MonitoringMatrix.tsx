@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { api } from '../lib/api'
+import i18n from '../lib/i18n'
 
 type WeekCell = {
   week: string
@@ -25,20 +27,21 @@ type MatrixData = {
 }
 
 const TONE_COLOR: Record<string, string> = {
-  done:    '#22c55e',
-  planned: '#f59e0b',
-  gap:     '#ef4444',
-  empty:   '#e5e7eb',
+  done:    'var(--green)',
+  planned: 'var(--yellow)',
+  gap:     'var(--red)',
+  empty:   'var(--panel-border)',
 }
 
-const TONE_LABEL: Record<string, string> = {
-  done:    'Actual activity recorded',
-  planned: 'Planned, not yet done',
-  gap:     'Expected, but empty',
-  empty:   'No plan',
-}
+const toneLabels = (): Record<string, string> => ({
+  done:    i18n.t('Actual activity recorded'),
+  planned: i18n.t('Planned, not yet done'),
+  gap:     i18n.t('Expected, but empty'),
+  empty:   i18n.t('No plan'),
+})
 
 export function MonitoringMatrix() {
+  const { t } = useTranslation()
   const navigate = useInertiaNavigate()
   const [data, setData] = useState<MatrixData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -51,25 +54,25 @@ export function MonitoringMatrix() {
         if (res && Array.isArray(res.data)) {
           setData({ data: res.data, weeks: res.weeks ?? [], currentWeek: res.currentWeek ?? '' })
         } else {
-          setError('Invalid response format')
+          setError(t('Invalid response format'))
         }
       })
-      .catch(err => setError(err instanceof Error ? err.message : 'Failed to load matrix'))
+      .catch(err => setError(err instanceof Error ? err.message : t('Failed to load matrix')))
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
-  if (loading) return <div className="monitoring-matrix__loading">Loading monitoring matrix…</div>
+  if (loading) return <div className="monitoring-matrix__loading">{t('Loading monitoring matrix…')}</div>
   if (error)   return <div className="monitoring-matrix__error">{error}</div>
   if (!data?.data?.length) return (
     <div className="monitoring-matrix__empty">
-      <p>No active programs to display.</p>
+      <p>{t('No active programs to display.')}</p>
     </div>
   )
 
   return (
     <div className="monitoring-matrix">
       <div className="monitoring-matrix__legend">
-        {Object.entries(TONE_LABEL).map(([tone, label]) => (
+        {Object.entries(toneLabels()).map(([tone, label]) => (
           <span key={tone} className="monitoring-matrix__legend-item">
             <span className="monitoring-matrix__dot" style={{ background: TONE_COLOR[tone] }} />
             {label}
@@ -81,8 +84,8 @@ export function MonitoringMatrix() {
         <table className="monitoring-matrix__table">
           <thead>
             <tr>
-              <th className="monitoring-matrix__th-name">Program</th>
-              <th className="monitoring-matrix__th-prog">Progress</th>
+              <th className="monitoring-matrix__th-name">{t('Program')}</th>
+              <th className="monitoring-matrix__th-prog">{t('Progress')}</th>
               {data.weeks.map(w => (
                 <th key={w} className={`monitoring-matrix__th-week${w === data.currentWeek ? ' monitoring-matrix__th-week--current' : ''}`}>
                   {w.replace(/^\d{4}-/, '')}
@@ -108,7 +111,7 @@ export function MonitoringMatrix() {
                     <div
                       className="monitoring-matrix__cell"
                       style={{ background: TONE_COLOR[cell.tone] }}
-                      title={`${cell.week}: ${TONE_LABEL[cell.tone]}`}
+                      title={`${cell.week}: ${toneLabels()[cell.tone]}`}
                     />
                   </td>
                 ))}

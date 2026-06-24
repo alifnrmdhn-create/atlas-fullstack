@@ -177,8 +177,8 @@ A: Bukan — Commitment Ledger di **KPI Saya** menghitung hit rate dari Tasks + 
 - Untuk lintas direktorat, eskalasi via BOD atau hubungi admin
 
 ### Notifikasi tidak muncul real-time
-- Pastikan koneksi internet stabil (notif pakai SSE)
-- Tab harus tetap aktif (browser throttle SSE di tab tidak aktif setelah ~5 menit)
+- Pastikan koneksi internet stabil — notifikasi diambil via **polling** `/realtime/poll` setiap 2 detik (SSE sudah di-drop 19 Mei 2026), jadi ada jeda hingga ~2 detik
+- Jika tab idle lama, polling tetap berjalan dengan *exponential backoff*; refresh halaman akan force ambil notifikasi terbaru seketika
 - Refresh halaman akan force ambil notifikasi terbaru
 
 ---

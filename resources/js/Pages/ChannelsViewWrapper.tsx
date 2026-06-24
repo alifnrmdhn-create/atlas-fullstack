@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { ChannelsView } from './ChannelsView'
 import type { ChannelAttachment } from './ChannelsView'
@@ -7,6 +8,7 @@ import { api, extractErrorMessage } from '../lib/api'
 import { effectivePresenceSlug } from '../components/ui'
 
 export function ChannelsViewWrapper() {
+  const { t } = useTranslation()
   const {
     channels, setChannels, selectedChannelId, setSelectedChannelId,
     selectedThreadId, setSelectedThreadId,
@@ -173,7 +175,7 @@ export function ChannelsViewWrapper() {
       }
     } catch (err) {
       setComposerValue(content)
-      const msg = err instanceof Error ? err.message : 'Failed to send message. Try again.'
+      const msg = err instanceof Error ? err.message : t('Failed to send message. Try again.')
       setChannelStatus({ loading: false, message: msg })
       console.error('[sendMessage] failed:', err)
     } finally {
@@ -214,8 +216,8 @@ export function ChannelsViewWrapper() {
       const msg = extractErrorMessage(
         err,
         scope === 'all'
-          ? 'Failed to delete message for all members.'
-          : 'Failed to delete message from your view.',
+          ? t('Failed to delete message for all members.')
+          : t('Failed to delete message from your view.'),
       )
       setChannelStatus({ loading: false, message: msg })
       throw err
@@ -228,7 +230,7 @@ export function ChannelsViewWrapper() {
       await api.put(`/channels/${selectedChannelId}/messages/${messageId}/pin`)
       void refreshChannel(selectedChannelId, selectedThreadId, true)
     } catch (err) {
-      const msg = extractErrorMessage(err, 'Failed to update message pin.')
+      const msg = extractErrorMessage(err, t('Failed to update message pin.'))
       setChannelStatus({ loading: false, message: msg })
     }
   }
@@ -262,7 +264,7 @@ export function ChannelsViewWrapper() {
 
     if (alsoToChannel) {
       void api.post(`/channels/${channelId}/messages`, {
-        content: `↩ _from thread:_ ${content}`,
+        content: t('↩ _from thread:_ {{content}}', { content }),
       })
     }
   }
@@ -377,7 +379,7 @@ export function ChannelsViewWrapper() {
       void refreshChannel(channelId, null, true)
       void loadOverview('refresh')
     } catch (err) {
-      const msg = extractErrorMessage(err, 'Failed to remove member from channel.')
+      const msg = extractErrorMessage(err, t('Failed to remove member from channel.'))
       setChannelStatus({ loading: false, message: msg })
       throw err
     }

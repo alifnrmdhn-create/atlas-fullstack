@@ -1,4 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
 import { Card, Pill, Gauge, Meter } from '../../design-system'
 import { scoreTone, fillRatio, formatNumber, formatPercent, formatPeriod } from './_shared'
 import { KpiTrendChart, type KpiTrendPayload } from './KpiTrendChart'
@@ -90,6 +91,7 @@ function RankWithBar({
 }
 
 export default function ScorecardView() {
+  const { t } = useTranslation()
   const { topDirektorat, topDivisi, direktoratGrid, trend, periode, matrix, exceptions, kpiTotals } =
     usePage<PageProps>().props
 
@@ -123,33 +125,33 @@ export default function ScorecardView() {
 
   return (
     <>
-      <Head title="Scorecard" />
+      <Head title={t('Scorecard')} />
       <div className="ds perf view-performance">
         <div className="perf__inner ds-stagger">
           {/* ─── Header ──────────────────────────── */}
           <header className="perf__header">
             <div className="perf__header-left">
-              <h1 className="perf__title">Scorecard</h1>
-              <span className="perf__subtitle">Directorate &amp; division ranking</span>
+              <h1 className="perf__title">{t('Scorecard')}</h1>
+              <span className="perf__subtitle">{t('Directorate & division ranking')}</span>
             </div>
             <div className="perf__header-summary">
               {soloDir ? null : (
                 <>
                   <span className="perf__header-stat">
                     <strong data-tone={scoreTone(avgScore)} data-num>{formatPercent(avgScore, 1)}</strong>
-                    <span>average</span>
+                    <span>{t('average')}</span>
                   </span>
                   <span className="perf__header-divider" aria-hidden />
                   <span className="perf__header-stat">
                     <strong data-num>{totalDirektorat}</strong>
-                    <span>{totalDirektorat === 1 ? 'directorate' : 'directorates'}</span>
+                    <span>{totalDirektorat === 1 ? t('directorate') : t('directorates')}</span>
                   </span>
                   {belowTargetCount > 0 && (
                     <>
                       <span className="perf__header-divider" aria-hidden />
                       <span className="perf__header-stat">
                         <strong data-tone="red" data-num>{belowTargetCount}</strong>
-                        <span>below target</span>
+                        <span>{t('below target')}</span>
                       </span>
                     </>
                   )}
@@ -166,8 +168,8 @@ export default function ScorecardView() {
 
           {direktoratGrid.length === 0 && (
             <Card padding="lg" className="perf__section perf-empty">
-              <div className="perf-empty__title">No scorecard data yet</div>
-              <div>Directorate and division scores are not available for the {periodeLabel} period.</div>
+              <div className="perf-empty__title">{t('No scorecard data yet')}</div>
+              <div>{t('Directorate and division scores are not available for the {{period}} period.', { period: periodeLabel })}</div>
             </Card>
           )}
 
@@ -180,7 +182,7 @@ export default function ScorecardView() {
               {/* Zona 1 — verdict: angka gradient + delta + per-divisi mini-bar
                   (mirror persis kartu "KPI Achievement" di Home). */}
               <div className="perf-hero__verdict">
-                <span className="perf-hero__eyebrow">Directorate scorecard · {periodeLabel}</span>
+                <span className="perf-hero__eyebrow">{t('Directorate scorecard · {{period}}', { period: periodeLabel })}</span>
                 <h2 className="perf-hero__name">{soloDir.nama}</h2>
                 <div className="perf-hero__numrow">
                   <span className="perf-hero__num" data-tone={scoreTone(soloDir.nilai)}>
@@ -188,11 +190,11 @@ export default function ScorecardView() {
                   </span>
                   {soloDelta && (
                     <span className="perf__header-delta" data-tone={soloDelta.value >= 0 ? 'green' : 'red'}>
-                      {soloDelta.value >= 0 ? '▲' : '▼'} {formatPercent(Math.abs(soloDelta.value), 1)} vs {soloDelta.vs}
+                      {soloDelta.value >= 0 ? '▲' : '▼'} {formatPercent(Math.abs(soloDelta.value), 1)} {t('vs {{period}}', { period: soloDelta.vs })}
                     </span>
                   )}
                 </div>
-                <span className="perf-hero__sub">vs target 100% · {periodeLabel}</span>
+                <span className="perf-hero__sub">{t('vs target 100% · {{period}}', { period: periodeLabel })}</span>
               </div>
 
               {/* Zona 2 — mini-bar per divisi (Meter, target tick 100). */}
@@ -220,7 +222,7 @@ export default function ScorecardView() {
                   thickness={14}
                   valueText={`${kpiTotals.onTarget}`}
                   unit={`/${kpiTotals.total}`}
-                  label="KPIs on target"
+                  label={t('KPIs on target')}
                 />
               </div>
             </Card>
@@ -228,8 +230,8 @@ export default function ScorecardView() {
             <div className="perf-cockpit perf__section">
             <section>
               <div className="perf-section-head">
-                <span className="perf__section-label">BSC Perspective × Division</span>
-                <span className="perf-section-meta">click a division to drill down</span>
+                <span className="perf__section-label">{t('BSC Perspective × Division')}</span>
+                <span className="perf-section-meta">{t('click a division to drill down')}</span>
               </div>
               <Card padding="none" className="perf-matrix-card">
                 <ScoreMatrix rows={matrix} />
@@ -239,15 +241,15 @@ export default function ScorecardView() {
             {/* ─── Pengecualian lintas-divisi | Trend ───────────── */}
             <div className="perf-cockpit__aside">
               <div className="perf-section-head">
-                <span className="perf__section-label">This month</span>
-                <span className="perf-section-meta">across all divisions</span>
+                <span className="perf__section-label">{t('This month')}</span>
+                <span className="perf-section-meta">{t('across all divisions')}</span>
               </div>
               <ExceptionsCard exceptions={exceptions} total={kpiTotals.total} />
 
               {trend && trend.series.length > 0 && (
                 <Card padding="md">
                   <div className="perf-card-head">
-                    <h2 className="perf-card-head__title">Score trend</h2>
+                    <h2 className="perf-card-head__title">{t('Score trend')}</h2>
                     <Pill tone="neutral" variant="soft">
                       {trend.periodes[0]?.label} – {trend.periodes[trend.periodes.length - 1]?.label}
                     </Pill>
@@ -262,7 +264,7 @@ export default function ScorecardView() {
           <div className="perf__cols-2 perf__section">
             <Card padding="md">
               <div className="perf-card-head">
-                <h2 className="perf-card-head__title">Top 3 Directorates</h2>
+                <h2 className="perf-card-head__title">{t('Top 3 Directorates')}</h2>
                 <Pill tone="neutral" variant="soft">{periodeLabel}</Pill>
               </div>
               <div className="perf-rank-bar-list">
@@ -274,7 +276,7 @@ export default function ScorecardView() {
 
             <Card padding="md">
               <div className="perf-card-head">
-                <h2 className="perf-card-head__title">Top 3 Divisions</h2>
+                <h2 className="perf-card-head__title">{t('Top 3 Divisions')}</h2>
                 <Pill tone="neutral" variant="soft">{periodeLabel}</Pill>
               </div>
               <div className="perf-rank-bar-list">
@@ -294,9 +296,9 @@ export default function ScorecardView() {
           {!soloDir && trend && trend.series.length > 0 && (
             <section className="perf__section">
               <div className="perf-section-head">
-                <span className="perf__section-label">KPI Score Trend</span>
+                <span className="perf__section-label">{t('KPI Score Trend')}</span>
                 <span className="perf-section-meta">
-                  {trend.periodes[0]?.label} – {trend.periodes[trend.periodes.length - 1]?.label} · by directorate
+                  {t('{{from}} – {{to}} · by directorate', { from: trend.periodes[0]?.label, to: trend.periodes[trend.periodes.length - 1]?.label })}
                 </span>
               </div>
               <Card padding="md">
@@ -311,8 +313,8 @@ export default function ScorecardView() {
           {!soloDir && direktoratGrid.length > 0 && (
           <section className="perf__section">
             <div className="perf-section-head">
-              <span className="perf__section-label">All Directorates</span>
-              <span className="perf-section-meta">{totalDirektorat} directorates · drill down for details</span>
+              <span className="perf__section-label">{t('All Directorates')}</span>
+              <span className="perf-section-meta">{t('{{count}} directorates · drill down for details', { count: totalDirektorat })}</span>
             </div>
             <div className="perf-direktorat-grid">
               {direktoratGrid.map(d => {
@@ -367,18 +369,18 @@ export default function ScorecardView() {
           <div className="perf-legend" role="note">
             <span className="perf-legend__item">
               <span className="perf-legend__dot" data-tone="red" />
-              &lt; 80% below target
+              {t('< 80% below target')}
             </span>
             <span className="perf-legend__item">
               <span className="perf-legend__dot" data-tone="amber" />
-              80–99% needs attention
+              {t('80–99% needs attention')}
             </span>
             <span className="perf-legend__item">
               <span className="perf-legend__dot" data-tone="green" />
-              ≥ 100% meets target
+              {t('≥ 100% meets target')}
             </span>
             <span className="perf-legend__item perf-legend__item--muted">
-              Maximum scale 110%
+              {t('Maximum scale 110%')}
             </span>
           </div>
         </div>
@@ -396,18 +398,19 @@ export default function ScorecardView() {
  * Header kolom (kode divisi) klik → halaman divisi.
  */
 function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
+  const { t } = useTranslation()
   const perspectives = MATRIX_COLS.filter(c => rows.some(r => r.perspektif[c.key] != null))
   return (
     <div
       className="perf-matrix perf-matrix--transposed"
       role="table"
-      aria-label="BSC perspective by division achievement"
+      aria-label={t('BSC perspective by division achievement')}
       // Jumlah kolom eksplisit — auto-fit membuat sel wrap ke baris implisit
       // saat sempit, bukan memicu scroll-x.
       style={{ ['--matrix-cols' as never]: rows.length }}
     >
       <div className="perf-matrix__row perf-matrix__row--head" role="row">
-        <span className="perf-matrix__rowlabel" role="columnheader">Perspective</span>
+        <span className="perf-matrix__rowlabel" role="columnheader">{t('Perspective')}</span>
         {rows.map(r => (
           <Link
             key={r.kode}
@@ -442,7 +445,7 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
       ))}
 
       <div className="perf-matrix__row perf-matrix__row--total" role="row">
-        <span className="perf-matrix__rowlabel" role="cell">Total</span>
+        <span className="perf-matrix__rowlabel" role="cell">{t('Total')}</span>
         {rows.map(r => (
           <span
             key={r.kode}
@@ -457,7 +460,7 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
       </div>
 
       <div className="perf-matrix__row" role="row">
-        <span className="perf-matrix__rowlabel" role="cell">On target</span>
+        <span className="perf-matrix__rowlabel" role="cell">{t('On target')}</span>
         {rows.map(r => (
           <span
             key={r.kode}

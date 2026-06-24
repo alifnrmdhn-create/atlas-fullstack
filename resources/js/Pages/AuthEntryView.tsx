@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import './AuthEntryView.css'
 import indonesiaMap from '../assets/indonesia-map.png'
 
@@ -52,6 +53,7 @@ export function AuthEntryView({
   onForgotPassword,
   onSubmit,
 }: Props) {
+  const { t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
   const isLoading = authStatus === 'authenticating'
@@ -71,7 +73,7 @@ export function AuthEntryView({
         <div className="auth-panel__inner">
           <div className="auth-panel__brand">
             <div className="auth-panel__mark">
-              <svg width="26" height="26" viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+              <svg width="26" height="26" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
                 <line x1="2.5" y1="18.5" x2="10" y2="2.5"/>
                 <line x1="17.5" y1="18.5" x2="10" y2="2.5"/>
                 <line x1="6.3" y1="11.5" x2="13.7" y2="11.5"/>
@@ -82,9 +84,9 @@ export function AuthEntryView({
 
           <div className="auth-panel__content">
             <p className="auth-panel__eyebrow">Advanced Transformation &amp; Leadership Alignment System</p>
-            <h2 className="auth-panel__headline">Programs, execution, and alignment — one platform, one view.</h2>
+            <h2 className="auth-panel__headline">{t('Programs, execution, and alignment — one platform, one view.')}</h2>
             <p className="auth-panel__desc">
-              ATLAS brings priority programs, cross-functional collaboration, and strategic alignment into one platform that is easy to monitor and comfortable to use every day.
+              {t('ATLAS brings priority programs, cross-functional collaboration, and strategic alignment into one platform that is easy to monitor and comfortable to use every day.')}
             </p>
           </div>
 
@@ -99,8 +101,8 @@ export function AuthEntryView({
       <div className="auth-form-side">
         <div className="auth-form-container">
           <div className="auth-form-header">
-            <span className="auth-form-header__eyebrow">Sign in to ATLAS Workspace</span>
-            <p>Sign in with your NIK or User ID to open today's workspace.</p>
+            <span className="auth-form-header__eyebrow">{t('Sign in to ATLAS Workspace')}</span>
+            <p>{t("Sign in with your NIK or User ID to open today's workspace.")}</p>
           </div>
 
           {authMessage && <div className="auth-notice auth-notice--info">{authMessage}</div>}
@@ -117,7 +119,7 @@ export function AuthEntryView({
                 type="text"
                 value={identifier}
               />
-              <label htmlFor="identifier" className="auth-float-label">NIK or dedicated User ID</label>
+              <label htmlFor="identifier" className="auth-float-label">{t('NIK or dedicated User ID')}</label>
             </div>
 
             <div className="auth-float-group">
@@ -130,17 +132,17 @@ export function AuthEntryView({
                 type={showPassword ? 'text' : 'password'}
                 value={password}
               />
-              <label htmlFor="password" className="auth-float-label">Password</label>
+              <label htmlFor="password" className="auth-float-label">{t('Password')}</label>
               <button
                 className="auth-input-toggle"
                 onClick={() => setShowPassword((v) => !v)}
                 type="button"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={showPassword ? t('Hide password') : t('Show password')}
               >
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
               <button className="auth-form__forgot" onClick={onForgotPassword} type="button">
-                Forgot password?
+                {t('Forgot password?')}
               </button>
             </div>
 
@@ -149,14 +151,14 @@ export function AuthEntryView({
               disabled={isLoading || isSuccess}
                 type="submit"
               >
-                <span className="auth-form__submit-text">Sign in</span>
+                <span className="auth-form__submit-text">{t('Sign in')}</span>
               <span className="auth-form__submit-loader">
                 <span className="auth-spinner" />
-                Processing…
+                {t('Processing…')}
               </span>
               <span className="auth-form__submit-success">
                 <CheckIcon />
-                Signed in
+                {t('Signed in')}
               </span>
               </button>
           </form>

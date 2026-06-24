@@ -1,6 +1,8 @@
 import { Fragment, useEffect, useId, useRef, useState, startTransition } from 'react'
 import type { ReactNode } from 'react'
 import { Link, usePage } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
@@ -365,42 +367,47 @@ const ACTION_NOTIF_TYPES = new Set([
   'MEETING_INVITED',
   'MEETING_UPDATED',
   'ACTION_ITEM_ASSIGNED',
-  // Assignment review flow — reviewer giliran perlu approve, PIC perlu revisi
+  // Assignment review flow — reviewer giliran perlu approve, PIC perlu revisi/lanjut
   'ASSIGNMENT_REVIEW',
   'ASSIGNMENT_RETURNED',
+  'ASSIGNMENT_REOPENED',
 ])
 
-const NOTIF_FALLBACK_CONTEXT: Record<string, { roleImpact: string; impact: string }> = {
-  APPROVAL: { roleImpact: 'You are the decision-maker', impact: 'Holding up the flow until decided' },
-  BLOCKER_CREATED: { roleImpact: 'You need to help unblock', impact: 'Task progress is stalled' },
-  DEADLINE_APPROACHING: { roleImpact: 'You own the deadline', impact: 'Rising risk of falling behind' },
-  DM_RECEIVED: { roleImpact: 'You received a direct message', impact: 'A work conversation is awaiting your reply' },
-  MENTION: { roleImpact: 'You were mentioned in a discussion', impact: 'Context that may need your response' },
-  PROGRAM_NEEDS_APPROVAL: { roleImpact: 'You are the program approver', impact: "Program can't proceed without approval" },
-  PROGRAM_REJECTED: { roleImpact: 'You are the program PIC', impact: 'Fix per the notes, then resubmit' },
-  PROGRAM_WITHDRAWN: { roleImpact: 'You are the program reviewer', impact: 'Submission withdrawn by PIC — no further review needed' },
-  PROGRAM_COMMITMENT_CHANGED: { roleImpact: 'You are the KADIV approver for this program', impact: 'PIC changed the commitment (target/priority/budget/etc.) — review if needed' },
-  REPORT_NEEDS_REVISION: { roleImpact: 'You need to revise the report', impact: 'Review cycle is on hold until the revision lands' },
-  TASK_ASSIGNED: { roleImpact: 'You are the task PIC', impact: 'Awaiting your follow-up' },
+function notifFallbackContext(): Record<string, { roleImpact: string; impact: string }> {
+  return {
+  APPROVAL: { roleImpact: i18n.t('You are the decision-maker'), impact: i18n.t('Holding up the flow until decided') },
+  BLOCKER_CREATED: { roleImpact: i18n.t('You need to help unblock'), impact: i18n.t('Task progress is stalled') },
+  DEADLINE_APPROACHING: { roleImpact: i18n.t('You own the deadline'), impact: i18n.t('Rising risk of falling behind') },
+  DM_RECEIVED: { roleImpact: i18n.t('You received a direct message'), impact: i18n.t('A work conversation is awaiting your reply') },
+  MENTION: { roleImpact: i18n.t('You were mentioned in a discussion'), impact: i18n.t('Context that may need your response') },
+  PROGRAM_NEEDS_APPROVAL: { roleImpact: i18n.t('You are the program approver'), impact: i18n.t("Program can't proceed without approval") },
+  PROGRAM_REJECTED: { roleImpact: i18n.t('You are the program PIC'), impact: i18n.t('Fix per the notes, then resubmit') },
+  PROGRAM_WITHDRAWN: { roleImpact: i18n.t('You are the program reviewer'), impact: i18n.t('Submission withdrawn by PIC — no further review needed') },
+  PROGRAM_COMMITMENT_CHANGED: { roleImpact: i18n.t('You are the KADIV approver for this program'), impact: i18n.t('PIC changed the commitment (target/priority/budget/etc.) — review if needed') },
+  REPORT_NEEDS_REVISION: { roleImpact: i18n.t('You need to revise the report'), impact: i18n.t('Review cycle is on hold until the revision lands') },
+  TASK_ASSIGNED: { roleImpact: i18n.t('You are the task PIC'), impact: i18n.t('Awaiting your follow-up') },
   // Sprint 4 — Clear the Path
-  CLEAR_PATH_REQUESTED: { roleImpact: 'You are asked to clear a blocker', impact: 'The team awaits a disposition (Commit / Reroute / Decline)' },
-  CLEAR_PATH_COMMITTED:  { roleImpact: 'Your request was committed by your manager', impact: 'The blocker will be cleared per the commitment' },
-  CLEAR_PATH_CLEARED:    { roleImpact: 'The blocker has been cleared', impact: 'You can resume execution' },
+  CLEAR_PATH_REQUESTED: { roleImpact: i18n.t('You are asked to clear a blocker'), impact: i18n.t('The team awaits a disposition (Commit / Reroute / Decline)') },
+  CLEAR_PATH_COMMITTED:  { roleImpact: i18n.t('Your request was committed by your manager'), impact: i18n.t('The blocker will be cleared per the commitment') },
+  CLEAR_PATH_CLEARED:    { roleImpact: i18n.t('The blocker has been cleared'), impact: i18n.t('You can resume execution') },
   // Sprint 4 — carryover
-  CARRYOVER_THRESHOLD: { roleImpact: 'Your action item keeps carrying over', impact: 'Consider escalating or re-scoping' },
+  CARRYOVER_THRESHOLD: { roleImpact: i18n.t('Your action item keeps carrying over'), impact: i18n.t('Consider escalating or re-scoping') },
   // Sprint 5 — Plan→Do handoff
-  PROGRAM_TASKS_ASSIGNED: { roleImpact: 'New tasks in your pipeline', impact: 'Program is active, start executing' },
+  PROGRAM_TASKS_ASSIGNED: { roleImpact: i18n.t('New tasks in your pipeline'), impact: i18n.t('Program is active, start executing') },
   // Meeting flow
-  MEETING_INVITED:       { roleImpact: 'You are invited to a meeting',   impact: 'Confirm your RSVP so the organizer knows your attendance' },
-  MEETING_UPDATED:       { roleImpact: 'The meeting schedule changed',   impact: 'Check the new time and adjust your calendar' },
-  MEETING_CANCELLED:     { roleImpact: 'The organizer cancelled the meeting', impact: 'Your time slot is free again' },
-  MEETING_POSTPONED:     { roleImpact: 'The meeting is postponed',       impact: 'Wait for a new schedule from the organizer' },
-  ACTION_ITEM_ASSIGNED:  { roleImpact: 'You are the PIC for a meeting action item', impact: 'Follow up by the set deadline' },
+  MEETING_INVITED:       { roleImpact: i18n.t('You are invited to a meeting'),   impact: i18n.t('Confirm your RSVP so the organizer knows your attendance') },
+  MEETING_UPDATED:       { roleImpact: i18n.t('The meeting schedule changed'),   impact: i18n.t('Check the new time and adjust your calendar') },
+  MEETING_CANCELLED:     { roleImpact: i18n.t('The organizer cancelled the meeting'), impact: i18n.t('Your time slot is free again') },
+  MEETING_POSTPONED:     { roleImpact: i18n.t('The meeting is postponed'),       impact: i18n.t('Wait for a new schedule from the organizer') },
+  ACTION_ITEM_ASSIGNED:  { roleImpact: i18n.t('You are the PIC for a meeting action item'), impact: i18n.t('Follow up by the set deadline') },
   // Assignment review flow
-  ASSIGNMENT_REVIEW:   { roleImpact: 'You are the reviewer in turn', impact: 'The assignment is on hold until you approve or return it' },
-  ASSIGNMENT_RETURNED: { roleImpact: 'You are the assignment PIC', impact: 'Revise per the notes, then resubmit for review' },
-  ASSIGNMENT_REJECTED: { roleImpact: 'You are the assignment PIC', impact: 'The assignment was rejected — check the reason' },
-  ASSIGNMENT_APPROVED: { roleImpact: 'You are the assignment PIC', impact: 'Approved and marked complete — no further action' },
+  ASSIGNMENT_REVIEW:   { roleImpact: i18n.t('You are the reviewer in turn'), impact: i18n.t('The assignment is on hold until you approve or return it') },
+  ASSIGNMENT_RETURNED: { roleImpact: i18n.t('You are the assignment PIC'), impact: i18n.t('Revise per the notes, then resubmit for review') },
+  ASSIGNMENT_REOPENED: { roleImpact: i18n.t('You are the assignment PIC'), impact: i18n.t('The assignment was reopened — continue the work') },
+  ASSIGNMENT_CANCELLED: { roleImpact: i18n.t('You are the assignment PIC'), impact: i18n.t('The assignment was cancelled — no further action') },
+  ASSIGNMENT_REJECTED: { roleImpact: i18n.t('You are the assignment PIC'), impact: i18n.t('The assignment was rejected — check the reason') },
+  ASSIGNMENT_APPROVED: { roleImpact: i18n.t('You are the assignment PIC'), impact: i18n.t('Approved and marked complete — no further action') },
+  }
 }
 
 function isActionNotification(type: string): boolean {
@@ -409,26 +416,28 @@ function isActionNotification(type: string): boolean {
 
 function notificationIntentLabel(notification: NotificationItem): string {
   if (notification.actionLabel) return notification.actionLabel
-  if (notification.type === 'DM_RECEIVED') return 'Reply'
-  if (notification.type === 'MENTION') return 'Open conversation'
-  if (notification.type === 'BLOCKER_CREATED') return 'Follow up'
-  if (notification.type === 'PROGRAM_NEEDS_APPROVAL' || notification.type === 'APPROVAL') return 'Review'
-  if (notification.type === 'PROGRAM_REJECTED') return 'Fix & resubmit'
-  if (notification.type === 'REPORT_NEEDS_REVISION') return 'Revise'
-  if (notification.type === 'DEADLINE_APPROACHING') return 'Check deadline'
-  if (notification.type === 'TASK_ASSIGNED') return 'Work on it'
-  if (notification.type === 'CLEAR_PATH_REQUESTED') return 'Disposition'
-  if (notification.type === 'CLEAR_PATH_COMMITTED') return 'View commitment'
-  if (notification.type === 'CLEAR_PATH_CLEARED') return 'Resume execution'
-  if (notification.type === 'CARRYOVER_THRESHOLD') return 'Review again'
-  if (notification.type === 'PROGRAM_TASKS_ASSIGNED') return 'Open pipeline'
-  if (notification.type === 'MEETING_INVITED') return 'Confirm RSVP'
-  if (notification.type === 'MEETING_UPDATED') return 'View schedule'
-  if (notification.type === 'MEETING_CANCELLED' || notification.type === 'MEETING_POSTPONED') return 'Open meeting'
-  if (notification.type === 'ACTION_ITEM_ASSIGNED') return 'Work on it'
-  if (notification.type === 'ASSIGNMENT_REVIEW') return 'Review'
-  if (notification.type === 'ASSIGNMENT_RETURNED') return 'Revise & resubmit'
-  return 'View details'
+  if (notification.type === 'DM_RECEIVED') return i18n.t('Reply')
+  if (notification.type === 'MENTION') return i18n.t('Open conversation')
+  if (notification.type === 'BLOCKER_CREATED') return i18n.t('Follow up')
+  if (notification.type === 'PROGRAM_NEEDS_APPROVAL' || notification.type === 'APPROVAL') return i18n.t('Review')
+  if (notification.type === 'PROGRAM_REJECTED') return i18n.t('Fix & resubmit')
+  if (notification.type === 'REPORT_NEEDS_REVISION') return i18n.t('Revise')
+  if (notification.type === 'DEADLINE_APPROACHING') return i18n.t('Check deadline')
+  if (notification.type === 'TASK_ASSIGNED') return i18n.t('Work on it')
+  if (notification.type === 'CLEAR_PATH_REQUESTED') return i18n.t('Disposition')
+  if (notification.type === 'CLEAR_PATH_COMMITTED') return i18n.t('View commitment')
+  if (notification.type === 'CLEAR_PATH_CLEARED') return i18n.t('Resume execution')
+  if (notification.type === 'CARRYOVER_THRESHOLD') return i18n.t('Review again')
+  if (notification.type === 'PROGRAM_TASKS_ASSIGNED') return i18n.t('Open pipeline')
+  if (notification.type === 'MEETING_INVITED') return i18n.t('Confirm RSVP')
+  if (notification.type === 'MEETING_UPDATED') return i18n.t('View schedule')
+  if (notification.type === 'MEETING_CANCELLED' || notification.type === 'MEETING_POSTPONED') return i18n.t('Open meeting')
+  if (notification.type === 'ACTION_ITEM_ASSIGNED') return i18n.t('Work on it')
+  if (notification.type === 'ASSIGNMENT_REVIEW') return i18n.t('Review')
+  if (notification.type === 'ASSIGNMENT_RETURNED') return i18n.t('Revise & resubmit')
+  if (notification.type === 'ASSIGNMENT_REOPENED') return i18n.t('Continue')
+  if (notification.type === 'ASSIGNMENT_CANCELLED') return i18n.t('View details')
+  return i18n.t('View details')
 }
 
 function notificationRequiresAction(notification: NotificationItem): boolean {
@@ -477,11 +486,11 @@ function notificationCategory(notification: NotificationItem): NonNullable<Notif
 }
 
 function notificationRoleImpact(notification: NotificationItem): string | undefined {
-  return notification.roleImpact ?? NOTIF_FALLBACK_CONTEXT[notification.type]?.roleImpact
+  return notification.roleImpact ?? notifFallbackContext()[notification.type]?.roleImpact
 }
 
 function notificationImpact(notification: NotificationItem): string | undefined {
-  return notification.impact ?? NOTIF_FALLBACK_CONTEXT[notification.type]?.impact
+  return notification.impact ?? notifFallbackContext()[notification.type]?.impact
 }
 
 function notificationDropdownContext(notification: NotificationItem): string[] {
@@ -540,6 +549,7 @@ function NotifToast({
   onDismiss: () => void
   onClick: () => void
 }) {
+  const { t } = useTranslation()
   // Simpan onDismiss di ref agar timer tidak direset setiap re-render parent
   const dismissRef = useRef(onDismiss)
   useEffect(() => { dismissRef.current = onDismiss })
@@ -579,7 +589,7 @@ function NotifToast({
         className="notif-toast__close"
         onClick={(e) => { e.stopPropagation(); onDismiss() }}
         type="button"
-        aria-label="Close"
+        aria-label={t('Close')}
       >
         <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <path d="m1 1 10 10M11 1 1 11" />
@@ -591,6 +601,7 @@ function NotifToast({
 }
 
 export function AppShell({ children }: { children?: ReactNode }) {
+  const { t } = useTranslation()
   const { url } = usePage()
   const pathname = url.split('?')[0] || '/'
   const activePath = normalizeShellPath(pathname)
@@ -749,6 +760,12 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
   const activeNotifications = notifications.filter(notification => notificationVisibleInDropdown(notification))
   const unreadCount = activeNotifications.filter(n => n.state === 'UNREAD').length
+  // Badge Focus = unread NON-chat. DM & mention sudah tidak disurface di Focus
+  // (rumahnya Channels, dihitung di badge Channels) — kalau ikut dihitung di sini
+  // badge overstate vs isi feed. Lihat memory project_focus_disposition_followup.
+  const focusBadgeCount = activeNotifications.filter(n =>
+    n.state === 'UNREAD' && n.type !== 'DM_RECEIVED' && n.type !== 'MENTION'
+  ).length
   const urgentCount = activeNotifications.filter(n =>
     n.state === 'UNREAD' && notificationRequiresAction(n)
   ).length
@@ -790,23 +807,24 @@ export function AppShell({ children }: { children?: ReactNode }) {
   }, [notifDropOpen])
 
   const NOTIF_TYPE_LABEL: Record<string, string> = {
-    MENTION: 'Mention', APPROVAL: 'Approval',
-    BLOCKER_CREATED: 'Blocker', TASK_ASSIGNED: 'Task',
-    PROGRAM_NEEDS_APPROVAL: 'Approval', PROGRAM_APPROVED: 'Program',
-    PROGRAM_REJECTED: 'Program', PROGRAM_WITHDRAWN: 'Program',
-    PROGRAM_COMMITMENT_CHANGED: 'Commitment',
-    REPORT_AWAITING_REVIEW: 'Report',
-    REPORT_AWAITING_APPROVAL: 'Report', REPORT_APPROVED: 'Report',
-    REPORT_REJECTED: 'Report', REPORT_NEEDS_REVISION: 'Report',
-    DEADLINE_APPROACHING: 'Deadline', DM_RECEIVED: 'DM',
-    CLEAR_PATH_REQUESTED: 'Clear the Path', CLEAR_PATH_COMMITTED: 'Clear the Path',
-    CLEAR_PATH_CLEARED: 'Clear the Path', CARRYOVER_THRESHOLD: 'Carryover',
-    PROGRAM_TASKS_ASSIGNED: 'Pipeline',
-    MEETING_INVITED: 'Meeting', MEETING_UPDATED: 'Meeting',
-    MEETING_CANCELLED: 'Meeting', MEETING_POSTPONED: 'Meeting',
-    ACTION_ITEM_ASSIGNED: 'Action Item',
-    ASSIGNMENT_REVIEW: 'Review', ASSIGNMENT_RETURNED: 'Assignment',
-    ASSIGNMENT_REJECTED: 'Assignment', ASSIGNMENT_APPROVED: 'Assignment',
+    MENTION: t('Mention'), APPROVAL: t('Approval'),
+    BLOCKER_CREATED: t('Blocker'), TASK_ASSIGNED: t('Task'),
+    PROGRAM_NEEDS_APPROVAL: t('Approval'), PROGRAM_APPROVED: t('Program'),
+    PROGRAM_REJECTED: t('Program'), PROGRAM_WITHDRAWN: t('Program'),
+    PROGRAM_COMMITMENT_CHANGED: t('Commitment'),
+    REPORT_AWAITING_REVIEW: t('Report'),
+    REPORT_AWAITING_APPROVAL: t('Report'), REPORT_APPROVED: t('Report'),
+    REPORT_REJECTED: t('Report'), REPORT_NEEDS_REVISION: t('Report'),
+    DEADLINE_APPROACHING: t('Deadline'), DM_RECEIVED: t('DM'),
+    CLEAR_PATH_REQUESTED: t('Clear the Path'), CLEAR_PATH_COMMITTED: t('Clear the Path'),
+    CLEAR_PATH_CLEARED: t('Clear the Path'), CARRYOVER_THRESHOLD: t('Carryover'),
+    PROGRAM_TASKS_ASSIGNED: t('Pipeline'),
+    MEETING_INVITED: t('Meeting'), MEETING_UPDATED: t('Meeting'),
+    MEETING_CANCELLED: t('Meeting'), MEETING_POSTPONED: t('Meeting'),
+    ACTION_ITEM_ASSIGNED: t('Action Item'),
+    ASSIGNMENT_REVIEW: t('Review'), ASSIGNMENT_RETURNED: t('Assignment'),
+    ASSIGNMENT_REOPENED: t('Assignment'), ASSIGNMENT_CANCELLED: t('Assignment'),
+    ASSIGNMENT_REJECTED: t('Assignment'), ASSIGNMENT_APPROVED: t('Assignment'),
   }
 
   const NOTIF_TYPE_COLOR: Record<string, string> = {
@@ -824,6 +842,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
     ACTION_ITEM_ASSIGNED: 'notif-type--approval',
     ASSIGNMENT_REVIEW: 'notif-type--approval',
     ASSIGNMENT_RETURNED: 'notif-type--warn',
+    ASSIGNMENT_REOPENED: 'notif-type--warn',
+    ASSIGNMENT_CANCELLED: '',
     ASSIGNMENT_REJECTED: 'notif-type--danger',
     ASSIGNMENT_APPROVED: 'notif-type--success' as string,
   }
@@ -831,11 +851,11 @@ export function AppShell({ children }: { children?: ReactNode }) {
   function formatNotifTime(dateString: string): string {
     const diff = Date.now() - new Date(dateString).getTime()
     const m = Math.floor(diff / 60000)
-    if (m < 1) return 'just now'
-    if (m < 60) return `${m}m ago`
+    if (m < 1) return t('just now')
+    if (m < 60) return t('{{count}}m ago', { count: m })
     const h = Math.floor(m / 60)
-    if (h < 24) return `${h}h ago`
-    return `${Math.floor(h / 24)}d ago`
+    if (h < 24) return t('{{count}}h ago', { count: h })
+    return t('{{count}}d ago', { count: Math.floor(h / 24) })
   }
 
   function navigateToNotifSource(source: string) {
@@ -846,8 +866,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
       if (colon === -1) continue
       const type = part.slice(0, colon)
       const id = Number(part.slice(colon + 1).split(':')[0])
-      if (type === 'task' && !isNaN(id)) { setSelectedTaskId(id); navigate('/execution'); return }
-      if (type === 'program' && !isNaN(id)) { setSelectedProgramId(id); navigate('/programs'); return }
+      // Detail route (bukan list) — selaras dgn Focus; list-nav pernah glitch
+      // (URL ganti tapi komponen tak rerender). setSelected* untuk konteks.
+      if (type === 'task' && !isNaN(id)) { setSelectedTaskId(id); navigate(`/execution/tasks/${id}`); return }
+      if (type === 'program' && !isNaN(id)) { setSelectedProgramId(id); navigate(`/programs/${id}`); return }
       if (type === 'channel' && !isNaN(id)) { setSelectedChannelId(id); navigate('/channels'); return }
       if (type === 'workstream' && !isNaN(id)) { navigate('/programs'); return }
       if (type === 'assignment' && !isNaN(id)) { navigate('/penugasan'); return }
@@ -899,6 +921,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
     ...dropVisibleNotifications.filter(n => n.state === 'UNREAD'),
     ...dropVisibleNotifications.filter(n => n.state === 'READ'),
   ])
+  // Badge lonceng = jumlah ENTITAS unread (grup), bukan unread mentah — selaras
+  // tab "All" & tidak melebih-lebihkan saat 1 entitas punya banyak update.
+  const unreadGroupCount = dropNotifGroups.filter(group => group.unreadCount > 0).length
   const dropActionGroups = dropNotifGroups.filter(group => group.actionItem)
   const dropActionGroupIds = new Set(dropActionGroups.map(group => group.id))
   const dropContextGroups = dropNotifGroups.filter(group => !dropActionGroupIds.has(group.id))
@@ -915,10 +940,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
           ? dropRiskGroups.slice(0, 8)
           : []
   const notifViewOptions: Array<{ view: NotificationDropView; label: string; count: number }> = [
-    { view: 'all', label: 'All', count: dropNotifGroups.length },
-    { view: 'action', label: 'Action', count: dropActionGroups.length },
-    { view: 'communication', label: 'Communication', count: dropCommunicationGroups.length },
-    { view: 'risk', label: 'Risk', count: dropRiskGroups.length },
+    { view: 'all', label: t('All'), count: dropNotifGroups.length },
+    { view: 'action', label: t('Action'), count: dropActionGroups.length },
+    { view: 'communication', label: t('Communication'), count: dropCommunicationGroups.length },
+    { view: 'risk', label: t('Risk'), count: dropRiskGroups.length },
   ]
 
   const renderNotifDropGroup = (group: NotificationDropGroup, displayItem: NotificationItem = group.latest) => {
@@ -938,7 +963,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
           <div className="topbar__notif-item-body">
             <div className="topbar__notif-item-meta">
               <span className={`topbar__notif-item-type ${typeClass}`}>{typeLabel}</span>
-              {group.items.length > 1 && <span className="topbar__notif-item-count">{group.items.length} update</span>}
+              {group.items.length > 1 && <span className="topbar__notif-item-count">{t('{{count}} update', { count: group.items.length })}</span>}
             </div>
             <p className="topbar__notif-item-msg">{n.message}</p>
             {contextPills.length > 0 && (
@@ -953,10 +978,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
           </div>
         </button>
         <button
-          aria-label={`Dismiss notification: ${n.message}`}
+          aria-label={t('Dismiss notification: {{message}}', { message: n.message })}
           className="topbar__notif-dismiss"
           onClick={() => void handleNotifGroupDismiss(group)}
-          title="Dismiss notification"
+          title={t('Dismiss notification')}
           type="button"
         >
           <svg aria-hidden="true" fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" viewBox="0 0 12 12" width="12">
@@ -967,7 +992,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     )
   }
 
-  const fokusItem: NavItem = { path: '/fokus', label: 'Focus', caption: 'Tasks, mentions, and items awaiting you', icon: IconInbox, badge: () => unreadCount, badgeUrgent: true, shortcut: 'G F' }
+  const fokusItem: NavItem = { path: '/fokus', label: t('Focus'), caption: t('Tasks and items awaiting you'), icon: IconInbox, badge: () => focusBadgeCount, badgeUrgent: true, shortcut: 'G F' }
   const programsCount = programs?.length ?? 0
   const tasksCount = myWork?.tasks?.length ?? 0
 
@@ -979,25 +1004,25 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // dioptimasi untuk fast lookup (group by intent, bukan by abstract phase).
   // Single source of truth: lib/nav-config.ts. Labels & order mirror that file.
   const NI = {
-    home:        { path: '/',          label: 'Home',             caption: 'Executive overview of work programs', icon: IconHome,        shortcut: 'G H' },
-    roadmap:     { path: '/roadmap',   label: 'Roadmap',          caption: 'Visual program timeline',           icon: IconRoadmap    },
-    programs:    { path: '/programs',  label: 'Programs',         caption: 'Portfolio orchestration',           icon: IconPrograms,    shortcut: 'G P', badge: () => programsCount },
-    execution:   { path: '/execution', label: 'Workboard',        caption: 'Scheduled tasks from Programs',     icon: IconExecution,   shortcut: 'G E', badge: () => tasksCount },
-    penugasan:   { path: '/penugasan', label: 'Assignment',       caption: 'Ad-hoc tasks outside Programs',     icon: IconAssignments, shortcut: 'G A' },
-    goals:       { path: '/goals',      label: 'Goals & KPI',   caption: 'Manage org KPIs & achievement tracking',  icon: IconGoals    },
-    activity:    { path: '/activity',   label: 'Team Activity', caption: 'Session leaderboard & daily team activity', icon: IconActivity },
-    reports:       { path: '/reports',         label: 'Analytics',       caption: 'KPI, program health & leaderboard',  icon: IconReports       },
-    executive:     { path: '/executive',             label: 'Executive Summary', caption: 'One-page executive snapshot',      icon: IconScorecard    },
-    perfScorecard: { path: '/performance/scorecard', label: 'Scorecard',       caption: 'Directorate & division achievement ranking', icon: IconScorecard    },
-    perfDirektorat:{ path: '/performance/kolegial',  label: 'Directorate KPI', caption: 'KPI achievement across the board',     icon: IconKpiDirektorat },
-    perfDivisi:    { path: '/performance/divisi',    label: 'Division KPI',    caption: 'Division-level KPI achievement',       icon: IconKpiDivisi    },
-    perfSaya:      { path: '/performance/me',        label: 'My KPI',          caption: 'My individual KPI',                    icon: IconKpiIndividu  },
-    perfIndividu:  { path: '/performance/individu',  label: 'Leaderboard',     caption: 'Top performer per BOD level',          icon: IconKpiIndividu  },
-    schedule:    { path: '/jadwal',    label: 'Coordination',     caption: 'Coordination meetings & team cadence', icon: IconSchedule,    shortcut: 'G R' },
-    channels:    { path: '/channels',  label: 'Channels',         caption: 'Team collaboration',                icon: IconChannels,    shortcut: 'G C', badge: () => totalUnreadChannels, badgeUrgent: true },
-    presence:    { path: '/presence',  label: 'Presence',         caption: 'Live team availability',            icon: IconPresence   },
-    profile:     { path: '/profile',   label: 'Profile',          caption: 'Account & position hierarchy',      icon: IconProfile    },
-    settings:    { path: '/settings',  label: 'Settings',         caption: 'Workspace preferences',             icon: IconSettings   },
+    home:        { path: '/',          label: t('Home'),             caption: t('Executive overview of work programs'), icon: IconHome,        shortcut: 'G H' },
+    roadmap:     { path: '/roadmap',   label: t('Roadmap'),          caption: t('Visual program timeline'),           icon: IconRoadmap    },
+    programs:    { path: '/programs',  label: t('Programs'),         caption: t('Portfolio orchestration'),           icon: IconPrograms,    shortcut: 'G P', badge: () => programsCount },
+    execution:   { path: '/execution', label: t('Workboard'),        caption: t('Scheduled tasks from Programs'),     icon: IconExecution,   shortcut: 'G E', badge: () => tasksCount },
+    penugasan:   { path: '/penugasan', label: t('Assignment'),       caption: t('Ad-hoc tasks outside Programs'),     icon: IconAssignments, shortcut: 'G A' },
+    goals:       { path: '/goals',      label: t('Goals & KPI'),   caption: t('Manage org KPIs & achievement tracking'),  icon: IconGoals    },
+    activity:    { path: '/activity',   label: t('Team Activity'), caption: t('Session leaderboard & daily team activity'), icon: IconActivity },
+    reports:       { path: '/reports',         label: t('Analytics'),       caption: t('KPI, program health & leaderboard'),  icon: IconReports       },
+    executive:     { path: '/executive',             label: t('Executive Summary'), caption: t('One-page executive snapshot'),      icon: IconScorecard    },
+    perfScorecard: { path: '/performance/scorecard', label: t('Scorecard'),       caption: t('Directorate & division achievement ranking'), icon: IconScorecard    },
+    perfDirektorat:{ path: '/performance/kolegial',  label: t('Directorate KPI'), caption: t('KPI achievement across the board'),     icon: IconKpiDirektorat },
+    perfDivisi:    { path: '/performance/divisi',    label: t('Division KPI'),    caption: t('Division-level KPI achievement'),       icon: IconKpiDivisi    },
+    perfSaya:      { path: '/performance/me',        label: t('My KPI'),          caption: t('My individual KPI'),                    icon: IconKpiIndividu  },
+    perfIndividu:  { path: '/performance/individu',  label: t('Leaderboard'),     caption: t('Top performer per BOD level'),          icon: IconKpiIndividu  },
+    schedule:    { path: '/jadwal',    label: t('Coordination'),     caption: t('Coordination meetings & team cadence'), icon: IconSchedule,    shortcut: 'G R' },
+    channels:    { path: '/channels',  label: t('Channels'),         caption: t('Team collaboration'),                icon: IconChannels,    shortcut: 'G C', badge: () => totalUnreadChannels, badgeUrgent: true },
+    presence:    { path: '/presence',  label: t('Presence'),         caption: t('Live team availability'),            icon: IconPresence   },
+    profile:     { path: '/profile',   label: t('Profile'),          caption: t('Account & position hierarchy'),      icon: IconProfile    },
+    settings:    { path: '/settings',  label: t('Settings'),         caption: t('Workspace preferences'),             icon: IconSettings   },
   } satisfies Record<string, NavItem>
 
   // ── Sidebar groups — intent-based (post 2026-05-25) ──────────────────────
@@ -1020,7 +1045,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // tim (Channels/Presence/Coordination), bukan murni tugas personal — 'Work'
   // lebih pas & tetap intent-based. 'Workspace' dihindari (tabrakan dgn .workspace
   // container + route /workspace/overview + tab Settings Workspace).
-  const grpMyWork  = { label: 'Work', items: [NI.execution, NI.penugasan, NI.schedule, NI.channels, NI.presence] }
+  const grpMyWork  = { label: t('Work'), tone: 'do', items: [NI.execution, NI.penugasan, NI.schedule, NI.channels, NI.presence] }
   // Settings & Profile eksklusif di user popover (sidebar footer) per keputusan
   // 2026-05-26 — eliminasi grup Account 1-item + duplikat entry point. Keduanya
   // personal/identity, sepasang natural dengan Mode gelap toggle di popover.
@@ -1038,19 +1063,21 @@ export function AppShell({ children }: { children?: ReactNode }) {
       : [NI.programs]
   // Label jujur ke isi: "Performance" hanya saat item Performance benar hadir.
   const grpPortfolio = {
-    label: isSuperAdmin || canAccessPerformance ? 'Portfolio & Performance' : 'Portfolio',
+    label: isSuperAdmin || canAccessPerformance ? t('Portfolio & Performance') : t('Portfolio'),
+    tone: 'check',
     items: portfolioItems,
   }
   const grpAdmin = {
-    label: 'Admin',
+    label: t('Admin'),
+    tone: 'admin',
     items: [
-      { path: '/admin/orgs',           label: 'Companies',      caption: 'Org entities & hierarchy',   icon: IconOrg       },
-      { path: '/admin/positions',      label: 'Positions',      caption: 'Position management',        icon: IconPositions },
-      { path: '/admin/users',          label: 'Users',          caption: 'User management',            icon: IconUsers     },
-      { path: '/admin/roles',          label: 'Roles',          caption: 'Roles & permission matrix',  icon: IconRoles     },
-      { path: '/admin/pilot-metrics',  label: 'Pilot Metrics',  caption: 'Pilot DKM dashboard (Sprint 4)', icon: IconReports },
+      { path: '/admin/orgs',           label: t('Companies'),      caption: t('Org entities & hierarchy'),   icon: IconOrg       },
+      { path: '/admin/positions',      label: t('Positions'),      caption: t('Position management'),        icon: IconPositions },
+      { path: '/admin/users',          label: t('Users'),          caption: t('User management'),            icon: IconUsers     },
+      { path: '/admin/roles',          label: t('Roles'),          caption: t('Roles & permission matrix'),  icon: IconRoles     },
+      { path: '/admin/pilot-metrics',  label: t('Pilot Metrics'),  caption: t('Pilot DKM dashboard (Sprint 4)'), icon: IconReports },
       ...(role === 'SUPERADMIN' ? [
-        { path: '/admin/thresholds',   label: 'Thresholds',     caption: 'Live system number tuning',      icon: IconSettings },
+        { path: '/admin/thresholds',   label: t('Thresholds'),     caption: t('Live system number tuning'),      icon: IconSettings },
       ] : []),
     ],
   }
@@ -1064,7 +1091,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // Halaman /laporan-bulanan tetap hidup: accessible via direct URL & notif deep-link.
   // Dashboard Risiko standalone (/laporan-risiko) DIHILANGKAN dari discovery 2026-06-02
   // (ATLAS bukan app manajemen risiko); API /risk-reports tetap untuk Monthly Report DIMR.
-  const navGroups: { label: string; items: NavItem[] }[] = [
+  const navGroups: { label: string; tone: string; items: NavItem[] }[] = [
     grpPortfolio,
     grpMyWork,
     ...(isAdmin ? [grpAdmin] : []),
@@ -1072,19 +1099,19 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
   // Page name for breadcrumb
   const PAGE_NAMES: Record<string, string> = {
-    '/': 'Home', '/programs': 'Programs',
-    '/goals': 'Goals & KPI', '/activity': 'Team Activity', '/execution': 'Workboard', '/penugasan': 'Assignment', '/reports': 'Analytics', '/laporan-bulanan': 'Monthly Reports',
-    '/fokus': 'Focus', '/channels': 'Channels', '/jadwal': 'Coordination', '/search': 'Search',
-    '/presence': 'Presence', '/profile': 'Profile', '/settings': 'Settings',
-    '/executive': 'Executive Summary',
-    '/admin/users': 'Users', '/admin/positions': 'Positions',
-    '/admin/orgs': 'Companies', '/admin/roles': 'Roles & Permissions',
-    '/playbook': 'Playbook',
-    '/performance/scorecard': 'Scorecard',
-    '/performance/kolegial': 'Directorate KPI',
-    '/performance/divisi': 'Division KPI',
-    '/performance/me': 'My KPI',
-    '/performance/individu': 'Leaderboard',
+    '/': t('Home'), '/programs': t('Programs'),
+    '/goals': t('Goals & KPI'), '/activity': t('Team Activity'), '/execution': t('Workboard'), '/penugasan': t('Assignment'), '/reports': t('Analytics'), '/laporan-bulanan': t('Monthly Reports'),
+    '/fokus': t('Focus'), '/channels': t('Channels'), '/jadwal': t('Coordination'), '/search': t('Search'),
+    '/presence': t('Presence'), '/profile': t('Profile'), '/settings': t('Settings'),
+    '/executive': t('Executive Summary'),
+    '/admin/users': t('Users'), '/admin/positions': t('Positions'),
+    '/admin/orgs': t('Companies'), '/admin/roles': t('Roles & Permissions'),
+    '/playbook': t('Playbook'),
+    '/performance/scorecard': t('Scorecard'),
+    '/performance/kolegial': t('Directorate KPI'),
+    '/performance/divisi': t('Division KPI'),
+    '/performance/me': t('My KPI'),
+    '/performance/individu': t('Leaderboard'),
   }
   const _currentPage = PAGE_NAMES[activePath] ?? PAGE_NAMES[pathname] ?? 'ATLAS'
 
@@ -1102,12 +1129,12 @@ export function AppShell({ children }: { children?: ReactNode }) {
               className="sidebar__brand-mark"
               role={sidebarCollapsedView ? 'button' : undefined}
               tabIndex={sidebarCollapsedView ? 0 : undefined}
-              aria-label={sidebarCollapsedView ? 'Expand sidebar' : undefined}
-              title={sidebarCollapsedView ? 'Expand sidebar (⌘\\)' : 'ATLAS'}
+              aria-label={sidebarCollapsedView ? t('Expand sidebar') : undefined}
+              title={sidebarCollapsedView ? t('Expand sidebar (⌘\\)') : 'ATLAS'}
               onClick={sidebarCollapsedView ? toggleSidebar : undefined}
               onKeyDown={sidebarCollapsedView ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSidebar() } } : undefined}
             >
-              <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
                 <line x1="2.5" y1="18.5" x2="10" y2="2.5"/>
                 <line x1="17.5" y1="18.5" x2="10" y2="2.5"/>
                 <line x1="6.3" y1="11.5" x2="13.7" y2="11.5"/>
@@ -1115,14 +1142,14 @@ export function AppShell({ children }: { children?: ReactNode }) {
             </div>
             <div className="sidebar__brand-name">
               <span className="sidebar__brand-title" title="Advanced Transformation &amp; Leadership Alignment System">ATLAS</span>
-              <span className="sidebar__brand-tagline" aria-label="PTPN III Holding workspace">PTPN III · Holding</span>
+              <span className="sidebar__brand-tagline" aria-label={t('PTPN III Holding workspace')}>PTPN III · Holding</span>
             </div>
           </div>
           <button
             className="sidebar__collapse-toggle"
             onClick={toggleSidebar}
-            title={sidebarCollapsedView ? 'Expand sidebar (⌘\\)' : 'Collapse sidebar (⌘\\)'}
-            aria-label={sidebarCollapsedView ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={sidebarCollapsedView ? t('Expand sidebar (⌘\\)') : t('Collapse sidebar (⌘\\)')}
+            aria-label={sidebarCollapsedView ? t('Expand sidebar') : t('Collapse sidebar')}
             type="button"
           >
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1167,16 +1194,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
           })()}
 
           {navGroups.filter((group) => group.items.length > 0).map((group) => {
-            const pdcaTone = (
-              {
-                'Work':                    'do',
-                'Portfolio & Performance': 'check',
-                'Portfolio':               'check',
-              } as Record<string, string>
-            )[group.label] ?? ''
+            const pdcaTone = group.tone === 'do' || group.tone === 'check' ? group.tone : ''
             return (
             <div
-              className={`sidebar__group sidebar__group--separated${pdcaTone ? ` sidebar__group--${pdcaTone}` : ''}${group.label === 'Admin' ? ' sidebar__group--admin' : ''}`}
+              className={`sidebar__group sidebar__group--separated${pdcaTone ? ` sidebar__group--${pdcaTone}` : ''}${group.tone === 'admin' ? ' sidebar__group--admin' : ''}`}
               key={group.label}
             >
               <p className="sidebar__group-label">{group.label}</p>
@@ -1213,23 +1234,12 @@ export function AppShell({ children }: { children?: ReactNode }) {
             title native. Bantuan & Panduan + toggle tema (dipindah dari topbar).
             Expanded = baris rata kiri (sejajar kolom ikon nav); collapsed = tumpuk. */}
         <div className="sidebar__footer">
-          <Link
-            className={`sidebar__util-btn${activePath === '/panduan' ? ' sidebar__util-btn--active' : ''}`}
-            href="/panduan"
-            title="Help & Guide"
-            aria-label="Help & Guide"
-            onMouseEnter={() => prefetchRoute('/panduan')}
-            onFocus={() => prefetchRoute('/panduan')}
-            aria-current={activePath === '/panduan' ? 'page' : undefined}
-          >
-            {helpIcon()}
-          </Link>
           <button
             type="button"
             className="sidebar__util-btn"
             onClick={toggleTheme}
-            title={resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
-            aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={resolvedTheme === 'dark' ? t('Light mode') : t('Dark mode')}
+            aria-label={resolvedTheme === 'dark' ? t('Switch to light mode') : t('Switch to dark mode')}
           >
             {resolvedTheme === 'dark' ? (
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1277,7 +1287,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
             type="button"
             className="topbar__hamburger"
             onClick={() => setMobileNavOpen((o) => !o)}
-            aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
+            aria-label={mobileNavOpen ? t('Close menu') : t('Open menu')}
             aria-expanded={mobileNavOpen}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
@@ -1303,9 +1313,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
             const monthName = now.toLocaleDateString('en-US', { month: 'long' })
             const monthLabel = monthName.charAt(0).toUpperCase() + monthName.slice(1)
             const periodLabel = `Q${quarter} · W${weekOfMonth} ${monthLabel} ${now.getFullYear()}`
-            const liveLabel = realtimeStatus === 'connected' ? 'Live'
-              : realtimeStatus === 'connecting' ? 'Syncing'
-              : realtimeStatus === 'disconnected' ? 'Offline'
+            const liveLabel = realtimeStatus === 'connected' ? t('Live')
+              : realtimeStatus === 'connecting' ? t('Syncing')
+              : realtimeStatus === 'disconnected' ? t('Offline')
               : ''
             const liveClass = realtimeStatus === 'connected' ? 'topbar__live--connected'
               : realtimeStatus === 'disconnected' ? 'topbar__live--disconnected'
@@ -1316,9 +1326,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
                   <span
                     className={`topbar__live ${liveClass}`}
                     title={
-                      realtimeStatus === 'connected' ? 'Real-time active — data in sync'
-                      : realtimeStatus === 'connecting' ? 'Connecting to real-time server…'
-                      : realtimeStatus === 'disconnected' ? 'Real-time connection lost — reconnecting'
+                      realtimeStatus === 'connected' ? t('Real-time active — data in sync')
+                      : realtimeStatus === 'connecting' ? t('Connecting to real-time server…')
+                      : realtimeStatus === 'disconnected' ? t('Real-time connection lost — reconnecting')
                       : ''
                     }
                   >
@@ -1348,14 +1358,14 @@ export function AppShell({ children }: { children?: ReactNode }) {
             type="button"
             className="topbar__cmdk"
             onClick={() => setPaletteOpen(true)}
-            aria-label="Open command palette (⌘K)"
-            title="Search (⌘K)"
+            aria-label={t('Open command palette (⌘K)')}
+            title={t('Search (⌘K)')}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
               <circle cx="6" cy="6" r="4.5" />
               <path d="m9.5 9.5 3 3" />
             </svg>
-            <span className="topbar__cmdk-placeholder">Search programs, tasks…</span>
+            <span className="topbar__cmdk-placeholder">{t('Search programs, tasks…')}</span>
             <kbd>⌘K</kbd>
           </button>
 
@@ -1368,16 +1378,16 @@ export function AppShell({ children }: { children?: ReactNode }) {
                 aria-haspopup="menu"
                 className="topbar__notif-btn"
                 onClick={() => setNotifDropOpen(open => !open)}
-                title="Notifications"
+                title={t('Notifications')}
                 type="button"
               >
                 <svg className="topbar__notif-icon" fill="none" height="20" viewBox="0 0 20 20" width="20" aria-hidden="true">
                   <path d="M10 3.2c-2.25 0-4.05 1.73-4.05 4.08v1.68c0 .78-.26 1.53-.74 2.14l-.68.85c-.3.37-.03.93.44.93h10.06c.47 0 .74-.56.44-.93l-.68-.85a3.42 3.42 0 0 1-.74-2.14V7.28c0-2.35-1.8-4.08-4.05-4.08Z" />
                   <path d="M8.25 15.05c.3.76.95 1.25 1.75 1.25s1.45-.49 1.75-1.25" />
                 </svg>
-                {unreadCount > 0 && (
+                {unreadGroupCount > 0 && (
                   <span className={`topbar__notif-badge${urgentCount > 0 ? ' topbar__notif-badge--urgent' : ' topbar__notif-badge--info'}`}>
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                    {unreadGroupCount > 9 ? '9+' : unreadGroupCount}
                   </span>
                 )}
               </button>
@@ -1385,7 +1395,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
               {notifDropOpen && (
                 <div className="topbar__notif-popover" role="menu">
                   <div className="topbar__notif-popover-head">
-                    <span className="topbar__notif-popover-title">Notifications</span>
+                    <span className="topbar__notif-popover-title">{t('Notifications')}</span>
                     {unreadCount > 0 && (
                       <button
                         className="topbar__notif-mark-all"
@@ -1393,16 +1403,18 @@ export function AppShell({ children }: { children?: ReactNode }) {
                         onClick={() => void handleMarkAllReadDrop()}
                         type="button"
                       >
-                        {markingAllRead ? 'Marking…' : 'Mark all read'}
+                        {markingAllRead ? t('Marking…') : t('Mark all read')}
                       </button>
                     )}
                   </div>
 
-                  <div className="topbar__notif-filter" aria-label="Filter notifications">
+                  <div className="topbar__notif-filter" aria-label={t('Filter notifications')}>
                     {notifViewOptions.map(option => (
                       <button
                         aria-pressed={notifDropView === option.view}
                         className={`topbar__notif-filter-btn${notifDropView === option.view ? ' is-active' : ''}`}
+                        // Tab kosong diredupkan (bukan disembunyikan — posisi tetap stabil).
+                        style={option.count === 0 && notifDropView !== option.view ? { opacity: 0.45 } : undefined}
                         key={option.view}
                         onClick={() => setNotifDropView(option.view)}
                         type="button"
@@ -1420,15 +1432,15 @@ export function AppShell({ children }: { children?: ReactNode }) {
                           <path d="M8 1.5a5 5 0 0 1 5 5v2.5l1 1.5H1l1-1.5V6.5a5 5 0 0 1 5-5Z" />
                           <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" />
                         </svg>
-                        No notifications
+                        {t('No notifications')}
                       </div>
                     ) : (
                       <>
                         {dropActionGroups.length > 0 && (
                           <div className="topbar__notif-priority">
                             <div>
-                                <span className="topbar__notif-priority-label">Needs action</span>
-                                <span className="topbar__notif-priority-copy">Tasks, approvals, blockers, revisions, or conversations needing a response.</span>
+                                <span className="topbar__notif-priority-label">{t('Needs action')}</span>
+                                <span className="topbar__notif-priority-copy">{t('Tasks, approvals, blockers, revisions, or conversations needing a response.')}</span>
                             </div>
                             <strong>{dropActionGroups.length}</strong>
                           </div>
@@ -1438,7 +1450,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                             {visibleDropActionGroups.map(group => renderNotifDropGroup(group, group.actionItem ?? group.latest))}
                             {visibleDropContextGroups.length > 0 && (
                               <div className="topbar__notif-section-label">
-                                {visibleDropActionGroups.length > 0 ? 'Other updates' : 'Latest updates'}
+                                {visibleDropActionGroups.length > 0 ? t('Other updates') : t('Latest updates')}
                               </div>
                             )}
                             {visibleDropContextGroups.map(group => renderNotifDropGroup(group))}
@@ -1447,7 +1459,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                           visibleFilteredGroups.map(group => renderNotifDropGroup(group, notifDropView === 'action' ? group.actionItem ?? group.latest : group.latest))
                         ) : (
                           <div className="topbar__notif-empty topbar__notif-empty--compact">
-                            No notifications for this filter
+                            {t('No notifications for this filter')}
                           </div>
                         )}
                       </>
@@ -1455,17 +1467,42 @@ export function AppShell({ children }: { children?: ReactNode }) {
                   </div>
 
                   <div className="topbar__notif-footer">
-                    <button
-                      className="topbar__notif-view-all"
-                      onClick={() => { setNotifDropOpen(false); navigate('/fokus') }}
-                      type="button"
-                    >
-                      View all in Focus →
-                    </button>
+                    {/* Footer kontekstual: chat (Communication) rumahnya Channels —
+                        Focus tak lagi menampilkan DM/mention. Tab lain → Focus. */}
+                    {notifDropView === 'communication' ? (
+                      <button
+                        className="topbar__notif-view-all"
+                        onClick={() => { setNotifDropOpen(false); navigate('/channels') }}
+                        type="button"
+                      >
+                        {t('Open Channels →')}
+                      </button>
+                    ) : (
+                      <button
+                        className="topbar__notif-view-all"
+                        onClick={() => { setNotifDropOpen(false); navigate('/fokus') }}
+                        type="button"
+                      >
+                        {t('View all in Focus →')}
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
             </div>
+
+            {/* Help & Guide — dipindah dari footer sidebar 2026-06-25, di antara bell & avatar */}
+            <Link
+              className={`topbar__notif-btn topbar__help-btn${activePath === '/panduan' ? ' topbar__help-btn--active' : ''}`}
+              href="/panduan"
+              title={t('Help & Guide')}
+              aria-label={t('Help & Guide')}
+              onMouseEnter={() => prefetchRoute('/panduan')}
+              onFocus={() => prefetchRoute('/panduan')}
+              aria-current={activePath === '/panduan' ? 'page' : undefined}
+            >
+              {helpIcon()}
+            </Link>
 
             {/* Account avatar + menu — kanan-atas (Gmail/Linear pattern).
                 Popover positioned absolut di dalam .topbar__user-menu; backdrop
@@ -1476,11 +1513,16 @@ export function AppShell({ children }: { children?: ReactNode }) {
                 onClick={() => toggleUserMenu('topbar')}
                 aria-expanded={userMenuSurface === 'topbar'}
                 aria-haspopup="menu"
-                title={currentUser?.name ?? 'User menu'}
+                title={currentUser?.positionTitle ? `${currentUser?.name} — ${currentUser.positionTitle}` : (currentUser?.name ?? t('User menu'))}
                 type="button"
               >
                 <span className="topbar__avatar"><span className="topbar__avatar-initials">{userInitials || 'AU'}</span></span>
-                <span className="topbar__avatar-name">{currentUser?.name ?? 'Atlas User'}</span>
+                <span className="topbar__avatar-text">
+                  <span className="topbar__avatar-name">{currentUser?.name ?? 'Atlas User'}</span>
+                  {currentUser?.positionTitle && (
+                    <span className="topbar__avatar-title">{currentUser.positionTitle}</span>
+                  )}
+                </span>
                 <svg className="topbar__avatar-chev" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="m3 4.5 3 3 3-3" />
                 </svg>
@@ -1494,6 +1536,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
                       <div className="topbar__user-popover-avatar">{userInitials || 'AU'}</div>
                       <div>
                         <strong>{currentUser?.name}</strong>
+                        {currentUser?.positionTitle && (
+                          <span className="topbar__user-popover-title">{currentUser.positionTitle}</span>
+                        )}
                         <span>{currentUser?.unit?.name ?? formatRoleLabel(currentUser?.roleType)}</span>
                       </div>
                     </div>
@@ -1509,7 +1554,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                         <rect x="2" y="1" width="10" height="12" rx="1" />
                         <path d="M5 4h4M5 7h4M5 10h2" />
                       </svg>
-                      Playbook
+                      {t('Playbook')}
                     </Link>
                     <Link
                       className="topbar__user-popover-item"
@@ -1522,7 +1567,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                         <circle cx="7" cy="4.5" r="2.5" />
                         <path d="M2.5 12a4.5 4.5 0 0 1 9 0" />
                       </svg>
-                      Profile
+                      {t('Profile')}
                     </Link>
                     <Link
                       className="topbar__user-popover-item"
@@ -1539,7 +1584,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                         <path d="M2.5 11.5h8M13 11.5h.5" />
                         <circle cx="11.5" cy="11.5" r="1.5" />
                       </svg>
-                      Settings
+                      {t('Settings')}
                     </Link>
                     <div className="topbar__user-popover-divider" />
                     <button
@@ -1551,7 +1596,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                         <path d="M12.5 7A5.5 5.5 0 1 1 7 1.5a5.5 5.5 0 0 1 4.5 2.3" />
                         <path d="M10 1.5h3v3" />
                       </svg>
-                      {overviewStatus.refreshing ? 'Refreshing…' : 'Refresh data'}
+                      {overviewStatus.refreshing ? t('Refreshing…') : t('Refresh data')}
                     </button>
                     <div className="topbar__user-popover-divider" />
                     <button
@@ -1563,7 +1608,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                         <path d="M5 7h7M9.5 4.5 12 7l-2.5 2.5" />
                         <path d="M5 2H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2" />
                       </svg>
-                      Sign out
+                      {t('Sign out')}
                     </button>
                   </div>
                 </>
@@ -1584,36 +1629,36 @@ export function AppShell({ children }: { children?: ReactNode }) {
       {/* ── Bottom tab bar (phone ≤640) — navigasi utama jangkauan-jempol.
            4 destinasi inti + "Menu" yang membuka drawer lengkap. Hanya phone. */}
       {viewportPhone ? (
-        <nav className="mobile-tabbar" aria-label="Navigasi utama">
+        <nav className="mobile-tabbar" aria-label={t('Main navigation')}>
           {/* Badge bottom-nav HANYA untuk sinyal unread/butuh-aksi (Channels).
            * Workboard/Programs dulu pakai count total (tasksCount/programsCount)
            * → dot mengambang yang selalu nyala terbaca sebagai notifikasi padahal
            * cuma jumlah katalog/antrian. Count tetap tersedia inline di sidebar
            * (afordans inventaris, bukan dot). 2026-06-03. */}
           {[
-            { path: '/',           label: 'Home',      icon: IconHome,      badge: 0 },
-            { path: '/execution',  label: 'Workboard', icon: IconExecution, badge: 0 },
-            { path: '/programs',   label: 'Programs',  icon: IconPrograms,  badge: 0 },
-            { path: '/channels',   label: 'Channels',  icon: IconChannels,  badge: totalUnreadChannels, urgent: true },
-          ].map((t) => {
-            const active = activePath === t.path
+            { path: '/',           label: t('Home'),      icon: IconHome,      badge: 0 },
+            { path: '/execution',  label: t('Workboard'), icon: IconExecution, badge: 0 },
+            { path: '/programs',   label: t('Programs'),  icon: IconPrograms,  badge: 0 },
+            { path: '/channels',   label: t('Channels'),  icon: IconChannels,  badge: totalUnreadChannels, urgent: true },
+          ].map((tab) => {
+            const active = activePath === tab.path
             return (
               <Link
-                key={t.path}
-                href={t.path}
+                key={tab.path}
+                href={tab.path}
                 className={`mobile-tabbar__item${active ? ' mobile-tabbar__item--active' : ''}`}
                 aria-current={active ? 'page' : undefined}
-                onMouseEnter={() => prefetchRoute(t.path)}
+                onMouseEnter={() => prefetchRoute(tab.path)}
               >
                 <span className="mobile-tabbar__icon">
-                  {t.icon()}
-                  {t.badge > 0 ? (
-                    <span className={`mobile-tabbar__badge${t.urgent ? ' mobile-tabbar__badge--urgent' : ''}`}>
-                      {t.badge > 99 ? '99+' : t.badge}
+                  {tab.icon()}
+                  {tab.badge > 0 ? (
+                    <span className={`mobile-tabbar__badge${tab.urgent ? ' mobile-tabbar__badge--urgent' : ''}`}>
+                      {tab.badge > 99 ? '99+' : tab.badge}
                     </span>
                   ) : null}
                 </span>
-                <span className="mobile-tabbar__label">{t.label}</span>
+                <span className="mobile-tabbar__label">{tab.label}</span>
               </Link>
             )
           })}
@@ -1622,7 +1667,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
             className={`mobile-tabbar__item${mobileNavOpen ? ' mobile-tabbar__item--active' : ''}`}
             onClick={() => setMobileNavOpen((o) => !o)}
             aria-expanded={mobileNavOpen}
-            aria-label="Menu lengkap"
+            aria-label={t('Full menu')}
           >
             <span className="mobile-tabbar__icon">
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
@@ -1631,7 +1676,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                 <line x1="4" y1="15.5" x2="18" y2="15.5" />
               </svg>
             </span>
-            <span className="mobile-tabbar__label">Menu</span>
+            <span className="mobile-tabbar__label">{t('Menu')}</span>
           </button>
         </nav>
       ) : null}
@@ -1642,9 +1687,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
           <div aria-describedby={logoutDescId} aria-labelledby={logoutTitleId} aria-modal="true" className="modal" ref={logoutDialogRef} role="dialog" style={{ maxWidth: 380 }} tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Session</span>
-                <h3 className="modal__title" id={logoutTitleId}>Sign out?</h3>
-                <p className="modal-subtitle" id={logoutDescId}>End the current session and return to the login screen.</p>
+                <span className="modal-kicker">{t('Session')}</span>
+                <h3 className="modal__title" id={logoutTitleId}>{t('Sign out?')}</h3>
+                <p className="modal-subtitle" id={logoutDescId}>{t('End the current session and return to the login screen.')}</p>
               </div>
               <button className="modal__close" onClick={cancelLogout} type="button">
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12">
@@ -1654,12 +1699,12 @@ export function AppShell({ children }: { children?: ReactNode }) {
             </div>
             <div className="modal__body">
               <div className="modal-helper-note modal-helper-note--danger">
-                You'll return to the login screen. Unsaved changes will be lost.
+                {t("You'll return to the login screen. Unsaved changes will be lost.")}
               </div>
             </div>
             <div className="modal__footer">
               <button className="btn btn--ghost" onClick={cancelLogout} type="button">
-                Cancel
+                {t('Cancel')}
               </button>
               <button
                 className="btn btn--primary"
@@ -1667,7 +1712,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                 style={{ background: 'var(--red)', borderColor: 'var(--red)' }}
                 type="button"
               >
-                Sign out
+                {t('Sign out')}
               </button>
             </div>
           </div>
@@ -1676,7 +1721,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
       {/* ── Notification toast stack (kanan bawah) ── */}
       {notifToasts.length > 0 && (
-        <div className="notif-toast-stack" aria-live="polite" aria-label="New notifications">
+        <div className="notif-toast-stack" aria-live="polite" aria-label={t('New notifications')}>
           {notifToasts.map(toast => {
             const typeLabel = NOTIF_TYPE_LABEL[toast.type] ?? toast.type
             const typeClass = NOTIF_TYPE_COLOR[toast.type] ?? ''
