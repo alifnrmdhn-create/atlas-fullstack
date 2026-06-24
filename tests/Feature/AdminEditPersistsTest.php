@@ -127,6 +127,20 @@ class AdminEditPersistsTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_new_user_gets_default_password(): void
+    {
+        $this->actingAs($this->admin);
+
+        $this->postJson('/users', [
+            'name' => 'Fresh User',
+            'email' => 'fresh-user@ptpn.test',
+            'roleType' => 'ASISTEN',
+        ])->assertCreated();
+
+        $created = User::where('email', 'fresh-user@ptpn.test')->firstOrFail();
+        $this->assertTrue(Hash::check('DKMR2026', $created->passwordHash));
+    }
+
     public function test_non_admin_cannot_edit_user(): void
     {
         $this->actingAs($this->target); // ASISTEN

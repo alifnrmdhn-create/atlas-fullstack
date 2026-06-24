@@ -664,7 +664,8 @@ class WorkspaceController extends Controller
             // Position = sumber kebenaran roleType; form roleType dipakai bila tanpa jabatan.
             'roleType' => $position?->roleType ?? $data['roleType'],
             'isActive' => true,
-            'passwordHash' => Hash::make('Password123!'),
+            // Default password akun baru = DKMR2026 (selaras teks modal Create User).
+            'passwordHash' => Hash::make('DKMR2026'),
         ]);
 
         if ($position) {
