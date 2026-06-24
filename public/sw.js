@@ -5,7 +5,11 @@
  *   - API / Inertia XHR / realtime polling: network-only passthrough (tak di-cache)
  * Hanya didaftarkan di production build (lihat registrasi di app.tsx) supaya
  * tidak mengganggu Vite HMR saat dev. */
-const CACHE = 'atlas-shell-v1'
+// Nama cache di-stamp build-id oleh docker/entrypoint.sh (sed __BUILD_ID__ →
+// hash manifest). Tiap build aset baru → nama cache baru → SW di-update browser
+// → `activate` purge cache build lama (cegah shell HTML basi menunjuk hash mati).
+// Saat dev (sw.js tak di-stamp) placeholder tetap valid sebagai nama konstan.
+const CACHE = 'atlas-shell-__BUILD_ID__'
 const SHELL = ['/']
 
 self.addEventListener('install', (event) => {
@@ -33,8 +37,13 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone()
-          caches.open(CACHE).then((c) => c.put('/', copy)).catch(() => {})
+          // Hanya cache respons sukses sbg shell. Tanpa guard ini, respons error
+          // (mis. 504 dari proxy / halaman maintenance) ikut tersimpan sbg '/'
+          // lalu disajikan saat fallback → HTML rusak/basi → 404 aset ber-hash.
+          if (res && res.ok) {
+            const copy = res.clone()
+            caches.open(CACHE).then((c) => c.put('/', copy)).catch(() => {})
+          }
           return res
         })
         .catch(() => caches.match(req).then((m) => m || caches.match('/'))),
