@@ -86,7 +86,7 @@ Klasifikasi kondisi pelaksanaan program pada periode pelaporan.
 
 | Istilah | Penjelasan |
 |---------|------------|
-| **PDCA** | Siklus *Plan-Do-Check-Act* — kerangka kerja yang melandasi struktur sidebar ATLAS: Perencanaan → Eksekusi → Performance → Tindak Lanjut. |
+| **PDCA** | Siklus *Plan-Do-Check-Act* — kerangka kerja sistem ATLAS untuk mengklasifikasi modul (Plan = Programs/Workstream, Do = Workboard/Penugasan, Check = Performance/Scorecard, Act = Rapat Koordinasi/Eskalasi). **Sejak 25 Mei 2026 navigasi sidebar di-organize berbasis *intent* (Today / Portfolio & Performance / Work / Admin), bukan fase PDCA** — agar lookup lebih cepat. PDCA tetap kerangka di balik layar (dipakai di playbook & dokumentasi untuk klasifikasi modul). |
 | **Workstream** | Jalur kerja dalam satu Program — mengelompokkan Phase dan Task berdasarkan bidang atau tim. *Contoh: Audit Divisi Keuangan.* |
 | **Phase** | Tahapan utama dalam sebuah Workstream. Mengelompokkan Task yang saling berkaitan. Tampil sebagai container bernomor di tab Struktur. *Contoh: Pengumpulan Dokumen.* |
 | **Task** | Satu unit pekerjaan konkret di dalam sebuah Phase — memiliki status, assignee, prioritas, dan batas waktu. Muncul di **Workboard**. *Contoh: Kumpulkan laporan arus kas Q1.* |
@@ -135,23 +135,19 @@ flowchart TD
     classDef warn     fill:#fed7aa,stroke:#c2410c,color:#7c2d12,stroke-width:1.5px
 ```
 
-### 2. Sidebar PDCA
+### 2. Sidebar (Intent-based)
 
-Sidebar ATLAS mengikuti urutan siklus PDCA. Grup & item bersifat *role-aware* — pengguna hanya melihat menu yang relevan untuk jabatannya.
+Sejak 25 Mei 2026 sidebar ATLAS di-organize berbasis **intent pengguna** (bukan fase PDCA) agar lookup cepat. Grup & item bersifat *role-aware* — pengguna hanya melihat menu yang relevan untuk jabatannya. **Today** (Home + Fokus) di-pin paling atas; **Profile & Settings** pindah ke popover avatar (sidebar footer), bukan lagi grup tersendiri.
 
 ```mermaid
 flowchart LR
-    P[Perencanaan<br/>Plan]:::plan --> D[Eksekusi<br/>Do]:::do
-    D --> C[Performance<br/>Check]:::check
-    C --> A[Tindak Lanjut<br/>Act]:::act
-    A --> K[Komunikasi]:::comm
-    K --> AK[Akun]:::akun
+    T["Today<br/>Home · Fokus"]:::today --> P["Portfolio & Performance<br/>Programs · KPI dashboards"]:::check
+    P --> W["Work<br/>Workboard · Penugasan · Koordinasi · Channels · Presence"]:::do
+    W --> AD["Admin<br/>ADMIN/SUPERADMIN"]:::akun
 
-    classDef plan  fill:#bfdbfe,stroke:#2563eb,color:#1e3a8a,stroke-width:2px
+    classDef today fill:#bfdbfe,stroke:#2563eb,color:#1e3a8a,stroke-width:2px
     classDef do    fill:#fde68a,stroke:#b45309,color:#451a03,stroke-width:2px
     classDef check fill:#bbf7d0,stroke:#16a34a,color:#14532d,stroke-width:2px
-    classDef act   fill:#fecaca,stroke:#b91c1c,color:#7f1d1d,stroke-width:2px
-    classDef comm  fill:#ddd6fe,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px
     classDef akun  fill:#cbd5e1,stroke:#64748b,color:#1e293b,stroke-width:1.5px
 ```
 
@@ -342,7 +338,7 @@ flowchart LR
 
 **Siapa yang bisa:** Semua pengguna
 
-Sidebar ATLAS disusun mengikuti siklus PDCA, dan otomatis menyembunyikan menu yang tidak relevan untuk jabatan Anda.
+Sidebar ATLAS disusun berbasis **intent pengguna** (sejak 25 Mei 2026, bukan lagi fase PDCA), dan otomatis menyembunyikan menu yang tidak relevan untuk jabatan Anda.
 
 ### Halaman Awal Setelah Login
 
@@ -355,42 +351,44 @@ Seluruh pengguna mendarat di **Home** (`/`) — namun **konten Home berbeda per 
 | KASUBDIV | Unit sendiri, KPI divisi, divisi dengan delay |
 | OFFICER / ASISTEN | Unit sendiri, KPI personal, komitmen hari ini |
 
-### Grup Menu Sidebar (PDCA)
+### Grup Menu Sidebar (Intent-based)
 
-| Grup | Item | Fase PDCA |
-|------|------|-----------|
-| **Perencanaan** | Programs | Plan |
-| **Eksekusi** | Workboard, Assignment | Do |
-| **Performance** | Executive Summary, Scorecard, KPI Direktorat, KPI Divisi, KPI Saya, KPI Individu | Check |
-| **Tindak Lanjut** | Rapat Koordinasi | Act |
-| **Komunikasi** | Channels | — |
-| **Akun** | Presence, Profile, Settings | — |
-| **Admin** *(ADMIN/SUPERADMIN)* | Companies, Positions, Users, Roles, Pilot Metrics, Thresholds | — |
+Urutan render: **Today** (pinned) → **Portfolio & Performance** → **Work** → **Admin**.
 
-> 💡 Roadmap (visual timeline portofolio) dan halaman Fokus diakses lewat shortcut, breadcrumb, dan deep-link — tidak menempati slot sidebar tetap agar sidebar tetap ringkas.
+| Grup | Item | Catatan akses |
+|------|------|---------------|
+| **Today** *(pinned, paling atas)* | Home, Fokus | Semua pengguna |
+| **Portfolio & Performance** | Programs, Scorecard, KPI Direktorat, KPI Divisi, KPI Saya, Leaderboard, Executive Summary | Programs untuk semua; dashboard KPI/Performance *role-gated* (lihat tabel di bawah). Label grup jadi "Portfolio" saja bila user tak punya akses Performance. |
+| **Work** | Workboard, Assignment (Penugasan), Coordination (Rapat Koordinasi), Channels, Presence | Semua pengguna |
+| **Admin** *(ADMIN/SUPERADMIN)* | Companies, Positions, Users, Roles, Pilot Metrics, Thresholds *(SUPERADMIN)* | ADMIN/SUPERADMIN |
 
-### Skup Item Performance per Jabatan
+> 💡 **Profile & Settings** tidak lagi punya grup tersendiri — keduanya diakses dari popover avatar di footer sidebar. Roadmap (visual timeline portofolio), Goals & KPI, Team Activity, Analytics, dan Laporan Bulanan tetap hidup tapi diakses lewat shortcut, breadcrumb, ⌘K, atau deep-link — tidak menempati slot sidebar.
 
-| Jabatan | Executive | Scorecard | KPI Direktorat | KPI Divisi | KPI Saya |
-|---------|:--------:|:--------:|:--------------:|:----------:|:--------:|
-| BOD / DIRUT | ✓ | ✓ | ✓ | ✓ | — |
-| KADIV | ✓ | ✓ | ✓ | ✓ | ✓ |
-| KASUBDIV | — | — | — | ✓ | ✓ |
-| OFFICER / ASISTEN | — | — | — | — | ✓ |
+### Skup Item Performance per Akses
 
-> 💡 **KPI Individu** (browse semua karyawan) tersedia untuk semua jabatan via tombol pada Scorecard atau direct URL `/performance/individu`.
+Sejak 29 Mei 2026 dashboard Performance **tidak lagi role-based granular** (BOD/KADIV/KASUBDIV). Aksesnya kini ditentukan oleh gate `EnsurePerformanceAccess` (`canAccessPerformance`):
+
+| Akses | Programs | Scorecard | KPI Direktorat | KPI Divisi | KPI Saya / Leaderboard / Executive |
+|-------|:--------:|:--------:|:--------------:|:----------:|:--:|
+| **SUPERADMIN** | ✓ | ✓ | ✓ | ✓ | ✓ (full grid) |
+| **Anggota direktorat ber-akses Performance** *(saat ini DIR-KMR)* | ✓ | ✓ | ✓ | ✓ | — |
+| **Lainnya** | ✓ | — | — | — | — |
+
+> 💡 Direktorat ber-akses Performance dikontrol via gate akses (`EnsurePerformanceAccess` di backend, prop `canAccessPerformance` di frontend). Saat ini pilot di **DIR-KMR**. Executive Summary, Leaderboard, dan KPI Saya tetap **SUPERADMIN-only** di grid sidebar; KPI Divisi otomatis mengunci unit-level user ke divisinya sendiri.
 
 **Status: ✅ Lengkap**
 
-> 🔧 *Catatan teknis: Grup "Pelaporan" (Laporan Bulanan, Laporan Risiko, Analytics) sengaja dihilangkan dari sidebar sejak 10 Mei 2026. Halaman tetap hidup di `/laporan-bulanan`, `/laporan-risiko`, dan `/reports` — diakses via deep-link notifikasi atau link kontekstual.*
+> 🔧 *Catatan teknis: Grup "Pelaporan" (Laporan Bulanan, Analytics) sengaja dihilangkan dari sidebar sejak 10 Mei 2026 — halaman tetap hidup di `/laporan-bulanan` & `/reports`, diakses via deep-link notifikasi atau link kontekstual. Dashboard Risiko standalone (`/laporan-risiko`) dihilangkan dari discovery sejak 2026-06-02 (ATLAS bukan aplikasi manajemen risiko); endpoint `/risk-reports` tetap dipakai untuk Laporan Bulanan DIMR.*
 
-### Responsive — Sidebar Otomatis Collapse
+### Responsive — Desktop, Tablet, & Phone
 
 Sejak **19 Mei 2026**, sidebar **auto-collapse** di viewport ≤1024px (laptop kantor 1366×768, tablet, dst). Preference manual user tetap di `localStorage` — saat resize kembali ke layar besar, sidebar kembali sesuai preferensi terakhir. Topbar juga menyembunyikan period meta + tombol command-palette text di viewport sempit; tanggal lengkap di-hide di ≤768px.
 
+**Dukungan phone penuh ≤640px** (sejak 1 Juni 2026, menggantikan kebijakan lama "floor 768px"). Shell menjadi *off-canvas*: hamburger / bottom-tab-bar membuka drawer, sidebar keluar dari grid, dengan *safe-area insets*. Pakem mobile-UX: tap target ≥44px, modal menjadi *bottom-sheet* di ≤640px, tabel menjadi kartu (atau scroll-x untuk matriks), tab horizontal *scrollable*. **ATLAS juga PWA installable** (`manifest.webmanifest` + service worker + ikon) — bisa ditambahkan ke home screen seperti aplikasi native. Tablet 768px tetap tier resmi.
+
 Halaman primer **Playbook** dan **Charter** sudah *fluid responsive* — TOC clamp `clamp(200px, 20vw, 280px)`, mermaid `max-width: 1200px`, dan layout stacked di mobile (≤768px). Charter activity table punya horizontal scroll wrapper dengan kolom Aktivitas sticky di kiri.
 
-> 💡 Lihat `docs/responsive-audit-2026-05.md` untuk audit lengkap + decisions locked per breakpoint tier (T1 1366, T2 1440-1536, T3 1920, T4 2K/4K).
+> 💡 Lihat `docs/responsive-audit-2026-05.md` (tier desktop T1 1366, T2 1440-1536, T3 1920, T4 2K/4K) dan `docs/mobile-phone-support-plan-2026-06.md` (phone/tablet) untuk audit lengkap + decisions locked per breakpoint.
 
 
 ## 3. Home — Ringkasan Eksekutif
@@ -425,7 +423,7 @@ Fokus adalah inbox prioritas — menggabungkan tugas, blocker, mention, approval
 
 ### Cara Akses
 
-- Klik shortcut **Focus** di topbar (angka merah = jumlah item belum tertangani)
+- Klik **Fokus** di grup **Today** (di-pin paling atas sidebar; angka merah = jumlah item belum tertangani)
 - Atau tekan **G F** dari mana saja
 
 ### Bagian Utama Fokus
@@ -706,7 +704,7 @@ Penugasan adalah tugas ad-hoc di luar struktur Program — perintah cepat dari a
 
 ### Cara Akses
 
-Klik **Penugasan** di sidebar (grup Eksekusi), atau tekan **G A**.
+Klik **Penugasan** (Assignment) di sidebar (grup **Work**), atau tekan **G A**.
 
 ### Kolom Kanban Penugasan
 
@@ -939,7 +937,7 @@ Halaman Rapat Koordinasi adalah pusat manajemen rapat — dari undangan, RSVP, n
 
 ### Cara Akses
 
-Sidebar → grup **Tindak Lanjut** → **Rapat Koordinasi**, atau tekan **G R**.
+Sidebar → grup **Work** → **Coordination** (Rapat Koordinasi), atau tekan **G R**.
 
 ### Cara Membuat Rapat
 
@@ -1153,7 +1151,7 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 | Modul | Backend | Frontend | Realtime | Status |
 |-------|---------|----------|----------|--------|
 | Login (NIK/UserID) & Session | ✅ | ✅ | — | ✅ |
-| Navigasi PDCA per Role | ✅ | ✅ | — | ✅ |
+| Navigasi Sidebar intent-based per Role (Today/Portfolio/Work/Admin) | ✅ | ✅ | — | ✅ |
 | Home (Ringkasan Eksekutif) | ✅ | ✅ | ✅ | ✅ |
 | Fokus (Inbox) + humanized notif source & verb-specific CTA | ✅ | ✅ | ✅ | ✅ |
 | Program CRUD | ✅ | ✅ | ✅ | ✅ |
@@ -1202,10 +1200,10 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 | Admin Users/Org/Roles/Positions | ✅ | ✅ | — | ✅ |
 | Admin Pilot Metrics | ✅ | ✅ | — | ✅ |
 | Admin Thresholds (SUPERADMIN) | ✅ | ✅ | — | ✅ |
-| PDCA Onboarding Tour | ✅ | ✅ | — | ✅ |
+| Onboarding Tours kontekstual (Escalation inbox, Clear-the-Path button, Triage panel, Commitment Ledger) | ✅ | ✅ | — | ✅ |
 | My Work (personal view) | ⚠️ | ✅ | ✅ | ⚠️ |
 | Realtime — Polling (`/realtime/poll` 2s cadence + exponential backoff) | ✅ | ✅ | — | ✅ |
-| Responsive — Sidebar auto-collapse ≤1024px, Playbook & Charter fluid | — | ✅ | — | ✅ |
+| Responsive — Sidebar auto-collapse ≤1024px, phone ≤640px off-canvas + bottom-tab, PWA installable, Playbook & Charter fluid | — | ✅ | — | ✅ |
 | Visual system — Pill/badge background strip + spacing ladder + primary CTA dedupe | — | ✅ | — | ✅ |
 | Motion — `.ds-stagger` page-enter utility across all pages | — | ✅ | — | ✅ |
 | Execution — TaskDetailModal expand animation + URL deep-link `?task={id}` | ✅ | ✅ | ✅ | ✅ |
@@ -1227,7 +1225,9 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 - ❌ **APMS Live Sync** — fetch data real dari AGHRIS belum diimplementasi; KPI APMS masih menggunakan seed data. KPI internal berfungsi penuh termasuk monitoring health
 - ⚠️ **My Work endpoint** — implementasi minimal, sebagian besar fungsionalitas sudah diserap ke Fokus dan Papan Kerja
 
-**Status: ✅ Evaluasi Lengkap per 24 Mei 2026** (Sprint 0–5 MVP selesai 8 Mei 2026)
+**Status: ✅ Evaluasi Lengkap per 25 Juni 2026** (Sprint 0–5 MVP selesai 8 Mei 2026)
+
+> 🗓️ **Perubahan signifikan sejak 24 Mei 2026** (tercermin di dokumen ini): navigasi sidebar di-organize ulang berbasis **intent** (Today / Portfolio & Performance / Work / Admin) menggantikan grouping fase PDCA; akses dashboard Performance dipindah ke gate `EnsurePerformanceAccess` (pilot DIR-KMR), bukan lagi role granular; dukungan **phone penuh ≤640px** (off-canvas shell + bottom-tab) dan **PWA installable**; dashboard Risiko standalone dihilangkan dari discovery (2 Jun 2026); migrasi bertahap ke **design-system primitives** (`@/design-system`).
 
 
-*Panduan ini mencerminkan kondisi implementasi ATLAS per 24 Mei 2026. Perbarui dokumen setiap ada perubahan fitur signifikan.*
+*Panduan ini mencerminkan kondisi implementasi ATLAS per 25 Juni 2026. Perbarui dokumen setiap ada perubahan fitur signifikan.*

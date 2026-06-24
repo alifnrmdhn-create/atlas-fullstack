@@ -11,6 +11,8 @@
  */
 
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 import type { AutoSaveStatus } from '../hooks/useAutoSave'
 
 interface Props {
@@ -21,17 +23,18 @@ interface Props {
 
 function relativeTime(from: Date): string {
     const seconds = Math.max(0, Math.floor((Date.now() - from.getTime()) / 1000))
-    if (seconds < 5)   return 'just now'
-    if (seconds < 60)  return `${seconds}s ago`
+    if (seconds < 5)   return i18n.t('just now')
+    if (seconds < 60)  return i18n.t('{{count}}s ago', { count: seconds })
     const minutes = Math.floor(seconds / 60)
-    if (minutes < 60)  return `${minutes}m ago`
+    if (minutes < 60)  return i18n.t('{{count}}m ago', { count: minutes })
     const hours = Math.floor(minutes / 60)
-    if (hours < 24)    return `${hours}h ago`
+    if (hours < 24)    return i18n.t('{{count}}h ago', { count: hours })
     const days = Math.floor(hours / 24)
-    return `${days}d ago`
+    return i18n.t('{{count}}d ago', { count: days })
 }
 
 export function DraftStatusBadge({ status, lastSavedAt, className = '' }: Props) {
+    const { t } = useTranslation()
     // Force re-render setiap 30 detik supaya relative time tidak basi
     const [, setTick] = useState(0)
     useEffect(() => {
@@ -49,27 +52,27 @@ export function DraftStatusBadge({ status, lastSavedAt, className = '' }: Props)
         case 'idle':
             if (!lastSavedAt) return null
             tone = 'green'
-            label = `Saved • ${relativeTime(lastSavedAt)}`
+            label = t('Saved • {{time}}', { time: relativeTime(lastSavedAt) })
             break
         case 'saved':
             tone = 'green'
-            label = lastSavedAt ? `Saved • ${relativeTime(lastSavedAt)}` : 'Saved'
+            label = lastSavedAt ? t('Saved • {{time}}', { time: relativeTime(lastSavedAt) }) : t('Saved')
             break
         case 'typing':
             tone = 'muted'
-            label = 'Typing…'
+            label = t('Typing…')
             break
         case 'saving':
             tone = 'blue'
-            label = 'Saving…'
+            label = t('Saving…')
             break
         case 'offline':
             tone = 'yellow'
-            label = 'Offline — local backup'
+            label = t('Offline — local backup')
             break
         case 'error':
             tone = 'red'
-            label = 'Save failed'
+            label = t('Save failed')
             break
     }
 

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useId, useMemo, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
@@ -20,6 +21,7 @@ function Modal({ title, subtitle, onClose, children, footer }: {
   children: React.ReactNode
   footer?: React.ReactNode
 }) {
+  const { t } = useTranslation()
   const dialogRef = useDialogFocus<HTMLDivElement>(true)
   useEscKey(onClose, true)
   const titleId = useId()
@@ -30,11 +32,11 @@ function Modal({ title, subtitle, onClose, children, footer }: {
       <div aria-describedby={subtitle ? subtitleId : undefined} aria-labelledby={titleId} aria-modal="true" className="modal-surface mr-modal-surface" ref={dialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-headcopy">
-            <span className="modal-kicker">Monthly Reports</span>
+            <span className="modal-kicker">{t('Monthly Reports')}</span>
             <span className="modal-title" id={titleId}>{title}</span>
             {subtitle ? <p className="modal-subtitle" id={subtitleId}>{subtitle}</p> : null}
           </div>
-          <button aria-label="Close" className="modal__close" onClick={onClose} type="button">
+          <button aria-label={t('Close')} className="modal__close" onClick={onClose} type="button">
             <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
           </button>
         </div>
@@ -48,6 +50,7 @@ function Modal({ title, subtitle, onClose, children, footer }: {
 // ── Main view (list only) ─────────────────────────────────────────────────────
 
 export function MonthlyReportsView() {
+  const { t } = useTranslation()
   const navigate = useInertiaNavigate()
   const { currentUser } = useWorkspace()
   const role   = currentUser?.roleType?.toUpperCase() ?? ''
@@ -95,7 +98,7 @@ export function MonthlyReportsView() {
       if (!canSeeAll && myUnit?.id) q.set('unitId', String(myUnit.id))
       const res = await api.get<{ data: Report[] }>(`/monthly-reports?${q}`)
       setReports(res.data)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Failed to load') }
+    } catch (e) { setError(e instanceof Error ? e.message : t('Failed to load')) }
     finally { setLoading(false) }
   }, [year, canSeeAll, myUnit?.id])
 
@@ -104,7 +107,7 @@ export function MonthlyReportsView() {
   async function doCreate() {
     setBusy(true)
     try { await api.post('/monthly-reports', createForm); setModal(null); await load() }
-    catch (e) { alert(e instanceof Error ? e.message : 'Failed') }
+    catch (e) { alert(e instanceof Error ? e.message : t('Failed')) }
     finally { setBusy(false) }
   }
 
@@ -114,22 +117,22 @@ export function MonthlyReportsView() {
       const fd = new FormData(); fd.append('file', file)
       await api.upload<{ data: Report }>(`/monthly-reports/${id}/upload`, fd)
       setModal(null); await load()
-    } catch (e) { alert(e instanceof Error ? e.message : 'Upload failed') }
+    } catch (e) { alert(e instanceof Error ? e.message : t('Upload failed')) }
     finally { setUploading(false) }
   }
 
   async function doSubmit(id: number) {
-    if (!confirm('Submit this report for review?')) return
+    if (!confirm(t('Submit this report for review?'))) return
     setBusy(true)
     try { await api.post(`/monthly-reports/${id}/submit`, {}); await load() }
-    catch (e) { alert(e instanceof Error ? e.message : 'Failed') }
+    catch (e) { alert(e instanceof Error ? e.message : t('Failed')) }
     finally { setBusy(false) }
   }
 
   async function doDelete(id: number) {
-    if (!confirm('Delete this draft report?')) return
+    if (!confirm(t('Delete this draft report?'))) return
     try { await api.delete(`/monthly-reports/${id}`); await load() }
-    catch (e) { alert(e instanceof Error ? e.message : 'Failed') }
+    catch (e) { alert(e instanceof Error ? e.message : t('Failed')) }
   }
 
   function openReport(id: number) {
@@ -161,9 +164,9 @@ export function MonthlyReportsView() {
 
       {/* ── Toolbar ── */}
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Monthly Reports</h2>
+        <h2 className="view-toolbar__title">{t('Monthly Reports')}</h2>
         <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Monthly division output — upload, review, tiered approval</span>
+        <span className="view-toolbar__subtitle">{t('Monthly division output — upload, review, tiered approval')}</span>
         <div className="mr-toolbar-controls">
           <select className="form-select mr-toolbar-year"
             value={year} onChange={e => { setYear(Number(e.target.value)) }}>
@@ -171,7 +174,7 @@ export function MonthlyReportsView() {
           </select>
           {canCreate && (
             <button className="btn btn--primary btn--sm" onClick={() => setModal('create')}>
-              + New Report
+              {t('+ New Report')}
             </button>
           )}
         </div>
@@ -183,7 +186,7 @@ export function MonthlyReportsView() {
           <div className="mr-strip__icon-wrap neutral"><span className="mr-strip__icon">📋</span></div>
           <div className="mr-strip__content">
             <span className="mr-strip__val">{total}</span>
-            <span className="mr-strip__lbl">Total Reports</span>
+            <span className="mr-strip__lbl">{t('Total Reports')}</span>
           </div>
           {total > 0 && <div className="mr-strip__progress"><div className="mr-strip__progress-fill neutral" style={{ width: '100%' }} /></div>}
         </div>
@@ -191,7 +194,7 @@ export function MonthlyReportsView() {
           <div className="mr-strip__icon-wrap green"><span className="mr-strip__icon">✓</span></div>
           <div className="mr-strip__content">
             <span className="mr-strip__val green">{approved}</span>
-            <span className="mr-strip__lbl">Approved</span>
+            <span className="mr-strip__lbl">{t('Approved')}</span>
           </div>
           {total > 0 && <div className="mr-strip__progress"><div className="mr-strip__progress-fill green" style={{ width: `${(approved / total) * 100}%` }} /></div>}
         </div>
@@ -199,7 +202,7 @@ export function MonthlyReportsView() {
           <div className="mr-strip__icon-wrap amber"><span className="mr-strip__icon">⏳</span></div>
           <div className="mr-strip__content">
             <span className="mr-strip__val amber">{pending}</span>
-            <span className="mr-strip__lbl">Awaiting Review</span>
+            <span className="mr-strip__lbl">{t('Awaiting Review')}</span>
           </div>
           {total > 0 && <div className="mr-strip__progress"><div className="mr-strip__progress-fill amber" style={{ width: `${(pending / total) * 100}%` }} /></div>}
         </div>
@@ -207,7 +210,7 @@ export function MonthlyReportsView() {
           <div className="mr-strip__icon-wrap muted"><span className="mr-strip__icon">✏️</span></div>
           <div className="mr-strip__content">
             <span className="mr-strip__val muted">{drafts}</span>
-            <span className="mr-strip__lbl">Draft</span>
+            <span className="mr-strip__lbl">{t('Draft')}</span>
           </div>
           {total > 0 && <div className="mr-strip__progress"><div className="mr-strip__progress-fill muted" style={{ width: `${(drafts / total) * 100}%` }} /></div>}
         </div>
@@ -216,7 +219,7 @@ export function MonthlyReportsView() {
             <div className="mr-strip__icon-wrap red"><span className="mr-strip__icon">✕</span></div>
             <div className="mr-strip__content">
               <span className="mr-strip__val red">{rejected}</span>
-              <span className="mr-strip__lbl">Rejected</span>
+              <span className="mr-strip__lbl">{t('Rejected')}</span>
             </div>
             {total > 0 && <div className="mr-strip__progress"><div className="mr-strip__progress-fill red" style={{ width: `${(rejected / total) * 100}%` }} /></div>}
           </div>
@@ -226,7 +229,7 @@ export function MonthlyReportsView() {
       {/* ── Report list ── */}
       {loading ? (
         <div className="mr-state">
-          <span className="mr-state__copy">Loading reports…</span>
+          <span className="mr-state__copy">{t('Loading reports…')}</span>
         </div>
       ) : error ? (
         <div className="mr-state mr-state--error">
@@ -237,10 +240,10 @@ export function MonthlyReportsView() {
           {total === 0 && (
             <div className="mr-index__empty">
               <span className="mr-index__empty-icon">📋</span>
-              <span>No reports for {year}</span>
+              <span>{t('No reports for {{year}}', { year })}</span>
               {canCreate && (
                 <button className="mr-btn primary" onClick={() => setModal('create')}>
-                  + Create First Report
+                  {t('+ Create First Report')}
                 </button>
               )}
             </div>
@@ -251,7 +254,7 @@ export function MonthlyReportsView() {
               {canSeeAll && (
                 <div className="mr-index__group-header">
                   <span className="mr-index__group-name">{unit.name}</span>
-                  <span className="mr-index__group-count">{rows.length} report{rows.length !== 1 ? 's' : ''}</span>
+                  <span className="mr-index__group-count">{t('{{count}} report', { count: rows.length })}</span>
                 </div>
               )}
               <div className="mr-index__cards">
@@ -268,7 +271,7 @@ export function MonthlyReportsView() {
                         type="button"
                         className="mr-card__main"
                         onClick={() => openReport(r.id)}
-                        aria-label={`Open report dashboard for ${MON[r.month - 1]} ${r.year}${r.unit.name ? ` ${r.unit.name}` : ''}`}
+                        aria-label={t('Open report dashboard for {{period}}', { period: `${MON[r.month - 1]} ${r.year}${r.unit.name ? ` ${r.unit.name}` : ''}` })}
                       >
                         {/* Period block */}
                         <span className="mr-card__period">
@@ -279,9 +282,9 @@ export function MonthlyReportsView() {
                         {/* Main info */}
                         <span className="mr-card__body">
                           <span className="mr-card__row1">
-                            <span className={`mr-badge ${st.cls}`}>{st.label}</span>
+                            <span className={`mr-badge ${st.cls}`}>{t(st.label)}</span>
                             {approvable && (
-                              <span className="mr-card__action-pill">Needs your action</span>
+                              <span className="mr-card__action-pill">{t('Needs your action')}</span>
                             )}
                           </span>
                           {!canSeeAll && r.unit.name && (
@@ -289,8 +292,8 @@ export function MonthlyReportsView() {
                           )}
                           <span className="mr-card__meta">
                             {cnt > 0
-                              ? <span>{cnt} indicators</span>
-                              : <span className="mr-card__no-data">No data yet</span>
+                              ? <span>{t('{{count}} indicators', { count: cnt })}</span>
+                              : <span className="mr-card__no-data">{t('No data yet')}</span>
                             }
                             {r.submittedBy && (
                               <span>· {r.submittedBy.name}</span>
@@ -302,19 +305,19 @@ export function MonthlyReportsView() {
                       {/* Quick actions */}
                       <div className="mr-card__actions">
                         {r.status === 'DRAFT' && (
-                          <button type="button" className="mr-btn" title="Upload Excel"
+                          <button type="button" className="mr-btn" title={t('Upload Excel')}
                             onClick={() => { setUploadId(r.id); setModal('upload') }}>
-                            ↑ Upload
+                            {t('↑ Upload')}
                           </button>
                         )}
                         {r.status === 'DRAFT' && cnt > 0 && (
                           <button type="button" className="mr-btn primary" disabled={busy}
                             onClick={() => void doSubmit(r.id)}>
-                            Submit
+                            {t('Submit')}
                           </button>
                         )}
                         {r.status === 'DRAFT' && (
-                          <button type="button" className="mr-btn danger" title="Delete"
+                          <button type="button" className="mr-btn danger" title={t('Delete')}
                             onClick={() => void doDelete(r.id)}>
                             ✕
                           </button>
@@ -323,7 +326,7 @@ export function MonthlyReportsView() {
                           type="button"
                           className="mr-card__open-btn"
                           onClick={() => openReport(r.id)}>
-                          Open Dashboard →
+                          {t('Open Dashboard →')}
                         </button>
                       </div>
                     </div>
@@ -338,32 +341,32 @@ export function MonthlyReportsView() {
       {/* ── Modal: Create ── */}
       {modal === 'create' && (
         <Modal
-          title="New Report"
-          subtitle="Pick the reporting period to open as a draft, then continue filling in its indicators."
+          title={t('New Report')}
+          subtitle={t('Pick the reporting period to open as a draft, then continue filling in its indicators.')}
           onClose={() => setModal(null)}
           footer={(
             <>
-              <button className="btn" onClick={() => setModal(null)} type="button">Cancel</button>
+              <button className="btn" onClick={() => setModal(null)} type="button">{t('Cancel')}</button>
               <button className="btn btn--primary" disabled={busy} onClick={doCreate} type="button">
-                {busy ? 'Creating…' : 'Create Draft'}
+                {busy ? t('Creating…') : t('Create Draft')}
               </button>
             </>
           )}
         >
           <section className="modal-section">
             <div className="modal-section__intro">
-              <h4>Reporting period</h4>
-              <p>Set the month and year so the new draft is tied directly to the correct reporting cycle.</p>
+              <h4>{t('Reporting period')}</h4>
+              <p>{t('Set the month and year so the new draft is tied directly to the correct reporting cycle.')}</p>
             </div>
             <div className="form-group">
-              <label className="form-label">Month</label>
+              <label className="form-label">{t('Month')}</label>
               <select className="form-select" value={createForm.month}
                 onChange={e => setCreateForm(f => ({ ...f, month: Number(e.target.value) }))}>
                 {MON.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
               </select>
             </div>
             <div className="form-group mr-form-group--spaced">
-              <label className="form-label">Year</label>
+              <label className="form-label">{t('Year')}</label>
               <select className="form-select" value={createForm.year}
                 onChange={e => setCreateForm(f => ({ ...f, year: Number(e.target.value) }))}>
                 {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
@@ -376,24 +379,24 @@ export function MonthlyReportsView() {
       {/* ── Modal: Upload ── */}
       {modal === 'upload' && uploadId !== null && (
         <Modal
-          title="Upload Excel Data"
-          subtitle="Import indicator data from the Excel template so the draft can be processed at once."
+          title={t('Upload Excel Data')}
+          subtitle={t('Import indicator data from the Excel template so the draft can be processed at once.')}
           onClose={() => setModal(null)}
         >
           <section className="modal-section modal-section--soft">
             <div className="modal-section__intro">
-              <h4>File template</h4>
-              <p>Keep the column order matching the template so the import runs smoothly.</p>
+              <h4>{t('File template')}</h4>
+              <p>{t('Keep the column order matching the template so the import runs smoothly.')}</p>
             </div>
             <div className="mr-template-box">
-              <div className="mr-template-box__title">Excel Template Format — 7 Columns</div>
+              <div className="mr-template-box__title">{t('Excel Template Format — 7 Columns')}</div>
               <div className="mr-template-box__cols">
                 {['A: Section','B: Category','C: Label','D: Unit','E: RKAP','F: Actual','G: Prior Year'].map(c => (
-                  <span className="mr-template-box__col" key={c}>{c}</span>
+                  <span className="mr-template-box__col" key={c}>{t(c)}</span>
                 ))}
               </div>
               <div className="mr-template-box__note">
-                Section: OPERASIONAL or KEUANGAN. Row 1 is the header and will be skipped.
+                {t('Section: OPERASIONAL or KEUANGAN. Row 1 is the header and will be skipped.')}
               </div>
             </div>
           </section>
@@ -406,9 +409,9 @@ export function MonthlyReportsView() {
               onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) void doUpload(uploadId, f) }}>
               <span className="mr-drop__icon">{uploading ? '⏳' : '📂'}</span>
               <span className="mr-drop__text">
-                {uploading ? 'Uploading and processing…' : 'Click or drag an Excel file here'}
+                {uploading ? t('Uploading and processing…') : t('Click or drag an Excel file here')}
               </span>
-              <span className="mr-drop__sub">.xlsx or .xls · Max 10 MB</span>
+              <span className="mr-drop__sub">{t('.xlsx or .xls · Max 10 MB')}</span>
             </button>
           </section>
           <input ref={fileRef} className="mr-file-input-hidden" type="file" accept=".xlsx,.xls"

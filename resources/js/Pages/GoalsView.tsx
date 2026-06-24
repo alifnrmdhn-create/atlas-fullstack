@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useId } from 'react'
 import { createPortal } from 'react-dom'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
@@ -35,11 +37,11 @@ const KPI_HEALTH_CLASS: Record<string, string> = {
   RED: 'off-track',
 }
 
-const KPI_HEALTH_LABEL: Record<string, string> = {
-  GREEN: 'On Track',
-  YELLOW: 'At Risk',
-  RED: 'Off Track',
-}
+const kpiHealthLabel = (): Record<string, string> => ({
+  GREEN: i18n.t('On Track'),
+  YELLOW: i18n.t('At Risk'),
+  RED: i18n.t('Off Track'),
+})
 
 function getDeadlineTone(daysLeft: number): 'overdue' | 'today' | 'soon' | 'calm' {
   if (daysLeft < 0) return 'overdue'
@@ -49,9 +51,9 @@ function getDeadlineTone(daysLeft: number): 'overdue' | 'today' | 'soon' | 'calm
 }
 
 function getDeadlineLabel(daysLeft: number): string {
-  if (daysLeft < 0) return 'Overdue'
-  if (daysLeft === 0) return 'Today'
-  return `${daysLeft}h`
+  if (daysLeft < 0) return i18n.t('Overdue')
+  if (daysLeft === 0) return i18n.t('Today')
+  return i18n.t('{{count}}d', { count: daysLeft })
 }
 
 // ── KPI table section ───────────────────────────────────────────────────────
@@ -67,6 +69,7 @@ function KpiSection({
   onEdit: (kpi: Kpi) => void
   onDelete: (kpi: Kpi) => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="section-block">
       <div className="section-header">
@@ -80,20 +83,20 @@ function KpiSection({
       </div>
       {list.length === 0 ? (
         <div className="section-state section-state--compact goals-section-empty">
-          <strong>No KPIs yet</strong>
-          <p>No KPIs in this category yet.</p>
+          <strong>{t('No KPIs yet')}</strong>
+          <p>{t('No KPIs in this category yet.')}</p>
         </div>
       ) : (
         <table className="reports-table">
           <thead>
             <tr>
-              <th>Code</th>
-              <th>KPI Name</th>
-              <th className="goals-kpi-table__head--numeric">Target</th>
-              <th>Unit</th>
-              <th>Type</th>
-              <th>Frequency</th>
-              <th>Status</th>
+              <th>{t('Code')}</th>
+              <th>{t('KPI Name')}</th>
+              <th className="goals-kpi-table__head--numeric">{t('Target')}</th>
+              <th>{t('Unit')}</th>
+              <th>{t('Type')}</th>
+              <th>{t('Frequency')}</th>
+              <th>{t('Status')}</th>
               {canManage && <th />}
             </tr>
           </thead>
@@ -101,10 +104,10 @@ function KpiSection({
             {list.map(kpi => {
               const health = kpi.status
               const healthClass = KPI_HEALTH_CLASS[health] ?? 'off-track'
-              const healthLabel = KPI_HEALTH_LABEL[health] ?? 'Off Track'
+              const healthLabel = kpiHealthLabel()[health] ?? t('Off Track')
               const freqLabel: Record<string, string> = {
-                WEEKLY: 'Weekly', MONTHLY: 'Monthly',
-                QUARTERLY: 'Quarterly', ANNUALLY: 'Annually',
+                WEEKLY: t('Weekly'), MONTHLY: t('Monthly'),
+                QUARTERLY: t('Quarterly'), ANNUALLY: t('Annually'),
               }
               return (
                 <tr key={kpi.id}>
@@ -133,14 +136,14 @@ function KpiSection({
                           onClick={() => onEdit(kpi)}
                           type="button"
                         >
-                          Edit
+                          {t('Edit')}
                         </button>
                         <button
                           className="btn btn--xs btn--ghost goals-kpi-action goals-kpi-action--danger"
                           onClick={() => onDelete(kpi)}
                           type="button"
                         >
-                          Delete
+                          {t('Delete')}
                         </button>
                       </div>
                     </td>
@@ -158,6 +161,7 @@ function KpiSection({
 // ── Main view ──────────────────────────────────────────────────────────────
 
 export function GoalsView() {
+  const { t } = useTranslation()
   const {
     kpis: workspaceKpis, dashboard,
     normalizeHealthStatus,
@@ -199,7 +203,7 @@ export function GoalsView() {
       : empty
     const dirty = (Object.keys(baseline) as Array<keyof typeof baseline>)
       .some(k => kpiForm[k] !== baseline[k])
-    if (dirty && !window.confirm('Discard unsaved changes?')) return
+    if (dirty && !window.confirm(t('Discard unsaved changes?'))) return
     setShowKpiModal(false); setEditingKpi(null); setKpiError(null)
   }, showKpiModal)
 
@@ -254,7 +258,7 @@ export function GoalsView() {
       setEditingKpi(null)
       refreshKpis()
     } catch (err: unknown) {
-      setKpiError((err as { message?: string })?.message ?? 'Failed to save KPI.')
+      setKpiError((err as { message?: string })?.message ?? t('Failed to save KPI.'))
     } finally {
       setKpiSaving(false)
     }
@@ -278,7 +282,7 @@ export function GoalsView() {
       setConfirmDeleteKpi(null)
       refreshKpis()
     } catch (err) {
-      setKpiDeleteError(err instanceof Error ? err.message : 'Failed to delete KPI.')
+      setKpiDeleteError(err instanceof Error ? err.message : t('Failed to delete KPI.'))
     } finally {
       setKpiDeleteSaving(false)
     }
@@ -297,23 +301,23 @@ export function GoalsView() {
           (Create KPI + Delete KPI) sudah di-portal-mount ke document.body. */}
       <div className="goals-v2__inner ds-stagger">
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Goals & KPI</h2>
+        <h2 className="view-toolbar__title">{t('Goals & KPI')}</h2>
         <div className="view-toolbar__sep" />
         <span className="view-toolbar__subtitle">
           {isStrategic
-            ? 'Manage KPI definitions, targets, and portfolio strategic alignment.'
-            : 'Manage KPIs and performance targets within your unit.'}
+            ? t('Manage KPI definitions, targets, and portfolio strategic alignment.')
+            : t('Manage KPIs and performance targets within your unit.')}
         </span>
         <div className="view-toolbar__right">
           <div className="view-toolbar__stats goals-toolbar-stats">
-            <span className="goals-toolbar-stat">{kpis.length} <em>KPIs</em></span>
-            <span className="goals-toolbar-stat goals-toolbar-stat--green">{onTrack} <em>on track</em></span>
-            {atRisk > 0   && <span className="goals-toolbar-stat goals-toolbar-stat--yellow">{atRisk} <em>at risk</em></span>}
-            {offTrack > 0 && <span className="goals-toolbar-stat goals-toolbar-stat--red">{offTrack} <em>off track</em></span>}
+            <span className="goals-toolbar-stat">{kpis.length} <em>{t('KPIs')}</em></span>
+            <span className="goals-toolbar-stat goals-toolbar-stat--green">{onTrack} <em>{t('on track')}</em></span>
+            {atRisk > 0   && <span className="goals-toolbar-stat goals-toolbar-stat--yellow">{atRisk} <em>{t('at risk')}</em></span>}
+            {offTrack > 0 && <span className="goals-toolbar-stat goals-toolbar-stat--red">{offTrack} <em>{t('off track')}</em></span>}
           </div>
           {canManage && (
             <button className="btn btn--primary btn--sm goals-toolbar-cta" onClick={openCreateKpi}>
-              + New KPI
+              {t('+ New KPI')}
             </button>
           )}
         </div>
@@ -323,8 +327,8 @@ export function GoalsView() {
         {/* Left: KPI management tables */}
         <div className="goals-main">
           <KpiSection
-            title="Leading KPIs"
-            badge="Leading"
+            title={t('Leading KPIs')}
+            badge={t('Leading')}
             badgeTone="leading"
             list={leadingKpis}
             canManage={canManage}
@@ -332,8 +336,8 @@ export function GoalsView() {
             onDelete={(k) => setConfirmDeleteKpi(k)}
           />
           <KpiSection
-            title="Lagging KPIs"
-            badge="Lagging"
+            title={t('Lagging KPIs')}
+            badge={t('Lagging')}
             badgeTone="lagging"
             list={laggingKpis}
             canManage={canManage}
@@ -349,7 +353,7 @@ export function GoalsView() {
           {dashboard?.dimensions.timeIntelligence && dashboard.dimensions.timeIntelligence.length > 0 && (
             <div className="section-block">
               <div className="section-header">
-                <h3 className="section-title goals-rail-title">Upcoming Deadlines</h3>
+                <h3 className="section-title goals-rail-title">{t('Upcoming Deadlines')}</h3>
               </div>
               <div className="goals-deadline-list">
                 {dashboard.dimensions.timeIntelligence.slice(0, 6).map(item => {
@@ -383,16 +387,16 @@ export function GoalsView() {
           <div aria-describedby={kpiDialogDescId} aria-labelledby={kpiDialogTitleId} aria-modal="true" className="modal modal--wide" ref={kpiDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Goals</span>
-                <h3 className="modal__title" id={kpiDialogTitleId}>{editingKpi ? 'Edit KPI' : 'New KPI'}</h3>
+                <span className="modal-kicker">{t('Goals')}</span>
+                <h3 className="modal__title" id={kpiDialogTitleId}>{editingKpi ? t('Edit KPI') : t('New KPI')}</h3>
                 <p className="modal-subtitle" id={kpiDialogDescId}>
                   {editingKpi
-                    ? 'Update the definition, target, and review rules so the KPI stays relevant and easy to track.'
-                    : 'Build a new KPI with a clear identity, measurable target, and a consistent review cadence.'}
+                    ? t('Update the definition, target, and review rules so the KPI stays relevant and easy to track.')
+                    : t('Build a new KPI with a clear identity, measurable target, and a consistent review cadence.')}
                 </p>
               </div>
               <button
-                aria-label="Close"
+                aria-label={t('Close')}
                 className="modal__close"
                 disabled={kpiSaving}
                 onClick={() => setShowKpiModal(false)}
@@ -405,12 +409,12 @@ export function GoalsView() {
               <div className="modal__body goals-modal-body">
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>KPI Identity</h4>
-                    <p>Set the code, name, and brief context so the indicator is easy to recognize on the dashboard.</p>
+                    <h4>{t('KPI Identity')}</h4>
+                    <p>{t('Set the code, name, and brief context so the indicator is easy to recognize on the dashboard.')}</p>
                   </div>
                   <div className="goals-form-grid goals-form-grid--name">
                     <div className="modal-field">
-                      <label className="modal-label">Code <span className="goals-required">*</span></label>
+                      <label className="modal-label">{t('Code')} <span className="goals-required">*</span></label>
                       <input
                         autoFocus
                         className="form-input"
@@ -425,14 +429,14 @@ export function GoalsView() {
                       />
                     </div>
                     <div className="modal-field">
-                      <label className="modal-label">KPI Name <span className="goals-required">*</span></label>
+                      <label className="modal-label">{t('KPI Name')} <span className="goals-required">*</span></label>
                       <input
                         className="form-input"
                         disabled={kpiSaving}
                         maxLength={120}
                         minLength={2}
                         onChange={e => setKpiForm(f => ({ ...f, name: e.target.value }))}
-                        placeholder="Performance indicator name…"
+                        placeholder={t('Performance indicator name…')}
                         required
                         type="text"
                         value={kpiForm.name}
@@ -440,13 +444,13 @@ export function GoalsView() {
                     </div>
                   </div>
                   <div className="modal-field">
-                    <label className="modal-label">Description</label>
+                    <label className="modal-label">{t('Description')}</label>
                     <textarea
                       className="form-input goals-textarea"
                       disabled={kpiSaving}
                       maxLength={400}
                       onChange={e => setKpiForm(f => ({ ...f, description: e.target.value }))}
-                      placeholder="Brief description of this KPI…"
+                      placeholder={t('Brief description of this KPI…')}
                       rows={2}
                       value={kpiForm.description}
                     />
@@ -455,12 +459,12 @@ export function GoalsView() {
 
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>Target & review</h4>
-                    <p>Make sure the target value, unit, and review frequency match how this KPI is assessed.</p>
+                    <h4>{t('Target & review')}</h4>
+                    <p>{t('Make sure the target value, unit, and review frequency match how this KPI is assessed.')}</p>
                   </div>
                   <div className="goals-form-grid goals-form-grid--metrics">
                     <div className="modal-field">
-                      <label className="modal-label">Target Value <span className="goals-required">*</span></label>
+                      <label className="modal-label">{t('Target Value')} <span className="goals-required">*</span></label>
                       <input
                         className="form-input"
                         disabled={kpiSaving}
@@ -473,29 +477,29 @@ export function GoalsView() {
                       />
                     </div>
                     <div className="modal-field">
-                      <label className="modal-label">Unit</label>
+                      <label className="modal-label">{t('Unit')}</label>
                       <input
                         className="form-input"
                         disabled={kpiSaving}
                         maxLength={30}
                         onChange={e => setKpiForm(f => ({ ...f, unitOfMeasure: e.target.value }))}
-                        placeholder="%, Rp, unit…"
+                        placeholder={t('%, Rp, unit…')}
                         type="text"
                         value={kpiForm.unitOfMeasure}
                       />
                     </div>
                     <div className="modal-field">
-                      <label className="modal-label">Review Frequency</label>
+                      <label className="modal-label">{t('Review Frequency')}</label>
                       <select
                         className="form-input"
                         disabled={kpiSaving}
                         onChange={e => setKpiForm(f => ({ ...f, reviewFrequency: e.target.value }))}
                         value={kpiForm.reviewFrequency}
                       >
-                        <option value="WEEKLY">Weekly</option>
-                        <option value="MONTHLY">Monthly</option>
-                        <option value="QUARTERLY">Quarterly</option>
-                        <option value="ANNUALLY">Annually</option>
+                        <option value="WEEKLY">{t('Weekly')}</option>
+                        <option value="MONTHLY">{t('Monthly')}</option>
+                        <option value="QUARTERLY">{t('Quarterly')}</option>
+                        <option value="ANNUALLY">{t('Annually')}</option>
                       </select>
                     </div>
                   </div>
@@ -503,23 +507,23 @@ export function GoalsView() {
 
                 <section className="modal-section modal-section--soft">
                   <div className="modal-section__intro">
-                    <h4>Metric behavior</h4>
-                    <p>Define the KPI's character and mark whether it serves as a leading signal.</p>
+                    <h4>{t('Metric behavior')}</h4>
+                    <p>{t("Define the KPI's character and mark whether it serves as a leading signal.")}</p>
                   </div>
                   <div className="goals-form-grid goals-form-grid--meta">
                     <div className="modal-field">
-                      <label className="modal-label">Metric Type</label>
+                      <label className="modal-label">{t('Metric Type')}</label>
                       <select
                         className="form-input"
                         disabled={kpiSaving}
                         onChange={e => setKpiForm(f => ({ ...f, metricType: e.target.value }))}
                         value={kpiForm.metricType}
                       >
-                        <option value="PERCENTAGE">Percentage</option>
-                        <option value="CURRENCY">Currency</option>
-                        <option value="COUNT">Count</option>
-                        <option value="RATIO">Ratio</option>
-                        <option value="INDEX">Index</option>
+                        <option value="PERCENTAGE">{t('Percentage')}</option>
+                        <option value="CURRENCY">{t('Currency')}</option>
+                        <option value="COUNT">{t('Count')}</option>
+                        <option value="RATIO">{t('Ratio')}</option>
+                        <option value="INDEX">{t('Index')}</option>
                       </select>
                     </div>
                     <div className="modal-field goals-modal-field goals-modal-field--end">
@@ -530,7 +534,7 @@ export function GoalsView() {
                           onChange={e => setKpiForm(f => ({ ...f, isLeadingIndicator: e.target.checked }))}
                           type="checkbox"
                         />
-                        Leading Indicator
+                        {t('Leading Indicator')}
                       </label>
                     </div>
                   </div>
@@ -545,10 +549,10 @@ export function GoalsView() {
                   onClick={() => setShowKpiModal(false)}
                   type="button"
                 >
-                  Cancel
+                  {t('Cancel')}
                 </button>
                 <button className="btn btn--primary" disabled={kpiSaving} type="submit">
-                  {kpiSaving ? 'Saving…' : editingKpi ? 'Save Changes' : 'Create KPI'}
+                  {kpiSaving ? t('Saving…') : editingKpi ? t('Save Changes') : t('Create KPI')}
                 </button>
               </div>
             </form>
@@ -563,11 +567,11 @@ export function GoalsView() {
           <div aria-describedby={deleteKpiDescId} aria-labelledby={deleteKpiTitleId} aria-modal="true" className="modal goals-delete-modal" ref={deleteKpiDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={deleteKpiTitleId}>Delete KPI?</h3>
-                <p className="modal-subtitle" id={deleteKpiDescId}>This is permanent and will delete the KPI and its entire value history.</p>
+                <h3 className="modal__title" id={deleteKpiTitleId}>{t('Delete KPI?')}</h3>
+                <p className="modal-subtitle" id={deleteKpiDescId}>{t('This is permanent and will delete the KPI and its entire value history.')}</p>
               </div>
               <button
-                aria-label="Close"
+                aria-label={t('Close')}
                 className="modal__close"
                 disabled={kpiDeleteSaving}
                 onClick={() => { setConfirmDeleteKpi(null); setKpiDeleteError(null) }}
@@ -578,7 +582,7 @@ export function GoalsView() {
             </div>
             <div className="modal__body">
               <p className="text-sm goals-delete-copy modal-helper-note modal-helper-note--danger">
-                KPI <strong>{confirmDeleteKpi.name}</strong> [{confirmDeleteKpi.code}] will be permanently deleted along with its entire value history.
+                {t('KPI {{name}} [{{code}}] will be permanently deleted along with its entire value history.', { name: confirmDeleteKpi.name, code: confirmDeleteKpi.code })}
               </p>
               {kpiDeleteError && <p className="wid-form__error" style={{ marginTop: 8 }}>{kpiDeleteError}</p>}
             </div>
@@ -589,7 +593,7 @@ export function GoalsView() {
                 onClick={() => { setConfirmDeleteKpi(null); setKpiDeleteError(null) }}
                 type="button"
               >
-                Cancel
+                {t('Cancel')}
               </button>
               <button
                 className="btn btn--danger"
@@ -597,7 +601,7 @@ export function GoalsView() {
                 onClick={() => void doDeleteKpi()}
                 type="button"
               >
-                {kpiDeleteSaving ? 'Deleting…' : 'Delete'}
+                {kpiDeleteSaving ? t('Deleting…') : t('Delete')}
               </button>
             </div>
           </div>

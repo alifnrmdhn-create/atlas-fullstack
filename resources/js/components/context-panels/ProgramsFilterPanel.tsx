@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { router, usePage } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../../lib/i18n'
 
 /**
  * Programs context panel — filter UI.
@@ -17,11 +19,13 @@ import { router, usePage } from '@inertiajs/react'
  * (loaded from API) and warrants its own dropdown work in M6.1.
  */
 
-const STATUS_OPTIONS: Array<{ value: string; label: string; tone: 'green' | 'amber' | 'red' }> = [
-  { value: 'on_track', label: 'On Track', tone: 'green' },
-  { value: 'at_risk', label: 'At Risk', tone: 'amber' },
-  { value: 'terlambat', label: 'Delayed', tone: 'red' },
-]
+function getStatusOptions(): Array<{ value: string; label: string; tone: 'green' | 'amber' | 'red' }> {
+  return [
+    { value: 'on_track', label: i18n.t('On Track'), tone: 'green' },
+    { value: 'at_risk', label: i18n.t('At Risk'), tone: 'amber' },
+    { value: 'terlambat', label: i18n.t('Delayed'), tone: 'red' },
+  ]
+}
 
 function readQuery(): URLSearchParams {
   if (typeof window === 'undefined') return new URLSearchParams()
@@ -38,6 +42,7 @@ function readStaleOnly(): boolean {
 }
 
 export function ProgramsFilterPanel() {
+  const { t } = useTranslation()
   const { url } = usePage()
   const [status, setStatus] = useState<Set<string>>(() => readStatusSet())
   const [staleOnly, setStaleOnly] = useState<boolean>(() => readStaleOnly())
@@ -85,19 +90,19 @@ export function ProgramsFilterPanel() {
     <>
       <section className="context-panel__section">
         <header className="context-panel__section-header">
-          <h3 className="context-panel__section-title">Status</h3>
+          <h3 className="context-panel__section-title">{t('Status')}</h3>
           {hasActive ? (
             <button
               type="button"
               className="context-panel__reset"
               onClick={reset}
             >
-              Reset
+              {t('Reset')}
             </button>
           ) : null}
         </header>
         <div className="context-panel__section-body">
-          {STATUS_OPTIONS.map((opt) => {
+          {getStatusOptions().map((opt) => {
             const checked = status.has(opt.value)
             return (
               <label key={opt.value} className="context-panel__check">
@@ -116,7 +121,7 @@ export function ProgramsFilterPanel() {
 
       <section className="context-panel__section">
         <header className="context-panel__section-header">
-          <h3 className="context-panel__section-title">Other</h3>
+          <h3 className="context-panel__section-title">{t('Other')}</h3>
         </header>
         <div className="context-panel__section-body">
           <label className="context-panel__check">
@@ -126,8 +131,8 @@ export function ProgramsFilterPanel() {
               onChange={toggleStale}
             />
             <span className="context-panel__check-label">
-              Stale &gt;30 days
-              <span className="context-panel__check-hint">no updates</span>
+              {t('Stale >30 days')}
+              <span className="context-panel__check-hint">{t('no updates')}</span>
             </span>
           </label>
         </div>

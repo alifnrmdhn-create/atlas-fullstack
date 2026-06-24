@@ -13,7 +13,7 @@
 import { useEffect, useRef } from 'react'
 import { usePage, router } from '@inertiajs/react'
 import { api } from '../lib/api'
-import { TOURS, tourExists, type TourId } from '../lib/onboardingTours'
+import { getTours, tourExists, type TourId } from '../lib/onboardingTours'
 
 type AuthUser = {
   id: number
@@ -51,7 +51,7 @@ export function useOnboardingTour(tourId: TourId, options: { trigger: boolean } 
         },
       })
 
-      const steps = TOURS[tourId]
+      const steps = getTours()[tourId]
       steps.forEach((step, idx) => {
         const isLast = idx === steps.length - 1
         tour.addStep({

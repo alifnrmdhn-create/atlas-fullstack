@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 import { usePage } from '@inertiajs/react'
 import { api } from '../lib/api'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useEscKey } from '../hooks/useEscKey'
 import { MON_FULL, STATUS } from '../types/monthlyReports'
+import i18n from '../lib/i18n'
 
 type RiskReportSummary = {
   id: number
@@ -24,15 +26,16 @@ type RiskReportSummary = {
   loss_events_count?: number
 }
 
-const COMPOSITE_META: Record<string, { label: string; color: string }> = {
-  LOW:              { label: 'Low',              color: '#22c55e' },
-  LOW_TO_MODERATE:  { label: 'Low–Moderate',    color: '#84cc16' },
-  MODERATE:         { label: 'Moderate',         color: '#f59e0b' },
-  MODERATE_TO_HIGH: { label: 'Moderate–High',   color: '#f97316' },
-  HIGH:             { label: 'High',             color: '#ef4444' },
-}
+const compositeMeta = (): Record<string, { label: string; color: string }> => ({
+  LOW:              { label: i18n.t('Low'),              color: 'var(--green)' },
+  LOW_TO_MODERATE:  { label: i18n.t('Low–Moderate'),    color: 'var(--green)' },
+  MODERATE:         { label: i18n.t('Moderate'),         color: 'var(--yellow)' },
+  MODERATE_TO_HIGH: { label: i18n.t('Moderate–High'),   color: 'var(--orange)' },
+  HIGH:             { label: i18n.t('High'),             color: 'var(--red)' },
+})
 
 export function RiskReportsView() {
+  const { t } = useTranslation()
   const navigate = useInertiaNavigate()
   const { currentUser } = useWorkspace()
 
@@ -62,7 +65,7 @@ export function RiskReportsView() {
     if (statusFilter !== 'all') params.set('status', statusFilter)
     api.get<{ data: RiskReportSummary[] }>(`/risk-reports?${params}`)
       .then(j => setReports(j.data ?? []))
-      .catch(e => setError(e instanceof Error ? e.message : 'Failed to load risk reports.'))
+      .catch(e => setError(e instanceof Error ? e.message : t('Failed to load risk reports.')))
       .finally(() => setLoading(false))
   }
 
@@ -74,7 +77,7 @@ export function RiskReportsView() {
     if (statusFilter !== 'all') params.set('status', statusFilter)
     api.get<{ data: RiskReportSummary[] }>(`/risk-reports?${params}`)
       .then(j => { if (!cancelled) setReports(j.data ?? []) })
-      .catch(e => { if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load risk reports.') })
+      .catch(e => { if (!cancelled) setError(e instanceof Error ? e.message : t('Failed to load risk reports.')) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [yearFilter, statusFilter])
@@ -90,7 +93,7 @@ export function RiskReportsView() {
   return (
     <div className="view-risk-reports">
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Risk Reports</h2>
+        <h2 className="view-toolbar__title">{t('Risk Reports')}</h2>
         <div className="view-toolbar__sep" />
         <div className="view-toggle">
           {years.map(y => (
@@ -110,19 +113,19 @@ export function RiskReportsView() {
               className={`view-toggle-btn${statusFilter === s ? ' active' : ''}`}
               onClick={() => setStatusFilter(s)}
             >
-              {s === 'all' ? 'All' : STATUS[s]?.label ?? s}
+              {s === 'all' ? t('All') : STATUS[s]?.label ?? s}
             </button>
           ))}
         </div>
         <button className="view-toggle-btn" style={{ marginLeft: 'auto' }} onClick={() => setShowCreate(true)}>
-          + New Report
+          {t('+ New Report')}
         </button>
       </div>
 
       <div className="risk-reports-body">
         {loading && (
           <div className="schedule-empty">
-            <span className="text-muted text-sm">Loading risk reports…</span>
+            <span className="text-muted text-sm">{t('Loading risk reports…')}</span>
           </div>
         )}
 
@@ -135,8 +138,8 @@ export function RiskReportsView() {
         {!loading && !error && reports.length === 0 && (
           <div className="schedule-empty">
             <div className="schedule-empty__icon">🛡</div>
-            <p className="schedule-empty__title">No risk reports yet</p>
-            <p className="schedule-empty__sub">No DIMR risk reports are available for {yearFilter} yet.</p>
+            <p className="schedule-empty__title">{t('No risk reports yet')}</p>
+            <p className="schedule-empty__sub">{t('No DIMR risk reports are available for {{year}} yet.', { year: yearFilter })}</p>
           </div>
         )}
 
@@ -144,23 +147,23 @@ export function RiskReportsView() {
           <div key={unitName} className="risk-reports-group">
             <div className="risk-reports-group__header">
               <span className="risk-reports-group__name">{unitName}</span>
-              <span className="risk-reports-group__count">{unitReports.length} report{unitReports.length !== 1 ? 's' : ''}</span>
+              <span className="risk-reports-group__count">{t('{{count}} report', { count: unitReports.length })}</span>
             </div>
             <div className="risk-reports-table">
               <div className="risk-reports-table__head">
-                <span>Period</span>
-                <span>Status</span>
-                <span>Composite Rating</span>
-                <span>RMI Score</span>
-                <span>Risks</span>
-                <span>Loss Events</span>
-                <span>Submitted</span>
+                <span>{t('Period')}</span>
+                <span>{t('Status')}</span>
+                <span>{t('Composite Rating')}</span>
+                <span>{t('RMI Score')}</span>
+                <span>{t('Risks')}</span>
+                <span>{t('Loss Events')}</span>
+                <span>{t('Submitted')}</span>
               </div>
               {unitReports
                 .sort((a, b) => b.month - a.month)
                 .map(r => {
                   const statusMeta = STATUS[r.status]
-                  const compositeMeta = r.compositeRating ? COMPOSITE_META[r.compositeRating] : null
+                  const composite = r.compositeRating ? compositeMeta()[r.compositeRating] : null
                   const riskCount = r._count?.riskSnapshots ?? r.risk_snapshots_count ?? 0
                   const lossEventCount = r._count?.lossEvents ?? r.loss_events_count ?? 0
                   return (
@@ -179,9 +182,9 @@ export function RiskReportsView() {
                         </span>
                       </span>
                       <span>
-                        {compositeMeta ? (
-                          <span className="risk-reports-table__rating" style={{ color: compositeMeta.color }}>
-                            ● {compositeMeta.label}
+                        {composite ? (
+                          <span className="risk-reports-table__rating" style={{ color: composite.color }}>
+                            ● {composite.label}
                           </span>
                         ) : (
                           <span className="text-muted">—</span>
@@ -191,15 +194,15 @@ export function RiskReportsView() {
                         {r.rmiScore != null ? Number(r.rmiScore).toFixed(2) : '—'}
                       </span>
                       <span className="risk-reports-table__count">
-                        {riskCount > 0 ? `${riskCount} risk${riskCount !== 1 ? 's' : ''}` : '—'}
+                        {riskCount > 0 ? t('{{count}} risk', { count: riskCount }) : '—'}
                       </span>
                       <span className="risk-reports-table__count">
-                        {lossEventCount > 0 ? `${lossEventCount} event${lossEventCount !== 1 ? 's' : ''}` : '—'}
+                        {lossEventCount > 0 ? t('{{count}} event', { count: lossEventCount }) : '—'}
                       </span>
                       <span className="risk-reports-table__submitted text-muted">
                         {r.submittedBy
                           ? r.submittedBy.name.split(' ')[0]
-                          : r.status === 'DRAFT' ? 'Not yet' : '—'}
+                          : r.status === 'DRAFT' ? t('Not yet') : '—'}
                       </span>
                     </button>
                   )
@@ -231,6 +234,7 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
   onClose: () => void
   onCreated: (id: number) => void
 }) {
+  const { t } = useTranslation()
   const now = new Date()
   const [month, setMonth]   = useState(now.getMonth() + 1)
   const [year, setYear]     = useState(now.getFullYear())
@@ -242,7 +246,7 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
     if (saving) return
     // Dirty: user sudah memilih unit atau mengubah bulan/tahun dari default
     const dirty = unitId !== '' || month !== now.getMonth() + 1 || year !== now.getFullYear()
-    if (dirty && !window.confirm('Discard unsaved changes?')) return
+    if (dirty && !window.confirm(t('Discard unsaved changes?'))) return
     onClose()
   }, true)
 
@@ -253,7 +257,7 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
   }, [])
 
   const save = async () => {
-    if (!unitId) { setErr('Select a unit first.'); return }
+    if (!unitId) { setErr(t('Select a unit first.')); return }
     setSaving(true); setErr(null)
     try {
       const res = await api.post<{ data: { id: number } }>('/risk-reports', {
@@ -263,11 +267,11 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
         createdById: userId,
       })
       onCreated(res.data.id)
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed to create report') }
+    } catch (e) { setErr(e instanceof Error ? e.message : t('Failed to create report')) }
     finally { setSaving(false) }
   }
 
-  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+  const MONTHS = [t('January'),t('February'),t('March'),t('April'),t('May'),t('June'),t('July'),t('August'),t('September'),t('October'),t('November'),t('December')]
   const YEARS  = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1]
 
   // Phase 5B: portal-mount ke document.body — modal-safe walaupun parent
@@ -277,25 +281,25 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
     <div className="dimr-modal-backdrop" onClick={onClose}>
       <div className="dimr-modal" onClick={e => e.stopPropagation()}>
         <div className="dimr-modal__header">
-          <span className="dimr-modal__title">New Risk Report</span>
+          <span className="dimr-modal__title">{t('New Risk Report')}</span>
           <button className="dimr-modal__close" onClick={onClose}>✕</button>
         </div>
         <div className="dimr-modal__body">
-          <label className="dimr-form-label">Unit / Division</label>
+          <label className="dimr-form-label">{t('Unit / Division')}</label>
           <select className="dimr-form-select" value={unitId} onChange={e => setUnitId(e.target.value)}>
-            <option value="">— Select a unit —</option>
+            <option value="">{t('— Select a unit —')}</option>
             {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
             <div>
-              <label className="dimr-form-label">Month</label>
+              <label className="dimr-form-label">{t('Month')}</label>
               <select className="dimr-form-select" value={month} onChange={e => setMonth(Number(e.target.value))}>
                 {MONTHS.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
               </select>
             </div>
             <div>
-              <label className="dimr-form-label">Year</label>
+              <label className="dimr-form-label">{t('Year')}</label>
               <select className="dimr-form-select" value={year} onChange={e => setYear(Number(e.target.value))}>
                 {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
@@ -304,9 +308,9 @@ function CreateRiskReportModal({ userId, onClose, onCreated }: {
           {err && <p className="dimr-form-error">{err}</p>}
         </div>
         <div className="dimr-modal__footer">
-          <button className="mrd-btn" onClick={onClose} disabled={saving}>Cancel</button>
+          <button className="mrd-btn" onClick={onClose} disabled={saving}>{t('Cancel')}</button>
           <button className="mrd-btn primary" onClick={save} disabled={saving}>
-            {saving ? 'Creating…' : 'Create Report'}
+            {saving ? t('Creating…') : t('Create Report')}
           </button>
         </div>
       </div>

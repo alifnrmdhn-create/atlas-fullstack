@@ -1,5 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { useForm, Head } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
 import '../AuthEntryView.css'
 import indonesiaMap from '../../assets/indonesia-map.png'
 
@@ -35,6 +36,7 @@ type PageProps = {
 }
 
 export default function Login({ errors: _pageErrors }: PageProps) {
+    const { t } = useTranslation()
     const { data, setData, post, processing, errors } = useForm({
         identifier: '',
         password: '',
@@ -61,7 +63,7 @@ export default function Login({ errors: _pageErrors }: PageProps) {
 
     return (
         <>
-            <Head title="Sign in to ATLAS" />
+            <Head title={t('Sign in to ATLAS')} />
             <div className={`auth-shell${isExiting ? ' auth-shell--exiting' : ''}`}>
                 {/* Left panel — brand */}
                 <div className="auth-panel">
@@ -69,7 +71,7 @@ export default function Login({ errors: _pageErrors }: PageProps) {
                     <div className="auth-panel__inner">
                         <div className="auth-panel__brand">
                             <div className="auth-panel__mark">
-                                <svg width="26" height="26" viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                                <svg width="26" height="26" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
                                     <line x1="2.5" y1="18.5" x2="10" y2="2.5" />
                                     <line x1="17.5" y1="18.5" x2="10" y2="2.5" />
                                     <line x1="6.3" y1="11.5" x2="13.7" y2="11.5" />
@@ -80,9 +82,9 @@ export default function Login({ errors: _pageErrors }: PageProps) {
 
                         <div className="auth-panel__content">
                             <p className="auth-panel__eyebrow">Advanced Transformation &amp; Leadership Alignment System</p>
-                            <h2 className="auth-panel__headline">Programs, execution, and alignment — one platform, one view.</h2>
+                            <h2 className="auth-panel__headline">{t('Programs, execution, and alignment — one platform, one view.')}</h2>
                             <p className="auth-panel__desc">
-                                ATLAS brings priority programs, cross-functional collaboration, and strategic alignment into a single platform that's easy to monitor and comfortable to use every day.
+                                {t("ATLAS brings priority programs, cross-functional collaboration, and strategic alignment into a single platform that's easy to monitor and comfortable to use every day.")}
                             </p>
                         </div>
 
@@ -100,7 +102,7 @@ export default function Login({ errors: _pageErrors }: PageProps) {
                     <div className="auth-form-container">
                         <div className="auth-mobile-brand" aria-hidden="true">
                             <div className="auth-panel__mark">
-                                <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                                <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
                                     <line x1="2.5" y1="18.5" x2="10" y2="2.5" />
                                     <line x1="17.5" y1="18.5" x2="10" y2="2.5" />
                                     <line x1="6.3" y1="11.5" x2="13.7" y2="11.5" />
@@ -113,8 +115,8 @@ export default function Login({ errors: _pageErrors }: PageProps) {
                         </div>
 
                         <div className="auth-form-header">
-                            <span className="auth-form-header__eyebrow">Sign in to ATLAS Workspace</span>
-                            <p>Sign in with your NIK or User ID to open today's workspace.</p>
+                            <span className="auth-form-header__eyebrow">{t('Sign in to ATLAS Workspace')}</span>
+                            <p>{t("Sign in with your NIK or User ID to open today's workspace.")}</p>
                         </div>
 
                         {authError && (
@@ -134,7 +136,7 @@ export default function Login({ errors: _pageErrors }: PageProps) {
                                     type="text"
                                     value={data.identifier}
                                 />
-                                <label htmlFor="identifier" className="auth-float-label">NIK or User ID</label>
+                                <label htmlFor="identifier" className="auth-float-label">{t('NIK or User ID')}</label>
                             </div>
 
                             <div className="auth-float-group">
@@ -147,12 +149,12 @@ export default function Login({ errors: _pageErrors }: PageProps) {
                                     type={showPassword ? 'text' : 'password'}
                                     value={data.password}
                                 />
-                                <label htmlFor="password" className="auth-float-label">Password</label>
+                                <label htmlFor="password" className="auth-float-label">{t('Password')}</label>
                                 <button
                                     className="auth-input-toggle"
                                     onClick={() => setShowPassword((v) => !v)}
                                     type="button"
-                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    aria-label={showPassword ? t('Hide password') : t('Show password')}
                                 >
                                     {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                                 </button>
@@ -163,14 +165,14 @@ export default function Login({ errors: _pageErrors }: PageProps) {
                                 disabled={processing || isSuccess}
                                 type="submit"
                             >
-                                <span className="auth-form__submit-text">Sign in</span>
+                                <span className="auth-form__submit-text">{t('Sign in')}</span>
                                 <span className="auth-form__submit-loader">
                                     <span className="auth-spinner" />
-                                    Signing in…
+                                    {t('Signing in…')}
                                 </span>
                                 <span className="auth-form__submit-success">
                                     <CheckIcon />
-                                    Signed in
+                                    {t('Signed in')}
                                 </span>
                             </button>
                         </form>

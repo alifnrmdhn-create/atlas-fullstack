@@ -1,4 +1,5 @@
 import { Head, usePage } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
 import type { CharterPayload } from '../../types/charter'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { ActivityTimelineTable } from './Charter/ActivityTimelineTable'
@@ -28,6 +29,7 @@ export default function Charter() {
   const { props } = usePage<CharterPayload>()
   const { program, status, kpi, activities, latestProgressLog, kpiHistory } = props
   const navigate = useInertiaNavigate()
+  const { t } = useTranslation()
 
   return (
     <>
@@ -35,17 +37,17 @@ export default function Charter() {
       <div className="page-shell">
         <div className="page-shell__inner">
           <div className="charter-page" data-charter-root>
-            <nav className="charter-back" aria-label="Back navigation">
+            <nav className="charter-back" aria-label={t('Back navigation')}>
               <button
                 type="button"
                 className="charter-back__link"
                 onClick={() => navigate(`/programs/${program.id}`)}
-                title="Back to program detail"
+                title={t('Back to program detail')}
               >
                 <svg aria-hidden="true" fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12">
                   <path d="M9 6H3M6 3 3 6l3 3" />
                 </svg>
-                <span>Back to {program.code}</span>
+                <span>{t('Back to {{code}}', { code: program.code })}</span>
               </button>
             </nav>
 
@@ -58,7 +60,7 @@ export default function Charter() {
 
             <div className="charter-grid">
               <section className="charter-grid__main">
-                <h2 className="charter-section-title">Activities &amp; Timeline</h2>
+                <h2 className="charter-section-title">{t('Activities & Timeline')}</h2>
                 <ActivityTimelineTable activities={activities} period={program.period} />
               </section>
               <aside className="charter-grid__side">
@@ -68,13 +70,13 @@ export default function Charter() {
             </div>
 
             <section className="charter-section">
-              <h2 className="charter-section-title">PICA &amp; Next Steps</h2>
+              <h2 className="charter-section-title">{t('PICA & Next Steps')}</h2>
               <PicaNextStepRow log={latestProgressLog} />
             </section>
 
             {kpi && (
               <section className="charter-section">
-                <h2 className="charter-section-title">Monthly KPI Progress</h2>
+                <h2 className="charter-section-title">{t('Monthly KPI Progress')}</h2>
                 <KpiProgressTable history={kpiHistory} />
               </section>
             )}

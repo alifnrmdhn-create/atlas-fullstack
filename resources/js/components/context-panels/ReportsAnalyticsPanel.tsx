@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react'
 import { Activity, Trophy, FileText, Zap, ZapOff } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../../hooks/useWorkspace'
 
 /**
@@ -19,6 +20,7 @@ import { useWorkspace } from '../../hooks/useWorkspace'
  * deliberately don't duplicate it here.
  */
 export function ReportsAnalyticsPanel() {
+  const { t } = useTranslation()
   const { dashboard, apmsConnected, normalizeHealthStatus } = useWorkspace()
   const leaderboard = dashboard?.dimensions.performance ?? []
 
@@ -33,7 +35,7 @@ export function ReportsAnalyticsPanel() {
           <span className="context-panel__section-icon" aria-hidden="true">
             <Activity size={13} />
           </span>
-          <h3 className="context-panel__section-title">Data source</h3>
+          <h3 className="context-panel__section-title">{t('Data source')}</h3>
         </header>
         <div className="context-panel__section-body">
           <div
@@ -42,12 +44,12 @@ export function ReportsAnalyticsPanel() {
             {apmsConnected ? (
               <>
                 <Zap size={12} aria-hidden="true" />
-                <span>Live AGHRIS</span>
+                <span>{t('Live AGHRIS')}</span>
               </>
             ) : (
               <>
                 <ZapOff size={12} aria-hidden="true" />
-                <span>Not connected</span>
+                <span>{t('Not connected')}</span>
               </>
             )}
           </div>
@@ -59,11 +61,11 @@ export function ReportsAnalyticsPanel() {
           <span className="context-panel__section-icon" aria-hidden="true">
             <Trophy size={13} />
           </span>
-          <h3 className="context-panel__section-title">Top 3 Leaderboard</h3>
+          <h3 className="context-panel__section-title">{t('Top 3 Leaderboard')}</h3>
         </header>
         <div className="context-panel__section-body">
           {top3.length === 0 ? (
-            <p className="context-panel__empty">No scores yet.</p>
+            <p className="context-panel__empty">{t('No scores yet.')}</p>
           ) : (
             top3.map((entry, idx) => {
               const health = normalizeHealthStatus(entry.status)
@@ -90,14 +92,14 @@ export function ReportsAnalyticsPanel() {
 
       <section className="context-panel__section">
         <header className="context-panel__section-header">
-          <h3 className="context-panel__section-title">Related reports</h3>
+          <h3 className="context-panel__section-title">{t('Related reports')}</h3>
         </header>
         <div className="context-panel__section-body">
           <Link href="/laporan-bulanan" className="context-panel__focus-item">
             <span className="context-panel__focus-icon-inline" aria-hidden="true">
               <FileText size={13} />
             </span>
-            <span className="context-panel__focus-label">Monthly Report</span>
+            <span className="context-panel__focus-label">{t('Monthly Report')}</span>
           </Link>
         </div>
       </section>

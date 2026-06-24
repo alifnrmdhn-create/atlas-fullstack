@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 import { usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
@@ -81,7 +83,7 @@ function relativeTime(iso: string): string {
   if (isNaN(d)) return ''
   const diff = Date.now() - d
   const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
+  if (mins < 1) return i18n.t('just now')
   if (mins < 60) return `${mins}m`
   const hrs = Math.floor(mins / 60)
   if (hrs < 24) return `${hrs}h`
@@ -93,16 +95,16 @@ function relativeTime(iso: string): string {
 }
 
 function formatEstimate(hours: number): { primary: string; secondary?: string } {
-  if (hours <= 0) return { primary: `${hours} hrs` }
-  if (hours < 8) return { primary: `${hours} hrs` }
+  if (hours <= 0) return { primary: i18n.t('{{count}} hrs', { count: hours }) }
+  if (hours < 8) return { primary: i18n.t('{{count}} hrs', { count: hours }) }
   const days = hours / 8
   if (days < 5) {
     const pretty = days % 1 === 0 ? days.toFixed(0) : days.toFixed(1)
-    return { primary: `${hours} hrs`, secondary: `≈ ${pretty} work days` }
+    return { primary: i18n.t('{{count}} hrs', { count: hours }), secondary: i18n.t('≈ {{count}} work days', { count: pretty }) }
   }
   const weeks = days / 5
   const pretty = weeks % 1 === 0 ? weeks.toFixed(0) : weeks.toFixed(1)
-  return { primary: `${hours} hrs`, secondary: `≈ ${pretty} work weeks` }
+  return { primary: i18n.t('{{count}} hrs', { count: hours }), secondary: i18n.t('≈ {{count}} work weeks', { count: pretty }) }
 }
 
 function autoResize(el: HTMLTextAreaElement | null) {
@@ -216,6 +218,7 @@ export interface TaskDetailViewProps {
 }
 
 export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: TaskDetailViewProps = {}) {
+  const { t } = useTranslation()
   const page = usePage<{ task?: { id: number } }>()
   const id = taskId != null
     ? String(taskId)
@@ -279,9 +282,9 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
   const copyWILink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href)
-      showToast('Task link copied', 'success')
+      showToast(t('Task link copied'), 'success')
     } catch {
-      showToast('Failed to copy link', 'error')
+      showToast(t('Failed to copy link'), 'error')
     }
   }
 
@@ -308,7 +311,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to save deadline.'), 'error')
+      showToast(extractErr(err, t('Failed to save deadline.')), 'error')
     } finally {
       setTenggatSaving(false)
       setTenggatEditing(false)
@@ -344,7 +347,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await loadDetail(true)
       setRenEditing(false)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to save schedule.'), 'error')
+      showToast(extractErr(err, t('Failed to save schedule.')), 'error')
     } finally {
       setRenSaving(false)
     }
@@ -358,7 +361,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await loadDetail(true)
       setRenEditing(false)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to delete schedule.'), 'error')
+      showToast(extractErr(err, t('Failed to delete schedule.')), 'error')
     } finally {
       setRenSaving(false)
     }
@@ -405,7 +408,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await loadDetail(true)
       setRealEditing(false)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to save realization.'), 'error')
+      showToast(extractErr(err, t('Failed to save realization.')), 'error')
     } finally {
       setRealSaving(false)
     }
@@ -418,7 +421,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await loadDetail(true)
       setRealEditing(false)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to reset realization.'), 'error')
+      showToast(extractErr(err, t('Failed to reset realization.')), 'error')
     } finally {
       setRealSaving(false)
     }
@@ -448,7 +451,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await api.patch(`/tasks/${id}`, { picUnitIds: ids })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to save unit PIC.'), 'error')
+      showToast(extractErr(err, t('Failed to save unit PIC.')), 'error')
     } finally { setPicSaving(false) }
   }
 
@@ -459,7 +462,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await api.patch(`/tasks/${id}`, { picPersonIds: ids })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to save person PIC.'), 'error')
+      showToast(extractErr(err, t('Failed to save person PIC.')), 'error')
     } finally { setPicSaving(false) }
   }
 
@@ -510,7 +513,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
     } catch (err) {
       if (!silent) {
         const msg = err instanceof Error ? err.message : String(err)
-        setLoadError(msg || 'Work item could not be loaded.')
+        setLoadError(msg || t('Work item could not be loaded.'))
       }
     } finally {
       if (!silent) setLoading(false)
@@ -571,9 +574,9 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
   // Tanpa ini slider di-disable agar task tanpa PIC tak bisa didorong "Berjalan".
   const canStart = !!detail?.assignee && !!detail?.targetCompletion
   const startBlockReason = !detail?.assignee && !detail?.targetCompletion
-    ? 'Set a PIC & target completion first'
-    : !detail?.assignee ? 'Set a PIC before starting the task'
-    : !detail?.targetCompletion ? 'Set a target completion before starting the task'
+    ? t('Set a PIC & target completion first')
+    : !detail?.assignee ? t('Set a PIC before starting the task')
+    : !detail?.targetCompletion ? t('Set a target completion before starting the task')
     : ''
 
   // Catatan PIC (24 Jun 2026): progres/status/realisasi hanya boleh diubah oleh
@@ -585,19 +588,19 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
   const isAdminRole = roleAccess.role === 'SUPERADMIN' || roleAccess.role === 'ADMIN'
   const canReportProgress = !roleAccess.isMonitoringOnly && (isTaskPic || isProgramOwner || isAdminRole)
   const progressBlockReason = !canReportProgress
-    ? 'Only the assigned PIC or program owner can update progress'
+    ? t('Only the assigned PIC or program owner can update progress')
     : startBlockReason
 
   const commitProgress = async () => {
     if (!id || !detail) return
     if (!canReportProgress) {
-      showToast('Only the assigned PIC or program owner can update progress.', 'error')
+      showToast(t('Only the assigned PIC or program owner can update progress.'), 'error')
       return
     }
     if (actionStatus.saving) return // guard double-submit
     if (editDraft.percentComplete === detail.percentComplete) return // tidak berubah
     if (isRegressing && !regressNote.trim()) {
-      showToast('Enter a reason for the progress decrease for the audit log.', 'error')
+      showToast(t('Enter a reason for the progress decrease for the audit log.'), 'error')
       return
     }
     setActionStatus({ saving: true, message: null })
@@ -610,11 +613,11 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       })
       await Promise.all([loadDetail(true), loadOverview('refresh')])
       setRegressNote('')
-      setActionStatus({ saving: false, message: 'Saved.' })
+      setActionStatus({ saving: false, message: t('Saved.') })
       setTimeout(() => setActionStatus(s => ({ ...s, message: null })), 2500)
     } catch (err) {
       setActionStatus({ saving: false, message: null })
-      showToast(extractErr(err, 'Failed to save progress.'), 'error')
+      showToast(extractErr(err, t('Failed to save progress.')), 'error')
     }
   }
 
@@ -646,7 +649,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       const res = await api.get<{ data: DirectoryUser[] }>('/users/directory')
       setAssignUsers(res.data ?? [])
     } catch (err) {
-      showToast(extractErr(err, 'Failed to load user directory.'), 'error')
+      showToast(extractErr(err, t('Failed to load user directory.')), 'error')
     }
   }
 
@@ -658,7 +661,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await loadDetail(true)
       setShowAssigneeEdit(false)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to change assignee.'), 'error')
+      showToast(extractErr(err, t('Failed to change assignee.')), 'error')
     } finally { setAssignSaving(false) }
   }
 
@@ -683,7 +686,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await api.patch(`/tasks/${id}`, { title: next })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to save title.'), 'error')
+      showToast(extractErr(err, t('Failed to save title.')), 'error')
     } finally {
       setTitleSaving(false)
       setTitleEditing(false)
@@ -711,7 +714,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await api.patch(`/tasks/${id}`, { description: next || undefined })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to save description.'), 'error')
+      showToast(extractErr(err, t('Failed to save description.')), 'error')
     } finally {
       setDescSaving(false)
       setDescEditing(false)
@@ -733,7 +736,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await api.patch(`/tasks/${id}`, { priority: newPriority })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to save priority.'), 'error')
+      showToast(extractErr(err, t('Failed to save priority.')), 'error')
     } finally { setPrioritySaving(false) }
   }
 
@@ -749,7 +752,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await loadOverview('refresh')
       navigate('/execution')
     } catch (err) {
-      showToast(extractErr(err, 'Failed to delete task.'), 'error')
+      showToast(extractErr(err, t('Failed to delete task.')), 'error')
     } finally { setDeleting(false) }
   }
 
@@ -780,7 +783,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
         ...prev,
         subTasks: prev.subTasks.map(st => st.id === subtaskId ? { ...st, isCompleted: !st.isCompleted } : st),
       } : prev)
-      showToast(extractErr(err, 'Failed to update subtask.'), 'error')
+      showToast(extractErr(err, t('Failed to update subtask.')), 'error')
     } finally { setTogglingSubtask(null) }
   }
 
@@ -790,7 +793,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await api.delete(`/tasks/${id}/subtasks/${subtaskId}`)
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to delete subtask.'), 'error')
+      showToast(extractErr(err, t('Failed to delete subtask.')), 'error')
     }
   }
 
@@ -804,7 +807,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       setShowAddSubtask(false)
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to add subtask.'), 'error')
+      showToast(extractErr(err, t('Failed to add subtask.')), 'error')
     } finally { setStSaving(false) }
   }
 
@@ -823,7 +826,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
   // Helper: Escape boleh menutup edit mode hanya jika tidak ada perubahan,
   // atau user mengonfirmasi buang draft.
   const confirmDiscard = (): boolean =>
-    window.confirm('Discard unsaved changes?')
+    window.confirm(t('Discard unsaved changes?'))
 
   useEscKey(() => setPriorityEditing(false), priorityEditing)
   useEscKey(() => {
@@ -950,7 +953,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
     if (detail.percentComplete === 100 && detail.status === 'COMPLETED' && !confettiFiredRef.current) {
       confettiFiredRef.current = true
       // Fire from center of hero progress bar
-      const el = document.querySelector('.wid-hero__progress-fill') as HTMLElement | null
+      const el = document.querySelector('.wid-ms-field--progress .wid-slider, .wid-ms-pct') as HTMLElement | null
       if (el) {
         const r = el.getBoundingClientRect()
         fireConfetti(r.right, r.top + r.height / 2)
@@ -1015,7 +1018,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       setShowCreateBlocker(false)
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err) {
-      setBlError((err as { message?: string })?.message ?? 'Failed to create blocker.')
+      setBlError((err as { message?: string })?.message ?? t('Failed to create blocker.'))
     } finally { setBlSaving(false) }
   }
 
@@ -1033,7 +1036,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       setBlEditTarget(null)
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to save blocker.'), 'error')
+      showToast(extractErr(err, t('Failed to save blocker.')), 'error')
     } finally { setBlEditSaving(false) }
   }
 
@@ -1049,7 +1052,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       setBlStatusTarget(null)
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err) {
-      showToast(extractErr(err, 'Failed to change blocker status.'), 'error')
+      showToast(extractErr(err, t('Failed to change blocker status.')), 'error')
     } finally { setBlStatusSaving(false) }
   }
 
@@ -1061,7 +1064,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       setBlDeleteConfirmId(null)
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err) {
-      showToast(extractErr(err, 'Failed to delete blocker.'), 'error')
+      showToast(extractErr(err, t('Failed to delete blocker.')), 'error')
     } finally { setBlDeleteSaving(false) }
   }
 
@@ -1094,7 +1097,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       setCommentValue(''); setReplyTargetId(null)
       await loadDetail(true)
     } catch (err) {
-      setCommentError(err instanceof Error ? err.message : 'Failed to post comment.')
+      setCommentError(err instanceof Error ? err.message : t('Failed to post comment.'))
     } finally { setSending(false) }
   }
 
@@ -1103,7 +1106,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await api.delete(`/comments/${commentId}`)
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to delete comment.'), 'error')
+      showToast(extractErr(err, t('Failed to delete comment.')), 'error')
     }
   }
   const reactToComment = async (commentId: number) => {
@@ -1111,7 +1114,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       await api.post(`/comments/${commentId}/reactions`, { emoji: ':thumbsup:' })
       await loadDetail(true)
     } catch (err) {
-      showToast(extractErr(err, 'Failed to add reaction.'), 'error')
+      showToast(extractErr(err, t('Failed to add reaction.')), 'error')
     }
   }
 
@@ -1147,7 +1150,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       <div className="ds task-detail-v2 wid-page view-task-detail ds-stagger">
         <div className="wid-topbar">
           <button className="wid-back" onClick={() => navigate('/execution')} type="button">
-            {Icon.back} Workboard
+            {Icon.back} {t('Workboard')}
           </button>
         </div>
         {/* Shape-aware skeleton matching real layout */}
@@ -1192,14 +1195,14 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       <div className="ds task-detail-v2 wid-page view-task-detail ds-stagger">
         <div className="wid-topbar">
           <button className="wid-back" onClick={() => navigate('/execution')} type="button">
-            {Icon.back} Workboard
+            {Icon.back} {t('Workboard')}
           </button>
         </div>
         <div style={{ padding: '32px', maxWidth: 560 }}>
-          <InlineNotice tone="error">{loadError ?? 'Work item not found.'}</InlineNotice>
+          <InlineNotice tone="error">{loadError ?? t('Work item not found.')}</InlineNotice>
           <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
-            <button className="wid-btn wid-btn--primary" onClick={() => void loadDetail()} type="button">Try again</button>
-            <button className="wid-btn" onClick={() => navigate('/execution')} type="button">Back to board</button>
+            <button className="wid-btn wid-btn--primary" onClick={() => void loadDetail()} type="button">{t('Try again')}</button>
+            <button className="wid-btn" onClick={() => navigate('/execution')} type="button">{t('Back to board')}</button>
           </div>
         </div>
       </div>
@@ -1226,17 +1229,17 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
   if (isOverdue) {
     alert = {
       tone: 'danger', icon: Icon.alert,
-      title: `${Math.abs(dueDays!)} days overdue`,
+      title: t('{{count}} days overdue', { count: Math.abs(dueDays!) }),
       sub: dueDate ? dueDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : undefined,
-      actionLabel: !roleAccess.isMonitoringOnly ? 'Edit deadline' : undefined,
+      actionLabel: !roleAccess.isMonitoringOnly ? t('Edit deadline') : undefined,
       onAction: !roleAccess.isMonitoringOnly ? beginTenggatEdit : undefined,
     }
   } else if (detail.isBlocked && detail.blockedReason) {
     alert = {
       tone: 'danger', icon: Icon.blocker,
-      title: 'Work item blocked',
+      title: t('Work item blocked'),
       sub: detail.blockedReason,
-      actionLabel: 'View blocker',
+      actionLabel: t('View blocker'),
       onAction: scrollToBlockers,
     }
   }
@@ -1275,35 +1278,35 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
         />
         <div className="wid-topbar__actions">
           {liveFlash && (
-            <span className="wid-live-badge" title="Data updated by real-time sync">
+            <span className="wid-live-badge" title={t('Data updated by real-time sync')}>
               {Icon.wifi}
-              <span>Live</span>
+              <span>{t('Live')}</span>
             </span>
           )}
           <button
-            aria-label="Search & switch to another task"
+            aria-label={t('Search & switch to another task')}
             className="wid-iconbtn"
             onClick={() => { setShowQuickSwitch(true); setQsQuery(''); setQsIndex(0) }}
-            title="Quick switch (⌘P)"
+            title={t('Quick switch (⌘P)')}
             type="button"
           >
             {Icon.search}
             <kbd className="wid-kbd">⌘P</kbd>
           </button>
           <button
-            aria-label="Copy link to this task"
+            aria-label={t('Copy link to this task')}
             className="wid-iconbtn"
             onClick={() => void copyWILink()}
-            title="Copy link (⌘⇧C)"
+            title={t('Copy link (⌘⇧C)')}
             type="button"
           >
             {Icon.link}
           </button>
           <button
-            aria-label="Open keyboard shortcut guide"
+            aria-label={t('Open keyboard shortcut guide')}
             className="wid-iconbtn"
             onClick={() => setShowHelp(true)}
-            title="Keyboard shortcuts (?)"
+            title={t('Keyboard shortcuts (?)')}
             type="button"
           >
             <span style={{ fontWeight: 700, fontSize: 12, lineHeight: 1 }}>?</span>
@@ -1311,24 +1314,24 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
           {!roleAccess.isMonitoringOnly && !confirmDelete && (
             <>
               <span className="wid-topbar__sep" aria-hidden="true" />
-              <button className="wid-iconbtn" onClick={beginTitleEdit} title="Edit title (E)" type="button">
+              <button className="wid-iconbtn" onClick={beginTitleEdit} title={t('Edit title (E)')} type="button">
                 <svg aria-hidden="true" fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="12"><path d="M8.5 1.5a1.06 1.06 0 0 1 1.5 1.5L3.5 9.5l-3 1 1-3 6.5-6z"/></svg>
-                Edit
+                {t('Edit')}
                 <kbd className="wid-kbd">E</kbd>
               </button>
-              <button aria-label="Delete task" className="wid-iconbtn wid-iconbtn--danger" onClick={() => setConfirmDelete(true)} type="button">
+              <button aria-label={t('Delete task')} className="wid-iconbtn wid-iconbtn--danger" onClick={() => setConfirmDelete(true)} type="button">
                 <svg aria-hidden="true" fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 12 12" width="12"><path d="M2 3h8M4 3V2h4v1M5 5.5v3M7 5.5v3M3 3l.5 7h5l.5-7"/></svg>
-                Delete
+                {t('Delete')}
               </button>
             </>
           )}
           {confirmDelete && (
             <div className="wid-confirm">
-              <span className="wid-confirm__label">Delete permanently?</span>
+              <span className="wid-confirm__label">{t('Delete permanently?')}</span>
               <button className="wid-confirm__btn wid-confirm__btn--danger" disabled={deleting} onClick={() => void doDelete()} type="button">
-                {deleting ? '…' : 'Yes, Delete'}
+                {deleting ? '…' : t('Yes, Delete')}
               </button>
-              <button className="wid-confirm__btn" disabled={deleting} onClick={() => setConfirmDelete(false)} type="button">Cancel</button>
+              <button className="wid-confirm__btn" disabled={deleting} onClick={() => setConfirmDelete(false)} type="button">{t('Cancel')}</button>
             </div>
           )}
         </div>
@@ -1344,7 +1347,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
           {priority !== 'MEDIUM' && (
             <span className="wid-chip wid-chip--priority" style={{ background: priorityTone.bg, color: priorityTone.fg }}>
               <span className="wid-chip__dot" style={{ background: priorityTone.dot }} />
-              {PRIORITY_LABELS[priority] ?? priority}
+              {t(PRIORITY_LABELS[priority] ?? priority)}
             </span>
           )}
           <HealthPill status={health} />
@@ -1371,19 +1374,15 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
           <h1
             className={`wid-hero__title${roleAccess.isMonitoringOnly ? '' : ' is-editable'}`}
             onClick={() => !roleAccess.isMonitoringOnly && beginTitleEdit()}
-            title={roleAccess.isMonitoringOnly ? undefined : 'Click to edit (T)'}
+            title={roleAccess.isMonitoringOnly ? undefined : t('Click to edit (T)')}
           >
             {detail.title}
           </h1>
         )}
 
         <div className="wid-hero__statline">
-          <div className={`wid-hero__progress${isDirty ? ' is-dirty' : ''}`}>
-            <div className={`wid-hero__progress-track wid-hero__progress-track--${health.toLowerCase()}`}>
-              <div className={`wid-hero__progress-fill wid-hero__progress-fill--${health.toLowerCase()}`} style={{ width: `${editDraft.percentComplete}%` }} />
-            </div>
-            <span className="wid-hero__progress-pct" key={editDraft.percentComplete}>{editDraft.percentComplete}%</span>
-          </div>
+          {/* Progress bar dihapus dari hero — duplikat dengan slider interaktif
+              di metastrip tepat di bawah. Hero statline = assignee + due. */}
           {/* Status tag dihapus dari statline — sudah ada status dropdown di
               form body bawah yang interactive. Pill di sini cuma read-only
               duplicate. */}
@@ -1393,7 +1392,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                 type="button"
                 className="wid-hero__assignee wid-hero__assignee--clickable"
                 onClick={() => { setShowAssigneeEdit(true); void loadAssignUsers() }}
-                title="Click to change executor"
+                title={t('Click to change executor')}
               >
                 <Avatar name={detail.assignee.name} />
                 <span className="wid-hero__assignee-name">{detail.assignee.name}</span>
@@ -1411,12 +1410,12 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
               onClick={() => { setShowAssigneeEdit(true); void loadAssignUsers() }}
             >
               {Icon.user}
-              <span>Unassigned</span>
+              <span>{t('Unassigned')}</span>
             </button>
           ) : (
             <span className="wid-hero__assignee wid-hero__assignee--empty">
               {Icon.user}
-              <span>Unassigned</span>
+              <span>{t('Unassigned')}</span>
             </span>
           )}
           {dueDate ? (
@@ -1439,11 +1438,11 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
               </span>
             ) : (
               <button
-                aria-label="Edit deadline"
+                aria-label={t('Edit deadline')}
                 className={`wid-hero__due wid-hero__due--btn${isOverdue ? ' wid-hero__due--overdue' : isDueSoon ? ' wid-hero__due--soon' : ''}${roleAccess.isMonitoringOnly ? '' : ' is-editable'}`}
                 disabled={roleAccess.isMonitoringOnly}
                 onClick={beginTenggatEdit}
-                title={roleAccess.isMonitoringOnly ? undefined : 'Click to edit deadline'}
+                title={roleAccess.isMonitoringOnly ? undefined : t('Click to edit deadline')}
                 type="button"
               >
                 {Icon.calendar}
@@ -1451,9 +1450,9 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                 {dueDays !== null && detail.status !== 'COMPLETED' && (
                   <span className="wid-due-chip">
                     {isOverdue
-                      ? `${Math.abs(dueDays)}d overdue`
-                      : dueDays === 0 ? 'today'
-                      : `${dueDays}d left`}
+                      ? t('{{count}}d overdue', { count: Math.abs(dueDays) })
+                      : dueDays === 0 ? t('today')
+                      : t('{{count}}d left', { count: dueDays })}
                   </span>
                 )}
               </button>
@@ -1479,7 +1478,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                 type="button"
               >
                 {Icon.calendar}
-                <span>+ Set deadline</span>
+                <span>{t('+ Set deadline')}</span>
               </button>
             )
           ) : null}
@@ -1507,18 +1506,18 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       {!roleAccess.isMonitoringOnly && !inPlanning ? (
         <form className="wid-metastrip" onSubmit={(e) => void saveExecution(e)}>
           <div className="wid-ms-field">
-            <span className="wid-ms-label">Status</span>
+            <span className="wid-ms-label">{t('Status')}</span>
             {/* Status read-only — di-derive dari progress (slider) + tombol review +
                 section Blockers. Tidak ada dropdown manual supaya tidak ada dua
                 cara set status yang membingungkan. */}
             <span className={`wid-status-tag wid-status-tag--${detail.status.toLowerCase().replace(/_/g, '-')}`}>
               <span className="wid-status-tag__dot" style={{ background: STATUS_DOT[detail.status] }} />
-              {STATUS_LABELS[detail.status] ?? detail.status}
+              {t(STATUS_LABELS[detail.status] ?? detail.status)}
             </span>
           </div>
           <span className="wid-ms-sep" aria-hidden="true" />
           <div className="wid-ms-field wid-ms-field--progress">
-            <span className="wid-ms-label">Progress</span>
+            <span className="wid-ms-label">{t('Progress')}</span>
             <input
               className="wid-slider"
               max={100}
@@ -1553,11 +1552,11 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
           )}
           {isRegressing && (
             <div className="wid-ms-field wid-ms-regress">
-              <span className="wid-ms-label">Decrease reason</span>
+              <span className="wid-ms-label">{t('Decrease reason')}</span>
               <input
                 className="wid-ms-select"
                 type="text"
-                placeholder="e.g. scope revision, wrong input"
+                placeholder={t('e.g. scope revision, wrong input')}
                 value={regressNote}
                 onChange={e => setRegressNote(e.target.value)}
                 maxLength={2000}
@@ -1577,14 +1576,14 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                 disabled={actionStatus.saving}
                 type="submit"
               >
-                {actionStatus.saving ? '…' : 'Save'}
+                {actionStatus.saving ? '…' : t('Save')}
               </button>
             ) : (
               <span className="wid-ms-saved" aria-live="polite">
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M2 6.5 5 9.5l5-7" />
                 </svg>
-                Saved
+                {t('Saved')}
               </span>
             )}
           </div>
@@ -1592,15 +1591,15 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       ) : (
         <div className="wid-metastrip wid-metastrip--readonly">
           <div className="wid-ms-field">
-            <span className="wid-ms-label">Status</span>
+            <span className="wid-ms-label">{t('Status')}</span>
             <span className={`wid-status-tag wid-status-tag--${detail.status.toLowerCase().replace(/_/g, '-')}`}>
               <span className="wid-status-tag__dot" style={{ background: STATUS_DOT[detail.status] }} />
-              {STATUS_LABELS[detail.status] ?? detail.status}
+              {t(STATUS_LABELS[detail.status] ?? detail.status)}
             </span>
           </div>
           <span className="wid-ms-sep" aria-hidden="true" />
           <div className="wid-ms-field wid-ms-field--progress">
-            <span className="wid-ms-label">Progress</span>
+            <span className="wid-ms-label">{t('Progress')}</span>
             <div className={`wid-hero__progress-track wid-hero__progress-track--${health.toLowerCase()}`} style={{ width: 140 }}>
               <div className={`wid-hero__progress-fill wid-hero__progress-fill--${health.toLowerCase()}`} style={{ width: `${detail.percentComplete}%` }} />
             </div>
@@ -1608,7 +1607,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
           </div>
           {inPlanning && (
             <span className="wid-ms-lock-hint">
-              Program is still in Planning — status &amp; progress become available once Execution begins.
+              {t('Program is still in Planning — status & progress become available once Execution begins.')}
             </span>
           )}
         </div>
@@ -1626,7 +1625,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
               <div className="wid-panel__head">
                 <h3 className="wid-panel__title">
                   <span className="wid-panel__icon">{Icon.info}</span>
-                  Description
+                  {t('Description')}
                 </h3>
                 {/* "Edit" button dihapus — text di body already click-to-edit
                     (.wid-desc.is-editable). Tombol di header = duplicate path. */}
@@ -1644,27 +1643,27 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); void commitDescEdit() }
                         if (e.key === 'Escape') { e.preventDefault(); setDescEditing(false) }
                       }}
-                      placeholder="Task description, context, or attachments the team should read…"
+                      placeholder={t('Task description, context, or attachments the team should read…')}
                       ref={descInputRef}
                       rows={Math.max(3, Math.min(10, descDraft.split('\n').length + 1))}
                       value={descDraft}
                     />
                     <p className="wid-desc-edit__hint">
-                      <kbd className="wid-kbd">⌘↵</kbd> save · <kbd className="wid-kbd">ESC</kbd> cancel
+                      <kbd className="wid-kbd">⌘↵</kbd> {t('save')} · <kbd className="wid-kbd">ESC</kbd> {t('cancel')}
                     </p>
                   </div>
                 ) : detail.description ? (
                   <p
                     className={`wid-desc${roleAccess.isMonitoringOnly ? '' : ' is-editable'}`}
                     onClick={() => !roleAccess.isMonitoringOnly && beginDescEdit()}
-                    title={roleAccess.isMonitoringOnly ? undefined : 'Click to edit'}
+                    title={roleAccess.isMonitoringOnly ? undefined : t('Click to edit')}
                   >
                     {detail.description}
                   </p>
                 ) : (
                   <button className="wid-desc-add" onClick={beginDescEdit} type="button">
                     <span className="wid-desc-add__icon">+</span>
-                    Add task description
+                    {t('Add task description')}
                   </button>
                 )}
               </div>
@@ -1676,7 +1675,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
             <div className="wid-panel__head">
               <h3 className="wid-panel__title">
                 <span className="wid-panel__icon">{Icon.subtask}</span>
-                Subtasks
+                {t('Subtasks')}
                 {subtaskStats.total > 0 && (
                   <span className="wid-panel__count">{subtaskStats.done}/{subtaskStats.total}</span>
                 )}
@@ -1691,7 +1690,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
               )}
               {!roleAccess.isMonitoringOnly && (
                 <button className={`wid-panel__action${showAddSubtask ? ' is-cancel' : ''}`} onClick={() => setShowAddSubtask(v => !v)} type="button">
-                  {showAddSubtask ? 'Cancel' : '+ Add'}
+                  {showAddSubtask ? t('Cancel') : t('+ Add')}
                 </button>
               )}
             </div>
@@ -1705,7 +1704,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                         className={`wid-subtask-check${st.isCompleted ? ' is-done' : ''}${celebrateIds.has(st.id) ? ' is-celebrating' : ''}`}
                         disabled={togglingSubtask === st.id || roleAccess.isMonitoringOnly || inPlanning}
                         onClick={() => void toggleSubtask(st.id)}
-                        title={inPlanning ? 'Subtasks can be checked off once the program enters Execution' : undefined}
+                        title={inPlanning ? t('Subtasks can be checked off once the program enters Execution') : undefined}
                         type="button"
                       >
                         {st.isCompleted ? (
@@ -1721,7 +1720,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                       </button>
                       <span className={`wid-subtask-title${st.isCompleted ? ' is-done' : ''}`}>{st.title}</span>
                       {!roleAccess.isMonitoringOnly && (
-                        <button className="wid-subtask-del" onClick={() => void deleteSubtask(st.id)} type="button" title="Delete">
+                        <button className="wid-subtask-del" onClick={() => void deleteSubtask(st.id)} type="button" title={t('Delete')}>
                           <svg fill="none" height="10" viewBox="0 0 10 10" width="10"><path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6"/></svg>
                         </button>
                       )}
@@ -1745,12 +1744,12 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                     disabled={stSaving}
                     maxLength={160}
                     onChange={e => setStTitle(e.target.value)}
-                    placeholder="New subtask name…"
+                    placeholder={t('New subtask name…')}
                     type="text"
                     value={stTitle}
                   />
                   <button className="wid-subtask-add__submit" disabled={stSaving || !stTitle.trim()} type="submit">
-                    {stSaving ? '…' : 'Save'}
+                    {stSaving ? '…' : t('Save')}
                   </button>
                   <button className="wid-subtask-add__cancel" onClick={() => { setShowAddSubtask(false); setStTitle('') }} type="button">
                     <svg fill="none" height="10" viewBox="0 0 10 10" width="10"><path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5"/></svg>
@@ -1767,7 +1766,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
             <div className="wid-panel__head">
               <h3 className="wid-panel__title">
                 <span className="wid-panel__icon" style={{ color: activeBlockers.length > 0 ? 'var(--red)' : undefined }}>{Icon.blocker}</span>
-                Blockers
+                {t('Blockers')}
                 {activeBlockers.length > 0 && (
                   <span className="wid-panel__count wid-panel__count--danger">{activeBlockers.length}</span>
                 )}
@@ -1778,45 +1777,45 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                   onClick={() => { setShowCreateBlocker(v => !v); setBlError(null); void loadAssignUsers() }}
                   type="button"
                 >
-                  {showCreateBlocker ? 'Cancel' : '+ Blocker'}
+                  {showCreateBlocker ? t('Cancel') : t('+ Blocker')}
                 </button>
               )}
             </div>
             <div className="wid-panel__body">
               {inPlanning && (detail.blockers ?? []).length === 0 && (
                 <p className="wid-bl-locked">
-                  Blockers can only be created once the program enters the Execution phase.
+                  {t('Blockers can only be created once the program enters the Execution phase.')}
                 </p>
               )}
               {showCreateBlocker && !inPlanning && (
                 <form className="wid-bl-form" onSubmit={(e) => void submitCreateBlocker(e)}>
                   <div className="wid-form__row">
-                    <input className="wid-input" disabled={blSaving} maxLength={40} minLength={3} onChange={e => setBlForm(f => ({ ...f, code: e.target.value }))} placeholder="Code (BLK-001)" required style={{ flex: '0 0 140px' }} type="text" value={blForm.code} />
+                    <input className="wid-input" disabled={blSaving} maxLength={40} minLength={3} onChange={e => setBlForm(f => ({ ...f, code: e.target.value }))} placeholder={t('Code (BLK-001)')} required style={{ flex: '0 0 140px' }} type="text" value={blForm.code} />
                     <select className="wid-input" disabled={blSaving} onChange={e => setBlForm(f => ({ ...f, severity: e.target.value }))} value={blForm.severity}>
-                      <option value="CRITICAL">Critical</option>
-                      <option value="HIGH">High</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="LOW">Low</option>
+                      <option value="CRITICAL">{t('Critical')}</option>
+                      <option value="HIGH">{t('High')}</option>
+                      <option value="MEDIUM">{t('Medium')}</option>
+                      <option value="LOW">{t('Low')}</option>
                     </select>
                   </div>
-                  <input className="wid-input" disabled={blSaving} maxLength={120} minLength={3} onChange={e => setBlForm(f => ({ ...f, title: e.target.value }))} placeholder="Blocker title *" required type="text" value={blForm.title} />
-                  <textarea className="wid-input" disabled={blSaving} maxLength={400} onChange={e => setBlForm(f => ({ ...f, description: e.target.value }))} placeholder="Description (optional)" rows={2} style={{ resize: 'vertical' }} value={blForm.description} />
+                  <input className="wid-input" disabled={blSaving} maxLength={120} minLength={3} onChange={e => setBlForm(f => ({ ...f, title: e.target.value }))} placeholder={t('Blocker title *')} required type="text" value={blForm.title} />
+                  <textarea className="wid-input" disabled={blSaving} maxLength={400} onChange={e => setBlForm(f => ({ ...f, description: e.target.value }))} placeholder={t('Description (optional)')} rows={2} style={{ resize: 'vertical' }} value={blForm.description} />
                   <div className="wid-form__row wid-form__row--baseline">
                     <div style={{ flex: 1 }}>
                       <UserPicker
                         allowClear
-                        clearLabel="— Remove assignee —"
+                        clearLabel={t('— Remove assignee —')}
                         disabled={blSaving}
                         inputClassName="wid-input"
                         onChange={id => setBlForm(f => ({ ...f, assignedTo: id ? String(id) : '' }))}
                         options={assignUsers}
-                        placeholder="Assignee (optional)"
+                        placeholder={t('Assignee (optional)')}
                         value={blForm.assignedTo ? Number(blForm.assignedTo) : null}
                       />
                     </div>
                     {blError && <span className="wid-form__error" style={{ margin: 0 }}>{blError}</span>}
                     <button className="wid-btn wid-btn--primary" disabled={blSaving} type="submit">
-                      {blSaving ? 'Saving…' : 'Save'}
+                      {blSaving ? t('Saving…') : t('Save')}
                     </button>
                   </div>
                 </form>
@@ -1836,10 +1835,10 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                       <div className="wid-bl-meta">
                         <span className="wid-bl-code">{bl.code}</span>
                         <span className="wid-bl-sev" style={{ background: tone.bg, color: tone.fg }}>
-                          {PRIORITY_LABELS[bl.severity] ?? bl.severity}
+                          {t(PRIORITY_LABELS[bl.severity] ?? bl.severity)}
                         </span>
                         <span className={`wid-bl-status wid-bl-status--${bl.status.toLowerCase()}`}>
-                          {bl.status === 'OPEN' ? 'Open' : bl.status === 'IN_PROGRESS' ? 'In Progress' : 'Resolved'}
+                          {bl.status === 'OPEN' ? t('Open') : bl.status === 'IN_PROGRESS' ? t('In Progress') : t('Resolved')}
                         </span>
                       </div>
                       <p className="wid-bl-title">{bl.title}</p>
@@ -1848,47 +1847,47 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                       {blEditTarget?.id === bl.id && (
                         <form onSubmit={(e) => void submitEditBlocker(e)} className="wid-bl-inline-form">
                           <input className="wid-input" disabled={blEditSaving} maxLength={120} onChange={e => setBlEditTarget(t => t ? { ...t, title: e.target.value } : t)} value={blEditTarget.title} />
-                          <select className="wid-input" disabled={blEditSaving} onChange={e => setBlEditTarget(t => t ? { ...t, severity: e.target.value } : t)} value={blEditTarget.severity}>
-                            <option value="CRITICAL">Critical</option><option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option>
+                          <select className="wid-input" disabled={blEditSaving} onChange={e => setBlEditTarget(prev => prev ? { ...prev, severity: e.target.value } : prev)} value={blEditTarget.severity}>
+                            <option value="CRITICAL">{t('Critical')}</option><option value="HIGH">{t('High')}</option><option value="MEDIUM">{t('Medium')}</option><option value="LOW">{t('Low')}</option>
                           </select>
                           <textarea className="wid-input" disabled={blEditSaving} onChange={e => setBlEditTarget(t => t ? { ...t, description: e.target.value } : t)} rows={2} style={{ resize: 'vertical' }} value={blEditTarget.description} />
                           <UserPicker
                             allowClear
-                            clearLabel="— Remove assignee —"
+                            clearLabel={t('— Remove assignee —')}
                             disabled={blEditSaving}
                             inputClassName="wid-input"
                             onChange={id => setBlEditTarget(t => t ? { ...t, assignedTo: id } : t)}
                             options={assignUsers}
-                            placeholder="Assignee (optional)"
+                            placeholder={t('Assignee (optional)')}
                             value={blEditTarget.assignedTo}
                           />
                           <div className="wid-form__actions">
-                            <button className="wid-btn wid-btn--primary" disabled={blEditSaving} type="submit">{blEditSaving ? '…' : 'Save'}</button>
-                            <button className="wid-btn" onClick={() => setBlEditTarget(null)} type="button">Cancel</button>
+                            <button className="wid-btn wid-btn--primary" disabled={blEditSaving} type="submit">{blEditSaving ? '…' : t('Save')}</button>
+                            <button className="wid-btn" onClick={() => setBlEditTarget(null)} type="button">{t('Cancel')}</button>
                           </div>
                         </form>
                       )}
                       {blStatusTarget?.id === bl.id && (
                         <form onSubmit={(e) => void submitUpdateBlockerStatus(e)} className="wid-bl-inline-form">
                           <select className="wid-input" disabled={blStatusSaving} onChange={e => setBlStatusTarget(t => t ? { ...t, status: e.target.value } : t)} value={blStatusTarget.status}>
-                            <option value="OPEN">Open</option><option value="IN_PROGRESS">In Progress</option><option value="RESOLVED">Resolved</option>
+                            <option value="OPEN">{t('Open')}</option><option value="IN_PROGRESS">{t('In Progress')}</option><option value="RESOLVED">{t('Resolved')}</option>
                           </select>
                           {blStatusTarget.status === 'RESOLVED' && (
-                            <textarea className="wid-input" disabled={blStatusSaving} onChange={e => setBlStatusTarget(t => t ? { ...t, resolution: e.target.value } : t)} placeholder="Resolution note (optional)" rows={2} style={{ resize: 'vertical' }} value={blStatusTarget.resolution} />
+                            <textarea className="wid-input" disabled={blStatusSaving} onChange={e => setBlStatusTarget(prev => prev ? { ...prev, resolution: e.target.value } : prev)} placeholder={t('Resolution note (optional)')} rows={2} style={{ resize: 'vertical' }} value={blStatusTarget.resolution} />
                           )}
                           <div className="wid-form__actions">
-                            <button className="wid-btn wid-btn--primary" disabled={blStatusSaving} type="submit">{blStatusSaving ? '…' : 'Save'}</button>
-                            <button className="wid-btn" onClick={() => setBlStatusTarget(null)} type="button">Cancel</button>
+                            <button className="wid-btn wid-btn--primary" disabled={blStatusSaving} type="submit">{blStatusSaving ? '…' : t('Save')}</button>
+                            <button className="wid-btn" onClick={() => setBlStatusTarget(null)} type="button">{t('Cancel')}</button>
                           </div>
                         </form>
                       )}
                       {blDeleteConfirmId === bl.id && (
                         <div className="wid-bl-delete-confirm">
-                          <span>Delete this blocker?</span>
+                          <span>{t('Delete this blocker?')}</span>
                           <button className="wid-btn wid-btn--danger" disabled={blDeleteSaving} onClick={() => void submitDeleteBlocker(bl.id)} type="button">
-                            {blDeleteSaving ? '…' : 'Yes'}
+                            {blDeleteSaving ? '…' : t('Yes')}
                           </button>
-                          <button className="wid-btn" disabled={blDeleteSaving} onClick={() => setBlDeleteConfirmId(null)} type="button">Cancel</button>
+                          <button className="wid-btn" disabled={blDeleteSaving} onClick={() => setBlDeleteConfirmId(null)} type="button">{t('Cancel')}</button>
                         </div>
                       )}
                     </div>
@@ -1897,7 +1896,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                         <EscalationButton
                           sourceType="BLOCKER"
                           sourceId={bl.id}
-                          prefillTitle={`Support needed: ${bl.title}`}
+                          prefillTitle={t('Support needed: {{title}}', { title: bl.title })}
                           prefillDescription={bl.description ?? undefined}
                           size="sm"
                         />
@@ -1905,13 +1904,13 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                     )}
                     {!roleAccess.isMonitoringOnly && (
                       <div className="wid-bl-actions">
-                        <button className="wid-bl-actionbtn" onClick={() => setBlEditTarget(t => t?.id === bl.id ? null : { id: bl.id, title: bl.title, description: bl.description ?? '', severity: bl.severity, assignedTo: bl.assignedTo ?? null })} title="Edit" type="button">
+                        <button className="wid-bl-actionbtn" onClick={() => setBlEditTarget(prev => prev?.id === bl.id ? null : { id: bl.id, title: bl.title, description: bl.description ?? '', severity: bl.severity, assignedTo: bl.assignedTo ?? null })} title={t('Edit')} type="button">
                           <svg fill="none" height="12" viewBox="0 0 12 12" width="12"><path d="M8.5 1.5a1.06 1.06 0 0 1 1.5 1.5L3.5 9.5l-3 1 1-3 6.5-6z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.3"/></svg>
                         </button>
-                        <button className="wid-bl-actionbtn" onClick={() => setBlStatusTarget(t => t?.id === bl.id ? null : { id: bl.id, status: bl.status, resolution: '' })} title="Change status" type="button">
+                        <button className="wid-bl-actionbtn" onClick={() => setBlStatusTarget(prev => prev?.id === bl.id ? null : { id: bl.id, status: bl.status, resolution: '' })} title={t('Change status')} type="button">
                           <svg fill="none" height="12" viewBox="0 0 12 12" width="12"><path d="M10 2.5A4.5 4.5 0 1 1 2 6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3"/><path d="M2 2.5v4H6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.3"/></svg>
                         </button>
-                        <button className="wid-bl-actionbtn wid-bl-actionbtn--danger" onClick={() => setBlDeleteConfirmId(i => i === bl.id ? null : bl.id)} title="Delete" type="button">
+                        <button className="wid-bl-actionbtn wid-bl-actionbtn--danger" onClick={() => setBlDeleteConfirmId(i => i === bl.id ? null : bl.id)} title={t('Delete')} type="button">
                           <svg fill="none" height="12" viewBox="0 0 12 12" width="12"><path d="M2 3h8M4 3V2h4v1M5 5.5v3M7 5.5v3M3 3l.5 7h5l.5-7" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.3"/></svg>
                         </button>
                       </div>
@@ -1928,7 +1927,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
             <div className="wid-panel__head">
               <h3 className="wid-panel__title">
                 <span className="wid-panel__icon">{Icon.chat}</span>
-                Discussion
+                {t('Discussion')}
                 {(detail.comments ?? []).length > 0 && <span className="wid-panel__count">{detail.comments.length}</span>}
               </h3>
             </div>
@@ -1950,7 +1949,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                 <div className="wid-composer__body">
                   {replyTargetId && (
                     <div className="wid-composer__context">
-                      <span className="badge">Reply #{replyTargetId}</span>
+                      <span className="badge">{t('Reply #{{id}}', { id: replyTargetId })}</span>
                     </div>
                   )}
                   {(commentFocused || commentValue.trim().length > 0) && (
@@ -1962,23 +1961,23 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                           onClick={() => setShowTemplates(v => !v)}
                           type="button"
                         >
-                          + Template
+                          {t('+ Template')}
                           <svg fill="none" height="8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 10 6" width="8"><path d="M1 1l4 4 4-4"/></svg>
                         </button>
                         {showTemplates && (
                           <div className="wid-tpl__menu">
-                            {COMPOSER_TEMPLATES.map(t => (
+                            {COMPOSER_TEMPLATES.map(tpl => (
                               <button
                                 className="wid-tpl__item"
-                                key={t.label}
+                                key={tpl.label}
                                 onClick={() => {
-                                  appendComposerSnippet(setCommentValue, t.value)
+                                  appendComposerSnippet(setCommentValue, tpl.value)
                                   setShowTemplates(false)
                                   setTimeout(() => composerRef.current?.focus(), 30)
                                 }}
                                 type="button"
                               >
-                                {t.label}
+                                {t(tpl.label)}
                               </button>
                             ))}
                           </div>
@@ -2046,7 +2045,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                             if (commentValue.trim() && !sending) (e.currentTarget.form as HTMLFormElement)?.requestSubmit()
                           }
                         }}
-                        placeholder="Execution update, blocker context, next step…  (⌘↵ send · / focus · @ mention)"
+                        placeholder={t('Execution update, blocker context, next step…  (⌘↵ send · / focus · @ mention)')}
                         ref={composerRef}
                         rows={2}
                         value={commentValue}
@@ -2094,18 +2093,18 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                       })()}
                     </div>
                   ) : (
-                    <RichTextPreview emptyText="Preview" value={commentValue} />
+                    <RichTextPreview emptyText={t('Preview')} value={commentValue} />
                   )}
                   {commentError && <p className="wid-form__error">{commentError}</p>}
                   <div className="wid-composer__actions">
                     {replyTargetId
-                      ? <button className="wid-btn" onClick={() => setReplyTargetId(null)} type="button">Cancel reply</button>
+                      ? <button className="wid-btn" onClick={() => setReplyTargetId(null)} type="button">{t('Cancel reply')}</button>
                       : <span className="wid-composer__hint">
-                          <kbd className="wid-kbd">⌘↵</kbd> to send
+                          <kbd className="wid-kbd">⌘↵</kbd> {t('to send')}
                         </span>
                     }
                     <button className="wid-btn wid-btn--primary" disabled={sending || !commentValue.trim()} type="submit">
-                      {sending ? 'Sending…' : 'Send'}
+                      {sending ? t('Sending…') : t('Send')}
                     </button>
                   </div>
                 </div>
@@ -2141,7 +2140,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                 >
                   <path d="M1 1l4 4 4-4"/>
                 </svg>
-                Context & Team
+                {t('Context & Team')}
               </button>
             )}
 
@@ -2150,24 +2149,24 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
 
                 {/* Tim block */}
                 <div className="wid-info-footer__block">
-                  <p className="wid-info-footer__block-title">Team</p>
+                  <p className="wid-info-footer__block-title">{t('Team')}</p>
 
                   <div className={`wid-team-row wid-team-row--executor${showAssigneeEdit ? ' is-editing' : ''}`}>
-                    <span className="wid-sp-label">Executor</span>
+                    <span className="wid-sp-label">{t('Executor')}</span>
                     {showAssigneeEdit && !roleAccess.isMonitoringOnly ? (
                       <div className="wid-team-row__edit">
                         <UserPicker
                           allowClear
                           autoOpen
-                          clearLabel="— Remove assignee —"
+                          clearLabel={t('— Remove assignee —')}
                           disabled={assignSaving}
                           inputClassName="wid-input"
                           onChange={id => void handleAssign(id)}
                           options={assignUsers}
-                          placeholder="Select executor…"
+                          placeholder={t('Select executor…')}
                           value={detail.assignee?.id ?? null}
                         />
-                        <button className="wid-btn" onClick={() => setShowAssigneeEdit(false)} type="button">Cancel</button>
+                        <button className="wid-btn" onClick={() => setShowAssigneeEdit(false)} type="button">{t('Cancel')}</button>
                       </div>
                     ) : detail.assignee ? (
                       <button
@@ -2187,7 +2186,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                         onClick={() => { setShowAssigneeEdit(true); void loadAssignUsers() }}
                         type="button"
                       >
-                        + Assign{currentUser && <span className="wid-flat-add__kbd"><kbd className="wid-kbd">A</kbd></span>}
+                        {t('+ Assign')}{currentUser && <span className="wid-flat-add__kbd"><kbd className="wid-kbd">A</kbd></span>}
                       </button>
                     ) : <span className="wid-sp-val">—</span>}
                   </div>
@@ -2195,7 +2194,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                   {!roleAccess.isMonitoringOnly && (
                     <>
                       <div className="wid-team-row">
-                        <span className="wid-sp-label">PIC</span>
+                        <span className="wid-sp-label">{t('PIC')}</span>
                         <div className="wid-team-row__chips">
                           {(() => {
                             const currentId = (detail?.picPersonIds ?? [])[0]
@@ -2207,7 +2206,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                                   {label}
                                   <button type="button" className="wid-pic-chip__remove"
                                     disabled={picSaving} onClick={() => savePicPersons([])}
-                                    aria-label={`Remove PIC ${label}`}>×</button>
+                                    aria-label={t('Remove PIC {{label}}', { label })}>×</button>
                                 </span>
                               )
                             }
@@ -2220,7 +2219,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                               onClick={() => { setShowPicAdder(true); void loadAssignUsers() }}
                               disabled={picSaving}
                             >
-                              {(detail?.picPersonIds ?? []).length > 0 ? 'Change' : '+ Select'}
+                              {(detail?.picPersonIds ?? []).length > 0 ? t('Change') : t('+ Select')}
                             </button>
                           ) : (
                           <div className="wid-pic-adder">
@@ -2231,7 +2230,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                               onBlur={() => { if (picPersonSearch.length === 0) setShowPicAdder(false) }}
                               onChange={(e) => { setPicPersonSearch(e.target.value); void loadAssignUsers() }}
                               onKeyDown={(e) => { if (e.key === 'Escape') { setPicPersonSearch(''); setShowPicAdder(false) } }}
-                              placeholder={(detail?.picPersonIds ?? []).length > 0 ? 'Search name…' : 'Search name…'}
+                              placeholder={t('Search name…')}
                               value={picPersonSearch}
                             />
                             {picPersonSearch.length > 0 && (() => {
@@ -2258,7 +2257,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                       </div>
 
                       <div className="wid-team-row">
-                        <span className="wid-sp-label">Unit</span>
+                        <span className="wid-sp-label">{t('Unit')}</span>
                         <div className="wid-team-row__chips">
                           {(detail?.picUnitIds ?? []).map((uid) => {
                             const unit = orgUnits.find((u) => u.id === uid)
@@ -2269,7 +2268,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                                 <button type="button" className="wid-pic-chip__remove"
                                   disabled={picSaving}
                                   onClick={() => savePicUnits((detail?.picUnitIds ?? []).filter((x) => x !== uid))}
-                                  aria-label={`Remove ${label}`}>×</button>
+                                  aria-label={t('Remove {{label}}', { label })}>×</button>
                               </span>
                             )
                           })}
@@ -2280,7 +2279,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                               onClick={() => { setShowUnitAdder(true); loadOrgUnits() }}
                               disabled={picSaving}
                             >
-                              + Add unit
+                              {t('+ Add unit')}
                             </button>
                           ) : (
                           <div className="wid-pic-adder">
@@ -2291,7 +2290,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                               onBlur={() => { if (picUnitSearch.length === 0) setShowUnitAdder(false) }}
                               onChange={(e) => { setPicUnitSearch(e.target.value); loadOrgUnits() }}
                               onKeyDown={(e) => { if (e.key === 'Escape') { setPicUnitSearch(''); setShowUnitAdder(false) } }}
-                              placeholder="Search unit code/name…"
+                              placeholder={t('Search unit code/name…')}
                               value={picUnitSearch}
                             />
                             {picUnitSearch.length > 0 && (() => {
@@ -2323,10 +2322,10 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
 
                 {/* Detail metadata block */}
                 <div className="wid-info-footer__block">
-                  <p className="wid-info-footer__block-title">Detail</p>
+                  <p className="wid-info-footer__block-title">{t('Detail')}</p>
                   <div className="wid-sp-grid">
                     <div className="wid-sp-grid__cell">
-                      <span className="wid-sp-label">Priority</span>
+                      <span className="wid-sp-label">{t('Priority')}</span>
                       {priorityEditing && !roleAccess.isMonitoringOnly ? (
                         <select
                           autoFocus
@@ -2336,10 +2335,10 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                           onChange={e => void savePriority(e.target.value)}
                           value={priority}
                         >
-                          <option value="LOW">Low</option>
-                          <option value="MEDIUM">Medium</option>
-                          <option value="HIGH">High</option>
-                          <option value="CRITICAL">Critical</option>
+                          <option value="LOW">{t('Low')}</option>
+                          <option value="MEDIUM">{t('Medium')}</option>
+                          <option value="HIGH">{t('High')}</option>
+                          <option value="CRITICAL">{t('Critical')}</option>
                         </select>
                       ) : (
                         <button
@@ -2347,17 +2346,17 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                           disabled={prioritySaving || roleAccess.isMonitoringOnly}
                           onClick={() => !roleAccess.isMonitoringOnly && setPriorityEditing(true)}
                           style={{ background: priorityTone.bg, color: priorityTone.fg, fontSize: 10.5, padding: '2px 8px', cursor: roleAccess.isMonitoringOnly ? 'default' : 'pointer', border: 'none' }}
-                          title={roleAccess.isMonitoringOnly ? undefined : 'Click to change priority'}
+                          title={roleAccess.isMonitoringOnly ? undefined : t('Click to change priority')}
                           type="button"
                         >
                           <span className="wid-chip__dot" style={{ background: priorityTone.dot }} />
-                          {PRIORITY_LABELS[priority] ?? priority}
+                          {t(PRIORITY_LABELS[priority] ?? priority)}
                         </button>
                       )}
                     </div>
                     {dueDate && (
                       <div className="wid-sp-grid__cell">
-                        <span className="wid-sp-label">Deadline</span>
+                        <span className="wid-sp-label">{t('Deadline')}</span>
                         <span className={`wid-sp-val${isOverdue ? ' is-overdue' : isDueSoon ? ' is-soon' : ''}`}>
                           {dueDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
@@ -2367,7 +2366,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                       const est = formatEstimate(detail.estimatedHours!)
                       return (
                         <div className="wid-sp-grid__cell">
-                          <span className="wid-sp-label">Estimate</span>
+                          <span className="wid-sp-label">{t('Estimate')}</span>
                           <span className="wid-sp-val">
                             {est.primary}
                             {est.secondary && <span className="wid-sp-sub"> · {est.secondary}</span>}
@@ -2377,7 +2376,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                     })()}
                     {detail.workstream && (
                       <div className="wid-sp-grid__cell wid-sp-grid__cell--full">
-                        <span className="wid-sp-label">Workstream</span>
+                        <span className="wid-sp-label">{t('Workstream')}</span>
                         <span className="wid-sp-val wid-sp-val--wrap">{detail.workstream.name}</span>
                       </div>
                     )}
@@ -2387,7 +2386,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                 {/* Ren block */}
                 {!roleAccess.isMonitoringOnly && (
                   <div className="wid-info-footer__block wid-info-footer__block--full">
-                    <p className="wid-info-footer__block-title">Weekly Plan</p>
+                    <p className="wid-info-footer__block-title">{t('Weekly Plan')}</p>
                     {!renEditing ? (
                       <div className="wid-ren-view">
                         {(detail?.plannedWeeks ?? []).length > 0 ? (
@@ -2397,35 +2396,35 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                                 <span className="wid-ren-week-chip" key={w}>{formatWeekLabel(w)}</span>
                               ))}
                             </div>
-                            <button className="btn btn--ghost wid-ren-edit-btn" onClick={openRenEditor} type="button">Edit schedule</button>
+                            <button className="btn btn--ghost wid-ren-edit-btn" onClick={openRenEditor} type="button">{t('Edit schedule')}</button>
                           </>
                         ) : (
-                          <button className="wid-flat-add" onClick={openRenEditor} type="button">+ Set up Plan</button>
+                          <button className="wid-flat-add" onClick={openRenEditor} type="button">{t('+ Set up Plan')}</button>
                         )}
                       </div>
                     ) : (
                       <div className="wid-ren-editor">
                         <div className="wid-ren-range">
                           <div className="form-field wid-ren-field">
-                            <label>Start week</label>
+                            <label>{t('Start week')}</label>
                             <input onChange={e => setRenStart(e.target.value)} type="week" value={renStart} />
                           </div>
                           <div className="form-field wid-ren-field">
-                            <label>End week</label>
+                            <label>{t('End week')}</label>
                             <input min={renStart} onChange={e => setRenEnd(e.target.value)} type="week" value={renEnd} />
                           </div>
                         </div>
                         {renStart && renEnd && renStart <= renEnd && (
-                          <p className="wid-ren-preview">{weeksInRange(renStart, renEnd).length} weeks selected</p>
+                          <p className="wid-ren-preview">{t('{{count}} weeks selected', { count: weeksInRange(renStart, renEnd).length })}</p>
                         )}
                         <div className="wid-ren-actions">
                           <button className="profile-save-btn" disabled={renSaving || !renStart || !renEnd || renStart > renEnd} onClick={() => void saveRen()} type="button">
-                            {renSaving ? 'Saving…' : 'Save'}
+                            {renSaving ? t('Saving…') : t('Save')}
                           </button>
                           {(detail?.plannedWeeks ?? []).length > 0 && (
-                            <button className="btn btn--ghost" disabled={renSaving} onClick={() => void clearRen()} type="button">Delete</button>
+                            <button className="btn btn--ghost" disabled={renSaving} onClick={() => void clearRen()} type="button">{t('Delete')}</button>
                           )}
-                          <button className="btn btn--ghost" disabled={renSaving} onClick={() => setRenEditing(false)} type="button">Cancel</button>
+                          <button className="btn btn--ghost" disabled={renSaving} onClick={() => setRenEditing(false)} type="button">{t('Cancel')}</button>
                         </div>
                       </div>
                     )}
@@ -2436,7 +2435,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                     tab Timeline read-only menampilkannya (catatan 24 Jun opsi B). */}
                 {canReportProgress && !inPlanning && (
                   <div className="wid-info-footer__block wid-info-footer__block--full">
-                    <p className="wid-info-footer__block-title">Weekly Realization</p>
+                    <p className="wid-info-footer__block-title">{t('Weekly Realization')}</p>
                     {!realEditing ? (
                       <div className="wid-ren-view">
                         {realIsManual && (detail?.actualWeeks ?? []).length > 0 ? (
@@ -2447,18 +2446,18 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                           </div>
                         ) : (
                           <p className="wid-ren-auto-note">
-                            Auto — derived from progress ({detail?.percentComplete ?? 0}%). Shown read-only on the program Timeline.
+                            {t('Auto — derived from progress ({{percent}}%). Shown read-only on the program Timeline.', { percent: detail?.percentComplete ?? 0 })}
                           </p>
                         )}
                         {realCandidateWeeks.length > 0 && (
                           <button className="btn btn--ghost wid-ren-edit-btn" onClick={openRealEditor} type="button">
-                            {realIsManual ? 'Edit realization' : 'Set manually'}
+                            {realIsManual ? t('Edit realization') : t('Set manually')}
                           </button>
                         )}
                       </div>
                     ) : (
                       <div className="wid-ren-editor">
-                        <p className="wid-ren-hint">Pick the weeks actually worked (can be non-contiguous). Clearing all reverts to auto.</p>
+                        <p className="wid-ren-hint">{t('Pick the weeks actually worked (can be non-contiguous). Clearing all reverts to auto.')}</p>
                         <div className="wid-ren-weeks wid-ren-weeks--toggle">
                           {realCandidateWeeks.map(w => {
                             const on = realDraft.includes(w)
@@ -2469,7 +2468,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                                 className={`wid-ren-week-chip wid-ren-week-chip--toggle${on ? ' is-on' : ''}${planned ? ' is-planned' : ''}`}
                                 key={w}
                                 onClick={() => toggleRealWeek(w)}
-                                title={planned ? 'Planned week' : undefined}
+                                title={planned ? t('Planned week') : undefined}
                                 type="button"
                               >
                                 {formatWeekLabel(w)}
@@ -2479,12 +2478,12 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                         </div>
                         <div className="wid-ren-actions">
                           <button className="profile-save-btn" disabled={realSaving} onClick={() => void saveReal()} type="button">
-                            {realSaving ? 'Saving…' : 'Save'}
+                            {realSaving ? t('Saving…') : t('Save')}
                           </button>
                           {realIsManual && (
-                            <button className="btn btn--ghost" disabled={realSaving} onClick={() => void resetRealToAuto()} type="button">Reset to auto</button>
+                            <button className="btn btn--ghost" disabled={realSaving} onClick={() => void resetRealToAuto()} type="button">{t('Reset to auto')}</button>
                           )}
-                          <button className="btn btn--ghost" disabled={realSaving} onClick={() => setRealEditing(false)} type="button">Cancel</button>
+                          <button className="btn btn--ghost" disabled={realSaving} onClick={() => setRealEditing(false)} type="button">{t('Cancel')}</button>
                         </div>
                       </div>
                     )}
@@ -2494,7 +2493,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                 {/* Program Induk block */}
                 {parentProgram && (
                   <div className="wid-info-footer__block">
-                    <p className="wid-info-footer__block-title">Parent Program</p>
+                    <p className="wid-info-footer__block-title">{t('Parent Program')}</p>
                     <button className="wid-parent-card" onClick={() => navigate(`/programs/${parentProgram.id}`)} type="button">
                       <div className="wid-parent-card__head">
                         <span className="wid-parent-card__code">{parentProgram.code}</span>
@@ -2508,7 +2507,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                         <span className="wid-parent-card__pct">{parentProgram.progressPercent}%</span>
                       </div>
                       <div className="wid-parent-card__foot">
-                        <span>Open program</span>
+                        <span>{t('Open program')}</span>
                         {Icon.arrow}
                       </div>
                     </button>
@@ -2518,7 +2517,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                 {/* Recent activity block */}
                 {recentActivity.length > 0 && (
                   <div className="wid-info-footer__block wid-info-footer__block--full">
-                    <p className="wid-info-footer__block-title">Recent Activity</p>
+                    <p className="wid-info-footer__block-title">{t('Recent Activity')}</p>
                     <div className="wid-activity">
                       {recentActivity.map(c => (
                         <div className="wid-activity__row" key={c.id}>
@@ -2527,7 +2526,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                           </div>
                           <div className="wid-activity__body">
                             <div className="wid-activity__top">
-                              <span className="wid-activity__author">{c.authorName ?? 'Anonymous'}</span>
+                              <span className="wid-activity__author">{c.authorName ?? t('Anonymous')}</span>
                               <time className="wid-activity__time">{relativeTime(c.createdAt)}</time>
                             </div>
                             <p className="wid-activity__msg">{c.commentText.length > 100 ? c.commentText.slice(0, 100) + '…' : c.commentText}</p>
@@ -2547,33 +2546,33 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
 
       {/* ── Help overlay (press ? to toggle) ────────────────── */}
       {showHelp && (
-        <div aria-label="Keyboard shortcut guide" className="wid-help" onMouseDown={() => setShowHelp(false)} role="dialog" aria-modal="true">
+        <div aria-label={t('Keyboard shortcut guide')} className="wid-help" onMouseDown={() => setShowHelp(false)} role="dialog" aria-modal="true">
           <div className="wid-help__modal" onMouseDown={e => e.stopPropagation()}>
             <div className="wid-help__head">
-              <h3 className="wid-help__title">Keyboard shortcuts</h3>
-              <button className="wid-help__close" onClick={() => setShowHelp(false)} type="button" aria-label="Close">
+              <h3 className="wid-help__title">{t('Keyboard shortcuts')}</h3>
+              <button className="wid-help__close" onClick={() => setShowHelp(false)} type="button" aria-label={t('Close')}>
                 <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="14"><path d="M1 1l12 12M13 1L1 13"/></svg>
               </button>
             </div>
             <div className="wid-help__body">
               <section className="wid-help__group">
-                <h4>Navigation</h4>
+                <h4>{t('Navigation')}</h4>
                 <dl>
-                  <div><dt><kbd className="wid-kbd">E</kbd></dt><dd>Edit title (inline)</dd></div>
-                  <div><dt><kbd className="wid-kbd">T</kbd></dt><dd>Edit title (inline)</dd></div>
-                  <div><dt><kbd className="wid-kbd">/</kbd></dt><dd>Focus composer</dd></div>
-                  <div><dt><kbd className="wid-kbd">?</kbd></dt><dd>Open this guide</dd></div>
-                  <div><dt><kbd className="wid-kbd">ESC</kbd></dt><dd>Close modal / cancel edit</dd></div>
+                  <div><dt><kbd className="wid-kbd">E</kbd></dt><dd>{t('Edit title (inline)')}</dd></div>
+                  <div><dt><kbd className="wid-kbd">T</kbd></dt><dd>{t('Edit title (inline)')}</dd></div>
+                  <div><dt><kbd className="wid-kbd">/</kbd></dt><dd>{t('Focus composer')}</dd></div>
+                  <div><dt><kbd className="wid-kbd">?</kbd></dt><dd>{t('Open this guide')}</dd></div>
+                  <div><dt><kbd className="wid-kbd">ESC</kbd></dt><dd>{t('Close modal / cancel edit')}</dd></div>
                 </dl>
               </section>
               <section className="wid-help__group">
-                <h4>Composer</h4>
+                <h4>{t('Composer')}</h4>
                 <dl>
-                  <div><dt><kbd className="wid-kbd">⌘</kbd>+<kbd className="wid-kbd">↵</kbd></dt><dd>Post comment</dd></div>
+                  <div><dt><kbd className="wid-kbd">⌘</kbd>+<kbd className="wid-kbd">↵</kbd></dt><dd>{t('Post comment')}</dd></div>
                 </dl>
               </section>
               <section className="wid-help__group">
-                <h4>Progress slider</h4>
+                <h4>{t('Progress slider')}</h4>
                 <dl>
                   <div><dt><kbd className="wid-kbd">←</kbd> <kbd className="wid-kbd">→</kbd></dt><dd>±1%</dd></div>
                   <div><dt><kbd className="wid-kbd">⇧</kbd>+<kbd className="wid-kbd">←</kbd>/<kbd className="wid-kbd">→</kbd></dt><dd>±10%</dd></div>
@@ -2581,16 +2580,16 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                 </dl>
               </section>
               <section className="wid-help__group">
-                <h4>Inline edit</h4>
+                <h4>{t('Inline edit')}</h4>
                 <dl>
-                  <div><dt>Click title / description</dt><dd>Enter edit mode</dd></div>
-                  <div><dt><kbd className="wid-kbd">↵</kbd></dt><dd>Save title</dd></div>
-                  <div><dt><kbd className="wid-kbd">⌘</kbd>+<kbd className="wid-kbd">↵</kbd></dt><dd>Save description</dd></div>
+                  <div><dt>{t('Click title / description')}</dt><dd>{t('Enter edit mode')}</dd></div>
+                  <div><dt><kbd className="wid-kbd">↵</kbd></dt><dd>{t('Save title')}</dd></div>
+                  <div><dt><kbd className="wid-kbd">⌘</kbd>+<kbd className="wid-kbd">↵</kbd></dt><dd>{t('Save description')}</dd></div>
                 </dl>
               </section>
             </div>
             <div className="wid-help__foot">
-              Press <kbd className="wid-kbd">ESC</kbd> or click outside to close
+              {t('Press')} <kbd className="wid-kbd">ESC</kbd> {t('or click outside to close')}
             </div>
           </div>
         </div>
@@ -2598,7 +2597,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
 
       {/* ── Quick-switch modal (⌘P) ──────────────────────── */}
       {showQuickSwitch && (
-        <div aria-label="Quick switch to another task" className="wid-qs" onMouseDown={() => setShowQuickSwitch(false)} role="dialog" aria-modal="true">
+        <div aria-label={t('Quick switch to another task')} className="wid-qs" onMouseDown={() => setShowQuickSwitch(false)} role="dialog" aria-modal="true">
           <div className="wid-qs__modal" onMouseDown={e => e.stopPropagation()}>
             <div className="wid-qs__head">
               <span className="wid-qs__icon" aria-hidden="true">{Icon.search}</span>
@@ -2615,7 +2614,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                     if (target) { setShowQuickSwitch(false); navigate(`/execution/tasks/${target.id}`) }
                   }
                 }}
-                placeholder="Search tasks by code or title…"
+                placeholder={t('Search tasks by code or title…')}
                 type="text"
                 value={qsQuery}
               />
@@ -2623,10 +2622,10 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
             </div>
             <div className="wid-qs__body">
               {qsLoading && qsResults.length === 0 && (
-                <div className="wid-qs__empty">Loading…</div>
+                <div className="wid-qs__empty">{t('Loading…')}</div>
               )}
               {!qsLoading && qsResults.length === 0 && (
-                <div className="wid-qs__empty">{qsQuery.trim() ? 'No results.' : 'Type to search tasks.'}</div>
+                <div className="wid-qs__empty">{qsQuery.trim() ? t('No results.') : t('Type to search tasks.')}</div>
               )}
               {qsResults.map((r, i) => (
                 <button
@@ -2638,14 +2637,14 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                 >
                   <span className="wid-qs__item-code">{r.code}</span>
                   <span className="wid-qs__item-title">{r.title}</span>
-                  {r.id === Number(id) && <span className="wid-qs__item-tag">current</span>}
+                  {r.id === Number(id) && <span className="wid-qs__item-tag">{t('current')}</span>}
                 </button>
               ))}
             </div>
             <div className="wid-qs__foot">
-              <span><kbd className="wid-kbd">↑</kbd><kbd className="wid-kbd">↓</kbd> navigate</span>
-              <span><kbd className="wid-kbd">↵</kbd> open</span>
-              <span><kbd className="wid-kbd">ESC</kbd> close</span>
+              <span><kbd className="wid-kbd">↑</kbd><kbd className="wid-kbd">↓</kbd> {t('navigate')}</span>
+              <span><kbd className="wid-kbd">↵</kbd> {t('open')}</span>
+              <span><kbd className="wid-kbd">ESC</kbd> {t('close')}</span>
             </div>
           </div>
         </div>
@@ -2662,22 +2661,22 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
       )}
 
       {/* ── Kbd hint bar (floating, dismissible) ───────── */}
-      {!kbdHintDismissed && !showHelp && !showQuickSwitch && (
+      {mode !== 'modal' && !kbdHintDismissed && !showHelp && !showQuickSwitch && (
         <div className="wid-kbd-hint">
           <button
-            aria-label="Open keyboard shortcut guide"
+            aria-label={t('Open keyboard shortcut guide')}
             className="wid-kbd-hint__btn"
             onClick={() => setShowHelp(true)}
             type="button"
           >
             <kbd className="wid-kbd">?</kbd>
-            <span>Keyboard shortcuts</span>
+            <span>{t('Keyboard shortcuts')}</span>
           </button>
           <button
-            aria-label="Close hint"
+            aria-label={t('Close hint')}
             className="wid-kbd-hint__close"
             onClick={dismissKbdHint}
-            title="Don't show again"
+            title={t("Don't show again")}
             type="button"
           >
             <svg aria-hidden="true" fill="none" height="10" viewBox="0 0 10 10" width="10"><path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5"/></svg>

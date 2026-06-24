@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { TimelineGantt } from '../components/TimelineGantt'
 import type { TimelineGanttProgram } from '../components/TimelineGantt'
@@ -12,6 +13,7 @@ const STATUS_ORDER = ['IN_PROGRESS', 'PLANNING', 'ON_HOLD', 'COMPLETED', 'CANCEL
 // ── Main view ──────────────────────────────────────────────────────────────
 
 export function RoadmapView() {
+  const { t } = useTranslation()
   const {
     programs, dashboard: _dashboard, overviewStatus,
     openProgramWorkspace,
@@ -57,14 +59,14 @@ export function RoadmapView() {
     })).filter(g => g.items.length > 0)
   } else if (groupBy === 'priority') {
     groups = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(pri => ({
-      key: pri, label: pri,
+      key: pri, label: t(pri),
       tone: pri.toLowerCase(),
       items: filtered.filter(p => p.priority === pri),
     })).filter(g => g.items.length > 0)
   } else {
     groups = ['GREEN', 'YELLOW', 'RED'].map(h => ({
       key: h,
-      label: h === 'GREEN' ? 'On Track' : h === 'YELLOW' ? 'At Risk' : 'Delayed',
+      label: h === 'GREEN' ? t('On Track') : h === 'YELLOW' ? t('At Risk') : t('Delayed'),
       tone: h.toLowerCase(),
       items: filtered.filter(p => normalizeHealthStatus(p.healthStatus) === h),
     })).filter(g => g.items.length > 0)
@@ -87,19 +89,19 @@ export function RoadmapView() {
       {/* `ds-stagger`: motion standardization (no inline modal). */}
       <div className="roadmap-v2__inner ds-stagger">
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Program Roadmap</h2>
+        <h2 className="view-toolbar__title">{t('Program Roadmap')}</h2>
         <div className="view-toolbar__sep" />
         <span className="view-toolbar__subtitle">
-          {isStrategic ? 'Health and progress across the entire program portfolio.' : 'Schedule and progress of programs in your unit.'}
+          {isStrategic ? t('Health and progress across the entire program portfolio.') : t('Schedule and progress of programs in your unit.')}
         </span>
 
         {/* View mode toggle */}
         <div className="view-toggle">
           <button className={`view-toggle-btn${viewMode === 'lanes' ? ' active' : ''}`} onClick={() => setViewMode('lanes')}>
-            Lanes
+            {t('Lanes')}
           </button>
           <button className={`view-toggle-btn${viewMode === 'timeline' ? ' active' : ''}`} onClick={() => setViewMode('timeline')}>
-            Timeline
+            {t('Timeline')}
           </button>
         </div>
 
@@ -108,20 +110,20 @@ export function RoadmapView() {
           <div className="view-toggle roadmap-toolbar-offset">
             {(['status', 'priority', 'health'] as RoadmapGrouping[]).map(g => (
               <button className={`view-toggle-btn${groupBy === g ? ' active' : ''}`} key={g} onClick={() => setGroupBy(g)}>
-                {g === 'status' ? 'Status' : g === 'priority' ? 'Priority' : 'Health'}
+                {g === 'status' ? t('Status') : g === 'priority' ? t('Priority') : t('Health')}
               </button>
             ))}
           </div>
         )}
 
-        <input className="view-toolbar__search roadmap-toolbar-offset" onChange={e => setSearch(e.target.value)} placeholder="Filter programs…" value={search} />
+        <input className="view-toolbar__search roadmap-toolbar-offset" onChange={e => setSearch(e.target.value)} placeholder={t('Filter programs…')} value={search} />
 
         <div className="view-toolbar__right">
           <div className="view-toolbar__stats">
-            <span>{total} <em>programs</em></span>
-            <span>{inProgress} <em>active</em></span>
-            <span>{avgProgress}% <em>avg</em></span>
-            {atRiskOrOff > 0 && <span className="roadmap-stat-alert">{atRiskOrOff} <em>need attention</em></span>}
+            <span>{total} <em>{t('programs')}</em></span>
+            <span>{inProgress} <em>{t('active')}</em></span>
+            <span>{avgProgress}% <em>{t('avg')}</em></span>
+            {atRiskOrOff > 0 && <span className="roadmap-stat-alert">{atRiskOrOff} <em>{t('need attention')}</em></span>}
           </div>
         </div>
       </div>
@@ -129,11 +131,11 @@ export function RoadmapView() {
       {viewMode === 'timeline' ? (
         <div className="roadmap-body roadmap-body--timeline">
           {timelineLoading ? (
-            <p className="text-sm text-muted roadmap-empty">Loading timeline…</p>
+            <p className="text-sm text-muted roadmap-empty">{t('Loading timeline…')}</p>
           ) : (
             <TimelineGantt
               programs={filteredTimeline}
-              emptyText="No programs to show."
+              emptyText={t('No programs to show.')}
               onOpenProgram={openProgramWorkspace}
             />
           )}
@@ -141,9 +143,9 @@ export function RoadmapView() {
       ) : (
         <div className="roadmap-body">
           {overviewStatus.loading ? (
-            <p className="text-sm text-muted roadmap-empty">Loading roadmap…</p>
+            <p className="text-sm text-muted roadmap-empty">{t('Loading roadmap…')}</p>
           ) : groups.length === 0 ? (
-            <p className="text-sm text-muted roadmap-empty">No matching programs.</p>
+            <p className="text-sm text-muted roadmap-empty">{t('No matching programs.')}</p>
           ) : (
             <>
               {groups.map(group => (

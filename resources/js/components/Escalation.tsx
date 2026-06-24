@@ -11,6 +11,8 @@
  */
 import { useEffect, useId, useState } from 'react'
 import { usePage } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 import { api } from '../lib/api'
 import { useFeatureFlag } from '../hooks/useFeatureFlag'
 import { useOnboardingTour } from '../hooks/useOnboardingTour'
@@ -67,6 +69,7 @@ export function EscalationButton({
   onCreated?: (req: EscalationRequest) => void
   size?: 'sm' | 'md'
 }) {
+  const { t } = useTranslation()
   const enabled = useFeatureFlag('clear-the-path')
   const [open, setOpen] = useState(false)
 
@@ -81,13 +84,13 @@ export function EscalationButton({
         type="button"
         className={`btn btn--ghost ${size === 'sm' ? 'btn--sm' : ''}`}
         onClick={() => setOpen(true)}
-        title="Escalate to your manager"
+        title={t('Escalate to your manager')}
         data-tour="escalation-button"
       >
         <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M7 12V2M3 6l4-4 4 4" />
         </svg>
-        Request Manager Support
+        {t('Request Manager Support')}
       </button>
       {open && (
         <EscalationCreateModal
@@ -117,6 +120,7 @@ export function EscalationCreateModal({
   onClose: () => void
   onCreated?: (req: EscalationRequest) => void
 }) {
+  const { t } = useTranslation()
   const titleId = useId()
   const dialogRef = useDialogFocus<HTMLDivElement>(true)
   const [title, setTitle] = useState(prefillTitle)
@@ -127,7 +131,7 @@ export function EscalationCreateModal({
   const isDirty = title !== prefillTitle || description !== prefillDescription
   const safeClose = () => {
     if (saving) return
-    if (isDirty && !window.confirm('Discard unsaved changes?')) return
+    if (isDirty && !window.confirm(t('Discard unsaved changes?'))) return
     onClose()
   }
   useEscKey(safeClose, true)
@@ -135,7 +139,7 @@ export function EscalationCreateModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (title.trim().length < 3) { setError('Title must be at least 3 characters.'); return }
+    if (title.trim().length < 3) { setError(t('Title must be at least 3 characters.')); return }
     setSaving(true)
     try {
       const payload = await api.post<{ data: EscalationRequest }>('/escalations', {
@@ -145,7 +149,7 @@ export function EscalationCreateModal({
       })
       onCreated?.(payload.data)
     } catch (err) {
-      setError((err as Error).message || 'Failed to submit escalation.')
+      setError((err as Error).message || t('Failed to submit escalation.'))
     } finally {
       setSaving(false)
     }
@@ -166,11 +170,11 @@ export function EscalationCreateModal({
         <form onSubmit={handleSubmit}>
           <div className="modal__header">
             <div className="modal-headcopy">
-              <span className="modal-kicker">Clear the Path</span>
-              <h3 id={titleId} className="modal__title">Request Manager Support</h3>
-              <p className="modal-subtitle">This is automatically routed to your direct manager for disposition.</p>
+              <span className="modal-kicker">{t('Clear the Path')}</span>
+              <h3 id={titleId} className="modal__title">{t('Request Manager Support')}</h3>
+              <p className="modal-subtitle">{t('This is automatically routed to your direct manager for disposition.')}</p>
             </div>
-            <button type="button" className="modal__close" onClick={safeClose} aria-label="Close">
+            <button type="button" className="modal__close" onClick={safeClose} aria-label={t('Close')}>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="m1 1 10 10M11 1 1 11" />
               </svg>
@@ -178,7 +182,7 @@ export function EscalationCreateModal({
           </div>
           <div className="modal__body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Title *</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{t('Title *')}</span>
               <input
                 type="text"
                 value={title}
@@ -190,26 +194,26 @@ export function EscalationCreateModal({
               />
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Additional context (optional)</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{t('Additional context (optional)')}</span>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
                 maxLength={2000}
-                placeholder="What's making this stuck? What do you need from your manager?"
+                placeholder={t("What's making this stuck? What do you need from your manager?")}
                 style={{ padding: '6px 10px', border: '1px solid var(--panel-border)', borderRadius: 4, font: 'inherit', resize: 'vertical' }}
               />
             </label>
             {error && (
-              <div style={{ padding: '6px 10px', background: 'color-mix(in srgb, #c5302d 8%, transparent)', color: '#c5302d', borderRadius: 4, fontSize: 12 }}>
+              <div style={{ padding: '6px 10px', background: 'var(--red-dim)', color: 'var(--red)', borderRadius: 4, fontSize: 12 }}>
                 {error}
               </div>
             )}
           </div>
           <div className="modal__footer">
-            <button type="button" className="btn btn--ghost" onClick={safeClose} disabled={saving}>Cancel</button>
+            <button type="button" className="btn btn--ghost" onClick={safeClose} disabled={saving}>{t('Cancel')}</button>
             <button type="submit" className="btn btn--primary" disabled={saving || title.trim().length < 3}>
-              {saving ? 'Submitting…' : 'Submit Escalation'}
+              {saving ? t('Submitting…') : t('Submit Escalation')}
             </button>
           </div>
         </form>
@@ -229,6 +233,7 @@ export function EscalationTriagePanel({
   onClose: () => void
   onUpdated: (next: EscalationRequest) => void
 }) {
+  const { t } = useTranslation()
   const [mode, setMode] = useState<TriageMode>('view')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -267,7 +272,7 @@ export function EscalationTriagePanel({
       const payload = await api.post<{ data: EscalationRequest }>(`/escalations/${request.id}/${path}`, body)
       onUpdated(payload.data)
     } catch (err) {
-      setError((err as Error).message || 'Action failed.')
+      setError((err as Error).message || t('Action failed.'))
     } finally {
       setSaving(false)
     }
@@ -289,32 +294,32 @@ export function EscalationTriagePanel({
       open
       onClose={safeClose}
       title={request.title}
-      subtitle={`${request.code} · diajukan oleh ${request.requester?.name ?? '—'}`}
+      subtitle={t('{{code}} · requested by {{name}}', { code: request.code, name: request.requester?.name ?? '—' })}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span className={`badge badge--${statusToTone(request.status)}`}>{statusLabel(request.status)}</span>
         <AgingIndicator days={request.agingDays} thresholds={escalationAging} />
         {request.linkedProgram && (
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            Program: {request.linkedProgram.code}
+            {t('Program:')} {request.linkedProgram.code}
           </span>
         )}
       </div>
 
       {request.description && (
-        <Section label="Context">
+        <Section label={t('Context')}>
           <p style={{ fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap', margin: 0 }}>{request.description}</p>
         </Section>
       )}
 
       {request.status !== 'REQUESTED' && (
-        <Section label="Disposition">
+        <Section label={t('Disposition')}>
           <DispositionDetails req={request} />
         </Section>
       )}
 
       {error && (
-        <div style={{ padding: '8px 10px', background: 'color-mix(in srgb, #c5302d 8%, transparent)', color: '#c5302d', borderRadius: 4, fontSize: 12 }}>
+        <div style={{ padding: '8px 10px', background: 'var(--red-dim)', color: 'var(--red)', borderRadius: 4, fontSize: 12 }}>
           {error}
         </div>
       )}
@@ -324,23 +329,23 @@ export function EscalationTriagePanel({
           {canDispose && (
             <div style={{ display: 'flex', gap: 6 }}>
               <button type="button" className="btn btn--primary btn--sm" onClick={() => setMode('commit')}>
-                Commit (C)
+                {t('Commit (C)')}
               </button>
               <button type="button" className="btn btn--ghost btn--sm" onClick={() => setMode('reroute')}>
-                Reroute (R)
+                {t('Reroute (R)')}
               </button>
               <button type="button" className="btn btn--ghost btn--sm" onClick={() => setMode('decline')}>
-                Decline (D)
+                {t('Decline (D)')}
               </button>
             </div>
           )}
           {canResolve && (
             <button type="button" className="btn btn--primary btn--sm" onClick={() => setMode('resolve')}>
-              Mark Resolved (Cleared)
+              {t('Mark Resolved (Cleared)')}
             </button>
           )}
           {!canDispose && !canResolve && !isRequester && (
-            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>No actions available to you.</p>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('No actions available to you.')}</p>
           )}
         </>
       )}
@@ -394,27 +399,33 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 }
 
 function DispositionDetails({ req }: { req: EscalationRequest }) {
+  const { t } = useTranslation()
   if (req.status === 'COMMITTED' || req.status === 'IN_PROGRESS') {
     return (
       <div style={{ fontSize: 12, color: 'var(--text)' }}>
-        <p style={{ margin: '0 0 4px' }}>Manager committed to resolve{req.commitmentDueDate ? ` by ${formatDate(req.commitmentDueDate)}` : ''}.</p>
+        <p style={{ margin: '0 0 4px' }}>
+          {req.commitmentDueDate
+            ? t('Manager committed to resolve by {{date}}.', { date: formatDate(req.commitmentDueDate) })
+            : t('Manager committed to resolve.')}
+        </p>
         {req.commitmentNote && <p style={{ margin: 0, color: 'var(--text-muted)' }}>"{req.commitmentNote}"</p>}
       </div>
     )
   }
   if (req.status === 'CLEARED' && req.resolutionNote) {
-    return <p style={{ fontSize: 12, margin: 0 }}>✓ Resolved: {req.resolutionNote}</p>
+    return <p style={{ fontSize: 12, margin: 0 }}>✓ {t('Resolved:')} {req.resolutionNote}</p>
   }
   if (req.status === 'DECLINED' && req.declinedReason) {
-    return <p style={{ fontSize: 12, margin: 0, color: 'var(--text-muted)' }}>✗ Declined: {req.declinedReason}</p>
+    return <p style={{ fontSize: 12, margin: 0, color: 'var(--text-muted)' }}>✗ {t('Declined:')} {req.declinedReason}</p>
   }
   if (req.status === 'REROUTED') {
-    return <p style={{ fontSize: 12, margin: 0 }}>↻ Rerouted to {req.reroutedTo?.name ?? '—'}</p>
+    return <p style={{ fontSize: 12, margin: 0 }}>↻ {t('Rerouted to {{name}}', { name: req.reroutedTo?.name ?? '—' })}</p>
   }
   return null
 }
 
 function CommitForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel: () => void; onSubmit: (due: string, note: string) => void }) {
+  const { t } = useTranslation()
   const [due, setDue] = useState('')
   const [note, setNote] = useState('')
   const safeCancel = makeSafeCancel(saving, due !== '' || note !== '', onCancel)
@@ -422,49 +433,52 @@ function CommitForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel:
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(due, note) }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Target completion date (optional)</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{t('Target completion date (optional)')}</span>
         <input type="date" value={due} onChange={(e) => setDue(e.target.value)} min={new Date().toISOString().slice(0, 10)} style={inputStyle} />
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Notes (optional)</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{t('Notes (optional)')}</span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={1000} style={{ ...inputStyle, resize: 'vertical' }} />
       </label>
-      <FormActions saving={saving} primaryLabel="Commit" onCancel={safeCancel} />
+      <FormActions saving={saving} primaryLabel={t('Commit')} onCancel={safeCancel} />
     </form>
   )
 }
 
 function DeclineForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel: () => void; onSubmit: (reason: string) => void }) {
+  const { t } = useTranslation()
   const [reason, setReason] = useState('')
   const safeCancel = makeSafeCancel(saving, reason !== '', onCancel)
   useEscKey(safeCancel, true)
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(reason) }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Decline reason *</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{t('Decline reason *')}</span>
         <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} required minLength={5} maxLength={1000} autoFocus style={{ ...inputStyle, resize: 'vertical' }} />
       </label>
-      <FormActions saving={saving} primaryLabel="Decline" disabled={reason.trim().length < 5} onCancel={safeCancel} />
+      <FormActions saving={saving} primaryLabel={t('Decline')} disabled={reason.trim().length < 5} onCancel={safeCancel} />
     </form>
   )
 }
 
 function ResolveForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel: () => void; onSubmit: (note: string) => void }) {
+  const { t } = useTranslation()
   const [note, setNote] = useState('')
   const safeCancel = makeSafeCancel(saving, note !== '', onCancel)
   useEscKey(safeCancel, true)
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(note) }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Resolution note *</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{t('Resolution note *')}</span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} required minLength={5} maxLength={1000} autoFocus style={{ ...inputStyle, resize: 'vertical' }} />
       </label>
-      <FormActions saving={saving} primaryLabel="Mark Resolved" disabled={note.trim().length < 5} onCancel={safeCancel} />
+      <FormActions saving={saving} primaryLabel={t('Mark Resolved')} disabled={note.trim().length < 5} onCancel={safeCancel} />
     </form>
   )
 }
 
 function RerouteForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel: () => void; onSubmit: (targetId: number, note: string) => void }) {
+  const { t } = useTranslation()
   const [targetId, setTargetId] = useState('')
   const [note, setNote] = useState('')
   const id = parseInt(targetId, 10)
@@ -473,15 +487,15 @@ function RerouteForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel
   return (
     <form onSubmit={(e) => { e.preventDefault(); if (id) onSubmit(id, note) }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Target user ID *</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{t('Target user ID *')}</span>
         <input type="number" value={targetId} onChange={(e) => setTargetId(e.target.value)} required autoFocus style={inputStyle} />
-        <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>MVP: manual user ID input. Next sprint: typeahead picker.</span>
+        <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{t('MVP: manual user ID input. Next sprint: typeahead picker.')}</span>
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Notes (optional)</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{t('Notes (optional)')}</span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={500} style={{ ...inputStyle, resize: 'vertical' }} />
       </label>
-      <FormActions saving={saving} primaryLabel="Reroute" disabled={!id} onCancel={safeCancel} />
+      <FormActions saving={saving} primaryLabel={t('Reroute')} disabled={!id} onCancel={safeCancel} />
     </form>
   )
 }
@@ -495,17 +509,18 @@ function RerouteForm({ saving, onCancel, onSubmit }: { saving: boolean; onCancel
 function makeSafeCancel(saving: boolean, isDirty: boolean, onCancel: () => void): () => void {
   return () => {
     if (saving) return
-    if (isDirty && !window.confirm('Discard unsaved changes?')) return
+    if (isDirty && !window.confirm(i18n.t('Discard unsaved changes?'))) return
     onCancel()
   }
 }
 
 function FormActions({ saving, primaryLabel, disabled, onCancel }: { saving: boolean; primaryLabel: string; disabled?: boolean; onCancel: () => void }) {
+  const { t } = useTranslation()
   return (
     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-      <button type="button" className="btn btn--ghost btn--sm" onClick={onCancel} disabled={saving}>Cancel</button>
+      <button type="button" className="btn btn--ghost btn--sm" onClick={onCancel} disabled={saving}>{t('Cancel')}</button>
       <button type="submit" className="btn btn--primary btn--sm" disabled={saving || disabled}>
-        {saving ? 'Saving…' : primaryLabel}
+        {saving ? t('Saving…') : primaryLabel}
       </button>
     </div>
   )
@@ -532,12 +547,12 @@ function statusToTone(s: EscalationStatus): string {
 
 function statusLabel(s: EscalationStatus): string {
   return ({
-    REQUESTED: 'Awaiting',
-    COMMITTED: 'Committed',
-    IN_PROGRESS: 'In Progress',
-    CLEARED: 'Resolved',
-    DECLINED: 'Declined',
-    REROUTED: 'Rerouted',
+    REQUESTED: i18n.t('Awaiting'),
+    COMMITTED: i18n.t('Committed'),
+    IN_PROGRESS: i18n.t('In Progress'),
+    CLEARED: i18n.t('Resolved'),
+    DECLINED: i18n.t('Declined'),
+    REROUTED: i18n.t('Rerouted'),
   } as const)[s] ?? s
 }
 

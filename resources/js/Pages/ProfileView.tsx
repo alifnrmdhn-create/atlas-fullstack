@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { formatRoleLabel } from '../lib/roleLabel'
@@ -124,6 +125,7 @@ function roleTone(role?: string | null): RoleTone {
 
 function OrgNode({ person, positionName, isSelf = false }:
   { person?: PersonNode | null; positionName: string; isSelf?: boolean }) {
+  const { t } = useTranslation()
   const name = person?.name ?? '—'
   const role = person?.roleType ?? ''
   const tone = roleTone(role)
@@ -135,7 +137,7 @@ function OrgNode({ person, positionName, isSelf = false }:
       </div>
       <div className="org-node__info">
         <div className="org-node__name">
-          {person ? name : <em className="org-node__empty-name">Vacant</em>}
+          {person ? name : <em className="org-node__empty-name">{t('Vacant')}</em>}
         </div>
         <div className="org-node__pos">{positionName}</div>
         {role && (
@@ -149,6 +151,7 @@ function OrgNode({ person, positionName, isSelf = false }:
 // ── Main view ──────────────────────────────────────────────────────────────
 
 export function ProfileView() {
+  const { t } = useTranslation()
   const { currentUser } = useWorkspace()
 
   const [profileData, setProfileData] = useState<ProfileResponse | null>(null)
@@ -192,7 +195,7 @@ export function ProfileView() {
       await api.put('/profile', { name: formName, email: formEmail })
       setProfileData(prev => prev ? { ...prev, user: { ...prev.user, name: formName, email: formEmail } } : prev)
       setSaved(true); setTimeout(() => setSaved(false), 2000)
-    } catch (err) { setSaveError(err instanceof Error ? err.message : 'Failed to save') }
+    } catch (err) { setSaveError(err instanceof Error ? err.message : t('Failed to save')) }
     finally { setSaving(false) }
   }
 
@@ -218,7 +221,7 @@ export function ProfileView() {
   if (loading) return (
     <div className="ds profile-v2 view-profile">
       <div className="section-block profile-loading">
-        <span className="profile-empty-note">Loading profile…</span>
+        <span className="profile-empty-note">{t('Loading profile…')}</span>
       </div>
     </div>
   )
@@ -233,8 +236,8 @@ export function ProfileView() {
     } catch { /* ignore */ }
   }
   const atasanEmptyText = user?.position?.levelCode === 'BOD' || user?.position?.levelCode === 'BOD-1'
-    ? 'Reports directly to the Board of Directors.'
-    : 'No supervisor on record.'
+    ? t('Reports directly to the Board of Directors.')
+    : t('No supervisor on record.')
 
   return (
     <div className="ds profile-v2 view-profile">
@@ -244,19 +247,19 @@ export function ProfileView() {
           — column children muncul bersamaan dengan parent column. */}
       <div className="profile-v2__inner ds-stagger">
         <div className="view-toolbar">
-          <h2 className="view-toolbar__title">My Profile</h2>
+          <h2 className="view-toolbar__title">{t('My Profile')}</h2>
           <div className="view-toolbar__sep" />
-          <span className="view-toolbar__subtitle">View and update your account information and preferences.</span>
+          <span className="view-toolbar__subtitle">{t('View and update your account information and preferences.')}</span>
         </div>
 
         {/* ─── HERO BAND ─────────────────────────────────────── */}
-        <section className="pv-hero" aria-label="Identity">
+        <section className="pv-hero" aria-label={t('Identity')}>
           <div className={`pv-hero__avatar`} data-tone={userRoleTone}>
             {user ? initials(user.name) : '?'}
           </div>
           <div className="pv-hero__body">
             <h2 className="pv-hero__name">{user?.name ?? '—'}</h2>
-            <p className="pv-hero__pos">{user?.position?.name ?? user?.positionTitle ?? 'Position not assigned'}</p>
+            <p className="pv-hero__pos">{user?.position?.name ?? user?.positionTitle ?? t('Position not assigned')}</p>
             <div className="pv-hero__badges">
               {user?.roleType && (
                 <span className="profile-role-badge" data-tone={userRoleTone}>{formatRoleLabel(user.roleType)}</span>
@@ -265,7 +268,7 @@ export function ProfileView() {
                 <span className="profile-role-badge profile-role-badge--level" data-tone="gray">{user.position.levelCode}</span>
               )}
               <span className="profile-role-badge profile-role-badge--completeness" data-tone={profileCompleteness === 100 ? 'green' : 'yellow'}>
-                {profileCompleteness === 100 ? '✓ Complete' : `${profileCompleteness}%`}
+                {profileCompleteness === 100 ? t('✓ Complete') : `${profileCompleteness}%`}
               </span>
             </div>
           </div>
@@ -274,17 +277,17 @@ export function ProfileView() {
             onClick={() => setShowEditForm(v => !v)}
             type="button"
           >
-            {showEditForm ? 'Close editor' : '✏ Edit profile'}
+            {showEditForm ? t('Close editor') : t('✏ Edit profile')}
           </button>
         </section>
 
         {/* ─── EDIT FORM (collapsible) ────────────────────────── */}
         {showEditForm && (
-          <section className="pv-section pv-form-section" aria-label="Edit profile">
+          <section className="pv-section pv-form-section" aria-label={t('Edit profile')}>
             <form className="pv-form" onSubmit={handleSave}>
               <div className="pv-form__row">
                 <div className="pv-form__field">
-                  <label className="pv-form__label" htmlFor="p-name">Name</label>
+                  <label className="pv-form__label" htmlFor="p-name">{t('Name')}</label>
                   <input
                     className="pv-input"
                     disabled={saving}
@@ -295,7 +298,7 @@ export function ProfileView() {
                   />
                 </div>
                 <div className="pv-form__field">
-                  <label className="pv-form__label" htmlFor="p-email">Email</label>
+                  <label className="pv-form__label" htmlFor="p-email">{t('Email')}</label>
                   <div className="pv-input-wrap">
                     <input
                       className="pv-input pv-input--with-action"
@@ -306,10 +309,10 @@ export function ProfileView() {
                       value={formEmail}
                     />
                     <button
-                      aria-label="Copy email"
+                      aria-label={t('Copy email')}
                       className="pv-input-action"
                       onClick={copyEmail}
-                      title={emailCopied ? 'Copied!' : 'Copy email'}
+                      title={emailCopied ? t('Copied!') : t('Copy email')}
                       type="button"
                     >
                       {emailCopied ? (
@@ -328,10 +331,10 @@ export function ProfileView() {
               </div>
               <div className="pv-form__actions">
                 <span className={`pv-form__state${hasDirtyProfile ? ' is-dirty' : ''}`}>
-                  {saved ? '✓ Saved' : saveError ? saveError : hasDirtyProfile ? 'You have unsaved changes' : 'Data in sync'}
+                  {saved ? t('✓ Saved') : saveError ? saveError : hasDirtyProfile ? t('You have unsaved changes') : t('Data in sync')}
                 </span>
                 <button className="pv-form__save" disabled={saving || !hasDirtyProfile} type="submit">
-                  {saving ? 'Saving…' : 'Save changes'}
+                  {saving ? t('Saving…') : t('Save changes')}
                 </button>
               </div>
             </form>
@@ -345,31 +348,31 @@ export function ProfileView() {
         <div className="pv-body__col pv-body__col--main">
 
         {/* ─── IDENTITAS ORGANISASI ──────────────────────────── */}
-        <section className="pv-section" aria-label="Organization identity">
-          <h3 className="pv-section__title">Organization Identity</h3>
+        <section className="pv-section" aria-label={t('Organization identity')}>
+          <h3 className="pv-section__title">{t('Organization Identity')}</h3>
           <dl className="pv-data-list">
             <div className="pv-data-row">
-              <dt>NIK</dt>
-              <dd>{user?.nik ?? <span className="pv-empty-inline">— Not available</span>}</dd>
+              <dt>{t('NIK')}</dt>
+              <dd>{user?.nik ?? <span className="pv-empty-inline">{t('— Not available')}</span>}</dd>
             </div>
             <div className="pv-data-row">
-              <dt>Email</dt>
-              <dd>{user?.email ?? <span className="pv-empty-inline">— Not available</span>}</dd>
+              <dt>{t('Email')}</dt>
+              <dd>{user?.email ?? <span className="pv-empty-inline">{t('— Not available')}</span>}</dd>
             </div>
             <div className="pv-data-row">
-              <dt>Unit</dt>
+              <dt>{t('Unit')}</dt>
               <dd>{user?.unit?.code ?? <span className="pv-empty-inline">—</span>}</dd>
             </div>
             <div className="pv-data-row">
-              <dt>Directorate</dt>
+              <dt>{t('Directorate')}</dt>
               <dd>{user?.directorate?.name ?? <span className="pv-empty-inline">—</span>}</dd>
             </div>
             <div className="pv-data-row">
-              <dt>Division</dt>
+              <dt>{t('Division')}</dt>
               <dd>{user?.unit?.name ?? <span className="pv-empty-inline">—</span>}</dd>
             </div>
             <div className="pv-data-row">
-              <dt>Direct supervisor</dt>
+              <dt>{t('Direct supervisor')}</dt>
               <dd>
                 {supervisorChain[0]?.name
                   ? <>{supervisorChain[0].name} <span className="pv-data-row__sub">· {supervisorChain[0].positionTitle ?? formatRoleLabel(supervisorChain[0].roleType)}</span></>
@@ -377,11 +380,13 @@ export function ProfileView() {
               </dd>
             </div>
             <div className="pv-data-row">
-              <dt>Direct team</dt>
+              <dt>{t('Direct team')}</dt>
               <dd>
                 {directReportsCount > 0
-                  ? <>{directReportsCount} {directReportsCount === 1 ? 'person reports' : 'people report'} directly</>
-                  : <span className="pv-empty-inline">No direct reports</span>}
+                  ? (directReportsCount === 1
+                      ? t('{{count}} person reports directly', { count: directReportsCount })
+                      : t('{{count}} people report directly', { count: directReportsCount }))
+                  : <span className="pv-empty-inline">{t('No direct reports')}</span>}
               </dd>
             </div>
           </dl>
@@ -389,14 +394,14 @@ export function ProfileView() {
 
         {/* ─── HIERARKI ──────────────────────────────────────── */}
         {user?.position && (
-          <section className="pv-section" aria-label="Position hierarchy">
+          <section className="pv-section" aria-label={t('Position hierarchy')}>
             <div className="pv-section__head">
-              <h3 className="pv-section__title">Position Hierarchy</h3>
-              <span className="pv-section__meta">{supervisorChain.length} supervisors · {directReportsCount} reports</span>
+              <h3 className="pv-section__title">{t('Position Hierarchy')}</h3>
+              <span className="pv-section__meta">{t('{{supervisors}} supervisors · {{reports}} reports', { supervisors: supervisorChain.length, reports: directReportsCount })}</span>
             </div>
             <div className="pv-org-map">
               <div className="pv-org-lane">
-                <div className="pv-org-lane__head">Supervisors</div>
+                <div className="pv-org-lane__head">{t('Supervisors')}</div>
                 <div className="pv-org-lane__nodes">
                   {supervisorChain.length > 0 ? (
                     [...supervisorChain].reverse().map(person => (
@@ -406,19 +411,19 @@ export function ProfileView() {
                 </div>
               </div>
               <div className="pv-org-lane pv-org-lane--self">
-                <div className="pv-org-lane__head">My position</div>
+                <div className="pv-org-lane__head">{t('My position')}</div>
                 <div className="pv-org-lane__nodes">
                   <OrgNode person={user as PersonNode} positionName={user.position.name} isSelf />
                 </div>
               </div>
               <div className="pv-org-lane">
-                <div className="pv-org-lane__head">Direct reports</div>
+                <div className="pv-org-lane__head">{t('Direct reports')}</div>
                 <div className="pv-org-lane__nodes">
                   {subordinates.length > 0 ? (
                     subordinates.map(person => (
                       <OrgNode key={person.id} person={person} positionName={person.positionTitle ?? formatRoleLabel(person.roleType)} />
                     ))
-                  ) : <span className="pv-empty-inline">No direct reports</span>}
+                  ) : <span className="pv-empty-inline">{t('No direct reports')}</span>}
                 </div>
               </div>
             </div>
@@ -431,13 +436,13 @@ export function ProfileView() {
         <div className="pv-body__col pv-body__col--rail">
 
         {/* ─── AKTIVITAS ─────────────────────────────────────── */}
-        <section className="pv-section" aria-label="Activity">
+        <section className="pv-section" aria-label={t('Activity')}>
           <div className="pv-section__head">
             <div>
-              <h3 className="pv-section__title">My Activity</h3>
+              <h3 className="pv-section__title">{t('My Activity')}</h3>
               <p className="pv-section__sub">
-                Last active: {activityLast}
-                {activityData?.dailyBreakdown.length ? ` · ${activeDaysCount}/${activityData.dailyBreakdown.length} active days` : ''}
+                {t('Last active: {{date}}', { date: activityLast })}
+                {activityData?.dailyBreakdown.length ? ` · ${t('{{active}}/{{total}} active days', { active: activeDaysCount, total: activityData.dailyBreakdown.length })}` : ''}
               </p>
             </div>
             <div className="pv-range-toggle">
@@ -452,27 +457,27 @@ export function ProfileView() {
             </div>
           </div>
           {activityLoading ? (
-            <p className="pv-empty-inline">Loading activity data…</p>
+            <p className="pv-empty-inline">{t('Loading activity data…')}</p>
           ) : !activityData ? (
-            <p className="pv-empty-inline">Activity data not available.</p>
+            <p className="pv-empty-inline">{t('Activity data not available.')}</p>
           ) : (
             <>
               <div className="pv-kpi-row">
                 <div className="pv-kpi">
                   <span className="pv-kpi__value">{fmtDuration(activityData.totalDurationMs)}</span>
-                  <span className="pv-kpi__label">Total active</span>
+                  <span className="pv-kpi__label">{t('Total active')}</span>
                 </div>
                 <div className="pv-kpi">
                   <span className="pv-kpi__value">{activityData.sessionCount}</span>
-                  <span className="pv-kpi__label">Sessions</span>
+                  <span className="pv-kpi__label">{t('Sessions')}</span>
                 </div>
                 <div className="pv-kpi">
                   <span className="pv-kpi__value">{fmtDuration(activityData.avgSessionDurationMs)}</span>
-                  <span className="pv-kpi__label">Avg. session</span>
+                  <span className="pv-kpi__label">{t('Avg. session')}</span>
                 </div>
                 <div className="pv-kpi">
                   <span className="pv-kpi__value">{activeDaysCount}</span>
-                  <span className="pv-kpi__label">Active days</span>
+                  <span className="pv-kpi__label">{t('Active days')}</span>
                 </div>
               </div>
               {activityData.dailyBreakdown.length > 0 && (() => {
@@ -481,7 +486,7 @@ export function ProfileView() {
                 return (
                   <div className="pv-chart-wrap">
                     <div className="pv-chart-meta">
-                      <span className="pv-chart-meta__label">Peak</span>
+                      <span className="pv-chart-meta__label">{t('Peak')}</span>
                       <span className="pv-chart-meta__value">
                         {fmtDuration(peakDay.durationMs)} · {fmtDayLabel(peakDay.date)}
                       </span>
@@ -503,12 +508,12 @@ export function ProfileView() {
         </section>
 
         {/* ─── RIWAYAT JABATAN (timeline) ──────────────────── */}
-        <section className="pv-section" aria-label="Position history">
+        <section className="pv-section" aria-label={t('Position history')}>
           <div className="pv-section__head">
             <div>
-              <h3 className="pv-section__title">Position History</h3>
+              <h3 className="pv-section__title">{t('Position History')}</h3>
               <p className="pv-section__sub">
-                {latestHistoryEntry ? `Last change ${fmtDate(latestHistoryEntry.startDate)}.` : 'Timeline of position changes and transfers.'}
+                {latestHistoryEntry ? t('Last change {{date}}.', { date: fmtDate(latestHistoryEntry.startDate) }) : t('Timeline of position changes and transfers.')}
               </p>
             </div>
             {positionHistory.length > 0 && <span className="pv-section__badge">{positionHistory.length}</span>}
@@ -523,20 +528,20 @@ export function ProfileView() {
                       {entry.position?.code && <span className="code-badge">{entry.position.code}</span>}
                       <span className="pv-timeline__title">{entry.position?.name ?? '—'}</span>
                       <span className="code-badge">{entry.mutationType}</span>
-                      {!entry.endDate && <span className="pv-timeline__active">Active</span>}
+                      {!entry.endDate && <span className="pv-timeline__active">{t('Active')}</span>}
                     </div>
                     <div className="pv-timeline__date">
                       {fmtDate(entry.startDate)}
-                      {entry.endDate ? ` — ${fmtDate(entry.endDate)}` : ' — present'}
+                      {entry.endDate ? ` — ${fmtDate(entry.endDate)}` : ` — ${t('present')}`}
                     </div>
                     {entry.mutationReason && <div className="pv-timeline__note">{entry.mutationReason}</div>}
-                    {entry.skNumber && <div className="pv-timeline__sk">SK: <span className="code-badge">{entry.skNumber}</span></div>}
+                    {entry.skNumber && <div className="pv-timeline__sk">{t('SK')}: <span className="code-badge">{entry.skNumber}</span></div>}
                   </div>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="pv-empty-inline">No transfers recorded yet. Position history will appear here after a position change.</p>
+            <p className="pv-empty-inline">{t('No transfers recorded yet. Position history will appear here after a position change.')}</p>
           )}
         </section>
 

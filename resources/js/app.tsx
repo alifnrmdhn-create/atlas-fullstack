@@ -39,6 +39,12 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
     }
 }
 
+// Fonts — self-hosted via @fontsource (tanpa CDN call). Public Sans = brand sans
+// (x-height tinggi, DNA institusional/governance; selaras ERIN). Geist Mono =
+// code-block / keyboard-key / kode-ID. Di-load sebelum CSS agar --font-sans resolve.
+import '@fontsource-variable/public-sans'
+import '@fontsource-variable/geist-mono'
+
 import './styles/tokens.css'
 import './design-system/tokens.css'
 import './styles/reset.css'
@@ -72,10 +78,14 @@ import './styles/context-panel.css'
 import './styles/icing.css' // PREVIEW: lapisan finishing aditif (hapus baris ini + file untuk revert)
 
 import { hydrateThemePreference } from './lib/theme'
+import { hydrateLocale } from './lib/locale'
+import './lib/i18n' // initialise i18next (reads stored locale) before first render
+import { I18nProvider } from './components/I18nProvider'
 
 // Restore persisted appearance settings before first paint
 ;(function () {
     hydrateThemePreference()
+    hydrateLocale()
     const size = localStorage.getItem('atlas.fontSize')
     if (size) document.documentElement.style.fontSize = size === 'small' ? '13px' : size === 'large' ? '15px' : '14px'
     const compact = localStorage.getItem('atlas.sidebarCompact')
@@ -117,7 +127,11 @@ createInertiaApp({
             root = createRoot(el)
             roots.set(el, root)
         }
-        root.render(<App {...props} />)
+        root.render(
+            <I18nProvider>
+                <App {...props} />
+            </I18nProvider>,
+        )
     },
 })
 

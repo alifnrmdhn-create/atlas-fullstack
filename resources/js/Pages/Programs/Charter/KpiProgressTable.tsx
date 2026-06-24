@@ -1,4 +1,6 @@
 import { Fragment } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../../../lib/i18n'
 import { MONTH_KEYS, type CharterCellStatus, type CharterKpiHistory } from '../../../types/charter'
 
 type Props = {
@@ -22,10 +24,10 @@ function statusGlyph(status: CharterCellStatus): string {
 
 function statusAria(status: CharterCellStatus): string {
   switch (status) {
-    case 'above': return 'di atas target'
-    case 'on':    return 'sesuai target'
-    case 'below': return 'di bawah target'
-    default:      return 'belum diukur'
+    case 'above': return i18n.t('Above target')
+    case 'on':    return i18n.t('On target')
+    case 'below': return i18n.t('Below target')
+    default:      return i18n.t('Not measured')
   }
 }
 
@@ -35,8 +37,9 @@ function statusAria(status: CharterCellStatus): string {
  * mirroring DKMR PDF "Above/On/Below target" icons (slide 20).
  */
 export function KpiProgressTable({ history }: Props) {
+  const { t } = useTranslation()
   if (history.rows.length === 0) {
-    return <div className="kpt-empty">No monthly KPI history yet.</div>
+    return <div className="kpt-empty">{t('No monthly KPI history yet.')}</div>
   }
 
   return (
@@ -56,7 +59,7 @@ export function KpiProgressTable({ history }: Props) {
             <Fragment key={`${idx}-${row.label}`}>
               <tr className="kpt-row kpt-row--target">
                 <td className="kpt-cell kpt-cell--name" rowSpan={2}>{row.label}</td>
-                <td className="kpt-cell kpt-cell--label">Target</td>
+                <td className="kpt-cell kpt-cell--label">{t('Target')}</td>
                 {MONTH_KEYS.map(m => {
                   const cell = row.months[m]
                   return (
@@ -67,7 +70,7 @@ export function KpiProgressTable({ history }: Props) {
                 })}
               </tr>
               <tr className="kpt-row kpt-row--real">
-                <td className="kpt-cell kpt-cell--label">Real</td>
+                <td className="kpt-cell kpt-cell--label">{t('Real')}</td>
                 {MONTH_KEYS.map(m => {
                   const cell = row.months[m]
                   const status = cell.status ?? (cell.aboveTarget ? 'above' : 'na')

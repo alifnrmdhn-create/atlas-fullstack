@@ -918,7 +918,7 @@
 @media print {
   /* ── Base reset ── */
   *, *::before, *::after { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  body, html { background: #fff !important; color: #000 !important; font-size: 11pt; }
+  body, html { background: #fff !important; color: #000 !important; font-size: 11pt; } /* dark-allow: print stylesheet forces light for PDF */
 
   /* ── Hide chrome & interactive elements ── */
   .app-sidebar, .topbar, .channel-context-banner,
@@ -934,19 +934,19 @@
     display: block;
     font-size: 14pt;
     font-weight: 700;
-    color: #000;
+    color: #000; /* dark-allow: print stylesheet forces light for PDF */
     margin-bottom: 4px;
   }
   .view-toolbar::after {
     content: 'Dicetak: ' attr(data-print-date);
     display: block;
     font-size: 9pt;
-    color: #666;
+    color: #666; /* dark-allow: print stylesheet forces light for PDF */
   }
-  .view-toolbar { border-bottom: 1.5px solid #000 !important; padding-bottom: 8px; }
+  .view-toolbar { border-bottom: 1.5px solid #000 !important; padding-bottom: 8px; } /* dark-allow: print stylesheet forces light for PDF */
 
   /* ── Layout ── */
-  .view-dashboard { padding: 0 !important; background: #fff !important; }
+  .view-dashboard { padding: 0 !important; background: #fff !important; } /* dark-allow: print stylesheet forces light for PDF */
   .view-dashboard > .hd-hero,
   .view-dashboard > .hd-intel-row,
   .view-dashboard > .hd-intel,
@@ -954,7 +954,7 @@
     margin-left: 16px !important;
     margin-right: 16px !important;
     box-shadow: none !important;
-    border-color: #ddd !important;
+    border-color: #ddd !important; /* dark-allow: print stylesheet forces light for PDF */
     break-inside: avoid;
   }
 
@@ -964,8 +964,8 @@
     border-color: transparent !important;
     background: none !important;
   }
-  .hd-hero__statrow { border-top-color: #ddd !important; }
-  .hd-hero__stat-sep { background: #ddd !important; }
+  .hd-hero__statrow { border-top-color: #ddd !important; } /* dark-allow: print stylesheet forces light for PDF */
+  .hd-hero__stat-sep { background: #ddd !important; } /* dark-allow: print stylesheet forces light for PDF */
 
   /* ── Program rows ── */
   .hd-pl-row, .hd-act-row, .hd-divrow { break-inside: avoid; }
@@ -980,7 +980,7 @@
   .hd-intel-row--2col { grid-template-columns: 1fr !important; }
 
   /* ── Colors simplified ── */
-  .hd-hero { border-color: #ddd !important; }
+  .hd-hero { border-color: #ddd !important; } /* dark-allow: print stylesheet forces light for PDF */
 }
 
 /* ── Inject print date via JS ── */

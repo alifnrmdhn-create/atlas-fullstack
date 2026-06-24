@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 import { TaskDetailView } from '../Pages/TaskDetailView'
 
 /**
@@ -27,6 +28,7 @@ export interface TaskDetailModalProps {
 type AnimPhase = 'enter' | 'open' | 'exit'
 
 export function TaskDetailModal({ taskId, originRect, onClose }: TaskDetailModalProps) {
+  const { t } = useTranslation()
   const [phase, setPhase] = useState<AnimPhase>('enter')
   const dialogRef = useRef<HTMLDivElement | null>(null)
 
@@ -128,15 +130,15 @@ export function TaskDetailModal({ taskId, originRect, onClose }: TaskDetailModal
               const url = `${window.location.origin}/execution/tasks/${taskId}`
               navigator.clipboard?.writeText(url)
             }}
-            title="Copy task link to share"
+            title={t('Copy task link to share')}
           >
-            🔗 Copy link
+            🔗 {t('Copy link')}
           </button>
           <button
             type="button"
             className="task-detail-modal__close"
             onClick={handleClose}
-            aria-label="Close"
+            aria-label={t('Close')}
           >
             <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 14 14" width="14">
               <path d="m1 1 12 12M13 1 1 13" />

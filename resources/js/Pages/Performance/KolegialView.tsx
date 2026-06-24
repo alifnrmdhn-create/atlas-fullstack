@@ -1,4 +1,5 @@
 import { Head, usePage } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { Card, Pill, Stat } from '../../design-system'
 import { scoreTone, fillRatio, formatNumber, formatPercent, formatPeriod } from './_shared'
@@ -28,6 +29,7 @@ type PageProps = {
   periode: string
 }
 
+// dark-allow: palet identitas perspektif BSC (kategorikal), konsisten dua theme
 const PERSPEKTIF_COLORS: Record<string, string> = {
   'Ekonomi & Sosial':     'var(--ds-green-500)',
   'IMB':                   '#6366F1',
@@ -45,6 +47,7 @@ function statTone(c: StatItem['color']): 'green' | 'amber' | 'red' | 'neutral' {
 }
 
 export default function KolegialView() {
+  const { t } = useTranslation()
   const { stats, dirut, direktur, periode } = usePage<PageProps>().props
   const periodeLabel = formatPeriod(periode)
   const navigate = useInertiaNavigate()
@@ -55,14 +58,14 @@ export default function KolegialView() {
 
   return (
     <>
-      <Head title="KPI Collegial" />
+      <Head title={t('KPI Collegial')} />
       <div className="ds perf view-performance">
         <div className="perf__inner ds-stagger">
           {/* ─── Header ──────────────────────────── */}
           <header className="perf__header">
             <div className="perf__header-left">
-              <h1 className="perf__title">KPI Collegial</h1>
-              <span className="perf__subtitle">Shared achievement of the board of directors</span>
+              <h1 className="perf__title">{t('KPI Collegial')}</h1>
+              <span className="perf__subtitle">{t('Shared achievement of the board of directors')}</span>
             </div>
             <div className="perf__header-actions">
               <span className="perf__period-pill">
@@ -74,8 +77,8 @@ export default function KolegialView() {
 
           {isEmpty && (
             <Card padding="lg" className="perf__section perf-empty">
-              <div className="perf-empty__title">No KPI Collegial data yet</div>
-              <div>Directorate scores are not available for the {periodeLabel} period. Data will appear once the directors' KPI module is populated.</div>
+              <div className="perf-empty__title">{t('No KPI Collegial data yet')}</div>
+              <div>{t('Directorate scores are not available for the {{period}} period. Data will appear once the directors\' KPI module is populated.', { period: periodeLabel })}</div>
             </Card>
           )}
 
@@ -110,7 +113,7 @@ export default function KolegialView() {
                 <span className="perf-subject__eyebrow">{dirut.jabatan}</span>
                 <div className="perf-subject__name">{dirut.nama}</div>
                 <div className="perf-subject__chips">
-                  <Pill tone="neutral" variant="soft">{dirut.total_kpi} KPI</Pill>
+                  <Pill tone="neutral" variant="soft">{t('{{count}} KPI', { count: dirut.total_kpi })}</Pill>
                   <Pill tone="neutral" variant="soft">{periodeLabel}</Pill>
                   {dirut.perspektif?.map(p => (
                     <span
@@ -145,7 +148,7 @@ export default function KolegialView() {
                 <span className="perf-subject__score-value" data-tone={dirutTone}>
                   {formatNumber(dirut.nilai)}<span style={{ fontSize: 14, color: 'var(--ds-text-tertiary)', marginLeft: 3, fontWeight: 500 }}>%</span>
                 </span>
-                <span className="perf-subject__score-label">View details →</span>
+                <span className="perf-subject__score-label">{t('View details →')}</span>
               </div>
             </div>
             <div className="perf-subject__bar">
@@ -156,7 +159,7 @@ export default function KolegialView() {
 
           {/* ─── 5 Direktur grid ──────────────────── */}
           <section className="perf__section">
-            <span className="perf__section-label">Directors' Individual KPI</span>
+            <span className="perf__section-label">{t('Directors\' Individual KPI')}</span>
             <div className="perf-direktur-grid">
               {direktur.map(d => {
                 const tone = scoreTone(d.nilai)
@@ -181,7 +184,7 @@ export default function KolegialView() {
                     <div className="perf-subject__bar" style={{ marginTop: 0 }}>
                       <div className="perf-subject__bar-fill" data-tone={tone} style={{ width: `${bar}%` }} />
                     </div>
-                    <div className="perf-rank__sub">{d.total_kpi} KPI</div>
+                    <div className="perf-rank__sub">{t('{{count}} KPI', { count: d.total_kpi })}</div>
                   </Card>
                 )
               })}

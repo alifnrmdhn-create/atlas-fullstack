@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
 import { Card, Pill } from '../../design-system'
 import { scoreTone, formatNumber, formatPercent, formatVal } from './_shared'
 
@@ -18,17 +19,18 @@ export type ExceptionRow = {
  * KPI Division (comparison) supaya konsisten.
  */
 export function ExceptionsCard({ exceptions, total }: { exceptions: ExceptionRow[]; total?: number }) {
+  const { t } = useTranslation()
   return (
     <Card padding="md">
       <div className="perf-card-head">
-        <h2 className="perf-card-head__title">Needs attention</h2>
+        <h2 className="perf-card-head__title">{t('Needs attention')}</h2>
         <Pill tone={exceptions.length > 0 ? 'amber' : 'green'} variant="soft">
-          {exceptions.length > 0 ? `${exceptions.length} KPI below 100%` : 'all on target'}
+          {exceptions.length > 0 ? t('{{count}} KPI below 100%', { count: exceptions.length }) : t('all on target')}
         </Pill>
       </div>
       {exceptions.length === 0 ? (
         <p className="perf-empty">
-          All {total ?? ''} division KPIs meet 100% of target this period.
+          {t('All {{count}} division KPIs meet 100% of target this period.', { count: total ?? '' })}
         </p>
       ) : (
         <div className="perf-exc-list">
@@ -48,13 +50,16 @@ export function ExceptionsCard({ exceptions, total }: { exceptions: ExceptionRow
                 <span className="perf-exc__kpi">{e.kpi}</span>
                 <span className="perf-exc__detail">
                   {e.realisasi === '—'
-                    ? 'not measured yet'
-                    : `${formatVal(e.realisasi, e.satuan)} of ${formatVal(e.sasaran, e.satuan)} target`}
-                  {' · '}weight {formatNumber(e.bobot, 0)}%
+                    ? t('not measured yet')
+                    : t('{{realisasi}} of {{sasaran}} target', {
+                        realisasi: formatVal(e.realisasi, e.satuan),
+                        sasaran: formatVal(e.sasaran, e.satuan),
+                      })}
+                  {' · '}{t('weight {{weight}}%', { weight: formatNumber(e.bobot, 0) })}
                 </span>
               </span>
               <span className="perf-exc__pct" data-tone={scoreTone(e.pct)}>
-                {e.realisasi === '—' ? 'N/A' : formatPercent(e.pct, 0)}
+                {e.realisasi === '—' ? t('N/A') : formatPercent(e.pct, 0)}
               </span>
             </Link>
             )

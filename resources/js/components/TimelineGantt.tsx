@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export type TimelineGanttWorkstream = {
   id: number
@@ -149,6 +150,7 @@ function GanttBar({
 }
 
 export function TimelineGantt({ programs, emptyText, onOpenProgram }: TimelineGanttProps) {
+  const { t } = useTranslation()
   if (programs.length === 0) return <p className="text-sm text-muted roadmap-empty">{emptyText}</p>
 
   const dates = programs.flatMap((program) => [
@@ -191,7 +193,7 @@ export function TimelineGantt({ programs, emptyText, onOpenProgram }: TimelineGa
               {monthLabel.format(date)}
             </div>
           ))}
-          {showToday ? <div className="gantt-today" style={todayStyle} title="Today" /> : null}
+          {showToday ? <div className="gantt-today" style={todayStyle} title={t('Today')} /> : null}
         </div>
       </div>
 
@@ -213,7 +215,11 @@ export function TimelineGantt({ programs, emptyText, onOpenProgram }: TimelineGa
                 pct={program.progressPercent}
                 tone={healthTone(program.healthStatus)}
                 onClick={() => onOpenProgram(program.id)}
-                ariaLabel={`${program.code} ${program.name}, ${program.progressPercent}% progress`}
+                ariaLabel={t('{{code}} {{name}}, {{percent}}% progress', {
+                  code: program.code,
+                  name: program.name,
+                  percent: program.progressPercent,
+                })}
                 height={30}
               />
             </div>

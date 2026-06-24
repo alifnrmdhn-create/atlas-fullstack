@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Card } from '../../design-system'
 import { scoreTone } from './_shared'
 
@@ -23,6 +24,7 @@ type Props = {
  * Reusable: render di IndividuView + Executive Summary.
  */
 export function LeaderboardSection({ topPerformers, onSelect, periode }: Props) {
+  const { t } = useTranslation()
   const groups = Object.entries(topPerformers)
   if (groups.length === 0) return null
 
@@ -33,7 +35,7 @@ export function LeaderboardSection({ topPerformers, onSelect, periode }: Props) 
           <div className="perf-card-head">
             <h2 className="perf-card-head__title">{bodLabel}</h2>
             <span className="perf-rank__sub">
-              {periode ? `Score ${periode}` : 'Score this month'}
+              {periode ? t('Score {{periode}}', { periode }) : t('Score this month')}
             </span>
           </div>
           <div className="perf-leaderboard__list">

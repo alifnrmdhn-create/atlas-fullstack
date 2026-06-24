@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 
 export type UserOption = {
   id: number
@@ -25,15 +27,16 @@ export function UserPicker({
   value,
   onChange,
   options,
-  placeholder = 'Select a user…',
+  placeholder = i18n.t('Select a user…'),
   disabled,
   allowClear,
-  clearLabel = '— Clear selection —',
+  clearLabel = i18n.t('— Clear selection —'),
   currentUserId,
   autoOpen,
   inputClassName = 'form-input',
   className,
 }: SingleProps) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(!!autoOpen)
   const [query, setQuery] = useState('')
   const [activeIdx, setActiveIdx] = useState(0)
@@ -103,7 +106,7 @@ export function UserPicker({
   }
 
   const displayLabel = selected
-    ? `${selected.name}${selected.id === currentUserId ? ' (You)' : ''}${selected.positionTitle ? ` — ${selected.positionTitle}` : ''}`
+    ? `${selected.name}${selected.id === currentUserId ? ` ${t('(You)')}` : ''}${selected.positionTitle ? ` — ${selected.positionTitle}` : ''}`
     : ''
 
   return (
@@ -133,14 +136,14 @@ export function UserPicker({
             <input
               onChange={e => setQuery(e.target.value)}
               onKeyDown={onKey}
-              placeholder="Search by name or position…"
+              placeholder={t('Search by name or position…')}
               ref={inputRef}
               type="text"
               value={query}
             />
           </div>
           {filtered.length === 0 ? (
-            <p className="user-picker__empty">No matching names.</p>
+            <p className="user-picker__empty">{t('No matching names.')}</p>
           ) : (
             <ul className="user-picker__results" ref={listRef} role="listbox">
               {filtered.map((u, idx) => (
@@ -153,7 +156,7 @@ export function UserPicker({
                     type="button"
                   >
                     <span className="user-picker-item__name">
-                      {u.name}{u.id === currentUserId ? ' (You)' : ''}
+                      {u.name}{u.id === currentUserId ? ` ${t('(You)')}` : ''}
                     </span>
                     {u.positionTitle && (
                       <span className="user-picker-item__meta">{u.positionTitle}</span>
@@ -195,10 +198,11 @@ export function UserPickerMulti({
   options,
   excludeIds = [],
   maxSuggestions = 6,
-  searchPlaceholder = 'Search by name or position…',
-  emptyAllPickedLabel = 'All users are already selected.',
+  searchPlaceholder = i18n.t('Search by name or position…'),
+  emptyAllPickedLabel = i18n.t('All users are already selected.'),
   className,
 }: MultiProps) {
+  const { t } = useTranslation()
   const [query, setQuery] = useState('')
 
   const selectedUsers = useMemo(
@@ -234,7 +238,7 @@ export function UserPickerMulti({
             <span className="user-picker__chip" key={u.id}>
               <span className="user-picker__chip-name">{u.name}</span>
               <button
-                aria-label={`Remove ${u.name}`}
+                aria-label={t('Remove {{name}}', { name: u.name })}
                 className="user-picker__chip-remove"
                 onClick={() => remove(u.id)}
                 type="button"
@@ -267,7 +271,7 @@ export function UserPickerMulti({
       </div>
       {filtered.length === 0 ? (
         <p className="user-picker__empty">
-          {query ? 'No matching names.' : emptyAllPickedLabel}
+          {query ? t('No matching names.') : emptyAllPickedLabel}
         </p>
       ) : (
         <ul className="user-picker__results user-picker__results--inline">

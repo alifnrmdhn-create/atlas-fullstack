@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../../../lib/i18n'
 import type { CharterProgram, CharterStatus, CharterKpi, CharterHealth } from '../../../types/charter'
 
 type Props = {
@@ -9,11 +11,14 @@ type Props = {
   actionSlot?: ReactNode
 }
 
-const HEALTH_LABEL: Record<CharterHealth, string> = {
-  ON_TRACK:  'On Track',
-  AT_RISK:   'At Risk',
-  TERLAMBAT: 'Delayed',
-  COMPLETED: 'Completed',
+function healthLabel(health: CharterHealth): string {
+  const labels: Record<CharterHealth, string> = {
+    ON_TRACK:  i18n.t('On Track'),
+    AT_RISK:   i18n.t('At Risk'),
+    TERLAMBAT: i18n.t('Delayed'),
+    COMPLETED: i18n.t('Completed'),
+  }
+  return labels[health]
 }
 
 /** Format "YYYY-MM" → "May 2026". */
@@ -30,6 +35,7 @@ function formatYearMonth(ym: string): string {
  * di atas, kemudian grid 4-kolom: Strategic Objective, KPI, PIC, Period.
  */
 export function HeaderStrip({ program, status, kpi, actionSlot }: Props) {
+  const { t } = useTranslation()
   return (
     <header className="cs-header">
       <div className="cs-header__title">
@@ -41,23 +47,23 @@ export function HeaderStrip({ program, status, kpi, actionSlot }: Props) {
           {/* Health badge — sentence case (CSS) + subtle bg only, no inline color
               override yang clash dengan modern flat style. */}
           <span className={`cs-health cs-health--${status.health.toLowerCase()}`}>
-            {HEALTH_LABEL[status.health]}
+            {healthLabel(status.health)}
           </span>
           {actionSlot ?? (
             <button
               type="button"
               className="charter-export-button cs-export"
               disabled
-              title="Available in Phase 3"
+              title={t('Available in Phase 3')}
             >
-              Export PPTX
+              {t('Export PPTX')}
             </button>
           )}
         </div>
       </div>
 
       <div className="cs-header__col cs-header__col--so">
-        <div className="cs-header__label">Strategic Objective</div>
+        <div className="cs-header__label">{t('Strategic Objective')}</div>
         <div className="cs-header__so" title={program.strategicObjective ?? undefined}>
           {program.strategicObjective ?? '—'}
         </div>
@@ -67,27 +73,27 @@ export function HeaderStrip({ program, status, kpi, actionSlot }: Props) {
       </div>
 
       <div className="cs-header__col">
-        <div className="cs-header__label">Primary KPI</div>
+        <div className="cs-header__label">{t('Primary KPI')}</div>
         {kpi ? (
           <>
             <div className="cs-header__value">{kpi.name}</div>
-            <div className="cs-header__sub">Target {kpi.target.toLocaleString('en-US')} {kpi.unit}</div>
+            <div className="cs-header__sub">{t('Target {{value}} {{unit}}', { value: kpi.target.toLocaleString('en-US'), unit: kpi.unit })}</div>
           </>
         ) : (
           // kpi null = belum ada KpiDefinition (APMS maupun internal). Bukan
           // "non-scorecard" — owner bisa menetapkannya via tab KPI program.
-          <div className="cs-header__sub cs-header__sub--muted">Not set</div>
+          <div className="cs-header__sub cs-header__sub--muted">{t('Not set')}</div>
         )}
       </div>
 
       <div className="cs-header__col">
-        <div className="cs-header__label">PIC</div>
+        <div className="cs-header__label">{t('PIC')}</div>
         <div className="cs-header__value">{program.pic.name}</div>
         <div className="cs-header__sub">{program.pic.position}</div>
       </div>
 
       <div className="cs-header__col">
-        <div className="cs-header__label">Period</div>
+        <div className="cs-header__label">{t('Period')}</div>
         <div className="cs-header__value">
           {formatYearMonth(program.period.from)} → {formatYearMonth(program.period.to)}
         </div>

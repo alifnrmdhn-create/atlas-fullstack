@@ -4,12 +4,14 @@ import './Gauge.css'
 
 type Tone = 'green' | 'amber' | 'red' | 'neutral'
 
+// dark-allow: ramp gradien status data-viz (arc + glow), konsisten dua theme
 const RICH_GRAD: Record<Tone, [string, string]> = {
   green:   ['#34D399', '#059669'],
   amber:   ['#FBBF24', '#D97706'],
   red:     ['#FB7185', '#DC2626'],
   neutral: ['#CBD5E1', '#94A3B8'],
 }
+// dark-allow: glow aksen di atas arc status data-viz, konsisten dua theme
 const RICH_GLOW: Record<Tone, string> = {
   green:   'rgba(16,185,129,0.55)',
   amber:   'rgba(245,158,11,0.55)',

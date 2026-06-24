@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { router, usePage } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
 import { Calendar } from 'lucide-react'
+import i18n from '../../lib/i18n'
 
 /**
  * Monthly Reports context panel — period + status filter.
@@ -17,13 +19,15 @@ import { Calendar } from 'lucide-react'
 const CURRENT_YEAR = new Date().getFullYear()
 const YEARS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2]
 
-const STATUS_OPTIONS: Array<{ value: string; label: string; tone: 'gray' | 'amber' | 'blue' | 'green' | 'red' }> = [
-  { value: 'DRAFT', label: 'Draft', tone: 'gray' },
-  { value: 'SUBMITTED', label: 'Submitted', tone: 'amber' },
-  { value: 'REVIEWED', label: 'Reviewed', tone: 'blue' },
-  { value: 'APPROVED', label: 'Approved', tone: 'green' },
-  { value: 'REJECTED', label: 'Rejected', tone: 'red' },
-]
+function statusOptions(): Array<{ value: string; label: string; tone: 'gray' | 'amber' | 'blue' | 'green' | 'red' }> {
+  return [
+    { value: 'DRAFT', label: i18n.t('Draft'), tone: 'gray' },
+    { value: 'SUBMITTED', label: i18n.t('Submitted'), tone: 'amber' },
+    { value: 'REVIEWED', label: i18n.t('Reviewed'), tone: 'blue' },
+    { value: 'APPROVED', label: i18n.t('Approved'), tone: 'green' },
+    { value: 'REJECTED', label: i18n.t('Rejected'), tone: 'red' },
+  ]
+}
 
 function readQuery(): URLSearchParams {
   if (typeof window === 'undefined') return new URLSearchParams()
@@ -42,6 +46,7 @@ function readStatusSet(): Set<string> {
 }
 
 export function MonthlyReportsFilterPanel() {
+  const { t } = useTranslation()
   const { url } = usePage()
   const [year, setYear] = useState<number>(() => readYear())
   const [status, setStatus] = useState<Set<string>>(() => readStatusSet())
@@ -93,10 +98,10 @@ export function MonthlyReportsFilterPanel() {
           <span className="context-panel__section-icon" aria-hidden="true">
             <Calendar size={13} />
           </span>
-          <h3 className="context-panel__section-title">Year</h3>
+          <h3 className="context-panel__section-title">{t('Year')}</h3>
           {hasActive ? (
             <button type="button" className="context-panel__reset" onClick={reset}>
-              Reset
+              {t('Reset')}
             </button>
           ) : null}
         </header>
@@ -118,10 +123,10 @@ export function MonthlyReportsFilterPanel() {
 
       <section className="context-panel__section">
         <header className="context-panel__section-header">
-          <h3 className="context-panel__section-title">Status</h3>
+          <h3 className="context-panel__section-title">{t('Status')}</h3>
         </header>
         <div className="context-panel__section-body">
-          {STATUS_OPTIONS.map((opt) => {
+          {statusOptions().map((opt) => {
             const checked = status.has(opt.value)
             return (
               <label key={opt.value} className="context-panel__check">

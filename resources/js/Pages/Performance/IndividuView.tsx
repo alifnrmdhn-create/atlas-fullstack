@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Head, Link, usePage } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { Button, Card } from '../../design-system'
 import { LeaderboardSection, type Performer } from './LeaderboardSection'
@@ -17,23 +18,24 @@ type PageProps = {
 export default function IndividuView() {
   const { topPerformers, orgNav, periode } = usePage<PageProps>().props
   const navigate = useInertiaNavigate()
+  const { t } = useTranslation()
   const [openOrg, setOpenOrg] = useState<string | null>(null)
 
   return (
     <>
-      <Head title="KPI Individual" />
+      <Head title={t('KPI Individual')} />
       <div className="ds perf view-performance">
         <div className="perf__inner ds-stagger">
           {/* ─── Header ──────────────────────────── */}
           <header className="perf__header">
             <div className="perf__header-left">
-              <h1 className="perf__title">KPI Individual</h1>
-              <span className="perf__subtitle">Data sourced from APMS as of {periode}</span>
+              <h1 className="perf__title">{t('KPI Individual')}</h1>
+              <span className="perf__subtitle">{t('Data sourced from APMS as of {{periode}}', { periode })}</span>
             </div>
             <div className="perf__header-actions">
               <Link href="/performance/me">
                 <Button variant="primary" size="sm" iconLeft={<IconUser />}>
-                  My KPI
+                  {t('My KPI')}
                 </Button>
               </Link>
               <span className="perf__period-pill">
@@ -46,13 +48,13 @@ export default function IndividuView() {
           {/* ─── Leaderboard BOD-1/-2/-3 ─────────── */}
           <section className="perf__section">
             <div className="perf-section-head">
-              <span className="perf__section-label">KPI Leaderboard</span>
-              <span className="perf-section-meta">Top 3 per level · medal styling for #1–#3</span>
+              <span className="perf__section-label">{t('KPI Leaderboard')}</span>
+              <span className="perf-section-meta">{t('Top 3 per level · medal styling for #1–#3')}</span>
             </div>
             {Object.keys(topPerformers).length === 0 ? (
               <Card padding="lg" className="perf-empty">
-                <div className="perf-empty__title">No leaderboard data yet</div>
-                <div>Individual KPIs are not available yet. Use the division navigation below to open employee details.</div>
+                <div className="perf-empty__title">{t('No leaderboard data yet')}</div>
+                <div>{t('Individual KPIs are not available yet. Use the division navigation below to open employee details.')}</div>
               </Card>
             ) : (
               <LeaderboardSection
@@ -65,7 +67,7 @@ export default function IndividuView() {
 
           {/* ─── Org navigation ──────────────────── */}
           <section className="perf__section">
-            <span className="perf__section-label">Navigation by Division</span>
+            <span className="perf__section-label">{t('Navigation by Division')}</span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {orgNav.map(org => {
                 const isOpen = openOrg === org.kode || openOrg === null
@@ -112,7 +114,7 @@ export default function IndividuView() {
                         fontSize: 11,
                         color: 'var(--ds-text-tertiary)',
                       }}>
-                        {org.divisi.length} divisions
+                        {t('{{count}} divisions', { count: org.divisi.length })}
                       </span>
                     </button>
                     {isOpen && (

@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { CSSProperties, ReactElement } from 'react'
 import { Head, Link } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import PanduanKonsepHierarki from './PanduanKonsepHierarki'
@@ -92,185 +94,185 @@ type Topik = {
   playbook?: { anchor: string; label: string }
 }
 
-const TOPIK: Topik[] = [
+const getTopik = (): Topik[] => [
   {
     slug:      'buat-program',
     icon:      '📋',
-    judul:     'Create a work program',
-    ringkas:   'Register a new strategic program or initiative in ATLAS',
+    judul:     i18n.t('Create a work program'),
+    ringkas:   i18n.t('Register a new strategic program or initiative in ATLAS'),
     audience:  ['KADIV', 'KASUBDIV', 'ASISTEN', 'ADMIN'],
     bacaMenit: 2,
-    apa:       'A work program is the largest planning unit — a container for a strategic initiative that you will break down into Workstreams, Tasks, and KPIs. A KADIV can activate it directly; a KASUBDIV or ASISTEN needs approval from their superior.',
+    apa:       i18n.t('A work program is the largest planning unit — a container for a strategic initiative that you will break down into Workstreams, Tasks, and KPIs. A KADIV can activate it directly; a KASUBDIV or ASISTEN needs approval from their superior.'),
     langkah: [
-      { judul: 'Open the Programs menu',      deskripsi: 'Sidebar → Plan group → Programs.' },
-      { judul: 'Click "+ Create Program"',    deskripsi: 'Button in the top-right corner of the page.' },
-      { judul: 'Fill in the minimum fields',  deskripsi: 'Code, Name, a short Description, and the program Year. The default owner is you.' },
-      { judul: 'Click Save',                  deskripsi: 'The program is created. KADIV: immediately ACTIVE. KASUBDIV: status PENDING_KADIV. ASISTEN: status DRAFT (you then need to click "Submit for Approval").', tip: 'As an ASISTEN, you can keep editing the draft before submitting it.' },
+      { judul: i18n.t('Open the Programs menu'),      deskripsi: i18n.t('Sidebar → Portfolio → Programs.') },
+      { judul: i18n.t('Click "+ Create Program"'),    deskripsi: i18n.t('Button in the top-right corner of the page.') },
+      { judul: i18n.t('Fill in the minimum fields'),  deskripsi: i18n.t('Code, Name, a short Description, and the program Year. The default owner is you.') },
+      { judul: i18n.t('Click Save'),                  deskripsi: i18n.t('The program is created. KADIV: immediately ACTIVE. KASUBDIV: status PENDING_KADIV. ASISTEN: status DRAFT (you then need to click "Submit for Approval").'), tip: i18n.t('As an ASISTEN, you can keep editing the draft before submitting it.') },
     ],
     tips: [
-      'Once a program is ACTIVE, any change to commitment fields (target, deadline, KPI link) is recorded in the audit log and the relevant people are notified — this keeps everyone accountable.',
-      'A "post-activation hint" banner appears to help you add the first Workstream (the Plan → Do bridge).',
+      i18n.t('Once a program is ACTIVE, any change to commitment fields (target, deadline, KPI link) is recorded in the audit log and the relevant people are notified — this keeps everyone accountable.'),
+      i18n.t('A "post-activation hint" banner appears to help you add the first Workstream (the Plan → Do bridge).'),
     ],
-    playbook: { anchor: '5-perencanaan--program--workstream', label: '§5 Program & Workstream' },
+    playbook: { anchor: '5-perencanaan--program--workstream', label: i18n.t('§5 Program & Workstream') },
   },
   {
     slug:      'setujui-program',
     icon:      '✅',
-    judul:     'Approve or reject a program',
-    ringkas:   'Review a program submitted by your team',
+    judul:     i18n.t('Approve or reject a program'),
+    ringkas:   i18n.t('Review a program submitted by your team'),
     audience:  ['KASUBDIV', 'KADIV', 'ADMIN'],
     bacaMenit: 2,
-    apa:       'Programs created by a KASUBDIV or ASISTEN need your review. As a KASUBDIV you are the first reviewer for an ASISTEN; as a KADIV you are the final reviewer.',
+    apa:       i18n.t('Programs created by a KASUBDIV or ASISTEN need your review. As a KASUBDIV you are the first reviewer for an ASISTEN; as a KADIV you are the final reviewer.'),
     langkah: [
-      { judul: 'Open a notification or Focus', deskripsi: 'A "Program awaiting your approval" item appears in Focus and the notification bell. Click it to open the program detail.' },
-      { judul: 'Review the program content',  deskripsi: 'Check the Summary tab: description, target, owner, KPI link. Check the Structure tab if Workstreams already exist.' },
-      { judul: 'Approve or Return',           deskripsi: 'Use the "Approve" / "Return" buttons in the top banner. Returning a program requires a reason; it goes back to DRAFT for the PIC to revise.' },
+      { judul: i18n.t('Open a notification or Focus'), deskripsi: i18n.t('A "Program awaiting your approval" item appears in Focus and the notification bell. Click it to open the program detail.') },
+      { judul: i18n.t('Review the program content'),  deskripsi: i18n.t('Check the Summary tab: description, target, owner, KPI link. Check the Structure tab if Workstreams already exist.') },
+      { judul: i18n.t('Approve or Return'),           deskripsi: i18n.t('Use the "Approve" / "Return" buttons in the top banner. Returning a program requires a reason; it goes back to DRAFT for the PIC to revise.') },
     ],
     tips: [
-      'After approval, a confirmation toast appears along with an "On Track" badge on the program. The creator is notified as well.',
-      'When rejecting, add a note so the PIC knows what to fix — it is linked to the REJECTED status.',
+      i18n.t('After approval, a confirmation toast appears along with an "On Track" badge on the program. The creator is notified as well.'),
+      i18n.t('When rejecting, add a note so the PIC knows what to fix — it is linked to the REJECTED status.'),
     ],
-    playbook: { anchor: '5-perencanaan--program--workstream', label: '§5 Program Approval Flow' },
+    playbook: { anchor: '5-perencanaan--program--workstream', label: i18n.t('§5 Program Approval Flow') },
   },
   {
     slug:      'tambah-workstream-task',
     icon:      '🌳',
-    judul:     'Add Workstreams & Tasks',
-    ringkas:   'Build the work hierarchy: Workstream → Phase → Task',
+    judul:     i18n.t('Add Workstreams & Tasks'),
+    ringkas:   i18n.t('Build the work hierarchy: Workstream → Phase → Task'),
     audience:  ['KADIV', 'KASUBDIV', 'ASISTEN', 'OFFICER'],
     bacaMenit: 3,
-    apa:       'Once a program is ACTIVE, you break it down into work tracks (Workstreams), stages (Phases), and execution units (Tasks). Tasks are what appear on the Workboard and can be assigned to team members.',
+    apa:       i18n.t('Once a program is ACTIVE, you break it down into work tracks (Workstreams), stages (Phases), and execution units (Tasks). Tasks are what appear on the Workboard and can be assigned to team members.'),
     langkah: [
-      { judul: 'Open the Program detail',      deskripsi: 'Click a program from the list, then open the Structure tab.' },
-      { judul: 'Add a Workstream',             deskripsi: 'Click "+ New Workstream". Fill in the name, code, dates, and PIC.' },
-      { judul: 'Add a Phase to the Workstream', deskripsi: 'Click the Workstream, then "+ Add Phase". Give it a name (e.g. "Document Collection", "Analysis", "Report Drafting").' },
-      { judul: 'Add a Task to the Phase',      deskripsi: 'Click "+ Add Task" under the Phase. Fill in the title, priority, assignee, and target completion date.', tip: 'The new Task appears on the assignee’s Workboard.' },
+      { judul: i18n.t('Open the Program detail'),      deskripsi: i18n.t('Click a program from the list, then open the Structure tab.') },
+      { judul: i18n.t('Add a Workstream'),             deskripsi: i18n.t('Click "+ New Workstream". Fill in the name, code, dates, and PIC.') },
+      { judul: i18n.t('Add a Phase to the Workstream'), deskripsi: i18n.t('Click the Workstream, then "+ Add Phase". Give it a name (e.g. "Document Collection", "Analysis", "Report Drafting").') },
+      { judul: i18n.t('Add a Task to the Phase'),      deskripsi: i18n.t('Click "+ Add Task" under the Phase. Fill in the title, priority, assignee, and target completion date.'), tip: i18n.t('The new Task appears on the assignee’s Workboard.') },
     ],
     tips: [
-      'The hierarchy is Program → Workstream → Phase → Task → Subtask. A Subtask is a small step-by-step checklist inside a Task and does not appear on the Workboard.',
-      'If you just need a quick task without a Phase, create it directly from the Workboard with "+ New Task".',
+      i18n.t('The hierarchy is Program → Workstream → Phase → Task → Subtask. A Subtask is a small step-by-step checklist inside a Task and does not appear on the Workboard.'),
+      i18n.t('If you just need a quick task without a Phase, create it directly from the Workboard with "+ New Task".'),
     ],
-    playbook: { anchor: '5-perencanaan--program--workstream', label: '§5 How to Add a Task' },
+    playbook: { anchor: '5-perencanaan--program--workstream', label: i18n.t('§5 How to Add a Task') },
   },
   {
     slug:      'update-progress',
     icon:      '⏱️',
-    judul:     'Update daily task progress',
-    ringkas:   'Move tasks between columns, log progress %, mark them done',
+    judul:     i18n.t('Update daily task progress'),
+    ringkas:   i18n.t('Move tasks between columns, log progress %, mark them done'),
     audience:  ['ALL'],
     bacaMenit: 2,
-    apa:       'The Workboard has 5 columns: Backlog → Ready → In Progress → In Review → Done. Move a task card between columns as its status changes.',
+    apa:       i18n.t('The Workboard has 5 columns: Backlog → Ready → In Progress → In Review → Done. Move a task card between columns as its status changes.'),
     langkah: [
-      { judul: 'Open the Workboard',           deskripsi: 'Sidebar → Do group → Workboard. Or use the shortcut G E.' },
-      { judul: 'Filter to your tasks',         deskripsi: 'Click the "My Tasks" tab to see only the tasks assigned to you.' },
-      { judul: 'Click a task card',            deskripsi: 'The detail modal opens. Change the status from the dropdown, or drag the card between columns.' },
-      { judul: 'Submit for review when done',  deskripsi: 'Move it to "In Review" and attach evidence, a link, or a note. The reviewer is notified.', tip: 'A backward transition (e.g. In Progress → Ready) requires a reason.' },
+      { judul: i18n.t('Open the Workboard'),           deskripsi: i18n.t('Sidebar → Work → Workboard. Or use the shortcut G E.') },
+      { judul: i18n.t('Filter to your tasks'),         deskripsi: i18n.t('Click the "My Tasks" tab to see only the tasks assigned to you.') },
+      { judul: i18n.t('Click a task card'),            deskripsi: i18n.t('The detail modal opens. Change the status from the dropdown, or drag the card between columns.') },
+      { judul: i18n.t('Submit for review when done'),  deskripsi: i18n.t('Move it to "In Review" and attach evidence, a link, or a note. The reviewer is notified.'), tip: i18n.t('A backward transition (e.g. In Progress → Ready) requires a reason.') },
     ],
     tips: [
-      'The ⚠ Blocked badge: if a blocker exists, the task stays in its current column but is flagged. Its progress history is preserved.',
-      'When a task is Done, an "✓ On time" / "⚠ Late" badge appears automatically based on the deadline.',
-      'WIP limit: if too many tasks are In Progress, the system reminds you so the team does not get overloaded.',
+      i18n.t('The ⚠ Blocked badge: if a blocker exists, the task stays in its current column but is flagged. Its progress history is preserved.'),
+      i18n.t('When a task is Done, an "✓ On time" / "⚠ Late" badge appears automatically based on the deadline.'),
+      i18n.t('WIP limit: if too many tasks are In Progress, the system reminds you so the team does not get overloaded.'),
     ],
-    playbook: { anchor: '8-eksekusi--papan-kerja-workboard', label: '§8 Workboard' },
+    playbook: { anchor: '8-eksekusi--papan-kerja-workboard', label: i18n.t('§8 Workboard') },
   },
   {
     slug:      'lapor-blocker-eskalasi',
     icon:      '🚧',
-    judul:     'Report blockers & escalate',
-    ringkas:   'Log a blocker and request support from your superior (Clear the Path)',
+    judul:     i18n.t('Report blockers & escalate'),
+    ringkas:   i18n.t('Log a blocker and request support from your superior (Clear the Path)'),
     audience:  ['ALL'],
     bacaMenit: 2,
-    apa:       'A Blocker is an obstacle that prevents a task from being completed. An Escalation (Clear the Path) is a fast track to request support from your superior when work is stuck — it can start from a blocker, a progress log, or be created ad-hoc.',
+    apa:       i18n.t('A Blocker is an obstacle that prevents a task from being completed. An Escalation (Clear the Path) is a fast track to request support from your superior when work is stuck — it can start from a blocker, a progress log, or be created ad-hoc.'),
     langkah: [
-      { judul: 'Open the blocked task detail', deskripsi: 'From the Workboard, click the task card.' },
-      { judul: 'Click "+ Add Blocker"',        deskripsi: 'In the detail panel. Fill in a title, a description, and the severity (LOW / MEDIUM / HIGH).' },
-      { judul: 'Save',                         deskripsi: 'The PIC and KADIV are notified automatically. The blocker feeds into the program’s Health Score.' },
-      { judul: 'Escalate if needed',           deskripsi: 'Click "Request Support" on the blocker card, or from Home or the program detail. Add context and send. Your superior will triage it (Commit / Reroute / Decline).', tip: 'The escalation status shows up in your Focus; a superior who commits will set a due date.' },
+      { judul: i18n.t('Open the blocked task detail'), deskripsi: i18n.t('From the Workboard, click the task card.') },
+      { judul: i18n.t('Click "+ Add Blocker"'),        deskripsi: i18n.t('In the detail panel. Fill in a title, a description, and the severity (LOW / MEDIUM / HIGH).') },
+      { judul: i18n.t('Save'),                         deskripsi: i18n.t('The PIC and KADIV are notified automatically. The blocker feeds into the program’s Health Score.') },
+      { judul: i18n.t('Escalate if needed'),           deskripsi: i18n.t('Click "Request Support" on the blocker card, or from Home or the program detail. Add context and send. Your superior will triage it (Commit / Reroute / Decline).'), tip: i18n.t('The escalation status shows up in your Focus; a superior who commits will set a due date.') },
     ],
     tips: [
-      'Every blocker gets an automatic discussion channel — the conversation stays in the context of the obstacle.',
-      'The escalation feature is enabled for the DKM Pilot (feature flag). If the button does not appear, it may not be enabled for your unit yet.',
+      i18n.t('Every blocker gets an automatic discussion channel — the conversation stays in the context of the obstacle.'),
+      i18n.t('The escalation feature is enabled for the DKM Pilot (feature flag). If the button does not appear, it may not be enabled for your unit yet.'),
     ],
-    playbook: { anchor: '11-eksekusi--blocker-hambatan-kerja', label: '§11 Blocker · §18 Escalation' },
+    playbook: { anchor: '11-eksekusi--blocker-hambatan-kerja', label: i18n.t('§11 Blocker · §18 Escalation') },
   },
   {
     slug:      'buat-penugasan',
     icon:      '📨',
-    judul:     'Create & delegate an assignment',
-    ringkas:   'Give an ad-hoc task to your team, outside the Program structure',
+    judul:     i18n.t('Create & delegate an assignment'),
+    ringkas:   i18n.t('Give an ad-hoc task to your team, outside the Program structure'),
     audience:  ['BOD', 'KADIV', 'KASUBDIV', 'ADMIN'],
     bacaMenit: 2,
-    apa:       'An Assignment is an ad-hoc task from a superior to a team member, outside the Program structure. It usually comes with completion evidence (file, link, or note).',
+    apa:       i18n.t('An Assignment is an ad-hoc task from a superior to a team member, outside the Program structure. It usually comes with completion evidence (file, link, or note).'),
     langkah: [
-      { judul: 'Open the Assignment page',     deskripsi: 'Sidebar → Do group → Assignment. Or use the shortcut G A.' },
-      { judul: 'Click "+ New Assignment"',     deskripsi: 'Button in the top-right corner.' },
-      { judul: 'Choose a recipient from the directory', deskripsi: 'The system shows a preview of the approval chain if the recipient needs approval first.' },
-      { judul: 'Fill in the details & send',   deskripsi: 'Title, description, priority, target completion date, and the type of evidence expected. Click Send — the recipient is notified immediately.', tip: 'If the recipient is in a different directorate, ATLAS asks for a justification (cross-directorate policy).' },
+      { judul: i18n.t('Open the Assignment page'),     deskripsi: i18n.t('Sidebar → Work → Assignment. Or use the shortcut G A.') },
+      { judul: i18n.t('Click "+ New Assignment"'),     deskripsi: i18n.t('Button in the top-right corner.') },
+      { judul: i18n.t('Choose a recipient from the directory'), deskripsi: i18n.t('The system shows a preview of the approval chain if the recipient needs approval first.') },
+      { judul: i18n.t('Fill in the details & send'),   deskripsi: i18n.t('Title, description, priority, target completion date, and the type of evidence expected. Click Send — the recipient is notified immediately.'), tip: i18n.t('If the recipient is in a different directorate, ATLAS asks for a justification (cross-directorate policy).') },
     ],
     tips: [
-      'Assignments do not count toward program KPIs, but they are recorded in the recipient’s Commitment Ledger (their commitment hit-rate).',
-      'Status: Ready → In Progress → In Review → Done. Same as a Workboard Task.',
+      i18n.t('Assignments do not count toward program KPIs, but they are recorded in the recipient’s Commitment Ledger (their commitment hit-rate).'),
+      i18n.t('Status: Ready → In Progress → In Review → Done. Same as a Workboard Task.'),
     ],
-    playbook: { anchor: '9-eksekusi--penugasan-ad-hoc-task', label: '§9 Assignment' },
+    playbook: { anchor: '9-eksekusi--penugasan-ad-hoc-task', label: i18n.t('§9 Assignment') },
   },
   {
     slug:      'kerjakan-review-penugasan',
     icon:      '🔄',
-    judul:     'Work on & review an assignment',
-    ringkas:   'As the assignee: do the work and upload evidence. As the reviewer: approve or return.',
+    judul:     i18n.t('Work on & review an assignment'),
+    ringkas:   i18n.t('As the assignee: do the work and upload evidence. As the reviewer: approve or return.'),
     audience:  ['ALL'],
     bacaMenit: 2,
-    apa:       'After you receive an assignment, you start working on it and upload completion evidence. The person who assigned it will either approve it or return it for revision.',
+    apa:       i18n.t('After you receive an assignment, you start working on it and upload completion evidence. The person who assigned it will either approve it or return it for revision.'),
     langkah: [
-      { judul: 'Open your assignment card',    deskripsi: 'Assignment → filter "Given to me". The card sits in the Ready column.' },
-      { judul: 'Move it to In Progress',       deskripsi: 'Drag the card to the second column when you start working.' },
-      { judul: 'Upload completion evidence',   deskripsi: 'Click the card, then upload a file, paste a link, or write a note, as requested by your superior.' },
-      { judul: 'Move it to In Review',         deskripsi: 'The person who assigned it is notified.', tip: 'As the reviewer: click an In Review card, then Approve (moves it to Done) or Return (sends it back to In Progress with a reason).' },
+      { judul: i18n.t('Open your assignment card'),    deskripsi: i18n.t('Assignment → filter "Given to me". The card sits in the Ready column.') },
+      { judul: i18n.t('Move it to In Progress'),       deskripsi: i18n.t('Drag the card to the second column when you start working.') },
+      { judul: i18n.t('Upload completion evidence'),   deskripsi: i18n.t('Click the card, then upload a file, paste a link, or write a note, as requested by your superior.') },
+      { judul: i18n.t('Move it to In Review'),         deskripsi: i18n.t('The person who assigned it is notified.'), tip: i18n.t('As the reviewer: click an In Review card, then Approve (moves it to Done) or Return (sends it back to In Progress with a reason).') },
     ],
     tips: [
-      'Helpful filters: Mine / Given to me / Team / Awaiting review — use whichever fits your role at the moment.',
-      'The evidence required is stated in the "Evidence type" field — you must attach it before you can submit for review.',
+      i18n.t('Helpful filters: Mine / Given to me / Team / Awaiting review — use whichever fits your role at the moment.'),
+      i18n.t('The evidence required is stated in the "Evidence type" field — you must attach it before you can submit for review.'),
     ],
-    playbook: { anchor: '9-eksekusi--penugasan-ad-hoc-task', label: '§9 Assignment' },
+    playbook: { anchor: '9-eksekusi--penugasan-ad-hoc-task', label: i18n.t('§9 Assignment') },
   },
 ]
 
 // ── FAQ data ─────────────────────────────────────────────────────────────────
 
-const FAQ: Array<{ q: string; a: string; link?: { anchor: string; label: string } }> = [
+const getFaq = (): Array<{ q: string; a: string; link?: { anchor: string; label: string } }> => [
   {
-    q: 'Why can’t I edit my program?',
-    a: 'A program that is going through approval (status PENDING_KASUB or PENDING_KADIV) is locked from editing, and the Edit button is hidden automatically. You can edit it again once it is approved (ACTIVE) or rejected (REJECTED/DRAFT). ADMIN and SUPERADMIN can edit at any time.',
-    link: { anchor: '5-perencanaan--program--workstream', label: '§5 Program Editing Rules' },
+    q: i18n.t('Why can’t I edit my program?'),
+    a: i18n.t('A program that is going through approval (status PENDING_KASUB or PENDING_KADIV) is locked from editing, and the Edit button is hidden automatically. You can edit it again once it is approved (ACTIVE) or rejected (REJECTED/DRAFT). ADMIN and SUPERADMIN can edit at any time.'),
+    link: { anchor: '5-perencanaan--program--workstream', label: i18n.t('§5 Program Editing Rules') },
   },
   {
-    q: 'What’s the difference between Program Status and Work Status?',
-    a: 'Program Status (On Track / At Risk / Delayed / Completed) is the strategic level — it answers "is the program healthy?". Work Status (Backlog / Ready / In Progress / In Review / Done) is the operator level — it answers "which stage of the pipeline is this in?". They are orthogonal — a program can be On Track while some of its tasks are still in the Backlog.',
-    link: { anchor: 'glosarium-istilah', label: 'Glossary' },
+    q: i18n.t('What’s the difference between Program Status and Work Status?'),
+    a: i18n.t('Program Status (On Track / At Risk / Delayed / Completed) is the strategic level — it answers "is the program healthy?". Work Status (Backlog / Ready / In Progress / In Review / Done) is the operator level — it answers "which stage of the pipeline is this in?". They are orthogonal — a program can be On Track while some of its tasks are still in the Backlog.'),
+    link: { anchor: 'glosarium-istilah', label: i18n.t('Glossary') },
   },
   {
-    q: 'How do I request support from my superior?',
-    a: 'Click the "Request Support" button that appears on Home, the Program detail, the Task panel, the Blocker panel, or a meeting Action Item detail. Add context and send. Your superior will triage it: Commit (accept with a due date), Reroute (hand it to a peer), or Decline (with a reason).',
-    link: { anchor: '18-tindak-lanjut--eskalasi-clear-the-path', label: '§18 Escalation' },
+    q: i18n.t('How do I request support from my superior?'),
+    a: i18n.t('Click the "Request Support" button that appears on Home, the Program detail, the Task panel, the Blocker panel, or a meeting Action Item detail. Add context and send. Your superior will triage it: Commit (accept with a due date), Reroute (hand it to a peer), or Decline (with a reason).'),
+    link: { anchor: '18-tindak-lanjut--eskalasi-clear-the-path', label: i18n.t('§18 Escalation') },
   },
   {
-    q: 'Why does my task show "⚠ Blocked"?',
-    a: 'Your task is flagged `isBlocked` — either you or your superior reported an obstacle. It is not a separate status, so the task stays in its current column (e.g. "In Progress"). Hover over the badge to see the reason. Once the obstacle is resolved, toggle the flag off from the detail panel.',
-    link: { anchor: '11-eksekusi--blocker-hambatan-kerja', label: '§11 Blocker' },
+    q: i18n.t('Why does my task show "⚠ Blocked"?'),
+    a: i18n.t('Your task is flagged `isBlocked` — either you or your superior reported an obstacle. It is not a separate status, so the task stays in its current column (e.g. "In Progress"). Hover over the badge to see the reason. Once the obstacle is resolved, toggle the flag off from the detail panel.'),
+    link: { anchor: '11-eksekusi--blocker-hambatan-kerja', label: i18n.t('§11 Blocker') },
   },
   {
-    q: 'When should I use a Task vs an Assignment?',
-    a: 'A Task is planned work that already sits within a Program / Workstream / Phase. An Assignment is an ad-hoc task from a superior, outside of any Program — usually situational. If the work has a clear, scheduled deliverable, use a Task. If it’s a quick request with no structure, use an Assignment.',
-    link: { anchor: '9-eksekusi--penugasan-ad-hoc-task', label: '§9 Assignment' },
+    q: i18n.t('When should I use a Task vs an Assignment?'),
+    a: i18n.t('A Task is planned work that already sits within a Program / Workstream / Phase. An Assignment is an ad-hoc task from a superior, outside of any Program — usually situational. If the work has a clear, scheduled deliverable, use a Task. If it’s a quick request with no structure, use an Assignment.'),
+    link: { anchor: '9-eksekusi--penugasan-ad-hoc-task', label: i18n.t('§9 Assignment') },
   },
   {
-    q: 'How do I export a program Charter to PPTX?',
-    a: 'Open the Program detail, click the "Charter" button in the header, then click "Export PPTX". A presentation-ready deck is downloaded. For a batch (multiple programs into one deck), use the Export Batch button on the Programs list.',
-    link: { anchor: '6-perencanaan--charter-program-read-only', label: '§6 Charter' },
+    q: i18n.t('How do I export a program Charter to PPTX?'),
+    a: i18n.t('Open the Program detail, click the "Charter" button in the header, then click "Export PPTX". A presentation-ready deck is downloaded. For a batch (multiple programs into one deck), use the Export Batch button on the Programs list.'),
+    link: { anchor: '6-perencanaan--charter-program-read-only', label: i18n.t('§6 Charter') },
   },
   {
-    q: 'Why don’t some sidebar menu items appear for me?',
-    a: 'The sidebar is role-aware — items are hidden automatically based on your position. For example, Directorate KPIs are not shown to KASUBDIV and below; Executive Summary is shown to BOD/KADIV. You can still reach a page via its direct URL if you know the link, but the content may be empty or limited according to policy.',
+    q: i18n.t('Why don’t some sidebar menu items appear for me?'),
+    a: i18n.t('The sidebar is intent-based and role-aware — items are hidden automatically based on your access. Everyone sees Today (Home, Focus), Programs, and the Work group (Workboard, Assignment, Coordination, Channels, Presence). The Performance dashboards (Scorecard, Directorate & Division KPI) only appear for directorates with performance access; Executive Summary and the Leaderboard are SUPERADMIN-only; the Admin group is visible only to admins. You can still reach a page via its direct URL if you know the link, but the content may be empty or limited according to policy.'),
   },
 ]
 
@@ -279,13 +281,17 @@ const FAQ: Array<{ q: string; a: string; link?: { anchor: string; label: string 
 type View = 'index' | 'topik' | 'konsep'
 
 export default function PanduanView() {
+  const { t } = useTranslation()
   const { currentUser } = useWorkspace()
   const navigate = useInertiaNavigate()
   const [view,  setView]  = useState<View>('index')
   const [active, setActive] = useState<string | null>(null)
   const [query,  setQuery]  = useState('')
 
-  const greetName = currentUser?.name ?? 'there'
+  const greetName = currentUser?.name ?? t('there')
+
+  const TOPIK = useMemo(() => getTopik(), [])
+  const FAQ = useMemo(() => getFaq(), [])
 
   const filteredTopik = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -295,7 +301,7 @@ export default function PanduanView() {
       t.ringkas.toLowerCase().includes(q) ||
       t.apa.toLowerCase().includes(q),
     )
-  }, [query])
+  }, [query, TOPIK])
 
   const filteredFaq = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -304,7 +310,7 @@ export default function PanduanView() {
       f.q.toLowerCase().includes(q) ||
       f.a.toLowerCase().includes(q),
     )
-  }, [query])
+  }, [query, FAQ])
 
   const openTopik = (slug: string) => {
     setActive(slug)
@@ -332,11 +338,11 @@ export default function PanduanView() {
   if (view === 'topik' && activeTopik) {
     return (
       <>
-      <Head title={`${activeTopik.judul} — Help Center`} />
+      <Head title={`${activeTopik.judul} — ${t('Help Center')}`} />
       <div className="panduan">
         <div className="panduan__inner panduan__inner--reading ds-stagger" key={`topik-${activeTopik.slug}`}>
           <button type="button" className="panduan__back" onClick={backToIndex}>
-            ← Back to Help Center
+            ← {t('Back to Help Center')}
           </button>
 
           <header className="panduan__topik-head" style={{ '--tc': TOPIK_ACCENT[activeTopik.slug] ?? 'var(--green)' } as CSSProperties}>
@@ -344,9 +350,9 @@ export default function PanduanView() {
             <div className="panduan__topik-head-text">
               <h1 className="panduan__topik-title">{activeTopik.judul}</h1>
               <p className="panduan__topik-meta">
-                For: {activeTopik.audience.includes('ALL') ? 'All roles' : activeTopik.audience.join(' · ')}
+                {t('For:')} {activeTopik.audience.includes('ALL') ? t('All roles') : activeTopik.audience.join(' · ')}
                 <span className="panduan__topik-meta-sep" aria-hidden="true">•</span>
-                {activeTopik.bacaMenit} min read
+                {t('{{count}} min read', { count: activeTopik.bacaMenit })}
               </p>
             </div>
           </header>
@@ -354,13 +360,13 @@ export default function PanduanView() {
           <section className="panduan__apa">
             <span className="panduan__apa-icon" aria-hidden="true"><InfoIcon /></span>
             <div className="panduan__apa-body">
-              <span className="panduan__apa-label">What is this?</span>
+              <span className="panduan__apa-label">{t('What is this?')}</span>
               <p className="panduan__apa-text">{activeTopik.apa}</p>
             </div>
           </section>
 
           <section className="panduan__langkah-section">
-            <h2 className="panduan__sec-title">Quick steps</h2>
+            <h2 className="panduan__sec-title">{t('Quick steps')}</h2>
             <ol className="panduan__langkah">
               {activeTopik.langkah.map((l, i) => (
                 <li className="panduan__langkah-item" key={i}>
@@ -368,7 +374,7 @@ export default function PanduanView() {
                   <div className="panduan__langkah-body">
                     <h3 className="panduan__langkah-judul">{l.judul}</h3>
                     <p className="panduan__langkah-desc">{l.deskripsi}</p>
-                    {l.tip && <p className="panduan__langkah-tip"><span className="panduan__langkah-tip-label">Tip</span>{l.tip}</p>}
+                    {l.tip && <p className="panduan__langkah-tip"><span className="panduan__langkah-tip-label">{t('Tip')}</span>{l.tip}</p>}
                   </div>
                 </li>
               ))}
@@ -377,7 +383,7 @@ export default function PanduanView() {
 
           {activeTopik.tips.length > 0 && (
             <section className="panduan__tips-section">
-              <h2 className="panduan__sec-title">Tips</h2>
+              <h2 className="panduan__sec-title">{t('Tips')}</h2>
               <ul className="panduan__tips">
                 {activeTopik.tips.map((t, i) => (
                   <li className="panduan__tips-item" key={i}>{t}</li>
@@ -389,7 +395,7 @@ export default function PanduanView() {
           {activeTopik.playbook && (
             <section className="panduan__playbook-link">
               <span className="panduan__playbook-link-icon" aria-hidden="true"><BookIcon /></span>
-              <span>Learn more in the Playbook:{' '}
+              <span>{t('Learn more in the Playbook:')}{' '}
                 <a
                   href={`/playbook#${activeTopik.playbook.anchor}`}
                   onClick={e => { e.preventDefault(); navigate(`/playbook#${activeTopik.playbook!.anchor}`) }}
@@ -409,15 +415,15 @@ export default function PanduanView() {
   // ── Index view ────────────────────────────────────────────────────────────
   return (
     <>
-    <Head title="Help Center" />
+    <Head title={t('Help Center')} />
     <div className="panduan">
       <div className="panduan__inner ds-stagger" key="panduan-index">
         {/* Hero */}
         <header className="panduan__hero">
-          <span className="panduan__hero-eyebrow">Help Center</span>
-          <h1 className="panduan__hero-title">Hello, {greetName}</h1>
+          <span className="panduan__hero-eyebrow">{t('Help Center')}</span>
+          <h1 className="panduan__hero-title">{t('Hello, {{name}}', { name: greetName })}</h1>
           <p className="panduan__hero-sub">
-            Find step-by-step guides, quick answers, and the full ATLAS documentation.
+            {t('Find step-by-step guides, quick answers, and the full ATLAS documentation.')}
           </p>
         </header>
 
@@ -431,13 +437,13 @@ export default function PanduanView() {
             type="search"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search help topics, e.g. 'escalation' or 'kpi'…"
+            placeholder={t("Search help topics, e.g. 'escalation' or 'kpi'…")}
             className="panduan__search"
-            aria-label="Search help topics"
+            aria-label={t('Search help topics')}
           />
           {query
-            ? <button type="button" onClick={() => setQuery('')} className="panduan__search-clear" aria-label="Clear search">×</button>
-            : <kbd className="panduan__search-kbd" aria-hidden="true">{filteredTopik.length + filteredFaq.length} items</kbd>
+            ? <button type="button" onClick={() => setQuery('')} className="panduan__search-clear" aria-label={t('Clear search')}>×</button>
+            : <kbd className="panduan__search-kbd" aria-hidden="true">{t('{{count}} items', { count: filteredTopik.length + filteredFaq.length })}</kbd>
           }
         </div>
 
@@ -445,10 +451,10 @@ export default function PanduanView() {
         <button type="button" className="panduan__concept-banner" onClick={openKonsep}>
           <span className="panduan__concept-banner-icon" aria-hidden="true"><BookOpenIcon /></span>
           <span className="panduan__concept-banner-body">
-            <span className="panduan__concept-banner-title">New to ATLAS?</span>
+            <span className="panduan__concept-banner-title">{t('New to ATLAS?')}</span>
             <span className="panduan__concept-banner-sub">
-              Learn the difference between <strong>Program</strong>, <strong>Workstream</strong>,
-              <strong> Phase</strong>, and <strong>Task</strong> — with full examples.
+              {t('Learn the difference between')} <strong>{t('Program')}</strong>, <strong>{t('Workstream')}</strong>,
+              <strong> {t('Phase')}</strong>, {t('and')} <strong>{t('Task')}</strong> {t('— with full examples.')}
             </span>
           </span>
           <span className="panduan__concept-banner-arrow" aria-hidden="true">→</span>
@@ -457,28 +463,28 @@ export default function PanduanView() {
         {/* Topik task-oriented */}
         <section className="panduan__topiks">
           <h2 className="panduan__sec-title">
-            What would you like to do?
+            {t('What would you like to do?')}
             <span className="panduan__sec-count">{filteredTopik.length}</span>
           </h2>
           {filteredTopik.length === 0 ? (
-            <p className="panduan__empty">No topics match "{query}".</p>
+            <p className="panduan__empty">{t('No topics match "{{query}}".', { query })}</p>
           ) : (
             <div className="panduan__topik-grid">
-              {filteredTopik.map(t => (
+              {filteredTopik.map(topik => (
                 <button
-                  key={t.slug}
+                  key={topik.slug}
                   type="button"
                   className="panduan__topik-card"
-                  style={{ '--tc': TOPIK_ACCENT[t.slug] ?? 'var(--green)' } as CSSProperties}
-                  onClick={() => openTopik(t.slug)}
+                  style={{ '--tc': TOPIK_ACCENT[topik.slug] ?? 'var(--green)' } as CSSProperties}
+                  onClick={() => openTopik(topik.slug)}
                 >
-                  <span className="panduan__topik-card-icon" aria-hidden="true"><TopikIcon slug={t.slug} /></span>
+                  <span className="panduan__topik-card-icon" aria-hidden="true"><TopikIcon slug={topik.slug} /></span>
                   <div className="panduan__topik-card-body">
-                    <h3 className="panduan__topik-card-judul">{t.judul}</h3>
-                    <p className="panduan__topik-card-ringkas">{t.ringkas}</p>
+                    <h3 className="panduan__topik-card-judul">{topik.judul}</h3>
+                    <p className="panduan__topik-card-ringkas">{topik.ringkas}</p>
                     <span className="panduan__topik-card-meta">
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><circle cx="6" cy="6" r="4.5"/><path d="M6 3.5V6l1.8 1" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      {t.bacaMenit} min read
+                      {t('{{count}} min read', { count: topik.bacaMenit })}
                     </span>
                   </div>
                   <span className="panduan__topik-card-arrow" aria-hidden="true">
@@ -493,11 +499,11 @@ export default function PanduanView() {
         {/* FAQ */}
         <section className="panduan__faq">
           <h2 className="panduan__sec-title">
-            Frequently asked questions
+            {t('Frequently asked questions')}
             <span className="panduan__sec-count">{filteredFaq.length}</span>
           </h2>
           {filteredFaq.length === 0 ? (
-            <p className="panduan__empty">No questions match "{query}".</p>
+            <p className="panduan__empty">{t('No questions match "{{query}}".', { query })}</p>
           ) : (
             <ul className="panduan__faq-list">
               {filteredFaq.map((f, i) => (
@@ -529,13 +535,13 @@ export default function PanduanView() {
           <div className="panduan__footer-card">
             <span className="panduan__footer-icon" aria-hidden="true"><BookIcon /></span>
             <div className="panduan__footer-text">
-              <h3 className="panduan__footer-title">Need the full technical detail?</h3>
+              <h3 className="panduan__footer-title">{t('Need the full technical detail?')}</h3>
               <p className="panduan__footer-sub">
-                The full Playbook contains 23 workflows, a technical glossary, system process flows, and implementation tables.
+                {t('The full Playbook contains 23 workflows, a technical glossary, system process flows, and implementation tables.')}
               </p>
             </div>
             <Link href="/playbook" className="panduan__footer-link">
-              Open Playbook
+              {t('Open Playbook')}
               <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 7.5h8M7 3.5 11 7.5l-4 4"/></svg>
             </Link>
           </div>

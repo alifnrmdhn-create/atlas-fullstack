@@ -114,6 +114,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/users/me/tours-completed', [WorkspaceController::class, 'markTourCompleted'])->name('users.me.tours-completed');
     Route::patch('/users/{id}', [WorkspaceController::class, 'updateUser'])->name('users.update');
     Route::get('/inbox/today', [WorkspaceController::class, 'inboxToday'])->name('inbox.today');
+    Route::post('/focus/dispositions', [\App\Http\Controllers\FocusDispositionController::class, 'store'])->name('focus.dispositions.store');
     Route::get('/notifications', [WorkspaceController::class, 'notifications'])->name('notifications.index');
     Route::put('/notifications/read-all', [WorkspaceController::class, 'readAllNotifications'])->name('notifications.read-all');
     Route::put('/notifications/{id}/read', [WorkspaceController::class, 'readNotification'])->name('notifications.read');

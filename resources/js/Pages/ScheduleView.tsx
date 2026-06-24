@@ -10,23 +10,29 @@ import { formatRoleLabel } from '../lib/roleLabel'
 import { UserPicker } from '../components/UserPicker'
 import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import { PageHeader } from '../design-system'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 import './ScheduleView.css'
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const MEETING_TYPE_LABEL: Record<MeetingType, string> = {
-  RAPAT_DIREKSI:    'Rapat Direksi',
-  RAPAT_KOORDINASI: 'Rapat Koordinasi',
-  RAPAT_DIVISI:     'Rapat Divisi',
-  RAPAT_TIM:        'Rapat Tim',
-  ONE_ON_ONE:       '1-on-1',
+function meetingTypeLabel(): Record<MeetingType, string> {
+  return {
+    RAPAT_DIREKSI:    i18n.t('Board of Directors Meeting'),
+    RAPAT_KOORDINASI: i18n.t('Coordination Meeting'),
+    RAPAT_DIVISI:     i18n.t('Division Meeting'),
+    RAPAT_TIM:        i18n.t('Team Meeting'),
+    ONE_ON_ONE:       '1-on-1',
+  }
 }
 
-const RSVP_LABEL: Record<RsvpStatus, string> = {
-  PENDING:      'No response',
-  HADIR:        'Present',
-  TIDAK_HADIR:  'Absent',
-  DELEGASI:     'Delegated',
+function rsvpLabel(): Record<RsvpStatus, string> {
+  return {
+    PENDING:      i18n.t('No response'),
+    HADIR:        i18n.t('Present'),
+    TIDAK_HADIR:  i18n.t('Absent'),
+    DELEGASI:     i18n.t('Delegated'),
+  }
 }
 
 type ScheduleTone = 'red' | 'yellow' | 'green' | 'blue' | 'purple' | 'gray' | 'cyan' | 'pink' | 'orange'
@@ -141,7 +147,7 @@ function computeOverlapLayout(
   return result
 }
 
-type FilterMode = 'upcoming' | 'completed' | 'mine' | 'person' | 'decisions'
+type FilterMode = 'upcoming' | 'attending' | 'completed' | 'mine' | 'person' | 'decisions'
 
 type DecisionItem = {
   id: number
@@ -220,8 +226,8 @@ function isTomorrow(iso: string) {
 }
 
 function dayLabel(iso: string) {
-  if (isToday(iso)) return `Today — ${formatDate(iso)}`
-  if (isTomorrow(iso)) return `Tomorrow — ${formatDate(iso)}`
+  if (isToday(iso)) return i18n.t('Today — {{date}}', { date: formatDate(iso) })
+  if (isTomorrow(iso)) return i18n.t('Tomorrow — {{date}}', { date: formatDate(iso) })
   return formatDate(iso)
 }
 
@@ -231,9 +237,9 @@ function getInitials(name: string) {
 
 function durationLabel(startAt: string, endAt: string) {
   const mins = Math.round((new Date(endAt).getTime() - new Date(startAt).getTime()) / 60000)
-  if (mins < 60) return `${mins} min`
+  if (mins < 60) return i18n.t('{{count}} min', { count: mins })
   const h = Math.floor(mins / 60), m = mins % 60
-  return m > 0 ? `${h} hr ${m} min` : `${h} hr`
+  return m > 0 ? i18n.t('{{h}} hr {{m}} min', { h, m }) : i18n.t('{{h}} hr', { h })
 }
 
 // A focus block may span multiple days. Expand it into one segment per calendar
@@ -278,10 +284,10 @@ function expandFocusBlock(b: FocusBlock): FocusSegment[] {
 function focusSegLabel(seg: FocusSegment): string {
   const startHM = formatTime(seg.segStart), endHM = formatTime(seg.segEnd)
   const startsMidnight = startHM === '00.00', endsEod = endHM === '23.59'
-  if (seg.total === 1) return startsMidnight && endsEod ? 'All day' : `${startHM} – ${endHM}`
-  if (seg.isStart) return startsMidnight ? 'All day' : `From ${startHM}`
-  if (seg.isEnd) return endsEod ? 'All day' : `Until ${endHM}`
-  return 'All day'
+  if (seg.total === 1) return startsMidnight && endsEod ? i18n.t('All day') : `${startHM} – ${endHM}`
+  if (seg.isStart) return startsMidnight ? i18n.t('All day') : i18n.t('From {{time}}', { time: startHM })
+  if (seg.isEnd) return endsEod ? i18n.t('All day') : i18n.t('Until {{time}}', { time: endHM })
+  return i18n.t('All day')
 }
 
 function rsvpSymbol(status: RsvpStatus) {
@@ -310,7 +316,7 @@ function Avatar({ name, size = 28 }: { name: string; size?: number }) {
 function TypeBadge({ type }: { type: MeetingType }) {
   return (
     <span className="schedule-type-badge" data-tone={MEETING_TYPE_TONE[type]}>
-      {MEETING_TYPE_LABEL[type]}
+      {meetingTypeLabel()[type]}
     </span>
   )
 }
@@ -318,7 +324,7 @@ function TypeBadge({ type }: { type: MeetingType }) {
 function RsvpBadge({ status }: { status: RsvpStatus }) {
   return (
     <span className="schedule-rsvp-badge" data-tone={RSVP_STATUS_TONE[status]}>
-      {rsvpSymbol(status)} {RSVP_LABEL[status]}
+      {rsvpSymbol(status)} {rsvpLabel()[status]}
     </span>
   )
 }
@@ -326,6 +332,7 @@ function RsvpBadge({ status }: { status: RsvpStatus }) {
 // ── Main component ─────────────────────────────────────────────────────────
 
 export function ScheduleView() {
+  const { t } = useTranslation()
   const { currentUser } = useWorkspace()
 
   const [meetings, setMeetings] = useState<Meeting[]>([])
@@ -370,7 +377,7 @@ export function ScheduleView() {
   const focusDialogRef = useDialogFocus<HTMLDivElement>(showFocusForm || closingOverlay === 'focus')
   const focusDialogTitleId = useId()
   const focusDialogDescId = useId()
-  const [focusForm, setFocusForm] = useState({ title: 'Focus Time', date: '', endDate: '', startTime: '', endTime: '', allDay: false, note: '' })
+  const [focusForm, setFocusForm] = useState({ title: t('Focus Time'), date: '', endDate: '', startTime: '', endTime: '', allDay: false, note: '' })
   const [focusSaving, setFocusSaving] = useState(false)
   const [focusError, setFocusError] = useState<string | null>(null)
 
@@ -474,6 +481,10 @@ export function ScheduleView() {
       .then(res => {
         let data = res.data
         if (filter === 'mine') data = data.filter(m => m.organizerId === currentUser?.id)
+        // "My Meetings" = yang saya selenggarakan ATAU saya jadi peserta.
+        if (filter === 'attending') data = data.filter(m =>
+          m.organizerId === currentUser?.id ||
+          (m.attendees ?? []).some(a => a.userId === currentUser?.id))
         if (filter === 'completed') data = data.filter(m => m.status === 'COMPLETED')
         setMeetings(data)
         // Update selectedMeeting from fresh list — don't nullify if it dropped out of filter
@@ -482,7 +493,7 @@ export function ScheduleView() {
           return data.find(m => m.id === prev.id) ?? prev
         })
       })
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load schedule.'))
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : t('Failed to load schedule.')))
       .finally(() => setLoading(false))
   }, [filter, currentUser?.id, personView, viewMode, calWeekOffset])
 
@@ -670,7 +681,7 @@ export function ScheduleView() {
     const qs = decisionsQuery.trim() ? `?q=${encodeURIComponent(decisionsQuery.trim())}` : ''
     api.get<{ data: DecisionItem[] }>(`/meetings/decisions${qs}`)
       .then(res => { if (!cancelled) setDecisions(res.data) })
-      .catch(err => { if (!cancelled) setDecisionsError(err instanceof Error ? err.message : 'Failed to load decisions.') })
+      .catch(err => { if (!cancelled) setDecisionsError(err instanceof Error ? err.message : t('Failed to load decisions.')) })
       .finally(() => { if (!cancelled) setDecisionsLoading(false) })
     return () => { cancelled = true }
   }, [filter, decisionsQuery])
@@ -725,7 +736,7 @@ export function ScheduleView() {
   const submitRsvp = async () => {
     if (!showRsvpFor) return
     if (rsvpStatus === 'DELEGASI' && !selectedDelegate) {
-      setRsvpError('Select who will represent you.')
+      setRsvpError(t('Select who will represent you.'))
       return
     }
     setRsvpSaving(true)
@@ -739,7 +750,7 @@ export function ScheduleView() {
       setShowRsvpFor(null)
       loadMeetings()
     } catch (err) {
-      setRsvpError(err instanceof Error ? err.message : 'Failed to save RSVP.')
+      setRsvpError(err instanceof Error ? err.message : t('Failed to save RSVP.'))
     } finally {
       setRsvpSaving(false)
     }
@@ -763,7 +774,7 @@ export function ScheduleView() {
       await api.post(`/meetings/${meetingId}/rsvp`, { rsvpStatus: status })
       loadMeetings()
     } catch (err) {
-      setQuickRsvpError({ id: meetingId, msg: err instanceof Error ? err.message : 'Failed to save RSVP.' })
+      setQuickRsvpError({ id: meetingId, msg: err instanceof Error ? err.message : t('Failed to save RSVP.') })
     } finally {
       setQuickRsvpLoading(null)
     }
@@ -788,7 +799,7 @@ export function ScheduleView() {
       loadMeetings()
       if (selectedMeeting?.id === confirmCancel.id) setSelectedMeeting(null)
     } catch (err) {
-      setCancelError(err instanceof Error ? err.message : 'Failed to cancel meeting.')
+      setCancelError(err instanceof Error ? err.message : t('Failed to cancel meeting.'))
     } finally {
       setCancelSaving(false)
     }
@@ -818,7 +829,7 @@ export function ScheduleView() {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date())
     setForm({
       title: s.suggestedTitle,
-      description: `Related to program ${s.programCode}: ${s.programName} (${s.programHealth})`,
+      description: t('Related to program {{code}}: {{name}} ({{health}})', { code: s.programCode, name: s.programName, health: s.programHealth }),
       meetingType: s.suggestedType,
       date: today,
       startTime: '09:00',
@@ -834,37 +845,37 @@ export function ScheduleView() {
 
   const openFocusForm = () => {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date())
-    setFocusForm({ title: 'Focus Time', date: today, endDate: '', startTime: '09:00', endTime: '11:00', allDay: false, note: '' })
+    setFocusForm({ title: t('Focus Time'), date: today, endDate: '', startTime: '09:00', endTime: '11:00', allDay: false, note: '' })
     setFocusError(null)
     setShowFocusForm(true)
   }
 
   const submitFocusBlock = async () => {
-    if (!focusForm.date) { setFocusError('Date is required.'); return }
+    if (!focusForm.date) { setFocusError(t('Date is required.')); return }
     const endDate = focusForm.endDate || focusForm.date
-    if (endDate < focusForm.date) { setFocusError('End date must be on or after the start date.'); return }
+    if (endDate < focusForm.date) { setFocusError(t('End date must be on or after the start date.')); return }
     let startAt: string, endAt: string
     if (focusForm.allDay) {
       startAt = new Date(`${focusForm.date}T00:00:00`).toISOString()
       endAt   = new Date(`${endDate}T23:59:00`).toISOString()
     } else {
-      if (!focusForm.startTime || !focusForm.endTime) { setFocusError('Start and end time are required.'); return }
+      if (!focusForm.startTime || !focusForm.endTime) { setFocusError(t('Start and end time are required.')); return }
       startAt = new Date(`${focusForm.date}T${focusForm.startTime}:00`).toISOString()
       endAt   = new Date(`${endDate}T${focusForm.endTime}:00`).toISOString()
     }
-    if (new Date(endAt) <= new Date(startAt)) { setFocusError('End must be after start.'); return }
+    if (new Date(endAt) <= new Date(startAt)) { setFocusError(t('End must be after start.')); return }
     setFocusSaving(true)
     setFocusError(null)
     try {
       await api.post('/focus-blocks', {
-        title: focusForm.title.trim() || 'Focus Time',
+        title: focusForm.title.trim() || t('Focus Time'),
         startAt, endAt,
         note: focusForm.note.trim() || undefined,
       })
       setShowFocusForm(false)
       loadFocusBlocks()
     } catch (err) {
-      setFocusError(err instanceof Error ? err.message : 'Failed to save.')
+      setFocusError(err instanceof Error ? err.message : t('Failed to save.'))
     } finally {
       setFocusSaving(false)
     }
@@ -883,7 +894,7 @@ export function ScheduleView() {
       setConfirmDeleteFocus(null)
       loadFocusBlocks()
     } catch (err) {
-      setDeleteFocusError(err instanceof Error ? err.message : 'Failed to delete focus block.')
+      setDeleteFocusError(err instanceof Error ? err.message : t('Failed to delete focus block.'))
     } finally {
       setDeleteFocusSaving(false)
     }
@@ -908,12 +919,12 @@ export function ScheduleView() {
   }
 
   const submitCreate = async () => {
-    if (!form.title.trim()) { setCreateError('Meeting title is required.'); return }
-    if (!form.date || !form.startTime || !form.endTime) { setCreateError('Date and time are required.'); return }
+    if (!form.title.trim()) { setCreateError(t('Meeting title is required.')); return }
+    if (!form.date || !form.startTime || !form.endTime) { setCreateError(t('Date and time are required.')); return }
     const startAt = new Date(`${form.date}T${form.startTime}:00`).toISOString()
     const endAt   = new Date(`${form.date}T${form.endTime}:00`).toISOString()
-    if (new Date(endAt) <= new Date(startAt)) { setCreateError('End time must be after start time.'); return }
-    if (new Date(startAt) < new Date(Date.now() - 15 * 60 * 1000)) { setCreateError('Cannot create a meeting in the past.'); return }
+    if (new Date(endAt) <= new Date(startAt)) { setCreateError(t('End time must be after start time.')); return }
+    if (new Date(startAt) < new Date(Date.now() - 15 * 60 * 1000)) { setCreateError(t('Cannot create a meeting in the past.')); return }
 
     setCreateSaving(true)
     setCreateError(null)
@@ -933,7 +944,7 @@ export function ScheduleView() {
       setShowCreate(false)
       loadMeetings()
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create meeting.')
+      setCreateError(err instanceof Error ? err.message : t('Failed to create meeting.'))
     } finally {
       setCreateSaving(false)
     }
@@ -961,24 +972,24 @@ export function ScheduleView() {
     <div className="ds schedule-v2 view-schedule ds-stagger">
 
       {/* Page header (design-system PageHeader) — "Coordination" selaras sidebar */}
-      <PageHeader className="ds-page-header--inset" title="Coordination" subtitle="Coordination meetings & team cadence" />
+      <PageHeader className="ds-page-header--inset" title={t('Coordination')} subtitle={t('Coordination meetings & team cadence')} />
 
       {/* Controls row: stats + filter + view toggle + Blok Fokus */}
       <div className="view-toolbar">
         {/* Mini stats */}
         <div className="schedule-toolbar-stats">
           {thisWeekCount > 0 && (
-            <span>{thisWeekCount} <em>this week</em></span>
+            <span>{thisWeekCount} <em>{t('this week')}</em></span>
           )}
           {pendingRsvpCount > 0 && (
             <span className="schedule-toolbar-stats__pending">
-              {pendingRsvpCount} <em>need confirmation</em>
+              {pendingRsvpCount} <em>{t('need confirmation')}</em>
             </span>
           )}
         </div>
 
         <div className="view-toggle schedule-toolbar__filters scroll-tabs">
-          {(['upcoming', 'completed', 'mine', 'person', 'decisions'] as FilterMode[]).map(f => (
+          {(['upcoming', 'attending', 'completed', 'mine', 'person', 'decisions'] as FilterMode[]).map(f => (
             <button
               key={f}
               className={`view-toggle-btn${filter === f ? ' active' : ''}`}
@@ -989,7 +1000,7 @@ export function ScheduleView() {
                 setListPage(1)
               }}
             >
-              {f === 'upcoming' ? 'Upcoming' : f === 'completed' ? 'Completed' : f === 'mine' ? 'Created by Me' : f === 'person' ? 'By Person' : 'Decisions'}
+              {f === 'upcoming' ? t('Upcoming') : f === 'attending' ? t('My Meetings') : f === 'completed' ? t('Completed') : f === 'mine' ? t('Created by Me') : f === 'person' ? t('By Person') : t('Decisions')}
             </button>
           ))}
         </div>
@@ -999,7 +1010,7 @@ export function ScheduleView() {
           <button
             className={`schedule-view-toggle__btn${viewMode === 'list' ? ' active' : ''}`}
             onClick={() => setViewMode('list')}
-            title="List view"
+            title={t('List view')}
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M2 4h12M2 8h12M2 12h12"/>
@@ -1008,7 +1019,7 @@ export function ScheduleView() {
           <button
             className={`schedule-view-toggle__btn${viewMode === 'calendar' ? ' active' : ''}`}
             onClick={() => setViewMode('calendar')}
-            title="Calendar view"
+            title={t('Calendar view')}
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="3" width="12" height="11" rx="1.5"/>
@@ -1024,12 +1035,22 @@ export function ScheduleView() {
             <rect x="3" y="7" width="10" height="8" rx="1.5"/>
             <path d="M5 7V5a3 3 0 0 1 6 0v2"/>
           </svg>
-          Focus Block
+          {t('Focus Block')}
         </button>
-        {/* "+ Buat Meeting" content button dihapus 2026-05-24 — duplikat
-            dengan topbar action "+ Rapat Baru" (topbar-config.ts) yang sudah
-            accessible dari semua halaman. Empty state CTA "+ Buat Meeting Baru"
-            tetap (contextual, hanya muncul saat list kosong, useful onboarding). */}
+        {/* CTA "New Meeting" hidup DI TOOLBAR halaman (page owns its CTA),
+            selaras ProgramsView/WorkboardView; /jadwal dikeluarkan dari
+            TOPBAR_ACTIONS agar topbar tak memuat tombol kontekstual yang lepas
+            dari konten. */}
+        <button
+          className="toolbar-action-btn schedule-toolbar-action-btn schedule-toolbar-action-btn--primary"
+          onClick={() => openCreate()}
+          type="button"
+        >
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8 3v10M3 8h10"/>
+          </svg>
+          {t('New Meeting')}
+        </button>
       </div>
 
       {/* Decisions search bar */}
@@ -1041,7 +1062,7 @@ export function ScheduleView() {
           <input
             className="schedule-search-bar__input"
             type="text"
-            placeholder="Search meeting decisions…"
+            placeholder={t('Search meeting decisions…')}
             value={decisionsQuery}
             onChange={e => setDecisionsQuery(e.target.value)}
           />
@@ -1061,7 +1082,7 @@ export function ScheduleView() {
         <input
           className="schedule-search-bar__input"
           type="text"
-          placeholder="Search meetings or locations…"
+          placeholder={t('Search meetings or locations…')}
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
         />
@@ -1092,13 +1113,13 @@ export function ScheduleView() {
                 className="person-view-header__change"
                 onClick={() => { setPersonView(null); setPersonSearch('') }}
               >
-                Change
+                {t('Change')}
               </button>
             </div>
           ) : (
             /* Person search */
             <div className="person-view-search">
-              <div className="person-view-search__label">Whose schedule do you want to view?</div>
+              <div className="person-view-search__label">{t('Whose schedule do you want to view?')}</div>
               <div className="person-view-search__input-wrap">
                 <svg className="schedule-inline-icon schedule-inline-icon--muted" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="6.5" cy="6.5" r="5" /><path d="m10.5 10.5 3.5 3.5" />
@@ -1106,14 +1127,14 @@ export function ScheduleView() {
                 <input
                   className="person-view-search__input"
                   type="text"
-                  placeholder="Search by name, position, or unit…"
+                  placeholder={t('Search by name, position, or unit…')}
                   value={personSearch}
                   onChange={e => setPersonSearch(e.target.value)}
                   autoFocus
                 />
               </div>
               {personSearchLoading && (
-                <p className="text-xs text-muted schedule-loading-note">Loading…</p>
+                <p className="text-xs text-muted schedule-loading-note">{t('Loading…')}</p>
               )}
               {!personSearchLoading && personOptions.length > 0 && (
                 <div className="person-view-list">
@@ -1152,17 +1173,17 @@ export function ScheduleView() {
               className="suggestions-banner__title"
               onClick={toggleSuggestExpanded}
               aria-expanded={suggestExpanded}
-              title={suggestExpanded ? 'Collapse' : 'Show details'}
+              title={suggestExpanded ? t('Collapse') : t('Show details')}
             >
               <span className="suggestions-banner__icon">⚡</span>
-              <span>Meeting Recommendations</span>
-              <span className="suggestions-banner__count">{suggestions.length} programs need attention</span>
+              <span>{t('Meeting Recommendations')}</span>
+              <span className="suggestions-banner__count">{t('{{count}} programs need attention', { count: suggestions.length })}</span>
               <svg className="suggestions-banner__chevron" fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10"><path d="m3 4.5 3 3 3-3" /></svg>
             </button>
             <button
               className="suggestions-banner__dismiss"
               onClick={dismissSuggestions}
-              title="Dismiss"
+              title={t('Dismiss')}
             >
               <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg>
             </button>
@@ -1181,15 +1202,15 @@ export function ScheduleView() {
                     </span>
                     {s.criticalBlockerCount > 0 && (
                       <span className="suggestion-card__blocker">
-                        {s.criticalBlockerCount} critical blockers
+                        {t('{{count}} critical blockers', { count: s.criticalBlockerCount })}
                       </span>
                     )}
                     {s.daysSinceLastMeeting !== null ? (
                       <span className="suggestion-card__days">
-                        Last meeting {s.daysSinceLastMeeting} days ago
+                        {t('Last meeting {{count}} days ago', { count: s.daysSinceLastMeeting })}
                       </span>
                     ) : (
-                      <span className="suggestion-card__days">No meetings yet</span>
+                      <span className="suggestion-card__days">{t('No meetings yet')}</span>
                     )}
                   </div>
                 </div>
@@ -1197,7 +1218,7 @@ export function ScheduleView() {
                   className="btn btn--xs btn--primary"
                   onClick={() => openCreateFromSuggestion(s)}
                 >
-                  Schedule
+                  {t('Schedule')}
                 </button>
               </div>
             ))}
@@ -1211,7 +1232,7 @@ export function ScheduleView() {
         <div className="schedule-content">
           {decisionsLoading && (
             <div className="schedule-empty">
-              <span className="text-muted text-sm">Loading decisions registry…</span>
+              <span className="text-muted text-sm">{t('Loading decisions registry…')}</span>
             </div>
           )}
           {decisionsError && (
@@ -1222,18 +1243,18 @@ export function ScheduleView() {
           {!decisionsLoading && !decisionsError && decisions.length === 0 && (
             <div className="schedule-empty">
               <div className="schedule-empty__icon">📋</div>
-              <p className="schedule-empty__title">No decisions yet</p>
+              <p className="schedule-empty__title">{t('No decisions yet')}</p>
               <p className="schedule-empty__sub">
                 {decisionsQuery
-                  ? `No decisions match "${decisionsQuery}".`
-                  : 'Decisions recorded in meetings will appear here as institutional memory.'}
+                  ? t('No decisions match "{{query}}".', { query: decisionsQuery })
+                  : t('Decisions recorded in meetings will appear here as institutional memory.')}
               </p>
             </div>
           )}
           {!decisionsLoading && !decisionsError && decisions.length > 0 && (
             <div className="decisions-registry">
               <div className="decisions-registry__header">
-                <span className="decisions-registry__count">{decisions.length} decisions{decisionsQuery ? ` for "${decisionsQuery}"` : ''}</span>
+                <span className="decisions-registry__count">{decisionsQuery ? t('{{count}} decisions for "{{query}}"', { count: decisions.length, query: decisionsQuery }) : t('{{count}} decisions', { count: decisions.length })}</span>
               </div>
               {decisions.map(d => (
                 <button
@@ -1277,7 +1298,7 @@ export function ScheduleView() {
       <div className="schedule-content">
         {loading && (
           <div className="schedule-empty">
-            <span className="text-muted text-sm">Loading schedule…</span>
+            <span className="text-muted text-sm">{t('Loading schedule…')}</span>
           </div>
         )}
 
@@ -1290,25 +1311,25 @@ export function ScheduleView() {
         {filter === 'person' && !personView && (
           <div className="schedule-empty">
             <div className="schedule-empty__icon">👤</div>
-            <p className="schedule-empty__title">Select a person</p>
-            <p className="schedule-empty__sub">Search a name to view their schedule.</p>
+            <p className="schedule-empty__title">{t('Select a person')}</p>
+            <p className="schedule-empty__sub">{t('Search a name to view their schedule.')}</p>
           </div>
         )}
 
         {!loading && !error && viewMode === 'list' && grouped.length === 0 && (filter !== 'person' || personView) && (
           <div className="schedule-empty">
             <div className="schedule-empty__icon">📅</div>
-            <p className="schedule-empty__title">No meetings</p>
+            <p className="schedule-empty__title">{t('No meetings')}</p>
             <p className="schedule-empty__sub">
               {filter === 'person'
-                ? `${personView?.name} has no upcoming meetings.`
+                ? t('{{name}} has no upcoming meetings.', { name: personView?.name })
                 : filter === 'upcoming'
-                  ? 'No meetings scheduled in the near term.'
-                  : 'No meetings recorded yet.'}
+                  ? t('No meetings scheduled in the near term.')
+                  : t('No meetings recorded yet.')}
             </p>
             {filter !== 'person' && (
               <button className="btn btn--primary schedule-empty__action" onClick={() => openCreate()}>
-                + Create New Meeting
+                {t('+ Create New Meeting')}
               </button>
             )}
           </div>
@@ -1357,12 +1378,12 @@ export function ScheduleView() {
 
                 {calWeekOffset !== 0 && (
                   <button className="schedule-cal-nav__today-btn" onClick={() => setCalWeekOffset(0)}>
-                    Today
+                    {t('Today')}
                   </button>
                 )}
 
                 <span className="schedule-cal-nav__kbd-hint">
-                  <kbd>←</kbd><kbd>→</kbd> navigate · <kbd>T</kbd> today
+                  <kbd>←</kbd><kbd>→</kbd> {t('navigate')} · <kbd>T</kbd> {t('today')}
                 </span>
 
                 <button className="schedule-cal-nav__btn" onClick={() => setCalWeekOffset(o => o + 1)}>
@@ -1374,19 +1395,19 @@ export function ScheduleView() {
                   <button
                     className={`schedule-cal-nav__day-btn${!calShowWeekend ? ' active' : ''}`}
                     onClick={() => setCalShowWeekend(false)}
-                  >5 days</button>
+                  >{t('5 days')}</button>
                   <button
                     className={`schedule-cal-nav__day-btn${calShowWeekend ? ' active' : ''}`}
                     onClick={() => setCalShowWeekend(true)}
-                  >7 days</button>
+                  >{t('7 days')}</button>
                 </div>
 
                 {/* Zoom toggle */}
-                <div className="schedule-cal-nav__zoom-toggle" title="Hour row density">
+                <div className="schedule-cal-nav__zoom-toggle" title={t('Hour row density')}>
                   <button
                     className={`schedule-cal-nav__zoom-btn${calZoom === 'compact' ? ' active' : ''}`}
                     onClick={() => setCalZoom('compact')}
-                    title="Compact"
+                    title={t('Compact')}
                   >
                     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                       <path d="M2 4h12M2 8h12M2 12h12"/>
@@ -1395,7 +1416,7 @@ export function ScheduleView() {
                   <button
                     className={`schedule-cal-nav__zoom-btn${calZoom === 'normal' ? ' active' : ''}`}
                     onClick={() => setCalZoom('normal')}
-                    title="Normal"
+                    title={t('Normal')}
                   >
                     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                       <path d="M2 3h12M2 8h12M2 13h12"/>
@@ -1404,7 +1425,7 @@ export function ScheduleView() {
                   <button
                     className={`schedule-cal-nav__zoom-btn${calZoom === 'spacious' ? ' active' : ''}`}
                     onClick={() => setCalZoom('spacious')}
-                    title="Spacious"
+                    title={t('Spacious')}
                   >
                     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                       <path d="M2 2h12M2 9h12M2 16h12"/>
@@ -1529,7 +1550,7 @@ export function ScheduleView() {
                             className="schedule-cal-event schedule-cal-event--focus"
                             style={{ top, height, left: `${leftPct}%`, right: `${rightPct}%` }}
                           >
-                            <span className="schedule-cal-event__time">{seg.total > 1 ? `Day ${seg.index + 1}/${seg.total}` : formatTime(seg.segStart)}</span>
+                            <span className="schedule-cal-event__time">{seg.total > 1 ? t('Day {{index}}/{{total}}', { index: seg.index + 1, total: seg.total }) : formatTime(seg.segStart)}</span>
                             <span className="schedule-cal-event__title">🔒 {seg.block.title}</span>
                           </div>
                         )
@@ -1572,7 +1593,7 @@ export function ScheduleView() {
                             )}
                             {showAttendees && (
                               <span className="schedule-cal-event__attendees">
-                                {m.attendees.length} attendees
+                                {t('{{count}} attendees', { count: m.attendees.length })}
                               </span>
                             )}
                             {isOngoing && <span className="schedule-cal-event__dot" />}
@@ -1632,7 +1653,7 @@ export function ScheduleView() {
                     <div className="schedule-date-header">
                       <span>{dayLabel(dateRef)}</span>
                       <span className="schedule-date-count">
-                        {group.meetings.length} meetings{group.blocks.length > 0 ? ` · ${group.blocks.length} focus` : ''}
+                        {t('{{count}} meetings', { count: group.meetings.length })}{group.blocks.length > 0 ? ` · ${t('{{count}} focus', { count: group.blocks.length })}` : ''}
                       </span>
                     </div>
 
@@ -1662,17 +1683,17 @@ export function ScheduleView() {
                                 {isOngoing && (
                                   <span className="schedule-card__ongoing-badge">
                                     <span className="schedule-card__ongoing-dot" />
-                                    Ongoing
+                                    {t('Ongoing')}
                                   </span>
                                 )}
                                 {isCancelled && (
                                   <span className="schedule-tone-pill" data-tone="gray">
-                                    Cancelled
+                                    {t('Cancelled')}
                                   </span>
                                 )}
                                 {isPostponed && (
                                   <span className="schedule-tone-pill" data-tone="yellow">
-                                    ⏸ Postponed
+                                    ⏸ {t('Postponed')}
                                   </span>
                                 )}
                                 <span className="schedule-card__time">
@@ -1691,7 +1712,7 @@ export function ScheduleView() {
                                     cancelMeeting(meeting.id)
                                   }}
                                 >
-                                  Cancel
+                                  {t('Cancel')}
                                 </button>
                               )}
                             </div>
@@ -1739,7 +1760,7 @@ export function ScheduleView() {
 
                               <div className="schedule-card__my-rsvp">
                                 {isPersonView ? null : isOrganizer ? (
-                                  <span className="schedule-organizer-badge">Organizer</span>
+                                  <span className="schedule-organizer-badge">{t('Organizer')}</span>
                                 ) : myRsvp ? (
                                   showQuickRsvp ? (
                                     <div>
@@ -1751,9 +1772,9 @@ export function ScheduleView() {
                                             void submitQuickRsvp(meeting.id, 'HADIR')
                                           }}
                                           disabled={quickRsvpLoading === meeting.id || showRsvpFor !== null}
-                                          title="Confirm attendance"
+                                          title={t('Confirm attendance')}
                                         >
-                                          {quickRsvpLoading === meeting.id ? '…' : '✓ Present'}
+                                          {quickRsvpLoading === meeting.id ? '…' : `✓ ${t('Present')}`}
                                         </button>
                                         <button
                                           className="schedule-rsvp-quick__btn schedule-rsvp-quick__btn--tidak"
@@ -1762,9 +1783,9 @@ export function ScheduleView() {
                                             void submitQuickRsvp(meeting.id, 'TIDAK_HADIR')
                                           }}
                                           disabled={quickRsvpLoading === meeting.id || showRsvpFor !== null}
-                                          title="Absent"
+                                          title={t('Absent')}
                                         >
-                                          {quickRsvpLoading === meeting.id ? '…' : '✗ Absent'}
+                                          {quickRsvpLoading === meeting.id ? '…' : `✗ ${t('Absent')}`}
                                         </button>
                                         <button
                                           className="schedule-rsvp-quick__btn schedule-rsvp-quick__btn--delegasi"
@@ -1772,9 +1793,9 @@ export function ScheduleView() {
                                             e.stopPropagation()
                                             openRsvp(meeting)
                                           }}
-                                          title="Delegate to someone else (opens dialog)"
+                                          title={t('Delegate to someone else (opens dialog)')}
                                         >
-                                          ↪ Delegate…
+                                          ↪ {t('Delegate…')}
                                         </button>
                                       </div>
                                       {quickRsvpError?.id === meeting.id && (
@@ -1792,7 +1813,7 @@ export function ScheduleView() {
                                             openRsvp(meeting)
                                           }}
                                         >
-                                          Edit
+                                          {t('Edit')}
                                         </button>
                                       )}
                                     </div>
@@ -1805,7 +1826,7 @@ export function ScheduleView() {
                             {meeting.organizer && (
                               <div className="schedule-card__organizer">
                                 <span className="schedule-card__organizer-label">
-                                  Created by {meeting.organizer.name}
+                                  {t('Created by {{name}}', { name: meeting.organizer.name })}
                                 </span>
                               </div>
                             )}
@@ -1821,12 +1842,12 @@ export function ScheduleView() {
                           <div className="schedule-card__top">
                             <div className="schedule-card__meta">
                               <span className="schedule-tone-pill" data-tone="purple">
-                                🔒 Focus
+                                🔒 {t('Focus')}
                               </span>
                               <span className="schedule-card__time">{label}</span>
                               {seg.total > 1 ? (
-                                <span className="schedule-card__duration text-muted">Day {seg.index + 1}/{seg.total}</span>
-                              ) : label !== 'All day' ? (
+                                <span className="schedule-card__duration text-muted">{t('Day {{index}}/{{total}}', { index: seg.index + 1, total: seg.total })}</span>
+                              ) : label !== i18n.t('All day') ? (
                                 <span className="schedule-card__duration text-muted">({durationLabel(seg.segStart, seg.segEnd)})</span>
                               ) : null}
                             </div>
@@ -1835,7 +1856,7 @@ export function ScheduleView() {
                                 className="btn btn--xs btn--ghost schedule-card__action"
                                 onClick={() => void deleteFocusBlock(seg.block.id)}
                               >
-                                Delete
+                                {t('Delete')}
                               </button>
                             )}
                           </div>
@@ -1857,7 +1878,7 @@ export function ScheduleView() {
                     className="btn btn--ghost schedule-load-more__btn"
                     onClick={() => setListPage(p => p + 1)}
                   >
-                    Load more ({grouped.length - pagedGroups.length} more)
+                    {t('Load more ({{count}} more)', { count: grouped.length - pagedGroups.length })}
                   </button>
                 </div>
               )}
@@ -1889,9 +1910,9 @@ export function ScheduleView() {
           <div aria-describedby={cancelMeetingDescId} aria-labelledby={cancelMeetingTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--sm" ref={cancelMeetingDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Schedule</span>
-                <h3 className="modal__title" id={cancelMeetingTitleId}>Cancel Meeting</h3>
-                <p className="modal-subtitle" id={cancelMeetingDescId}>Cancelling will close RSVP and minutes access for all attendees.</p>
+                <span className="modal-kicker">{t('Schedule')}</span>
+                <h3 className="modal__title" id={cancelMeetingTitleId}>{t('Cancel Meeting')}</h3>
+                <p className="modal-subtitle" id={cancelMeetingDescId}>{t('Cancelling will close RSVP and minutes access for all attendees.')}</p>
               </div>
               <button className="modal__close" onClick={() => closeOverlay('cancel', () => setConfirmCancel(null))} disabled={cancelSaving}>
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
@@ -1899,21 +1920,21 @@ export function ScheduleView() {
             </div>
             <div className="modal__body schedule-modal__body schedule-modal__body--compact">
               <p className="text-sm schedule-modal__text modal-helper-note modal-helper-note--danger">
-                Are you sure you want to cancel the meeting <strong>"{confirmCancel?.title}"</strong>?
-                Attendees will no longer be able to RSVP or view the minutes once the meeting is cancelled.
+                {t('Are you sure you want to cancel the meeting')} <strong>"{confirmCancel?.title}"</strong>?
+                {' '}{t('Attendees will no longer be able to RSVP or view the minutes once the meeting is cancelled.')}
               </p>
               {cancelError && (
                 <p className="text-sm schedule-feedback schedule-feedback--danger">{cancelError}</p>
               )}
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => closeOverlay('cancel', () => setConfirmCancel(null))} disabled={cancelSaving}>Back</button>
+              <button className="btn btn--ghost" onClick={() => closeOverlay('cancel', () => setConfirmCancel(null))} disabled={cancelSaving}>{t('Back')}</button>
               <button
                 className="btn btn--danger"
                 onClick={doCancel}
                 disabled={cancelSaving}
               >
-                {cancelSaving ? 'Cancelling…' : 'Yes, Cancel Meeting'}
+                {cancelSaving ? t('Cancelling…') : t('Yes, Cancel Meeting')}
               </button>
             </div>
           </div>
@@ -1927,24 +1948,24 @@ export function ScheduleView() {
           <div aria-describedby={deleteFocusDescId} aria-labelledby={deleteFocusTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--xs" ref={deleteFocusDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Schedule</span>
-                <h3 className="modal__title" id={deleteFocusTitleId}>Delete Focus Block</h3>
-                <p className="modal-subtitle" id={deleteFocusDescId}>This availability signal will be removed from your focus calendar.</p>
+                <span className="modal-kicker">{t('Schedule')}</span>
+                <h3 className="modal__title" id={deleteFocusTitleId}>{t('Delete Focus Block')}</h3>
+                <p className="modal-subtitle" id={deleteFocusDescId}>{t('This availability signal will be removed from your focus calendar.')}</p>
               </div>
               <button className="modal__close" onClick={() => closeOverlay('del-focus', () => { setConfirmDeleteFocus(null); setDeleteFocusError(null) })} disabled={deleteFocusSaving}>
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
               </button>
             </div>
             <div className="modal__body schedule-modal__body">
-              <p className="text-sm schedule-modal__text modal-helper-note modal-helper-note--danger">Are you sure you want to delete this focus block?</p>
+              <p className="text-sm schedule-modal__text modal-helper-note modal-helper-note--danger">{t('Are you sure you want to delete this focus block?')}</p>
               {deleteFocusError && (
                 <p className="text-sm schedule-feedback schedule-feedback--danger schedule-feedback--spaced">{deleteFocusError}</p>
               )}
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => closeOverlay('del-focus', () => { setConfirmDeleteFocus(null); setDeleteFocusError(null) })} disabled={deleteFocusSaving}>Cancel</button>
+              <button className="btn btn--ghost" onClick={() => closeOverlay('del-focus', () => { setConfirmDeleteFocus(null); setDeleteFocusError(null) })} disabled={deleteFocusSaving}>{t('Cancel')}</button>
               <button className="btn btn--danger" onClick={() => void doDeleteFocus()} disabled={deleteFocusSaving}>
-                {deleteFocusSaving ? 'Deleting…' : 'Delete'}
+                {deleteFocusSaving ? t('Deleting…') : t('Delete')}
               </button>
             </div>
           </div>
@@ -1958,9 +1979,9 @@ export function ScheduleView() {
           <div aria-describedby={rsvpDescId} aria-labelledby={rsvpTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--md" ref={rsvpDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Schedule</span>
-                <h3 className="modal__title" id={rsvpTitleId}>Confirm Attendance</h3>
-                <p className="modal-subtitle" id={rsvpDescId}>Choose your attendance status or delegate to the most suitable colleague.</p>
+                <span className="modal-kicker">{t('Schedule')}</span>
+                <h3 className="modal__title" id={rsvpTitleId}>{t('Confirm Attendance')}</h3>
+                <p className="modal-subtitle" id={rsvpDescId}>{t('Choose your attendance status or delegate to the most suitable colleague.')}</p>
               </div>
               <button className="modal__close" onClick={() => closeOverlay('rsvp', () => setShowRsvpFor(null))}>
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
@@ -1970,8 +1991,8 @@ export function ScheduleView() {
             <div className="modal__body">
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Attendance Status</h4>
-                  <p>Pick the response that fits best so the organizer can read attendance commitment accurately.</p>
+                  <h4>{t('Attendance Status')}</h4>
+                  <p>{t('Pick the response that fits best so the organizer can read attendance commitment accurately.')}</p>
                 </div>
                 <div className="schedule-rsvp-options">
                   {(['HADIR', 'TIDAK_HADIR', 'DELEGASI'] as const).map(s => (
@@ -1980,7 +2001,7 @@ export function ScheduleView() {
                       className={`btn btn--sm${rsvpStatus === s ? ' btn--primary' : ' btn--ghost'}`}
                       onClick={() => { setRsvpStatus(s); if (s !== 'DELEGASI') setSelectedDelegate(null) }}
                     >
-                      {s === 'HADIR' ? '✓ Present' : s === 'TIDAK_HADIR' ? '✗ Absent' : '↪ Delegate'}
+                      {s === 'HADIR' ? `✓ ${t('Present')}` : s === 'TIDAK_HADIR' ? `✗ ${t('Absent')}` : `↪ ${t('Delegate')}`}
                     </button>
                   ))}
                 </div>
@@ -1989,17 +2010,17 @@ export function ScheduleView() {
               {rsvpStatus === 'DELEGASI' && (
                 <section className="modal-section">
                   <div className="modal-section__intro">
-                    <h4>Delegate Attendee</h4>
-                    <p>Pick the delegate and add brief context so the handover stays clear.</p>
+                    <h4>{t('Delegate Attendee')}</h4>
+                    <p>{t('Pick the delegate and add brief context so the handover stays clear.')}</p>
                   </div>
                   <div className="modal-field">
-                    <label className="modal-label">Delegate to</label>
+                    <label className="modal-label">{t('Delegate to')}</label>
                     {allUsers.length === 0 ? (
-                      <p className="text-sm text-muted schedule-feedback schedule-feedback--muted">Loading user list…</p>
+                      <p className="text-sm text-muted schedule-feedback schedule-feedback--muted">{t('Loading user list…')}</p>
                     ) : (
                       <UserPicker
                         allowClear
-                        clearLabel="— Clear delegation —"
+                        clearLabel={t('— Clear delegation —')}
                         onChange={id => {
                           if (id == null) { setSelectedDelegate(null); return }
                           const u = delegateOptions.find(o => o.id === id) ?? null
@@ -2010,18 +2031,18 @@ export function ScheduleView() {
                           name: u.name,
                           positionTitle: u.positionTitle ?? formatRoleLabel(u.roleType),
                         }))}
-                        placeholder="Select a delegate…"
+                        placeholder={t('Select a delegate…')}
                         value={selectedDelegate?.id ?? null}
                       />
                     )}
                   </div>
 
                   <div className="modal-field">
-                    <label className="modal-label">Note <span className="text-muted">(optional)</span></label>
+                    <label className="modal-label">{t('Note')} <span className="text-muted">{t('(optional)')}</span></label>
                     <input
                       className="form-input"
                       type="text"
-                      placeholder="Reason for delegation…"
+                      placeholder={t('Reason for delegation…')}
                       value={delegateNote}
                       maxLength={200}
                       onChange={e => setDelegateNote(e.target.value)}
@@ -2041,9 +2062,9 @@ export function ScheduleView() {
             </div>
 
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => closeOverlay('rsvp', () => setShowRsvpFor(null))} disabled={rsvpSaving}>Cancel</button>
+              <button className="btn btn--ghost" onClick={() => closeOverlay('rsvp', () => setShowRsvpFor(null))} disabled={rsvpSaving}>{t('Cancel')}</button>
               <button className="btn btn--primary" onClick={submitRsvp} disabled={rsvpSaving}>
-                {rsvpSaving ? 'Saving…' : 'Save'}
+                {rsvpSaving ? t('Saving…') : t('Save')}
               </button>
             </div>
           </div>
@@ -2057,9 +2078,9 @@ export function ScheduleView() {
           <div aria-describedby={createMeetingDescId} aria-labelledby={createMeetingTitleId} aria-modal="true" className="modal modal--wide schedule-modal" ref={createMeetingDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Schedule</span>
-                <h3 className="modal__title" id={createMeetingTitleId}>Create New Meeting</h3>
-                <p className="modal-subtitle" id={createMeetingDescId}>Set up the meeting context, schedule, and attendees in one clean flow before invitations go out.</p>
+                <span className="modal-kicker">{t('Schedule')}</span>
+                <h3 className="modal__title" id={createMeetingTitleId}>{t('Create New Meeting')}</h3>
+                <p className="modal-subtitle" id={createMeetingDescId}>{t('Set up the meeting context, schedule, and attendees in one clean flow before invitations go out.')}</p>
               </div>
               <button className="modal__close" onClick={() => closeOverlay('create', () => setShowCreate(false))}>
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
@@ -2069,15 +2090,15 @@ export function ScheduleView() {
             <div className="modal__body schedule-modal__body schedule-modal__body--spacious">
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Meeting Information</h4>
-                  <p>Set the meeting identity and its link to a program so invitations are immediately contextual.</p>
+                  <h4>{t('Meeting Information')}</h4>
+                  <p>{t('Set the meeting identity and its link to a program so invitations are immediately contextual.')}</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Meeting Title <span className="schedule-modal__required">*</span></label>
+                  <label className="modal-label">{t('Meeting Title')} <span className="schedule-modal__required">*</span></label>
                   <input
                     className="form-input"
                     type="text"
-                    placeholder="e.g. Q2 2026 Coordination Meeting"
+                    placeholder={t('e.g. Q2 2026 Coordination Meeting')}
                     value={form.title}
                     maxLength={120}
                     onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
@@ -2085,26 +2106,26 @@ export function ScheduleView() {
                   />
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Meeting Type</label>
+                  <label className="modal-label">{t('Meeting Type')}</label>
                   <select
                     className="form-input"
                     value={form.meetingType}
                     onChange={e => setForm(f => ({ ...f, meetingType: e.target.value as MeetingType }))}
                   >
-                    {(Object.entries(MEETING_TYPE_LABEL) as [MeetingType, string][]).map(([val, lbl]) => (
+                    {(Object.entries(meetingTypeLabel()) as [MeetingType, string][]).map(([val, lbl]) => (
                       <option key={val} value={val}>{lbl}</option>
                     ))}
                   </select>
                 </div>
                 {programs.length > 0 && (
                   <div className="modal-field">
-                    <label className="modal-label">Related Program <span className="text-muted">(optional)</span></label>
+                    <label className="modal-label">{t('Related Program')} <span className="text-muted">{t('(optional)')}</span></label>
                     <select
                       className="form-input"
                       value={form.linkedProgramId}
                       onChange={e => setForm(f => ({ ...f, linkedProgramId: e.target.value }))}
                     >
-                      <option value="">— Select a program —</option>
+                      <option value="">{t('— Select a program —')}</option>
                       {programs.map(p => (
                         <option key={p.id} value={p.id}>[{p.code}] {p.name}</option>
                       ))}
@@ -2115,11 +2136,11 @@ export function ScheduleView() {
 
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Time & location</h4>
-                  <p>Make sure attendees can see when the meeting starts, ends, and where it takes place.</p>
+                  <h4>{t('Time & location')}</h4>
+                  <p>{t('Make sure attendees can see when the meeting starts, ends, and where it takes place.')}</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Date & Time <span className="schedule-modal__required">*</span></label>
+                  <label className="modal-label">{t('Date & Time')} <span className="schedule-modal__required">*</span></label>
                   <div className="schedule-modal__datetime-grid">
                     <input
                       className="form-input"
@@ -2140,24 +2161,24 @@ export function ScheduleView() {
                       onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
                     />
                   </div>
-                  <span className="text-xs text-muted schedule-modal__hint">Date · Start · End</span>
+                  <span className="text-xs text-muted schedule-modal__hint">{t('Date · Start · End')}</span>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Location <span className="text-muted">(optional)</span></label>
+                  <label className="modal-label">{t('Location')} <span className="text-muted">{t('(optional)')}</span></label>
                   <input
                     className="form-input"
                     type="text"
-                    placeholder="e.g. Boardroom Floor 8 or https://meet.google.com/…"
+                    placeholder={t('e.g. Boardroom Floor 8 or https://meet.google.com/…')}
                     value={form.location}
                     maxLength={200}
                     onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
                   />
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Description <span className="text-muted">(optional)</span></label>
+                  <label className="modal-label">{t('Description')} <span className="text-muted">{t('(optional)')}</span></label>
                   <textarea
                     rows={2}
-                    placeholder="Agenda, context, or meeting objective…"
+                    placeholder={t('Agenda, context, or meeting objective…')}
                     value={form.description}
                     maxLength={400}
                     onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
@@ -2168,14 +2189,14 @@ export function ScheduleView() {
 
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Invite Attendees</h4>
-                  <p>Choose required or optional attendees, then review the invite list before creating the meeting.</p>
+                  <h4>{t('Invite Attendees')}</h4>
+                  <p>{t('Choose required or optional attendees, then review the invite list before creating the meeting.')}</p>
                 </div>
                 <div className="schedule-attendee-list">
                   <div className="schedule-attendee-chip schedule-attendee-chip--organizer">
                     <Avatar name={currentUser?.name ?? ''} size={18} />
                     <span>{currentUser?.name}</span>
-                    <span className="schedule-attendee-chip__meta">Organizer</span>
+                    <span className="schedule-attendee-chip__meta">{t('Organizer')}</span>
                   </div>
                   {selectedAttendees.map(a => (
                     <div key={a.user.id} className="schedule-attendee-chip">
@@ -2185,9 +2206,9 @@ export function ScheduleView() {
                         type="button"
                         className="schedule-attendee-chip__role"
                         onClick={() => toggleAttendeeRole(a.user.id)}
-                        title="Click to change role"
+                        title={t('Click to change role')}
                       >
-                        {a.role === 'REQUIRED' ? 'Required' : 'Optional'}
+                        {a.role === 'REQUIRED' ? t('Required') : t('Optional')}
                       </button>
                       <button type="button" className="schedule-attendee-chip__remove" onClick={() => removeAttendee(a.user.id)}>
                         <svg fill="none" height="8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="8"><path d="m1 1 10 10M11 1 1 11" /></svg>
@@ -2199,7 +2220,7 @@ export function ScheduleView() {
                 <input
                   className="form-input"
                   type="text"
-                  placeholder="Type a name to invite an attendee…"
+                  placeholder={t('Type a name to invite an attendee…')}
                   value={attendeeSearch}
                   onChange={e => setAttendeeSearch(e.target.value)}
                 />
@@ -2229,7 +2250,7 @@ export function ScheduleView() {
 
               {selectedAttendees.length === 0 && (
                 <p className="text-sm schedule-feedback schedule-feedback--warning">
-                  ⚠ No attendees invited yet. Only the organizer will attend this meeting.
+                  ⚠ {t('No attendees invited yet. Only the organizer will attend this meeting.')}
                 </p>
               )}
 
@@ -2239,9 +2260,9 @@ export function ScheduleView() {
             </div>
 
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => closeOverlay('create', () => setShowCreate(false))} disabled={createSaving}>Cancel</button>
+              <button className="btn btn--ghost" onClick={() => closeOverlay('create', () => setShowCreate(false))} disabled={createSaving}>{t('Cancel')}</button>
               <button className="btn btn--primary" onClick={submitCreate} disabled={createSaving}>
-                {createSaving ? 'Creating…' : 'Create Meeting'}
+                {createSaving ? t('Creating…') : t('Create Meeting')}
               </button>
             </div>
           </div>
@@ -2255,9 +2276,9 @@ export function ScheduleView() {
           <div aria-describedby={focusDialogDescId} aria-labelledby={focusDialogTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--md" ref={focusDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Schedule</span>
-                <h3 className="modal__title" id={focusDialogTitleId}>Focus Time Block</h3>
-                <p className="modal-subtitle" id={focusDialogDescId}>Mark a time range that should stay free of meeting invitations, as a signal to your team.</p>
+                <span className="modal-kicker">{t('Schedule')}</span>
+                <h3 className="modal__title" id={focusDialogTitleId}>{t('Focus Time Block')}</h3>
+                <p className="modal-subtitle" id={focusDialogDescId}>{t('Mark a time range that should stay free of meeting invitations, as a signal to your team.')}</p>
               </div>
               <button className="modal__close" onClick={() => closeOverlay('focus', () => setShowFocusForm(false))}>
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
@@ -2265,11 +2286,11 @@ export function ScheduleView() {
             </div>
             <div className="modal__body schedule-modal__body">
               <p className="text-sm text-muted schedule-modal__intro modal-helper-note">
-                This block marks when you are unavailable for meetings. It is soft — it does not block invitations, only signals availability.
+                {t('This block marks when you are unavailable for meetings. It is soft — it does not block invitations, only signals availability.')}
               </p>
               <section className="modal-section">
                 <div className="modal-field">
-                  <label className="modal-label">Label</label>
+                  <label className="modal-label">{t('Label')}</label>
                   <input
                     className="form-input"
                     type="text"
@@ -2280,16 +2301,16 @@ export function ScheduleView() {
                   />
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Date &amp; Time <span className="schedule-modal__required">*</span></label>
+                  <label className="modal-label">{t('Date & Time')} <span className="schedule-modal__required">*</span></label>
                   <div className="schedule-focus-dt">
                     <div className="schedule-focus-dt__row">
                       <div className="schedule-focus-dt__cell">
-                        <span className="schedule-focus-dt__cap">Start date</span>
+                        <span className="schedule-focus-dt__cap">{t('Start date')}</span>
                         <input className="form-input" type="date" value={focusForm.date}
                           onChange={e => setFocusForm(f => ({ ...f, date: e.target.value }))} />
                       </div>
                       <div className="schedule-focus-dt__cell">
-                        <span className="schedule-focus-dt__cap">End date <span className="text-muted">(optional)</span></span>
+                        <span className="schedule-focus-dt__cap">{t('End date')} <span className="text-muted">{t('(optional)')}</span></span>
                         <input className="form-input" type="date" value={focusForm.endDate} min={focusForm.date}
                           onChange={e => setFocusForm(f => ({ ...f, endDate: e.target.value }))} />
                       </div>
@@ -2297,17 +2318,17 @@ export function ScheduleView() {
                     <label className="schedule-focus-dt__allday">
                       <input type="checkbox" checked={focusForm.allDay}
                         onChange={e => setFocusForm(f => ({ ...f, allDay: e.target.checked }))} />
-                      <span>All day</span>
+                      <span>{t('All day')}</span>
                     </label>
                     {!focusForm.allDay && (
                       <div className="schedule-focus-dt__row">
                         <div className="schedule-focus-dt__cell">
-                          <span className="schedule-focus-dt__cap">Start time</span>
+                          <span className="schedule-focus-dt__cap">{t('Start time')}</span>
                           <input className="form-input" type="time" value={focusForm.startTime}
                             onChange={e => setFocusForm(f => ({ ...f, startTime: e.target.value }))} />
                         </div>
                         <div className="schedule-focus-dt__cell">
-                          <span className="schedule-focus-dt__cap">End time</span>
+                          <span className="schedule-focus-dt__cap">{t('End time')}</span>
                           <input className="form-input" type="time" value={focusForm.endTime}
                             onChange={e => setFocusForm(f => ({ ...f, endTime: e.target.value }))} />
                         </div>
@@ -2316,13 +2337,13 @@ export function ScheduleView() {
                   </div>
                   <span className="text-xs text-muted schedule-modal__hint">
                     {focusForm.endDate && focusForm.endDate !== focusForm.date
-                      ? 'Spans multiple days — shown on each day, free of meeting invites'
-                      : focusForm.allDay ? 'Whole day marked meeting-free' : 'A few hours of meeting-free time'}
+                      ? t('Spans multiple days — shown on each day, free of meeting invites')
+                      : focusForm.allDay ? t('Whole day marked meeting-free') : t('A few hours of meeting-free time')}
                   </span>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Note <span className="text-muted">(optional)</span></label>
-                  <input className="form-input" type="text" placeholder="e.g. Q2 deep work sprint"
+                  <label className="modal-label">{t('Note')} <span className="text-muted">{t('(optional)')}</span></label>
+                  <input className="form-input" type="text" placeholder={t('e.g. Q2 deep work sprint')}
                     value={focusForm.note}
                     maxLength={300}
                     onChange={e => setFocusForm(f => ({ ...f, note: e.target.value }))} />
@@ -2331,9 +2352,9 @@ export function ScheduleView() {
               {focusError && <p className="text-sm schedule-feedback schedule-feedback--danger">{focusError}</p>}
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => closeOverlay('focus', () => setShowFocusForm(false))} disabled={focusSaving}>Cancel</button>
+              <button className="btn btn--ghost" onClick={() => closeOverlay('focus', () => setShowFocusForm(false))} disabled={focusSaving}>{t('Cancel')}</button>
               <button className="btn btn--primary schedule-btn--focus" onClick={submitFocusBlock} disabled={focusSaving}>
-                {focusSaving ? 'Saving…' : 'Save Block'}
+                {focusSaving ? t('Saving…') : t('Save Block')}
               </button>
             </div>
           </div>

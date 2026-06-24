@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Head, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { useFeatureFlag } from '../../hooks/useFeatureFlag'
@@ -66,6 +67,7 @@ function ledgerTone(pct: number | null): 'green' | 'amber' | 'red' | 'neutral' {
 }
 
 function CommitmentLedgerSection({ userId }: { userId: number }) {
+  const { t } = useTranslation()
   const enabled = useFeatureFlag('commitment-ledger')
   const [data, setData] = useState<LedgerData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -91,8 +93,8 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
 
   return (
     <section className="perf__section">
-      <span className="perf__section-label">My Commitments</span>
-      {loading && <div style={{ fontSize: 12, color: 'var(--ds-text-tertiary)', padding: '8px 0' }}>Loading ledger…</div>}
+      <span className="perf__section-label">{t('My Commitments')}</span>
+      {loading && <div style={{ fontSize: 12, color: 'var(--ds-text-tertiary)', padding: '8px 0' }}>{t('Loading ledger…')}</div>}
       {error && (
         <Card padding="md" style={{ borderColor: 'var(--ds-red-500)' }}>
           <div style={{ fontSize: 13, color: 'var(--tone-red)' }}>{error}</div>
@@ -115,7 +117,7 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
                 fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
                 letterSpacing: '0.06em', color: 'var(--ds-text-tertiary)', marginBottom: 4,
               }}>
-                Consistency ({data.lookbackWeeks} weeks)
+                {t('Consistency ({{count}} weeks)', { count: data.lookbackWeeks })}
               </div>
               <div style={{
                 fontSize: 24, fontWeight: 600,
@@ -126,7 +128,7 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
               </div>
               {sparseData && (
                 <div style={{ fontSize: 11, color: 'var(--ds-text-tertiary)', marginTop: 4 }}>
-                  Not enough data — {weeksWithData} of {data.lookbackWeeks} weeks recorded
+                  {t('Not enough data — {{recorded}} of {{total}} weeks recorded', { recorded: weeksWithData, total: data.lookbackWeeks })}
                 </div>
               )}
             </div>
@@ -135,13 +137,13 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
                 fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
                 letterSpacing: '0.06em', color: 'var(--ds-text-tertiary)', marginBottom: 4,
               }}>
-                Streak ≥{data.streakMinPct}%
+                {t('Streak ≥{{pct}}%', { pct: data.streakMinPct })}
               </div>
               <div style={{ fontSize: 24, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: 'var(--ds-text-primary)' }}>
                 {data.streak > 0 ? `${data.streak}` : '—'}
                 {data.streak > 0 && (
                   <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--ds-text-tertiary)', marginLeft: 6 }}>
-                    weeks
+                    {t('weeks')}
                   </span>
                 )}
               </div>
@@ -180,7 +182,7 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
             fontSize: 11, color: 'var(--ds-text-tertiary)',
             marginTop: 12, lineHeight: 1.5,
           }}>
-            Source: Tasks + Action Items + Assignments with a due date within the window. Hit = completed before due.
+            {t('Source: Tasks + Action Items + Assignments with a due date within the window. Hit = completed before due.')}
           </div>
         </Card>
         )
@@ -190,6 +192,7 @@ function CommitmentLedgerSection({ userId }: { userId: number }) {
 }
 
 export default function IndividuDetailView() {
+  const { t } = useTranslation()
   const { karyawan, kpiItems, periode } = usePage<PageProps>().props
   const navigate = useInertiaNavigate()
 
@@ -198,7 +201,7 @@ export default function IndividuDetailView() {
 
   return (
     <>
-      <Head title={`KPI — ${karyawan.nama}`} />
+      <Head title={t('KPI — {{name}}', { name: karyawan.nama })} />
       <div className="ds perf view-performance">
         <div className="perf__inner ds-stagger">
           {/* ─── Header ──────────────────────────── */}
@@ -206,7 +209,7 @@ export default function IndividuDetailView() {
             <div className="perf__header-left">
               <button className="perf__back" onClick={() => navigate('/performance/individu')} type="button">
                 <IconBack />
-                Back
+                {t('Back')}
               </button>
               <h1 className="perf__title">{karyawan.nama}</h1>
             </div>
@@ -222,20 +225,20 @@ export default function IndividuDetailView() {
           <Card padding="lg" className="perf__section perf-subject">
             <div className="perf-subject__row">
               <div className="perf-subject__meta">
-                <span className="perf-subject__eyebrow">Individual</span>
+                <span className="perf-subject__eyebrow">{t('Individual')}</span>
                 <div className="perf-subject__name">{karyawan.nama}</div>
                 <div className="perf-subject__jabatan">{karyawan.jabatan}</div>
                 <div className="perf-subject__chips">
                   <Pill variant="mono">{karyawan.unit}</Pill>
-                  <Pill tone="neutral" variant="soft">{karyawan.jumlah_kpi} KPI items</Pill>
-                  <Pill tone="neutral" variant="soft">Total weight 100%</Pill>
+                  <Pill tone="neutral" variant="soft">{t('{{count}} KPI items', { count: karyawan.jumlah_kpi })}</Pill>
+                  <Pill tone="neutral" variant="soft">{t('Total weight 100%')}</Pill>
                 </div>
               </div>
               <div className="perf-subject__score">
                 <span className="perf-subject__score-value" data-tone={tone}>
                   {karyawan.nilai.toFixed(2)}
                 </span>
-                <span className="perf-subject__score-label">Score {periode}</span>
+                <span className="perf-subject__score-label">{t('Score {{periode}}', { periode })}</span>
               </div>
             </div>
             <div className="perf-subject__bar">
@@ -245,11 +248,11 @@ export default function IndividuDetailView() {
 
           {/* ─── KPI list ─────────────────────────── */}
           <section className="perf__section">
-            <span className="perf__section-label">KPI Breakdown</span>
+            <span className="perf__section-label">{t('KPI Breakdown')}</span>
             {kpiItems.length === 0 ? (
               <Card padding="md" className="perf-empty">
-                <div className="perf-empty__title">No individual KPIs yet</div>
-                <div>KPIs for this employee are not registered for the {periode} period.</div>
+                <div className="perf-empty__title">{t('No individual KPIs yet')}</div>
+                <div>{t('KPIs for this employee are not registered for the {{periode}} period.', { periode })}</div>
               </Card>
             ) : (
             <div className="perf-kpi-list">
@@ -273,7 +276,7 @@ export default function IndividuDetailView() {
                       <div className="perf-kpi__meta">
                         <Pill variant="mono">{item.kode}</Pill>
                         <span className={`perf-kpi__meta-chip perf-kpi__meta-chip--${item.polaritas === 'maximize' ? 'max' : 'min'}`}>
-                          {item.polaritas === 'maximize' ? '↑ Maximize' : '↓ Minimize'}
+                          {item.polaritas === 'maximize' ? t('↑ Maximize') : t('↓ Minimize')}
                         </span>
                         <span className="perf-kpi__meta-chip">{item.satuan}</span>
                         <span className="perf-kpi__meta-chip">{item.periode}</span>
@@ -281,12 +284,12 @@ export default function IndividuDetailView() {
                       </div>
                       <div className="perf-kpi__realisasi">
                         <div className="perf-kpi__realisasi-block">
-                          <span className="perf-kpi__realisasi-label">Target</span>
+                          <span className="perf-kpi__realisasi-label">{t('Target')}</span>
                           <span className="perf-kpi__realisasi-value">{item.sasaran}</span>
                         </div>
                         <span className="perf-kpi__realisasi-arrow">→</span>
                         <div className="perf-kpi__realisasi-block">
-                          <span className="perf-kpi__realisasi-label">Realization</span>
+                          <span className="perf-kpi__realisasi-label">{t('Realization')}</span>
                           <span className="perf-kpi__realisasi-value" data-tone={itemTone}>{item.realisasi}</span>
                         </div>
                       </div>
@@ -301,7 +304,7 @@ export default function IndividuDetailView() {
                       <span className="perf-kpi__skor" style={{ color: `var(--ds-${itemTone}-600)` }}>
                         {item.skor.toFixed(2)}
                       </span>
-                      <span className="perf-kpi__bobot">Weight {item.bobot}%</span>
+                      <span className="perf-kpi__bobot">{t('Weight {{bobot}}%', { bobot: item.bobot })}</span>
                     </div>
                   </article>
                 )

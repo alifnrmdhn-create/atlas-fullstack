@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import './Meter.css'
 
 type Tone = 'green' | 'amber' | 'red' | 'neutral'
@@ -30,13 +31,14 @@ export function Meter({
   className,
   'aria-label': ariaLabel,
 }: MeterProps) {
+  const { t } = useTranslation()
   const pct = (v: number) => `${Math.min(Math.max((v / max) * 100, 0), 100)}%`
   return (
     <div
       className={['ds-meter', className].filter(Boolean).join(' ')}
       style={{ height }}
       role="img"
-      aria-label={ariaLabel ?? `${value} dari ${max}`}
+      aria-label={ariaLabel ?? t('{{value}} of {{max}}', { value, max })}
     >
       <span className="ds-meter__track" />
       <span className={`ds-meter__fill ds-meter__fill--${tone}`} style={{ width: pct(value) }} />

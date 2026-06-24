@@ -5,6 +5,7 @@
  */
 import { useState } from 'react'
 import { usePage } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import './AdminViews.css'
 
@@ -63,6 +64,7 @@ function FieldRow({
   onSave: (value: number | string) => Promise<void>
   onReset: () => Promise<void>
 }) {
+  const { t } = useTranslation()
   const currentValue = override ? override.value : defaultValue
   const [draft, setDraft] = useState<string>(formatValue(currentValue))
   const [saving, setSaving] = useState(false)
@@ -75,16 +77,16 @@ function FieldRow({
     let parsed: number | string = draft
     if (def.type === 'int') {
       const n = parseInt(draft, 10)
-      if (isNaN(n)) { setError('Must be a whole number'); return }
+      if (isNaN(n)) { setError(t('Must be a whole number')); return }
       parsed = n
     } else if (def.type === 'float') {
       const n = parseFloat(draft)
-      if (isNaN(n)) { setError('Must be a number'); return }
+      if (isNaN(n)) { setError(t('Must be a number')); return }
       parsed = n
     }
     setSaving(true)
     try { await onSave(parsed) }
-    catch (e) { setError((e as Error).message || 'Failed to save') }
+    catch (e) { setError((e as Error).message || t('Failed to save')) }
     finally { setSaving(false) }
   }
 
@@ -95,7 +97,7 @@ function FieldRow({
       await onReset()
       setDraft(formatValue(defaultValue))
     } catch (e) {
-      setError((e as Error).message || 'Failed to reset')
+      setError((e as Error).message || t('Failed to reset'))
     } finally {
       setSaving(false)
     }
@@ -106,7 +108,7 @@ function FieldRow({
       <div className="threshold-row__main">
         <label className="threshold-row__label">
           {def.label}
-          {isCustomized && <span className="threshold-row__customized" title="Custom override active">●</span>}
+          {isCustomized && <span className="threshold-row__customized" title={t('Custom override active')}>●</span>}
         </label>
         <span className="threshold-row__key">{fullKey}</span>
       </div>
@@ -128,7 +130,7 @@ function FieldRow({
           onClick={() => void handleSave()}
           disabled={saving || draft === formatValue(currentValue)}
         >
-          {saving ? '…' : 'Save'}
+          {saving ? '…' : t('Save')}
         </button>
         {isCustomized && (
           <button
@@ -136,16 +138,16 @@ function FieldRow({
             className="btn btn--ghost btn--sm"
             onClick={() => void handleReset()}
             disabled={saving}
-            title={`Reset to default: ${formatValue(defaultValue)}`}
+            title={t('Reset to default: {{value}}', { value: formatValue(defaultValue) })}
           >
-            Reset
+            {t('Reset')}
           </button>
         )}
       </div>
       {error && <div className="threshold-row__error">{error}</div>}
       {isCustomized && (
         <div className="threshold-row__hint">
-          Default: <code>{formatValue(defaultValue)}</code>
+          {t('Default:')} <code>{formatValue(defaultValue)}</code>
         </div>
       )}
     </div>
@@ -153,6 +155,7 @@ function FieldRow({
 }
 
 export default function AdminThresholdsView() {
+  const { t } = useTranslation()
   const initial = usePage<PageProps>().props
   const [overrides, setOverrides] = useState<Record<string, OverrideRow>>(initial.overrides)
 
@@ -175,18 +178,17 @@ export default function AdminThresholdsView() {
   return (
     <div className="ds admin-v2 view-thresholds ds-stagger">
       <div className="perf-toolbar">
-        <span className="perf-toolbar__title">Threshold Settings</span>
+        <span className="perf-toolbar__title">{t('Threshold Settings')}</span>
         <div className="perf-toolbar__sep" />
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          Dynamic configuration of PDCA system behavior. Live — no restart needed.
+          {t('Dynamic configuration of PDCA system behavior. Live — no restart needed.')}
         </span>
       </div>
 
       <div className="thresholds-page">
         <div className="thresholds-banner">
-          <strong>⚠ Caution</strong> — the values here affect system behavior experienced by
-          all users. Change one setting at a time, observe the effect for 1–2 days, then adjust
-          again if needed. Cache TTL is 60 seconds — effects appear within 1 minute.
+          <strong>{t('⚠ Caution')}</strong>{' '}
+          {t('— the values here affect system behavior experienced by all users. Change one setting at a time, observe the effect for 1–2 days, then adjust again if needed. Cache TTL is 60 seconds — effects appear within 1 minute.')}
         </div>
 
         {initial.schema.map(section => (

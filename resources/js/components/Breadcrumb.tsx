@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { ChevronDown, Check } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { NAV_SECTIONS } from '../lib/nav-config'
 
 type BreadcrumbProps = {
@@ -16,8 +17,9 @@ type BreadcrumbProps = {
  * Workspace ("PTPN III") stays static — single-tenant for now.
  */
 export function Breadcrumb({ workspace, currentLabel, currentPath }: BreadcrumbProps) {
+  const { t } = useTranslation()
   return (
-    <nav className="topbar__breadcrumb" aria-label="breadcrumb">
+    <nav className="topbar__breadcrumb" aria-label={t('breadcrumb')}>
       <span className="topbar__breadcrumb-workspace">{workspace}</span>
       <span className="topbar__breadcrumb-sep">/</span>
 
@@ -26,9 +28,9 @@ export function Breadcrumb({ workspace, currentLabel, currentPath }: BreadcrumbP
           <button
             type="button"
             className="topbar__breadcrumb-page topbar__breadcrumb-page--trigger"
-            aria-label={`Pindah halaman dari ${currentLabel}`}
+            aria-label={t('Switch page from {{label}}', { label: t(currentLabel) })}
           >
-            <span>{currentLabel}</span>
+            <span>{t(currentLabel)}</span>
             <ChevronDown size={13} aria-hidden="true" />
           </button>
         </DropdownMenu.Trigger>
@@ -46,7 +48,7 @@ export function Breadcrumb({ workspace, currentLabel, currentPath }: BreadcrumbP
                   <DropdownMenu.Separator className="topbar-quickjump__sep" />
                 ) : null}
                 <DropdownMenu.Label className="topbar-quickjump__label">
-                  {section.label}
+                  {t(section.label)}
                 </DropdownMenu.Label>
                 {section.items.map((item) => {
                   const isActive = item.path === currentPath
@@ -59,7 +61,7 @@ export function Breadcrumb({ workspace, currentLabel, currentPath }: BreadcrumbP
                     >
                       <Link href={item.path}>
                         <span className="topbar-quickjump__item-label">
-                          {item.label}
+                          {t(item.label)}
                         </span>
                         {isActive ? (
                           <Check

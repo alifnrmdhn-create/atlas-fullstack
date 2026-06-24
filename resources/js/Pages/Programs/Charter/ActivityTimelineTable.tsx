@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MONTH_KEYS, type CharterActivity, type CharterPeriod } from '../../../types/charter'
 
 type Props = {
@@ -18,10 +19,11 @@ type Props = {
  * WeekToMonthMapper. A week that spans two months counts for both.
  */
 export function ActivityTimelineTable({ activities, period }: Props) {
+  const { t } = useTranslation()
   if (activities.length === 0) {
     return (
       <div className="atl-empty">
-        No activities yet. Add tasks to a workstream to populate the timeline.
+        {t('No activities yet. Add tasks to a workstream to populate the timeline.')}
       </div>
     )
   }
@@ -44,9 +46,9 @@ export function ActivityTimelineTable({ activities, period }: Props) {
         <thead>
           {year && (
             <tr>
-              <th className="atl-head atl-head--name" rowSpan={2}>Activity</th>
-              <th className="atl-head atl-head--workstream" rowSpan={2}>Workstream</th>
-              <th className="atl-head atl-head--deliverable" rowSpan={2}>Deliverable</th>
+              <th className="atl-head atl-head--name" rowSpan={2}>{t('Activity')}</th>
+              <th className="atl-head atl-head--workstream" rowSpan={2}>{t('Workstream')}</th>
+              <th className="atl-head atl-head--deliverable" rowSpan={2}>{t('Deliverable')}</th>
               <th className="atl-head atl-head--label" rowSpan={2} />
               <th className="atl-year-row" colSpan={MONTH_KEYS.length}>{year}</th>
             </tr>
@@ -54,9 +56,9 @@ export function ActivityTimelineTable({ activities, period }: Props) {
           <tr>
             {!year && (
               <>
-                <th className="atl-head atl-head--name">Activity</th>
-                <th className="atl-head atl-head--workstream">Workstream</th>
-                <th className="atl-head atl-head--deliverable">Deliverable</th>
+                <th className="atl-head atl-head--name">{t('Activity')}</th>
+                <th className="atl-head atl-head--workstream">{t('Workstream')}</th>
+                <th className="atl-head atl-head--deliverable">{t('Deliverable')}</th>
                 <th className="atl-head atl-head--label" />
               </>
             )}
@@ -74,20 +76,20 @@ export function ActivityTimelineTable({ activities, period }: Props) {
                 <td className="atl-cell atl-cell--deliverable" rowSpan={2}>
                   {activity.deliverable ?? <span className="atl-muted">—</span>}
                 </td>
-                <td className="atl-cell atl-cell--label">Target</td>
+                <td className="atl-cell atl-cell--label">{t('Target')}</td>
                 {MONTH_KEYS.map(m => {
                   const cell = activity.months[m]
                   return (
                     <td
                       key={m}
                       className={`atl-cell atl-cell--mon${cell.target ? ' is-target' : ''}`}
-                      aria-label={cell.target ? `Target ${m}` : undefined}
+                      aria-label={cell.target ? t('Target {{month}}', { month: m }) : undefined}
                     />
                   )
                 })}
               </tr>
               <tr className="atl-row atl-row--real">
-                <td className="atl-cell atl-cell--label">Real</td>
+                <td className="atl-cell atl-cell--label">{t('Real')}</td>
                 {MONTH_KEYS.map(m => {
                   const cell = activity.months[m]
                   const state = cell.realized ? 'realized' : cell.below ? 'below' : ''
@@ -96,8 +98,8 @@ export function ActivityTimelineTable({ activities, period }: Props) {
                       key={m}
                       className={`atl-cell atl-cell--mon${state ? ` is-${state}` : ''}`}
                       aria-label={
-                        cell.realized ? `Realized ${m}` :
-                        cell.below ? `Below target ${m}` : undefined
+                        cell.realized ? t('Realized {{month}}', { month: m }) :
+                        cell.below ? t('Below target {{month}}', { month: m }) : undefined
                       }
                     />
                   )

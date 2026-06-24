@@ -1,13 +1,16 @@
 import { Fragment, useState, useEffect } from 'react'
 import type { ReactNode, CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Head, usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useAuth } from '../hooks/useAuth'
 import {  SectionState } from '../components/ui'
+import { DualLanguageAnnouncement } from '../components/DualLanguageAnnouncement'
 import { Card, Sparkline, Meter, Delta, Bars, Gauge, Tooltip } from '../design-system'
 import { scoreTone, type Tone } from '../lib/tone'
 import { resolveMonthIndex } from '../lib/forecast'
+import i18n from '../lib/i18n'
 import './HomeView.css'
 
 /* ─── Inertia props ─────────────────────────────────────────── */
@@ -47,9 +50,9 @@ type ScorecardSnapshot = {
 
 function getGreeting(): string {
   const h = new Date().getHours()
-  if (h < 11) return 'Good morning'
-  if (h < 15) return 'Good afternoon'
-  return 'Good evening'
+  if (h < 11) return i18n.t('Good morning')
+  if (h < 15) return i18n.t('Good afternoon')
+  return i18n.t('Good evening')
 }
 
 /* Proyeksi KPI akhir tahun — regresi linear tren bulanan → nilai Desember.
@@ -103,24 +106,26 @@ function relativeTime(iso: string): string {
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return ''
   const m = Math.floor((Date.now() - then) / 60000)
-  if (m < 1) return 'just now'
-  if (m < 60) return `${m}m ago`
+  if (m < 1) return i18n.t('just now')
+  if (m < 60) return i18n.t('{{count}}m ago', { count: m })
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
+  if (h < 24) return i18n.t('{{count}}h ago', { count: h })
   const d = Math.floor(h / 24)
-  if (d < 30) return `${d}d ago`
-  return `${Math.floor(d / 30)}mo ago`
+  if (d < 30) return i18n.t('{{count}}d ago', { count: d })
+  return i18n.t('{{count}}mo ago', { count: Math.floor(d / 30) })
 }
 
-const ENTITY_LABEL: Record<string, string> = {
-  Program: 'program', WorkItem: 'task', Task: 'task', Meeting: 'meeting',
-  ProgressLog: 'progress', Blocker: 'blocker', Assignment: 'assignment',
-  EscalationRequest: 'escalation', MeetingActionItem: 'action item',
+function entityLabel(): Record<string, string> {
+  return {
+    Program: i18n.t('program'), WorkItem: i18n.t('task'), Task: i18n.t('task'), Meeting: i18n.t('meeting'),
+    ProgressLog: i18n.t('progress'), Blocker: i18n.t('blocker'), Assignment: i18n.t('assignment'),
+    EscalationRequest: i18n.t('escalation'), MeetingActionItem: i18n.t('action item'),
+  }
 }
 
 function activityText(a: { action: string; entityType: string; description?: string }): string {
   if (a.description) return a.description
-  const ent = ENTITY_LABEL[a.entityType] ?? a.entityType
+  const ent = entityLabel()[a.entityType] ?? a.entityType
   return `${a.action} ${ent}`.trim()
 }
 
@@ -200,13 +205,14 @@ function ExecutionMap({ programs, onOpen }: {
   programs: Array<{ progressPercent: number; daysRemaining: number | null; healthTone: string }>
   onOpen: (href: string) => void
 }) {
+  const { t } = useTranslation()
   // rows = time-pressure (Tinggi/Sedang/Rendah), cols = progress (Awal/Tengah/Akhir)
   const grid = [0, 1, 2].map(() => [0, 0, 0])
   const pressRow = (d: number | null) => d == null ? 2 : d < 0 || d <= 30 ? 0 : d <= 90 ? 1 : 2
   const progCol = (p: number) => p < 34 ? 0 : p < 67 ? 1 : 2
   programs.forEach(p => { grid[pressRow(p.daysRemaining)][progCol(p.progressPercent)]++ })
   const max = Math.max(1, ...grid.flat())
-  const rowLabels = ['High', 'Medium', 'Low']
+  const rowLabels = [t('High'), t('Medium'), t('Low')]
   // Composite deep-link (Tier 3): baris pressure → token ?deadline (bisa >1),
   // kolom progress → token ?progress. Selaras bucket di ProgramsView.
   // Catatan: baris Low juga mencakup program tanpa tenggat (pressRow null→2); filter
@@ -220,9 +226,10 @@ function ExecutionMap({ programs, onOpen }: {
     const score = (2 - r) + c // 0..4
     return r === 0 && c === 0 ? 'red' : score <= 1 ? 'red' : score === 2 ? 'amber' : 'green'
   }
+  const progLabels = [t('early'), t('mid'), t('final')]
   return (
     <div className="hvc__xmap">
-      <span className="hvc__xmap-yaxis">Deadline pressure</span>
+      <span className="hvc__xmap-yaxis">{t('Deadline pressure')}</span>
       <div className="hvc__xmap-grid">
         {grid.map((row, r) => (
           <Fragment key={r}>
@@ -230,20 +237,20 @@ function ExecutionMap({ programs, onOpen }: {
             {row.map((count, c) => (
               <button key={c} type="button" className="hvc__xmap-cell" data-tone={cellTone(r, c)} data-empty={count === 0 ? '' : undefined}
                 style={{ ['--i' as string]: count === 0 ? 0.05 : 0.18 + 0.82 * (count / max) } as CSSProperties}
-                title={`${rowLabels[r]} pressure · ${['early','mid','final'][c]} progress: ${count} programs`}
+                title={t('{{pressure}} pressure · {{progress}} progress: {{count}} programs', { pressure: rowLabels[r], progress: progLabels[c], count })}
                 onClick={() => onOpen(cellHref(r, c))}>
                 {count > 0
-                  ? <span className="hvc__xmap-count">{count}<span className="hvc__xmap-cap">Programs</span></span>
-                  : <span className="hvc__xmap-count hvc__xmap-count--zero">0<span className="hvc__xmap-cap">Programs</span></span>}
+                  ? <span className="hvc__xmap-count">{count}<span className="hvc__xmap-cap">{t('Programs')}</span></span>
+                  : <span className="hvc__xmap-count hvc__xmap-count--zero">0<span className="hvc__xmap-cap">{t('Programs')}</span></span>}
               </button>
             ))}
           </Fragment>
         ))}
         <span className="hvc__xmap-corner" aria-hidden />
-        <span className="hvc__xmap-colh">Early</span>
-        <span className="hvc__xmap-colh">Mid</span>
-        <span className="hvc__xmap-colh">Final</span>
-        <span className="hvc__xmap-xaxis">Progress</span>
+        <span className="hvc__xmap-colh">{t('Early')}</span>
+        <span className="hvc__xmap-colh">{t('Mid')}</span>
+        <span className="hvc__xmap-colh">{t('Final')}</span>
+        <span className="hvc__xmap-xaxis">{t('Progress')}</span>
       </div>
     </div>
   )
@@ -292,6 +299,7 @@ const DEADLINE_PREFIX: Array<[string, string]> = [['Overdue', 'overdue'], ['≤'
 const deadlineToken = (label: string) => DEADLINE_PREFIX.find(([p]) => label.startsWith(p))?.[1] ?? null
 
 function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (id: number) => void }) {
+  const { t: tr } = useTranslation()
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const toggle = (t: number) => setExpanded(prev => {
     const next = new Set(prev)
@@ -299,12 +307,12 @@ function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (i
     return next
   })
   const dated = programs.filter(p => p.targetEndDate && p.daysRemaining != null)
-  if (dated.length === 0) return <p className="hvc__empty">No active programs with deadlines.</p>
+  if (dated.length === 0) return <p className="hvc__empty">{tr('No active programs with deadlines.')}</p>
   const fmt = (t: number) => { const d = new Date(t); return `${d.getDate()} ${TL_MON[d.getMonth()]}` }
   // Overdue = merah; upcoming dekat (≤30h) = amber; jauh = hijau. Membedakan
   // "terlambat" dari "akan jatuh tempo" di sumbu yang sama.
   const toneOf = (days: number): Tone => days < 0 ? 'red' : days <= 30 ? 'amber' : 'green'
-  const daysLabelOf = (days: number) => days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Today' : `${days}d left`
+  const daysLabelOf = (days: number) => days < 0 ? tr('{{count}}d overdue', { count: Math.abs(days) }) : days === 0 ? tr('Today') : tr('{{count}}d left', { count: days })
   // Ringkasan divisi untuk baris tanggal padat — kode pendek unik, cap 4.
   const shortDiv = (d: string) => (d || '').split('-')[0]
   const divSummary = (items: TLProg[]) => {
@@ -361,18 +369,18 @@ function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (i
 
   return (
     <div className="hvc__tl2">
-      <div className="hvc__tl2-axis" role="img" aria-label="Program deadline distribution relative to today">
+      <div className="hvc__tl2-axis" role="img" aria-label={tr('Program deadline distribution relative to today')}>
         <span className="hvc__tl2-line" aria-hidden />
         {ticks.map((tk, i) => (
           <span key={i} className="hvc__tl2-tick" style={{ left: `${tk.pos}%` } as CSSProperties}>{tk.label}</span>
         ))}
         <span className="hvc__tl2-today" style={{ left: `${todayPos}%` } as CSSProperties} aria-hidden>
-          <span className="hvc__tl2-today-label">Today</span>
+          <span className="hvc__tl2-today-label">{tr('Today')}</span>
         </span>
         {groups.map((g, i) => {
           const tone = toneOf(g.days)
           const n = g.items.length
-          const label = `${fmt(g.t)} · ${daysLabelOf(g.days)} · ${n > 1 ? `${n} programs` : g.items[0].name}`
+          const label = `${fmt(g.t)} · ${daysLabelOf(g.days)} · ${n > 1 ? tr('{{count}} programs', { count: n }) : g.items[0].name}`
           return (
             <button key={g.t} type="button" className="hvc__tl2-dot" data-tone={tone}
               style={{ left: `${positions[i]}%`, ['--lane' as string]: lanes[i] } as CSSProperties}
@@ -415,7 +423,7 @@ function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (i
                   <span className="hvc__tl2-rdot" data-tone={tone} aria-hidden />
                   <span className="hvc__tl2-rdate" data-tone={tone}>{fmt(g.t)}</span>
                   <span className="hvc__tl2-rgroup">
-                    <span className="hvc__tl2-rcount">{n} programs</span>
+                    <span className="hvc__tl2-rcount">{tr('{{count}} programs', { count: n })}</span>
                     <span className="hvc__tl2-rdiv" title={divSummary(g.items)}>{divSummary(g.items)}</span>
                   </span>
                   <span className="hvc__tl2-rdays" data-tone={tone}>{daysLabelOf(g.days)}</span>
@@ -444,6 +452,7 @@ function DeadlineTimeline({ programs, onOpen }: { programs: TLProg[]; onOpen: (i
 /* ─── Page ──────────────────────────────────────────────────── */
 
 export default function HomeView() {
+  const { t } = useTranslation()
   const { currentUser, programSummary, overviewStatus, openProgramWorkspace } = useWorkspace()
   const navigate = useInertiaNavigate()
   const { props } = usePage<{ scorecardSnapshot: ScorecardSnapshot }>()
@@ -458,7 +467,7 @@ export default function HomeView() {
   if (overviewStatus.loading && !programSummary) {
     return (
       <div className="ds home-v2 home-v2--cockpit">
-        <div className="hv hv--cockpit hvc__sk" aria-busy="true" aria-label="Loading dashboard">
+        <div className="hv hv--cockpit hvc__sk" aria-busy="true" aria-label={t('Loading dashboard')}>
           <div className="hvc__sk-line" style={{ width: 260, height: 20 }} />
           <div className="hvc__sk-bar" />
           <div className="hvc__sk-grid hvc__sk-grid--hud">
@@ -478,8 +487,8 @@ export default function HomeView() {
       <div className="ds home-v2">
         <div className="hv">
           <SectionState
-            title="Dashboard data unavailable"
-            text="Couldn't load the portfolio summary. Try refreshing — if it persists, check the server connection."
+            title={t('Dashboard data unavailable')}
+            text={t("Couldn't load the portfolio summary. Try refreshing — if it persists, check the server connection.")}
           />
         </div>
       </div>
@@ -546,7 +555,7 @@ export default function HomeView() {
     (tlm > 0 || belowTargetCount > 0 || criticalControlCount > 0) ? 'red'
     : (summary.atRisk > 0 || needsAction.length > 0) ? 'amber'
     : 'green'
-  const _statusLabel = statusTone === 'green' ? 'Under Control' : statusTone === 'amber' ? 'Attention' : 'Action'
+  const _statusLabel = statusTone === 'green' ? t('Under Control') : statusTone === 'amber' ? t('Attention') : t('Action')
   const aksiTone: Tone = decisionCount > 0 ? (belowTargetCount > 0 ? 'red' : 'amber')
     : tlm > 0 ? 'amber' : 'green'
 
@@ -557,22 +566,22 @@ export default function HomeView() {
     const f = scorecard.belowTarget[0]
     exceptions.push({
       id: 'kpi', tone: 'red',
-      label: <><strong>{belowTargetCount} KPI</strong> below target</>,
-      meta: `${f.nama} · ${f.nilai.toFixed(1)}%`, onClick: () => navigate(kpiRowUrl(f.kode)),
+      label: <><strong>{t('{{count}} KPI', { count: belowTargetCount })}</strong> {t('below target')}</>,
+      meta: `${f.nama} · ${f.nilai.toFixed(2)}%`, onClick: () => navigate(kpiRowUrl(f.kode)),
     })
   }
   if (needsAction.length > 0) {
     exceptions.push({
       id: 'na', tone: 'amber',
-      label: <><strong>{needsAction.length} items</strong> awaiting decision</>,
-      meta: 'Approvals, escalations & support', onClick: () => navigate('/fokus'),
+      label: <><strong>{t('{{count}} items', { count: needsAction.length })}</strong> {t('awaiting decision')}</>,
+      meta: t('Approvals, escalations & support'), onClick: () => navigate('/fokus'),
     })
   }
   if (criticalControlCount > 0) {
     exceptions.push({
       id: 'cc', tone: 'amber',
-      label: <><strong>{criticalControlCount} critical controls</strong> open</>,
-      meta: 'CRITICAL/HIGH risk', onClick: () => navigate('/programs'),
+      label: <><strong>{t('{{count}} critical controls', { count: criticalControlCount })}</strong> {t('open')}</>,
+      meta: t('CRITICAL/HIGH risk'), onClick: () => navigate('/programs'),
     })
   }
 
@@ -591,7 +600,7 @@ export default function HomeView() {
     label: shortCode(d.kode),
     value: d.nilai,
     tone: scoreTone(d.nilai) as Tone,
-    valueLabel: d.nilai.toFixed(1),
+    valueLabel: d.nilai.toFixed(2),
   }))
   const hasKpiDivisi = canSeePerformance && kpiDivisiBars.length > 0
 
@@ -641,10 +650,10 @@ export default function HomeView() {
     .sort((a, b) => b.total - a.total)
     .slice(0, 8)
   const heatCols: Array<{ key: 'onTrack' | 'atRisk' | 'tlm' | 'selesai'; label: string; tone: Tone }> = [
-    { key: 'onTrack', label: 'On Track', tone: 'green' },
-    { key: 'atRisk', label: 'At Risk', tone: 'amber' },
-    { key: 'tlm', label: 'Delayed', tone: 'red' },
-    { key: 'selesai', label: 'Completed', tone: 'neutral' },
+    { key: 'onTrack', label: t('On Track'), tone: 'green' },
+    { key: 'atRisk', label: t('At Risk'), tone: 'amber' },
+    { key: 'tlm', label: t('Delayed'), tone: 'red' },
+    { key: 'selesai', label: t('Completed'), tone: 'neutral' },
   ]
   const heatVal = (d: typeof heatRows[number], key: string) =>
     key === 'tlm' ? (d.terlambat ?? 0) + (d.overdue ?? 0)
@@ -672,20 +681,20 @@ export default function HomeView() {
 
   /* ── Shortcuts ───────────────────────────────────────────────── */
   const shortcuts: Array<{ icon: string; label: string; tone: Tone; onClick: () => void }> = [
-    { icon: 'programs', label: 'Programs', tone: 'green', onClick: () => navigate('/programs') },
-    { icon: 'workboard', label: 'Workboard', tone: 'amber', onClick: () => navigate('/execution') },
-    { icon: 'meeting', label: 'Meetings', tone: 'neutral', onClick: () => navigate('/jadwal') },
+    { icon: 'programs', label: t('Programs'), tone: 'green', onClick: () => navigate('/programs') },
+    { icon: 'workboard', label: t('Workboard'), tone: 'amber', onClick: () => navigate('/execution') },
+    { icon: 'meeting', label: t('Meetings'), tone: 'neutral', onClick: () => navigate('/jadwal') },
     canSeePerformance
-      ? { icon: 'performance', label: 'Performance', tone: 'green', onClick: () => navigate('/performance/scorecard') }
-      : { icon: 'workboard', label: 'Assignment', tone: 'neutral', onClick: () => navigate('/penugasan') },
+      ? { icon: 'performance', label: t('Performance'), tone: 'green', onClick: () => navigate('/performance/scorecard') }
+      : { icon: 'workboard', label: t('Assignment'), tone: 'neutral', onClick: () => navigate('/penugasan') },
   ]
 
   /* ── Hero stat chips ─────────────────────────────────────────── */
   const _heroStats: Array<{ val: number; label: string; tone: Tone; onClick: () => void }> = [
-    { val: tlm, label: 'Delayed programs', tone: tlm > 0 ? 'red' : 'green', onClick: () => navigate('/programs') },
-    { val: summary.selesai, label: 'Completed', tone: 'green', onClick: () => navigate('/programs') },
-    { val: summary.total, label: 'Total programs', tone: 'neutral', onClick: () => navigate('/programs') },
-    { val: exceptionCount, label: 'Needs action', tone: exceptionCount > 0 ? 'amber' : 'green', onClick: () => navigate('/fokus') },
+    { val: tlm, label: t('Delayed programs'), tone: tlm > 0 ? 'red' : 'green', onClick: () => navigate('/programs') },
+    { val: summary.selesai, label: t('Completed'), tone: 'green', onClick: () => navigate('/programs') },
+    { val: summary.total, label: t('Total programs'), tone: 'neutral', onClick: () => navigate('/programs') },
+    { val: exceptionCount, label: t('Needs action'), tone: exceptionCount > 0 ? 'amber' : 'green', onClick: () => navigate('/fokus') },
   ]
 
   /* ── Below-the-fold detail data (unchanged sources) ──────────── */
@@ -700,25 +709,25 @@ export default function HomeView() {
 
   /* ── Verdict — editorial lead: the one-line state + WHY (reframes a green
    * lagging KPI against the leading execution risk). All from existing data. */
-  const verdictLabel = statusTone === 'red' ? 'Action needed' : statusTone === 'amber' ? 'Attention' : 'Under control'
+  const verdictLabel = statusTone === 'red' ? t('Action needed') : statusTone === 'amber' ? t('Attention') : t('Under control')
   // Compact metric-led layout (pilihan user 2026-06-02): judul ringkas + count,
   // lalu baris metrik kontras (KPI lagging ⟷ eksekusi leading) menggantikan
   // kalimat naratif panjang yang dulu sulit dibaca di layar sempit.
   const verdictHeadDetail = tlm > 0
-    ? `${tlm} programs delayed`
+    ? t('{{count}} programs delayed', { count: tlm })
     : exceptionCount > 0
-      ? `${exceptionCount} items to decide`
-      : 'all on plan'
-  const verdictCta = tlm > 0 ? `Review ${tlm} programs` : exceptionCount > 0 ? 'Open Focus' : 'View programs'
+      ? t('{{count}} items to decide', { count: exceptionCount })
+      : t('all on plan')
+  const verdictCta = tlm > 0 ? t('Review {{count}} programs', { count: tlm }) : exceptionCount > 0 ? t('Open Focus') : t('View programs')
   const verdictHref = tlm > 0 ? '/programs' : exceptionCount > 0 ? '/fokus' : '/programs'
   // Metric contrast signs — lagging (KPI result) vs leading (execution on-track%).
-  const kpiSign = kpiTone === 'green' ? '✓ above target' : kpiTone === 'amber' ? 'near target' : '↓ below target'
-  const execSign = leadingTone === 'green' ? '✓ on track' : leadingTone === 'amber' ? 'steady' : '↓ lagging'
+  const kpiSign = kpiTone === 'green' ? t('✓ above target') : kpiTone === 'amber' ? t('near target') : t('↓ below target')
+  const execSign = leadingTone === 'green' ? t('✓ on track') : leadingTone === 'amber' ? t('steady') : t('↓ lagging')
 
   /* ── Portofolio scope — jawab "apa yang saya kelola & berapa" (data: scope+summary,
    * sebelumnya tak dirender). Active = berjalan (on-track+at-risk+telat), bukan selesai/draft. */
-  const scopeName = scope?.level === 'portfolio' ? 'PTPN III Portfolio' : (scope?.name ?? 'Your Portfolio')
-  const scopeUnitLabel = scope?.level === 'portfolio' ? 'directorates' : 'divisions'
+  const scopeName = scope?.level === 'portfolio' ? t('PTPN III Portfolio') : (scope?.name ?? t('Your Portfolio'))
+  const scopeUnitLabel = scope?.level === 'portfolio' ? t('directorates') : t('divisions')
   const activeCount = summary.onTrack + summary.atRisk + tlm
 
   /* ── P1: intelligence strip (1 baris padat) — forecast · insight · delta ── */
@@ -730,7 +739,7 @@ export default function HomeView() {
   const totalOverAll = overByDiv.reduce((s, d) => s + d.over, 0)
   const topOver = [...overByDiv].sort((a, b) => b.over - a.over)[0]
   const insightText = topOver && totalOverAll > 0 && topOver.over > 0 && overByDiv.length > 1 && topOver.over / totalOverAll >= 0.34
-    ? `${topOver.code} accounts for ${Math.round((topOver.over / totalOverAll) * 100)}% of delays`
+    ? t('{{code}} accounts for {{percent}}% of delays', { code: topOver.code, percent: Math.round((topOver.over / totalOverAll) * 100) })
     : null
   // Delta vs periode pembanding (velocity): Δtelat (naik = buruk), Δon-track (naik = baik)
   const velLate = velocity?.terlambat ?? null
@@ -740,7 +749,8 @@ export default function HomeView() {
 
   return (
     <>
-      <Head title="Home" />
+      <Head title={t('Home')} />
+      <DualLanguageAnnouncement />
       <div className="ds home-v2 home-v2--cockpit">
         <div className="hv hv--cockpit">
 
@@ -749,13 +759,13 @@ export default function HomeView() {
           <header className="hv__head hvc__head hvc__head--slim">
             <h1 className="hv__greeting">
               {getGreeting()},{' '}
-              <span className="hv__greeting-name">{currentUser?.name ?? 'there'}</span>
+              <span className="hv__greeting-name">{currentUser?.name ?? t('there')}</span>
             </h1>
             <span className="hvc__scope">
-              {scopeName} · <b>{summary.total} programs</b>
+              {scopeName} · <b>{t('{{count}} programs', { count: summary.total })}</b>
               {scope?.unitCount ? <> · {scope.unitCount} {scopeUnitLabel}</> : null}
-              {' · '}<b>{activeCount}</b> active
-              {draftPipeline > 0 ? <> · {draftPipeline} draft</> : null}
+              {' · '}<b>{activeCount}</b> {t('active')}
+              {draftPipeline > 0 ? <> · {t('{{count}} draft', { count: draftPipeline })}</> : null}
             </span>
           </header>
 
@@ -775,12 +785,12 @@ export default function HomeView() {
             <div className="hvc__verdict-metrics">
               {hasKpi && (
                 <span className="hvc__vmetric" data-tone={kpiTone}>
-                  <span className="hvc__vmetric-k">KPI</span> <b>{kpiHeadline.toFixed(1)}%</b> <span className="hvc__vmetric-s">{kpiSign}</span>
+                  <span className="hvc__vmetric-k">{t('KPI')}</span> <b>{kpiHeadline.toFixed(2)}%</b> <span className="hvc__vmetric-s">{kpiSign}</span>
                 </span>
               )}
               {activeProgramCount > 0 && (
                 <span className="hvc__vmetric" data-tone={leadingTone}>
-                  <span className="hvc__vmetric-k">Execution</span> <b>{onTrackPct}%</b> <span className="hvc__vmetric-s">{execSign}</span>
+                  <span className="hvc__vmetric-k">{t('Execution')}</span> <b>{onTrackPct}%</b> <span className="hvc__vmetric-s">{execSign}</span>
                 </span>
               )}
             </div>
@@ -798,13 +808,13 @@ export default function HomeView() {
               {forecast && (
                 <span className="hvc__intel-seg" data-tone={forecast.tone}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 18 L9 11 L13 14 L20 5" /><polyline points="15 5 20 5 20 10" /></svg>
-                  Dec KPI forecast <b>≈{forecast.value.toFixed(1)}%</b> <span className="hvc__intel-delta" data-tone={forecast.tone}>({forecast.deltaVsTarget >= 0 ? '+' : ''}{forecast.deltaVsTarget.toFixed(1)} vs target)</span>
+                  {t('Dec KPI forecast')} <b>≈{forecast.value.toFixed(2)}%</b> <span className="hvc__intel-delta" data-tone={forecast.tone}>({forecast.deltaVsTarget >= 0 ? '+' : ''}{forecast.deltaVsTarget.toFixed(2)} {t('vs target')})</span>
                 </span>
               )}
               {hasDelta && (
                 <span className="hvc__intel-seg hvc__intel-seg--delta">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 12a9 9 0 1 1-2.6-6.4" /><polyline points="21 3 21 8 16 8" /></svg>
-                  <span className="hvc__intel-deltawrap">vs {Math.abs(velDays!)}d ago:{velLate != null && velLate !== 0 && <b data-tone={velLate > 0 ? 'red' : 'green'}>{velLate > 0 ? '+' : ''}{velLate} delayed</b>}{velOn != null && velOn !== 0 && <b data-tone={velOn > 0 ? 'green' : 'red'}>{velOn > 0 ? '+' : ''}{velOn} On Track</b>}</span>
+                  <span className="hvc__intel-deltawrap">{t('vs {{count}}d ago:', { count: Math.abs(velDays!) })}{velLate != null && velLate !== 0 && <b data-tone={velLate > 0 ? 'red' : 'green'}>{velLate > 0 ? '+' : ''}{t('{{count}} delayed', { count: velLate })}</b>}{velOn != null && velOn !== 0 && <b data-tone={velOn > 0 ? 'green' : 'red'}>{velOn > 0 ? '+' : ''}{t('{{count}} On Track', { count: velOn })}</b>}</span>
                 </span>
               )}
             </div>
@@ -812,32 +822,32 @@ export default function HomeView() {
           </div>
 
           {/* ═══════════════ HERO — KPI dominan · Eksekusi · Tertinggal · Keputusan ═══════════════ */}
-          <section className="hvc__maphero" aria-label="Summary">
+          <section className="hvc__maphero" aria-label={t('Summary')}>
             <div className="hvc__hud">
               {/* ① KPI achievement — big number + delta + embedded flowing trend */}
               {canSeePerformance && hasKpi && (
                 <Card padding="none" className="hvc__hcard hvc__hcard--kpi" data-tone={kpiTone}>
                   <div className="hvc__hcard-body">
-                    <span className="hvc__hcard-eyebrow">KPI Achievement · {scorecard.periodeLabel} <InfoHint content="Latest available scorecard period — KPI is reported roughly one month in arrears, so this trails the current month." /></span>
+                    <span className="hvc__hcard-eyebrow">{t('KPI Achievement')} · {scorecard.periodeLabel} <InfoHint content={t('Latest available scorecard period — KPI is reported roughly one month in arrears, so this trails the current month.')} /></span>
                     <div className="hvc__kpi-split">
                       <div className="hvc__kpi-left">
                         <div className="hvc__hcard-figure">
-                          <span className="hvc__hcard-big" data-tone={kpiTone}><CountUp value={kpiHeadline} decimals={1} /><span className="hvc__hcard-unit">%</span></span>
-                          {scorecard.avgDelta != null && <Delta value={scorecard.avgDelta} suffix=" pts" />}
+                          <span className="hvc__hcard-big" data-tone={kpiTone}><CountUp value={kpiHeadline} decimals={2} /><span className="hvc__hcard-unit">%</span></span>
+                          {scorecard.avgDelta != null && <Delta value={scorecard.avgDelta} suffix={t(' pts')} />}
                         </div>
-                        <span className="hvc__hcard-foot">vs target 100</span>
+                        <span className="hvc__hcard-foot">{t('vs target 100')}</span>
                       </div>
                       {hasKpiDivisi && (
                         <div className="hvc__kpi-divbars">
                           {kpiRows.slice(0, 3).map(d => {
-                            const t = scoreTone(d.nilai)
+                            const tn = scoreTone(d.nilai)
                             return (
                               <button key={d.kode} type="button" className="hvc__kpi-divbar hvc__kpi-divbar--btn"
-                                title={`${d.nama}: ${d.nilai.toFixed(1)}% — buka KPI divisi`}
+                                title={t('{{name}}: {{value}}% — open division KPI', { name: d.nama, value: d.nilai.toFixed(2) })}
                                 onClick={() => navigate(`/performance/divisi/${shortCode(d.kode).toLowerCase()}`)}>
                                 <span className="hvc__kpi-divbar-name" title={d.nama}>{shortCode(d.kode)}</span>
-                                <Meter className="hvc__kpi-divbar-meter" value={d.nilai} max={120} target={100} tone={t} height={6} aria-label={`${d.nama}: ${d.nilai.toFixed(1)}%`} />
-                                <span className="hvc__kpi-divbar-val" data-tone={t}>{d.nilai.toFixed(1)}</span>
+                                <Meter className="hvc__kpi-divbar-meter" value={d.nilai} max={120} target={100} tone={tn} height={6} aria-label={`${d.nama}: ${d.nilai.toFixed(2)}%`} />
+                                <span className="hvc__kpi-divbar-val" data-tone={tn}>{d.nilai.toFixed(2)}</span>
                               </button>
                             )
                           })}
@@ -851,33 +861,33 @@ export default function HomeView() {
                   {kpiSpark.length >= 4 && (
                     <div className="hvc__hcard-spark"><Sparkline values={kpiSpark} tone={kpiTone} width={340} height={48} smooth lastDot={false} /></div>
                   )}
-                  <button type="button" className="hvc__hcard-link" onClick={() => navigate('/performance/scorecard')}>View scorecard <span className="hvc__arrow" aria-hidden>→</span></button>
+                  <button type="button" className="hvc__hcard-link" onClick={() => navigate('/performance/scorecard')}>{t('View scorecard')} <span className="hvc__arrow" aria-hidden>→</span></button>
                 </Card>
               )}
 
               {/* ② Execution health — arc gauge + legend */}
               <Card padding="none" className="hvc__hcard hvc__hcard--exec" data-tone={programTone}>
                 <div className="hvc__hcard-body">
-                  <span className="hvc__hcard-eyebrow">Execution Health</span>
+                  <span className="hvc__hcard-eyebrow">{t('Execution Health')}</span>
                   <div className="hvc__hcard-exec-row">
-                    <Gauge value={onTrackPct} max={100} tone={leadingTone} size={84} thickness={9} valueText={`${onTrackPct}`} unit="%" label="on track" rich className="hvc__execgauge" />
+                    <Gauge value={onTrackPct} max={100} tone={leadingTone} size={84} thickness={9} valueText={`${onTrackPct}`} unit="%" label={t('on track')} rich className="hvc__execgauge" />
                     <ul className="hvc__hcard-legend">
-                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('onTrack'))}><i className="hvc__dot" data-tone="green" />On Track<b>{summary.onTrack}</b></button></li>
-                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('atRisk'))}><i className="hvc__dot" data-tone="amber" />At Risk<b>{summary.atRisk}</b></button></li>
-                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('tlm'))}><i className="hvc__dot" data-tone="red" />Delayed<b>{tlm}</b></button></li>
-                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('selesai'))}><i className="hvc__dot" data-tone="neutral" />Completed<b>{summary.selesai}</b></button></li>
+                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('onTrack'))}><i className="hvc__dot" data-tone="green" />{t('On Track')}<b>{summary.onTrack}</b></button></li>
+                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('atRisk'))}><i className="hvc__dot" data-tone="amber" />{t('At Risk')}<b>{summary.atRisk}</b></button></li>
+                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('tlm'))}><i className="hvc__dot" data-tone="red" />{t('Delayed')}<b>{tlm}</b></button></li>
+                      <li><button type="button" className="hvc__legend-btn" onClick={() => navigate(programsHref('selesai'))}><i className="hvc__dot" data-tone="neutral" />{t('Completed')}<b>{summary.selesai}</b></button></li>
                     </ul>
                   </div>
                 </div>
-                <button type="button" className="hvc__hcard-link" onClick={() => navigate('/programs')}>View details <span className="hvc__arrow" aria-hidden>→</span></button>
+                <button type="button" className="hvc__hcard-link" onClick={() => navigate('/programs')}>{t('View details')} <span className="hvc__arrow" aria-hidden>→</span></button>
               </Card>
 
               {/* ③ Program tertinggal — big number + embedded area trend */}
               <button type="button" className="ds-card hvc__hcard hvc__hcard--late" data-tone={tlm > 0 ? 'red' : 'green'} onClick={() => navigate('/programs?status=terlambat')}>
                 <div className="hvc__hcard-body">
-                  <span className="hvc__hcard-eyebrow">Delayed Programs</span>
+                  <span className="hvc__hcard-eyebrow">{t('Delayed Programs')}</span>
                   <span className="hvc__hcard-big" data-tone={tlm > 0 ? 'red' : 'green'}><CountUp value={tlm} /></span>
-                  <span className="hvc__hcard-foot">{oldestOverdueDays != null ? `oldest ${oldestOverdueDays}d overdue` : `${summary.atRisk} at risk`}</span>
+                  <span className="hvc__hcard-foot">{oldestOverdueDays != null ? t('oldest {{count}}d overdue', { count: oldestOverdueDays }) : t('{{count}} at risk', { count: summary.atRisk })}</span>
                 </div>
                 {(() => {
                   const lt = stableSeries.slice(-14).map(t => t.terlambat)
@@ -885,7 +895,7 @@ export default function HomeView() {
                     ? <div className="hvc__hcard-spark"><Sparkline values={lt} tone="red" width={340} height={48} smooth lastDot={false} /></div>
                     : null
                 })()}
-                <span className="hvc__hcard-link hvc__hcard-link--static">View list <span className="hvc__arrow" aria-hidden>→</span></span>
+                <span className="hvc__hcard-link hvc__hcard-link--static">{t('View list')} <span className="hvc__arrow" aria-hidden>→</span></span>
               </button>
 
               {/* ④ Decision Inbox — keputusan yang menunggu Anda (naik dari command center
@@ -894,7 +904,7 @@ export default function HomeView() {
               <Card padding="none" className="hvc__hcard hvc__hcard--inbox" data-tone={aksiTone}>
                 <div className="hvc__hcard-body hvc__inbox-body">
                   <div className="hvc__inbox-head">
-                    <span className="hvc__hcard-eyebrow">Needs Your Decision</span>
+                    <span className="hvc__hcard-eyebrow">{t('Needs Your Decision')}</span>
                     {decisionCount > 0 && <span className="hvc__count-badge" data-tone={aksiTone}>{decisionCount}</span>}
                   </div>
                   {exceptions.length > 0 ? (
@@ -914,16 +924,16 @@ export default function HomeView() {
                     <div className="hvc__inbox-list">
                       <button type="button" className="hvc__inbox-row" data-tone="red" onClick={() => navigate('/programs')}>
                         <span className="hv__dot" data-tone="red" aria-hidden />
-                        <span className="hvc__inbox-label"><strong>{tlm} programs</strong> delayed</span>
-                        <span className="hvc__inbox-meta">Review &amp; act</span>
+                        <span className="hvc__inbox-label"><strong>{t('{{count}} programs', { count: tlm })}</strong> {t('delayed')}</span>
+                        <span className="hvc__inbox-meta">{t('Review & act')}</span>
                         <span className="hvc__inbox-arrow" aria-hidden>→</span>
                       </button>
                     </div>
                   ) : (
-                    <p className="hvc__inbox-empty"><ToneGlyph tone="green" /> No pending decisions.</p>
+                    <p className="hvc__inbox-empty"><ToneGlyph tone="green" /> {t('No pending decisions.')}</p>
                   )}
                 </div>
-                <button type="button" className="hvc__hcard-link" onClick={() => navigate('/fokus')}>Open Focus <span className="hvc__arrow" aria-hidden>→</span></button>
+                <button type="button" className="hvc__hcard-link" onClick={() => navigate('/fokus')}>{t('Open Focus')} <span className="hvc__arrow" aria-hidden>→</span></button>
               </Card>
             </div>
           </section>
@@ -932,9 +942,9 @@ export default function HomeView() {
           {<>
 
           {/* ═══════════════ EXECUTION COMMAND CENTER (+ rail keputusan) ═══════════════ */}
-          <section className="hvc__section" aria-label="Execution Command Center">
+          <section className="hvc__section" aria-label={t('Execution Command Center')}>
             <header className="hvc__sec-head">
-              <h2 className="hvc__sec-title">Execution Command Center</h2>
+              <h2 className="hvc__sec-title">{t('Execution Command Center')}</h2>
             </header>
             <div className="hvc__grid hvc__grid--cmd">
 
@@ -942,19 +952,19 @@ export default function HomeView() {
               <Card padding="lg" className="hvc__panel">
                 <header className="hvc__panel-head">
                   <span className="hvc__panel-title">
-                    <span className="hvc__eyebrow">Deadlines</span>
-                    <InfoHint content="Red bar = past due · rest = upcoming" />
+                    <span className="hvc__eyebrow">{t('Deadlines')}</span>
+                    <InfoHint content={t('Red bar = past due · rest = upcoming')} />
                   </span>
                 </header>
                 {horizonBars.length > 0
                   ? <Bars bars={horizonBars} height={112} rich onBarClick={(b) => { const dl = deadlineToken(b.label); navigate(dl ? `/programs?deadline=${dl}` : '/programs') }} />
-                  : <p className="hvc__empty">No active programs with deadlines.</p>}
+                  : <p className="hvc__empty">{t('No active programs with deadlines.')}</p>}
               </Card>
 
               {/* Execution Map — 3×3 progres × tekanan (digest peta) */}
               <Card padding="lg" className="hvc__panel">
                 <header className="hvc__panel-head">
-                  <span className="hvc__eyebrow">Execution Map</span>
+                  <span className="hvc__eyebrow">{t('Execution Map')}</span>
                 </header>
                 <ExecutionMap programs={programsForChart} onOpen={(href) => navigate(href)} />
               </Card>
@@ -966,8 +976,8 @@ export default function HomeView() {
               <Card padding="lg" className="hvc__panel hvc__panel--wide">
                 <header className="hvc__panel-head">
                   <span className="hvc__panel-title">
-                    <span className="hvc__eyebrow">Momentum</span>
-                    <InfoHint content="Tasks completed per week — real execution throughput over the last 8 weeks" />
+                    <span className="hvc__eyebrow">{t('Momentum')}</span>
+                    <InfoHint content={t('Tasks completed per week — real execution throughput over the last 8 weeks')} />
                   </span>
                 </header>
                 {throughputTotal > 0 ? (
@@ -975,11 +985,11 @@ export default function HomeView() {
                     <div className="hvc__mtrend-head">
                       <span className="hvc__mthead-val">
                         <span className="hvc__mthead-num" data-zero={thisWeekDone === 0 ? '' : undefined}>{thisWeekDone}</span>
-                        <span className="hvc__sub">tasks done · this week</span>
+                        <span className="hvc__sub">{t('tasks done · this week')}</span>
                       </span>
                       {throughputDelta != null && throughputDelta !== 0
-                        ? <Delta value={throughputDelta} suffix=" vs last wk" />
-                        : <span className="hvc__mtrend-flat">no change vs last wk</span>}
+                        ? <Delta value={throughputDelta} suffix={t(' vs last wk')} />
+                        : <span className="hvc__mtrend-flat">{t('no change vs last wk')}</span>}
                     </div>
                     <Bars
                       bars={throughputBars}
@@ -988,10 +998,10 @@ export default function HomeView() {
                       className="hvc__mbars"
                       onBarClick={() => navigate('/execution')}
                     />
-                    <p className="hvc__mcaption">Tasks completed per week · last 8 weeks</p>
+                    <p className="hvc__mcaption">{t('Tasks completed per week · last 8 weeks')}</p>
                   </>
                 ) : (
-                  <p className="hvc__empty">No tasks completed in the last 8 weeks.</p>
+                  <p className="hvc__empty">{t('No tasks completed in the last 8 weeks.')}</p>
                 )}
               </Card>
 
@@ -1012,7 +1022,7 @@ export default function HomeView() {
 
               {/* Heatmap rekap program (divisi × status) */}
               <Card padding="lg" className="hvc__panel">
-                <header className="hvc__panel-head"><span className="hvc__eyebrow">Program Summary · by Division</span></header>
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">{t('Program Summary · by Division')}</span></header>
                 {heatRows.length > 0 ? (
                   <div className="hvc__heat" style={{ '--cols': heatCols.length } as CSSProperties}>
                     <span className="hvc__heat-corner" aria-hidden />
@@ -1041,42 +1051,42 @@ export default function HomeView() {
                     ))}
                   </div>
                 ) : (
-                  <p className="hvc__empty">No programs to summarize yet.</p>
+                  <p className="hvc__empty">{t('No programs to summarize yet.')}</p>
                 )}
               </Card>
 
               {/* Top 5 program terlambat */}
               <Card padding="lg" className="hvc__panel">
                 <header className="hvc__panel-head">
-                  <span className="hvc__eyebrow">Top 5 Delayed Programs</span>
-                  <button type="button" className="hvc__link" onClick={() => navigate('/programs')}>All <span aria-hidden>→</span></button>
+                  <span className="hvc__eyebrow">{t('Top 5 Delayed Programs')}</span>
+                  <button type="button" className="hvc__link" onClick={() => navigate('/programs')}>{t('All')} <span aria-hidden>→</span></button>
                 </header>
                 {top5Terlambat.length > 0 ? (
                   <div className="hvc__toplist">
                     {top5Terlambat.map((p, i) => {
                       const days = p.daysRemaining ?? 0
-                      const daysLabel = days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Today' : `${days}d left`
+                      const daysLabel = days < 0 ? t('{{count}}d overdue', { count: Math.abs(days) }) : days === 0 ? t('Today') : t('{{count}}d left', { count: days })
                       return (
                         <button key={p.id} type="button" className="hvc__toprow" onClick={() => openProgramWorkspace(p.id)}>
                           <span className="hvc__toprank">{i + 1}</span>
                           <span className="hvc__topbody">
                             <span className="hvc__topname" title={p.name}>{p.name}</span>
-                            <span className="hvc__topmeta">{p.divisi || '—'} · {p.code}{(p.priority === 'HIGH' || p.priority === 'CRITICAL') ? <span className="hvc__topprio" data-prio={p.priority}>{p.priority === 'CRITICAL' ? 'Critical' : 'High priority'}</span> : null}</span>
+                            <span className="hvc__topmeta">{p.divisi || '—'} · {p.code}{(p.priority === 'HIGH' || p.priority === 'CRITICAL') ? <span className="hvc__topprio" data-prio={p.priority}>{p.priority === 'CRITICAL' ? t('Critical') : t('High priority')}</span> : null}</span>
                           </span>
-                          {p.ownerName ? <span className="hvc__topowner" title={`PIC: ${p.ownerName}`} aria-label={`PIC: ${p.ownerName}`}>{initials(p.ownerName)}</span> : null}
+                          {p.ownerName ? <span className="hvc__topowner" title={t('PIC: {{name}}', { name: p.ownerName })} aria-label={t('PIC: {{name}}', { name: p.ownerName })}>{initials(p.ownerName)}</span> : null}
                           <span className="hvc__topdays" data-tone="red">{daysLabel}</span>
                         </button>
                       )
                     })}
                   </div>
                 ) : (
-                  <p className="hvc__empty">No delayed programs.</p>
+                  <p className="hvc__empty">{t('No delayed programs.')}</p>
                 )}
               </Card>
 
               {/* Activity timeline */}
               <Card padding="lg" className="hvc__panel">
-                <header className="hvc__panel-head"><span className="hvc__eyebrow">Recent Activity</span></header>
+                <header className="hvc__panel-head"><span className="hvc__eyebrow">{t('Recent Activity')}</span></header>
                 {activity.length > 0 ? (
                   <ul className="hvc__activity">
                     {activity.map(a => {
@@ -1101,7 +1111,7 @@ export default function HomeView() {
                     })}
                   </ul>
                 ) : (
-                  <p className="hvc__empty">No activity recorded yet.</p>
+                  <p className="hvc__empty">{t('No activity recorded yet.')}</p>
                 )}
               </Card>
             </div>
@@ -1112,8 +1122,8 @@ export default function HomeView() {
           <section className="hvc__section">
             <Card padding="lg" className="hvc__panel hvc__tl-card">
               <header className="hvc__panel-head">
-                <span className="hvc__eyebrow">Critical Deadlines · Active Programs</span>
-                <button type="button" className="hvc__link" onClick={() => navigate('/programs')}>All <span aria-hidden>→</span></button>
+                <span className="hvc__eyebrow">{t('Critical Deadlines · Active Programs')}</span>
+                <button type="button" className="hvc__link" onClick={() => navigate('/programs')}>{t('All')} <span aria-hidden>→</span></button>
               </header>
               <DeadlineTimeline programs={datedPrograms} onOpen={openProgramWorkspace} />
             </Card>
@@ -1122,7 +1132,7 @@ export default function HomeView() {
           {/* Shortcut — chip ringkas (bukan kartu besar; pelengkap, bukan duplikat sidebar) */}
           <section className="hvc__section">
             <div className="hvc__shortcuts hvc__shortcuts--chips">
-              <span className="hvc__shortcuts-lead">Shortcuts</span>
+              <span className="hvc__shortcuts-lead">{t('Shortcuts')}</span>
               {shortcuts.map(s => (
                 <button key={s.label} type="button" className="hvc__shortcut" data-tone={s.tone} onClick={s.onClick}>
                   <span className="hvc__shortcut-icon" data-tone={s.tone}><ShortcutIcon name={s.icon} /></span>

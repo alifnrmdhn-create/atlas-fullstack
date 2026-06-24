@@ -13,6 +13,7 @@ import { useAuth as useInertiaAuth } from '../hooks/useAuth'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useStableCallback } from '../hooks/useStableCallback'
 import { useRealtimeEvents } from '../hooks/useRealtimeEvents'
+import i18n from '../lib/i18n'
 import type {
   AuthUser,
   Blocker,
@@ -239,10 +240,10 @@ function formatDate(dateString: string): string {
     const minutes = Math.floor(seconds / 60)
     const hours = Math.floor(minutes / 60)
     const days = Math.floor(hours / 24)
-    if (seconds < 60) return 'just now'
-    if (minutes < 60) return `${minutes}m ago`
-    if (hours < 24) return `${hours}h ago`
-    if (days < 7) return `${days}d ago`
+    if (seconds < 60) return i18n.t('just now')
+    if (minutes < 60) return i18n.t('{{count}}m ago', { count: minutes })
+    if (hours < 24) return i18n.t('{{count}}h ago', { count: hours })
+    if (days < 7) return i18n.t('{{count}}d ago', { count: days })
     return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
   } catch {
     return dateString
@@ -253,11 +254,15 @@ const normalizeHealthStatus = (value?: string): 'GREEN' | 'YELLOW' | 'RED' =>
   value === 'GREEN' || value === 'YELLOW' || value === 'RED' ? value : 'YELLOW'
 
 const formatStatusLabel = (value?: string): string => {
-  if (!value) return 'Not set'
-  return value
+  if (!value) return i18n.t('Not set')
+  const label = value
     .split('_')
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ')
+  // Translate the DISPLAY output (the title-cased label). The enum INPUT (value)
+  // is untouched — only the human-readable result is localised. Natural-key:
+  // missing keys fall back to the English label itself.
+  return i18n.t(label)
 }
 
 function appendComposerSnippet(
@@ -476,7 +481,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setCurrentUser(null)
     setAuthStatus('signed_out')
     setAuthError(null)
-    setAuthMessage(message ?? 'Sesi berakhir. Silakan masuk kembali.')
+    setAuthMessage(message ?? i18n.t('Your session has expired. Please sign in again.'))
     setAuthForm((cur) => ({ ...cur, password: '' }))
     navigate('/login')
   }
@@ -484,17 +489,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // ── Auth effects ─────────────────────────────────────────
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setAuthError('Silakan gunakan halaman login utama.')
+    setAuthError(i18n.t('Please use the main login page.'))
     window.location.assign('/login')
   }
 
   const handleForgotPassword = async () => {
     if (!authForm.identifier.trim()) {
-      setAuthError('Enter your NIK or User ID first.')
+      setAuthError(i18n.t('Enter your NIK or User ID first.'))
       return
     }
     setAuthError(null)
-    setAuthMessage('Password reset is not yet available in the Laravel app.')
+    setAuthMessage(i18n.t('Password reset is not yet available in the Laravel app.'))
   }
 
   const requestLogout = () => setLogoutPending(true)
@@ -508,7 +513,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     // Hindari fetch + manual navigate — bisa race dengan polling yang lagi
     // in-flight, balas 401, dispatch auth-expired, lalu refresh /login berulang.
     router.post('/logout', {}, {
-      onError: () => signOutToEntry('Logout failed. Trying a local reset.'),
+      onError: () => signOutToEntry(i18n.t('Logout failed. Trying a local reset.')),
     })
   }
 
@@ -664,11 +669,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         loading: false,
         refreshing: false,
         message: failedCount > 0 && !hasCoreData
-          ? 'Some workspace data failed to load. Try refreshing the page.'
+          ? i18n.t('Some workspace data failed to load. Try refreshing the page.')
           : null,
       })
     } catch {
-      setOverviewStatus({ loading: false, refreshing: false, message: 'Workspace failed to load. Try refreshing the page.' })
+      setOverviewStatus({ loading: false, refreshing: false, message: i18n.t('Workspace failed to load. Try refreshing the page.') })
     } finally {
       setOverviewStatus((cur) => ({ ...cur, loading: false, refreshing: false }))
       // Jaring pengaman: walau `/channels` gagal, jangan biarkan gate channel
@@ -750,7 +755,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     // Channel sudah berganti sementara request berjalan → biarkan refresh channel
     // aktif yang mengatur status; jangan sentuh apa pun di sini.
     if (isStale()) return
-    if (!silent) setChannelStatus({ loading: false, message: ok ? null : 'Channel tidak dapat dimuat.' })
+    if (!silent) setChannelStatus({ loading: false, message: ok ? null : i18n.t('Channel could not be loaded.') })
   })
 
   const loadProgramDetail = useStableCallback(async (programId: number, silent = false) => {
@@ -764,7 +769,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       })
       if (!silent) setProgramDetailStatus({ loading: false, message: null })
     } catch {
-      if (!silent) setProgramDetailStatus({ loading: false, message: 'Program detail tidak dapat dimuat.' })
+      if (!silent) setProgramDetailStatus({ loading: false, message: i18n.t('Program detail could not be loaded.') })
     }
   })
 
@@ -775,7 +780,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setWorkstreamDetail(payload.data)
       if (!silent) setWorkstreamDetailStatus({ loading: false, message: null })
     } catch {
-      if (!silent) setWorkstreamDetailStatus({ loading: false, message: 'Workstream detail could not be loaded.' })
+      if (!silent) setWorkstreamDetailStatus({ loading: false, message: i18n.t('Workstream detail could not be loaded.') })
     }
   })
 
@@ -786,7 +791,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setTaskDetail(payload.data)
       if (!silent) setTaskDetailStatus({ loading: false, message: null })
     } catch {
-      if (!silent) setTaskDetailStatus({ loading: false, message: 'Task could not be loaded.' })
+      if (!silent) setTaskDetailStatus({ loading: false, message: i18n.t('Task could not be loaded.') })
     }
   })
 
@@ -802,7 +807,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setSearchResults(payload.results)
       setSearchTotal(payload.total)
     } catch {
-      setSearchResults([]); setSearchTotal(0); setSearchError('Search tidak tersedia saat ini.')
+      setSearchResults([]); setSearchTotal(0); setSearchError(i18n.t('Search is not available right now.'))
     } finally {
       setSearching(false)
     }
@@ -815,7 +820,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       await api.post(`/channels/${selectedChannelId}/messages/${messageId}/reactions`, { emoji: ':thumbsup:' })
       await refreshChannel(selectedChannelId, selectedThreadId)
     } catch {
-      setChannelStatus({ loading: false, message: 'Failed to save reaction.' })
+      setChannelStatus({ loading: false, message: i18n.t('Failed to save reaction.') })
     }
   }
 
@@ -833,7 +838,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } catch {
       // Server gagal — re-sync state dari server
       await loadOverview('refresh')
-      setOverviewStatus((cur) => ({ ...cur, message: 'Failed to update notification.' }))
+      setOverviewStatus((cur) => ({ ...cur, message: i18n.t('Failed to update notification.') }))
     }
   }
 
@@ -850,7 +855,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       await api.put(`/notifications/${notificationId}/dismiss`)
     } catch {
       await loadOverview('refresh')
-      setOverviewStatus((cur) => ({ ...cur, message: 'Failed to hide notification.' }))
+      setOverviewStatus((cur) => ({ ...cur, message: i18n.t('Failed to hide notification.') }))
     }
   }
 
@@ -867,9 +872,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         const meId = currentUser.id
         setPresence(prev => prev.map(p => p.userId === meId ? { ...p, ...presenceDraft, lastActivityAt: nowIso } : p))
       }
-      setOverviewStatus((cur) => ({ ...cur, message: 'Status updated.' }))
+      setOverviewStatus((cur) => ({ ...cur, message: i18n.t('Status updated.') }))
     } catch {
-      setOverviewStatus((cur) => ({ ...cur, message: 'Failed to update status.' }))
+      setOverviewStatus((cur) => ({ ...cur, message: i18n.t('Failed to update status.') }))
     }
   }
 

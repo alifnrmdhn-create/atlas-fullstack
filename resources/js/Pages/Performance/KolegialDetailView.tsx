@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Head, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { Card, Pill, Gauge, Meter } from '../../design-system'
@@ -40,6 +41,7 @@ type PageProps = {
   periode: string
 }
 
+// dark-allow: palet identitas perspektif BSC (kategorikal), konsisten dua theme
 const PERSPEKTIF_COLORS: Record<string, string> = {
   ekonomi_sosial: 'var(--ds-green-500)',
   imb:            '#6366F1',
@@ -54,6 +56,7 @@ const PERSPEKTIF_COLORS: Record<string, string> = {
 }
 
 export default function KolegialDetailView() {
+  const { t } = useTranslation()
   const { direktur, kpiGroups, insight, periode } = usePage<PageProps>().props
   const navigate = useInertiaNavigate()
   const [activeFilter, setActiveFilter] = useState<string>('all')
@@ -100,7 +103,7 @@ export default function KolegialDetailView() {
 
   return (
     <>
-      <Head title={`KPI Collegial — ${direktur.jabatan}`} />
+      <Head title={t('KPI Collegial — {{jabatan}}', { jabatan: direktur.jabatan })} />
       <div className="ds perf view-performance">
         <div className="perf__inner ds-stagger">
           {/* ─── Header ──────────────────────────── */}
@@ -108,9 +111,9 @@ export default function KolegialDetailView() {
             <div className="perf__header-left">
               <button className="perf__back" onClick={() => navigate('/performance/kolegial')} type="button">
                 <IconBack />
-                Back
+                {t('Back')}
               </button>
-              <h1 className="perf__title">KPI Collegial — {direktur.jabatan}</h1>
+              <h1 className="perf__title">{t('KPI Collegial — {{jabatan}}', { jabatan: direktur.jabatan })}</h1>
             </div>
             <div className="perf__header-actions">
               <span className="perf__period-pill">
@@ -129,9 +132,9 @@ export default function KolegialDetailView() {
               <div className="perf-subject__chips">
                 <Pill variant="mono">{direktur.kode}</Pill>
                 <Pill tone="neutral" variant="soft">{periodeLabel}</Pill>
-                <Pill tone="neutral" variant="soft">{totalKpi} KPI items</Pill>
+                <Pill tone="neutral" variant="soft">{t('{{count}} KPI items', { count: totalKpi })}</Pill>
                 {attentionCount > 0 && (
-                  <Pill tone="amber" variant="soft">{attentionCount} below target</Pill>
+                  <Pill tone="amber" variant="soft">{t('{{count}} below target', { count: attentionCount })}</Pill>
                 )}
               </div>
             </div>
@@ -154,7 +157,7 @@ export default function KolegialDetailView() {
               thickness={12}
               valueText={formatNumber(totalSkor, 1)}
               unit="%"
-              label="Total score"
+              label={t('Total score')}
             />
           </Card>
 
@@ -165,8 +168,8 @@ export default function KolegialDetailView() {
 
           {kpiGroups.length === 0 ? (
             <Card padding="lg" className="perf__section perf-empty">
-              <div className="perf-empty__title">No KPI breakdown yet</div>
-              <div>The KPI breakdown for {direktur.jabatan} is not registered for the {periodeLabel} period.</div>
+              <div className="perf-empty__title">{t('No KPI breakdown yet')}</div>
+              <div>{t('The KPI breakdown for {{jabatan}} is not registered for the {{periode}} period.', { jabatan: direktur.jabatan, periode: periodeLabel })}</div>
             </Card>
           ) : (
           <>
@@ -178,7 +181,7 @@ export default function KolegialDetailView() {
               data-active={activeFilter === 'all'}
               onClick={() => setActiveFilter('all')}
             >
-              All perspectives
+              {t('All perspectives')}
             </button>
             {kpiGroups.map(g => (
               <button
@@ -198,33 +201,32 @@ export default function KolegialDetailView() {
               className="perf-filter perf-filter--triage"
               data-active={attentionOnly}
               onClick={() => setAttentionOnly(v => !v)}
-              title="Show only KPIs below 100% achievement"
+              title={t('Show only KPIs below 100% achievement')}
             >
               <span className="perf-filter__dot" style={{ background: 'var(--tone-amber)' }} />
-              Needs attention{attentionCount > 0 ? ` (${attentionCount})` : ''}
+              {attentionCount > 0 ? t('Needs attention ({{count}})', { count: attentionCount }) : t('Needs attention')}
             </button>
             <button
               type="button"
               className="perf-filter perf-filter--triage"
               data-active={lowestFirst}
               onClick={() => setLowestFirst(v => !v)}
-              title="Sort lowest achievement first"
+              title={t('Sort lowest achievement first')}
             >
-              ↓ Lowest first
+              {t('↓ Lowest first')}
             </button>
           </div>
 
           {/* Penjelasan skala — deviation bar berjangkar 100%, zoom ±. */}
           <p className="perf-scale-note">
-            Score = weight × achievement (capped 110%). The achievement bar is anchored at the 100% line —
-            right of the line = above target, left = below (zoomed ±).
+            {t('Score = weight × achievement (capped 110%). The achievement bar is anchored at the 100% line — right of the line = above target, left = below (zoomed ±).')}
           </p>
 
           {/* ─── KPI scorecard table ───────────────── */}
           {tableGroups.length === 0 ? (
             <Card padding="md" className="perf-empty">
-              <div className="perf-empty__title">Nothing needs attention</div>
-              <div>All KPIs in this view meet 100% of target. Clear the filter to see everything.</div>
+              <div className="perf-empty__title">{t('Nothing needs attention')}</div>
+              <div>{t('All KPIs in this view meet 100% of target. Clear the filter to see everything.')}</div>
             </Card>
           ) : (
             <Card padding="none" className="perf__section perf-table-card">

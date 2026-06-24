@@ -101,26 +101,26 @@
 
 /* Program — top level, ATLAS green accent + faint background */
 .phx-node--program {
-  border-color: #166534;
-  background: color-mix(in srgb, #166534 4%, transparent);
+  border-color: var(--green);
+  background: color-mix(in srgb, var(--green) 4%, transparent);
   border-radius: 6px;
 }
 
 /* Workstream — indent + blue accent */
 .phx-node--workstream {
-  border-color: #2563eb;
+  border-color: var(--blue);
   margin-left: 18px;
   margin-top: 12px;
-  background: color-mix(in srgb, #2563eb 3%, transparent);
+  background: color-mix(in srgb, var(--blue) 3%, transparent);
   border-radius: 4px;
 }
 
 /* Phase — deeper indent + amber accent */
 .phx-node--phase {
-  border-color: #b45309;
+  border-color: var(--yellow-ink);
   margin-left: 18px;
   margin-top: 10px;
-  background: color-mix(in srgb, #b45309 3%, transparent);
+  background: color-mix(in srgb, var(--yellow-ink) 3%, transparent);
   border-radius: 4px;
   padding: 12px 14px;
 }
@@ -196,7 +196,7 @@
 .phx-task-icon {
   display: inline-block;
   margin-right: 6px;
-  color: #16a34a;
+  color: var(--green);
   font-size: 8px;
   vertical-align: middle;
 }

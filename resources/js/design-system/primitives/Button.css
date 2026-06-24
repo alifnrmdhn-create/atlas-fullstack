@@ -53,18 +53,18 @@
 
 /* ─── Primary ───────────────────────────────────────────── */
 .ds-button--primary {
-  background: var(--ds-brand-600);
+  background: var(--ds-cta-fill);
   color: var(--ds-text-on-brand);
-  border-color: var(--ds-brand-600);
+  border-color: var(--ds-cta-fill);
 }
 
 .ds-button--primary:hover:not(:disabled) {
-  background: var(--ds-brand-700);
-  border-color: var(--ds-brand-700);
+  background: var(--ds-cta-fill-hover);
+  border-color: var(--ds-cta-fill-hover);
 }
 
 .ds-button--primary:active:not(:disabled) {
-  background: var(--ds-brand-700);
+  background: var(--ds-cta-fill-hover);
 }
 
 /* ─── Secondary (default) ───────────────────────────────── */
@@ -108,7 +108,7 @@
  * :active beri press momentary (rasa native). Primary sudah punya :active.
  * Block ini menang source-order atas rule :hover di atas. */
 @media (hover: none) {
-  .ds-button--primary:hover:not(:disabled)   { background: var(--ds-brand-600); border-color: var(--ds-brand-600); }
+  .ds-button--primary:hover:not(:disabled)   { background: var(--ds-cta-fill); border-color: var(--ds-cta-fill); }
   .ds-button--secondary:hover:not(:disabled) { background: var(--ds-surface-card); border-color: var(--ds-border-default); }
   .ds-button--ghost:hover:not(:disabled)     { background: transparent; }
   .ds-button--danger:hover:not(:disabled)    { background: var(--ds-red-500); border-color: var(--ds-red-500); }

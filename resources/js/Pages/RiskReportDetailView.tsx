@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
@@ -7,6 +8,7 @@ import type { RiskReport } from '../types/monthlyReports'
 import { MonthlyReportDetailDIMR } from './MonthlyReportDetailDIMR'
 
 export function RiskReportDetailView() {
+  const { t } = useTranslation()
   const page = usePage<{ report?: { id: number } }>()
   const reportId = page.props.report?.id != null ? String(page.props.report.id) : undefined
   const navigate = useInertiaNavigate()
@@ -22,7 +24,7 @@ export function RiskReportDetailView() {
     setError(null)
     api.get<{ data: RiskReport }>(`/risk-reports/${reportId}`)
       .then(j => setReport(j.data))
-      .catch(e => setError(e instanceof Error ? e.message : 'Failed to load risk report.'))
+      .catch(e => setError(e instanceof Error ? e.message : t('Failed to load risk report.')))
       .finally(() => setLoading(false))
   }, [reportId])
 
@@ -32,7 +34,7 @@ export function RiskReportDetailView() {
     return (
       <div className="view-risk-report-detail">
         <div className="schedule-empty">
-          <span className="text-muted text-sm">Loading risk report…</span>
+          <span className="text-muted text-sm">{t('Loading risk report…')}</span>
         </div>
       </div>
     )
@@ -43,10 +45,10 @@ export function RiskReportDetailView() {
       <div className="view-risk-report-detail">
         <div className="schedule-empty">
           <div className="schedule-empty__icon">⚠️</div>
-          <p className="schedule-empty__title">Report not found</p>
-          <p className="schedule-empty__sub">{error ?? 'This risk report is not available.'}</p>
+          <p className="schedule-empty__title">{t('Report not found')}</p>
+          <p className="schedule-empty__sub">{error ?? t('This risk report is not available.')}</p>
           <button className="btn btn--ghost schedule-empty__action" onClick={() => navigate('/laporan-risiko')}>
-            Back to list
+            {t('Back to list')}
           </button>
         </div>
       </div>

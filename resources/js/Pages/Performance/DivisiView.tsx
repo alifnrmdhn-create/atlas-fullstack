@@ -1,4 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { Card, Pill, Gauge, Meter } from '../../design-system'
 import { useState } from 'react'
@@ -91,6 +92,7 @@ type PageProps = SingleProps | ComparisonProps
 // Balanced Scorecard quadrant order + accent colors (distinct from the kolegial
 // taxonomy in KolegialDetailView). KPI divisi dikelompokkan ke 4 perspektif ini.
 const PERSPEKTIF_ORDER = ['Financial', 'Customer', 'Internal Business Process', 'L&G']
+// dark-allow: palet identitas perspektif BSC (kategorikal), konsisten dua theme
 const PERSPEKTIF_COLOR: Record<string, string> = {
   Financial: 'var(--ds-green-500)',
   Customer: '#6366F1',
@@ -132,6 +134,7 @@ export default function DivisiView() {
 }
 
 function ComparisonView({ direktorat, divisiList, exceptions, periode }: ComparisonProps) {
+  const { t } = useTranslation()
   const navigate = useInertiaNavigate()
   const avgNilai = divisiList.length > 0
     ? divisiList.reduce((s, d) => s + d.nilai, 0) / divisiList.length
@@ -141,16 +144,16 @@ function ComparisonView({ direktorat, divisiList, exceptions, periode }: Compari
 
   return (
     <>
-      <Head title={`KPI Division · ${direktorat.nama}`} />
+      <Head title={`${t('KPI Division')} · ${direktorat.nama}`} />
       <div className="ds perf view-performance">
         <div className="perf__inner ds-stagger">
           <header className="perf__header">
             <div className="perf__header-left">
               <button className="perf__back" onClick={() => navigate('/performance/scorecard')} type="button">
                 <IconBack />
-                Scorecard
+                {t('Scorecard')}
               </button>
-              <h1 className="perf__title">KPI Division</h1>
+              <h1 className="perf__title">{t('KPI Division')}</h1>
               <span className="perf__subtitle">{direktorat.nama}</span>
             </div>
             <div className="perf__header-actions">
@@ -164,28 +167,28 @@ function ComparisonView({ direktorat, divisiList, exceptions, periode }: Compari
           {/* Direktorat overview — flat inline header, no nested card (Pattern A) */}
           <section className="perf-compare__hero">
             <div className="perf-compare__hero-meta">
-              <span className="perf-compare__hero-eyebrow">Directorate</span>
+              <span className="perf-compare__hero-eyebrow">{t('Directorate')}</span>
               <h2 className="perf-compare__hero-name">{direktorat.nama}</h2>
               <div className="perf-compare__hero-sub">
                 <span className="perf-compare__hero-code">{direktorat.kode}</span>
                 <span>·</span>
-                <span>{divisiList.length} divisions</span>
+                <span>{t('{{count}} divisions', { count: divisiList.length })}</span>
                 <span>·</span>
-                <span>division average {formatPercent(avgNilai)}</span>
+                <span>{t('division average {{pct}}', { pct: formatPercent(avgNilai) })}</span>
               </div>
             </div>
             <div className="perf-compare__hero-score">
               <span className="perf-compare__hero-score-val" data-tone={tone}>
                 {formatPercent(direktorat.nilai)}
               </span>
-              <span className="perf-compare__hero-score-lbl">Directorate score · {periodeLabel}</span>
+              <span className="perf-compare__hero-score-lbl">{t('Directorate score · {{period}}', { period: periodeLabel })}</span>
             </div>
           </section>
 
           {divisiList.length === 0 ? (
             <Card padding="md" className="perf-empty">
-              <div className="perf-empty__title">No divisions yet</div>
-              <div>This directorate has no division data for the {periodeLabel} period.</div>
+              <div className="perf-empty__title">{t('No divisions yet')}</div>
+              <div>{t('This directorate has no division data for the {{period}} period.', { period: periodeLabel })}</div>
             </Card>
           ) : (
             <div className="perf-compare-grid">
@@ -203,7 +206,7 @@ function ComparisonView({ direktorat, divisiList, exceptions, periode }: Compari
             </section>
           )}
 
-          <p className="perf-footnote">Maximum KPI Division achievement: 110%</p>
+          <p className="perf-footnote">{t('Maximum KPI Division achievement: 110%')}</p>
         </div>
       </div>
     </>
@@ -211,6 +214,7 @@ function ComparisonView({ direktorat, divisiList, exceptions, periode }: Compari
 }
 
 function DivisiCompareCard({ div }: { div: DivisiCompare }) {
+  const { t } = useTranslation()
   const tone = scoreTone(div.nilai)
   const allOnTarget = div.atRisk === 0 && div.kpiCount > 0
   const statusTone = allOnTarget ? 'green' : (div.atRisk > div.onTarget ? 'red' : 'amber')
@@ -218,7 +222,7 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
   return (
     <Link href={`/performance/divisi/${div.kode.toLowerCase()}`} className="perf-compare-card" data-rank={div.rank}>
       <div className="perf-compare-card__top">
-        <span className="perf-compare-card__rank-pill">Rank #{div.rank} / {div.totalDivisi}</span>
+        <span className="perf-compare-card__rank-pill">{t('Rank #{{rank}} / {{total}}', { rank: div.rank, total: div.totalDivisi })}</span>
         <span className="perf-compare-card__arrow" aria-hidden="true">→</span>
       </div>
 
@@ -235,8 +239,8 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
           </span>
           <span className="perf-compare-card__status" data-tone={statusTone}>
             {allOnTarget
-              ? `All ${div.kpiCount} KPIs on target`
-              : `${div.onTarget}/${div.kpiCount} on target`}
+              ? t('All {{count}} KPIs on target', { count: div.kpiCount })
+              : t('{{onTarget}}/{{total}} on target', { onTarget: div.onTarget, total: div.kpiCount })}
           </span>
         </div>
       </div>
@@ -247,13 +251,13 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
           KPI by bobot" yang bar-nya meng-encode bobot (selalu mirip), bukan
           kinerja. Deviation bar = sama dgn tabel detail (jangkar 100%). */}
       <div className="perf-compare-card__kpis">
-        <span className="perf-compare-card__kpis-label">Achievement by perspective</span>
+        <span className="perf-compare-card__kpis-label">{t('Achievement by perspective')}</span>
         {div.perspektif.length === 0 ? (
-          <span className="perf-compare-card__kpi-empty">No KPIs yet</span>
+          <span className="perf-compare-card__kpi-empty">{t('No KPIs yet')}</span>
         ) : (
           div.perspektif.map(p => (
             <div key={p.nama} className="perf-compare-card__kpi">
-              <span className="perf-compare-card__kpi-name" title={`${p.nama} · weight ${formatNumber(p.bobot, 0)}%`}>
+              <span className="perf-compare-card__kpi-name" title={`${p.nama} · ${t('weight {{pct}}%', { pct: formatNumber(p.bobot, 0) })}`}>
                 {p.nama}
               </span>
               {p.pct == null ? (
@@ -275,6 +279,7 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
 }
 
 function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insight, periode }: SingleProps) {
+  const { t } = useTranslation()
   const navigate = useInertiaNavigate()
   const [attentionOnly, setAttentionOnly] = useState(false)
   const [lowestFirst, setLowestFirst] = useState(false)
@@ -319,7 +324,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
 
   return (
     <>
-      <Head title={`KPI Division — ${divisi.nama}`} />
+      <Head title={`${t('KPI Division')} — ${divisi.nama}`} />
       <div className="ds perf view-performance">
         <div className="perf__inner ds-stagger">
           {/* ─── Header ──────────────────────────── */}
@@ -327,7 +332,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
             <div className="perf__header-left">
               <button className="perf__back" onClick={() => navigate('/performance/divisi')} type="button">
                 <IconBack />
-                Divisions
+                {t('Divisions')}
               </button>
               <h1 className="perf__title">{divisi.nama}</h1>
             </div>
@@ -342,10 +347,10 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
           {/* ─── Subject card 3-zona: meta | meter perspektif | gauge ── */}
           <Card padding="md" className="perf__section perf-subject perf-subject--gauge" data-tone={tone}>
             <div className="perf-subject__meta">
-              <span className="perf-subject__eyebrow">Division</span>
+              <span className="perf-subject__eyebrow">{t('Division')}</span>
               <div className="perf-subject__name">{divisi.nama}</div>
               <div className="perf-subject__jabatan">
-                Part of{' '}
+                {t('Part of')}{' '}
                 <Link
                   href={`/performance/kolegial/${direktorat.kode.toLowerCase()}`}
                   style={{ color: 'inherit', textDecoration: 'underline' }}
@@ -355,11 +360,11 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
               </div>
               <div className="perf-subject__chips">
                 <Pill variant="mono">{divisi.kode}</Pill>
-                <Pill tone="neutral" variant="soft">{kpiItems.length} KPI items</Pill>
-                <Pill tone="neutral" variant="soft">Rank #{divisi.rank} of {divisi.totalDivisi} divisions</Pill>
-                <Pill tone="neutral" variant="soft">Directorate {formatPercent(direktorat.nilai)}</Pill>
+                <Pill tone="neutral" variant="soft">{t('{{count}} KPI items', { count: kpiItems.length })}</Pill>
+                <Pill tone="neutral" variant="soft">{t('Rank #{{rank}} of {{total}} divisions', { rank: divisi.rank, total: divisi.totalDivisi })}</Pill>
+                <Pill tone="neutral" variant="soft">{t('Directorate {{pct}}', { pct: formatPercent(direktorat.nilai) })}</Pill>
                 {attentionCount > 0 && (
-                  <Pill tone="amber" variant="soft">{attentionCount} below target</Pill>
+                  <Pill tone="amber" variant="soft">{t('{{count}} below target', { count: attentionCount })}</Pill>
                 )}
               </div>
             </div>
@@ -382,7 +387,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
               thickness={12}
               valueText={formatNumber(divisi.nilai, 1)}
               unit="%"
-              label={`Score · ${periodeLabel}`}
+              label={t('Score · {{period}}', { period: periodeLabel })}
             />
           </Card>
 
@@ -393,11 +398,11 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
 
           {/* ─── KPI list ─────────────────────────── */}
           <section className="perf__section">
-            <span className="perf__section-label">KPI Division Breakdown</span>
+            <span className="perf__section-label">{t('KPI Division Breakdown')}</span>
             {kpiItems.length === 0 ? (
               <Card padding="md" className="perf-empty">
-                <div className="perf-empty__title">No KPIs yet</div>
-                <div>No KPIs are registered for this division in the {periodeLabel} period.</div>
+                <div className="perf-empty__title">{t('No KPIs yet')}</div>
+                <div>{t('No KPIs are registered for this division in the {{period}} period.', { period: periodeLabel })}</div>
               </Card>
             ) : (
               <>
@@ -408,30 +413,29 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                   className="perf-filter perf-filter--triage"
                   data-active={attentionOnly}
                   onClick={() => setAttentionOnly(v => !v)}
-                  title="Show only KPIs below 100% achievement"
+                  title={t('Show only KPIs below 100% achievement')}
                 >
                   <span className="perf-filter__dot" style={{ background: 'var(--tone-amber)' }} />
-                  Needs attention{attentionCount > 0 ? ` (${attentionCount})` : ''}
+                  {t('Needs attention')}{attentionCount > 0 ? ` (${attentionCount})` : ''}
                 </button>
                 <button
                   type="button"
                   className="perf-filter perf-filter--triage"
                   data-active={lowestFirst}
                   onClick={() => setLowestFirst(v => !v)}
-                  title="Sort lowest achievement first"
+                  title={t('Sort lowest achievement first')}
                 >
-                  ↓ Lowest first
+                  ↓ {t('Lowest first')}
                 </button>
               </div>
               <p className="perf-scale-note">
-                Score = weight × achievement (capped 110%). The achievement bar is anchored at the 100% line —
-                right of the line = above target, left = below (zoomed ±).
+                {t('Score = weight × achievement (capped 110%). The achievement bar is anchored at the 100% line — right of the line = above target, left = below (zoomed ±).')}
               </p>
 
               {tableGroups.length === 0 ? (
                 <Card padding="md" className="perf-empty">
-                  <div className="perf-empty__title">Nothing needs attention</div>
-                  <div>All KPIs in this view meet 100% of target. Clear the filter to see everything.</div>
+                  <div className="perf-empty__title">{t('Nothing needs attention')}</div>
+                  <div>{t('All KPIs in this view meet 100% of target. Clear the filter to see everything.')}</div>
                 </Card>
               ) : (
                 <Card padding="none" className="perf-table-card">
@@ -446,10 +450,10 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
           <div className="perf__cols-2 perf__section">
             <Card padding="md">
               <div className="perf-card-head">
-                <h2 className="perf-card-head__title">Other divisions in {direktorat.nama}</h2>
+                <h2 className="perf-card-head__title">{t('Other divisions in {{name}}', { name: direktorat.nama })}</h2>
               </div>
               {peers.length === 0 ? (
-                <div className="perf-empty">No peer divisions.</div>
+                <div className="perf-empty">{t('No peer divisions.')}</div>
               ) : (
                 peers.map(p => {
                   const pt = scoreTone(p.nilai)
@@ -471,10 +475,10 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
 
             <Card padding="md">
               <div className="perf-card-head">
-                <h2 className="perf-card-head__title">Top performers in the division</h2>
+                <h2 className="perf-card-head__title">{t('Top performers in the division')}</h2>
               </div>
               {topPerformers.length === 0 ? (
-                <div className="perf-empty">No performer data yet.</div>
+                <div className="perf-empty">{t('No performer data yet.')}</div>
               ) : (
                 topPerformers.map(p => {
                   const pt = scoreTone(p.nilai)
@@ -495,7 +499,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
             </Card>
           </div>
 
-          <p className="perf-footnote">Maximum KPI Division achievement: 110%</p>
+          <p className="perf-footnote">{t('Maximum KPI Division achievement: 110%')}</p>
         </div>
       </div>
     </>

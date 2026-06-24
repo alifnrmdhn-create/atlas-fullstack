@@ -1,5 +1,6 @@
 import { Fragment } from 'react'
 import { Link } from '@inertiajs/react'
+import { useTranslation } from 'react-i18next'
 
 export type TraceNode = {
   label?: string
@@ -14,12 +15,13 @@ type TraceStripProps = {
 }
 
 export function TraceStrip({ nodes, current, className }: TraceStripProps) {
+  const { t } = useTranslation()
   const items = current ? [...nodes, { ...current, href: undefined }] : nodes
   if (items.length === 0) return null
 
   return (
     <nav
-      aria-label="hierarki"
+      aria-label={t('hierarchy')}
       className={className ? `trace-strip ${className}` : 'trace-strip'}
     >
       {items.map((node, idx) => {

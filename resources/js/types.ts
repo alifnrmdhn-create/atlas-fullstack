@@ -759,6 +759,46 @@ export type MyWorkPayload = {
   programs: Program[]
   decisions?: MyWorkDecision[]
   focusPolicy?: FocusPolicy
+  // Komitmen non-task milik user — kini ikut mesin scoring Focus (bukan cuma
+  // "due hari ini"). committedEscalations = escalation yang user commit & belum
+  // resolve (open-loop yang harus ditutup).
+  actionItems?: MyActionItem[]
+  assignments?: MyAssignment[]
+  committedEscalations?: CommittedEscalation[]
+}
+
+export type MyActionItem = {
+  id: number
+  title: string
+  status: string
+  dueDate: string | null
+  meetingId: number | null
+}
+
+export type MyAssignment = {
+  id: number
+  code: string
+  title: string
+  status: string
+  priority: string
+  dueDate: string | null
+  relatedProgramId: number | null
+}
+
+/** Escalation yang user (atasan) sudah COMMIT tapi belum resolve. Bentuk subset
+ *  dari EscalationRequest (komponen Escalation) — cukup untuk render kartu Focus
+ *  & dibuka di EscalationTriagePanel (di-cast saat membuka panel). */
+export type CommittedEscalation = {
+  id: number
+  code: string
+  title: string
+  status: string
+  commitmentDueDate: string | null
+  escalatedToId: number
+  requestedById: number
+  linkedProgramId: number | null
+  linkedProgram?: { id: number; code: string; name: string } | null
+  agingDays?: number
 }
 
 export type MyWorkDecision = {

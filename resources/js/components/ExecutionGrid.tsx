@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useRef, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type {
   ExecutionGridData,
   ExecutionPhase,
@@ -66,6 +67,7 @@ function aggregateSteps(steps: ExecutionStep[], currentWeek: string) {
  * Split-frame menghilangkan seluruh kelas bug ini.
  */
 export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: Props) {
+  const { t } = useTranslation()
   const { weekRange, monthHeaders, currentWeek, phases, unphasedSteps, workstream } = data
 
   const weeksGridTemplateColumns = useMemo(
@@ -115,8 +117,7 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
     return (
       <div className="execution-grid">
         <div className="execution-grid__empty">
-          This workstream has no sub-steps with a weekly plan yet. Add phases &amp; sub-steps
-          to start tracking Plan/Real.
+          {t('This workstream has no sub-steps with a weekly plan yet. Add phases & sub-steps to start tracking Plan/Real.')}
         </div>
       </div>
     )
@@ -154,7 +155,7 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
       id: -1,
       code: 'UNPHASED',
       order: 0,
-      name: 'Lain-lain (tanpa fase)',
+      name: t('Other (no phase)'),
       status: 'PENDING',
       picUnits: [],
       picPersons: [],
@@ -217,10 +218,10 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                 // continuity dengan month-spanning header di weeks pane.
                 return (
                   <Fragment key={`info-${idx}`}>
-                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-fase`}>Phase</div>
-                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-uraian`}>Step Description</div>
-                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-person`}>Person</div>
-                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-status`}>Status</div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-fase`}>{t('Phase')}</div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-uraian`}>{t('Step Description')}</div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-person`}>{t('Person')}</div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__info-cell--header execution-grid__col-status`}>{t('Status')}</div>
                   </Fragment>
                 )
               }
@@ -250,7 +251,7 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                     <span className="execution-grid__phase-row__name" title={phase.name}>{phase.name}</span>
                     {(unitLabels || personLabels || (phase.startWeek && phase.endWeek)) && (
                       <span className="execution-grid__phase-row__meta">
-                        {unitLabels && <>PIC: {unitLabels}</>}
+                        {unitLabels && <>{t('PIC')}: {unitLabels}</>}
                         {unitLabels && personLabels && ' · '}
                         {personLabels}
                         {phase.startWeek && phase.endWeek && ` · ${phase.startWeek} → ${phase.endWeek}`}
@@ -281,10 +282,10 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                           {personExtra > 0 && <span className="exec-grid-pic__extra">+{personExtra}</span>}
                         </span>
                       ) : (
-                        <span className="exec-grid-pic exec-grid-pic--empty">Not assigned</span>
+                        <span className="exec-grid-pic exec-grid-pic--empty">{t('Not assigned')}</span>
                       )}
                     </div>
-                    <div className={`${cls} execution-grid__info-cell execution-grid__col-status execution-grid__status-pill execution-grid__status-pill--plan`}>Plan</div>
+                    <div className={`${cls} execution-grid__info-cell execution-grid__col-status execution-grid__status-pill execution-grid__status-pill--plan`}>{t('Plan')}</div>
                   </Fragment>
                 )
               }
@@ -292,8 +293,8 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                 const { agg } = row
                 const isWorkstream = row.kind === 'workstream-summary'
                 const label = isWorkstream
-                  ? `Total ${workstream?.name ?? 'Workstream'}`
-                  : `Subtotal Fase ${row.phase.order}`
+                  ? t('Total {{name}}', { name: workstream?.name ?? t('Workstream') })
+                  : t('Subtotal Phase {{order}}', { order: row.phase.order })
                 const achievementColor = agg.achievement == null
                   ? undefined
                   : agg.achievement >= 80 ? 'var(--green)'
@@ -307,14 +308,14 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                   >
                     <span className="execution-grid__summary-label">{label}</span>
                     <span className="execution-grid__summary-stats">
-                      Plan {agg.plannedSoFar}/{agg.plannedTotal} mg
+                      {t('Plan {{done}}/{{total}} wk', { done: agg.plannedSoFar, total: agg.plannedTotal })}
                       <span className="execution-grid__summary-sep">·</span>
-                      Real {agg.actualSoFar}/{agg.plannedSoFar} mg
+                      {t('Real {{done}}/{{total}} wk', { done: agg.actualSoFar, total: agg.plannedSoFar })}
                       {agg.achievement != null && (
                         <>
                           <span className="execution-grid__summary-sep">·</span>
                           <span className="execution-grid__summary-pct" style={{ color: achievementColor }}>
-                            {agg.achievement}% pencapaian
+                            {t('{{pct}}% achievement', { pct: agg.achievement })}
                           </span>
                         </>
                       )}
@@ -328,8 +329,8 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                 <>
                   {!['BACKLOG', 'READY'].includes(step.status) && step.status}
                   {step.percentComplete > 0 && step.percentComplete < 100 && ` · ${step.percentComplete}%`}
-                  {step.isBlocked && ' · 🚧 blocked'}
-                  {!step.actualDerived && step.actualWeeks.length > 0 && ' · manual'}
+                  {step.isBlocked && ` · 🚧 ${t('blocked')}`}
+                  {!step.actualDerived && step.actualWeeks.length > 0 && ` · ${t('manual')}`}
                 </>
               )
               return (
@@ -340,12 +341,12 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                   </div>
                   <div className={`${cls} execution-grid__info-cell execution-grid__col-person`} />
                   <div className={`${cls} execution-grid__info-cell execution-grid__col-status execution-grid__status-pill execution-grid__status-pill--real`}>
-                    Real
+                    {t('Real')}
                     {onResetActualWeeks && !step.actualDerived && step.actualWeeks.length > 0 && (
                       <button
                         type="button"
                         className="execution-grid__reset-btn"
-                        title="Reset ke auto-derive dari status"
+                        title={t('Reset to auto-derive from status')}
                         onClick={() => onResetActualWeeks(step.id)}
                       >
                         ↺
@@ -387,7 +388,7 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                       className={`${cls} execution-grid__week ${iso === currentWeek ? 'execution-grid__week--today' : ''}`}
                       title={iso}
                     >
-                      W{ord}
+                      {t('W{{ord}}', { ord })}
                     </div>
                   )
                 })
@@ -435,7 +436,7 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                     <div
                       key={`plan-${step.id}-${w}`}
                       className={`${cls} execution-grid__cell ${isPlanned ? 'execution-grid__cell--ren' : ''} ${isToday && !isPlanned ? 'execution-grid__cell--today' : ''}`}
-                      title={isPlanned ? `Plan: ${w}` : ''}
+                      title={isPlanned ? t('Plan: {{week}}', { week: w }) : ''}
                     />
                   )
                 })
@@ -456,10 +457,10 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                     title={
                       canEdit
                         ? state !== 'none'
-                          ? `Realisasi: ${w} (${state}) — klik untuk hapus`
-                          : `Klik untuk tandai ${w} sebagai realisasi`
+                          ? t('Actual: {{week}} ({{state}}) — click to remove', { week: w, state })
+                          : t('Click to mark {{week}} as actual', { week: w })
                         : state !== 'none'
-                          ? `Realisasi: ${w} (${state})`
+                          ? t('Actual: {{week}} ({{state}})', { week: w, state })
                           : ''
                     }
                     onClick={canEdit ? () => onToggleActualWeek!(step.id, w, step.actualWeeks) : undefined}
@@ -484,9 +485,9 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
               <div
                 className="execution-grid__today-line"
                 style={{ left: todayLeftInWeeks }}
-                title={`Hari ini — ${currentWeek}`}
+                title={t('Today — {{week}}', { week: currentWeek })}
               >
-                <span className="execution-grid__today-flag">Today</span>
+                <span className="execution-grid__today-flag">{t('Today')}</span>
               </div>
             </>
           )}
@@ -496,27 +497,27 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
       <div className="execution-grid__legend">
         <span className="execution-grid__legend-chip">
           <span className="execution-grid__legend-swatch" style={{ background: 'var(--blue)' }} />
-          Plan
+          {t('Plan')}
         </span>
         <span className="execution-grid__legend-chip">
           <span className="execution-grid__legend-swatch" style={{ background: 'var(--green)' }} />
-          Real — on-time
+          {t('Real — on-time')}
         </span>
         <span className="execution-grid__legend-chip">
           <span className="execution-grid__legend-swatch" style={{ background: 'var(--yellow)' }} />
-          Real — terlambat
+          {t('Real — late')}
         </span>
         <span className="execution-grid__legend-chip">
           <span className="execution-grid__legend-swatch" style={{ background: 'var(--red)' }} />
-          Real — terblokir
+          {t('Real — blocked')}
         </span>
         {onToggleActualWeek && (
           <span className="execution-grid__legend-chip" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
-            Klik sel Real untuk input realisasi manual
+            {t('Click a Real cell to enter manual actuals')}
           </span>
         )}
         <span className="execution-grid__legend-chip" style={{ marginLeft: 'auto' }}>
-          Workstream: <b style={{ color: 'var(--text-strong)' }}>{workstream.name}</b>
+          {t('Workstream')}: <b style={{ color: 'var(--text-strong)' }}>{workstream.name}</b>
         </span>
       </div>
     </div>

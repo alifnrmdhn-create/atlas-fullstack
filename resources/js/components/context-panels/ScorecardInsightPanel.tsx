@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react'
 import { TrendingUp, TrendingDown, AlertCircle, Calendar } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { formatPercent, formatPeriod } from '../../Pages/Performance/_shared'
 
 type RankItem = { rank: number; nama: string; kode?: string; sub?: string; nilai: number }
@@ -22,6 +23,7 @@ type ScorecardPageProps = {
  * during transition), shows a quiet loading state.
  */
 export function ScorecardInsightPanel() {
+  const { t } = useTranslation()
   const { props } = usePage<ScorecardPageProps>()
   const topDirektorat = props.topDirektorat ?? []
   const direktoratGrid = props.direktoratGrid ?? []
@@ -30,7 +32,7 @@ export function ScorecardInsightPanel() {
   if (topDirektorat.length === 0) {
     return (
       <section className="context-panel__section">
-        <p className="context-panel__empty">Loading scorecard data…</p>
+        <p className="context-panel__empty">{t('Loading scorecard data…')}</p>
       </section>
     )
   }
@@ -50,7 +52,7 @@ export function ScorecardInsightPanel() {
         ? { rank: soloDivisi.length, nama: bottomSrc.kode, sub: bottomSrc.nama, nilai: bottomSrc.nilai }
         : null)
     : (topDirektorat.length > 1 ? topDirektorat[topDirektorat.length - 1] : null)
-  const scopeLabel = soloDivisi ? 'division' : 'directorate'
+  const scopeLabel = soloDivisi ? t('division') : t('directorate')
   const belowTarget = soloDivisi
     ? direktoratGrid[0].divisi.filter((d) => d.nilai < 100)
     : direktoratGrid.filter((d) => d.nilai < 100)
@@ -62,7 +64,7 @@ export function ScorecardInsightPanel() {
           <span className="context-panel__section-icon" aria-hidden="true">
             <Calendar size={13} />
           </span>
-          <h3 className="context-panel__section-title">Period</h3>
+          <h3 className="context-panel__section-title">{t('Period')}</h3>
         </header>
         <div className="context-panel__section-body">
           <p className="context-panel__period">{formatPeriod(periode)}</p>
@@ -74,7 +76,7 @@ export function ScorecardInsightPanel() {
           <span className="context-panel__section-icon" aria-hidden="true">
             <TrendingUp size={13} />
           </span>
-          <h3 className="context-panel__section-title">Top {scopeLabel}</h3>
+          <h3 className="context-panel__section-title">{t('Top {{scope}}', { scope: scopeLabel })}</h3>
         </header>
         <div className="context-panel__section-body">
           <PerformerRow item={top} tone="green" />
@@ -87,7 +89,7 @@ export function ScorecardInsightPanel() {
             <span className="context-panel__section-icon" aria-hidden="true">
               <TrendingDown size={13} />
             </span>
-            <h3 className="context-panel__section-title">Lowest {scopeLabel}</h3>
+            <h3 className="context-panel__section-title">{t('Lowest {{scope}}', { scope: scopeLabel })}</h3>
           </header>
           <div className="context-panel__section-body">
             <PerformerRow item={bottom} tone={bottom.nilai < 100 ? 'red' : 'green'} />
@@ -101,7 +103,7 @@ export function ScorecardInsightPanel() {
             <span className="context-panel__section-icon" aria-hidden="true">
               <AlertCircle size={13} />
             </span>
-            <h3 className="context-panel__section-title">Below target</h3>
+            <h3 className="context-panel__section-title">{t('Below target')}</h3>
           </header>
           <div className="context-panel__section-body">
             {belowTarget.map((d) => (

@@ -212,7 +212,7 @@
 .presence-v2 .presence-filter-tab.is-active {
   background: var(--app-bg);
   color: var(--text-strong);
-  box-shadow: 0 1px 2px rgba(15,20,40,0.06);
+  box-shadow: var(--panel-shadow);
 }
 
 /* Viewport-fit layout: whole Presence page fits within workspace card,
@@ -294,6 +294,50 @@
 .presence-v2 .presence-sidebar:hover .status-panel::-webkit-scrollbar-thumb,
 .presence-v2 .presence-sidebar .status-panel:hover::-webkit-scrollbar-thumb {
   background: var(--panel-border-strong);
+}
+
+/* ── Activity tab: internal-scroll (FIX 2026-06-24) ──────────────────────
+   Tab Activity render di dalam .presence-v2__inner yang viewport-fit
+   (overflow:hidden, tinggi terkunci ke workspace). Tab Presence scroll
+   internal via .presence-main; tab Activity DULU tak punya container scroll
+   sendiri → leaderboard ~2300px ke-clip pada tinggi viewport, halaman tak
+   bisa di-scroll. Samakan polanya: activity-view mengisi tinggi (flex), dan
+   .activity-main (daftar leaderboard) yang scroll internal. */
+.presence-v2 .activity-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+.presence-v2 .activity-controls { flex-shrink: 0; }
+.presence-v2 .activity-workspace {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  /* Constrain the grid row to the available height (default `auto` sizes to
+     the 2300px leaderboard → defeats internal scroll). Stretch columns so each
+     fills the row and scrolls within. */
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+}
+.presence-v2 .activity-main {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.presence-v2 .activity-main:hover { scrollbar-color: var(--panel-border-strong) transparent; }
+.presence-v2 .activity-main::-webkit-scrollbar { width: 6px; }
+.presence-v2 .activity-main::-webkit-scrollbar-track { background: transparent; }
+.presence-v2 .activity-main::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+.presence-v2 .activity-main:hover::-webkit-scrollbar-thumb { background: var(--panel-border-strong); }
+/* Keep the column header pinned while rows scroll. */
+.presence-v2 .activity-main .activity-leader-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 /* Status Saya rail polish */
@@ -602,7 +646,7 @@
   font-weight: 600 !important;
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 120ms ease;
-  box-shadow: 0 3px 8px -4px rgba(31, 107, 53, 0.35);
+  box-shadow: 0 3px 8px -4px rgba(31, 107, 53, 0.35); /* dark-allow: glow brand-green di atas tombol hijau, identik dua theme */
   height: 34px !important;
   width: 100%;
   display: inline-flex;
@@ -612,7 +656,7 @@
 }
 .presence-v2 .presence-update-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 12px -4px rgba(31, 107, 53, 0.5);
+  box-shadow: 0 5px 12px -4px rgba(31, 107, 53, 0.5); /* dark-allow: glow brand-green di atas tombol hijau, identik dua theme */
 }
 .presence-v2 .presence-update-btn:disabled {
   opacity: 0.6;
@@ -660,7 +704,7 @@
   font-weight: 600 !important;
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 120ms ease;
-  box-shadow: 0 3px 8px -4px rgba(31, 107, 53, 0.35);
+  box-shadow: 0 3px 8px -4px rgba(31, 107, 53, 0.35); /* dark-allow: glow brand-green di atas tombol hijau, identik dua theme */
   margin-top: 2px;
   height: 32px !important;
   align-self: stretch;
@@ -668,7 +712,7 @@
 .presence-v2 .status-form button[type="submit"]:hover,
 .presence-v2 .status-update-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 12px -4px rgba(31, 107, 53, 0.5);
+  box-shadow: 0 5px 12px -4px rgba(31, 107, 53, 0.5); /* dark-allow: glow brand-green di atas tombol hijau, identik dua theme */
 }
 
 

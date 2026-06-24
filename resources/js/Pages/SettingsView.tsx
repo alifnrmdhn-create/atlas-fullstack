@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
+import { useLocale } from '../lib/useLocale'
 import {
   type ResolvedTheme,
   type ThemePreference,
@@ -56,13 +58,14 @@ const NAV_ITEMS = [
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function InfoValue({ label, value }: { label: string; value: string }) {
+  const { t } = useTranslation()
   if (label === 'Database' && value.includes('PostgreSQL')) {
     return <span className="status-badge on-track">{value}</span>
   }
   if (label === 'Environment' && value === 'Production') {
-    return <span className="status-badge at-risk">{value}</span>
+    return <span className="status-badge at-risk">{t('Production')}</span>
   }
-  return <span className="settings-value-text">{value}</span>
+  return <span className="settings-value-text">{t(value)}</span>
 }
 
 function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
@@ -96,6 +99,7 @@ function PasswordVisibilityIcon({ visible }: { visible: boolean }) {
 // ── Security section with change-password form ─────────────────────────────
 
 function SecuritySection({ onLogout }: { onLogout: () => void }) {
+  const { t } = useTranslation()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -109,15 +113,15 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
     e.preventDefault()
     setError(null)
     setSuccess(false)
-    if (next !== confirm) { setError('Password confirmation does not match.'); return }
-    if (next.length < 6) { setError('New password must be at least 6 characters.'); return }
+    if (next !== confirm) { setError(t('Password confirmation does not match.')); return }
+    if (next.length < 6) { setError(t('New password must be at least 6 characters.')); return }
     setSaving(true)
     try {
       await api.post('/auth/change-password', { currentPassword: current, newPassword: next })
       setSuccess(true)
       setCurrent(''); setNext(''); setConfirm('')
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to change password.')
+      setError(err instanceof Error ? err.message : t('Failed to change password.'))
     } finally {
       setSaving(false)
     }
@@ -131,10 +135,10 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
   })()
 
   const infoRows = [
-    { label: 'Authentication Method', value: 'Workspace Password' },
-    { label: 'Two-Factor Authentication', value: 'Not active' },
-    { label: 'Current Device', value: uaDevice },
-    { label: 'Last Login', value: new Date().toLocaleString('id-ID') },
+    { label: t('Authentication Method'), value: t('Workspace Password') },
+    { label: t('Two-Factor Authentication'), value: t('Not active') },
+    { label: t('Current Device'), value: uaDevice },
+    { label: t('Last Login'), value: new Date().toLocaleString('id-ID') },
   ]
 
   // Password strength heuristic (0–4)
@@ -147,14 +151,14 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
     if (/\d/.test(next) && /[^A-Za-z0-9]/.test(next)) score += 1
     return Math.min(4, score)
   })()
-  const pwLabel = ['—', 'Weak', 'Fair', 'Good', 'Strong'][pwStrength]
+  const pwLabel = ['—', t('Weak'), t('Fair'), t('Good'), t('Strong')][pwStrength]
 
   return (
     <div className="section-block">
       <div className="section-header">
         <div>
-          <h3 className="section-title">Security</h3>
-          <p className="section-subtitle">Session information and account security.</p>
+          <h3 className="section-title">{t('Security')}</h3>
+          <p className="section-subtitle">{t('Session information and account security.')}</p>
         </div>
       </div>
 
@@ -168,14 +172,14 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
       </div>
 
       <div className="settings-security-card">
-        <div className="settings-security-card__title">Change Password</div>
+        <div className="settings-security-card__title">{t('Change Password')}</div>
         <p className="settings-security-card__subtitle">
-          Use a unique password that you haven't used elsewhere.
+          {t("Use a unique password that you haven't used elsewhere.")}
         </p>
 
         {success && (
           <div className="settings-feedback settings-feedback--success">
-            ✓ Password changed successfully.
+            ✓ {t('Password changed successfully.')}
           </div>
         )}
         {error && (
@@ -187,20 +191,20 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
         <form className="settings-password-form" onSubmit={handleSubmit}>
           <div className="settings-password-field">
             <label className="settings-password-label">
-              Current Password
+              {t('Current Password')}
             </label>
             <div className="settings-password-input-wrap">
               <input
                 autoComplete="current-password"
                 className="profile-input settings-password-input settings-password-input--with-toggle"
                 onChange={e => setCurrent(e.target.value)}
-                placeholder="Enter your current password"
+                placeholder={t('Enter your current password')}
                 required
                 type={showCurrent ? 'text' : 'password'}
                 value={current}
               />
               <button
-                aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
+                aria-label={showCurrent ? t('Hide current password') : t('Show current password')}
                 className="settings-password-toggle"
                 onClick={() => setShowCurrent(v => !v)}
                 type="button"
@@ -212,20 +216,20 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
 
           <div className="settings-password-field">
             <label className="settings-password-label">
-              New Password
+              {t('New Password')}
             </label>
             <div className="settings-password-input-wrap">
               <input
                 autoComplete="new-password"
                 className="profile-input settings-password-input settings-password-input--with-toggle"
                 onChange={e => setNext(e.target.value)}
-                placeholder="At least 6 characters"
+                placeholder={t('At least 6 characters')}
                 required
                 type={showNext ? 'text' : 'password'}
                 value={next}
               />
               <button
-                aria-label={showNext ? 'Hide new password' : 'Show new password'}
+                aria-label={showNext ? t('Hide new password') : t('Show new password')}
                 className="settings-password-toggle"
                 onClick={() => setShowNext(v => !v)}
                 type="button"
@@ -248,19 +252,19 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
 
           <div className="settings-password-field">
             <label className="settings-password-label">
-              Confirm New Password
+              {t('Confirm New Password')}
             </label>
             <input
               autoComplete="new-password"
               className={`profile-input settings-password-input${confirm && confirm !== next ? ' settings-password-input--error' : ''}`}
               onChange={e => setConfirm(e.target.value)}
-              placeholder="Repeat the new password"
+              placeholder={t('Repeat the new password')}
               required
               type="password"
               value={confirm}
             />
             {confirm && confirm !== next && (
-              <span className="settings-password-hint settings-password-hint--error">Passwords do not match.</span>
+              <span className="settings-password-hint settings-password-hint--error">{t('Passwords do not match.')}</span>
             )}
           </div>
 
@@ -270,14 +274,14 @@ function SecuritySection({ onLogout }: { onLogout: () => void }) {
               disabled={saving || !current || !next || !confirm}
               type="submit"
             >
-              {saving ? 'Saving…' : 'Save Password'}
+              {saving ? t('Saving…') : t('Save Password')}
             </button>
             <button
               className="btn btn--ghost"
               onClick={onLogout}
               type="button"
             >
-              Sign out &amp; Sign in Again
+              {t('Sign out & Sign in Again')}
             </button>
           </div>
         </form>
@@ -324,6 +328,8 @@ export function SettingsView() {
   const [sidebarCompact, setSidebarCompact] = useState(() => localStorage.getItem('atlas.sidebarCompact') === 'true')
   const [themePreference, setThemePreference] = useState<ThemePreference>(loadThemePreference)
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => getThemeSnapshot().resolved)
+  const [locale, setLocale] = useLocale()
+  const { t } = useTranslation()
 
   useEffect(() => {
     return subscribeThemeChange(({ preference, resolved }) => {
@@ -367,9 +373,9 @@ export function SettingsView() {
 
       {/* Page header */}
       <div className="view-toolbar">
-        <h2 className="view-toolbar__title">Settings</h2>
+        <h2 className="view-toolbar__title">{t('Settings')}</h2>
         <div className="view-toolbar__sep" />
-        <span className="view-toolbar__subtitle">Manage your profile, preferences, and workspace settings.</span>
+        <span className="view-toolbar__subtitle">{t('Manage your profile, preferences, and workspace settings.')}</span>
       </div>
 
       <div className="settings-workspace">
@@ -384,7 +390,7 @@ export function SettingsView() {
               type="button"
             >
               <span className="settings-nav__icon">{icon}</span>
-              <span>{id}</span>
+              <span>{t(id)}</span>
             </button>
           ))}
         </nav>
@@ -399,28 +405,28 @@ export function SettingsView() {
             }
             const NOTIF_GROUPS = [
               {
-                title: 'General',
+                title: t('General'),
                 items: [
-                  { key: 'inApp', label: 'In-App Notifications', desc: 'Show notification badge and panel' },
+                  { key: 'inApp', label: t('In-App Notifications'), desc: t('Show notification badge and panel') },
                 ],
               },
               {
-                title: 'Communication',
+                title: t('Communication'),
                 items: [
-                  { key: 'mentions', label: 'Mentions & Replies', desc: 'When someone mentions you in a message' },
+                  { key: 'mentions', label: t('Mentions & Replies'), desc: t('When someone mentions you in a message') },
                 ],
               },
               {
-                title: 'Programs & Approvals',
+                title: t('Programs & Approvals'),
                 items: [
-                  { key: 'approvals', label: 'Approval Requests', desc: 'Report approvals and follow-ups' },
-                  { key: 'statusUpdates', label: 'Program Status Updates', desc: 'Status changes on programs you follow' },
+                  { key: 'approvals', label: t('Approval Requests'), desc: t('Report approvals and follow-ups') },
+                  { key: 'statusUpdates', label: t('Program Status Updates'), desc: t('Status changes on programs you follow') },
                 ],
               },
               {
-                title: 'Meetings',
+                title: t('Meetings'),
                 items: [
-                  { key: 'meetingReminders', label: 'Meeting Reminders', desc: 'Reminder 15 minutes before a meeting' },
+                  { key: 'meetingReminders', label: t('Meeting Reminders'), desc: t('Reminder 15 minutes before a meeting') },
                 ],
               },
             ]
@@ -433,8 +439,8 @@ export function SettingsView() {
               <div className="section-block">
                 <div className="section-header">
                   <div>
-                    <h3 className="section-title">Notifications</h3>
-                    <p className="section-subtitle">Manage notification and alert preferences by category.</p>
+                    <h3 className="section-title">{t('Notifications')}</h3>
+                    <p className="section-subtitle">{t('Manage notification and alert preferences by category.')}</p>
                   </div>
                   <button
                     className="btn btn--ghost"
@@ -442,7 +448,7 @@ export function SettingsView() {
                     onClick={resetDefaults}
                     type="button"
                   >
-                    Reset to default
+                    {t('Reset to default')}
                   </button>
                 </div>
                 <div className="settings-notif-groups">
@@ -475,22 +481,22 @@ export function SettingsView() {
             <div className="section-block">
               <div className="section-header">
                 <div>
-                  <h3 className="section-title">Appearance</h3>
-                  <p className="section-subtitle">Display and comfort settings for the ATLAS workspace.</p>
+                  <h3 className="section-title">{t('Appearance')}</h3>
+                  <p className="section-subtitle">{t('Display and comfort settings for the ATLAS workspace.')}</p>
                 </div>
               </div>
               <div className="settings-list settings-list--spaced">
 
                 <div className="list-row settings-list-row settings-list-row--stacked">
                   <div className="settings-list-row__meta">
-                    <div className="settings-list-row__title">Theme</div>
+                    <div className="settings-list-row__title">{t('Theme')}</div>
                     <div className="settings-list-row__desc">
                       {themePreference === 'system'
-                        ? `Follow system settings. Current active theme: ${resolvedTheme === 'dark' ? 'Dark' : 'Light'}.`
-                        : `Active theme set to ${themePreference === 'dark' ? 'dark' : 'light'} mode.`}
+                        ? t('Follow system settings. Current active theme: {{theme}}.', { theme: resolvedTheme === 'dark' ? t('Dark') : t('Light') })
+                        : t('Active theme set to {{mode}} mode.', { mode: themePreference === 'dark' ? t('dark') : t('light') })}
                     </div>
                   </div>
-                  <div className="settings-theme-cards" role="radiogroup" aria-label="Theme">
+                  <div className="settings-theme-cards" role="radiogroup" aria-label={t('Theme')}>
                     {([
                       {
                         key: 'light',
@@ -538,8 +544,8 @@ export function SettingsView() {
                         type="button"
                       >
                         <span className={`settings-theme-card__preview settings-theme-card__preview--${card.preview}`}>{card.icon}</span>
-                        <span className="settings-theme-card__label">{card.label}</span>
-                        <span className="settings-theme-card__hint">{card.hint}</span>
+                        <span className="settings-theme-card__label">{t(card.label)}</span>
+                        <span className="settings-theme-card__hint">{t(card.hint)}</span>
                       </button>
                     ))}
                   </div>
@@ -547,10 +553,34 @@ export function SettingsView() {
 
                 <div className="list-row settings-list-row">
                   <div className="settings-list-row__meta">
-                    <div className="settings-list-row__title">Text Size</div>
-                    <div className="settings-list-row__desc">Adjust the interface text size</div>
+                    <div className="settings-list-row__title">{t('Language')}</div>
+                    <div className="settings-list-row__desc">{t('Choose the interface language')}</div>
                   </div>
-                  <div className="settings-segmented" role="radiogroup" aria-label="Text Size">
+                  <div className="settings-segmented" role="radiogroup" aria-label={t('Language')}>
+                    {([
+                      { key: 'en', label: 'English' },
+                      { key: 'id', label: 'Bahasa Indonesia' },
+                    ] as const).map(opt => (
+                      <button
+                        aria-checked={locale === opt.key}
+                        className={`settings-segmented__btn${locale === opt.key ? ' is-active' : ''}`}
+                        key={opt.key}
+                        onClick={() => setLocale(opt.key)}
+                        role="radio"
+                        type="button"
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="list-row settings-list-row">
+                  <div className="settings-list-row__meta">
+                    <div className="settings-list-row__title">{t('Text Size')}</div>
+                    <div className="settings-list-row__desc">{t('Adjust the interface text size')}</div>
+                  </div>
+                  <div className="settings-segmented" role="radiogroup" aria-label={t('Text Size')}>
                     {(['small','normal','large'] as const).map(sz => (
                       <button
                         aria-checked={fontSize === sz}
@@ -560,7 +590,7 @@ export function SettingsView() {
                         role="radio"
                         type="button"
                       >
-                        {sz === 'small' ? 'Small' : sz === 'large' ? 'Large' : 'Normal'}
+                        {sz === 'small' ? t('Small') : sz === 'large' ? t('Large') : t('Normal')}
                       </button>
                     ))}
                   </div>
@@ -568,8 +598,8 @@ export function SettingsView() {
 
                 <div className="list-row settings-list-row">
                   <div className="settings-list-row__meta">
-                    <div className="settings-list-row__title">Compact Sidebar</div>
-                    <div className="settings-list-row__desc">Display the sidebar more densely</div>
+                    <div className="settings-list-row__title">{t('Compact Sidebar')}</div>
+                    <div className="settings-list-row__desc">{t('Display the sidebar more densely')}</div>
                   </div>
                   <ToggleSwitch checked={sidebarCompact} onChange={applySidebarCompact} />
                 </div>
@@ -577,7 +607,7 @@ export function SettingsView() {
               </div>
 
               <div className="settings-footnote">
-                <strong>Shortcut:</strong> Press <kbd>⌘K</kbd> to open the command palette. Appearance changes are saved automatically on this device.
+                <strong>{t('Shortcut:')}</strong> {t('Press')} <kbd>⌘K</kbd> {t('to open the command palette. Appearance changes are saved automatically on this device.')}
               </div>
             </div>
           )}
@@ -587,7 +617,7 @@ export function SettingsView() {
             <>
               <SecuritySection onLogout={requestLogout} />
               <div className="settings-footnote">
-                <strong>Security tip:</strong> Use a password of at least 12 characters combining letters, numbers, and symbols. Do not reuse a password from another service.
+                <strong>{t('Security tip:')}</strong> {t('Use a password of at least 12 characters combining letters, numbers, and symbols. Do not reuse a password from another service.')}
               </div>
             </>
           )}
@@ -598,14 +628,14 @@ export function SettingsView() {
               <div className="section-block">
                 <div className="section-header">
                   <div>
-                  <h3 className="section-title">Workspace Info</h3>
-                  <p className="section-subtitle">Technical information about the ATLAS workspace.</p>
+                  <h3 className="section-title">{t('Workspace Info')}</h3>
+                  <p className="section-subtitle">{t('Technical information about the ATLAS workspace.')}</p>
                 </div>
               </div>
                 <div className="settings-list settings-list--compact">
                   {workspaceRows.map(({ label, value }) => (
                     <div className="list-row settings-list-row" key={label}>
-                      <span className="settings-list-row__label">{label}</span>
+                      <span className="settings-list-row__label">{t(label)}</span>
                       <InfoValue label={label} value={value} />
                     </div>
                   ))}
@@ -615,13 +645,13 @@ export function SettingsView() {
               {/* Danger zone */}
               <div className="section-block settings-danger-zone">
                 <div className="section-header">
-                  <h3 className="section-title settings-danger-title">Danger Zone</h3>
+                  <h3 className="section-title settings-danger-title">{t('Danger Zone')}</h3>
                 </div>
                 <div className="settings-danger-row">
                   <div className="settings-list-row__meta">
-                    <div className="settings-list-row__title">Sign out of workspace</div>
+                    <div className="settings-list-row__title">{t('Sign out of workspace')}</div>
                     <div className="settings-list-row__desc">
-                      Your session will end and your token will be cleared.
+                      {t('Your session will end and your token will be cleared.')}
                     </div>
                   </div>
                   <button
@@ -629,7 +659,7 @@ export function SettingsView() {
                     onClick={() => requestLogout()}
                     type="button"
                   >
-                    Sign out
+                    {t('Sign out')}
                   </button>
                 </div>
               </div>

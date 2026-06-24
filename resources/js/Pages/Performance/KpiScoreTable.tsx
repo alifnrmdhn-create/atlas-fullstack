@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { scoreTone, realisasiPercent, formatVal, formatNumber, formatPercent, isZeroTargetMet } from './_shared'
 
 /**
@@ -42,6 +43,7 @@ export function rowPct(r: ScoreRow): number {
  * Di bawah 100 → bar tumbuh ke kiri (amber/red); di atas → ke kanan (green).
  */
 export function DeviationBar({ pct }: { pct: number }) {
+  const { t } = useTranslation()
   const tone = scoreTone(pct)
   const over = pct >= 100
   const raw = over
@@ -50,7 +52,7 @@ export function DeviationBar({ pct }: { pct: number }) {
   const width = Math.max(raw, 0.75) // selalu ada jejak visual walau deviasi kecil
   const left = over ? 75 : 75 - width
   return (
-    <div className="kst-dev" role="img" aria-label={`${formatPercent(pct, 1)} of target`}>
+    <div className="kst-dev" role="img" aria-label={t('{{pct}} of target', { pct: formatPercent(pct, 1) })}>
       <span className="kst-dev__baseline" aria-hidden />
       <span
         className="kst-dev__fill"
@@ -64,6 +66,7 @@ export function DeviationBar({ pct }: { pct: number }) {
 }
 
 export function KpiScoreTable({ groups }: { groups: ScoreGroup[] }) {
+  const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const toggle = (k: string) =>
     setCollapsed(prev => {
@@ -76,12 +79,12 @@ export function KpiScoreTable({ groups }: { groups: ScoreGroup[] }) {
     <div className="kst">
       <div className="kst__headrow" aria-hidden>
         <span />
-        <span>KPI</span>
-        <span className="kst__num">Weight</span>
-        <span className="kst__num">Target</span>
-        <span className="kst__num">Realization</span>
-        <span className="kst__ach-head">Achievement · tick = 100%</span>
-        <span className="kst__num">Score</span>
+        <span>{t('KPI')}</span>
+        <span className="kst__num">{t('Weight')}</span>
+        <span className="kst__num">{t('Target')}</span>
+        <span className="kst__num">{t('Realization')}</span>
+        <span className="kst__ach-head">{t('Achievement · tick = 100%')}</span>
+        <span className="kst__num">{t('Score')}</span>
       </div>
 
       {groups.map(g => {
@@ -97,7 +100,7 @@ export function KpiScoreTable({ groups }: { groups: ScoreGroup[] }) {
               <span className="kst__chevron" data-collapsed={isCollapsed} aria-hidden>▾</span>
               <span className="kst__dot" style={{ background: g.color }} aria-hidden />
               <span className="kst__group-label">{g.label}</span>
-              <span className="kst__group-meta">{g.items.length} KPI · weight {formatNumber(g.bobot, 0)}%</span>
+              <span className="kst__group-meta">{t('{{count}} KPI · weight {{weight}}%', { count: g.items.length, weight: formatNumber(g.bobot, 0) })}</span>
               <span className="kst__group-pct" data-tone={scoreTone(g.pct)}>{formatPercent(g.pct, 1)}</span>
             </button>
 
@@ -123,18 +126,18 @@ export function KpiScoreTable({ groups }: { groups: ScoreGroup[] }) {
                       )}
                     </span>
                   </div>
-                  <span className="kst__cell kst__num" data-label="Weight">{formatNumber(r.bobot, 0)}%</span>
-                  <span className="kst__cell kst__num" data-label="Target">{formatVal(r.target, r.satuan)}</span>
-                  <span className="kst__cell kst__num" data-label="Realization">
+                  <span className="kst__cell kst__num" data-label={t('Weight')}>{formatNumber(r.bobot, 0)}%</span>
+                  <span className="kst__cell kst__num" data-label={t('Target')}>{formatVal(r.target, r.satuan)}</span>
+                  <span className="kst__cell kst__num" data-label={t('Realization')}>
                     {isNA
-                      ? <span className="kst__na" title="Not yet measured for this period">N/A</span>
+                      ? <span className="kst__na" title={t('Not yet measured for this period')}>{t('N/A')}</span>
                       : <span data-tone={tone} className="kst__val">{formatVal(r.realisasi, r.satuan)}</span>}
                   </span>
                   <div className="kst__cell kst__cell--ach">
                     {zeroMet ? (
-                      <span className="kst__zero" data-tone="green">✓ zero target met</span>
+                      <span className="kst__zero" data-tone="green">{t('✓ zero target met')}</span>
                     ) : isNA ? (
-                      <span className="kst__na">not measured</span>
+                      <span className="kst__na">{t('not measured')}</span>
                     ) : (
                       <>
                         <DeviationBar pct={pct} />
@@ -142,7 +145,7 @@ export function KpiScoreTable({ groups }: { groups: ScoreGroup[] }) {
                       </>
                     )}
                   </div>
-                  <span className="kst__cell kst__num kst__score" data-label="Score" data-tone={zeroMet ? 'green' : isNA ? undefined : tone}>
+                  <span className="kst__cell kst__num kst__score" data-label={t('Score')} data-tone={zeroMet ? 'green' : isNA ? undefined : tone}>
                     {formatNumber(r.skor, 1)}
                   </span>
                 </div>

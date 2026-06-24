@@ -1153,17 +1153,22 @@ class ProgramController extends Controller
         $program = Program::findOrFail($id);
         $user = $request->user();
 
-        // Permission: hanya owner program (PIC utama) yang boleh write refleksi.
-        // assertAccess sebelumnya terlalu permisif (Officer/Kadiv juga bisa).
-        // Refleksi adalah accountability statement PIC — orang lain edit
-        // melanggar audit trail. SUPERADMIN/ADMIN tetap diizinkan sebagai
-        // escape hatch (data correction kasus exceptional).
+        // Permission: PIC utama (owner) + co-PIC (entity_pics) boleh write refleksi.
+        // Refleksi adalah accountability statement tim PIC — diperluas dari
+        // owner-only ke co-PIC (2026-06-24) selaras arah "one-door Workboard":
+        // tim pelaksana program harus bisa melapor kondisi, bukan cuma PIC utama.
+        // Officer/Kadiv non-PIC tetap ditolak (mereka bukan accountable). Bukan
+        // assertAccess yang permisif. SUPERADMIN/ADMIN escape hatch untuk koreksi.
         $role = strtoupper($user->roleType ?? '');
         $isAdmin = in_array($role, ['SUPERADMIN', 'ADMIN'], true);
         $isOwner = $program->ownerId === $user->id;
-        if (! $isAdmin && ! $isOwner) {
+        $isCoPic = ! $isOwner && EntityPic::query()
+            ->forEntity('Program', $program->id)
+            ->where('userId', $user->id)
+            ->exists();
+        if (! $isAdmin && ! $isOwner && ! $isCoPic) {
             return response()->json([
-                'message' => 'Only the program PIC (owner) can write the weekly reflection.',
+                'message' => 'Only the program PIC (owner or co-PIC) can write the weekly reflection.',
             ], 403);
         }
 
@@ -1257,8 +1262,27 @@ class ProgramController extends Controller
         $hasSubmitted = $existingLog !== null;
         $activatedAt  = $program->activatedAt ? \Carbon\Carbon::parse($program->activatedAt) : null;
 
+        // Apakah user boleh MELAPORKAN kondisi (bukan sekadar akses baca)? Identik
+        // dengan gate storeProgressLog: owner + co-PIC (entity_pics) + admin.
+        // assertAccess di atas permisif (scope-viewer boleh baca), jadi FE perlu
+        // sinyal terpisah supaya modal read-only untuk yang tak berhak menulis.
+        $user = $request->user();
+        $role = strtoupper($user->roleType ?? '');
+        $canReport = in_array($role, ['SUPERADMIN', 'ADMIN'], true)
+            || $program->ownerId === $user->id
+            || EntityPic::query()->forEntity('Program', $program->id)->where('userId', $user->id)->exists();
+
         $summary = $this->weeklyDeadline->summary($weekIso, $hasSubmitted, $activatedAt);
         $prefill = $this->buildReflectionPrefill($program);
+
+        // KPI internal aktif — supaya modal "Report Condition" (Workboard) bisa
+        // menerima actual mingguan tanpa fetch terpisah. Realisasi = Do, jadi
+        // berbaur dengan pelaporan kondisi (arah one-door). KPI divisi via import
+        // tidak termasuk (itu KpiDefinition tanpa programId / jalur lain).
+        $kpis = $program->kpis()
+            ->where('isActive', true)
+            ->orderBy('id')
+            ->get(['id', 'name', 'targetValue', 'actualValue', 'unitOfMeasure', 'dataType']);
 
         // Existing log content — FE pakai untuk populate form saat edit mode.
         // Sebelumnya cuma return existingLogId, FE harus blind-start dari prefill
@@ -1282,6 +1306,8 @@ class ProgramController extends Controller
                 'prefill'       => $prefill,
                 'existing'      => $existing,
                 'existingLogId' => $existingLog?->id, // backward-compat
+                'kpis'          => $kpis,
+                'canReport'     => $canReport,
             ]),
         ]);
     }

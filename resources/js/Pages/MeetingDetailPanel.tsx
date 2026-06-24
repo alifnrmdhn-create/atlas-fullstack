@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
+import i18n from '../lib/i18n'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { useDialogFocus } from '../hooks/useDialogFocus'
@@ -104,14 +106,14 @@ function exportIcs(meeting: Meeting): void {
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const MEETING_TYPE_LABEL: Record<MeetingType, string> = {
-  RAPAT_DIREKSI: 'Rapat Direksi', RAPAT_KOORDINASI: 'Rapat Koordinasi',
-  RAPAT_DIVISI: 'Rapat Divisi', RAPAT_TIM: 'Rapat Tim', ONE_ON_ONE: '1-on-1',
-}
+const meetingTypeLabel = (): Record<MeetingType, string> => ({
+  RAPAT_DIREKSI: i18n.t('Board of Directors Meeting'), RAPAT_KOORDINASI: i18n.t('Coordination Meeting'),
+  RAPAT_DIVISI: i18n.t('Division Meeting'), RAPAT_TIM: i18n.t('Team Meeting'), ONE_ON_ONE: i18n.t('1-on-1'),
+})
 
-const ACTION_STATUS_LABEL: Record<string, string> = {
-  OPEN: 'Open', IN_PROGRESS: 'In Progress', COMPLETED: 'Completed',
-}
+const actionStatusLabel = (): Record<string, string> => ({
+  OPEN: i18n.t('Open'), IN_PROGRESS: i18n.t('In Progress'), COMPLETED: i18n.t('Completed'),
+})
 
 type MeetingTone = 'gray' | 'red' | 'yellow' | 'green' | 'blue' | 'purple' | 'cyan' | 'pink' | 'orange'
 
@@ -196,11 +198,11 @@ function getInitials(name: string) {
 
 function rsvpLabel(status: string) {
   return RSVP_STATUS_TONE[status] ? (
-    status === 'HADIR' || status === 'ACCEPTED' ? 'Present'
-      : status === 'TIDAK_HADIR' || status === 'DECLINED' ? 'Absent'
-      : status === 'DELEGASI' ? 'Delegated'
-      : status === 'TENTATIVE' ? 'Tentative'
-      : 'Pending'
+    status === 'HADIR' || status === 'ACCEPTED' ? i18n.t('Present')
+      : status === 'TIDAK_HADIR' || status === 'DECLINED' ? i18n.t('Absent')
+      : status === 'DELEGASI' ? i18n.t('Delegated')
+      : status === 'TENTATIVE' ? i18n.t('Tentative')
+      : i18n.t('Pending')
   ) : status
 }
 
@@ -214,9 +216,10 @@ function Avatar({ name }: { name: string }) {
 }
 
 function RsvpPill({ status, role }: { status: string; role: string }) {
+  const { t } = useTranslation()
   if (role === 'ORGANIZER') return (
     <span className="meeting-rsvp-pill meeting-rsvp-pill--organizer">
-      Organizer
+      {t('Organizer')}
     </span>
   )
   const tone = RSVP_STATUS_TONE[status] ?? 'gray'
@@ -238,6 +241,7 @@ export function MeetingDetailPanel({
   onClose: () => void
   onUpdate: () => void
 }) {
+  const { t } = useTranslation()
   const { currentUser, presence, meetingRefreshKey } = useWorkspace()
   const isOrganizer = meeting.organizerId === currentUser?.id
   const isCancelled = meeting.status === 'CANCELLED'
@@ -299,7 +303,7 @@ export function MeetingDetailPanel({
       editForm.description !== (meeting.description ?? '') ||
       editForm.meetingType !== meeting.meetingType ||
       editForm.location !== (meeting.location ?? '')
-    if (editDirty && !window.confirm('Discard unsaved changes?')) return
+    if (editDirty && !window.confirm(t('Discard unsaved changes?'))) return
     setShowEdit(false); setEditError(null)
   }, showEdit)
 
@@ -313,7 +317,7 @@ export function MeetingDetailPanel({
   const [postponeError, setPostponeError] = useState<string | null>(null)
   useEscKey(() => {
     if (postponeSaving) return
-    if (postponeReason !== '' && !window.confirm('Discard the reason you typed?')) return
+    if (postponeReason !== '' && !window.confirm(t('Discard the reason you typed?'))) return
     setShowPostpone(false); setPostponeReason(''); setPostponeError(null)
   }, showPostpone)
 
@@ -329,7 +333,7 @@ export function MeetingDetailPanel({
   useEscKey(() => {
     if (pushSaving) return
     const pushDirty = pushForm.workstreamId !== '' || pushForm.targetCompletion !== ''
-    if (pushDirty && !window.confirm('Discard the selections you made?')) return
+    if (pushDirty && !window.confirm(t('Discard the selections you made?'))) return
     setPushItem(null); setPushError(null)
   }, pushItem !== null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -438,10 +442,10 @@ export function MeetingDetailPanel({
     try {
       await api.patch(`/meetings/${meeting.id}`, { notes })
       onUpdate()
-      setSuccessMsg('Minutes saved successfully.')
+      setSuccessMsg(t('Minutes saved successfully.'))
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch (err) {
-      setNotesError(err instanceof Error ? err.message : 'Failed to save.')
+      setNotesError(err instanceof Error ? err.message : t('Failed to save.'))
     } finally {
       setNotesSaving(false)
     }
@@ -457,7 +461,7 @@ export function MeetingDetailPanel({
       setNewDecision('')
       void loadData()
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to add decision.')
+      showError(err instanceof Error ? err.message : t('Failed to add decision.'))
     } finally { setDecisionSaving(false) }
   }
 
@@ -473,7 +477,7 @@ export function MeetingDetailPanel({
       setConfirmDeleteDecision(null)
       void loadData()
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to delete decision.')
+      showError(err instanceof Error ? err.message : t('Failed to delete decision.'))
       setConfirmDeleteDecision(null)
     } finally {
       setDecisionDeleteSaving(false)
@@ -483,8 +487,8 @@ export function MeetingDetailPanel({
   // ── Action item actions ───────────────────────────────────────────────────
 
   const addActionItem = async () => {
-    if (!aiForm.title.trim()) { setAiError('Title is required.'); return }
-    if (aiForm.title.trim().length < 3) { setAiError('Title must be at least 3 characters.'); return }
+    if (!aiForm.title.trim()) { setAiError(t('Title is required.')); return }
+    if (aiForm.title.trim().length < 3) { setAiError(t('Title must be at least 3 characters.')); return }
     setAiSaving(true)
     setAiError(null)
     try {
@@ -497,7 +501,7 @@ export function MeetingDetailPanel({
       setShowAIForm(false)
       void loadData()
     } catch (err) {
-      setAiError(err instanceof Error ? err.message : 'Failed to add.')
+      setAiError(err instanceof Error ? err.message : t('Failed to add.'))
     } finally {
       setAiSaving(false) }
   }
@@ -510,7 +514,7 @@ export function MeetingDetailPanel({
       await api.patch(`/meetings/${meeting.id}/action-items/${item.id}`, { status: next })
       void loadData()
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to update action item status.')
+      showError(err instanceof Error ? err.message : t('Failed to update action item status.'))
     } finally {
       setToggleLoading(null)
     }
@@ -528,7 +532,7 @@ export function MeetingDetailPanel({
       setConfirmDeleteActionItem(null)
       void loadData()
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to delete action item.')
+      showError(err instanceof Error ? err.message : t('Failed to delete action item.'))
       setConfirmDeleteActionItem(null)
     } finally {
       setActionItemDeleteSaving(false)
@@ -547,7 +551,7 @@ export function MeetingDetailPanel({
       onUpdate()
       void loadData()
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to start meeting.')
+      showError(err instanceof Error ? err.message : t('Failed to start meeting.'))
     } finally {
       setStartLoading(false)
     }
@@ -563,14 +567,14 @@ export function MeetingDetailPanel({
       onUpdate()
       void loadData()
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to complete meeting.')
+      showError(err instanceof Error ? err.message : t('Failed to complete meeting.'))
     } finally {
       setCompleteLoading(false)
     }
   }
 
   const postponeMeeting = async () => {
-    if (!postponeReason.trim()) { setPostponeError('A postponement reason is required.'); return }
+    if (!postponeReason.trim()) { setPostponeError(t('A postponement reason is required.')); return }
     setPostponeSaving(true)
     setPostponeError(null)
     try {
@@ -580,7 +584,7 @@ export function MeetingDetailPanel({
       onUpdate()
       void loadData()
     } catch (err) {
-      setPostponeError(err instanceof Error ? err.message : 'Failed to postpone meeting.')
+      setPostponeError(err instanceof Error ? err.message : t('Failed to postpone meeting.'))
     } finally {
       setPostponeSaving(false)
     }
@@ -618,12 +622,12 @@ export function MeetingDetailPanel({
   }
 
   const submitEdit = async () => {
-    if (!editForm.title.trim()) { setEditError('Title is required.'); return }
-    if (editForm.title.trim().length < 3) { setEditError('Title must be at least 3 characters.'); return }
-    if (!editForm.date || !editForm.startTime || !editForm.endTime) { setEditError('Date and time are required.'); return }
+    if (!editForm.title.trim()) { setEditError(t('Title is required.')); return }
+    if (editForm.title.trim().length < 3) { setEditError(t('Title must be at least 3 characters.')); return }
+    if (!editForm.date || !editForm.startTime || !editForm.endTime) { setEditError(t('Date and time are required.')); return }
     const startAt = new Date(`${editForm.date}T${editForm.startTime}:00`).toISOString()
     const endAt   = new Date(`${editForm.date}T${editForm.endTime}:00`).toISOString()
-    if (new Date(endAt) <= new Date(startAt)) { setEditError('End time must be after start time.'); return }
+    if (new Date(endAt) <= new Date(startAt)) { setEditError(t('End time must be after start time.')); return }
     setEditSaving(true)
     setEditError(null)
     try {
@@ -640,7 +644,7 @@ export function MeetingDetailPanel({
       setShowEdit(false)
       onUpdate()
     } catch (err) {
-      setEditError(err instanceof Error ? err.message : 'Failed to save.')
+      setEditError(err instanceof Error ? err.message : t('Failed to save.'))
     } finally {
       setEditSaving(false)
     }
@@ -661,7 +665,7 @@ export function MeetingDetailPanel({
 
   const submitPush = async () => {
     if (!pushItem) return
-    if (!pushForm.workstreamId) { setPushError('Select a workstream first.'); return }
+    if (!pushForm.workstreamId) { setPushError(t('Select a workstream first.')); return }
     setPushSaving(true)
     setPushError(null)
     try {
@@ -675,10 +679,10 @@ export function MeetingDetailPanel({
       setPushItem(null)
       void loadData()
       setErrorMsg(null)
-      setSuccessMsg(`Task ${res.data.taskCode} created in Workboard.`)
+      setSuccessMsg(t('Task {{taskCode}} created in Workboard.', { taskCode: res.data.taskCode }))
       setTimeout(() => setSuccessMsg(null), 5000)
     } catch (err) {
-      setPushError(err instanceof Error ? err.message : 'Failed to push to Workboard.')
+      setPushError(err instanceof Error ? err.message : t('Failed to push to Workboard.'))
     } finally {
       setPushSaving(false)
     }
@@ -703,22 +707,22 @@ export function MeetingDetailPanel({
           {/* Top badges row */}
           <div className="meeting-detail__badges">
             <span className="meeting-detail__type-badge" data-tone={MEETING_TYPE_TONE[meeting.meetingType]}>
-              {MEETING_TYPE_LABEL[meeting.meetingType]}
+              {meetingTypeLabel()[meeting.meetingType]}
             </span>
             {meeting.status === 'ONGOING' && (
               <span className="meeting-detail__status-badge meeting-detail__status-badge--ongoing">
-                <span className="schedule-card__ongoing-dot" /> Ongoing
+                <span className="schedule-card__ongoing-dot" /> {t('Ongoing')}
               </span>
             )}
             {meeting.status === 'COMPLETED' && (
-              <span className="meeting-detail__status-badge meeting-detail__status-badge--done">✓ Completed</span>
+              <span className="meeting-detail__status-badge meeting-detail__status-badge--done">✓ {t('Completed')}</span>
             )}
             {isCancelled && (
-              <span className="meeting-detail__status-badge meeting-detail__status-badge--cancel">Cancelled</span>
+              <span className="meeting-detail__status-badge meeting-detail__status-badge--cancel">{t('Cancelled')}</span>
             )}
             {isPostponed && (
               <span className="meeting-detail__status-badge meeting-detail__status-badge--postponed">
-                ⏸ Postponed
+                ⏸ {t('Postponed')}
               </span>
             )}
           </div>
@@ -728,14 +732,14 @@ export function MeetingDetailPanel({
           {/* Postponed reason banner */}
           {isPostponed && meeting.postponedReason && (
             <div className="meeting-detail__postpone-banner">
-              <strong>Postponement reason:</strong> {meeting.postponedReason}
+              <strong>{t('Postponement reason:')}</strong> {meeting.postponedReason}
             </div>
           )}
 
           {/* Rescheduled indicator */}
           {meeting.rescheduledFromAt && meeting.status !== 'POSTPONED' && (
             <div className="meeting-detail__reschedule-note">
-              Rescheduled from {formatDatetime(meeting.rescheduledFromAt)}
+              {t('Rescheduled from {{datetime}}', { datetime: formatDatetime(meeting.rescheduledFromAt) })}
             </div>
           )}
 
@@ -757,36 +761,36 @@ export function MeetingDetailPanel({
           {/* Person-hours */}
           <div className="meeting-detail__stats">
             <span className="meeting-detail__stats-muted">
-              {meeting.attendees.length} attendees · {durationMins < 60 ? `${durationMins} min` : `${Math.round(durationHrs * 10) / 10} hr`}
+              {t('{{count}} attendees', { count: meeting.attendees.length })} · {durationMins < 60 ? t('{{count}} min', { count: durationMins }) : t('{{count}} hr', { count: Math.round(durationHrs * 10) / 10 })}
             </span>
             <span className="meeting-detail__stats-dot">·</span>
-            <span className="meeting-detail__stats-strong">{personHours} person-hours</span>
+            <span className="meeting-detail__stats-strong">{t('{{count}} person-hours', { count: personHours })}</span>
           </div>
         </div>
 
         {/* Action buttons + close */}
         <div className="meeting-detail__actions">
           {isOrganizer && !isCancelled && !isPostponed && !isCompleted && (
-            <button className="btn btn--sm btn--ghost meeting-detail__action-btn" onClick={openEdit}>Edit</button>
+            <button className="btn btn--sm btn--ghost meeting-detail__action-btn" onClick={openEdit}>{t('Edit')}</button>
           )}
           {isOrganizer && meeting.status === 'SCHEDULED' && (
             <button className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--info" onClick={startMeeting} disabled={startLoading}>
-              {startLoading ? '…' : '▶ Start'}
+              {startLoading ? '…' : `▶ ${t('Start')}`}
             </button>
           )}
           {isOrganizer && (meeting.status === 'SCHEDULED' || meeting.status === 'ONGOING') && (
             <button className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--success" onClick={completeMeeting} disabled={completeLoading}>
-              {completeLoading ? '…' : '✓ Complete'}
+              {completeLoading ? '…' : `✓ ${t('Complete')}`}
             </button>
           )}
           {isOrganizer && (meeting.status === 'SCHEDULED' || meeting.status === 'ONGOING') && (
             <button className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--warn" onClick={() => setShowPostpone(true)}>
-              ⏸ Postpone
+              ⏸ {t('Postpone')}
             </button>
           )}
           {isOrganizer && isPostponed && (
             <button className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--info" onClick={openReschedule}>
-              Reschedule
+              {t('Reschedule')}
             </button>
           )}
           {/* Sprint 5 — Check→Act bridge: post-meeting → ProgressLog */}
@@ -794,31 +798,31 @@ export function MeetingDetailPanel({
             <button
               className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--info"
               onClick={() => {
-                const decisionsList = decisions.length > 0 ? '\n\nDecisions:\n' + decisions.map(d => `- ${d.decision}`).join('\n') : ''
-                const actionList = actionItems.length > 0 ? '\n\nAction Items:\n' + actionItems.map(a => `- ${a.title}`).join('\n') : ''
+                const decisionsList = decisions.length > 0 ? '\n\n' + t('Decisions:') + '\n' + decisions.map(d => `- ${d.decision}`).join('\n') : ''
+                const actionList = actionItems.length > 0 ? '\n\n' + t('Action Items:') + '\n' + actionItems.map(a => `- ${a.title}`).join('\n') : ''
                 const meetingDate = new Date(meeting.startAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
                 const ctx = {
-                  narrative: `Outcome of coordination meeting "${meeting.title}" (${meetingDate}).${decisionsList}${actionList}`,
+                  narrative: t('Outcome of coordination meeting "{{title}}" ({{date}}).', { title: meeting.title, date: meetingDate }) + `${decisionsList}${actionList}`,
                   meetingTitle: meeting.title,
                   meetingDate: meeting.startAt,
                 }
                 sessionStorage.setItem(`atlas:progress-log-prefill.${meeting.linkedProgramId}`, JSON.stringify(ctx))
                 window.location.href = `/programs/${meeting.linkedProgramId}`
               }}
-              title="Record this meeting summary as a program ProgressLog"
+              title={t('Record this meeting summary as a program ProgressLog')}
             >
               → ProgressLog
             </button>
           )}
           {!isOrganizer && !isCancelled && !isPostponed && !isCompleted && (
-            <span className="meeting-detail__readonly-hint" title="Only the organizer can edit this meeting">
-              Read only
+            <span className="meeting-detail__readonly-hint" title={t('Only the organizer can edit this meeting')}>
+              {t('Read only')}
             </span>
           )}
           <button
             className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--ics"
             onClick={() => exportIcs(meeting)}
-            title="Export to Google Calendar / Apple Calendar (.ics)"
+            title={t('Export to Google Calendar / Apple Calendar (.ics)')}
             type="button"
           >
             <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="12">
@@ -827,7 +831,7 @@ export function MeetingDetailPanel({
             </svg>
             .ics
           </button>
-          <button className="meeting-detail__close-btn panel-close-btn" onClick={onClose} title="Close (Esc)" type="button">
+          <button className="meeting-detail__close-btn panel-close-btn" onClick={onClose} title={t('Close (Esc)')} type="button">
             <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg>
             <kbd>Esc</kbd>
           </button>
@@ -860,7 +864,7 @@ export function MeetingDetailPanel({
         {prepUnavailable && !prep && (
           <div className="meeting-prep-unavailable">
             <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3"/><circle cx="8" cy="11" r="0.5" fill="currentColor"/></svg>
-            Meeting briefing is currently unavailable.
+            {t('Meeting briefing is currently unavailable.')}
           </div>
         )}
         {prep && (prep.programContext || prep.continuity) && (
@@ -870,19 +874,19 @@ export function MeetingDetailPanel({
               onClick={() => setPrepExpanded(e => !e)}
             >
               <span className="prep-packet__icon">📋</span>
-              <span className="prep-packet__title">Meeting Briefing</span>
+              <span className="prep-packet__title">{t('Meeting Briefing')}</span>
               <div className="prep-packet__badges">
                 {prep.rsvpSummary.pending > 0 && (
                   <span className="prep-packet__badge prep-packet__badge--warn">
-                    ○ {prep.rsvpSummary.pending} not confirmed
+                    ○ {t('{{count}} not confirmed', { count: prep.rsvpSummary.pending })}
                   </span>
                 )}
                 {prep.programContext?.healthStatus === 'RED' && (
-                  <span className="prep-packet__badge prep-packet__badge--danger">🔴 Critical program</span>
+                  <span className="prep-packet__badge prep-packet__badge--danger">🔴 {t('Critical program')}</span>
                 )}
                 {prep.continuity && prep.continuity.unresolvedCount > 0 && (
                   <span className="prep-packet__badge prep-packet__badge--warn">
-                    ⚠ {prep.continuity.unresolvedCount} pending items
+                    ⚠ {t('{{count}} pending items', { count: prep.continuity.unresolvedCount })}
                   </span>
                 )}
               </div>
@@ -900,12 +904,12 @@ export function MeetingDetailPanel({
 
                 {/* RSVP Summary */}
                 <div className="prep-packet__row">
-                  <span className="prep-packet__label">Attendance Confirmation</span>
+                  <span className="prep-packet__label">{t('Attendance Confirmation')}</span>
                   <div className="meeting-prep-rsvp">
-                    <span className="meeting-prep-rsvp__item" data-tone="green">✓ {prep.rsvpSummary.hadir} present</span>
-                    {prep.rsvpSummary.tidakHadir > 0 && <span className="meeting-prep-rsvp__item" data-tone="red">✗ {prep.rsvpSummary.tidakHadir} absent</span>}
-                    {prep.rsvpSummary.delegasi > 0 && <span className="meeting-prep-rsvp__item" data-tone="yellow">↪ {prep.rsvpSummary.delegasi} delegated</span>}
-                    {prep.rsvpSummary.pending > 0 && <span className="meeting-prep-rsvp__item" data-tone="gray">○ {prep.rsvpSummary.pending} pending</span>}
+                    <span className="meeting-prep-rsvp__item" data-tone="green">✓ {t('{{count}} present', { count: prep.rsvpSummary.hadir })}</span>
+                    {prep.rsvpSummary.tidakHadir > 0 && <span className="meeting-prep-rsvp__item" data-tone="red">✗ {t('{{count}} absent', { count: prep.rsvpSummary.tidakHadir })}</span>}
+                    {prep.rsvpSummary.delegasi > 0 && <span className="meeting-prep-rsvp__item" data-tone="yellow">↪ {t('{{count}} delegated', { count: prep.rsvpSummary.delegasi })}</span>}
+                    {prep.rsvpSummary.pending > 0 && <span className="meeting-prep-rsvp__item" data-tone="gray">○ {t('{{count}} pending', { count: prep.rsvpSummary.pending })}</span>}
                   </div>
                 </div>
 
@@ -914,14 +918,14 @@ export function MeetingDetailPanel({
                   <>
                     <div className="prep-packet__divider" />
                     <div className="prep-packet__row">
-                      <span className="prep-packet__label">Program Status</span>
+                      <span className="prep-packet__label">{t('Program Status')}</span>
                       <div className="meeting-prep-program">
                         <div className="meeting-prep-program__header">
                           <span className="meeting-prep-program__name">
                             [{prep.programContext.code}] {prep.programContext.name}
                           </span>
                           <span className="meeting-prep-program__badge" data-tone={HEALTH_STATUS_TONE[prep.programContext.healthStatus as 'RED' | 'YELLOW' | 'GREEN'] ?? 'gray'}>
-                            {prep.programContext.healthStatus === 'RED' ? '🔴 Critical' : prep.programContext.healthStatus === 'YELLOW' ? '🟡 At Risk' : '🟢 Healthy'}
+                            {prep.programContext.healthStatus === 'RED' ? `🔴 ${t('Critical')}` : prep.programContext.healthStatus === 'YELLOW' ? `🟡 ${t('At Risk')}` : `🟢 ${t('Healthy')}`}
                           </span>
                         </div>
                         <div className="meeting-prep-program__progress">
@@ -936,7 +940,7 @@ export function MeetingDetailPanel({
                     {/* Blockers */}
                     {prep.programContext.activeBlockers.length > 0 && (
                       <div className="prep-packet__row">
-                        <span className="prep-packet__label">Active Blockers</span>
+                        <span className="prep-packet__label">{t('Active Blockers')}</span>
                         <div className="meeting-prep-stack">
                           {prep.programContext.activeBlockers.map(b => (
                             <div key={b.id} className="meeting-prep-inline-row">
@@ -953,7 +957,7 @@ export function MeetingDetailPanel({
                     {/* KPIs */}
                     {prep.programContext.kpis.length > 0 && (
                       <div className="prep-packet__row">
-                        <span className="prep-packet__label">Related KPIs</span>
+                        <span className="prep-packet__label">{t('Related KPIs')}</span>
                         <div className="meeting-prep-stack">
                           {prep.programContext.kpis.map(k => {
                             const pct = k.actualValue && k.targetValue ? Math.round((k.actualValue / k.targetValue) * 100) : null
@@ -979,11 +983,11 @@ export function MeetingDetailPanel({
                   <>
                     <div className="prep-packet__divider" />
                     <div className="prep-packet__row">
-                      <span className="prep-packet__label">Previous Meeting</span>
+                      <span className="prep-packet__label">{t('Previous Meeting')}</span>
                       <div className="meeting-prep-continuity">
                         <span className="meeting-prep-continuity__headline">
-                          ⚠ {prep.continuity.unresolvedCount} of {prep.continuity.totalCount} action items unresolved
-                          {prep.continuity.completionRate !== null && ` (${prep.continuity.completionRate}% complete)`}
+                          ⚠ {t('{{unresolved}} of {{total}} action items unresolved', { unresolved: prep.continuity.unresolvedCount, total: prep.continuity.totalCount })}
+                          {prep.continuity.completionRate !== null && ` ${t('({{rate}}% complete)', { rate: prep.continuity.completionRate })}`}
                         </span>
                         <span className="meeting-prep-continuity__meta">
                           {prep.continuity.previousMeeting.title} · {formatDate(prep.continuity.previousMeeting.startAt)}
@@ -999,21 +1003,21 @@ export function MeetingDetailPanel({
         )}
 
         {loadingData && (
-          <p className="text-muted text-sm meeting-detail__loading-note">Loading data…</p>
+          <p className="text-muted text-sm meeting-detail__loading-note">{t('Loading data…')}</p>
         )}
 
         {/* ── Attendees ── */}
         <div className="meeting-detail__section">
           <div className="meeting-detail__section-header">
-            <span className="meeting-detail__section-title">Attendees</span>
+            <span className="meeting-detail__section-title">{t('Attendees')}</span>
             <span className="meeting-detail__section-count">{meeting.attendees.length}</span>
           </div>
           <div className="meeting-detail__attendees">
             {meeting.attendees.length === 0 && (
-              <p className="meeting-detail__empty-note">No attendees yet.</p>
+              <p className="meeting-detail__empty-note">{t('No attendees yet.')}</p>
             )}
             {meeting.attendees.map(a => {
-              const name = a.user?.name ?? `User ${a.userId}`
+              const name = a.user?.name ?? t('User {{id}}', { id: a.userId })
               const pStatus = getPresenceStatus(a.userId)
               const presenceDotPulse = pStatus === 'ONLINE'
               return (
@@ -1023,7 +1027,7 @@ export function MeetingDetailPanel({
                     <span
                       className={presenceDotPulse ? 'attendee-presence-dot attendee-presence-dot--pulse' : 'attendee-presence-dot'}
                       data-tone={PRESENCE_STATUS_TONE[pStatus]}
-                      title={pStatus === 'ONLINE' ? 'Online' : pStatus === 'AWAY' ? 'Away' : pStatus === 'DO_NOT_DISTURB' ? 'Do Not Disturb' : 'Offline'}
+                      title={pStatus === 'ONLINE' ? t('Online') : pStatus === 'AWAY' ? t('Away') : pStatus === 'DO_NOT_DISTURB' ? t('Do Not Disturb') : t('Offline')}
                     />
                   </div>
                   <div className="meeting-detail__attendee-info">
@@ -1045,14 +1049,14 @@ export function MeetingDetailPanel({
         {/* ── Notulen ── */}
         <div className="meeting-detail__section">
           <div className="meeting-detail__section-header">
-            <span className="meeting-detail__section-title">Minutes</span>
+            <span className="meeting-detail__section-title">{t('Minutes')}</span>
           </div>
           {isOrganizer && !isCancelled && !isPostponed ? (
             <div className="meeting-detail__editor">
               <textarea
                 className="form-input meeting-detail__textarea"
                 rows={5}
-                placeholder="Write meeting notes, discussion summary, key points…"
+                placeholder={t('Write meeting notes, discussion summary, key points…')}
                 value={notes}
                 maxLength={8000}
                 onChange={e => setNotes(e.target.value)}
@@ -1069,13 +1073,13 @@ export function MeetingDetailPanel({
                   onClick={saveNotes}
                   disabled={notesSaving}
                 >
-                  {notesSaving ? 'Saving…' : 'Save Minutes'}
+                  {notesSaving ? t('Saving…') : t('Save Minutes')}
                 </button>
               </div>
             </div>
           ) : (
             <p className={`text-sm meeting-detail__notes-readonly${notes ? '' : ' meeting-detail__notes-readonly--empty'}`}>
-              {notes || 'No minutes yet.'}
+              {notes || t('No minutes yet.')}
             </p>
           )}
         </div>
@@ -1083,12 +1087,12 @@ export function MeetingDetailPanel({
         {/* ── Keputusan ── */}
         <div className="meeting-detail__section">
           <div className="meeting-detail__section-header">
-            <span className="meeting-detail__section-title">Decisions</span>
+            <span className="meeting-detail__section-title">{t('Decisions')}</span>
             <span className="meeting-detail__section-count">{decisions.length}</span>
           </div>
 
           {!loadingData && decisions.length === 0 && (
-            <p className="meeting-detail__empty-note">No decisions recorded yet.</p>
+            <p className="meeting-detail__empty-note">{t('No decisions recorded yet.')}</p>
           )}
 
           {decisions.length > 0 && (
@@ -1100,7 +1104,7 @@ export function MeetingDetailPanel({
                     <p className="text-sm meeting-decision-item__text">{d.decision}</p>
                     {d.decidedByUser && (
                       <span className="text-xs text-muted">
-                        by {d.decidedByUser.name} · {formatDatetime(d.createdAt)}
+                        {t('by {{name}}', { name: d.decidedByUser.name })} · {formatDatetime(d.createdAt)}
                       </span>
                     )}
                   </div>
@@ -1109,7 +1113,7 @@ export function MeetingDetailPanel({
                       type="button"
                       className="meeting-detail__icon-btn"
                       onClick={() => void deleteDecision(d.id)}
-                      aria-label="Delete decision"
+                      aria-label={t('Delete decision')}
                     >
                       <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg>
                     </button>
@@ -1125,7 +1129,7 @@ export function MeetingDetailPanel({
                 <input
                   className="form-input meeting-decision-add__input"
                   type="text"
-                  placeholder="Add a decision that was made…"
+                  placeholder={t('Add a decision that was made…')}
                   value={newDecision}
                   maxLength={600}
                   onChange={e => setNewDecision(e.target.value)}
@@ -1141,9 +1145,9 @@ export function MeetingDetailPanel({
                 className="btn btn--sm btn--primary"
                 onClick={addDecision}
                 disabled={decisionSaving || newDecision.trim().length < 3 || newDecision.length >= 600}
-                title={newDecision.trim().length > 0 && newDecision.trim().length < 3 ? 'At least 3 characters' : undefined}
+                title={newDecision.trim().length > 0 && newDecision.trim().length < 3 ? t('At least 3 characters') : undefined}
               >
-                {decisionSaving ? '…' : '+ Add'}
+                {decisionSaving ? '…' : `+ ${t('Add')}`}
               </button>
             </div>
           )}
@@ -1175,10 +1179,10 @@ export function MeetingDetailPanel({
         {/* ── Action Items ── */}
         <div className="meeting-detail__section">
           <div className="meeting-detail__section-header">
-            <span className="meeting-detail__section-title">Action Items</span>
+            <span className="meeting-detail__section-title">{t('Action Items')}</span>
             {totalAI > 0 && (
               <span className="meeting-detail__section-count">
-                {completedAI}/{totalAI} completed
+                {t('{{completed}}/{{total}} completed', { completed: completedAI, total: totalAI })}
               </span>
             )}
           </div>
@@ -1187,8 +1191,7 @@ export function MeetingDetailPanel({
               revert. Mencegah user surprise saat unmark accidentally. */}
           {actionItems.some(ai => ai.linkedTaskId) && (
             <p className="meeting-detail__hint">
-              💡 Action items linked to a task will automatically close the task when marked complete.
-              Reopening an action item does NOT revert the task — open the task to reopen it manually if needed.
+              💡 {t('Action items linked to a task will automatically close the task when marked complete. Reopening an action item does NOT revert the task — open the task to reopen it manually if needed.')}
             </p>
           )}
 
@@ -1201,12 +1204,12 @@ export function MeetingDetailPanel({
           {totalAI > 0 && completedAI === totalAI && (
             <div className="meeting-action-progress__done">
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6"/><path d="m5 8 2 2 4-4"/></svg>
-              All action items completed!
+              {t('All action items completed!')}
             </div>
           )}
 
           {!loadingData && actionItems.length === 0 && (
-            <p className="meeting-detail__empty-note">No action items yet.</p>
+            <p className="meeting-detail__empty-note">{t('No action items yet.')}</p>
           )}
 
           {actionItems.length > 0 && (
@@ -1217,7 +1220,7 @@ export function MeetingDetailPanel({
                     className="meeting-action-item__check"
                     onClick={() => void toggleActionStatus(item)}
                     disabled={toggleLoading === item.id || (item.assignedTo?.id !== currentUser?.id && !isOrganizer)}
-                    title={item.status === 'COMPLETED' ? 'Mark as not completed' : 'Mark as completed'}
+                    title={item.status === 'COMPLETED' ? t('Mark as not completed') : t('Mark as completed')}
                   >
                     {item.status === 'COMPLETED'
                       ? <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6" /><path d="m5 8 2 2 4-4" /></svg>
@@ -1234,11 +1237,11 @@ export function MeetingDetailPanel({
                       )}
                       {item.dueDate && (
                         <span className={`text-xs${new Date(item.dueDate) < new Date() && item.status !== 'COMPLETED' ? ' meeting-action-item__meta-overdue' : ' text-muted'}`}>
-                          due {formatDate(item.dueDate)}
+                          {t('due {{date}}', { date: formatDate(item.dueDate) })}
                         </span>
                       )}
                       <span className="text-xs meeting-action-item__status" data-tone={ACTION_STATUS_TONE[item.status]}>
-                        {ACTION_STATUS_LABEL[item.status]}
+                        {actionStatusLabel()[item.status]}
                       </span>
                     </div>
                   </div>
@@ -1251,13 +1254,13 @@ export function MeetingDetailPanel({
                       <button
                         className="btn btn--xs btn--ghost meeting-action-item__wb-btn"
                         onClick={() => openPush(item)}
-                        title="Push to Workboard as a Task"
+                        title={t('Push to Workboard as a Task')}
                       >
                         → WB
                       </button>
                     )}
                     {isOrganizer && !isCancelled && !isPostponed && (
-                      <button type="button" className="meeting-detail__icon-btn" onClick={() => void deleteActionItem(item.id)} aria-label="Delete action item">
+                      <button type="button" className="meeting-detail__icon-btn" onClick={() => void deleteActionItem(item.id)} aria-label={t('Delete action item')}>
                         <svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg>
                       </button>
                     )}
@@ -1274,14 +1277,14 @@ export function MeetingDetailPanel({
                   className="meeting-add-item-btn"
                   onClick={() => setShowAIForm(true)}
                 >
-                  + Add action item
+                  {`+ ${t('Add action item')}`}
                 </button>
               ) : (
                 <div className="meeting-ai-form">
                   <input
                     className="form-input meeting-ai-form__title"
                     type="text"
-                    placeholder="Action item title… (min. 3 characters)"
+                    placeholder={t('Action item title… (min. 3 characters)')}
                     value={aiForm.title}
                     minLength={3}
                     maxLength={200}
@@ -1292,7 +1295,7 @@ export function MeetingDetailPanel({
                     <div className="meeting-ai-form__field">
                       <UserPicker
                         allowClear
-                        clearLabel="— Clear assignee —"
+                        clearLabel={t('— Clear assignee —')}
                         inputClassName="form-input meeting-ai-form__input"
                         onChange={id => setAiForm(f => ({ ...f, assignedToId: id ?? '' }))}
                         options={aiUsers.map(u => ({
@@ -1300,7 +1303,7 @@ export function MeetingDetailPanel({
                           name: u.name,
                           positionTitle: u.positionTitle ?? formatRoleLabel(u.roleType),
                         }))}
-                        placeholder="Assign to…"
+                        placeholder={t('Assign to…')}
                         value={typeof aiForm.assignedToId === 'number' ? aiForm.assignedToId : (aiForm.assignedToId ? Number(aiForm.assignedToId) : null)}
                       />
                     </div>
@@ -1314,9 +1317,9 @@ export function MeetingDetailPanel({
                   </div>
                   {aiError && <p className="text-sm schedule-feedback schedule-feedback--danger">{aiError}</p>}
                   <div className="meeting-ai-form__actions">
-                    <button className="btn btn--sm btn--ghost" onClick={() => { setShowAIForm(false); setAiError(null); setAiForm({ title: '', assignedToId: '', dueDate: '' }) }}>Cancel</button>
+                    <button className="btn btn--sm btn--ghost" onClick={() => { setShowAIForm(false); setAiError(null); setAiForm({ title: '', assignedToId: '', dueDate: '' }) }}>{t('Cancel')}</button>
                     <button className="btn btn--sm btn--primary" onClick={addActionItem} disabled={aiSaving}>
-                      {aiSaving ? '…' : 'Add'}
+                      {aiSaving ? '…' : t('Add')}
                     </button>
                   </div>
                 </div>
@@ -1336,10 +1339,10 @@ export function MeetingDetailPanel({
           <div aria-describedby={editMeetingDescId} aria-labelledby={editMeetingTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--lg meeting-modal-surface" ref={editMeetingDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Meeting Setup</span>
-                <h3 className="modal__title" id={editMeetingTitleId}>Edit Meeting</h3>
+                <span className="modal-kicker">{t('Meeting Setup')}</span>
+                <h3 className="modal__title" id={editMeetingTitleId}>{t('Edit Meeting')}</h3>
                 <p className="modal-subtitle" id={editMeetingDescId}>
-                  Update the agenda, time, and meeting context so attendees receive the most accurate information.
+                  {t('Update the agenda, time, and meeting context so attendees receive the most accurate information.')}
                 </p>
               </div>
               <button className="modal__close" type="button" onClick={() => setShowEdit(false)}>
@@ -1349,32 +1352,32 @@ export function MeetingDetailPanel({
             <div className="modal__body schedule-modal__body">
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Main Information</h4>
-                  <p>Tidy up the meeting title and type so attendees immediately understand the forum they are attending.</p>
+                  <h4>{t('Main Information')}</h4>
+                  <p>{t('Tidy up the meeting title and type so attendees immediately understand the forum they are attending.')}</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Title <span className="schedule-modal__required">*</span></label>
+                  <label className="modal-label">{t('Title')} <span className="schedule-modal__required">*</span></label>
                   <input className="form-input" type="text" value={editForm.title}
                     minLength={3} maxLength={120} disabled={editSaving}
                     onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} autoFocus />
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Meeting Type</label>
+                  <label className="modal-label">{t('Meeting Type')}</label>
                   <select className="form-input" value={editForm.meetingType} disabled={editSaving}
                     onChange={e => setEditForm(f => ({ ...f, meetingType: e.target.value as MeetingType }))}>
                     {(['RAPAT_DIREKSI','RAPAT_KOORDINASI','RAPAT_DIVISI','RAPAT_TIM','ONE_ON_ONE'] as MeetingType[]).map(t => (
-                      <option key={t} value={t}>{MEETING_TYPE_LABEL[t]}</option>
+                      <option key={t} value={t}>{meetingTypeLabel()[t]}</option>
                     ))}
                   </select>
                 </div>
               </section>
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Time & Location</h4>
-                  <p>Make sure the schedule, location, and additional notes are ready before changes are saved for attendees.</p>
+                  <h4>{t('Time & Location')}</h4>
+                  <p>{t('Make sure the schedule, location, and additional notes are ready before changes are saved for attendees.')}</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Date & Time <span className="schedule-modal__required">*</span></label>
+                  <label className="modal-label">{t('Date & Time')} <span className="schedule-modal__required">*</span></label>
                   <div className="schedule-modal__datetime-grid">
                     <input className="form-input" type="date" value={editForm.date} required disabled={editSaving}
                       onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} />
@@ -1383,16 +1386,16 @@ export function MeetingDetailPanel({
                     <input className="form-input" type="time" value={editForm.endTime} required disabled={editSaving}
                       onChange={e => setEditForm(f => ({ ...f, endTime: e.target.value }))} />
                   </div>
-                  <span className="text-xs text-muted schedule-modal__hint">Date · Start · End</span>
+                  <span className="text-xs text-muted schedule-modal__hint">{t('Date · Start · End')}</span>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Location</label>
-                  <input className="form-input" type="text" placeholder="Meeting room or link…" value={editForm.location}
+                  <label className="modal-label">{t('Location')}</label>
+                  <input className="form-input" type="text" placeholder={t('Meeting room or link…')} value={editForm.location}
                     maxLength={200} disabled={editSaving}
                     onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))} />
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Description</label>
+                  <label className="modal-label">{t('Description')}</label>
                   <textarea className="form-input schedule-modal__textarea" rows={2} value={editForm.description}
                     maxLength={400} disabled={editSaving}
                     onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} />
@@ -1401,9 +1404,9 @@ export function MeetingDetailPanel({
               {editError && <p className="text-sm schedule-feedback schedule-feedback--danger">{editError}</p>}
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => { setShowEdit(false); setEditError(null) }} disabled={editSaving}>Cancel</button>
+              <button className="btn btn--ghost" onClick={() => { setShowEdit(false); setEditError(null) }} disabled={editSaving}>{t('Cancel')}</button>
               <button className="btn btn--primary" onClick={submitEdit} disabled={editSaving}>
-                {editSaving ? 'Saving…' : 'Save Changes'}
+                {editSaving ? t('Saving…') : t('Save Changes')}
               </button>
             </div>
           </div>
@@ -1417,8 +1420,8 @@ export function MeetingDetailPanel({
           <div aria-describedby={deleteDecisionDescId} aria-labelledby={deleteDecisionTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--confirm meeting-modal-surface meeting-modal-surface--confirm" ref={deleteDecisionDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={deleteDecisionTitleId}>Delete Decision?</h3>
-                <p className="modal-subtitle" id={deleteDecisionDescId}>A deleted meeting decision cannot be restored and will be lost from the minutes trail.</p>
+                <h3 className="modal__title" id={deleteDecisionTitleId}>{t('Delete Decision?')}</h3>
+                <p className="modal-subtitle" id={deleteDecisionDescId}>{t('A deleted meeting decision cannot be restored and will be lost from the minutes trail.')}</p>
               </div>
               <button className="modal__close" type="button" onClick={() => setConfirmDeleteDecision(null)}>
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
@@ -1426,13 +1429,13 @@ export function MeetingDetailPanel({
             </div>
             <div className="modal__body">
               <div className="modal-helper-note modal-helper-note--danger">
-                This decision will be permanently deleted and cannot be recovered.
+                {t('This decision will be permanently deleted and cannot be recovered.')}
               </div>
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => setConfirmDeleteDecision(null)} disabled={decisionDeleteSaving}>Cancel</button>
+              <button className="btn btn--ghost" onClick={() => setConfirmDeleteDecision(null)} disabled={decisionDeleteSaving}>{t('Cancel')}</button>
               <button className="btn btn--danger" onClick={() => void doDeleteDecision()} disabled={decisionDeleteSaving}>
-                {decisionDeleteSaving ? 'Deleting…' : 'Delete'}
+                {decisionDeleteSaving ? t('Deleting…') : t('Delete')}
               </button>
             </div>
           </div>
@@ -1446,8 +1449,8 @@ export function MeetingDetailPanel({
           <div aria-describedby={deleteActionItemDescId} aria-labelledby={deleteActionItemTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--confirm meeting-modal-surface meeting-modal-surface--confirm" ref={deleteActionItemDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <h3 className="modal__title" id={deleteActionItemTitleId}>Delete Action Item?</h3>
-                <p className="modal-subtitle" id={deleteActionItemDescId}>Deleting an action item breaks the execution trail originating from this meeting forum.</p>
+                <h3 className="modal__title" id={deleteActionItemTitleId}>{t('Delete Action Item?')}</h3>
+                <p className="modal-subtitle" id={deleteActionItemDescId}>{t('Deleting an action item breaks the execution trail originating from this meeting forum.')}</p>
               </div>
               <button className="modal__close" type="button" onClick={() => setConfirmDeleteActionItem(null)}>
                 <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="12"><path d="m1 1 10 10M11 1 1 11" /></svg>
@@ -1455,13 +1458,13 @@ export function MeetingDetailPanel({
             </div>
             <div className="modal__body">
               <div className="modal-helper-note modal-helper-note--danger">
-                This action item will be permanently deleted and cannot be recovered.
+                {t('This action item will be permanently deleted and cannot be recovered.')}
               </div>
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => setConfirmDeleteActionItem(null)} disabled={actionItemDeleteSaving}>Cancel</button>
+              <button className="btn btn--ghost" onClick={() => setConfirmDeleteActionItem(null)} disabled={actionItemDeleteSaving}>{t('Cancel')}</button>
               <button className="btn btn--danger" onClick={() => void doDeleteActionItem()} disabled={actionItemDeleteSaving}>
-                {actionItemDeleteSaving ? 'Deleting…' : 'Delete'}
+                {actionItemDeleteSaving ? t('Deleting…') : t('Delete')}
               </button>
             </div>
           </div>
@@ -1475,10 +1478,10 @@ export function MeetingDetailPanel({
           <div aria-describedby={pushTaskDescId} aria-labelledby={pushTaskTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--md meeting-modal-surface" ref={pushTaskDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Meeting to Workboard</span>
-                <h3 className="modal__title" id={pushTaskTitleId}>Push to Workboard</h3>
+                <span className="modal-kicker">{t('Meeting to Workboard')}</span>
+                <h3 className="modal__title" id={pushTaskTitleId}>{t('Push to Workboard')}</h3>
                 <p className="modal-subtitle" id={pushTaskDescId}>
-                  Turn a meeting action item into a task whose progress, owner, and deadline can be tracked.
+                  {t('Turn a meeting action item into a task whose progress, owner, and deadline can be tracked.')}
                 </p>
               </div>
               <button className="modal__close" type="button" onClick={() => setPushItem(null)}>
@@ -1488,27 +1491,27 @@ export function MeetingDetailPanel({
             <div className="modal__body schedule-modal__body">
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Source Action Item</h4>
-                  <p>The item below will be used as the basis for a new task in the workboard.</p>
+                  <h4>{t('Source Action Item')}</h4>
+                  <p>{t('The item below will be used as the basis for a new task in the workboard.')}</p>
                 </div>
                 <div className="meeting-push-preview">
-                  <span className="meeting-push-preview__label">Action item</span>
+                  <span className="meeting-push-preview__label">{t('Action item')}</span>
                   <span className="meeting-push-preview__title">{pushItem.title}</span>
                 </div>
               </section>
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Execution Target</h4>
-                  <p>Choose the destination workstream and add a target completion date if you want a more measurable follow-up rhythm.</p>
+                  <h4>{t('Execution Target')}</h4>
+                  <p>{t('Choose the destination workstream and add a target completion date if you want a more measurable follow-up rhythm.')}</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Workstream <span className="schedule-modal__required">*</span></label>
+                  <label className="modal-label">{t('Workstream')} <span className="schedule-modal__required">*</span></label>
                   {workstreams.length === 0 ? (
-                    <p className="text-sm text-muted">Loading…</p>
+                    <p className="text-sm text-muted">{t('Loading…')}</p>
                   ) : (
                     <select className="form-input" value={pushForm.workstreamId}
                       onChange={e => setPushForm(f => ({ ...f, workstreamId: e.target.value }))}>
-                      <option value="">— Select a workstream —</option>
+                      <option value="">{t('— Select a workstream —')}</option>
                       {workstreams.map(i => (
                         <option key={i.id} value={i.id}>[{i.code}] {i.name}</option>
                       ))}
@@ -1516,7 +1519,7 @@ export function MeetingDetailPanel({
                   )}
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Target Completion</label>
+                  <label className="modal-label">{t('Target Completion')}</label>
                   <input className="form-input" type="date" value={pushForm.targetCompletion}
                     onChange={e => setPushForm(f => ({ ...f, targetCompletion: e.target.value }))} />
                 </div>
@@ -1524,9 +1527,9 @@ export function MeetingDetailPanel({
               {pushError && <p className="text-sm schedule-feedback schedule-feedback--danger">{pushError}</p>}
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" onClick={() => setPushItem(null)} disabled={pushSaving}>Cancel</button>
+              <button className="btn btn--ghost" onClick={() => setPushItem(null)} disabled={pushSaving}>{t('Cancel')}</button>
               <button className="btn btn--primary" onClick={submitPush} disabled={pushSaving}>
-                {pushSaving ? 'Creating…' : '→ Create Task'}
+                {pushSaving ? t('Creating…') : `→ ${t('Create Task')}`}
               </button>
             </div>
           </div>
@@ -1540,10 +1543,10 @@ export function MeetingDetailPanel({
           <div aria-describedby={postponeMeetingDescId} aria-labelledby={postponeMeetingTitleId} aria-modal="true" className="modal schedule-modal schedule-modal--md meeting-modal-surface" ref={postponeMeetingDialogRef} role="dialog" tabIndex={-1} onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div className="modal-headcopy">
-                <span className="modal-kicker">Meeting Status</span>
-                <h3 className="modal__title" id={postponeMeetingTitleId}>Postpone Meeting</h3>
+                <span className="modal-kicker">{t('Meeting Status')}</span>
+                <h3 className="modal__title" id={postponeMeetingTitleId}>{t('Postpone Meeting')}</h3>
                 <p className="modal-subtitle" id={postponeMeetingDescId}>
-                  Postpone the meeting with a clear reason so attendees understand the context and the organizer can reschedule easily.
+                  {t('Postpone the meeting with a clear reason so attendees understand the context and the organizer can reschedule easily.')}
                 </p>
               </div>
               <button className="modal__close" type="button" onClick={() => { setShowPostpone(false); setPostponeReason(''); setPostponeError(null) }}>
@@ -1553,24 +1556,24 @@ export function MeetingDetailPanel({
             <div className="modal__body schedule-modal__body">
               <section className="modal-section">
                 <div className="modal-section__intro">
-                  <h4>Postponement Impact</h4>
-                  <p>The meeting status will become <strong>Postponed</strong>. The organizer can reschedule at any time.</p>
+                  <h4>{t('Postponement Impact')}</h4>
+                  <p>{t('The meeting status will become')} <strong>{t('Postponed')}</strong>{t('. The organizer can reschedule at any time.')}</p>
                 </div>
                 <div className="modal-helper-note">
-                  Use a sufficiently informative reason so attendees understand whether the meeting needs to be re-prepared or is simply being moved.
+                  {t('Use a sufficiently informative reason so attendees understand whether the meeting needs to be re-prepared or is simply being moved.')}
                 </div>
               </section>
               <section className="modal-section modal-section--soft">
                 <div className="modal-section__intro">
-                  <h4>Postponement Reason</h4>
-                  <p>This note helps preserve context when the meeting is rescheduled later.</p>
+                  <h4>{t('Postponement Reason')}</h4>
+                  <p>{t('This note helps preserve context when the meeting is rescheduled later.')}</p>
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label">Postponement Reason <span className="schedule-modal__required">*</span></label>
+                  <label className="modal-label">{t('Postponement Reason')} <span className="schedule-modal__required">*</span></label>
                   <textarea
                     className="form-input schedule-modal__textarea"
                     rows={3}
-                    placeholder="e.g. Director unavailable, will be rescheduled"
+                    placeholder={t('e.g. Director unavailable, will be rescheduled')}
                     value={postponeReason}
                     maxLength={300}
                     onChange={e => setPostponeReason(e.target.value)}
@@ -1584,9 +1587,9 @@ export function MeetingDetailPanel({
               {postponeError && <p className="text-sm schedule-feedback schedule-feedback--danger">{postponeError}</p>}
             </div>
             <div className="modal__footer">
-              <button className="btn btn--ghost" type="button" onClick={() => { setShowPostpone(false); setPostponeReason(''); setPostponeError(null) }} disabled={postponeSaving}>Cancel</button>
+              <button className="btn btn--ghost" type="button" onClick={() => { setShowPostpone(false); setPostponeReason(''); setPostponeError(null) }} disabled={postponeSaving}>{t('Cancel')}</button>
               <button className="btn btn--primary meeting-btn--warn" type="button" onClick={postponeMeeting} disabled={postponeSaving || !postponeReason.trim()}>
-                {postponeSaving ? 'Saving…' : '⏸ Confirm Postpone'}
+                {postponeSaving ? t('Saving…') : `⏸ ${t('Confirm Postpone')}`}
               </button>
             </div>
           </div>
