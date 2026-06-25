@@ -1882,6 +1882,8 @@
   "No active tasks": "Tidak ada tugas aktif",
   "No activities yet. Add tasks to a workstream to populate the timeline.": "Belum ada aktivitas. Tambahkan tugas ke alur kerja untuk mengisi linimasa.",
   "No activity data for this period yet.": "Belum ada data aktivitas untuk periode ini.",
+  "You don't have access to user activity.": "Anda tidak memiliki akses ke data aktivitas pengguna.",
+  "This leaderboard is limited to administrators.": "Papan peringkat ini hanya untuk administrator.",
   "No activity recorded yet.": "Belum ada aktivitas tercatat.",
   "No APMS KPI": "Tanpa KPI APMS",
   "No APMS reference for this program — define an internal target later.": "Tidak ada referensi APMS untuk program ini — tetapkan target internal kemudian.",

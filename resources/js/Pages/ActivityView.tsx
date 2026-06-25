@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Avatar, formatRelativeTime, effectivePresenceSlug } from '../components/ui'
-import { api } from '../lib/api'
+import { api, ApiRequestError } from '../lib/api'
 import { useWorkspace } from '../hooks/useWorkspace'
 import i18n from '../lib/i18n'
 
@@ -284,6 +284,9 @@ export function ActivityView() {
   const [loading, setLoading]           = useState(true)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [lastFetched, setLastFetched]   = useState<Date | null>(null)
+  // Bedakan "tidak ada akses" (403) dari "tidak ada data". Tanpa ini, 403 jatuh
+  // ke empty-state "No activity data" yang menyesatkan (seakan data hilang).
+  const [forbidden, setForbidden]       = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const rangeRef = useRef(range)
@@ -302,9 +305,18 @@ export function ActivityView() {
     api.get<{ data: { users: ActivityUser[] } }>(`/analytics/user-activity?range=${r}`)
       .then(res => {
         setUsers(res.data.users)
+        setForbidden(false)
         setLastFetched(new Date())
       })
-      .catch((err) => console.error('[Atlas] Silent failure in ActivityView.tsx:', err))
+      .catch((err) => {
+        if (err?.name === 'AbortError') return
+        if (err instanceof ApiRequestError && err.status === 403) {
+          setForbidden(true)
+          setUsers([])
+          return
+        }
+        console.error('[Atlas] Silent failure in ActivityView.tsx:', err)
+      })
       .finally(() => { if (!silent) setLoading(false) })
   }, [])
 
@@ -411,7 +423,18 @@ export function ActivityView() {
             </div>
           )}
 
-          {!loading && users.length === 0 && (
+          {!loading && forbidden && (
+            <div className="activity-empty">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                <rect x="5" y="11" width="14" height="9" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" strokeLinecap="round" />
+              </svg>
+              <p>{t("You don't have access to user activity.")}</p>
+              <span>{t('This leaderboard is limited to administrators.')}</span>
+            </div>
+          )}
+
+          {!loading && !forbidden && users.length === 0 && (
             <div className="activity-empty">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
                 <circle cx="12" cy="12" r="10" />

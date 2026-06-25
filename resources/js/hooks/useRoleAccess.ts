@@ -80,5 +80,12 @@ export function useRoleAccess() {
 
     isOfficer: is('OFFICER'),
     isBOD: is('BOD'),
+
+    /**
+     * Admin/superadmin — cermin `RolePolicy::canManageUsers` di backend
+     * (isAdminOrAbove). Dipakai untuk gating fitur "pengelola user", mis.
+     * leaderboard activity (data surveilans jam-aktif semua user).
+     */
+    isAdmin: isAnyOf('SUPERADMIN', 'ADMIN'),
   }
 }

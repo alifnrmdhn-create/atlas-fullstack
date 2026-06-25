@@ -2,6 +2,7 @@ import { createPortal } from 'react-dom'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useEscKey } from '../hooks/useEscKey'
 import { useWorkspace } from '../hooks/useWorkspace'
+import { useRoleAccess } from '../hooks/useRoleAccess'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { PresenceRow, SectionState, Avatar, resolveEmoji, formatRelativeTime, effectivePresenceSlug } from '../components/ui'
 import { api } from '../lib/api'
@@ -340,6 +341,12 @@ export function PresenceView() {
   const navigate  = useInertiaNavigate()
   const searchRef = useRef<HTMLInputElement>(null)
 
+  // Tab Activity = leaderboard jam-aktif SEMUA user (data surveilans). Endpoint
+  // /analytics/user-activity di-gate canManageUsers (admin/superadmin), jadi
+  // non-admin selalu kena 403. Sembunyikan tab-nya agar mereka tak melihat tab
+  // yang pasti gagal — mirror gate backend lewat isAdmin.
+  const { isAdmin } = useRoleAccess()
+
   // ── Tab ───────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<PresenceTab>('kehadiran')
 
@@ -606,19 +613,21 @@ export function PresenceView() {
           </svg>
           {t('Presence')}
         </button>
-        <button
-          className={`presence-tab-btn${activeTab === 'aktivitas' ? ' is-active' : ''}`}
-          onClick={() => setActiveTab('aktivitas')}
-          type="button"
-        >
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-            <path d="M2 12l3-4 3 2 3-5 3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          {t('Activity')}
-        </button>
+        {isAdmin && (
+          <button
+            className={`presence-tab-btn${activeTab === 'aktivitas' ? ' is-active' : ''}`}
+            onClick={() => setActiveTab('aktivitas')}
+            type="button"
+          >
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <path d="M2 12l3-4 3 2 3-5 3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            {t('Activity')}
+          </button>
+        )}
       </div>
 
-      {activeTab === 'aktivitas' && <ActivityView />}
+      {isAdmin && activeTab === 'aktivitas' && <ActivityView />}
 
       {activeTab === 'kehadiran' && <>
 
