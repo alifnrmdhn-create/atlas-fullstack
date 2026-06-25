@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
+import { workStatusLabel, severityLabel } from '../lib/status'
 import { CollapsibleSection } from './ui'
 import type { MeetingType } from '../types'
 
@@ -249,7 +250,7 @@ function ContinuitySection({ continuity }: { continuity: Continuity }) {
         <ul className="pica-continuity__list">
           {continuity.unresolvedItems.map(item => (
             <li key={item.id} className="pica-continuity__item">
-              <span className="pica-continuity__item-status">{item.status}</span>
+              <span className="pica-continuity__item-status">{workStatusLabel(item.status)}</span>
               <span className="pica-continuity__item-title">{item.title}</span>
               {item.assignedTo && <span className="pica-continuity__item-assignee">{item.assignedTo.name}</span>}
             </li>
@@ -353,7 +354,7 @@ function PicaRow({
       {/* Problem */}
       <div className="pica-cell pica-cell--problem">
         <div className="pica-cell__head">
-          <span className="pica-cell__sev" style={{ background: sevColor }}>{blocker.severity}</span>
+          <span className="pica-cell__sev" style={{ background: sevColor }}>{severityLabel(blocker.severity)}</span>
           <span className="pica-cell__code">{blocker.code}</span>
         </div>
         <div className="pica-cell__title">{blocker.title}</div>

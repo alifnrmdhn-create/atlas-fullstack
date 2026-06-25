@@ -1,0 +1,7 @@
+{
+  "_comment": "Utang render status mentah yang di-grandfather, per file. Turunkan saat migrasi sampai 0. Regenerate: node scripts/audit-status-labels.mjs --update-baseline",
+  "_total": 6,
+  "counts": {
+    "resources/js/Pages/InboxView.tsx": 6
+  }
+}

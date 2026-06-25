@@ -73,7 +73,7 @@ function priorityLabels(): Record<string, string> {
 function statusLabels(): Record<string, string> {
   return {
     BACKLOG: i18n.t('Backlog'), READY: i18n.t('Ready'), IN_PROGRESS: i18n.t('In Progress'),
-    IN_REVIEW: i18n.t('Review'), BLOCKED: i18n.t('Blocked'), COMPLETED: i18n.t('Completed'),
+    IN_REVIEW: i18n.t('In Review'), BLOCKED: i18n.t('Blocked'), COMPLETED: i18n.t('Completed'),
   }
 }
 

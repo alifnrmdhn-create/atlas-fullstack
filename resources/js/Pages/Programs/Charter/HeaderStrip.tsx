@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import i18n from '../../../lib/i18n'
+import { charterHealthLabel } from '../../../lib/status'
 import type { CharterProgram, CharterStatus, CharterKpi, CharterHealth } from '../../../types/charter'
 
 type Props = {
@@ -12,13 +12,7 @@ type Props = {
 }
 
 function healthLabel(health: CharterHealth): string {
-  const labels: Record<CharterHealth, string> = {
-    ON_TRACK:  i18n.t('On Track'),
-    AT_RISK:   i18n.t('At Risk'),
-    TERLAMBAT: i18n.t('Delayed'),
-    COMPLETED: i18n.t('Completed'),
-  }
-  return labels[health]
+  return charterHealthLabel(health)
 }
 
 /** Format "YYYY-MM" → "May 2026". */

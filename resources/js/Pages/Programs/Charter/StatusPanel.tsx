@@ -1,20 +1,13 @@
 import { useTranslation } from 'react-i18next'
-import i18n from '../../../lib/i18n'
+import { charterHealthLabel } from '../../../lib/status'
 import type { CharterStatus, CharterHealth } from '../../../types/charter'
 
 type Props = {
   status: CharterStatus
 }
 
-const healthLabel = (health: CharterHealth): string => {
-  const LABELS: Record<CharterHealth, string> = {
-    ON_TRACK:  i18n.t('On Track'),
-    AT_RISK:   i18n.t('At Risk'),
-    TERLAMBAT: i18n.t('Delayed'),
-    COMPLETED: i18n.t('Completed'),
-  }
-  return LABELS[health]
-}
+// Delegasi ke sumber tunggal lib/status.ts (charterHealthLabel) — vocab identik.
+const healthLabel = (health: CharterHealth): string => charterHealthLabel(health)
 
 /**
  * Side-rail status block — big % achievement number + health label

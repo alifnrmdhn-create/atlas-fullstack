@@ -7,6 +7,7 @@ import { usePage, router } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { getProgramDisplayStatus } from '../lib/programStatus'
+import { priorityLabel, programStatusLabel } from '../lib/status'
 import {
   Avatar,
   HealthPill,
@@ -1049,12 +1050,12 @@ export function ProgramsView() {
   let laneGroups: Group[]
   if (laneGrouping === 'status') {
     laneGroups = STATUS_ORDER.map(s => ({
-      key: s, label: formatStatusLabel(s), tone: s.toLowerCase(),
+      key: s, label: programStatusLabel(s), tone: s.toLowerCase(),
       items: filteredLane.filter(p => p.status === s).sort(byUrgency),
     })).filter(g => g.items.length > 0)
   } else if (laneGrouping === 'priority') {
     laneGroups = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(pri => ({
-      key: pri, label: pri,
+      key: pri, label: priorityLabel(pri),
       tone: pri.toLowerCase(),
       items: filteredLane.filter(p => p.priority === pri).sort(byUrgency),
     })).filter(g => g.items.length > 0)
@@ -1525,7 +1526,7 @@ export function ProgramsView() {
                     return (
                       <div className="kanban-col" key={status}>
                         <div className="kanban-col__header">
-                          <span className="kanban-col__label">{formatStatusLabel(status)}</span>
+                          <span className="kanban-col__label">{programStatusLabel(status)}</span>
                           <span className="kanban-col__count">{items.length}</span>
                         </div>
                         <div className="kanban-col__body">

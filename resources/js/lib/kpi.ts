@@ -1,4 +1,5 @@
 import type { HealthStatus } from '../types'
+import i18n from './i18n'
 
 type KpiTone = 'on-track' | 'at-risk' | 'off-track' | 'muted'
 
@@ -60,10 +61,10 @@ export function getKpiTone(status?: string | null): KpiTone {
 export function getKpiStatusLabel(status?: string | null) {
   const normalized = status?.toUpperCase()
 
-  if (normalized === 'GREEN') return 'On Track'
-  if (normalized === 'YELLOW') return 'At Risk'
-  if (normalized === 'RED') return 'Off Track'
-  return 'Not Measured'
+  if (normalized === 'GREEN') return i18n.t('On Track')
+  if (normalized === 'YELLOW') return i18n.t('At Risk')
+  if (normalized === 'RED') return i18n.t('Off Track')
+  return i18n.t('Not Measured')
 }
 
 export function getKpiFillPercent(actualValue?: number | null, targetValue?: number | null) {

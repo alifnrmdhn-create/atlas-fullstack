@@ -19,6 +19,7 @@ import { TaskDetailModal } from '../components/TaskDetailModal'
 import { ConditionReportModal } from '../components/ConditionReportModal'
 import type { HealthAtTime } from '../components/ConditionReportModal'
 import { getProgramHealthDisplay } from '../lib/programStatus'
+import { priorityLabel, severityLabel } from '../lib/status'
 import { PageHeader, Button } from '../design-system'
 import { Plus } from 'lucide-react'
 import './WorkboardView.css'
@@ -184,6 +185,69 @@ function BoardCard({
   )
 }
 
+type ScheduleTone = 'red' | 'amber' | 'green' | 'grey' | 'done'
+// Klasifikasi JADWAL/urgensi sebuah task → { rank utk sort, label pill, tone }.
+// Inilah "wadah" yang dulu hilang: Overdue/Delayed/At Risk punya tempat & warna,
+// bukan terkubur di lane "In Progress". rank kecil = lebih genting (tampil di atas).
+function scheduleOf(
+  item: Task,
+  normalizeHealthStatus: (h: string) => 'GREEN' | 'YELLOW' | 'RED',
+): { rank: number; label: string; tone: ScheduleTone } {
+  if (item.status === 'COMPLETED') return { rank: 5, label: '', tone: 'done' }
+  if (taskIsOverdue(item)) return { rank: 0, label: i18n.t('Overdue'), tone: 'red' }
+  if (item.isBlocked || item.status === 'BLOCKED') return { rank: 1, label: i18n.t('Blocked'), tone: 'red' }
+  const h = normalizeHealthStatus(item.healthStatus ?? 'GREEN')
+  if (h === 'RED') return { rank: 1, label: i18n.t('Delayed'), tone: 'red' }
+  if (h === 'YELLOW') return { rank: 2, label: i18n.t('At Risk'), tone: 'amber' }
+  if (item.status === 'BACKLOG' || item.status === 'READY') return { rank: 4, label: i18n.t('Not Started'), tone: 'grey' }
+  return { rank: 3, label: i18n.t('On Track'), tone: 'green' }
+}
+
+/** Baris task di bawah section program (By Program). Bukan kartu — flat,
+ *  ber-indentasi di bawah header program → keanggotaan otomatis jelas. Rail
+ *  kiri + pill = sinyal JADWAL (urgensi). */
+function ProgramTaskRow({
+  item, onClick, normalizeHealthStatus, showWorkstream,
+}: {
+  item: Task
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
+  normalizeHealthStatus: (h: string) => 'GREEN' | 'YELLOW' | 'RED'
+  showWorkstream: boolean
+}) {
+  const sched = scheduleOf(item, normalizeHealthStatus)
+  const health = normalizeHealthStatus(item.healthStatus ?? 'GREEN')
+  const healthClass = health === 'GREEN' ? 'on-track' : health === 'YELLOW' ? 'at-risk' : 'off-track'
+  const assigneeName = item.assignee?.name
+  const initials = assigneeName
+    ? assigneeName.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+    : ''
+  const iniName = showWorkstream ? item.workstream?.name : undefined
+  return (
+    <button type="button" data-task-card="true" className={`wb-row wb-row--${sched.tone}`} onClick={onClick}>
+      <span className="wb-row__rail" aria-hidden="true" />
+      <div className="wb-row__body">
+        <div className="wb-row__title">{item.title}</div>
+        <div className="wb-row__meta">
+          <span className="wb-row__code">{item.code}</span>
+          {iniName && <span className="wb-row__ws">{iniName}</span>}
+        </div>
+      </div>
+      {sched.tone !== 'green' && sched.tone !== 'done' && (
+        <span className={`wb-row__sched wb-row__sched--${sched.tone}`}>{sched.label}</span>
+      )}
+      <div className="wb-row__progress">
+        <div className="progress-bar-track wb-row__progress-track">
+          <div className={`progress-bar-fill ${healthClass}`} style={{ width: `${item.percentComplete}%` }} />
+        </div>
+        <span className="wb-row__pct">{item.percentComplete}%</span>
+      </div>
+      {assigneeName && (
+        <span className="wb-row__avatar" title={assigneeName} aria-label={assigneeName}>{initials}</span>
+      )}
+    </button>
+  )
+}
+
 export function WorkboardView() {
   const { t } = useTranslation()
   const LANES = getLanes()
@@ -294,6 +358,10 @@ export function WorkboardView() {
   // task lepas. Buka langsung ke konteks program. Board/List/Blockers tetap
   // tersedia sebagai mode alternatif.
   const [boardMode, setBoardMode] = useState<BoardMode>('by-program')
+
+  // Attention Queue di By Program: strip ringkas, default terlipat — hindari
+  // task yang sama tampil dua kali (di queue + di dalam program).
+  const [attentionExpanded, setAttentionExpanded] = useState(false)
 
   // One-door condition reporting (modal target) + session memory of what the
   // user just reported per program (immediate badge feedback, no full reload).
@@ -632,7 +700,7 @@ export function WorkboardView() {
               </div>
             </div>
             <div className="wi-list-row__right">
-              <span className={`priority-badge priority-badge--${item.priority.toLowerCase()}`}>{item.priority}</span>
+              <span className={`priority-badge priority-badge--${item.priority.toLowerCase()}`}>{priorityLabel(item.priority)}</span>
               {item.isBlocked ? <span className="severity-badge severity-badge--high">{t('BLOCKED')}</span> : null}
               <HealthPill status={normalizeHealthStatus(item.healthStatus)} />
             </div>
@@ -903,7 +971,40 @@ export function WorkboardView() {
           {boardReady && boardMode === 'by-program' && programSections.length === 0 ? (
             <SectionState icon="✨" title={t('No programs match the current filter')} text={t('Adjust the program / workstream filter, or toggle to All tasks.')} />
           ) : null}
-          {boardReady && boardMode === 'by-program' && programSections.length > 0 && attentionPanel}
+          {boardReady && boardMode === 'by-program' && criticalItems.length > 0 && (
+            <div className={`wb-attention-strip${attentionExpanded ? ' is-open' : ''}`}>
+              <button
+                type="button"
+                className="wb-attention-strip__toggle"
+                onClick={() => setAttentionExpanded(v => !v)}
+                aria-expanded={attentionExpanded}
+              >
+                <span className="wb-attention-strip__caret" aria-hidden="true">{attentionExpanded ? '▾' : '▸'}</span>
+                <span className="wb-attention-strip__icon" aria-hidden="true">⚠</span>
+                <strong>{t('{{count}} need attention', { count: criticalItems.length })}</strong>
+                {!attentionExpanded && <span className="wb-attention-strip__hint">{t('across all programs')}</span>}
+              </button>
+              {attentionExpanded && (
+                <div className="wi-list wb-attention-strip__list">
+                  {criticalItems.map((item) => (
+                    <button className="wi-list-row" key={item.id} onClick={(e) => openTaskModal(item.id, e)}>
+                      <div className="wi-list-row__left">
+                        <span className="code-badge">{item.code}</span>
+                        <div>
+                          <strong>{item.title}</strong>
+                          <span className="text-muted text-sm">{item.workstream?.program?.code ?? ''}</span>
+                        </div>
+                      </div>
+                      <div className="wi-list-row__right">
+                        {item.isBlocked ? <span className="severity-badge severity-badge--high">{t('BLOCKED')}</span> : null}
+                        <HealthPill status={normalizeHealthStatus(item.healthStatus)} />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {boardReady && boardMode === 'by-program' && programSections.length > 0 && (
             <div className="wb-prog-list">
               {programSections.map(({ program, pid, items }) => {
@@ -915,16 +1016,13 @@ export function WorkboardView() {
                 const doneExpanded = expandedDoneLanes.has(pid)
                 // Nama workstream cuma berguna bila program punya >1 workstream.
                 const multiWorkstream = new Set(items.map(i => i.workstream?.id).filter(Boolean)).size > 1
-                const lanes = LANES.map(lane => ({ lane, items: items.filter(i => lane.statuses.includes(i.status)) }))
-                // Lebar kolom: lane kosong → ramping; lane Completed terlipat →
-                // ramping; sisanya (In Progress) ambil ruang terbesar.
-                const laneCols = lanes
-                  .map(l => {
-                    if (l.items.length === 0) return 'minmax(96px, 0.34fr)'
-                    if (l.lane.key === 'done' && !doneExpanded) return 'minmax(132px, 0.42fr)'
-                    return 'minmax(0, 1fr)'
-                  })
-                  .join(' ')
+                // Urut baris per urgensi JADWAL (the "wadah": Overdue/Blocked/Delayed
+                // → At Risk → On Track → Not Started). Completed dipisah ke bawah &
+                // dilipat default (arsip, bukan aksi harian).
+                const activeItems = items
+                  .filter(i => i.status !== 'COMPLETED')
+                  .sort((a, b) => scheduleOf(a, normalizeHealthStatus).rank - scheduleOf(b, normalizeHealthStatus).rank)
+                const doneItems = items.filter(i => i.status === 'COMPLETED')
                 return (
                   <section className={`wb-prog${collapsed ? ' wb-prog--collapsed' : ''}`} key={pid}>
                     <header className="wb-prog__head">
@@ -974,49 +1072,41 @@ export function WorkboardView() {
                       </div>
                     </header>
                     {!collapsed && (
-                    <div className="wb-prog__lanes" style={{ '--wb-lane-cols': laneCols } as React.CSSProperties}>
-                      {lanes.map(({ lane, items: laneItems }) => {
-                        const isDone = lane.key === 'done'
-                        const isEmpty = laneItems.length === 0
-                        const foldDone = isDone && !doneExpanded && laneItems.length > 0
-                        return (
-                          <div
-                            className={`wb-prog__lane${isEmpty ? ' wb-prog__lane--empty' : ''}${foldDone ? ' wb-prog__lane--folded' : ''}`}
-                            key={lane.key}
+                    <div className="wb-prog__rows">
+                      {activeItems.length === 0 && doneItems.length === 0 && (
+                        <div className="wb-prog__empty">{t('No tasks in this program yet.')}</div>
+                      )}
+                      {activeItems.map(item => (
+                        <ProgramTaskRow
+                          key={item.id}
+                          item={item}
+                          onClick={(e) => openTaskModal(item.id, e)}
+                          normalizeHealthStatus={normalizeHealthStatus}
+                          showWorkstream={multiWorkstream}
+                        />
+                      ))}
+                      {doneItems.length > 0 && (
+                        <>
+                          <button
+                            type="button"
+                            className="wb-prog__done-toggle"
+                            onClick={() => toggleDoneLane(pid)}
+                            aria-expanded={doneExpanded}
                           >
-                            {isDone && laneItems.length > 0 ? (
-                              <button
-                                type="button"
-                                className="wb-prog__lane-head wb-prog__lane-head--toggle"
-                                onClick={() => toggleDoneLane(pid)}
-                                aria-expanded={doneExpanded}
-                                title={doneExpanded ? t('Collapse completed') : t('Show completed')}
-                              >
-                                <span className="wb-prog__lane-caret" aria-hidden="true">{doneExpanded ? '▾' : '▸'}</span>
-                                <span>{lane.label}</span>
-                                <span className="section-badge">{laneItems.length}</span>
-                              </button>
-                            ) : (
-                              <div className="wb-prog__lane-head">
-                                <span>{lane.label}</span>
-                                <span className="section-badge">{laneItems.length}</span>
-                              </div>
-                            )}
-                            {foldDone ? (
-                              <button type="button" className="wb-prog__lane-fold" onClick={() => toggleDoneLane(pid)}>
-                                {t('Show {{count}} completed', { count: laneItems.length })}
-                              </button>
-                            ) : (
-                              <div className="wb-prog__lane-body">
-                                {laneItems.map(item => (
-                                  <BoardCard key={item.id} item={item} onClick={(e) => openTaskModal(item.id, e)} normalizeHealthStatus={normalizeHealthStatus} showProgCode={false} showWorkstream={multiWorkstream} />
-                                ))}
-                                {isEmpty && <div className="wb-prog__lane-empty" aria-hidden="true">—</div>}
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
+                            <span aria-hidden="true">{doneExpanded ? '▾' : '▸'}</span>
+                            {doneExpanded ? `${t('Completed')} · ${doneItems.length}` : t('Show {{count}} completed', { count: doneItems.length })}
+                          </button>
+                          {doneExpanded && doneItems.map(item => (
+                            <ProgramTaskRow
+                              key={item.id}
+                              item={item}
+                              onClick={(e) => openTaskModal(item.id, e)}
+                              normalizeHealthStatus={normalizeHealthStatus}
+                              showWorkstream={multiWorkstream}
+                            />
+                          ))}
+                        </>
+                      )}
                     </div>
                     )}
                   </section>
@@ -1049,7 +1139,7 @@ export function WorkboardView() {
                       <span className={`status-dot-label status-dot-label--${statusSlug(item.status)}`}>
                         {formatStatusLabel(item.status)}
                       </span>
-                      <span className={`priority-badge priority-badge--${item.priority.toLowerCase()}`}>{item.priority}</span>
+                      <span className={`priority-badge priority-badge--${item.priority.toLowerCase()}`}>{priorityLabel(item.priority)}</span>
                       <HealthPill status={normalizeHealthStatus(item.healthStatus)} />
                       {item.isBlocked ? <span className="severity-badge severity-badge--high">⚑</span> : null}
                       <div className="progress-bar progress-bar--inline">
@@ -1075,7 +1165,7 @@ export function WorkboardView() {
                     <div className="blocker-row" key={blocker.id}>
                       <div className="blocker-row__left">
                         <span className={`severity-badge severity-badge--${blocker.severity.toLowerCase()}`}>
-                          {blocker.severity}
+                          {severityLabel(blocker.severity)}
                         </span>
                         <div>
                           <strong>{blocker.code}</strong>

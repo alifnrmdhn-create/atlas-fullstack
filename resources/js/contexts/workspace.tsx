@@ -14,6 +14,7 @@ import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useStableCallback } from '../hooks/useStableCallback'
 import { useRealtimeEvents } from '../hooks/useRealtimeEvents'
 import i18n from '../lib/i18n'
+import { workStatusLabel } from '../lib/status'
 import type {
   AuthUser,
   Blocker,
@@ -253,17 +254,9 @@ function formatDate(dateString: string): string {
 const normalizeHealthStatus = (value?: string): 'GREEN' | 'YELLOW' | 'RED' =>
   value === 'GREEN' || value === 'YELLOW' || value === 'RED' ? value : 'YELLOW'
 
-const formatStatusLabel = (value?: string): string => {
-  if (!value) return i18n.t('Not set')
-  const label = value
-    .split('_')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(' ')
-  // Translate the DISPLAY output (the title-cased label). The enum INPUT (value)
-  // is untouched — only the human-readable result is localised. Natural-key:
-  // missing keys fall back to the English label itself.
-  return i18n.t(label)
-}
+// Delegasi ke sumber tunggal lib/status.ts (workStatusLabel) — logika title-case
+// + i18n identik, dipusatkan agar tak ber-fork (lihat plan status-vocabulary).
+const formatStatusLabel = (value?: string): string => workStatusLabel(value)
 
 function appendComposerSnippet(
   setter: Dispatch<SetStateAction<string>>,

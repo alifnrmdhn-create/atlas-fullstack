@@ -9,6 +9,7 @@ import { api, ApiRequestError, extractErrorMessage } from '../lib/api'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { formatKpiValue, getKpiFillPercent } from '../lib/kpi'
 import { periodToLabel, currentIsoWeek } from '../lib/periodFormat'
+import { priorityLabel, severityLabel, approvalStatusLabel } from '../lib/status'
 import { useDarkMode } from '../lib/useDarkMode'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
@@ -1526,7 +1527,7 @@ export function ProgramDetailView() {
                       <div className="prog-approval-log__head">
                         <span className="prog-approval-log__action">{label}</span>
                         {entry.toStatus && (
-                          <span className="prog-approval-log__status">{entry.toStatus.replace(/_/g, ' ')}</span>
+                          <span className="prog-approval-log__status">{approvalStatusLabel(entry.toStatus)}</span>
                         )}
                       </div>
                       <span className="prog-approval-log__meta">
@@ -1607,7 +1608,7 @@ export function ProgramDetailView() {
             <div className="prog-title-row__meta">
               <span className="prog-title-row__priority">
                 <span className={`prog-title-row__priority-dot prog-title-row__priority-dot--${detail.priority.toLowerCase()}`} />
-                {detail.priority}
+                {priorityLabel(detail.priority)}
               </span>
               {detail.approvalStatus === 'DRAFT' && !!detail.rejectionNote && (
                 <span className="prog-approval-pill prog-approval-pill--danger">{t('Rejected')}</span>
@@ -2349,7 +2350,7 @@ export function ProgramDetailView() {
                         return (
                           <div key={b.id} className="prog-blocker-callout__item">
                             <span className="prog-blocker-callout__sev" style={{ color: sevColor }}>
-                              {b.severity}
+                              {severityLabel(b.severity)}
                             </span>
                             <span className="prog-blocker-callout__desc">{b.title}</span>
                           </div>

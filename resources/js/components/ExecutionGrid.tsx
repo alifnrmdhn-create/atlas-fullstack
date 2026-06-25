@@ -5,6 +5,7 @@ import type {
   ExecutionPhase,
   ExecutionStep,
 } from '../types'
+import { workStatusLabel } from '../lib/status'
 
 type Props = {
   data: ExecutionGridData
@@ -327,7 +328,7 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
               const { step } = row
               const statusText = (
                 <>
-                  {!['BACKLOG', 'READY'].includes(step.status) && step.status}
+                  {!['BACKLOG', 'READY'].includes(step.status) && workStatusLabel(step.status)}
                   {step.percentComplete > 0 && step.percentComplete < 100 && ` · ${step.percentComplete}%`}
                   {step.isBlocked && ` · 🚧 ${t('blocked')}`}
                   {!step.actualDerived && step.actualWeeks.length > 0 && ` · ${t('manual')}`}

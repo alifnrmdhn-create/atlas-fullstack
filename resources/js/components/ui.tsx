@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18n from '../lib/i18n'
+import { healthLabel } from '../lib/status'
 import type { CommentItem, PresenceUser } from '../types'
 import { useEscKey } from '../hooks/useEscKey'
 
@@ -390,18 +391,10 @@ export function Metric({ label, value }: { label: string; value: string }) {
   )
 }
 
-function healthLabels(): Record<string, string> {
-  return {
-    GREEN:   i18n.t('On Track'),
-    YELLOW:  i18n.t('At Risk'),
-    RED:     i18n.t('Delayed'),
-    OVERDUE: i18n.t('Overdue'),
-  }
-}
 export function HealthPill({ status, title }: { status: 'GREEN' | 'YELLOW' | 'RED' | 'OVERDUE'; title?: string }) {
   return (
     <span className={`health-pill health-pill--${status.toLowerCase()}`} title={title}>
-      {healthLabels()[status] ?? status}
+      {healthLabel(status)}
     </span>
   )
 }

@@ -1361,14 +1361,47 @@
 .workboard-v2 .wb-prog-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
-.workboard-v2 .wb-prog {
+/* ── Attention strip (By Program) — queue triase, terlipat default ──
+   anti-duplikasi: task yang sama tak lagi tampil 2× (queue + dalam program). */
+.workboard-v2 .wb-attention-strip {
   border: 1px solid var(--ds-border-tertiary, rgba(0, 0, 0, .08));
-  border-radius: 12px;
-  background: var(--ds-surface, #fff);
+  border-radius: 10px;
   overflow: hidden;
+  background: var(--ds-surface, #fff);
+}
+.workboard-v2 .wb-attention-strip__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ds-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.workboard-v2 .wb-attention-strip.is-open .wb-attention-strip__toggle {
+  border-bottom: 1px solid var(--ds-border-tertiary, rgba(0, 0, 0, .06));
+}
+.workboard-v2 .wb-attention-strip__toggle:hover { background: var(--ds-surface-hover, rgba(0, 0, 0, .02)); }
+.workboard-v2 .wb-attention-strip__caret { font-size: 10px; color: var(--ds-text-tertiary); }
+.workboard-v2 .wb-attention-strip__icon { color: var(--tone-amber); }
+.workboard-v2 .wb-attention-strip__hint { color: var(--ds-text-tertiary); font-size: 11.5px; font-weight: 400; }
+.workboard-v2 .wb-attention-strip__list { padding: 0 4px; }
+
+/* Program = SECTION (bukan kartu) — wadah ≠ isi. Tanpa border/radius/bg kartu;
+   header hairline (sticky) + baris ber-indentasi di bawahnya. */
+.workboard-v2 .wb-prog {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
 }
 
 .workboard-v2 .wb-prog__head {
@@ -1376,9 +1409,14 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 12px 20px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--ds-border-tertiary, rgba(0, 0, 0, .06));
-  background: var(--ds-surface-subtle, var(--ds-neutral-50, rgba(0, 0, 0, .015)));
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid var(--ds-border-secondary, var(--ds-border-tertiary, rgba(0, 0, 0, .1)));
+  /* Sticky → jangkar program tetap terlihat saat scroll barisnya; bg opaque
+     supaya baris tergulir bersih di bawahnya (bukan blur — hindari stutter). */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--ds-surface, #fff);
 }
 
 .workboard-v2 .wb-prog__id { flex: 1 1 240px; min-width: 0; }
@@ -1473,41 +1511,91 @@
 }
 .workboard-v2 .wb-prog__plan-link:hover { color: var(--ds-text-primary); }
 
-/* 3 compact lanes */
-.workboard-v2 .wb-prog__lanes {
-  display: grid;
-  /* Lebar kolom dari inline --wb-lane-cols (lane kosong dikolapskan). Memakai
-   * var, bukan grid-template-columns inline langsung, supaya media query stack
-   * (≤1024) tetap bisa menang atas inline style. */
-  grid-template-columns: var(--wb-lane-cols, repeat(3, 1fr));
-  gap: 1px;
-  background: var(--ds-border-tertiary, rgba(0, 0, 0, .06));
+/* ── Baris task di bawah section program (ganti 3-lane kanban) ──
+   Flat, ber-indentasi, diurut per urgensi. Rail kiri + pill = sinyal JADWAL. */
+.workboard-v2 .wb-prog__rows { display: flex; flex-direction: column; }
+.workboard-v2 .wb-prog__empty {
+  padding: 14px 12px;
+  color: var(--ds-text-tertiary, var(--ds-text-secondary));
+  font-size: 12.5px;
 }
-.workboard-v2 .wb-prog__lane { background: var(--ds-surface, #fff); padding: 10px 12px 14px; min-width: 0; }
-.workboard-v2 .wb-prog__lane-head {
+.workboard-v2 .wb-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .03em;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 12px 7px 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ds-border-subtle, rgba(0, 0, 0, .05));
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background var(--ds-duration-fast, .12s) var(--ds-ease-standard, ease);
+}
+.workboard-v2 .wb-row:last-child { border-bottom: 0; }
+.workboard-v2 .wb-row:hover { background: var(--ds-surface-hover, rgba(0, 0, 0, .025)); }
+
+/* Rail kiri = warna urgensi JADWAL (sinyal "wadah"). */
+.workboard-v2 .wb-row__rail {
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--ds-border-subtle, rgba(0, 0, 0, .08));
+}
+.workboard-v2 .wb-row--red .wb-row__rail   { background: var(--tone-red); }
+.workboard-v2 .wb-row--amber .wb-row__rail { background: var(--tone-amber); }
+.workboard-v2 .wb-row--green .wb-row__rail { background: color-mix(in srgb, var(--ds-green-500, #2E8B4E) 50%, transparent); }
+.workboard-v2 .wb-row--grey .wb-row__rail  { background: var(--ds-border-strong, rgba(0, 0, 0, .22)); }
+.workboard-v2 .wb-row--done { opacity: .6; }
+
+.workboard-v2 .wb-row__body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.workboard-v2 .wb-row__title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--ds-text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.workboard-v2 .wb-row--done .wb-row__title { color: var(--ds-text-secondary); }
+.workboard-v2 .wb-row__meta {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10.5px; color: var(--ds-text-tertiary, var(--ds-text-secondary)); min-width: 0;
+}
+.workboard-v2 .wb-row__code { font-family: var(--ds-font-mono, monospace); letter-spacing: .01em; white-space: nowrap; }
+.workboard-v2 .wb-row__ws { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Pill JADWAL — hanya utk yg butuh perhatian (red/amber/grey); On Track & Done diam. */
+.workboard-v2 .wb-row__sched {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px; font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.workboard-v2 .wb-row__sched--red   { background: color-mix(in srgb, var(--ds-red-500, #DC2626) 12%, transparent);   border-color: color-mix(in srgb, var(--ds-red-500, #DC2626) 38%, transparent);   color: var(--tone-red); }
+.workboard-v2 .wb-row__sched--amber { background: color-mix(in srgb, var(--ds-amber-500, #D97706) 15%, transparent); border-color: color-mix(in srgb, var(--ds-amber-500, #D97706) 38%, transparent); color: var(--tone-amber); }
+.workboard-v2 .wb-row__sched--grey  { background: var(--ds-neutral-100, rgba(0, 0, 0, .05)); color: var(--ds-text-secondary); }
+
+.workboard-v2 .wb-row__progress { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; width: 124px; }
+.workboard-v2 .wb-row__progress-track { flex: 1 1 auto; }
+.workboard-v2 .wb-row__pct {
+  font-size: 11px; font-weight: 600;
   color: var(--ds-text-secondary);
+  font-variant-numeric: tabular-nums;
+  min-width: 30px; text-align: right;
 }
-.workboard-v2 .wb-prog__lane-body { display: flex; flex-direction: column; gap: 8px; }
-.workboard-v2 .wb-prog__lane-empty {
-  padding: 12px 0;
-  text-align: center;
-  color: var(--ds-text-tertiary, var(--ds-text-secondary));
-  font-size: 12px;
-  opacity: .5;
+.workboard-v2 .wb-row__avatar {
+  flex: 0 0 auto;
+  width: 22px; height: 22px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--ds-neutral-100, rgba(0, 0, 0, .06));
+  color: var(--ds-text-secondary);
+  font-size: 9px; font-weight: 700;
 }
-/* Lane tanpa kartu dikolapskan ke kolom ramping (lebar dari inline grid-cols
- * di JSX). Redupkan head & rapatkan padding supaya tidak menarik perhatian. */
-.workboard-v2 .wb-prog__lane--empty { padding-left: 10px; padding-right: 10px; }
-.workboard-v2 .wb-prog__lane--empty .wb-prog__lane-head { opacity: .55; }
-.workboard-v2 .wb-prog__lane--empty .wb-prog__lane-empty { padding: 6px 0; }
 
 /* ── Program collapse toggle (By Program; On Track/Completed dilipat default) ── */
 .workboard-v2 .wb-prog__toggle {
@@ -1536,53 +1624,34 @@
   color: var(--ds-text-secondary);
 }
 
-/* ── Lane Completed: head sebagai toggle + tombol fold ── */
-.workboard-v2 .wb-prog__lane-head--toggle {
+/* ── Toggle "Show N completed" (arsip, dilipat default) ── */
+.workboard-v2 .wb-prog__done-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: 100%;
-  justify-content: flex-start;
-  gap: 5px;
-  padding: 0;
-  margin-bottom: 8px;
+  padding: 8px 12px;
   background: transparent;
   border: 0;
-  cursor: pointer;
+  border-bottom: 1px solid var(--ds-border-subtle, rgba(0, 0, 0, .05));
+  color: var(--ds-text-tertiary, var(--ds-text-secondary));
   font: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .03em;
-  color: var(--ds-text-secondary);
-}
-.workboard-v2 .wb-prog__lane-head--toggle:hover { color: var(--ds-text-primary); }
-.workboard-v2 .wb-prog__lane-head--toggle .section-badge { margin-left: auto; }
-.workboard-v2 .wb-prog__lane-caret { font-size: 9px; color: var(--ds-text-tertiary); }
-.workboard-v2 .wb-prog__lane-fold {
-  width: 100%;
-  padding: 10px 8px;
-  background: transparent;
-  border: 1px dashed var(--ds-border-subtle);
-  border-radius: 6px;
-  color: var(--ds-text-tertiary);
-  font-family: var(--ds-font-sans);
   font-size: 11.5px;
   font-weight: 500;
+  text-align: left;
   cursor: pointer;
-  text-align: center;
-  transition: color var(--ds-duration-fast) var(--ds-ease-standard),
-              border-color var(--ds-duration-fast) var(--ds-ease-standard);
 }
-.workboard-v2 .wb-prog__lane-fold:hover {
-  color: var(--tone-green);
-  border-color: color-mix(in srgb, var(--ds-green-500) 40%, transparent);
-}
+.workboard-v2 .wb-prog__done-toggle:last-child { border-bottom: 0; }
+.workboard-v2 .wb-prog__done-toggle:hover { color: var(--ds-text-secondary); }
 
-/* Stack lanes on narrow viewports */
 @media (max-width: 1024px) { /* bp-allow: matches sidebar collapse tier */
-  .workboard-v2 .wb-prog__lanes { grid-template-columns: 1fr; }
   .workboard-v2 .wb-prog__metrics { flex-basis: 100%; }
 }
 @media (max-width: 640px) {
   .workboard-v2 .wb-prog__head { gap: 10px; }
   .workboard-v2 .wb-prog__actions { width: 100%; }
   .workboard-v2 .wb-prog__actions .btn { flex: 1; }
+  /* Baris padat di telepon: progress ramping, sembunyikan nama workstream. */
+  .workboard-v2 .wb-row__progress { width: 88px; }
+  .workboard-v2 .wb-row__ws { display: none; }
 }

@@ -9,6 +9,7 @@ import { useEscKey } from '../hooks/useEscKey'
 import { PicaCompositePanel } from '../components/PicaCompositePanel'
 import { UserPicker } from '../components/UserPicker'
 import { formatRoleLabel } from '../lib/roleLabel'
+import { severityLabel, healthLabel } from '../lib/status'
 import type { Meeting, MeetingType, PresenceStatus } from '../types'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -925,7 +926,7 @@ export function MeetingDetailPanel({
                             [{prep.programContext.code}] {prep.programContext.name}
                           </span>
                           <span className="meeting-prep-program__badge" data-tone={HEALTH_STATUS_TONE[prep.programContext.healthStatus as 'RED' | 'YELLOW' | 'GREEN'] ?? 'gray'}>
-                            {prep.programContext.healthStatus === 'RED' ? `🔴 ${t('Critical')}` : prep.programContext.healthStatus === 'YELLOW' ? `🟡 ${t('At Risk')}` : `🟢 ${t('Healthy')}`}
+                            {prep.programContext.healthStatus === 'RED' ? `🔴 ${healthLabel('RED')}` : prep.programContext.healthStatus === 'YELLOW' ? `🟡 ${healthLabel('YELLOW')}` : `🟢 ${healthLabel('GREEN')}`}
                           </span>
                         </div>
                         <div className="meeting-prep-program__progress">
@@ -945,7 +946,7 @@ export function MeetingDetailPanel({
                           {prep.programContext.activeBlockers.map(b => (
                             <div key={b.id} className="meeting-prep-inline-row">
                               <span className="meeting-prep-severity" data-tone={BLOCKER_SEVERITY_TONE[b.severity] ?? 'blue'}>
-                                {b.severity}
+                                {severityLabel(b.severity)}
                               </span>
                               <span className="meeting-prep-inline-title">{b.title}</span>
                             </div>

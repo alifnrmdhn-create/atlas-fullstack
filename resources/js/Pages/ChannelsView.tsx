@@ -10,6 +10,7 @@ import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { formatRoleLabel } from '../lib/roleLabel'
 import { compressImageFile, MAX_UPLOAD_BYTES } from '../lib/imageCompress'
 import i18n from '../lib/i18n'
+import { workStatusLabel, priorityLabel } from '../lib/status'
 import { getProgramHealthDisplay, getProgramDisplayStatus } from '../lib/programStatus'
 import { useInlineToast } from '../components/InlineToast'
 import { PageHeader } from '../design-system'
@@ -2144,9 +2145,9 @@ export function ChannelsView({
                 <span className="channel-context-banner__progress-pct">{linkedProgram.progressPercent}%</span>
               </div>
               <div className="channel-context-banner__metrics">
-                <span>{t('Status')}: <strong>{linkedProgramStatusLabel || linkedProgram.status.replace(/_/g, ' ')}</strong></span>
+                <span>{t('Status')}: <strong>{linkedProgramStatusLabel || workStatusLabel(linkedProgram.status)}</strong></span>
                 <span className="channel-context-banner__sep" />
-                <span>{t('Priority')}: <strong>{linkedProgram.priority}</strong></span>
+                <span>{t('Priority')}: <strong>{priorityLabel(linkedProgram.priority)}</strong></span>
               </div>
             </div>
             {/* Arrow — slides in on hover */}
@@ -2930,7 +2931,7 @@ export function ChannelsView({
                             <strong>{wi.code}</strong>
                             <span>{wi.title}</span>
                           </div>
-                          <span className={`badge badge--soft mention-dropdown__wi-status mention-dropdown__wi-status--${wi.status.toLowerCase()}`}>{wi.status}</span>
+                          <span className={`badge badge--soft mention-dropdown__wi-status mention-dropdown__wi-status--${wi.status.toLowerCase()}`}>{workStatusLabel(wi.status)}</span>
                         </button>
                       ))}
                     </>
