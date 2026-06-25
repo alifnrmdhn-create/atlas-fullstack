@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ChannelMessageController extends Controller
 {
@@ -51,26 +52,46 @@ class ChannelMessageController extends Controller
     // POST /channels/:channelId/messages
     public function store(Request $request, int $channelId): JsonResponse|RedirectResponse
     {
+        // content NULLABLE (bukan required): pesan boleh berisi lampiran saja
+        // tanpa teks. Catatan penting — middleware global TrimStrings +
+        // ConvertEmptyStringsToNull membuat content " " (spasi) atau "" menjadi
+        // NULL sebelum sampai validator, jadi rule `required` lama menolak pesan
+        // attachment-only dengan "The content field is required." (bug upload
+        // chat 2026-06-25). Validasi "isi minimal" dilakukan manual di bawah.
         $data = $request->validate([
-            'content' => 'required|string|max:10000',
+            'content' => 'nullable|string|max:10000',
             'parentMessageId' => 'nullable|integer',
-            'attachments' => 'nullable|array',
+            'attachments' => 'nullable|array|max:10',
+            'attachments.*.url' => 'required_with:attachments|string|max:2048',
+            'attachments.*.name' => 'required_with:attachments|string|max:512',
+            'attachments.*.type' => 'required_with:attachments|string|max:255',
+            'attachments.*.size' => 'nullable|integer|min:0',
         ]);
+
+        $content = trim((string) ($data['content'] ?? ''));
+        $attachments = $data['attachments'] ?? null;
+
+        // Pesan harus punya teks ATAU lampiran — keduanya kosong = tolak.
+        if ($content === '' && empty($attachments)) {
+            throw ValidationException::withMessages([
+                'content' => 'A message must have text or an attachment.',
+            ]);
+        }
 
         $this->requireChannelAccess($request, $channelId, write: true);
         $userId = $request->user()->id;
 
-        $message = DB::transaction(function () use ($channelId, $userId, $data) {
+        $message = DB::transaction(function () use ($channelId, $userId, $content, $attachments, $data) {
             $msg = ChannelMessage::create([
                 'channelId' => $channelId,
                 'userId' => $userId,
-                'content' => $data['content'],
-                'attachments' => $data['attachments'] ?? null,
+                'content' => $content,
+                'attachments' => $attachments,
                 'parentMessageId' => $data['parentMessageId'] ?? null,
                 'replyCount' => 0,
                 'isPinned' => false,
                 'isEdited' => false,
-                'searchableText' => strtolower($data['content']),
+                'searchableText' => strtolower($content),
             ]);
 
             // Increment parent reply count
@@ -84,8 +105,8 @@ class ChannelMessageController extends Controller
         });
 
         // Extract mentions & create notifications (async-like, non-blocking)
-        rescue(function () use ($channelId, $userId, $data, $message) {
-            $this->processMentions($channelId, $userId, $data['content'], $message->id);
+        rescue(function () use ($channelId, $userId, $content, $message) {
+            $this->processMentions($channelId, $userId, $content, $message->id);
         });
 
         $message->load('author:id,name,avatarUrl,roleType,positionTitle');
@@ -350,9 +371,15 @@ class ChannelMessageController extends Controller
         $sender = User::find($senderId);
         if (!$sender) return;
 
-        $content = (string) ($message->content ?? '');
-        $preview = mb_strlen($content) > 100 ? mb_substr($content, 0, 100) . '…' : $content;
-        $msg = "{$sender->name} sent a message: \"{$preview}\"";
+        $content = trim((string) ($message->content ?? ''));
+        if ($content === '') {
+            // Pesan lampiran-saja (tanpa teks) — jangan tampilkan kutipan kosong.
+            $count = is_array($message->attachments) ? count($message->attachments) : 0;
+            $msg = "{$sender->name} sent " . ($count > 1 ? "{$count} attachments" : 'an attachment');
+        } else {
+            $preview = mb_strlen($content) > 100 ? mb_substr($content, 0, 100) . '…' : $content;
+            $msg = "{$sender->name} sent a message: \"{$preview}\"";
+        }
         $source = "{$sender->name}·channel:{$channelId}";
 
         foreach ($recipientIds as $uid) {

@@ -140,7 +140,10 @@ export function ChannelsViewWrapper() {
     const threadId = selectedThreadId
     try {
       const result = await api.post<{ data: { id: number; createdAt?: string } }>(`/channels/${channelId}/messages`, {
-        content: content || ' ',
+        // content boleh kosong bila ada lampiran — backend menerima pesan
+        // attachment-only (jangan kirim spasi " " sbg akal-akalan; middleware
+        // TrimStrings akan menjadikannya NULL & dulu memicu "content required").
+        content,
         parentMessageId: threadId ?? undefined,
         attachments: attachments && attachments.length > 0 ? attachments : undefined,
       })
@@ -150,7 +153,7 @@ export function ChannelsViewWrapper() {
         id: result.data.id,
         channelId,
         userId: currentUser.id,
-        content: content || ' ',
+        content,
         replyCount: 0,
         reactions: {} as Record<string, number[]>,
         isPinned: false,
