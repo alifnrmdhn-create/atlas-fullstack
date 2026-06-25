@@ -10,6 +10,6 @@
 # ⚠ DB lokal: set `DB_HOST=host.docker.internal` di .env supaya container bisa
 # meraih Postgres di host (127.0.0.1 di dalam container = container itu sendiri).
 services:
-    app:
-        ports:
-            - "8080:8080"
+  app:
+    ports:
+      - "8080:8080"

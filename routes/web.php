@@ -26,7 +26,7 @@ use App\Http\Controllers\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// ── Guest ─────────────────────────────────────────────────────────────────────
+// ── Guest Route Link ─────────────────────────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
@@ -46,36 +46,36 @@ Route::middleware('auth')->group(function () {
     // (lihat resources/js/context/workspace.tsx). Tidak punya halaman Inertia.
     Route::get('/workspace/overview', [WorkspaceController::class, 'workspaceOverview'])->name('workspace.overview');
     // Transitional redirect: bookmark/URL lama `/dashboard` → home.
-    Route::get('/dashboard', fn () => redirect('/'));
-    Route::get('/roadmap', fn () => Inertia::render('RoadmapView'))->name('roadmap');
-    Route::get('/execution', fn () => Inertia::render('WorkboardView'))->name('execution');
+    Route::get('/dashboard', fn() => redirect('/'));
+    Route::get('/roadmap', fn() => Inertia::render('RoadmapView'))->name('roadmap');
+    Route::get('/execution', fn() => Inertia::render('WorkboardView'))->name('execution');
     // Task detail URL → redirect ke Workboard dengan query param ?task={id}
     // (2026-05-21). Workboard auto-open modal saat query terdeteksi. URL deep
     // link tetap valid (share, bookmark) tapi visual surface single — modal.
     Route::get('/execution/tasks/{id}', function ($id) {
         return redirect("/execution?task={$id}");
     })->name('execution.tasks.show');
-    Route::get('/penugasan', fn () => Inertia::render('AssignmentsView'))->name('penugasan');
-    Route::get('/fokus', fn () => Inertia::render('InboxView'))->name('fokus');
-    Route::get('/goals', fn () => Inertia::render('GoalsView'))->name('goals');
-    Route::get('/activity', fn () => Inertia::render('ActivityView'))->name('activity');
-    Route::get('/reports', fn () => Inertia::render('ReportsView'))->name('reports');
-    Route::get('/jadwal', fn () => Inertia::render('ScheduleView'))->name('jadwal');
-    Route::get('/laporan-bulanan', fn () => Inertia::render('MonthlyReportView'))->name('laporan-bulanan');
+    Route::get('/penugasan', fn() => Inertia::render('AssignmentsView'))->name('penugasan');
+    Route::get('/fokus', fn() => Inertia::render('InboxView'))->name('fokus');
+    Route::get('/goals', fn() => Inertia::render('GoalsView'))->name('goals');
+    Route::get('/activity', fn() => Inertia::render('ActivityView'))->name('activity');
+    Route::get('/reports', fn() => Inertia::render('ReportsView'))->name('reports');
+    Route::get('/jadwal', fn() => Inertia::render('ScheduleView'))->name('jadwal');
+    Route::get('/laporan-bulanan', fn() => Inertia::render('MonthlyReportView'))->name('laporan-bulanan');
     Route::get('/laporan-bulanan/{id}', [MonthlyReportController::class, 'show'])->name('laporan-bulanan.show');
     // Halaman dashboard Risiko standalone DIHILANGKAN dari discovery (2026-06-02):
     // ATLAS bukan app manajemen risiko. API /risk-reports/* (di bawah) tetap hidup
     // untuk Monthly Report DIMR yang berformat risiko. Lihat feedback_atlas_not_risk_app.
     Route::get('/search', [WorkspaceController::class, 'search'])->name('search');
-    Route::get('/presence', fn () => Inertia::render('PresenceView'))->name('presence');
+    Route::get('/presence', fn() => Inertia::render('PresenceView'))->name('presence');
     Route::get('/profile', [WorkspaceController::class, 'profile'])->name('profile');
     Route::put('/profile', [WorkspaceController::class, 'updateProfile'])->name('profile.update');
-    Route::get('/settings', fn () => Inertia::render('SettingsView'))->name('settings');
+    Route::get('/settings', fn() => Inertia::render('SettingsView'))->name('settings');
     Route::post('/auth/change-password', [WorkspaceController::class, 'changePassword'])->name('auth.change-password');
-    Route::get('/playbook', fn () => Inertia::render('PlaybookView'))->name('playbook');
+    Route::get('/playbook', fn() => Inertia::render('PlaybookView'))->name('playbook');
     // Pusat Bantuan — friendly task-oriented entry point untuk operator/onboarding.
     // Playbook tetap eksis sebagai dokumen rinci yang dilink dari sini.
-    Route::get('/panduan', fn () => Inertia::render('PanduanView'))->name('panduan');
+    Route::get('/panduan', fn() => Inertia::render('PanduanView'))->name('panduan');
     Route::get('/executive', [\App\Http\Controllers\ExecutiveSummaryController::class, 'show'])->name('executive');
     // Serve curated markdown docs (single source = base_path('docs/')). Whitelist-gated
     // to prevent leaking internal planning/architecture files. Add filename to $allowed
@@ -88,7 +88,7 @@ Route::middleware('auth')->group(function () {
         return response()->file($path, ['Content-Type' => 'text/markdown; charset=UTF-8']);
     })->where('file', '[A-Za-z0-9_.-]+\.md')->name('docs.show');
     // Internal — design system preview (foundation primitives)
-    Route::get('/design-system', fn () => Inertia::render('DesignSystemView'))->name('design-system');
+    Route::get('/design-system', fn() => Inertia::render('DesignSystemView'))->name('design-system');
     // Post-MVP — Pilot DKM metrics dashboard (admin-only)
     Route::get('/admin/pilot-metrics',     [PilotMetricsController::class, 'index'])->name('admin.pilot-metrics');
     Route::get('/admin/pilot-metrics/api', [PilotMetricsController::class, 'api'])->name('admin.pilot-metrics.api');
@@ -97,10 +97,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/thresholds',        [AdminThresholdsController::class, 'index'])->name('admin.thresholds');
     Route::patch('/admin/thresholds',      [AdminThresholdsController::class, 'update'])->name('admin.thresholds.update');
     Route::post('/admin/thresholds/reset', [AdminThresholdsController::class, 'reset'])->name('admin.thresholds.reset');
-    Route::get('/admin/orgs', fn () => Inertia::render('AdminOrgsView'))->name('admin.orgs');
-    Route::get('/admin/users', fn () => Inertia::render('AdminUsersView'))->name('admin.users');
-    Route::get('/admin/positions', fn () => Inertia::render('AdminPositionsView'))->name('admin.positions');
-    Route::get('/admin/roles', fn () => Inertia::render('AdminRolesView'))->name('admin.roles');
+    Route::get('/admin/orgs', fn() => Inertia::render('AdminOrgsView'))->name('admin.orgs');
+    Route::get('/admin/users', fn() => Inertia::render('AdminUsersView'))->name('admin.users');
+    Route::get('/admin/positions', fn() => Inertia::render('AdminPositionsView'))->name('admin.positions');
+    Route::get('/admin/roles', fn() => Inertia::render('AdminRolesView'))->name('admin.roles');
 
     Route::get('/my-work', [WorkspaceController::class, 'myWork'])->name('my-work');
     Route::get('/apms/kpi', [WorkspaceController::class, 'apmsKpi'])->name('apms.kpi');
@@ -141,7 +141,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/',             [ProgramController::class, 'store'])->name('store');
         Route::get('/archived',      [ProgramController::class, 'archived'])->name('archived');
         Route::get('/timeline-all',  [ProgramController::class, 'timelineAll'])->name('timeline-all');
-        Route::get('/execution-pulse',[ProgramController::class, 'executionPulse'])->name('execution-pulse');
+        Route::get('/execution-pulse', [ProgramController::class, 'executionPulse'])->name('execution-pulse');
         Route::get('/execution-matrix', [ExecutionGridController::class, 'executionMatrix'])->name('execution-matrix');
 
         Route::get('/{id}',          [ProgramController::class, 'show'])->name('show');
@@ -192,7 +192,7 @@ Route::middleware('auth')->group(function () {
         // SubTask
         Route::post('/{id}/subtasks',                    [TaskController::class, 'storeSubTask'])->name('subtasks.store');
         Route::delete('/{id}/subtasks/{subTaskId}',      [TaskController::class, 'destroySubTask'])->name('subtasks.destroy');
-        Route::patch('/{id}/subtasks/{subTaskId}/toggle',[TaskController::class, 'toggleSubTask'])->name('subtasks.toggle');
+        Route::patch('/{id}/subtasks/{subTaskId}/toggle', [TaskController::class, 'toggleSubTask'])->name('subtasks.toggle');
     });
 
     // ── Phases ────────────────────────────────────────────────────────────────
@@ -262,8 +262,8 @@ Route::middleware('auth')->group(function () {
 
         // Members
         Route::post('/{id}/members',           [ChannelController::class, 'addMember'])->name('members.store');
-        Route::delete('/{id}/members/{userId}',[ChannelController::class, 'removeMember'])->name('members.destroy');
-        Route::put('/{id}/members/{userId}/mute',[ChannelController::class, 'toggleMute'])->name('members.mute');
+        Route::delete('/{id}/members/{userId}', [ChannelController::class, 'removeMember'])->name('members.destroy');
+        Route::put('/{id}/members/{userId}/mute', [ChannelController::class, 'toggleMute'])->name('members.mute');
         Route::post('/{id}/join',              [ChannelController::class, 'join'])->name('join');
 
         // Read state
@@ -277,10 +277,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/', [ChannelMessageController::class, 'store'])->name('store');
             Route::put('/{messageId}',      [ChannelMessageController::class, 'update'])->name('update');
             Route::delete('/{messageId}',   [ChannelMessageController::class, 'destroy'])->name('destroy');
-            Route::get('/{messageId}/thread',[ChannelMessageController::class, 'thread'])->name('thread');
+            Route::get('/{messageId}/thread', [ChannelMessageController::class, 'thread'])->name('thread');
             Route::put('/{messageId}/pin',  [ChannelMessageController::class, 'togglePin'])->name('pin');
             Route::post('/{messageId}/reactions',          [ChannelMessageController::class, 'addReaction'])->name('reactions.store');
-            Route::delete('/{messageId}/reactions/{emoji}',[ChannelMessageController::class, 'removeReaction'])->name('reactions.destroy');
+            Route::delete('/{messageId}/reactions/{emoji}', [ChannelMessageController::class, 'removeReaction'])->name('reactions.destroy');
         });
     });
 
@@ -293,7 +293,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/comments/{commentId}',           [CommentController::class, 'destroy'])->name('destroy');
         Route::put('/comments/{commentId}/pin',          [CommentController::class, 'togglePin'])->name('pin');
         Route::post('/comments/{commentId}/reactions',          [CommentController::class, 'addReaction'])->name('reactions.store');
-        Route::delete('/comments/{commentId}/reactions/{emoji}',[CommentController::class, 'removeReaction'])->name('reactions.destroy');
+        Route::delete('/comments/{commentId}/reactions/{emoji}', [CommentController::class, 'removeReaction'])->name('reactions.destroy');
     });
 
     // ── Meetings ──────────────────────────────────────────────────────────────
@@ -335,19 +335,19 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/directorates',       [OrganizationController::class, 'directorates'])->name('directorates.index');
         Route::post('/directorates',      [OrganizationController::class, 'storeDirectorate'])->name('directorates.store');
-        Route::patch('/directorates/{id}',[OrganizationController::class, 'updateDirectorate'])->name('directorates.update');
-        Route::delete('/directorates/{id}',[OrganizationController::class, 'destroyDirectorate'])->name('directorates.destroy');
+        Route::patch('/directorates/{id}', [OrganizationController::class, 'updateDirectorate'])->name('directorates.update');
+        Route::delete('/directorates/{id}', [OrganizationController::class, 'destroyDirectorate'])->name('directorates.destroy');
 
         Route::get('/units',       [OrganizationController::class, 'units'])->name('units.index');
         Route::post('/units',      [OrganizationController::class, 'storeUnit'])->name('units.store');
-        Route::patch('/units/{id}',[OrganizationController::class, 'updateUnit'])->name('units.update');
-        Route::delete('/units/{id}',[OrganizationController::class, 'destroyUnit'])->name('units.destroy');
+        Route::patch('/units/{id}', [OrganizationController::class, 'updateUnit'])->name('units.update');
+        Route::delete('/units/{id}', [OrganizationController::class, 'destroyUnit'])->name('units.destroy');
 
         Route::get('/positions',              [OrganizationController::class, 'positions'])->name('positions.index');
         Route::post('/positions',             [OrganizationController::class, 'storePosition'])->name('positions.store');
         Route::patch('/positions/{id}',       [OrganizationController::class, 'updatePosition'])->name('positions.update');
         Route::delete('/positions/{id}',      [OrganizationController::class, 'destroyPosition'])->name('positions.destroy');
-        Route::patch('/positions/{id}/assign',[OrganizationController::class, 'assignPosition'])->name('positions.assign');
+        Route::patch('/positions/{id}/assign', [OrganizationController::class, 'assignPosition'])->name('positions.assign');
     });
 
     // ── Real-time event delivery (polling) + Presence ─────────────────────────
@@ -377,17 +377,17 @@ Route::middleware('auth')->group(function () {
     // Sidebar visibility = auth.user.canAccessPerformance (HandleInertiaRequests).
     Route::middleware(\App\Http\Middleware\EnsurePerformanceAccess::class)
         ->prefix('performance')->name('performance.')->group(function () {
-        Route::get('/kolegial',           [PerformanceController::class, 'kolegial'])->name('kolegial');
-        Route::get('/kolegial/{slug}',    [PerformanceController::class, 'kolegialDetail'])->name('kolegial.detail');
-        Route::get('/scorecard',          [PerformanceController::class, 'scorecard'])->name('scorecard');
-        // KPI Divisi & KPI Saya — diperkenalkan Sprint 1; full implementation Sprint 2.
-        Route::get('/divisi/{kode?}',     [PerformanceController::class, 'divisi'])->name('divisi');
-        Route::get('/me',                 [PerformanceController::class, 'me'])->name('me');
-        Route::get('/individu',           [PerformanceController::class, 'individu'])->name('individu');
-        Route::get('/individu/{id}',      [PerformanceController::class, 'individuDetail'])->name('individu.detail');
-        // Sprint 4 — Commitment Ledger
-        Route::get('/individu/{id}/ledger', [PerformanceController::class, 'commitmentLedger'])->name('individu.ledger');
-    });
+            Route::get('/kolegial',           [PerformanceController::class, 'kolegial'])->name('kolegial');
+            Route::get('/kolegial/{slug}',    [PerformanceController::class, 'kolegialDetail'])->name('kolegial.detail');
+            Route::get('/scorecard',          [PerformanceController::class, 'scorecard'])->name('scorecard');
+            // KPI Divisi & KPI Saya — diperkenalkan Sprint 1; full implementation Sprint 2.
+            Route::get('/divisi/{kode?}',     [PerformanceController::class, 'divisi'])->name('divisi');
+            Route::get('/me',                 [PerformanceController::class, 'me'])->name('me');
+            Route::get('/individu',           [PerformanceController::class, 'individu'])->name('individu');
+            Route::get('/individu/{id}',      [PerformanceController::class, 'individuDetail'])->name('individu.detail');
+            // Sprint 4 — Commitment Ledger
+            Route::get('/individu/{id}/ledger', [PerformanceController::class, 'commitmentLedger'])->name('individu.ledger');
+        });
 
     // ── Escalations (Sprint 4 — Clear the Path) ───────────────────────────────
     Route::prefix('escalations')->name('escalations.')->group(function () {
