@@ -68,6 +68,7 @@ const CAL_ZOOM_LEVELS  = { compact: 40, normal: 56, spacious: 76 } as const
 type CalZoom = keyof typeof CAL_ZOOM_LEVELS
 const CAL_WORK_START   = 8   // 08:00 — start of working hours
 const CAL_WORK_END     = 17  // 17:00 — end of working hours
+const CAL_DEFAULT_SCROLL_HOUR = 6 // 06:00 — default top-of-view hour (early hours rarely used)
 
 /** Get Mon–Sun of the week that is `offsetWeeks` away from today. */
 function getWeekDays(offsetWeeks: number): Date[] {
@@ -653,8 +654,8 @@ export function ScheduleView() {
   useEffect(() => {
     if (viewMode !== 'calendar' || !calBodyRef.current) return
     const now = new Date()
-    // Scroll to current time if today is in view, else scroll to start of work day
-    const targetHour = now.getHours() > CAL_WORK_START ? now.getHours() - 1 : CAL_WORK_START
+    // Default the top of the view to 06:00; if the current hour is later, scroll to one hour before now.
+    const targetHour = Math.max(CAL_DEFAULT_SCROLL_HOUR, now.getHours() - 1)
     calBodyRef.current.scrollTop = Math.max(0, (targetHour - CAL_HOUR_START) * CAL_HOUR_PX)
   }, [viewMode, calWeekOffset])
 
