@@ -1,105 +1,144 @@
-# ─── Stage 1: Node build ─────────────────────────────────────────────────────
-FROM node:22-alpine AS node-builder
+# syntax=docker/dockerfile:1.7
+#
+# =========================================================
+# ATLAS — image produksi single-role (pola mirror PTI / erin-v2).
+#
+# SATU image (atlas-app:prod) dipakai beberapa container yang dibedakan oleh
+# env CONTAINER_ROLE (lihat docker-compose.yml + docker/start.sh):
+#   web    → nginx + php-fpm  (SATU-SATUNYA penerima trafik publik/Traefik)
+#   worker → queue:work x2 + schedule:work  (SCHEDULER ESENSIAL: realtime polling
+#            ATLAS bergantung pada atlas:cleanup-broadcast-events tiap menit)
+#   reverb → WebSocket (DORMANT — ATLAS realtime = polling, bukan WS; disiapkan
+#            untuk konsistensi, butuh `composer require laravel/reverb` dulu)
+#
+# Memisahkan worker dari web = fix permanen 504 (job/scheduler tak mencekik web).
+# Code + vendor + public/build DI-BAKE ke image (bukan shared volume), redeploy =
+# image baru. DB = PostgreSQL EKSTERNAL (DB_HOST dari .env), schema non-`public`
+# `ptpn_kmr_app` dipastikan ada di start.sh sebelum migrate.
+# =========================================================
 
-WORKDIR /app
+# ----- Stage 1: Build frontend assets (Vite) -----
+FROM node:22-bookworm-slim AS frontend
+WORKDIR /build
 
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --no-audit --no-fund
 
+# ATLAS pakai vite.config.ts (TypeScript), bukan .js. Tailwind v4 config-less.
 COPY resources/ resources/
 COPY public/ public/
-# Tailwind v4 is config-less — there is no postcss.config.js / tailwind.config.js
-# in the repo; COPYing nonexistent sources aborts the build. Only copy what exists.
-# ATLAS uses a TypeScript vite config (vite.config.ts), not .js.
 COPY vite.config.ts tsconfig.json ./
 
-# `npm run build` = `vite build` (config-less, no tsc). Type-check lives in CI
-# (`npm run typecheck`), not the deploy image.
+# `npm run build` = `vite build` (config-less, tanpa tsc → aman dari OOM).
 RUN npm run build
 
-# ─── Stage 2: PHP production ─────────────────────────────────────────────────
-FROM php:8.3-fpm-alpine AS php-base
+# ----- Stage 2: PHP dependencies (Composer) -----
+FROM composer:2 AS vendor
+WORKDIR /app
 
-# Install system deps + PHP extensions. Note: nginx package is intentionally
-# NOT installed here — production nginx runs in its own container (see
-# `nginx-prod` stage below). Keeping the app image PHP-FPM only.
-RUN apk add --no-cache \
-    postgresql-dev \
-    libpng-dev \
-    libzip-dev \
-    icu-dev \
-    oniguruma-dev \
-    libxml2-dev \
-    freetype-dev \
-    libjpeg-turbo-dev \
-    zip unzip git curl rsync \
-    supervisor
+COPY composer.json composer.lock ./
+RUN --mount=type=cache,id=atlas-composer,target=/tmp/composer-cache,sharing=locked \
+    COMPOSER_CACHE_DIR=/tmp/composer-cache composer install \
+        --no-dev \
+        --no-interaction \
+        --no-progress \
+        --no-scripts \
+        --prefer-dist \
+        --optimize-autoloader \
+        --ignore-platform-reqs
 
-# gd dgn freetype+jpeg (PhpSpreadsheet render gambar/font). Ekstensi:
-#   pgsql        — driver DB PostgreSQL (schema ptpn_kmr_app)
-#   bcmath       — aritmetika angka resmi
-#   mbstring,xml — Laravel core + PhpSpreadsheet
-#   intl         — locale
-#   pcntl,posix  — graceful shutdown queue worker (supervisord queue:work)
-#   opcache      — perf produksi
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" \
-       pdo pdo_pgsql gd zip bcmath mbstring xml intl pcntl posix opcache \
-    && php -m | grep -E "pdo_pgsql|bcmath|mbstring|xml|intl|pcntl|posix|gd|zip"
+# ----- Stage 3: Runtime (nginx + php-fpm + supervisor) -----
+FROM php:8.3-fpm-bookworm AS runtime
 
-# Composer
+ENV DEBIAN_FRONTEND=noninteractive \
+    COMPOSER_ALLOW_SUPERUSER=1 \
+    PORT=8080 \
+    APP_ENV=production \
+    APP_DEBUG=false
+
+RUN rm -f /etc/apt/apt.conf.d/docker-clean \
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+
+# OS packages — postgresql-client WAJIB (start.sh pakai psql untuk ensure schema).
+RUN --mount=type=cache,id=atlas-apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=atlas-apt-lib,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+        nginx \
+        supervisor \
+        curl \
+        ca-certificates \
+        git \
+        unzip \
+        postgresql-client \
+        rsync
+
+COPY --from=mlocati/php-extension-installer:2 /usr/bin/install-php-extensions /usr/local/bin/
+
+#   pdo_pgsql,pgsql — driver DB Postgres (schema ptpn_kmr_app)
+#   bcmath          — aritmetika angka resmi
+#   intl            — locale
+#   gd,zip          — PhpSpreadsheet (render gambar/font)
+#   pcntl           — graceful shutdown queue worker
+#   exif            — metadata gambar upload
+#   redis           — backend session/cache/queue (phpredis) — DORMANT, future
+#   mbstring,xml    — Laravel core + PhpSpreadsheet
+RUN --mount=type=cache,id=atlas-apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=atlas-apt-lib,target=/var/lib/apt,sharing=locked \
+    install-php-extensions \
+        pdo_pgsql \
+        pgsql \
+        bcmath \
+        intl \
+        gd \
+        zip \
+        pcntl \
+        exif \
+        redis \
+        mbstring \
+        xml \
+        opcache
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy application source
-COPY . .
+# Application source (di-bake; .dockerignore membuang vendor/node_modules/.env).
+COPY . /var/www/html
 
-# Copy pre-built frontend assets
-COPY --from=node-builder /app/public/build public/build
+# Overlay vendor + built assets dari stage paralel.
+COPY --from=vendor   /app/vendor        /var/www/html/vendor
+COPY --from=frontend /build/public/build /var/www/html/public/build
 
-# Install PHP dependencies (production only)
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# ── Stamp build-id ke service worker (PWA cache-busting) ─────────────────────
+# Di model single-image, public/ DI-BAKE (tak ada rsync boot), jadi stamp di
+# BUILD-time: sw.js statik → kalau bytes-nya tak berubah, browser tak update SW →
+# cache shell basi menyajikan HTML lama yg menunjuk hash aset yg sudah tiada →
+# 404. Stamp hash manifest ke __BUILD_ID__ supaya sw.js berubah HANYA saat aset
+# berubah (tiap deploy = manifest baru = id baru). Lihat public/sw.js.
+RUN if [ -f public/sw.js ] && [ -f public/build/manifest.json ]; then \
+        BUILD_ID="$(md5sum public/build/manifest.json | cut -c1-12)"; \
+        sed -i "s/__BUILD_ID__/${BUILD_ID}/g" public/sw.js; \
+        echo "[build] Service worker stamped build-id ${BUILD_ID}."; \
+    fi
 
-# NOTE: artisan config:cache / route:cache / view:cache are intentionally NOT
-# run at build time. They depend on the final runtime environment (DB_HOST,
-# APP_KEY, etc.) which is only known when the container starts. The entrypoint
-# script handles cache regeneration after env is loaded — see docker/entrypoint.sh.
+# Config nginx / php / supervisor (per-peran web/worker/reverb).
+COPY docker/nginx.conf              /etc/nginx/nginx.conf
+COPY docker/php-fpm.conf            /usr/local/etc/php-fpm.d/zz-www.conf
+COPY docker/php/php.ini             /usr/local/etc/php/conf.d/zzz-atlas.ini
+COPY docker/supervisord.web.conf    /etc/supervisor/supervisord.web.conf
+COPY docker/supervisord.worker.conf /etc/supervisor/supervisord.worker.conf
+COPY docker/supervisord.reverb.conf /etc/supervisor/supervisord.reverb.conf
 
-# Permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+COPY docker/start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
 
-# Clean copy of the fully-assembled app (code + vendor + public/build) for the
-# entrypoint to rsync into the shared `app_code` volume on boot. The volume
-# overlays /var/www/html and PERSISTS across deploys, so on redeploy it still
-# holds STALE code until the entrypoint refreshes it from here. storage/ & .env
-# are excluded at rsync time — see docker/entrypoint.sh.
-RUN mkdir -p /app-tmp && cp -rp /var/www/html/. /app-tmp/
+RUN rm -f /var/www/html/bootstrap/cache/*.php \
+    && composer dump-autoload --optimize --no-interaction \
+    && mkdir -p storage/logs storage/framework/sessions storage/framework/views storage/framework/cache/data storage/app/public bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R ug+rwX /var/www/html/storage /var/www/html/bootstrap/cache \
+    && php artisan package:discover --ansi
 
-# Copy config files
-COPY docker/php/php.ini /usr/local/etc/php/conf.d/atlas.ini
-COPY docker/php/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+EXPOSE 8080
 
-# Copy entrypoint
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-EXPOSE 9000
-
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
-
-# ─── Stage 3: nginx production ───────────────────────────────────────────────
-# Dedicated nginx image. public/ is NOT baked here — nginx serves it from the
-# shared `app_code` volume (mounted read-only in docker-compose). The `app`
-# container's entrypoint rsyncs the built public/ (incl. Vite assets) into that
-# volume on boot, so both containers resolve the same /var/www/html/public path
-# (required for FastCGI SCRIPT_FILENAME to be valid in both). nginx forwards PHP
-# requests to the `app` service (php-fpm:9000) and serves static assets directly.
-FROM nginx:alpine AS nginx-prod
-
-# Site config. The official nginx:alpine image includes /etc/nginx/conf.d/*.conf.
-COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
+CMD ["/usr/local/bin/start.sh"]

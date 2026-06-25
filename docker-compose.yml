@@ -1,117 +1,153 @@
-# ATLAS — Docker Compose (pola shared-volume, mirror erin-v2 / Aplikasi Hukum).
+# =========================================================
+# ATLAS — Docker Compose PRODUKSI (Coolify). Pola mirror PTI / erin-v2: app
+# dipecah jadi container terpisah supaya job/scheduler TIDAK mencekik web
+# (nginx+php-fpm). Fix permanen 504 Gateway Timeout intermiten.
 #
-#   - app (php-fpm) + webserver (nginx). Code di-BAKE ke image saat
-#     `docker compose build`; TIDAK ada dev server Vite & TIDAK ada live-edit
-#     (ubah kode → build lagi). Live-edit frontend = dev native (`npm run main-dev`).
-#   - app & webserver SHARE volume `app_code` di /var/www/html. Entrypoint app
-#     rsync code dari /app-tmp (di image) → volume tiap boot, jadi nginx + php-fpm
-#     melihat code + public/ yang SAMA (wajib agar FastCGI SCRIPT_FILENAME valid
-#     di kedua container). nginx baca read-only.
-#   - DB = PostgreSQL EKSTERNAL, dibaca dari `.env`. JANGAN hardcode DB_HOST di
-#     compose — biar env yang menentukan target. Di Coolify: isi DB_* di
-#     Environment Variables (arahkan ke Postgres service Coolify / DB managed).
-#     Run lokal ke Postgres host (Laragon): set DB_HOST=host.docker.internal di
-#     .env. Entrypoint hanya `migrate --force` (apply migrasi pending) — TIDAK seed.
-#   - TANPA WebSocket/Reverb (ATLAS realtime = polling 2s + scheduler).
+#   app    → WEB: nginx + php-fpm  (SATU-SATUNYA penerima trafik publik/Traefik)
+#   worker → queue:work x2 + schedule:work  (SCHEDULER ESENSIAL: realtime polling
+#            ATLAS bergantung pada atlas:cleanup-broadcast-events tiap menit)
+#   redis  → backend session/cache/queue (DORMANT — di-comment; ATLAS default
+#            session=database, cache=file, queue=sync)
+#   reverb → WebSocket (DORMANT — ATLAS realtime = polling, bukan WS)
 #
-# Deploy (Coolify): Traefik route domain ke service `webserver` lewat port 80
-# yang di-EXPOSE & terminasi HTTPS — JANGAN publish host port di sini.
+# Container app & worker memakai IMAGE YANG SAMA (atlas-app:prod), beda
+# CONTAINER_ROLE (lihat docker/start.sh). Nama service web tetap "app".
 #
-# Run lokal (akses http://localhost:8080): tambahkan sementara ke `webserver`:
-#     ports: ["8080:80"]
-#   lalu: docker compose up -d --build   (stop: docker compose down)
+# DB = PostgreSQL EKSTERNAL — DB_HOST dkk DARI .env (di Coolify: Environment
+# Variables), TIDAK di-override di sini. Run lokal ke Postgres host: set
+# DB_HOST=host.docker.internal di .env. Schema non-`public` `ptpn_kmr_app`
+# dipastikan ada oleh start.sh (psql) sebelum migrate.
 #
-# ── Ingin DB ter-bundel (tidak pakai Postgres host)? ─────────────────────────
-# Uncomment service `db` + volume `pgdata` di bawah, ganti `DB_HOST` di service
-# app jadi `db`, lalu `depends_on: [db]`. Schema ptpn_kmr_app dibuat otomatis
-# oleh entrypoint sebelum migrate; user login di-seed lewat entrypoint? TIDAK —
-# entrypoint.sh prod tidak seed. Untuk DB kosong + seed jalankan manual:
-#   docker compose exec app php artisan db:seed --force
+# Run (lokal): docker compose up -d --build   (akses via docker-compose.override.yml)
+# =========================================================
+
+# ─────────────────────────────────────────────────────────────────────────────
+# REDIS DIMATIKAN DULU (mirror erin). ATLAS tetap database/file/sync dari .env.
+# Image tetap punya ekstensi phpredis (Dockerfile), jadi mengaktifkan Redis nanti
+# TIDAK perlu ubah image. AKTIFKAN: uncomment 4 titik bertanda "[REDIS]" di bawah.
+# ⚠ Saat diaktifkan & driver dipindah ke redis: sesi/cache lama tak terbawa.
+# ─────────────────────────────────────────────────────────────────────────────
+# [REDIS] (1) anchor env — uncomment untuk aktifkan Redis
+# x-redis-env: &redis-env
+#   REDIS_HOST: redis
+#   REDIS_PORT: "6379"
+#   REDIS_CLIENT: phpredis
+#   SESSION_DRIVER: redis
+#   CACHE_STORE: redis
+#   QUEUE_CONNECTION: redis
+
+# Konfigurasi dasar yang dipakai bersama container app (web + worker).
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: atlas-app:prod
+  restart: always
+  env_file:
+    - path: .env
+      required: false
+  volumes:
+    # Upload user (disk privat 'local' = storage/app) + log. NAMED VOLUME supaya
+    # DURABLE lintas redeploy (di luar git-checkout Coolify).
+    - app_storage:/var/www/html/storage
+  networks:
+    - atlas
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
 
 services:
-    app:
-        build:
-            context: .
-            dockerfile: Dockerfile
-            target: php-base
-        container_name: atlas_app
-        restart: unless-stopped
-        env_file:
-            # Coolify menulis .env sebelah compose; di luar Coolify pakai .env
-            # repo. `required: false` → aman bila file belum ada saat build.
-            - path: .env
-              required: false
-        # DB_HOST dkk DARI .env (di Coolify: Environment Variables). TIDAK
-        # di-override di sini supaya env deploy yang menentukan DB target.
-        # Run lokal ke Postgres host? set DB_HOST=host.docker.internal di .env
-        # dan tambah `extra_hosts: ["host.docker.internal:host-gateway"]` (Linux).
-        volumes:
-            # Shared dgn webserver: berisi code + public/ (Vite) hasil rsync dari
-            # /app-tmp saat boot (lihat docker/entrypoint.sh). bootstrap/cache ikut
-            # di sini (di-rebuild entrypoint tiap boot — tak perlu persist).
-            - app_code:/var/www/html
-            # Upload user (disk privat 'local' = storage/app) + log. NAMED VOLUME,
-            # BUKAN bind ./storage — supaya DURABLE lintas redeploy. Entrypoint
-            # rsync --exclude 'storage' (volume ini tak pernah ditimpa kode baru).
-            - app_storage:/var/www/html/storage
-        networks:
-            - atlas
-        healthcheck:
-            test: ["CMD-SHELL", "php-fpm -t || exit 1"]
-            interval: 60s
-            timeout: 30s
-            retries: 5
-            start_period: 60s
+  # ---- WEB: nginx + php-fpm. Hanya service ini yang di-route Traefik (domain). ----
+  app:
+    <<: *app
+    container_name: atlas_app
+    environment:
+      # [REDIS] (2) uncomment baris berikut untuk aktifkan Redis di web:
+      # <<: *redis-env
+      CONTAINER_ROLE: web
+    # Traefik WAJIB meraih container web ini lewat network `coolify`. Tanpa label
+    # ini Traefik bisa menyimpan IP dari network yang salah → IP basi tiap deploy →
+    # 504 untuk SEMUA request sampai `docker restart coolify-proxy` (akar "harus 2x
+    # redeploy baru normal").
+    labels:
+      - "traefik.docker.network=coolify"
+    # expose (bukan ports) = internal; Traefik route lewat domain + terminasi HTTPS.
+    # Akses lokal lewat docker-compose.override.yml (publish 8080).
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/up"]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+      start_period: 120s
 
-    webserver:
-        build:
-            context: .
-            dockerfile: Dockerfile
-            target: nginx-prod
-        container_name: atlas_nginx
-        restart: unless-stopped
-        # Traefik WAJIB meraih container ini lewat network `coolify` (tempat proxy
-        # Coolify/Traefik berada). Tanpa label ini — karena container nempel di
-        # banyak network sekaligus (atlas + coolify) — Traefik bisa memilih lalu
-        # MENYIMPAN IP dari network yang salah (atlas); IP itu jadi basi tiap
-        # container di-recreate saat deploy → request mati di Traefik (tak pernah
-        # sampai nginx) → 504 "Gateway Timeout" untuk SEMUA request sampai
-        # `docker restart coolify-proxy`. Inilah akar "harus 2x redeploy baru normal".
-        labels:
-            - "traefik.docker.network=coolify"
-        # Coolify/Traefik route domain ke service ini lewat port 80 yang
-        # di-EXPOSE & terminasi HTTPS — JANGAN publish host port (bentrok "port
-        # is already allocated" karena :8080/:80 host dipegang Coolify).
-        # Run lokal? tambah sementara: ports: ["8080:80"].
-        expose:
-            - "80"
-        depends_on:
-            - app
-        volumes:
-            # Lihat code/public/ yang sama dgn app (read-only).
-            - app_code:/var/www/html:ro
-        networks:
-            - atlas
+  # ---- WORKER: queue:work (x2) + schedule:work. SCHEDULER ESENSIAL (realtime). ----
+  worker:
+    <<: *app
+    container_name: atlas_worker
+    environment:
+      # [REDIS] (2) uncomment baris berikut untuk aktifkan Redis di worker:
+      # <<: *redis-env
+      CONTAINER_ROLE: worker
+    # TIDAK ada expose/domain — murni background.
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "supervisorctl -c /etc/supervisor/supervisord.worker.conf status | grep -q RUNNING || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
 
-    # ── Postgres ter-bundel (opsional — lihat catatan di header) ──────────────
-    # db:
-    #     image: postgres:16-alpine
-    #     container_name: atlas_db
-    #     restart: unless-stopped
-    #     environment:
-    #         POSTGRES_DB: ${DB_DATABASE:-atlas-fullstack}
-    #         POSTGRES_USER: ${DB_USERNAME:-postgres}
-    #         POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-    #     volumes:
-    #         - pgdata:/var/lib/postgresql/data
-    #     networks:
-    #         - atlas
+  # ---- REDIS: backend session/cache/queue. DORMANT — uncomment untuk aktifkan. ----
+  # [REDIS] (3) uncomment service redis + depends_on (di app & worker) + volume:
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: atlas_redis
+  #   restart: always
+  #   command: ["redis-server", "--appendonly", "yes"]
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - atlas
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  # (lalu tambahkan ke app & worker:
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy )
+
+  # ---- REVERB: WebSocket. DORMANT — ATLAS pakai polling, bukan WS. Aktifkan
+  #      hanya bila ATLAS pindah ke WebSocket: `composer require laravel/reverb`,
+  #      tambahkan blok proxy /app di docker/nginx.conf, lalu UNCOMMENT blok ini. ----
+  # reverb:
+  #   <<: *app
+  #   container_name: atlas_reverb
+  #   environment:
+  #     <<: *redis-env
+  #     CONTAINER_ROLE: reverb
+  #   expose:
+  #     - "8081"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/127.0.0.1/8081' || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 30s
 
 volumes:
-    app_code:
-    app_storage:
-    # pgdata:
+  app_storage:
+  # [REDIS] (4) uncomment untuk aktifkan Redis:
+  # redis_data:
 
 networks:
-    atlas:
-        driver: bridge
+  atlas:
+    driver: bridge
