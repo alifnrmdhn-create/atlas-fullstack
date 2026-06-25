@@ -61,10 +61,14 @@ export default function HomeMobile({ scorecard }: Props) {
   const hasKpi = canAccessPerformance && (scorecard.totalItem > 0 || scorecard.ownItem != null)
   const kpiHeadline = scorecard.ownItem?.nilai ?? scorecard.avgItem
 
-  // Quick-access: 7 tile utama lintas-kategori + tile "All menu".
-  const quick: MenuTile[] = buildMobileMenu(gates).flatMap(s => s.items)
-  const QUICK_PATHS = ['/fokus', '/execution', '/penugasan', '/programs', '/jadwal', '/channels', '/presence']
-  const quickTiles = QUICK_PATHS.map(p => quick.find(q => q.path === p)).filter(Boolean) as MenuTile[]
+  // Quick-access (grid 5-kolom, padat): semua destinasi fitur (Today + Work +
+  // Portfolio) selain Home, di-cap 9 → 9 + "All menu" = 10 (2 baris penuh utk
+  // user ber-Performance; non-perf 7 + All = 8). Role-adaptif.
+  const quickTiles = buildMobileMenu(gates)
+    .filter(s => s.label === 'Today' || s.label === 'Work' || s.label.startsWith('Portfolio'))
+    .flatMap(s => s.items)
+    .filter(tile => tile.path !== '/')
+    .slice(0, 9) as MenuTile[]
 
   // Buka command palette (⌘K) lewat event yang didengar AppShell.
   const openSearch = () => window.dispatchEvent(new CustomEvent('atlas:open-palette'))
@@ -88,15 +92,15 @@ export default function HomeMobile({ scorecard }: Props) {
         <span>{t('Search programs, tasks…')}</span>
       </button>
 
-      {/* ── Status strip: ringkasan portofolio (horizontal-scroll) ──────── */}
+      {/* ── Metrik portofolio: 1 kartu, 4 sel — SEMUA terlihat (anti-scroll) ── */}
       {summary ? (
-        <div className="hm__strip" role="list" aria-label={t('Portfolio status')}>
-          <StatCard tone="green" n={summary.onTrack} label={t('On Track')} href="/programs?status=on_track" />
-          <StatCard tone="amber" n={summary.atRisk} label={t('At Risk')} href="/programs?status=at_risk" />
-          <StatCard tone="red" n={tlm} label={t('Delayed')} href="/programs?status=terlambat" />
+        <div className="hm__metrics" role="list" aria-label={t('Portfolio status')}>
+          <MetricCell tone="green" n={summary.onTrack} label={t('On Track')} href="/programs?status=on_track" />
+          <MetricCell tone="amber" n={summary.atRisk} label={t('At Risk')} href="/programs?status=at_risk" />
+          <MetricCell tone="red" n={tlm} label={t('Delayed')} href="/programs?status=terlambat" />
           {hasKpi
-            ? <StatCard tone={scoreTone(kpiHeadline)} n={Math.round(kpiHeadline)} suffix="%" label={t('KPI Score')} href="/performance/scorecard" />
-            : <StatCard tone="neutral" n={summary.selesai} label={t('Completed')} href="/programs?completed=1" />}
+            ? <MetricCell tone={scoreTone(kpiHeadline)} n={Math.round(kpiHeadline)} suffix="%" label={t('KPI')} href="/performance/scorecard" />
+            : <MetricCell tone="neutral" n={summary.selesai} label={t('Done')} href="/programs?completed=1" />}
         </div>
       ) : null}
 
@@ -179,14 +183,11 @@ export default function HomeMobile({ scorecard }: Props) {
   )
 }
 
-function StatCard({ tone, n, suffix, label, href }: { tone: string; n: number; suffix?: string; label: string; href: string }) {
+function MetricCell({ tone, n, suffix, label, href }: { tone: string; n: number; suffix?: string; label: string; href: string }) {
   return (
-    <Link href={href} className={`hm__stat hm__stat--${tone}`} role="listitem">
-      <span className="hm__stat-head">
-        <span className="hm__stat-dot" aria-hidden="true" />
-        <span className="hm__stat-label">{label}</span>
-      </span>
-      <span className="hm__stat-n">{n}{suffix ? <span className="hm__stat-suffix">{suffix}</span> : null}</span>
+    <Link href={href} className={`hm__metric hm__metric--${tone}`} role="listitem">
+      <span className="hm__metric-n">{n}{suffix ? <span className="hm__metric-suffix">{suffix}</span> : null}</span>
+      <span className="hm__metric-label"><span className="hm__metric-dot" aria-hidden="true" />{label}</span>
     </Link>
   )
 }

@@ -45,13 +45,13 @@ try {
   step('Home launcher (HomeMobile)')
   await navigate(page, `${baseUrl}/`)
   await waitFor(page, () => !!document.querySelector('.hm'), 15000, 'HomeMobile root')
-  await waitFor(page, () => document.querySelectorAll('.hm__stat').length >= 3, 15000, 'status strip loaded')
+  await waitFor(page, () => document.querySelectorAll('.hm__metric').length >= 3, 15000, 'status strip loaded')
   await sleep(800)
   await capture(page, '01-home-launcher', 'Home launcher marketplace')
 
   findings.push(`Greeting hadir: ${await evalAwait(page, () => !!document.querySelector('.hm__greet-name'))}`)
   findings.push(`Search pill hadir: ${await evalAwait(page, () => !!document.querySelector('.hm__search'))}`)
-  findings.push(`Status strip cards: ${await evalAwait(page, () => document.querySelectorAll('.hm__stat').length)}`)
+  findings.push(`Status strip cards: ${await evalAwait(page, () => document.querySelectorAll('.hm__metric').length)}`)
   findings.push(`Quick menu tiles: ${await evalAwait(page, () => document.querySelectorAll('.hm__sect .mm-tile').length)}`)
   findings.push(`Needs-action rows: ${await evalAwait(page, () => document.querySelectorAll('.hm__row').length)}`)
 

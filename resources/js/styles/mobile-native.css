@@ -11,8 +11,8 @@
 .hm {
   display: flex;
   flex-direction: column;
-  gap: 26px;
-  padding: 18px 16px 0;
+  gap: 18px;
+  padding: 16px 16px 0;
   /* Kedalaman: kartu putih di atas canvas off-white (shell.css set bg mobile ke
      --ds-surface-page) → shadow halus bikin "permukaan terangkat" ala app, bukan
      putih datar. Di dark, shadow nyaris tak tampak; kedalaman dari kontras
@@ -21,7 +21,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ── Header (greeting) ───────────────────────────────────────────────────── */
+/* ── Header (greeting) — compact ─────────────────────────────────────────── */
 .hm__head { display: flex; flex-direction: column; }
 .hm__greet-hi {
   margin: 0;
@@ -30,16 +30,16 @@
   font-weight: 550;
 }
 .hm__greet-name {
-  margin: 2px 0 0;
-  font-size: 27px;
-  line-height: 1.08;
+  margin: 1px 0 0;
+  font-size: 23px;
+  line-height: 1.1;
   font-weight: 750;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
   color: var(--ds-text-primary);
 }
 .hm__greet-sub {
-  margin: 6px 0 0;
-  font-size: var(--ds-text-13);
+  margin: 3px 0 0;
+  font-size: var(--ds-text-12, 12px);
   color: var(--ds-text-tertiary);
   white-space: nowrap;
   overflow: hidden;
@@ -52,9 +52,9 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-height: 48px;
-  padding: 0 16px;
-  border-radius: 14px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 13px;
   border: 1px solid var(--ds-border-subtle);
   background: var(--ds-surface-card);
   box-shadow: var(--hm-card-shadow);
@@ -67,65 +67,63 @@
 .hm__search:active { transform: scale(0.99); }
 .hm__search svg { flex-shrink: 0; color: var(--ds-brand-500); }
 
-/* ── Status strip: kartu metrik premium (horizontal-scroll, bleed ke tepi) ── */
-.hm__strip {
+/* ── Metrik portofolio: 1 kartu, 4 sel ber-divider (SEMUA terlihat) ──────── */
+.hm__metrics {
   display: flex;
-  align-items: stretch;
-  gap: 11px;
-  min-height: 88px; /* anti-collapse scroll-container flex (anak ~80px) */
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  /* bleed melawan padding .hm (16px) supaya kartu terakhir "ngintip" = afordans scroll */
-  margin: 0 -16px;
-  padding: 4px 16px 6px;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.hm__strip::-webkit-scrollbar { display: none; }
-.hm__stat {
-  scroll-snap-align: start;
-  flex: 0 0 auto;
-  width: 134px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 15px;
-  border-radius: 18px;
+  /* min-height eksplisit: flex-row + overflow:hidden bisa kolaps tinggi (sel
+     ter-clip jadi border 2px) — circular flex sizing. Kunci tinggi. */
+  min-height: 58px;
+  border-radius: 16px;
   border: 1px solid var(--ds-border-subtle);
   background: var(--ds-surface-card);
   box-shadow: var(--hm-card-shadow);
+  overflow: hidden;
+}
+.hm__metric {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 11px 4px;
   text-decoration: none;
+  border-left: 1px solid var(--ds-border-subtle);
 }
-.hm__stat-head { display: flex; align-items: center; gap: 7px; }
-.hm__stat-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: var(--_tone, var(--ds-neutral-400));
+.hm__metric:first-child { border-left: none; }
+.hm__metric:active { background: var(--ds-surface-hover); }
+.hm__metric-n {
+  font-size: 23px;
+  font-weight: 760;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ds-text-primary);
+  font-variant-numeric: tabular-nums;
 }
-.hm__stat--green   { --_tone: var(--ds-green-500); }
-.hm__stat--amber   { --_tone: var(--ds-amber-500); }
-.hm__stat--red     { --_tone: var(--ds-red-500); }
-.hm__stat--neutral { --_tone: var(--ds-neutral-400); }
-.hm__stat-label {
-  font-size: var(--ds-text-13);
+.hm__metric-suffix { font-size: 13px; font-weight: 650; color: var(--ds-text-tertiary); }
+.hm__metric-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--ds-text-secondary);
   white-space: nowrap;
 }
-.hm__stat-n {
-  font-size: 30px;
-  font-weight: 760;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: var(--ds-text-primary);
-  font-variant-numeric: tabular-nums;
+.hm__metric-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--_tone, var(--ds-neutral-400));
 }
-.hm__stat-suffix { font-size: 16px; font-weight: 650; color: var(--ds-text-tertiary); margin-left: 1px; }
+.hm__metric--green   { --_tone: var(--ds-green-500); }
+.hm__metric--amber   { --_tone: var(--ds-amber-500); }
+.hm__metric--red     { --_tone: var(--ds-red-500); }
+.hm__metric--neutral { --_tone: var(--ds-neutral-400); }
 
 /* ── Section scaffolding ─────────────────────────────────────────────────── */
-.hm__sect { display: flex; flex-direction: column; gap: 12px; }
+.hm__sect { display: flex; flex-direction: column; gap: 10px; }
 .hm__sect-head { display: flex; align-items: baseline; justify-content: space-between; }
 .hm__sect-title {
   margin: 0;
@@ -151,15 +149,29 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 6px 4px;
 }
-/* Quick-access di Home = panel kartu putih terangkat (mengelompokkan tile,
-   memberi kedalaman; bleed sheet TIDAK dapat ini). */
+/* Quick-access di Home = panel kartu putih terangkat, grid 5-kolom padat
+   (rasa super-app: banyak menu, label 2 baris). Sheet "All menu" TIDAK dapat
+   override ini (tetap 4-kolom, ruang lega). */
 .mm-grid--quick {
-  gap: 14px 4px;
-  padding: 16px 8px;
-  border-radius: 18px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px 2px;
+  padding: 14px 6px;
+  border-radius: 16px;
   border: 1px solid var(--ds-border-subtle);
   background: var(--ds-surface-card);
   box-shadow: var(--hm-card-shadow);
+}
+.mm-grid--quick .mm-tile { gap: 6px; padding: 4px 1px; }
+.mm-grid--quick .mm-tile__chip { width: 46px; height: 46px; border-radius: 14px; }
+.mm-grid--quick .mm-tile__chip svg { width: 20px; height: 20px; }
+.mm-grid--quick .mm-tile__label {
+  font-size: 10.5px;
+  line-height: 1.18;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-height: 2.36em; /* 2 baris konsisten → tile rata grid */
 }
 .mm-tile {
   display: flex;
@@ -229,10 +241,10 @@
 .hm__row {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 10px;
   width: 100%;
-  min-height: 56px;
-  padding: 11px 14px;
+  min-height: 48px;
+  padding: 9px 13px;
   background: none;
   border: none;
   border-top: 1px solid var(--ds-border-subtle);
@@ -244,11 +256,11 @@
 .hm__row:active { background: var(--ds-surface-hover); }
 .hm__row-tag {
   flex-shrink: 0;
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  padding: 4px 8px;
+  padding: 3px 7px;
   border-radius: var(--ds-radius-sm);
 }
 .hm__row-tag--approval { background: var(--ds-brand-100); color: var(--ds-brand-700); }
@@ -487,13 +499,13 @@
   font-size: var(--ds-text-14);
 }
 
-.pm__list { display: flex; flex-direction: column; gap: 10px; }
+.pm__list { display: flex; flex-direction: column; gap: 8px; }
 .pm-card {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 8px;
   width: 100%;
-  padding: 15px;
+  padding: 13px 14px;
   border-radius: 18px;
   border: 1px solid var(--ds-border-subtle);
   background: var(--ds-surface-card);
@@ -583,8 +595,8 @@
 /* ════════════════════════════════════════════════════════════════════════
    WorkboardMobile — board task per-lane (reuse .pm header/search/chips/mine)
    ════════════════════════════════════════════════════════════════════════ */
-.wb-m__lanes { display: flex; flex-direction: column; gap: 20px; }
-.wb-m__lane { display: flex; flex-direction: column; gap: 9px; }
+.wb-m__lanes { display: flex; flex-direction: column; gap: 16px; }
+.wb-m__lane { display: flex; flex-direction: column; gap: 7px; }
 .wb-m__lane-head { display: flex; align-items: center; gap: 8px; padding: 0 2px; }
 .wb-m__lane-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ds-neutral-400); }
 .wb-m__lane-dot--red { background: var(--ds-red-500); }
