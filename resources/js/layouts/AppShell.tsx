@@ -1291,6 +1291,18 @@ export function AppShell({ children }: { children?: ReactNode }) {
       {/* ── Main workspace ── */}
       <div className="workspace" id="workspace-modal-root">
         <header className="topbar">
+          {/* Wordmark brand — hanya tampil di app-bar mobile (≤640), mengisi sisi
+              kiri yang dulu kosong/rusak. Hidden di desktop via CSS. */}
+          <div className="topbar__brand-mobile" aria-hidden="true">
+            <span className="topbar__brand-mobile-mark">
+              <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <line x1="2.5" y1="18.5" x2="10" y2="2.5" />
+                <line x1="17.5" y1="18.5" x2="10" y2="2.5" />
+                <line x1="6.3" y1="11.5" x2="13.7" y2="11.5" />
+              </svg>
+            </span>
+            <span className="topbar__brand-mobile-name">ATLAS</span>
+          </div>
           {/* Navigasi phone = bottom tab "Menu" → All-menu sheet (hamburger lama
               dihapus; entri menu tunggal lewat tab bar jangkauan-jempol). */}
           {/* ── Slim utility bar — date/period/live + sticky title + actions ──

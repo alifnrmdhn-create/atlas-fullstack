@@ -71,22 +71,14 @@ export default function HomeMobile({ scorecard }: Props) {
 
   const greetName = firstName(currentUser?.name)
   const subtitle = currentUser?.positionTitle || currentUser?.directorate?.name || currentUser?.unit?.name || ''
-  const initials = greetName ? greetName.slice(0, 1).toUpperCase() : 'A'
 
   return (
     <div className="hm">
-      {/* ── Header: salam + avatar + search pill ───────────────────────── */}
+      {/* ── Header: salam (avatar ada di app-bar, tak diduplikasi) + search ── */}
       <header className="hm__head">
-        <div className="hm__greet">
-          <p className="hm__greet-hi">{t(greetingKey())}{greetName ? ',' : ''}</p>
-          <p className="hm__greet-name">{greetName || t('Welcome')}</p>
-          {subtitle ? <p className="hm__greet-sub">{subtitle}</p> : null}
-        </div>
-        <Link href="/profile" className="hm__avatar" aria-label={t('Profile')}>
-          {currentUser?.avatarUrl
-            ? <img src={currentUser.avatarUrl} alt="" />
-            : <span>{initials}</span>}
-        </Link>
+        <p className="hm__greet-hi">{t(greetingKey())}{greetName ? ',' : ''}</p>
+        <h1 className="hm__greet-name">{greetName || t('Welcome')}</h1>
+        {subtitle ? <p className="hm__greet-sub">{subtitle}</p> : null}
       </header>
 
       <button type="button" className="hm__search" onClick={openSearch}>
@@ -190,8 +182,11 @@ export default function HomeMobile({ scorecard }: Props) {
 function StatCard({ tone, n, suffix, label, href }: { tone: string; n: number; suffix?: string; label: string; href: string }) {
   return (
     <Link href={href} className={`hm__stat hm__stat--${tone}`} role="listitem">
+      <span className="hm__stat-head">
+        <span className="hm__stat-dot" aria-hidden="true" />
+        <span className="hm__stat-label">{label}</span>
+      </span>
       <span className="hm__stat-n">{n}{suffix ? <span className="hm__stat-suffix">{suffix}</span> : null}</span>
-      <span className="hm__stat-label">{label}</span>
     </Link>
   )
 }

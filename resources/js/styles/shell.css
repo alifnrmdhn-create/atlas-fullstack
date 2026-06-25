@@ -82,28 +82,61 @@
 
 /* Hamburger topbar: tidak dipakai (navigasi via tab "Menu"). Tetap hidden. */
 .topbar__hamburger { display: none; }
+/* Wordmark brand hanya tampil di app-bar mobile (≤640); hidden di desktop. */
+.topbar__brand-mobile { display: none; }
 
 @media (max-width: 640px) { /* bp-allow: --bp-sm */
   /* Sidebar keluar grid → workspace full-width; sidebar disembunyikan total. */
   .app-shell--mobile { grid-template-columns: 1fr; }
   .app-shell--mobile .sidebar { display: none; }
 
-  /* Topbar lebih ringkas di phone: tinggi 44→40 (reclaim 4px di puncak konten —
-     keluhan "boros ruang"). --topbar-height di-override di shell supaya
-     .workspace__content padding-top ikut otomatis. Tombol di dalamnya (cmdk
-     36px, bell, avatar) tetap muat nyaman. Respect notch + gap rapat. */
-  .app-shell--mobile { --topbar-height: 40px; }
+  /* ── Kedalaman: canvas off-white di mobile (bukan putih murni --app-bg) →
+     kartu putih + shadow halus "terangkat" = rasa app, bukan web datar. ── */
+  .app-shell--mobile .workspace__content { background: var(--ds-surface-page); }
+
+  /* ── App-bar mobile bersih & seimbang (2026-06-25) ──
+     Ganti strip desktop yang terlihat rusak (titik live yatim + ikon menumpuk):
+     wordmark ATLAS kiri · bell + avatar kanan. Permukaan putih card + hairline
+     bawah, mengambang di atas canvas off-white. */
+  .app-shell--mobile { --topbar-height: 54px; }
   .topbar {
-    padding-left: max(14px, env(safe-area-inset-left, 0px));
-    padding-right: max(14px, env(safe-area-inset-right, 0px));
-    gap: 8px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    gap: 6px;
+    align-items: center;
+    background: var(--ds-surface-card);
+    border-bottom: 1px solid var(--ds-border-subtle);
   }
-  /* "Live" indicator: buang label teks (sisakan dot pulsing) — di phone status
-     realtime low-value & makan lebar. Prefix `.topbar` WAJIB (0,2,0): base
-     `.topbar__live{font-size:11px}` ada LEBIH BAWAH di file (≈L918) → tanpa
-     prefix kalah source-order & "Live" tetap tampil. Dot 6px fixed, tak
-     terdampak font-size:0. */
-  .topbar .topbar__live { font-size: 0; gap: 0; padding: 0 2px; }
+  /* Sembunyikan elemen desktop yang tak relevan / berisik di app-bar mobile.
+     Prefix `.app-shell--mobile` (0,2,0) WAJIB — base `.topbar__notif-btn`/
+     `.topbar__cmdk` (0,1,0) menang source-order tanpa ini (jebakan specificity
+     class). App-bar bersih = ATLAS · bell · avatar. */
+  .app-shell--mobile .topbar__live,
+  .app-shell--mobile .topbar__meta-period,
+  .app-shell--mobile .topbar__cmdk,
+  .app-shell--mobile .topbar__help-btn { display: none; }
+
+  /* Wordmark brand (mobile-only) — mengisi sisi kiri yang dulu kosong. */
+  .topbar__brand-mobile {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: auto;
+  }
+  .topbar__brand-mobile-mark {
+    display: grid;
+    place-items: center;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--ds-brand-500);
+    color: #fff; /* dark-allow: mark di atas brand fill, kontras tetap */
+  }
+  .topbar__brand-mobile-name {
+    font-size: 16px;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    color: var(--ds-text-primary);
+  }
 
   /* ── Bottom tab bar (Mobile UX, 2026-06-02) ─────────────────────────────
    * Navigasi utama jangkauan-jempol. Fixed di bawah, opaque, safe-area aware.
