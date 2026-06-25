@@ -1095,3 +1095,80 @@
   /* :active press momentary (umpan-balik tap sebelum baris jadi aktif). */
   .ds.channels-v2 .channel-row:not(.is-active):active { background: var(--surface-1); }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PHASE 11 — Mobile chat-column "wow" (≤640) — 2026-06-25
+   Mengangkat kolom percakapan HP ke rasa marketplace-chat kelas atas
+   (WA/Telegram/Livin) TANPA menyentuh logika messaging: hanya presentasi,
+   scoped .ds.channels-v2, load terakhir → menang cascade. Fondasi bubble dua
+   sisi (Phase 5–7) + list↔conversation (Phase 10) tetap; di sini disetel ulang
+   khusus phone agar lebih lega, membulat, dan day-divider mengambang.
+   Lihat memory project_mobile_native_marketplace + project_channels_css_architecture.
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  /* ── Day divider → pill mengambang sticky (gaya WA) ──
+     Buang garis kiri/kanan; span jadi kapsul terpusat yang menempel di puncak
+     saat scroll grup hari berjalan. */
+  .ds.channels-v2 .message-group__separator {
+    position: sticky;
+    top: 6px;
+    z-index: 3;
+    justify-content: center;
+    margin: 14px 0 12px;
+    pointer-events: none;
+  }
+  .ds.channels-v2 .message-group__separator::before,
+  .ds.channels-v2 .message-group__separator::after { display: none; }
+  .ds.channels-v2 .message-group__separator span {
+    font-size: 11px;
+    /* near-opaque (BUKAN backdrop-filter: sticky-over-scroll + blur = stutter,
+       lihat memory feedback_backdrop_filter_perf) */
+    background: color-mix(in srgb, var(--panel) 97%, var(--surface-2));
+    border: 1px solid var(--panel-border-soft);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14); /* dark-allow: drop-shadow pill, identik dua theme */
+    padding: 4px 12px;
+  }
+
+  /* ── Bubble: lebih lebar (hemat gutter di HP) + sudut lebih membulat ── */
+  .ds.channels-v2 .message-card:not(.message-card--own):not(.message-card--tagged):not(.message-card--deleted-state) .message-card__body,
+  .ds.channels-v2 .message-card--own .message-card__body {
+    max-width: 82%;
+    padding: 9px 13px;
+    font-size: 14.5px;
+    line-height: 1.42;
+  }
+  /* Bubble solo: sudut penuh + ekor satu sisi (kiri-bawah lawan, kanan-bawah own) */
+  .ds.channels-v2 .message-card--cluster-solo:not(.message-card--own):not(.message-card--tagged) .message-card__body {
+    border-radius: 20px 20px 20px 7px;
+  }
+  .ds.channels-v2 .message-card--cluster-solo.message-card--own .message-card__body {
+    border-radius: 20px 20px 7px 20px;
+  }
+
+  /* ── Rhythm: rapatkan pesan beruntun, beri jeda antar-pengirim ── */
+  .ds.channels-v2 .message-card--grouped { margin-top: 2px; }
+  .ds.channels-v2 .message-card:not(.message-card--grouped) { margin-top: 9px; }
+
+  /* ── Meta penulis lebih ringkas ── */
+  .ds.channels-v2 .message-card__author-name { font-size: 13px; }
+  .ds.channels-v2 .message-card__meta .ch-role-badge {
+    font-size: 9px;
+    padding: 0 5px;
+  }
+  .ds.channels-v2 .message-card__time { font-size: 10.5px; }
+
+  /* ── Composer: kapsul membulat, tap-safe, hormati safe-area ── */
+  .ds.channels-v2 .composer-slim {
+    padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--panel-border-soft);
+  }
+  .ds.channels-v2 .composer-slim__box {
+    border-radius: 22px;
+    background: var(--surface-1);
+  }
+  .ds.channels-v2 .composer-slim__send {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+  }
+}
