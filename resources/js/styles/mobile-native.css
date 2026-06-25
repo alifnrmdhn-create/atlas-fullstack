@@ -11,8 +11,8 @@
 .hm {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 16px 16px 0;
+  gap: 13px;
+  padding: 12px 14px 0;
   /* Kedalaman: kartu putih di atas canvas off-white (shell.css set bg mobile ke
      --ds-surface-page) → shadow halus bikin "permukaan terangkat" ala app, bukan
      putih datar. Di dark, shadow nyaris tak tampak; kedalaman dari kontras
@@ -30,16 +30,16 @@
   font-weight: 550;
 }
 .hm__greet-name {
-  margin: 1px 0 0;
-  font-size: 23px;
-  line-height: 1.1;
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.08;
   font-weight: 750;
   letter-spacing: -0.02em;
   color: var(--ds-text-primary);
 }
 .hm__greet-sub {
-  margin: 3px 0 0;
-  font-size: var(--ds-text-12, 12px);
+  margin: 2px 0 0;
+  font-size: 11.5px;
   color: var(--ds-text-tertiary);
   white-space: nowrap;
   overflow: hidden;
@@ -50,11 +50,11 @@
 .hm__search {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   width: 100%;
-  min-height: 44px;
-  padding: 0 14px;
-  border-radius: 13px;
+  min-height: 40px;
+  padding: 0 13px;
+  border-radius: 12px;
   border: 1px solid var(--ds-border-subtle);
   background: var(--ds-surface-card);
   box-shadow: var(--hm-card-shadow);
@@ -72,8 +72,8 @@
   display: flex;
   /* min-height eksplisit: flex-row + overflow:hidden bisa kolaps tinggi (sel
      ter-clip jadi border 2px) — circular flex sizing. Kunci tinggi. */
-  min-height: 58px;
-  border-radius: 16px;
+  min-height: 52px;
+  border-radius: 14px;
   border: 1px solid var(--ds-border-subtle);
   background: var(--ds-surface-card);
   box-shadow: var(--hm-card-shadow);
@@ -86,22 +86,22 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 11px 4px;
+  gap: 3px;
+  padding: 9px 4px;
   text-decoration: none;
   border-left: 1px solid var(--ds-border-subtle);
 }
 .hm__metric:first-child { border-left: none; }
 .hm__metric:active { background: var(--ds-surface-hover); }
 .hm__metric-n {
-  font-size: 23px;
+  font-size: 21px;
   font-weight: 760;
   line-height: 1;
   letter-spacing: -0.02em;
   color: var(--ds-text-primary);
   font-variant-numeric: tabular-nums;
 }
-.hm__metric-suffix { font-size: 13px; font-weight: 650; color: var(--ds-text-tertiary); }
+.hm__metric-suffix { font-size: 12px; font-weight: 650; color: var(--ds-text-tertiary); }
 .hm__metric-label {
   display: flex;
   align-items: center;
@@ -123,11 +123,11 @@
 .hm__metric--neutral { --_tone: var(--ds-neutral-400); }
 
 /* ── Section scaffolding ─────────────────────────────────────────────────── */
-.hm__sect { display: flex; flex-direction: column; gap: 10px; }
+.hm__sect { display: flex; flex-direction: column; gap: 8px; }
 .hm__sect-head { display: flex; align-items: baseline; justify-content: space-between; }
 .hm__sect-title {
   margin: 0;
-  font-size: var(--ds-text-16);
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--ds-text-primary);
@@ -154,14 +154,14 @@
    override ini (tetap 4-kolom, ruang lega). */
 .mm-grid--quick {
   grid-template-columns: repeat(5, 1fr);
-  gap: 12px 2px;
-  padding: 14px 6px;
-  border-radius: 16px;
+  gap: 9px 2px;
+  padding: 11px 5px;
+  border-radius: 14px;
   border: 1px solid var(--ds-border-subtle);
   background: var(--ds-surface-card);
   box-shadow: var(--hm-card-shadow);
 }
-.mm-grid--quick .mm-tile { gap: 6px; padding: 4px 1px; }
+.mm-grid--quick .mm-tile { gap: 5px; padding: 3px 1px; }
 .mm-grid--quick .mm-tile__chip { width: 46px; height: 46px; border-radius: 14px; }
 .mm-grid--quick .mm-tile__chip svg { width: 20px; height: 20px; }
 .mm-grid--quick .mm-tile__label {
