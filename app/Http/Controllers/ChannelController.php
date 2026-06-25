@@ -396,7 +396,18 @@ class ChannelController extends Controller
             ->with(['members' => fn ($q) => $q->where('userId', $userId)])
             ->orderBy('name');
 
-        if (!$isAdmin) {
+        if ($isAdmin) {
+            // Admin/superadmin tetap punya pandangan luas (semua channel grup
+            // publik & privat utk moderasi), TAPI DM antar user lain (type
+            // PRIVATE, nama "dm-A-B") bersifat personal — JANGAN muncul di
+            // sidebar admin. Dulu admin tak difilter sama sekali → daftar
+            // "kotor" oleh DM orang lain (keluhan superadmin 2026-06-25). DM
+            // milik admin sendiri tetap tampil lewat keanggotaan.
+            $query->where(fn ($q) => $q
+                ->whereRaw('"name" !~ \'^dm-[0-9]+-[0-9]+$\'')
+                ->orWhereIn('id', $memberChannelIds)
+            );
+        } else {
             $query->where(fn ($q) => $q
                 ->where('type', 'PUBLIC')
                 ->orWhereIn('id', $memberChannelIds)
