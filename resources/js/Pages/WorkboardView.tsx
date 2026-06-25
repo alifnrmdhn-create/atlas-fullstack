@@ -34,26 +34,17 @@ type TimeFilter = 'week' | 'overdue' | 'in-flight' | 'all'
 //   legacy (Execution tak punya review), dinormalisasi oleh progres.
 //   Status underlying ditampilkan sebagai badge dalam lane (READY → "Siap").
 // - Perpindahan lane di-derive dari progress (lihat TaskService::updateProgress).
-type Lane = { key: string; label: string; statuses: string[]; hint: string }
-const getLanes = (): Lane[] => [
-  {
-    key: 'todo',
-    label: i18n.t('Not Started'),
-    statuses: ['BACKLOG', 'READY'],
-    hint: i18n.t('Task not started yet. Enter progress in the card detail to begin.'),
-  },
-  {
-    key: 'doing',
-    label: i18n.t('In Progress'),
-    statuses: ['IN_PROGRESS', 'IN_REVIEW', 'BLOCKED'],
-    hint: i18n.t('Task is actively being worked on or blocked.'),
-  },
-  {
-    key: 'done',
-    label: i18n.t('Completed'),
-    statuses: ['COMPLETED'],
-    hint: i18n.t('Task done (100% progress or approved by reviewer).'),
-  },
+// Board (kanban) di-organize per URGENSI JADWAL (bukan lifecycle) sejak
+// 2026-06-25 — Overdue/At Risk/On Track/Not Started/Completed. Memberi "wadah"
+// pada item telat/berisiko (yang dulu terkubur di lane "In Progress") & selaras
+// kosakata Schedule di seluruh app. Bucket per item via scheduleBucket().
+type ScheduleLane = { key: string; label: string; hint: string }
+const getScheduleLanes = (): ScheduleLane[] => [
+  { key: 'overdue',     label: i18n.t('Overdue'),     hint: i18n.t('Past due, delayed, or blocked — act now.') },
+  { key: 'at-risk',     label: i18n.t('At Risk'),     hint: i18n.t('Behind on health or due soon — watch closely.') },
+  { key: 'on-track',    label: i18n.t('On Track'),    hint: i18n.t('In progress and on schedule.') },
+  { key: 'not-started', label: i18n.t('Not Started'), hint: i18n.t('Not started yet.') },
+  { key: 'completed',   label: i18n.t('Completed'),   hint: i18n.t('Done.') },
 ]
 const statusSlug = (status: string) => status.toLowerCase()
 
@@ -203,6 +194,14 @@ function scheduleOf(
   return { rank: 3, label: i18n.t('On Track'), tone: 'green' }
 }
 
+// Map task → kolom Board (urgensi). Reuse scheduleOf (sumber tunggal urgensi):
+// rank 0/1 (overdue/delayed/blocked) → overdue, 2 → at-risk, 3 → on-track,
+// 4 → not-started, 5 → completed.
+const SCHEDULE_BUCKET_BY_RANK = ['overdue', 'overdue', 'at-risk', 'on-track', 'not-started', 'completed']
+function scheduleBucket(item: Task, normalizeHealthStatus: (h: string) => 'GREEN' | 'YELLOW' | 'RED'): string {
+  return SCHEDULE_BUCKET_BY_RANK[scheduleOf(item, normalizeHealthStatus).rank] ?? 'on-track'
+}
+
 /** Baris task di bawah section program (By Program). Bukan kartu — flat,
  *  ber-indentasi di bawah header program → keanggotaan otomatis jelas. Rail
  *  kiri + pill = sinyal JADWAL (urgensi). */
@@ -250,7 +249,7 @@ function ProgramTaskRow({
 
 export function WorkboardView() {
   const { t } = useTranslation()
-  const LANES = getLanes()
+  const SCHEDULE_LANES = getScheduleLanes()
   const TIME_FILTER_LABELS = getTimeFilterLabels()
   const {
     workGroups, workGroupsStatus, reloadTasks, blockers, programs,
@@ -494,12 +493,6 @@ export function WorkboardView() {
   }
 
   const allItems = scopedItems.filter(matchesTimeFilter)
-  const filteredGroups = workGroups.map(g => ({
-    ...g,
-    items: applyBoardFilters(
-      effectiveMyItemsOnly ? g.items.filter(i => i.assignee?.id === currentUser?.id) : g.items
-    ).filter(matchesTimeFilter),
-  }))
 
   // ── By-Program view: group the user's in-scope tasks under their program,
   //    enriched with program metadata (health/progress/PIC) from the programs
@@ -917,12 +910,17 @@ export function WorkboardView() {
           ) : null}
           {boardReady && boardMode === 'kanban' && allItems.length > 0 && (
             <div className="kanban-board kanban-board--lanes">
-              {LANES.map((lane) => {
-                // Bucket item per lane berdasarkan status underlying. Urutan
-                // status di lane.statuses menentukan urutan tampil dalam lane.
-                const items = lane.statuses.flatMap(
-                  s => filteredGroups.find(g => g.status === s)?.items ?? []
-                )
+              {(() => {
+                // Bucket allItems per kolom urgensi (Overdue/At Risk/On Track/
+                // Not Started/Completed) — sumbu Schedule, bukan lifecycle.
+                const byBucket = new Map<string, Task[]>()
+                for (const it of allItems) {
+                  const b = scheduleBucket(it, normalizeHealthStatus)
+                  const arr = byBucket.get(b)
+                  if (arr) arr.push(it); else byBucket.set(b, [it])
+                }
+                return SCHEDULE_LANES.map((lane) => {
+                const items = byBucket.get(lane.key) ?? []
                 const isCollapsed = collapsedCols.has(lane.key)
                 return (
                   <div
@@ -964,7 +962,8 @@ export function WorkboardView() {
                     )}
                   </div>
                 )
-              })}
+                })
+              })()}
             </div>
           )}
 

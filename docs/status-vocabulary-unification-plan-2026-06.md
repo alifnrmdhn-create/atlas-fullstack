@@ -330,8 +330,20 @@ tak salah, §6 abbreviation) → dibiarkan.
 - i18n baru: "No tasks in this program yet.", "{{count}} need attention", "across all programs".
 - CSS lama `.wb-prog__lane*`/`lane-fold` dibuang; Board tab (kanban lifecycle) TAK disentuh.
 
-**TODO opsional (PR-3b):** ubah **Board tab** dari lane lifecycle → kolom urgensi (Overdue/At Risk/
-On Track/Not Started/Completed) supaya delayed punya wadah-kolom global juga. Verifikasi dark-mode
-Workboard (gate token lolos, tapi belum di-screenshot). GOTCHA smoke: DB dev DTDI — password
-`atlas.admin` di-reset ke `Password123!` utk smoke (login = userId, kolom passwordHash; superadmin@atlas
-= "Super Admin ATLAS").
+GOTCHA smoke: DB dev DTDI — password `atlas.admin` di-reset ke `Password123!` utk smoke (login =
+userId, kolom passwordHash; superadmin@atlas = "Super Admin ATLAS"; bod_kmr@ptpn/DKMR2026 juga jalan).
+
+---
+
+## 15. Addendum — PR-3b (Board tab → kolom urgensi) + verifikasi dark-mode SELESAI (2026-06-25)
+
+`npm run check` HIJAU + smoke visual 4-shot PASS (Board + By-Program × light + dark).
+- **Board tab (kanban)** di-organize ulang dari lane LIFECYCLE (Not Started/In Progress/Completed)
+  → **5 kolom URGENSI** (Overdue/At Risk/On Track/Not Started/Completed). `getLanes`/`LANES`/`Lane`/
+  `filteredGroups` dibuang; ganti `getScheduleLanes()` + `scheduleBucket()` (reuse `scheduleOf`,
+  bucket allItems). Top-rule kolom diwarnai per urgensi. Delayed/overdue kini punya **wadah-kolom
+  global** juga — selaras By-Program. By-Program (PR-3) tak disentuh; metafora 2 tab kini beda peran
+  (Board = per-status-urgensi global, By Program = per-program). Smoke assert kolom =
+  `[Overdue, At Risk, On Track, Not Started, Completed]`.
+- **Dark-mode terverifikasi** (Board + By-Program): tak ada bolong putih, surface/rail/pill/top-rule
+  ter-theme benar (semua via token). Light + dark dua-duanya bersih.
