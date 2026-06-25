@@ -651,13 +651,19 @@ export function ScheduleView() {
   }, [personSearch, filter, allUsers, currentUser?.id])
 
   // ── Auto-scroll calendar to current time ────────────────────────────────
+  // Re-run once `loading` flips to false: while loading the calendar body shows a
+  // skeleton (no calBodyRef), so scrolling has to wait until the real grid mounts.
   useEffect(() => {
-    if (viewMode !== 'calendar' || !calBodyRef.current) return
-    const now = new Date()
-    // Default the top of the view to 06:00; if the current hour is later, scroll to one hour before now.
-    const targetHour = Math.max(CAL_DEFAULT_SCROLL_HOUR, now.getHours() - 1)
-    calBodyRef.current.scrollTop = Math.max(0, (targetHour - CAL_HOUR_START) * CAL_HOUR_PX)
-  }, [viewMode, calWeekOffset])
+    if (viewMode !== 'calendar' || loading) return
+    const id = requestAnimationFrame(() => {
+      if (!calBodyRef.current) return
+      const now = new Date()
+      // Default the top of the view to 06:00; if the current hour is later, scroll to one hour before now.
+      const targetHour = Math.max(CAL_DEFAULT_SCROLL_HOUR, now.getHours() - 1)
+      calBodyRef.current.scrollTop = Math.max(0, (targetHour - CAL_HOUR_START) * CAL_HOUR_PX)
+    })
+    return () => cancelAnimationFrame(id)
+  }, [viewMode, calWeekOffset, loading, CAL_HOUR_PX])
 
   // ── Keyboard navigation ──────────────────────────────────────────────────
   useEffect(() => {
