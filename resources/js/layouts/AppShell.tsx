@@ -13,6 +13,7 @@ import { applyThemePreference, getThemeSnapshot } from '../lib/theme'
 import type { ResolvedTheme } from '../lib/theme'
 import { TopbarAction } from '../components/TopbarAction'
 import { CommandPalette } from '../components/CommandPalette'
+import { MobileMenuSheet } from '../components/MobileMenuSheet'
 import { ContextPanel } from '../components/ContextPanel'
 import { TOPBAR_ACTIONS } from '../lib/topbar-config'
 import { resolveContextPanel } from '../lib/context-panel-config'
@@ -657,32 +658,30 @@ export function AppShell({ children }: { children?: ReactNode }) {
     return () => mql.removeEventListener('change', update)
   }, [])
 
-  /* Phone off-canvas (≤640 = --bp-sm). Sidebar keluar dari grid, jadi drawer
-   * slide-in di atas scrim, di-toggle hamburger di topbar. Lihat
-   * docs/mobile-phone-support-plan-2026-06.md Fase 1. */
+  /* Phone (≤640 = --bp-sm). Sidebar disembunyikan (keluar grid); navigasi via
+   * All-menu sheet (marketplace) yang dibuka hamburger/tab Menu — lihat
+   * MobileMenuSheet + memory project_mobile_native_marketplace. Sidebar
+   * off-canvas LAMA sudah dihapus (yatim sejak sheet jadi satu-satunya entri). */
   const [viewportPhone, setViewportPhone] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
     return window.matchMedia('(max-width: 640px)').matches
   })
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   useEffect(() => {
     if (typeof window === 'undefined') return
     const mql = window.matchMedia('(max-width: 640px)')
-    const update = (e: MediaQueryListEvent | MediaQueryList) => {
-      setViewportPhone(e.matches)
-      if (!e.matches) setMobileNavOpen(false) // resize ke desktop → tutup drawer
-    }
+    const update = (e: MediaQueryListEvent | MediaQueryList) => setViewportPhone(e.matches)
     update(mql)
     mql.addEventListener('change', update)
     return () => mql.removeEventListener('change', update)
   }, [])
 
-  // Di phone drawer tampil expanded (label penuh), bukan icon-rail — jadi
-  // collapse efektif hanya berlaku saat BUKAN phone.
+  // Di phone sidebar (tersembunyi) tetap expanded internal — collapse efektif
+  // hanya berlaku saat BUKAN phone.
   const effectiveCollapsed = !viewportPhone && (sidebarCollapsedView || viewportNarrow)
 
-  // Tutup drawer otomatis saat navigasi (klik nav-item → route berubah).
-  useEffect(() => { setMobileNavOpen(false) }, [activePath])
+  const [menuSheetOpen, setMenuSheetOpen] = useState(false)
+  // Tutup All-menu sheet otomatis saat navigasi (klik item → route berubah).
+  useEffect(() => { setMenuSheetOpen(false) }, [activePath])
 
   const [tooltipState, setTooltipState] = useState<SidebarTooltipState | null>(null)
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -709,7 +708,21 @@ export function AppShell({ children }: { children?: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEscKey(() => setMobileNavOpen(false), mobileNavOpen)
+  // Buka command palette / All-menu sheet dari komponen lain (search pill &
+  // "All menu" di HomeMobile) via event — menghindari prop-drilling +
+  // mencegah sheet ter-mount ganda (satu sumber di AppShell).
+  useEffect(() => {
+    const openPalette = () => setPaletteOpen(true)
+    const openMenu = () => setMenuSheetOpen(true)
+    window.addEventListener('atlas:open-palette', openPalette)
+    window.addEventListener('atlas:open-menu', openMenu)
+    return () => {
+      window.removeEventListener('atlas:open-palette', openPalette)
+      window.removeEventListener('atlas:open-menu', openMenu)
+    }
+  }, [])
+
+  useEscKey(() => setMenuSheetOpen(false), menuSheetOpen)
 
   useEscKey(closeUserMenu, userMenuSurface !== null)
   useEscKey(cancelLogout, logoutPending)
@@ -1116,12 +1129,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const _currentPage = PAGE_NAMES[activePath] ?? PAGE_NAMES[pathname] ?? 'ATLAS'
 
   return (
-    <div className={`app-shell${effectiveCollapsed ? ' app-shell--collapsed' : ''}${hasContextPanel ? ' app-shell--with-panel' : ''}${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}${viewportPhone ? ' app-shell--mobile' : ''}${mobileNavOpen ? ' app-shell--nav-open' : ''}`} ref={shellRef}>
-      {/* Phone off-canvas scrim — klik untuk tutup drawer (≤640). */}
-      {viewportPhone ? (
-        <div className="app-shell__scrim" onClick={() => setMobileNavOpen(false)} aria-hidden="true" />
-      ) : null}
-      {/* ── Sidebar ── */}
+    <div className={`app-shell${effectiveCollapsed ? ' app-shell--collapsed' : ''}${hasContextPanel ? ' app-shell--with-panel' : ''}${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}${viewportPhone ? ' app-shell--mobile' : ''}`} ref={shellRef}>
+      {/* ── Sidebar (disembunyikan di phone via shell.css; navigasi = MobileMenuSheet) ── */}
       <aside className="sidebar">
         <div className="sidebar__header">
           <div className="sidebar__brand">
@@ -1282,20 +1291,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
       {/* ── Main workspace ── */}
       <div className="workspace" id="workspace-modal-root">
         <header className="topbar">
-          {/* Hamburger — hanya tampil di phone (≤640), buka off-canvas drawer. */}
-          <button
-            type="button"
-            className="topbar__hamburger"
-            onClick={() => setMobileNavOpen((o) => !o)}
-            aria-label={mobileNavOpen ? t('Close menu') : t('Open menu')}
-            aria-expanded={mobileNavOpen}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
-              <line x1="2.5" y1="5" x2="15.5" y2="5" />
-              <line x1="2.5" y1="9" x2="15.5" y2="9" />
-              <line x1="2.5" y1="13" x2="15.5" y2="13" />
-            </svg>
-          </button>
+          {/* Navigasi phone = bottom tab "Menu" → All-menu sheet (hamburger lama
+              dihapus; entri menu tunggal lewat tab bar jangkauan-jempol). */}
           {/* ── Slim utility bar — date/period/live + sticky title + actions ──
            * Pure System: no breadcrumb, no full-width search input. Topbar is
            * a thin context strip sharing the sidebar's canvas. Sticky page
@@ -1664,9 +1661,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
           })}
           <button
             type="button"
-            className={`mobile-tabbar__item${mobileNavOpen ? ' mobile-tabbar__item--active' : ''}`}
-            onClick={() => setMobileNavOpen((o) => !o)}
-            aria-expanded={mobileNavOpen}
+            className={`mobile-tabbar__item${menuSheetOpen ? ' mobile-tabbar__item--active' : ''}`}
+            onClick={() => setMenuSheetOpen(true)}
+            aria-expanded={menuSheetOpen}
             aria-label={t('Full menu')}
           >
             <span className="mobile-tabbar__icon">
@@ -1749,6 +1746,17 @@ export function AppShell({ children }: { children?: ReactNode }) {
         resolvedTheme={resolvedTheme}
         onToggleTheme={toggleTheme}
       />
+
+      {/* All-menu sheet (phone) — marketplace grid; dibuka hamburger + tab Menu. */}
+      {viewportPhone ? (
+        <MobileMenuSheet
+          open={menuSheetOpen}
+          onClose={() => setMenuSheetOpen(false)}
+          gates={{ isAdmin, isSuperAdmin, canAccessPerformance }}
+          badges={{ channels: totalUnreadChannels, focus: focusBadgeCount }}
+          activePath={activePath}
+        />
+      ) : null}
     </div>
   )
 }

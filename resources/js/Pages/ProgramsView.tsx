@@ -27,6 +27,8 @@ import { MonitoringMatrix } from '../components/MonitoringMatrix'
 import { useInlineToast } from '../components/InlineToast'
 import { UserPicker } from '../components/UserPicker'
 import { PageHeader } from '../design-system'
+import { useIsPhone } from '../hooks/useIsPhone'
+import ProgramsMobile from './ProgramsMobile'
 import './ProgramsView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -2863,4 +2865,10 @@ export function ProgramsView() {
   )
 }
 
-export default ProgramsView
+/* Wrapper responsif: phone (≤640) → daftar mobile-native; desktop → view penuh.
+   Child di-mount kondisional sehingga hook ProgramsView yang berat tidak jalan
+   di phone. Route /programs/archived mem-bypass ini (pakai named export). */
+export default function ProgramsViewResponsive() {
+  const isPhone = useIsPhone()
+  return isPhone ? <ProgramsMobile /> : <ProgramsView />
+}

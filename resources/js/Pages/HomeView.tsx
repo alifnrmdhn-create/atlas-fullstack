@@ -10,6 +10,8 @@ import { DualLanguageAnnouncement } from '../components/DualLanguageAnnouncement
 import { Card, Sparkline, Meter, Delta, Bars, Gauge, Tooltip } from '../design-system'
 import { scoreTone, type Tone } from '../lib/tone'
 import { resolveMonthIndex } from '../lib/forecast'
+import { useIsPhone } from '../hooks/useIsPhone'
+import HomeMobile from './HomeMobile'
 import i18n from '../lib/i18n'
 import './HomeView.css'
 
@@ -458,6 +460,13 @@ export default function HomeView() {
   const { props } = usePage<{ scorecardSnapshot: ScorecardSnapshot }>()
   const scorecard = props.scorecardSnapshot
   const auth = useAuth()
+  const isPhone = useIsPhone()
+
+  // Phone (≤640): Home mobile-native (launcher marketplace) — reuse payload yang
+  // sama, render lebih awal agar header + menu grid instan (tak menunggu batch).
+  if (isPhone) {
+    return <HomeMobile scorecard={scorecard} />
+  }
 
   // Performance role-scoped (2026-05-29): KPI panel + KPI links only for those
   // with access (SUPERADMIN portfolio, or a directorate member with data).

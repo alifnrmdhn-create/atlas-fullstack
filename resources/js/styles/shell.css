@@ -73,68 +73,20 @@
   .topbar__meta-date { display: none; }
 }
 
-/* ══ Phone off-canvas shell (≤640 = --bp-sm) — Fase 1 mobile, 2026-06-01 ══════
- * Di phone, sidebar KELUAR dari grid lalu jadi drawer slide-in di atas scrim;
- * hamburger di topbar yang toggle. Desktop ≥641 sama sekali tidak berubah.
- * Drawer transform ada di `.sidebar` (BUKAN `.app-shell`) supaya tidak bikin
- * containing block untuk position:fixed — lihat catatan keras di blok
- * @keyframes app-shell-enter di atas. Rencana: docs/mobile-phone-support-plan-2026-06.md */
+/* ══ Phone shell (≤640 = --bp-sm) — mobile-native 2026-06-25 ═══════════════════
+ * Di phone, sidebar desktop DISEMBUNYIKAN total; navigasi via All-menu sheet
+ * (MobileMenuSheet, pola marketplace) + bottom tab bar. Desktop ≥641 tak berubah.
+ * Drawer off-canvas LAMA (slide-in + scrim + hamburger) sudah dihapus — yatim
+ * sejak sheet jadi satu-satunya entri menu. Lihat memory
+ * project_mobile_native_marketplace + docs/mobile-phone-support-plan-2026-06.md */
 
-/* Hamburger: hidden di desktop, flex di phone (via media di bawah). */
-.topbar__hamburger {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin-right: auto; /* dorong sisa actions topbar ke kanan */
-  flex-shrink: 0;
-  border: 1px solid var(--panel-border);
-  border-radius: 9px;
-  background: var(--surface-2);
-  color: var(--color-text);
-  cursor: pointer;
-  transition: background 140ms ease, color 140ms ease;
-}
-.topbar__hamburger:hover { background: var(--surface-3, var(--surface-2)); }
-.topbar__hamburger:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-
-/* Scrim — selalu di DOM saat phone, opacity-toggle (anti layout thrash). */
-.app-shell__scrim {
-  position: fixed;
-  inset: 0;
-  background: var(--scrim);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 240ms ease;
-  z-index: var(--z-nav-scrim);
-}
+/* Hamburger topbar: tidak dipakai (navigasi via tab "Menu"). Tetap hidden. */
+.topbar__hamburger { display: none; }
 
 @media (max-width: 640px) { /* bp-allow: --bp-sm */
-  /* Sidebar keluar grid → workspace full-width. */
+  /* Sidebar keluar grid → workspace full-width; sidebar disembunyikan total. */
   .app-shell--mobile { grid-template-columns: 1fr; }
-
-  .app-shell--mobile .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: min(82vw, 300px);
-    transform: translateX(-100%);
-    transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: var(--z-nav-drawer);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5); /* dark-allow: drawer drop-shadow, identik dua theme */
-    padding-left: env(safe-area-inset-left, 0px);
-  }
-  .app-shell--mobile.app-shell--nav-open .sidebar { transform: translateX(0); }
-
-  .app-shell--nav-open .app-shell__scrim {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  /* Hamburger topbar TIDAK dipakai di phone — digantikan tab "Menu" di bottom
-   * tab bar (jangkauan jempol). Biarkan display:none (base). */
+  .app-shell--mobile .sidebar { display: none; }
 
   /* Topbar lebih ringkas di phone: tinggi 44→40 (reclaim 4px di puncak konten —
      keluhan "boros ruang"). --topbar-height di-override di shell supaya

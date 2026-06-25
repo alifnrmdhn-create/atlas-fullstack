@@ -20,7 +20,10 @@ import { ConditionReportModal } from '../components/ConditionReportModal'
 import type { HealthAtTime } from '../components/ConditionReportModal'
 import { getProgramHealthDisplay } from '../lib/programStatus'
 import { priorityLabel, severityLabel } from '../lib/status'
+import { scheduleOf, scheduleBucket, taskIsOverdue } from '../lib/taskSchedule'
 import { PageHeader, Button } from '../design-system'
+import { useIsPhone } from '../hooks/useIsPhone'
+import WorkboardMobile from './WorkboardMobile'
 import { Plus } from 'lucide-react'
 import './WorkboardView.css'
 
@@ -57,11 +60,6 @@ const getStatusBadgeId = (): Record<string, string> => ({
 })
 
 // Time-based filter helpers (Daily PIC Workspace)
-function taskIsOverdue(t: Task): boolean {
-  return !!t.targetCompletion
-    && new Date(t.targetCompletion).getTime() < Date.now()
-    && t.status !== 'COMPLETED'
-}
 function taskDueWithinDays(t: Task, days: number): boolean {
   if (!t.targetCompletion || t.status === 'COMPLETED') return false
   const diffDays = (new Date(t.targetCompletion).getTime() - Date.now()) / 86400000
@@ -176,33 +174,8 @@ function BoardCard({
   )
 }
 
-type ScheduleTone = 'red' | 'amber' | 'green' | 'grey' | 'done'
-// Klasifikasi JADWAL/urgensi sebuah task → { rank utk sort, label pill, tone }.
-// Inilah "wadah" yang dulu hilang: Overdue/Delayed/At Risk punya tempat & warna,
-// bukan terkubur di lane "In Progress". rank kecil = lebih genting (tampil di atas).
-function scheduleOf(
-  item: Task,
-  normalizeHealthStatus: (h: string) => 'GREEN' | 'YELLOW' | 'RED',
-): { rank: number; label: string; tone: ScheduleTone } {
-  if (item.status === 'COMPLETED') return { rank: 5, label: '', tone: 'done' }
-  if (taskIsOverdue(item)) return { rank: 0, label: i18n.t('Overdue'), tone: 'red' }
-  if (item.isBlocked || item.status === 'BLOCKED') return { rank: 1, label: i18n.t('Blocked'), tone: 'red' }
-  const h = normalizeHealthStatus(item.healthStatus ?? 'GREEN')
-  if (h === 'RED') return { rank: 1, label: i18n.t('Delayed'), tone: 'red' }
-  if (h === 'YELLOW') return { rank: 2, label: i18n.t('At Risk'), tone: 'amber' }
-  if (item.status === 'BACKLOG' || item.status === 'READY') return { rank: 4, label: i18n.t('Not Started'), tone: 'grey' }
-  return { rank: 3, label: i18n.t('On Track'), tone: 'green' }
-}
-
-// Map task → kolom Board (urgensi). Reuse scheduleOf (sumber tunggal urgensi).
-// JUJUR: kolom "Overdue" HANYA yang benar-benar lewat tempo (rank 0). Delayed &
-// Blocked (rank 1) + At Risk (rank 2) → kolom "At Risk" — kartu tetap membedakan
-// via warna bar (merah=Delayed/off-track) + badge Blocked, jadi hitungan "Overdue"
-// tak menggembung. 3→on-track, 4→not-started, 5→completed.
-const SCHEDULE_BUCKET_BY_RANK = ['overdue', 'at-risk', 'at-risk', 'on-track', 'not-started', 'completed']
-function scheduleBucket(item: Task, normalizeHealthStatus: (h: string) => 'GREEN' | 'YELLOW' | 'RED'): string {
-  return SCHEDULE_BUCKET_BY_RANK[scheduleOf(item, normalizeHealthStatus).rank] ?? 'on-track'
-}
+// scheduleOf/scheduleBucket/taskIsOverdue/ScheduleTone dipindah ke
+// lib/taskSchedule (sumber tunggal, dipakai WorkboardMobile juga).
 
 /** Baris task di bawah section program (By Program). Bukan kartu — flat,
  *  ber-indentasi di bawah header program → keanggotaan otomatis jelas. Rail
@@ -1406,4 +1379,10 @@ export function WorkboardView() {
   )
 }
 
-export default WorkboardView
+/* Wrapper responsif: phone (≤640) → board mobile-native; desktop → board penuh.
+   Child di-mount kondisional sehingga hook WorkboardView berat tak jalan di
+   phone. Lihat pola sama di ProgramsView (ProgramsViewResponsive). */
+export default function WorkboardViewResponsive() {
+  const isPhone = useIsPhone()
+  return isPhone ? <WorkboardMobile /> : <WorkboardView />
+}
