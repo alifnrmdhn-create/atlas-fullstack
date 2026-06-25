@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from '@inertiajs/react'
 import { useTranslation } from 'react-i18next'
@@ -509,13 +509,14 @@ function fileIcon(_mime: string | null, name: string | null): string {
   return '📎'
 }
 
-function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, evidenceRequired }: {
+function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, evidenceRequired, onChanged }: {
   assignmentId: number
   items: Evidence[]
   loading: boolean
   canUpload: boolean
   canDelete: (item: Evidence) => boolean
   evidenceRequired: boolean
+  onChanged: () => void
 }) {
   const { t } = useTranslation()
   const [uploadMode, setUploadMode] = useState<'idle' | 'file' | 'link' | 'note'>('idle')
@@ -523,15 +524,17 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
   const [description, setDescription] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [dragging, setDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const reset = () => {
     setUploadMode('idle'); setLinkUrl(''); setDescription(''); setErr(null)
+    setPendingFile(null); setDragging(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  async function uploadFile(file: File) {
     setBusy(true); setErr(null)
     try {
       const fd = new FormData()
@@ -539,10 +542,21 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
       if (description.trim()) fd.append('description', description.trim())
       await api.upload(`/assignments/${assignmentId}/attachments/file`, fd)
       reset()
-      if (fileInputRef.current) fileInputRef.current.value = ''
+      onChanged()
     } catch (er) {
       setErr(extractErrorMessage(er))
     } finally { setBusy(false) }
+  }
+
+  function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) setPendingFile(file)
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault(); setDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) setPendingFile(file)
   }
 
   async function handleLinkSubmit() {
@@ -553,6 +567,7 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
         type: 'LINK', url: linkUrl.trim(), description: description.trim(),
       })
       reset()
+      onChanged()
     } catch (er) { setErr(extractErrorMessage(er)) } finally { setBusy(false) }
   }
 
@@ -564,6 +579,7 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
         type: 'NOTE', description: description.trim(),
       })
       reset()
+      onChanged()
     } catch (er) { setErr(extractErrorMessage(er)) } finally { setBusy(false) }
   }
 
@@ -571,6 +587,7 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
     if (!window.confirm(t('Delete this attachment?'))) return
     try {
       await api.delete(`/assignments/${assignmentId}/attachments/${id}`)
+      onChanged()
     } catch (er) {
       alert(extractErrorMessage(er))
     }
@@ -658,12 +675,39 @@ function EvidenceSection({ assignmentId, items, loading, canUpload, canDelete, e
           )}
           {uploadMode === 'file' && (
             <div className="pg-evidence__form">
-              <label>{t('Choose file')} <small>{t('(max 20 MB — PDF/Office/image/ZIP)')}</small></label>
-              <input ref={fileInputRef} type="file" onChange={(e) => void handleFileUpload(e)} disabled={busy} />
+              <input ref={fileInputRef} type="file" hidden onChange={handleFilePick} disabled={busy} />
+              {!pendingFile ? (
+                <button
+                  type="button"
+                  className={`pg-dropzone${dragging ? ' is-dragging' : ''}`}
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={handleDrop}
+                  disabled={busy}
+                >
+                  <svg className="pg-dropzone__icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 16v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+                  <span className="pg-dropzone__title">{t('Click to choose a file')}</span>
+                  <span className="pg-dropzone__hint">{t('or drag & drop here')}</span>
+                  <span className="pg-dropzone__meta">{t('Max 20 MB — PDF / Office / image / ZIP')}</span>
+                </button>
+              ) : (
+                <div className="pg-filecard">
+                  <span className="pg-filecard__icon">{fileIcon(pendingFile.type, pendingFile.name)}</span>
+                  <div className="pg-filecard__body">
+                    <span className="pg-filecard__name" title={pendingFile.name}>{pendingFile.name}</span>
+                    <span className="pg-filecard__size">{formatFileSize(pendingFile.size)}</span>
+                  </div>
+                  <button className="pg-filecard__clear" type="button" onClick={() => { setPendingFile(null); if (fileInputRef.current) fileInputRef.current.value = '' }} disabled={busy} title={t('Remove')} aria-label={t('Remove')}>
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m1 1 10 10M11 1 1 11"/></svg>
+                  </button>
+                </div>
+              )}
               <label>{t('Caption')} <small>{t('(optional)')}</small></label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder={t('e.g. draft v1, before manager review')} />
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder={t('e.g. draft v1, before manager review')} disabled={busy} />
               <div className="pg-evidence__form-actions">
                 <button className="btn btn--ghost btn--sm" type="button" onClick={reset} disabled={busy}>{t('Cancel')}</button>
+                <button className="btn btn--primary btn--sm" type="button" onClick={() => pendingFile && void uploadFile(pendingFile)} disabled={busy || !pendingFile}>{busy ? t('Uploading…') : t('Upload')}</button>
               </div>
             </div>
           )}
@@ -711,16 +755,23 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
   // Evidence state (fetched terpisah dari list API)
   const [evidence, setEvidence] = useState<Evidence[]>([])
   const [evidenceLoading, setEvidenceLoading] = useState(false)
-  useEffect(() => {
-    if (!isOpen || !assignment) return
-    let cancelled = false
+  const assignmentId = assignment?.id
+  const loadEvidence = useCallback(async () => {
+    if (!assignmentId) return
     setEvidenceLoading(true)
-    api.get<{ data: Evidence[] }>(`/assignments/${assignment.id}/attachments`)
-      .then(({ data }) => { if (!cancelled) setEvidence(data) })
-      .catch(() => { if (!cancelled) setEvidence([]) })
-      .finally(() => { if (!cancelled) setEvidenceLoading(false) })
-    return () => { cancelled = true }
-  }, [isOpen, assignment?.id, assignmentRefreshTick])
+    try {
+      const { data } = await api.get<{ data: Evidence[] }>(`/assignments/${assignmentId}/attachments`)
+      setEvidence(data)
+    } catch {
+      setEvidence([])
+    } finally {
+      setEvidenceLoading(false)
+    }
+  }, [assignmentId])
+  useEffect(() => {
+    if (!isOpen || !assignmentId) return
+    void loadEvidence()
+  }, [isOpen, assignmentId, assignmentRefreshTick, loadEvidence])
 
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -856,6 +907,7 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
             canUpload={(isAssignee || isAdmin) && ['DITUGASKAN', 'DIKERJAKAN', 'IN_REVIEW'].includes(a.status)}
             canDelete={(item) => item.uploadedBy === currentUserId || isAdmin}
             evidenceRequired={a.evidenceRequired}
+            onChanged={loadEvidence}
           />
 
           <section className="pg-section">
@@ -1197,6 +1249,23 @@ const PENUGASAN_CSS = `
 .pg-evidence__form textarea { resize: vertical; }
 .pg-evidence__form input:focus, .pg-evidence__form textarea:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px var(--indigo-dim); }
 .pg-evidence__form-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 2px; }
+
+/* Dropzone + selected-file card */
+.pg-dropzone { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; padding: 18px 14px; border: 1.5px dashed var(--panel-border); border-radius: 9px; background: var(--surface-1); color: var(--text-muted); cursor: pointer; text-align: center; transition: border-color .15s ease, background .15s ease, color .15s ease; }
+.pg-dropzone:hover:not(:disabled) { border-color: var(--indigo); color: var(--text-strong); background: var(--indigo-dim); }
+.pg-dropzone.is-dragging { border-color: var(--indigo); border-style: solid; background: var(--indigo-dim); color: var(--indigo); }
+.pg-dropzone:disabled { opacity: .6; cursor: default; }
+.pg-dropzone__icon { color: var(--indigo); margin-bottom: 3px; }
+.pg-dropzone__title { font-size: 12.5px; font-weight: 600; color: var(--text-strong); }
+.pg-dropzone__hint { font-size: 11.5px; color: var(--text-muted); }
+.pg-dropzone__meta { font-size: 10px; color: var(--text-muted); margin-top: 4px; opacity: .85; }
+.pg-filecard { display: grid; grid-template-columns: 28px 1fr auto; gap: 9px; align-items: center; padding: 9px 11px; border: 1px solid color-mix(in srgb, var(--indigo) 28%, var(--panel-border)); border-radius: 8px; background: var(--indigo-dim); }
+.pg-filecard__icon { font-size: 19px; line-height: 1; }
+.pg-filecard__body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pg-filecard__name { font-size: 12.5px; font-weight: 600; color: var(--text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-filecard__size { font-size: 10.5px; color: var(--text-muted); }
+.pg-filecard__clear { background: transparent; border: none; padding: 5px; cursor: pointer; color: var(--text-muted); border-radius: 5px; display: flex; }
+.pg-filecard__clear:hover:not(:disabled) { background: var(--red-dim); color: var(--red); }
 
 /* Paperclip badge di card footer */
 .pg-card__evidence-badge { display: inline-flex; align-items: center; gap: 3px; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 600; background: var(--surface-1); color: var(--text-muted); border: 1px solid var(--panel-border); }
