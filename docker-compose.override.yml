@@ -5,7 +5,7 @@
 # `docker compose up` (tanpa -f) otomatis menggabungkan file ini.
 #
 # Gunanya: publish port web (service `app`, listen 8080 di container) ke host.
-# Akses lokal:http://localhost:8080
+# Akses lokal: http://localhost:8080
 #
 # ⚠ DB lokal: set `DB_HOST=host.docker.internal` di .env supaya container bisa
 # meraih Postgres di host (127.0.0.1 di dalam container = container itu sendiri).
