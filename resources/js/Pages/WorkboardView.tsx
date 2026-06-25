@@ -127,7 +127,7 @@ function CardFace({
       </div>
       <div className="work-card__footer">
         <span className="code-badge">{item.code}</span>
-        {item.isBlocked ? (
+        {item.isBlocked && item.status !== 'COMPLETED' ? (
           <span
             className="work-card__blocked"
             title={item.blockedReason ?? t('Task blocked — needs intervention')}
@@ -194,10 +194,12 @@ function scheduleOf(
   return { rank: 3, label: i18n.t('On Track'), tone: 'green' }
 }
 
-// Map task → kolom Board (urgensi). Reuse scheduleOf (sumber tunggal urgensi):
-// rank 0/1 (overdue/delayed/blocked) → overdue, 2 → at-risk, 3 → on-track,
-// 4 → not-started, 5 → completed.
-const SCHEDULE_BUCKET_BY_RANK = ['overdue', 'overdue', 'at-risk', 'on-track', 'not-started', 'completed']
+// Map task → kolom Board (urgensi). Reuse scheduleOf (sumber tunggal urgensi).
+// JUJUR: kolom "Overdue" HANYA yang benar-benar lewat tempo (rank 0). Delayed &
+// Blocked (rank 1) + At Risk (rank 2) → kolom "At Risk" — kartu tetap membedakan
+// via warna bar (merah=Delayed/off-track) + badge Blocked, jadi hitungan "Overdue"
+// tak menggembung. 3→on-track, 4→not-started, 5→completed.
+const SCHEDULE_BUCKET_BY_RANK = ['overdue', 'at-risk', 'at-risk', 'on-track', 'not-started', 'completed']
 function scheduleBucket(item: Task, normalizeHealthStatus: (h: string) => 'GREEN' | 'YELLOW' | 'RED'): string {
   return SCHEDULE_BUCKET_BY_RANK[scheduleOf(item, normalizeHealthStatus).rank] ?? 'on-track'
 }
@@ -528,11 +530,18 @@ export function WorkboardView() {
         if (mine && !groups.has(pr.id)) groups.set(pr.id, [])
       }
     }
-    const rank = (h?: string) => (h === 'RED' ? 0 : h === 'YELLOW' ? 1 : 2)
+    // Urut per kondisi YANG DITAMPILKAN (getProgramHealthDisplay), bukan healthStatus
+    // mentah — supaya program "Overdue" (lewat tanggal, health bisa GREEN) naik ke
+    // atas sesuai pill merahnya & konsisten dgn defaultProgCollapsed.
+    const rankSlug = (slug?: string) =>
+      slug === 'overdue' ? 0 : slug === 'red' ? 1 : slug === 'yellow' ? 2 : slug === 'completed' ? 4 : 3
     return Array.from(groups.entries())
-      .map(([pid, items]) => ({ program: programById.get(pid), pid, items }))
+      .map(([pid, items]) => {
+        const program = programById.get(pid)
+        return { program, pid, items, _slug: program ? getProgramHealthDisplay(program).slug : undefined }
+      })
       .sort((a, b) => {
-        const ra = rank(a.program?.healthStatus), rb = rank(b.program?.healthStatus)
+        const ra = rankSlug(a._slug), rb = rankSlug(b._slug)
         if (ra !== rb) return ra - rb
         return (a.program?.code ?? '').localeCompare(b.program?.code ?? '')
       })
@@ -695,7 +704,7 @@ export function WorkboardView() {
             <div className="wi-list-row__right">
               <span className={`priority-badge priority-badge--${item.priority.toLowerCase()}`}>{priorityLabel(item.priority)}</span>
               {item.isBlocked ? <span className="severity-badge severity-badge--high">{t('BLOCKED')}</span> : null}
-              <HealthPill status={normalizeHealthStatus(item.healthStatus)} />
+              <HealthPill status={normalizeHealthStatus(item.healthStatus ?? 'GREEN')} />
             </div>
           </button>
         ))}
@@ -818,36 +827,30 @@ export function WorkboardView() {
         </select>
         <div className="view-toolbar__right">
           <div className="view-toolbar__stats wb-stats wb-daily-summary">
-            <button
-              type="button"
-              className={`wb-summary-stat wb-summary-stat--overdue${overdueCount === 0 ? ' is-zero' : ''}${timeFilter === 'overdue' ? ' is-active' : ''}`}
-              onClick={() => overdueCount > 0 && setTimeFilter('overdue')}
-              disabled={overdueCount === 0}
+            {/* Ringkasan = DISPLAY-ONLY (konsisten span semua). Penyaringan ada di
+                kontrol time-filter terpisah; chip sbg tombol dulu bikin sebagian
+                klikable & sebagian mati (dead di By-Program) — membingungkan. */}
+            <span
+              className={`wb-summary-stat wb-summary-stat--overdue${overdueCount === 0 ? ' is-zero' : ''}`}
               title={t('Task past due & not completed')}
             >
               <span className="wb-summary-stat__num">{overdueCount}</span>
               <em>{t('overdue')}</em>
-            </button>
-            <button
-              type="button"
+            </span>
+            <span
               className={`wb-summary-stat wb-summary-stat--today${dueTodayCount === 0 ? ' is-zero' : ''}`}
-              onClick={() => dueTodayCount > 0 && setTimeFilter('week')}
-              disabled={dueTodayCount === 0}
               title={t('Tasks due today')}
             >
               <span className="wb-summary-stat__num">{dueTodayCount}</span>
               <em>{t('today')}</em>
-            </button>
-            <button
-              type="button"
+            </span>
+            <span
               className={`wb-summary-stat wb-summary-stat--week${dueWeekCount === 0 ? ' is-zero' : ''}`}
-              onClick={() => dueWeekCount > 0 && setTimeFilter('week')}
-              disabled={dueWeekCount === 0}
               title={t('Tasks due in the next 7 days')}
             >
               <span className="wb-summary-stat__num">{dueWeekCount}</span>
               <em>{t('due soon')}</em>
-            </button>
+            </span>
             <span className="wb-summary-stat">
               <span className="wb-summary-stat__num">{inFlightCount}</span>
               <em>{t('in progress')}</em>
@@ -941,6 +944,7 @@ export function WorkboardView() {
                           className="kanban-col__info"
                           title={lane.hint}
                           aria-label={t('About the {{lane}} lane', { lane: lane.label })}
+                          onClick={(e) => e.stopPropagation()}
                         >ⓘ</span>
                       </div>
                       <span className="section-badge">{items.length}</span>
@@ -996,7 +1000,7 @@ export function WorkboardView() {
                       </div>
                       <div className="wi-list-row__right">
                         {item.isBlocked ? <span className="severity-badge severity-badge--high">{t('BLOCKED')}</span> : null}
-                        <HealthPill status={normalizeHealthStatus(item.healthStatus)} />
+                        <HealthPill status={normalizeHealthStatus(item.healthStatus ?? 'GREEN')} />
                       </div>
                     </button>
                   ))}
@@ -1020,7 +1024,15 @@ export function WorkboardView() {
                 // dilipat default (arsip, bukan aksi harian).
                 const activeItems = items
                   .filter(i => i.status !== 'COMPLETED')
-                  .sort((a, b) => scheduleOf(a, normalizeHealthStatus).rank - scheduleOf(b, normalizeHealthStatus).rank)
+                  .sort((a, b) => {
+                    const r = scheduleOf(a, normalizeHealthStatus).rank - scheduleOf(b, normalizeHealthStatus).rank
+                    if (r !== 0) return r
+                    // tiebreak: tenggat terdekat dulu, lalu kode (urutan stabil & terbaca)
+                    const da = a.targetCompletion ? new Date(a.targetCompletion).getTime() : Infinity
+                    const db = b.targetCompletion ? new Date(b.targetCompletion).getTime() : Infinity
+                    if (da !== db) return da - db
+                    return (a.code ?? '').localeCompare(b.code ?? '')
+                  })
                 const doneItems = items.filter(i => i.status === 'COMPLETED')
                 return (
                   <section className={`wb-prog${collapsed ? ' wb-prog--collapsed' : ''}`} key={pid}>
@@ -1061,11 +1073,11 @@ export function WorkboardView() {
                       </div>
                       <div className="wb-prog__actions">
                         {canReportFor(program) && (
-                          <button type="button" className="btn btn--primary btn--sm" onClick={() => setConditionProgramId(pid)}>
+                          <Button variant="primary" size="sm" onClick={() => setConditionProgramId(pid)}>
                             {t('Report Condition')}
-                          </button>
+                          </Button>
                         )}
-                        <Link href={`/programs/${pid}`} className="btn btn--sm wb-prog__plan-link">
+                        <Link href={`/programs/${pid}`} className="wb-prog__plan-link">
                           {t('Edit plan')} →
                         </Link>
                       </div>
@@ -1139,7 +1151,7 @@ export function WorkboardView() {
                         {formatStatusLabel(item.status)}
                       </span>
                       <span className={`priority-badge priority-badge--${item.priority.toLowerCase()}`}>{priorityLabel(item.priority)}</span>
-                      <HealthPill status={normalizeHealthStatus(item.healthStatus)} />
+                      <HealthPill status={normalizeHealthStatus(item.healthStatus ?? 'GREEN')} />
                       {item.isBlocked ? <span className="severity-badge severity-badge--high">⚑</span> : null}
                       <div className="progress-bar progress-bar--inline">
                         <div className="progress-bar__fill" style={{ width: `${item.percentComplete}%` }} />
@@ -1152,34 +1164,61 @@ export function WorkboardView() {
             </div>
           )}
 
-          {boardReady && boardMode === 'blockers' && (
+          {boardReady && boardMode === 'blockers' && (() => {
+            // Scope blocker SAMA spt task: My Tasks (assignedTo), filter program/
+            // workstream (via blocker.task). + konteks program & klik-ke-task —
+            // dulu tab ini abaikan semua filter & barisnya mati (tak bisa diklik).
+            const scopedBlockers = blockers
+              .filter(b => effectiveMyItemsOnly ? b.assignedTo === currentUser?.id : true)
+              .filter(b => boardFilterProgramId ? b.task?.workstream?.program?.id === boardFilterProgramId : true)
+              .filter(b => boardFilterWorkstreamId ? b.task?.workstream?.id === boardFilterWorkstreamId : true)
+            return (
             <div className="panel">
               <div className="panel__header">
                 <h3 className="panel__title">{t('Blocker Tracker')}</h3>
-                <span className="badge badge--red">{t('{{count}} blockers', { count: blockers.length })}</span>
+                <span className="badge badge--red">{t('{{count}} blockers', { count: scopedBlockers.length })}</span>
               </div>
-              {blockers.length > 0 ? (
+              {scopedBlockers.length > 0 ? (
                 <div className="blocker-list">
-                  {blockers.map((blocker) => (
-                    <div className="blocker-row" key={blocker.id}>
-                      <div className="blocker-row__left">
-                        <span className={`severity-badge severity-badge--${blocker.severity.toLowerCase()}`}>
-                          {severityLabel(blocker.severity)}
-                        </span>
-                        <div>
-                          <strong>{blocker.code}</strong>
-                          <p>{blocker.title}</p>
+                  {scopedBlockers.map((blocker) => {
+                    const prog = blocker.task?.workstream?.program
+                    const tid = blocker.taskId ?? blocker.task?.id
+                    const body = (
+                      <>
+                        <div className="blocker-row__left">
+                          <span className={`severity-badge severity-badge--${blocker.severity.toLowerCase()}`}>
+                            {severityLabel(blocker.severity)}
+                          </span>
+                          <div>
+                            <strong>{blocker.code}</strong>
+                            <p>{blocker.title}</p>
+                            {(prog || blocker.task) && (
+                              <span className="blocker-row__context">
+                                {prog && <span className="blocker-row__prog">{prog.code}</span>}
+                                {prog && blocker.task && <span className="blocker-row__sep"> › </span>}
+                                {blocker.task && <span>{blocker.task.title}</span>}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <span className="badge">{formatStatusLabel(blocker.status)}</span>
-                    </div>
-                  ))}
+                        <span className="badge">{formatStatusLabel(blocker.status)}</span>
+                      </>
+                    )
+                    return tid ? (
+                      <button type="button" className="blocker-row blocker-row--clickable" key={blocker.id} onClick={(e) => openTaskModal(tid, e)}>
+                        {body}
+                      </button>
+                    ) : (
+                      <div className="blocker-row" key={blocker.id}>{body}</div>
+                    )
+                  })}
                 </div>
               ) : (
-                <SectionState icon="✅" title={t('No blockers')} text={t('No blockers recorded at this time.')} />
+                <SectionState icon="✅" title={t('No blockers')} text={effectiveMyItemsOnly ? t('No blockers on your tasks right now.') : t('No blockers recorded at this time.')} />
               )}
             </div>
-          )}
+            )
+          })()}
 
           {/* Attention Queue — di bawah board untuk mode Board/List/Blockers.
               Di By Program panel ini dirender di atas daftar program. */}
@@ -1279,12 +1318,12 @@ export function WorkboardView() {
                       onChange={e => setWiForm(f => ({ ...f, status: e.target.value }))}
                       value={wiForm.status}
                     >
+                      {/* Hanya state awal yang sah utk task baru. BLOCKED butuh
+                          alasan; IN_REVIEW tak ada di Execution; COMPLETED @0%
+                          = kartu inkonsisten (posisi lane di-derive dari progress). */}
                       <option value="BACKLOG">{t('Backlog')}</option>
                       <option value="READY">{t('Ready')}</option>
                       <option value="IN_PROGRESS">{t('In Progress')}</option>
-                      <option value="BLOCKED">{t('Blocked')}</option>
-                      <option value="IN_REVIEW">{t('In Review')}</option>
-                      <option value="COMPLETED">{t('Completed')}</option>
                     </select>
                   </div>
                   <div className="form-field">

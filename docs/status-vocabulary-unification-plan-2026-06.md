@@ -347,3 +347,35 @@ userId, kolom passwordHash; superadmin@atlas = "Super Admin ATLAS"; bod_kmr@ptpn
   `[Overdue, At Risk, On Track, Not Started, Completed]`.
 - **Dark-mode terverifikasi** (Board + By-Program): tak ada bolong putih, surface/rail/pill/top-rule
   ter-theme benar (semua via token). Light + dark dua-duanya bersih.
+
+---
+
+## 16. Addendum — Asesmen kelayakan + punch-list TUNTAS (2026-06-25)
+
+Asesmen menyeluruh (2 review adversarial + uji interaksi langsung @1366/390, light+dark):
+modul **fully functional, NOL blocker** — semua tab/modal/filter jalan, responsif nol-overflow
+(termasuk 390 mobile), nol exception (warning `createRoot` = pre-existing app-boot, dev-only).
+Seluruh punch-list dibereskan + diverifikasi (`npm run check` hijau + smoke 4-shot):
+
+MAJOR:
+- **#1 Board** kolom "Overdue" kini JUJUR (hanya lewat-tempo rank 0); Delayed/Blocked → "At Risk".
+  `SCHEDULE_BUCKET_BY_RANK = [overdue, at-risk, at-risk, on-track, not-started, completed]`.
+- **#2** Urutan section By-Program pakai `getProgramHealthDisplay().slug` (Overdue naik ke atas),
+  bukan `healthStatus` mentah → posisi konsisten dgn pill + `defaultProgCollapsed`.
+- **#3 Blockers tab** di-scope (My Tasks via assignedTo + filter program/workstream via task) +
+  konteks program (`blocker.task.workstream.program.code`) + baris klik-ke-task (`tid = taskId ?? task.id`).
+- **#4** Tombol By-Program (Report Condition) → design-system `<Button>` (lepas `.btn--*`); Edit plan = text-link.
+- **#5** Modal detail = **bottom-sheet penuh** ≤640 (full-width + top-rounded + safe-area; `!important`
+  atasi rule `.task-detail-modal` width-1080 kedua + matikan FLIP inline di HP).
+- **#6** Stat-chip → display-only semua (klik-filter redundan dgn time-filter & dead di By-Program).
+
+MINOR: status Create dibatasi BACKLOG/READY/IN_PROGRESS; **null-health → GREEN konsisten di SEMUA
+render Workboard** (semula rows=GREEN vs HealthPill=YELLOW; dicoba YELLOW tapi over-alarm 59 At Risk →
+balik GREEN: On Track 59 / At Risk 0 / Overdue 6). Label "Off track" modal = GUGUR (salah-baca;
+TaskDetailView pakai HealthPill kanonik "Delayed").
+
+POLISH: secondary sort (tenggat→kode) dalam bucket; ⓘ lane `stopPropagation`; guard badge "Blocked"
+tak muncul di task COMPLETED.
+
+Tersisa (keputusan produk, bukan bug): List/Blockers vs 2 tab utama (redundansi), "today" tanpa
+filter khusus, header progress (whole-program) vs counts (scoped).

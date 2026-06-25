@@ -883,6 +883,42 @@
   will-change: transform, opacity;
 }
 
+/* ── Bottom-sheet di telepon (≤640) — modal detail = permukaan harian PIC;
+   ikuti pakem sheet app (sebelumnya kartu mengambang ~326px tanpa safe-area). */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .task-detail-modal-backdrop { padding: 0; align-items: flex-end; }
+  .task-detail-modal {
+    /* !important: ada rule .task-detail-modal kedua (width 1080) setelah blok ini. */
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+    /* FLIP transform inline dimatikan di HP → sheet duduk rapi di bawah. */
+    transform: none !important;
+  }
+  .task-detail-modal__body { padding-bottom: max(14px, env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ── Blocker tab: baris klik-ke-task + konteks program ── */
+.workboard-v2 .blocker-row--clickable {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.workboard-v2 .blocker-row--clickable:hover { background: var(--ds-surface-hover, rgba(0, 0, 0, .025)); }
+.workboard-v2 .blocker-row__context {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--ds-text-tertiary, var(--ds-text-secondary));
+}
+.workboard-v2 .blocker-row__prog { font-family: var(--ds-font-mono, monospace); color: var(--ds-text-secondary); }
+.workboard-v2 .blocker-row__sep { opacity: .6; }
+
 .task-detail-modal__header {
   display: flex;
   align-items: center;
