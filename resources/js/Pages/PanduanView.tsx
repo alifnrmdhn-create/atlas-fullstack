@@ -158,15 +158,15 @@ const getTopik = (): Topik[] => [
     slug:      'update-progress',
     icon:      '⏱️',
     judul:     i18n.t('Update daily task progress'),
-    ringkas:   i18n.t('Move tasks between columns, log progress %, mark them done'),
+    ringkas:   i18n.t('Update status, log progress %, mark tasks done'),
     audience:  ['ALL'],
     bacaMenit: 2,
-    apa:       i18n.t('The Workboard has 5 columns: Backlog → Ready → In Progress → In Review → Done. Move a task card between columns as its status changes.'),
+    apa:       i18n.t('The Workboard has four views: By Program (the default — tasks grouped under their program), Board (a kanban organized by schedule urgency: Overdue · At Risk · On Track · Not Started · Completed), List, and Blockers. You update a task from its detail panel — card positions are derived from schedule and progress, not dragged.'),
     langkah: [
       { judul: i18n.t('Open the Workboard'),           deskripsi: i18n.t('Sidebar → Work → Workboard. Or use the shortcut G E.') },
-      { judul: i18n.t('Filter to your tasks'),         deskripsi: i18n.t('Click the "My Tasks" tab to see only the tasks assigned to you.') },
-      { judul: i18n.t('Click a task card'),            deskripsi: i18n.t('The detail modal opens. Change the status from the dropdown, or drag the card between columns.') },
-      { judul: i18n.t('Submit for review when done'),  deskripsi: i18n.t('Move it to "In Review" and attach evidence, a link, or a note. The reviewer is notified.'), tip: i18n.t('A backward transition (e.g. In Progress → Ready) requires a reason.') },
+      { judul: i18n.t('Filter to your tasks'),         deskripsi: i18n.t('Use the "My Tasks" filter to see only the tasks assigned to you. Switch views (By Program / Board / List / Blockers) from the tabs at the top.') },
+      { judul: i18n.t('Click a task card'),            deskripsi: i18n.t('The detail modal opens. Change the status from the Status dropdown and log your progress %.') },
+      { judul: i18n.t('Mark it done with evidence'),   deskripsi: i18n.t('Move it to Completed and attach evidence — a link or a note. Its progress history (start, completion) is kept.'), tip: i18n.t('A backward transition (e.g. In Progress → Ready) requires a reason.') },
     ],
     tips: [
       i18n.t('The ⚠ Blocked badge: if a blocker exists, the task stays in its current column but is flagged. Its progress history is preserved.'),
@@ -247,7 +247,7 @@ const getFaq = (): Array<{ q: string; a: string; link?: { anchor: string; label:
   },
   {
     q: i18n.t('What’s the difference between Program Status and Work Status?'),
-    a: i18n.t('Program Status (On Track / At Risk / Delayed / Completed) is the strategic level — it answers "is the program healthy?". Work Status (Backlog / Ready / In Progress / In Review / Done) is the operator level — it answers "which stage of the pipeline is this in?". They are orthogonal — a program can be On Track while some of its tasks are still in the Backlog.'),
+    a: i18n.t('Program Status (On Track / At Risk / Delayed / Completed) is the strategic, schedule/health level — it answers "is the program healthy?". Work Status (Backlog / Ready / In Progress / In Review / Completed) is the operator, lifecycle level — it answers "which stage of the pipeline is this in?". They are orthogonal — a program can be On Track while some of its tasks are still in the Backlog. The Workboard Board view groups tasks by the schedule axis (Overdue / At Risk / On Track / Not Started / Completed).'),
     link: { anchor: 'glosarium-istilah', label: i18n.t('Glossary') },
   },
   {
@@ -257,7 +257,7 @@ const getFaq = (): Array<{ q: string; a: string; link?: { anchor: string; label:
   },
   {
     q: i18n.t('Why does my task show "⚠ Blocked"?'),
-    a: i18n.t('Your task is flagged `isBlocked` — either you or your superior reported an obstacle. It is not a separate status, so the task stays in its current column (e.g. "In Progress"). Hover over the badge to see the reason. Once the obstacle is resolved, toggle the flag off from the detail panel.'),
+    a: i18n.t('Your task is flagged `isBlocked` — either you or your superior reported an obstacle. It is not a separate status; it is a flag layered on top of the task’s lifecycle status. On the Board its card moves to the At Risk column (or Overdue if it is already past due). Hover over the badge to see the reason. Once the obstacle is resolved, toggle the flag off from the detail panel.'),
     link: { anchor: '11-eksekusi--blocker-hambatan-kerja', label: i18n.t('§11 Blocker') },
   },
   {
@@ -273,6 +273,14 @@ const getFaq = (): Array<{ q: string; a: string; link?: { anchor: string; label:
   {
     q: i18n.t('Why don’t some sidebar menu items appear for me?'),
     a: i18n.t('The sidebar is intent-based and role-aware — items are hidden automatically based on your access. Everyone sees Today (Home, Focus), Programs, and the Work group (Workboard, Assignment, Coordination, Channels, Presence). The Performance dashboards (Scorecard, Directorate & Division KPI) only appear for directorates with performance access; Executive Summary and the Leaderboard are SUPERADMIN-only; the Admin group is visible only to admins. You can still reach a page via its direct URL if you know the link, but the content may be empty or limited according to policy.'),
+  },
+  {
+    q: i18n.t('How do I switch language or turn on dark mode?'),
+    a: i18n.t('Open Settings from your avatar menu (bottom of the sidebar). Under Appearance, choose Light, Dark, or System (which follows your device). Under Language, switch between English and Bahasa Indonesia — the whole interface, including status labels, updates instantly. Your choices are saved on this device.'),
+  },
+  {
+    q: i18n.t('How do I get around on my phone?'),
+    a: i18n.t('On phones (≤640px) ATLAS uses a mobile-native layout. A bottom tab bar gives you Home, Workboard, Programs, and Channels; the Menu tab opens the full menu as a grid. Home becomes a launcher with a search pill — tap it to open the command palette. You can also install ATLAS to your home screen as an app (PWA).'),
   },
 ]
 

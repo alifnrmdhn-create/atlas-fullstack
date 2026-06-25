@@ -19,6 +19,10 @@
 
 Vokabulari yang dipakai di seluruh ATLAS. Status program, atribut perencanaan, dan konsep platform — disusun supaya semua tim pakai istilah yang sama.
 
+> 🔧 *Sejak 25 Juni 2026 seluruh label status punya **satu sumber kebenaran** di `resources/js/lib/status.ts` (helper `workStatusLabel` / `healthLabel` / `priorityLabel` / `severityLabel` / `programStatusLabel` / dst). Aturan emas: satu konsep → satu string; variasi visual (UPPERCASE, ikon) = presentasi turunan, bukan teks kedua. Semua label lewat **i18n bilingual** — UI default English, bisa di-switch ke Bahasa Indonesia via Settings → Language (lihat §20).*
+
+> 💡 **Dua sumbu status — jangan dicampur.** (1) **Lifecycle / progress** menjawab "tugas ada di tahap pipeline mana?" → Backlog · Ready · In Progress · In Review · Completed. (2) **Jadwal / health** menjawab "sehat atau telat?" → On Track · At Risk · Delayed · Overdue · Completed. Sebuah program bisa **On Track** sementara sebagian task-nya masih **Backlog** — kedua sumbu independen.
+
 ### Status Program
 
 Klasifikasi kondisi pelaksanaan program pada periode pelaporan.
@@ -32,40 +36,43 @@ Klasifikasi kondisi pelaksanaan program pada periode pelaporan.
 
 ### Status Pekerjaan (Task & Penugasan)
 
-**Vocabulary lifecycle untuk pekerjaan individual** — dipakai di Workboard (Task) dan Penugasan. Sama persis lintas modul; tidak boleh divergen. Bedakan dari **Status Program** di atas (program = level strategis, pekerjaan = level operator).
+**Vocabulary lifecycle untuk pekerjaan individual** — dipakai di Workboard (Task) dan Penugasan. Sama persis lintas modul; tidak boleh divergen. Bedakan dari **Status Program** di atas (program = level strategis, pekerjaan = level operator). Label kanonik English (via `workStatusLabel`), terjemahan ID muncul saat user pilih Bahasa Indonesia.
 
-| Istilah | Status internal | Kriteria masuk |
-|---------|-----------------|----------------|
-| **Belum Direncanakan** | `BACKLOG` | Task baru. Prasyarat (PIC, tanggal, plan) belum lengkap. *Hanya Task — Penugasan tidak punya tahap ini karena atasan sudah menjabarkan saat memberikan.* |
-| **Siap Dikerjakan** | `READY` / `DITUGASKAN` | Set-up lengkap (PIC + tanggal + rencana). Penugasan masuk di sini begitu diterima. |
-| **Sedang Berjalan** | `IN_PROGRESS` / `DIKERJAKAN` | Eksekusi jalan; `actualStartDate` tercatat. |
-| **Menunggu Review** | `IN_REVIEW` | Selesai dari sisi PIC, menunggu approval reviewer. |
-| **Selesai** | `COMPLETED` / `SELESAI` | Done, bukti completion (link / catatan) tercatat. |
-| **Ditahan** | `ON_HOLD` | Dijeda sementara oleh keputusan (mis. tunggu input pihak eksternal). Tidak muncul sebagai kolom — flagged di kartu. |
-| **Dibatalkan** | `CANCELLED` / `DIBATALKAN` | Task dibatalkan, tidak akan dikerjakan. Disembunyikan dari board secara default. |
+| Label (EN) | Terjemahan (ID) | Enum DB | Kriteria masuk |
+|------------|-----------------|---------|----------------|
+| **Backlog** | Belum Direncanakan | `BACKLOG` | Task baru. Prasyarat (PIC, tanggal, plan) belum lengkap. *Hanya Task — Penugasan tidak punya tahap ini karena atasan sudah menjabarkan saat memberikan.* |
+| **Ready** | Siap Dikerjakan | `READY` | Set-up lengkap (PIC + tanggal + rencana). Penugasan masuk di sini begitu diterima. |
+| **In Progress** | Sedang Berjalan | `IN_PROGRESS` | Eksekusi jalan; `actualStartDate` tercatat. |
+| **In Review** | Menunggu Review | `IN_REVIEW` | Selesai dari sisi PIC, menunggu approval reviewer (Penugasan; Execution tidak punya tahap review). |
+| **Completed** | Selesai | `COMPLETED` | Done, bukti completion (link / catatan) tercatat. |
+| **On Hold** | Ditahan | `ON_HOLD` | Dijeda sementara oleh keputusan (mis. tunggu input pihak eksternal). Tidak muncul sebagai kolom — flagged di kartu. |
+| **Cancelled** | Dibatalkan | `CANCELLED` | Task dibatalkan, tidak akan dikerjakan. Disembunyikan dari board secara default. |
 
-> 💡 **Hambatan bukan status terpisah** — task/penugasan tetap berada di kolom statusnya (mis. "Sedang Berjalan"), dengan flag `isBlocked` yang memunculkan badge **⚠ Terhambat** di kartu. Progress historis (start date, dll) tidak hilang.
+> 💡 **Hambatan bukan status terpisah** — task/penugasan tetap berada di kolom lifecycle-nya (mis. "In Progress"), dengan flag `isBlocked` yang memunculkan badge **⚠ Terhambat** di kartu. Progress historis (start date, dll) tidak hilang. *(Catatan: alias lama `DITUGASKAN` / `DIKERJAKAN` / `SELESAI` sudah di-deprecate — gunakan enum kanonik di atas.)*
 
-### Indikator Urgency (Badge & Counter)
+### Status Jadwal & Urgensi (Health)
 
-**Vocabulary temporal pressure** — dipakai di counter strip Workboard, badge kartu, dan filter chip. Bahasa Indonesia konsisten.
+**Sumbu jadwal/health** — menjawab "sehat atau telat?". Dipakai oleh Health Score program, badge kartu, dan **menjadi kolom Board Workboard** (lihat §8). Label kanonik (English default, terjemahan ID via i18n):
 
-| Istilah | Arti |
-|---------|------|
-| **Lewat** | Deadline sudah lewat & item belum selesai. Setara *overdue*. |
-| **Hari Ini** | Deadline jatuh tempo hari ini. |
-| **7 Hari** | Deadline jatuh tempo dalam 7 hari ke depan (termasuk hari ini). |
-| **Berjalan** | Sedang aktif dikerjakan (status IN_PROGRESS atau IN_REVIEW). |
-| **Terhambat** | Punya flag `isBlocked` aktif. |
-| **Selesai** | Status COMPLETED, sebagai counter "berapa yang sudah tuntas". |
+| Label (EN) | Terjemahan (ID) | Arti |
+|------------|-----------------|------|
+| **On Track** | Sesuai Rencana | Progress sesuai timeline, tak ada kendala signifikan. *(enum health: GREEN)* |
+| **At Risk** | Berisiko | Ada kendala / mendekati deadline / ber-blocker tapi belum lewat tempo — perlu diawasi. *(YELLOW + blocked-not-overdue)* |
+| **Delayed** | Terlambat | Health merah: di belakang jadwal/target. *(RED)* |
+| **Overdue** | Lewat Tempo | Deadline benar-benar sudah lewat & item belum selesai (rank 0 — paling kritis). |
+| **Not Started** | Belum Mulai | Belum ada progress (kolom Board untuk task yang menunggu dikerjakan). |
+| **Completed** | Selesai | Sudah tuntas. |
+
+> 💡 **Overdue ≠ Delayed ≠ Late** — tiga kata yang dulu bertabrakan kini dipisah tegas di i18n: *Overdue* = **Lewat Tempo** (sudah lewat deadline), *Delayed* = **Terlambat** (health merah, belum tentu lewat tanggal), *Late* = **Lewat Tenggat** (badge "selesai tapi telat"). *Postponed* = **Diundur** (bukan lagi disamakan dengan On Hold "Ditunda").
 
 ### Aturan Penyebutan (Cheatsheet)
 
-- Untuk **program**, pakai *On Track / At Risk / Terlambat / Completed* — vocabulary terkunci sejak Sprint 1.
-- Untuk **task & penugasan**, pakai *Belum Direncanakan / Siap Dikerjakan / Sedang Berjalan / Menunggu Review / Selesai* — Title Case, Bahasa.
-- Untuk **badge urgency**, pakai *Lewat / Hari Ini / 7 Hari / Berjalan / Terhambat / Selesai* — boleh CAPS pada badge kartu (mis. **LEWAT**), tetap Bahasa.
-- **Jangan campur** *Overdue* (English) dengan *Lewat* (Bahasa) di surface yang sama.
-- **Jangan pakai** "Ditugaskan" / "Dikerjakan" / "Review" — istilah lama yang sudah di-deprecate per 24 Mei 2026.
+- **String sumber = English, lewat helper di `lib/status.ts`.** Jangan tulis label status manual di komponen — panggil `workStatusLabel` / `healthLabel` / `priorityLabel` / dst. i18n yang menerjemahkan ke Bahasa Indonesia saat user memilih ID di Settings → Language.
+- **Health program** (sumbu jadwal): *On Track / At Risk / Delayed / Overdue / Completed* — terkunci sejak Sprint 1, kini satu sumber.
+- **Lifecycle task & penugasan**: *Backlog / Ready / In Progress / In Review / Completed* — Title Case via `workStatusLabel`.
+- **Program "running" = "Active"** (BUKAN "In Progress"). Beda altitude: program *Active* vs task *In Progress* — bantu user bedakan level (keputusan 25 Juni 2026).
+- **Jangan render enum mentah** (`IN_PROGRESS`, `RED`, `HIGH`) ke UI — gate `npm run audit:status-labels` (bagian dari `npm run check`) menggagalkan build bila ada enum mentah baru bocor ke layar.
+- **Jangan pakai** "Ditugaskan" / "Dikerjakan" / "Review" (deprecated 24 Mei 2026), atau fork health lama "Off Track" / "Critical" / "Healthy" (di-collapse ke On Track / Delayed, 25 Juni 2026). *Pengecualian sengaja:* KPI tetap pakai **"Off Track"** (domain berbasis-target, bukan jadwal).
 
 ### Istilah Program & Atribut
 
@@ -384,7 +391,13 @@ Sejak 29 Mei 2026 dashboard Performance **tidak lagi role-based granular** (BOD/
 
 Sejak **19 Mei 2026**, sidebar **auto-collapse** di viewport ≤1024px (laptop kantor 1366×768, tablet, dst). Preference manual user tetap di `localStorage` — saat resize kembali ke layar besar, sidebar kembali sesuai preferensi terakhir. Topbar juga menyembunyikan period meta + tombol command-palette text di viewport sempit; tanggal lengkap di-hide di ≤768px.
 
-**Dukungan phone penuh ≤640px** (sejak 1 Juni 2026, menggantikan kebijakan lama "floor 768px"). Shell menjadi *off-canvas*: hamburger / bottom-tab-bar membuka drawer, sidebar keluar dari grid, dengan *safe-area insets*. Pakem mobile-UX: tap target ≥44px, modal menjadi *bottom-sheet* di ≤640px, tabel menjadi kartu (atau scroll-x untuk matriks), tab horizontal *scrollable*. **ATLAS juga PWA installable** (`manifest.webmanifest` + service worker + ikon) — bisa ditambahkan ke home screen seperti aplikasi native. Tablet 768px tetap tier resmi.
+**Dukungan phone penuh ≤640px** (sejak 1 Juni 2026, menggantikan kebijakan lama "floor 768px"). Sejak 25 Juni 2026 phone bukan lagi "desktop dikecilkan" melainkan **pengalaman mobile-native ala marketplace** (Livin / Grab / Shopee), reuse payload yang sama — nol perubahan server:
+
+- **Bottom tab bar** (jangkauan-jempol) menggantikan drawer off-canvas lama. 4 destinasi inti — **Home · Workboard · Programs · Channels** — plus tab **Menu** yang membuka *All-menu sheet* (grid kategori berikon, role-gated, satu sumber di `lib/mobile-menu`). Sidebar desktop `display:none` di phone. Badge bottom-nav hanya untuk sinyal unread Channels (bukan count katalog).
+- **Home** jadi *launcher*: greeting + search pill (→ ⌘K palette), status strip, quick-menu grid berwarna, feed Needs-decision + deadlines.
+- **Programs / Workboard** punya render mobile sendiri (search + filter/lane chips + kartu); membuka **TaskDetailModal** yang identik desktop (semua aksi jalan). **Channels** punya kolom chat bubble dua-sisi.
+
+Pakem mobile-UX tetap: tap target ≥44px, modal jadi *bottom-sheet* di ≤640px (termasuk Task Detail), tabel jadi kartu (atau scroll-x untuk matriks), tab horizontal *scrollable*, *safe-area insets*. **ATLAS juga PWA installable** (`manifest.webmanifest` + service worker + ikon) — bisa ditambahkan ke home screen seperti aplikasi native. Tablet 768px tetap tier resmi.
 
 Halaman primer **Playbook** dan **Charter** sudah *fluid responsive* — TOC clamp `clamp(200px, 20vw, 280px)`, mermaid `max-width: 1200px`, dan layout stacked di mobile (≤768px). Charter activity table punya horizontal scroll wrapper dengan kolom Aktivitas sticky di kiri.
 
@@ -441,10 +454,12 @@ Setiap item menampilkan: ikon jenis, judul, meta, alasan urgensi, cue aksi berik
 ### Aksi Cepat
 
 - Klik item → langsung ke **halaman detail** (bukan list) — deep-link ke konteks spesifik (task panel terbuka, program tab Hambatan, dst)
+- Item **Needs Action** membuka **panel disposisi** langsung di Fokus: **Berikan dukungan** (jadi PIC) · **Teruskan ke atas** (eskalasi ke atasan) · **Tandai ditangani** — item lalu di-*suppress* dari antrian needsAction (tabel `FocusDisposition`), jadi Fokus tidak menumpuk
 - Klik chip skup → filter daftar
 - Klik **Tandai Semua Dibaca** di header
 
 > 💡 Setiap item menampilkan **sumber notifikasi** dalam bahasa manusia (mis. "dari Pak Budi (KASUBDIV Keuangan)" alih-alih ID mentah) dan **CTA spesifik per verb** ("Setujui", "Buka", "Tindaklanjuti") — bukan tombol generik.
+> 💡 **DM & mention channel tidak lagi muncul di feed Fokus** (sejak 24 Juni 2026) — rumahnya di **Channels**. Fokus murni untuk pekerjaan yang butuh keputusan/aksi Anda.
 > 💡 Empty state ("semuanya beres") adalah kartu celebration — bukan tampilan kosong.
 
 **Status: ✅ Lengkap**
@@ -645,27 +660,29 @@ Roadmap menyajikan portofolio Program secara visual — lane atau timeline — u
 
 **Siapa yang bisa:** Semua pengguna (OFFICER/ASISTEN terutama)
 
-Papan Kerja adalah tempat utama untuk mengelola dan memantau tugas harian. Tersedia dua tampilan: **Board** (kartu kanban) dan **List** (daftar).
+Papan Kerja adalah tempat utama untuk mengelola dan memantau tugas harian. Tersedia **empat tampilan**: **By Program** (default — task dikelompokkan per program, unit akuntabilitas PIC), **Board** (kanban kolom urgensi), **List** (daftar), dan **Blockers** (hambatan saja).
 
 ### Cara Menggunakan Papan Kerja
 
 1. Klik **Workboard** di sidebar (atau tekan **G E**)
-2. Pilih tampilan **Board** atau **List** di bagian atas
-3. Filter berdasarkan **Program** atau **Workstream** sesuai kebutuhan
+2. Pilih tampilan **By Program**, **Board**, **List**, atau **Blockers** di bagian atas
+3. Filter berdasarkan **Program** atau **Workstream**, dan (di Board/List) batasi waktu lewat chip **Active This Week / Overdue / In Progress / All**
 
-### Kolom Status di Board (5-kolom)
+### Kolom Board — by Urgency (5 kolom)
 
-| Status (internal) | Label UI (Indonesia) | Kriteria masuk |
-|-------------------|----------------------|----------------|
-| BACKLOG | **Belum Direncanakan** | Task baru, prasyarat (PIC + tanggal + rencana) belum lengkap |
-| READY | **Siap Dikerjakan** | PIC + tanggal mulai + target selesai sudah set |
-| IN_PROGRESS | **Sedang Berjalan** | `actualStartDate` tercatat, kerjaan jalan |
-| IN_REVIEW | **Menunggu Review** | Selesai dari sisi PIC, menunggu approval reviewer |
-| COMPLETED | **Selesai** | Done, bukti completion (link / catatan) tercatat |
+Sejak 25 Juni 2026 tab **Board** **tidak lagi** dikelompokkan per status lifecycle (Backlog→Completed) — task telat dulu "nyangkut" di kolom In Progress tanpa rumah yang jelas. Board kini dipecah jadi **5 kolom urgensi** (selaras kosakata jadwal sistem, lihat Glosarium → *Status Jadwal & Urgensi*):
 
-Status **CANCELLED** tetap ada di backend tapi tidak ditampilkan sebagai kolom Board — task cancelled disembunyikan secara default (filter mode "Termasuk dibatalkan" untuk show).
+| Kolom | Isi |
+|-------|-----|
+| **Overdue** | Benar-benar lewat tempo & belum selesai — tindak sekarang (rank 0). |
+| **At Risk** | Di belakang health atau due soon — termasuk **Delayed** & **Blocked** yang belum lewat tanggal. |
+| **On Track** | Sedang dikerjakan & sesuai jadwal. |
+| **Not Started** | Belum dimulai. |
+| **Completed** | Sudah selesai. |
 
-> 💡 **BLOCKED bukan status terpisah.** Sejak 19 Mei 2026 BLOCKED jadi *orthogonal flag* (`isBlocked: true`) yang bisa di-attach ke status manapun — paling sering ke IN_PROGRESS. Kartu task blocked menampilkan badge **⚠ Terhambat** + tetap berada di kolom status aslinya, sehingga progress historis (`actualStartDate`, dst) tidak hilang. Hover badge untuk lihat `blockedReason`.
+Posisi kartu **di-derive** dari kondisi jadwal (helper tunggal `scheduleOf` / `scheduleBucket` di `lib/taskSchedule`, dipakai bersama oleh desktop & mobile) — **bukan drag manual**. Tab **By Program** menyusun task dalam baris per-program (program On Track / Completed terlipat default agar fokus ke yang butuh perhatian); tab **Blockers** menampilkan hambatan yang di-scope ke "My Tasks" + filter program/workstream, dan klik baris membuka task terkait.
+
+> 💡 **BLOCKED bukan status terpisah.** Sejak 19 Mei 2026 BLOCKED jadi *orthogonal flag* (`isBlocked: true`) yang bisa di-attach ke status lifecycle manapun. Kartu blocked menampilkan badge **⚠ Terhambat**; di Board ia masuk kolom **Overdue** (bila sudah lewat tempo) atau **At Risk** (bila belum), progress historis tidak hilang. Hover badge untuk lihat `blockedReason`. Status **CANCELLED** disembunyikan default (filter "Termasuk dibatalkan" untuk show).
 
 ### Cara Memperbarui Status Tugas
 
@@ -673,7 +690,7 @@ Status **CANCELLED** tetap ada di backend tapi tidak ditampilkan sebagai kolom B
 2. Di panel detail, ubah status menggunakan dropdown **Status**
 3. Perubahan disimpan otomatis dan terlihat real-time oleh seluruh tim (polling 2s)
 
-> 💡 **Backward transition** (mis. Sedang Berjalan → Siap Dikerjakan) **wajib disertai alasan** — tercatat di audit log task. Sistem mengkategorikan tiap transition sebagai `normal` (maju 1 step), `skip-forward` (loncat ke depan), `backward` (mundur), atau `lateral` (orthogonal — mis. toggle BLOCKED flag); backward & skip-forward yang trigger prompt alasan.
+> 💡 **Backward transition** (mis. In Progress → Ready) **wajib disertai alasan** — tercatat di audit log task. Sistem mengkategorikan tiap transition sebagai `normal` (maju 1 step), `skip-forward` (loncat ke depan), `backward` (mundur), atau `lateral` (orthogonal — mis. toggle BLOCKED flag); backward & skip-forward yang trigger prompt alasan. Saat **membuat** task baru, pilihan status dibatasi ke **Backlog / Ready / In Progress** (status lain ditentukan oleh progres, bukan diinput manual).
 
 ### Badge "Tepat Waktu" / "Terlambat" di Kartu Selesai
 
@@ -1080,9 +1097,14 @@ Buka **Profile** untuk melihat hierarki jabatan Anda, ubah foto, dan ganti passw
 
 ### Pengaturan (Settings)
 
-Workspace preferences — termasuk theme (light/dark) dan notifikasi.
+Workspace preferences. Buka **Settings** dari popover avatar (footer sidebar):
 
-> 💡 **Vokabulari ATLAS** — referensi istilah Program, Workstream, PICA, Eskalasi, status (On Track / At Risk / Terlambat / Completed), dst tersedia di [Glosarium Istilah](#glosarium-istilah) di awal playbook ini. Diakses lewat menu Playbook di popover akun.
+- **Appearance** — pilih tema **Light / Dark / System** (kartu radio; *System* mengikuti setelan perangkat). Tersimpan otomatis per device.
+- **Language** — switch bahasa antarmuka **English ⟷ Bahasa Indonesia** (react-i18next; berlaku lintas halaman seketika). Default English; semua label status, menu, dan teks UI ikut beralih.
+- Notifikasi & preferensi workspace lainnya.
+
+> 💡 **Pusat Bantuan (Help Center)** kini punya tombol sendiri di **topbar** (di antara lonceng notifikasi & avatar) — sejak 24 Juni 2026 dipindah dari footer sidebar. Membuka halaman panduan task-oriented (`/panduan`) yang men-deep-link ke playbook ini.
+> 💡 **Vokabulari ATLAS** — referensi istilah Program, Workstream, PICA, Eskalasi, status (On Track / At Risk / Delayed / Completed), dst tersedia di [Glosarium Istilah](#glosarium-istilah) di awal playbook ini. Diakses lewat menu Playbook di popover akun.
 
 **Status: ✅ Lengkap**
 
@@ -1203,15 +1225,17 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 | Onboarding Tours kontekstual (Escalation inbox, Clear-the-Path button, Triage panel, Commitment Ledger) | ✅ | ✅ | — | ✅ |
 | My Work (personal view) | ⚠️ | ✅ | ✅ | ⚠️ |
 | Realtime — Polling (`/realtime/poll` 2s cadence + exponential backoff) | ✅ | ✅ | — | ✅ |
-| Responsive — Sidebar auto-collapse ≤1024px, phone ≤640px off-canvas + bottom-tab, PWA installable, Playbook & Charter fluid | — | ✅ | — | ✅ |
+| Responsive — Sidebar auto-collapse ≤1024px; phone ≤640px **mobile-native** (bottom-tab Home/Workboard/Programs/Channels + Menu sheet, Home launcher, Programs/Workboard/Channels native render); PWA installable; Playbook & Charter fluid | — | ✅ | — | ✅ |
+| i18n bilingual EN ⟷ ID (react-i18next, switcher di Settings → Language) | — | ✅ | — | ✅ |
+| Dark mode — token theme-aware (light/dark/system) + gate `audit:darkmode` | — | ✅ | — | ✅ |
 | Visual system — Pill/badge background strip + spacing ladder + primary CTA dedupe | — | ✅ | — | ✅ |
 | Motion — `.ds-stagger` page-enter utility across all pages | — | ✅ | — | ✅ |
 | Execution — TaskDetailModal expand animation + URL deep-link `?task={id}` | ✅ | ✅ | ✅ | ✅ |
-| Execution — Workboard 5-kolom (BLOCKED jadi orthogonal flag `isBlocked` + badge ⚠ Terhambat) | ✅ | ✅ | ✅ | ✅ |
+| Execution — Workboard 4 mode (By Program default · Board kolom-urgensi · List · Blockers); BLOCKED = orthogonal flag `isBlocked` + badge ⚠ Terhambat | ✅ | ✅ | ✅ | ✅ |
+| Execution — Board by-urgency (Overdue · At Risk · On Track · Not Started · Completed) via `lib/taskSchedule` (sumber tunggal, dipakai mobile+desktop) | — | ✅ | — | ✅ |
 | Execution — Backward / skip-forward transition wajib alasan (audit log via `categorizeTransition`) | ✅ | ✅ | — | ✅ |
-| Execution — Badge perbandingan Tepat Waktu / Terlambat di kartu Selesai | — | ✅ | — | ✅ |
-| Vocabulary — Status Pekerjaan unified (Workboard + Penugasan pakai label sama) | — | ✅ | — | ✅ |
-| Vocabulary — Indikator urgency Bahasa konsisten (Lewat / Hari Ini / 7 Hari / Berjalan / Selesai) | — | ✅ | — | ✅ |
+| Execution — Badge perbandingan On time / Late di kartu Selesai | — | ✅ | — | ✅ |
+| Vocabulary — Status single source of truth (`lib/status.ts`) + gate `audit:status-labels` (anti enum-mentah bocor ke UI) | — | ✅ | — | ✅ |
 | Programs — Ringkasan rollup panel (executionAchievement: planned vs realized weeks) | ✅ | ✅ | ✅ | ✅ |
 | Programs — Refleksi mingguan edit mode (owner-only, reject future-period) | ✅ | ✅ | — | ✅ |
 | KPI — Audit table `KpiValueRevision` + atomic write (`lockForUpdate`) | ✅ | — | — | ✅ |
@@ -1227,7 +1251,9 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 
 **Status: ✅ Evaluasi Lengkap per 25 Juni 2026** (Sprint 0–5 MVP selesai 8 Mei 2026)
 
-> 🗓️ **Perubahan signifikan sejak 24 Mei 2026** (tercermin di dokumen ini): navigasi sidebar di-organize ulang berbasis **intent** (Today / Portfolio & Performance / Work / Admin) menggantikan grouping fase PDCA; akses dashboard Performance dipindah ke gate `EnsurePerformanceAccess` (pilot DIR-KMR), bukan lagi role granular; dukungan **phone penuh ≤640px** (off-canvas shell + bottom-tab) dan **PWA installable**; dashboard Risiko standalone dihilangkan dari discovery (2 Jun 2026); migrasi bertahap ke **design-system primitives** (`@/design-system`).
+> 🗓️ **Perubahan signifikan sejak 24 Mei 2026** (tercermin di dokumen ini): navigasi sidebar di-organize ulang berbasis **intent** (Today / Portfolio & Performance / Work / Admin) menggantikan grouping fase PDCA; akses dashboard Performance dipindah ke gate `EnsurePerformanceAccess` (pilot DIR-KMR), bukan lagi role granular; dukungan **phone penuh ≤640px** dan **PWA installable**; dashboard Risiko standalone dihilangkan dari discovery (2 Jun 2026); migrasi bertahap ke **design-system primitives** (`@/design-system`).
+>
+> 🗓️ **Perubahan 24–25 Juni 2026**: **i18n bilingual EN ⟷ ID** (switcher di Settings → Language); **dark mode** token theme-aware (Light/Dark/System); **status vocabulary unified** ke satu sumber `lib/status.ts` (enum mentah tak lagi bocor ke UI; health fork "Off Track/Critical" di-collapse; program "running" = **Active**); **Workboard redesign** — tab **Board** kini berkolom **urgensi** (Overdue · At Risk · On Track · Not Started · Completed), **By Program** jadi default, tab **Blockers** baru; **phone mobile-native** (bottom-tab + All-menu sheet + Home launcher) menggantikan drawer off-canvas; **Fokus** dapat panel **disposisi** & DM/mention dikeluarkan dari feed; **Pusat Bantuan** pindah ke topbar.
 
 
 *Panduan ini mencerminkan kondisi implementasi ATLAS per 25 Juni 2026. Perbarui dokumen setiap ada perubahan fitur signifikan.*
