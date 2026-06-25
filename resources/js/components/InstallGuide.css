@@ -1,0 +1,286 @@
+/* InstallGuide + InstallSheet + InstallBanner — PWA install onboarding.
+ * Komponen BARU → token --ds-* + design-system primitives (lihat CLAUDE.md §6b). */
+
+.install-guide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+}
+
+.install-guide__intro {
+  margin: 0;
+  font-size: var(--ds-text-14);
+  line-height: var(--ds-leading-relaxed);
+  color: var(--ds-text-secondary);
+}
+
+/* ── Platform tabs ── */
+.install-guide__tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--ds-surface-sunken);
+  border-radius: var(--ds-radius-pill);
+  align-self: flex-start;
+}
+.install-guide__tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 6px 16px;
+  min-height: 36px;
+  font-size: var(--ds-text-13);
+  font-weight: 600;
+  color: var(--ds-text-secondary);
+  border-radius: var(--ds-radius-pill);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+    color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.install-guide__tab--active {
+  background: var(--ds-surface-card);
+  color: var(--ds-text-primary);
+  box-shadow: var(--ds-shadow-popover);
+}
+
+.install-guide__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+}
+
+/* ── Steps ── */
+.install-guide__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  counter-reset: install-step;
+}
+.install-guide__step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3);
+  background: var(--ds-surface-sunken);
+  border-radius: var(--ds-radius-md);
+}
+.install-guide__step-num {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-brand-500);
+  color: var(--ds-text-on-brand);
+  font-size: var(--ds-text-11);
+  font-weight: 700;
+  line-height: 1;
+}
+.install-guide__step-text {
+  font-size: var(--ds-text-14);
+  line-height: var(--ds-leading-snug);
+  color: var(--ds-text-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.install-guide__step-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  color: var(--ds-text-secondary);
+}
+
+.install-guide__warn {
+  margin: 0;
+  padding: var(--ds-space-3);
+  font-size: var(--ds-text-13);
+  line-height: var(--ds-leading-snug);
+  color: var(--ds-amber-600);
+  background: var(--ds-amber-50);
+  border-radius: var(--ds-radius-md);
+}
+
+.install-guide__cta { width: 100%; }
+.install-guide__or {
+  margin: var(--ds-space-1) 0 0;
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+  text-align: center;
+}
+.install-guide__hint {
+  margin: 0;
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-secondary);
+}
+
+/* ── Already installed state ── */
+.install-guide--done {
+  align-items: center;
+  text-align: center;
+  padding: var(--ds-space-6) var(--ds-space-4);
+}
+.install-guide__done-mark {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-green-50);
+  color: var(--ds-green-600);
+}
+.install-guide__done-text {
+  margin: 0;
+  font-size: var(--ds-text-14);
+  color: var(--ds-text-secondary);
+}
+
+/* ── InstallSheet (modal/bottom-sheet) ── */
+.install-sheet__scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 27, 0.5); /* dark-allow: scrim overlay theme-independent */
+  z-index: 1000;
+  animation: install-fade var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.install-sheet__panel {
+  position: fixed;
+  z-index: 1001;
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-shadow-modal);
+  display: flex;
+  flex-direction: column;
+}
+/* Desktop/tablet → centered modal card. */
+.install-sheet__panel {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  border-radius: var(--ds-radius-xl);
+  animation: install-pop var(--ds-duration-normal) var(--ds-ease-standard);
+}
+/* Phone → bottom sheet. */
+@media (max-width: 640px) {
+  .install-sheet__panel {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    transform: none;
+    width: 100%;
+    max-height: 88vh;
+    border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    animation: install-slide-up var(--ds-duration-normal) var(--ds-ease-standard);
+  }
+}
+.install-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-5) var(--ds-space-5) var(--ds-space-3);
+}
+.install-sheet__title {
+  margin: 0;
+  font-size: var(--ds-text-16);
+  font-weight: 700;
+  color: var(--ds-text-primary);
+}
+.install-sheet__close {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ds-text-tertiary);
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--ds-radius-md);
+}
+.install-sheet__close:hover { background: var(--ds-surface-hover); color: var(--ds-text-primary); }
+.install-sheet__body {
+  padding: 0 var(--ds-space-5) var(--ds-space-5);
+  overflow-y: auto;
+}
+
+/* ── InstallBanner (shell, phone only) ── */
+.install-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  background: var(--ds-brand-50);
+  border-bottom: 1px solid var(--ds-border-subtle);
+}
+.install-banner__icon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-brand-500);
+  color: var(--ds-text-on-brand);
+}
+.install-banner__text { flex: 1 1 auto; min-width: 0; }
+.install-banner__title {
+  font-size: var(--ds-text-13);
+  font-weight: 700;
+  color: var(--ds-text-primary);
+  line-height: 1.2;
+}
+.install-banner__sub {
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-secondary);
+  line-height: 1.3;
+}
+.install-banner__cta {
+  flex: 0 0 auto;
+  appearance: none;
+  border: 0;
+  background: var(--ds-cta-fill);
+  color: var(--ds-text-on-brand);
+  font-size: var(--ds-text-13);
+  font-weight: 600;
+  padding: 8px 14px;
+  min-height: 40px;
+  border-radius: var(--ds-radius-md);
+  cursor: pointer;
+}
+.install-banner__cta:hover { background: var(--ds-cta-fill-hover); }
+.install-banner__dismiss {
+  flex: 0 0 auto;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ds-text-tertiary);
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--ds-radius-md);
+}
+
+@keyframes install-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes install-pop {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes install-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}

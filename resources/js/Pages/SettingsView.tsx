@@ -12,6 +12,7 @@ import {
   getStoredThemePreference,
   subscribeThemeChange,
 } from '../lib/theme'
+import { InstallGuide } from '../components/InstallGuide'
 import './SettingsView.css'
 
 // ── Nav items ──────────────────────────────────────────────────────────────
@@ -50,6 +51,15 @@ const NAV_ITEMS = [
       <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="14">
         <rect height="12" rx="1.5" width="12" x="2" y="2" />
         <path d="M2 6h12M6 6v8" />
+      </svg>
+    ),
+  },
+  {
+    id: 'Install',
+    icon: (
+      <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="14">
+        <rect height="13" rx="1.5" width="9" x="3.5" y="1.5" />
+        <path d="M7 13h2" />
       </svg>
     ),
   },
@@ -664,6 +674,19 @@ export function SettingsView() {
                 </div>
               </div>
             </>
+          )}
+
+          {/* Install (PWA) */}
+          {activeNav === 'Install' && (
+            <div className="section-block">
+              <div className="section-header">
+                <div>
+                  <h3 className="section-title">{t('Install ATLAS')}</h3>
+                  <p className="section-subtitle">{t('Add ATLAS to your home screen for an app-like, full-screen experience.')}</p>
+                </div>
+              </div>
+              <InstallGuide />
+            </div>
           )}
 
         </div>

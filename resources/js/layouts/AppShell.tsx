@@ -14,6 +14,7 @@ import type { ResolvedTheme } from '../lib/theme'
 import { TopbarAction } from '../components/TopbarAction'
 import { CommandPalette } from '../components/CommandPalette'
 import { MobileMenuSheet } from '../components/MobileMenuSheet'
+import { InstallBanner } from '../components/InstallBanner'
 import { ContextPanel } from '../components/ContextPanel'
 import { TOPBAR_ACTIONS } from '../lib/topbar-config'
 import { resolveContextPanel } from '../lib/context-panel-config'
@@ -1626,6 +1627,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
           </div>
         </header>
+
+        {/* PWA install nudge — self-gating: hanya tampil di phone yang belum
+            memasang app & belum di-dismiss. Lihat components/InstallBanner.tsx. */}
+        <InstallBanner />
 
         {/* Home runs flush so its greeting shares the floating cluster's row;
             all pages (incl. Home) reserve the cluster band; Home's greeting then

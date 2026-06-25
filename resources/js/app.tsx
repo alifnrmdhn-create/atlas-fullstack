@@ -144,3 +144,17 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
         })
     })
 }
+
+// PWA install: `beforeinstallprompt` (Chromium/Android) menembak SEKALI lebih awal
+// dari mount komponen mana pun. Tangkap di boot, simpan di window, lalu pancarkan
+// event supaya `useInstallPrompt` bisa bereaksi tanpa kehilangan kesempatan prompt.
+// Lihat resources/js/hooks/useInstallPrompt.ts.
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault()
+    ;(window as unknown as { __atlasInstallPrompt?: Event }).__atlasInstallPrompt = e
+    window.dispatchEvent(new Event('atlas:installable'))
+})
+window.addEventListener('appinstalled', () => {
+    ;(window as unknown as { __atlasInstallPrompt?: Event | null }).__atlasInstallPrompt = null
+    window.dispatchEvent(new Event('atlas:installed'))
+})
