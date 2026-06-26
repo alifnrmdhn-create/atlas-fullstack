@@ -1,14 +1,22 @@
-import { Fragment, useState, type MouseEvent } from 'react'
+import { Fragment, useEffect, useState, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { MONTH_KEYS, type CharterActivity, type CharterPeriod } from '../../../types/charter'
+import { useCanHover } from '../../../hooks/useCanHover'
 
 type Props = {
   activities: CharterActivity[]
   period?: CharterPeriod
   /** "YYYY-MM" — server `now()`, dipakai untuk garis penanda "posisi sekarang". */
   currentMonth?: string
+  /** "YYYY-MM-DD" — server `now()`, satu sumber untuk teks tooltip "Now"
+   *  (tanggal + minggu ISO). Konsisten dengan garis (yang pakai currentMonth).
+   *  Fallback ke jam klien hanya bila tak dikirim. */
+  today?: string
 }
+
+/** Satu baris tooltip marker — dipetakan ke warna garisnya (biru/merah). */
+type TipRow = { kind: 'now' | 'deadline'; label: string; detail: string }
 
 /**
  * 12-month timeline — one Activity = 2 rows (Target / Real).
@@ -25,9 +33,30 @@ type Props = {
  * Months derived server-side dari plannedWeeks / actualWeeks via
  * WeekToMonthMapper. A week that spans two months counts for both.
  */
-export function ActivityTimelineTable({ activities, period, currentMonth }: Props) {
+export function ActivityTimelineTable({ activities, period, currentMonth, today }: Props) {
   const { t } = useTranslation()
-  const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(null)
+  const canHover = useCanHover()
+  const [tip, setTip] = useState<{ x: number; y: number; rows: TipRow[]; colIdx: number } | null>(null)
+
+  // Touch: tooltip dibuka via tap (bukan hover) → tutup saat tap di luar / scroll
+  // (posisi fixed jadi basi saat konten bergeser). Listener dipasang di frame
+  // BERIKUTNYA: kalau langsung, event sisa dari tap pembuka (mis. scroll residual
+  // momentum / klik yang sama) menutup tooltip seketika. `click` (bukan
+  // `pointerdown`) + stopPropagation di sel marker → tap-ulang sel sama toggle
+  // tutup tanpa re-open.
+  useEffect(() => {
+    if (!tip || canHover) return
+    const close = () => setTip(null)
+    const raf = requestAnimationFrame(() => {
+      document.addEventListener('click', close)
+      window.addEventListener('scroll', close, true)
+    })
+    return () => {
+      cancelAnimationFrame(raf)
+      document.removeEventListener('click', close)
+      window.removeEventListener('scroll', close, true)
+    }
+  }, [tip, canHover])
   if (activities.length === 0) {
     return (
       <div className="atl-empty">
@@ -86,29 +115,52 @@ export function ActivityTimelineTable({ activities, period, currentMonth }: Prop
     const firstThu = new Date(Date.UTC(date.getUTCFullYear(), 0, 4))
     return 1 + Math.round((date.getTime() - firstThu.getTime()) / 6.048e8)
   }
-  const nowTip = (() => {
-    const d = new Date()
-    return `${t('Now')} · ${t('Week {{w}}', { w: isoWeek(d) })} · ${d.getDate()} ${MONTH_KEYS[d.getMonth()]} ${d.getFullYear()}`
+  // Sumber "Now" = server `today` (YYYY-MM-DD), sama dgn garis. Fallback jam
+  // klien hanya bila prop tak dikirim (caller lama).
+  const nowDate = (() => {
+    if (today) {
+      const [y, mo, d] = today.split('-').map(Number)
+      if (y && mo && d) return new Date(y, mo - 1, d)
+    }
+    return new Date()
   })()
-  const targetTip = (() => {
-    if (!period?.to) return undefined
-    const [ty, tm] = period.to.split('-').map(Number)
-    if (!ty || !tm) return undefined
-    const lastDay = new Date(ty, tm, 0).getDate() // hari-0 bulan berikutnya = hari terakhir bulan target
-    return `${t('Target finish')} · ${lastDay} ${MONTH_KEYS[tm - 1]} ${ty}`
-  })()
-  const markerTitle = (i: number): string | undefined => {
-    const parts: string[] = []
-    if (nowIdx === i || (nowIdx === 12 && i === 11)) parts.push(nowTip)
-    if ((targetIdx === i || (targetIdx === 12 && i === 11)) && targetTip) parts.push(targetTip)
-    return parts.length ? parts.join('   ·   ') : undefined
+  const nowRow: TipRow = {
+    kind: 'now',
+    label: t('Now'),
+    detail: `${t('Week {{w}}', { w: isoWeek(nowDate) })} · ${nowDate.getDate()} ${MONTH_KEYS[nowDate.getMonth()]} ${nowDate.getFullYear()}`,
   }
-  // Tooltip kustom (portal ke body → tidak terpotong overflow tabel).
+  const targetRow: TipRow | null = (() => {
+    if (!period?.to) return null
+    const [ty, tm] = period.to.split('-').map(Number)
+    if (!ty || !tm) return null
+    const lastDay = new Date(ty, tm, 0).getDate() // hari-0 bulan berikutnya = hari terakhir bulan target
+    return { kind: 'deadline', label: t('Target finish'), detail: `${lastDay} ${MONTH_KEYS[tm - 1]} ${ty}` }
+  })()
+  const markerRows = (i: number): TipRow[] => {
+    const rows: TipRow[] = []
+    if (nowIdx === i || (nowIdx === 12 && i === 11)) rows.push(nowRow)
+    if ((targetIdx === i || (targetIdx === 12 && i === 11)) && targetRow) rows.push(targetRow)
+    return rows
+  }
+  // Tooltip kustom (portal ke body → tidak terpotong overflow tabel). Tiap
+  // marker = satu baris berlabel + dot/dash warna garisnya (bukan string lebur).
+  // Clamp X agar pill tak keluar viewport di layar sempit (transform center).
+  const clampX = (x: number) => Math.min(Math.max(x, 130), window.innerWidth - 130)
   const tipProps = (i: number) => {
-    const text = markerTitle(i)
-    if (!text) return {}
-    const show = (e: MouseEvent) => setTip({ x: e.clientX, y: e.clientY, text })
-    return { onMouseEnter: show, onMouseMove: show, onMouseLeave: () => setTip(null) }
+    const rows = markerRows(i)
+    if (!rows.length) return {}
+    if (canHover) {
+      // Desktop: hover mengikuti kursor.
+      const show = (e: MouseEvent) => setTip({ x: clampX(e.clientX), y: e.clientY, rows, colIdx: i })
+      return { onMouseEnter: show, onMouseMove: show, onMouseLeave: () => setTip(null) }
+    }
+    // Touch: tap meng-toggle. stopPropagation supaya listener `click` dokumen
+    // (dismiss) tak ikut terpicu oleh tap yang membuka/menutup ini.
+    const toggle = (e: MouseEvent) => {
+      e.stopPropagation()
+      setTip(prev => (prev && prev.colIdx === i ? null : { x: clampX(e.clientX), y: e.clientY, rows, colIdx: i }))
+    }
+    return { onClick: toggle, style: { cursor: 'pointer' } as const }
   }
 
   // Anti-noise: kolom Workstream → caption grup bila tunggal; Deliverable
@@ -229,8 +281,18 @@ export function ActivityTimelineTable({ activities, period, currentMonth }: Prop
         </table>
       </div>
       {tip && createPortal(
-        <div className="atl-tip" role="tooltip" style={{ left: tip.x, top: tip.y - 14 }}>
-          {tip.text}
+        <div
+          className={`atl-tip${tip.y < 80 ? ' atl-tip--below' : ''}`}
+          role="tooltip"
+          style={{ left: tip.x, top: tip.y < 80 ? tip.y + 18 : tip.y - 14 }}
+        >
+          {tip.rows.map(row => (
+            <div key={row.kind} className="atl-tip__row">
+              <span className={`atl-tip__mark atl-tip__mark--${row.kind}`} aria-hidden="true" />
+              <span className="atl-tip__label">{row.label}</span>
+              <span className="atl-tip__detail">{row.detail}</span>
+            </div>
+          ))}
         </div>,
         document.body,
       )}

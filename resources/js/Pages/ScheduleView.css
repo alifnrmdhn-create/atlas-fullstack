@@ -9,6 +9,9 @@
   width: 100%;
 }
 
+/* First-paint skeleton wrapper (replaces bare "Loading schedule…" text). */
+.schedule-content__loading { padding: 16px; }
+
 /* ─── Toolbar ───────────────────────────────────────────── */
 
 .schedule-v2 .view-toolbar {

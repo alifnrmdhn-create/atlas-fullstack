@@ -725,6 +725,34 @@ export function SkeletonStack({
   )
 }
 
+/** Card-list placeholder for first-paint of card/list pages (Assignment, Admin
+ *  entity lists, schedule). Mirrors the card shape so the loading state reads as
+ *  "content is coming" instead of a blank panel with bare "Loading…" text. */
+export function SkeletonCardList({
+  count = 4,
+  className = '',
+  label = 'Loading…',
+}: {
+  count?: number
+  className?: string
+  label?: string
+}) {
+  return (
+    <div className={`skeleton-card-list ${className}`.trim()} aria-busy="true" aria-label={label}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div className="skeleton-card" key={i}>
+          <div className="skeleton-card__row">
+            <SkeletonBlock height={15} width="56%" />
+            <SkeletonBlock height={20} width="68px" />
+          </div>
+          <SkeletonBlock height={11} width="38%" />
+          <SkeletonBlock height={8} width="100%" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── CollapsibleSection ────────────────────────────────────────────────────
 // Sprint 2: extract pattern dari TaskDetailView ke primitive reusable.
 // Persist state ke localStorage saat persistKey diberikan.

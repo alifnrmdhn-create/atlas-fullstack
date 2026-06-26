@@ -6,6 +6,7 @@ import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import './AdminViews.css'
 import { api } from '../lib/api'
+import { SkeletonCardList } from '../components/ui'
 
 type DirectorateRecord = {
   id: number
@@ -384,9 +385,7 @@ export function AdminOrgsView() {
       )}
 
       {loading && (
-        <div className="panel admin-panel-state">
-          <span className="text-muted text-sm">{t('Loading organization data…')}</span>
-        </div>
+        <SkeletonCardList count={5} label={t('Loading organization data…')} />
       )}
 
       {/* ── Directorate modal ── */}

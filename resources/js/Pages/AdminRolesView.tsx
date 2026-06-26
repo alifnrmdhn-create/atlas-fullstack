@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
+import { SkeletonCardList } from '../components/ui'
 import { formatRoleLabel } from '../lib/roleLabel'
 import i18n from '../lib/i18n'
 import './AdminViews.css'
@@ -135,7 +136,7 @@ export function AdminRolesView() {
           </div>
           {loading ? (
             <div className="panel__body">
-              <span className="text-muted text-sm">{t('Loading…')}</span>
+              <SkeletonCardList count={3} label={t('Loading…')} />
             </div>
           ) : roleConfigs.length === 0 ? (
             <div className="panel__body">

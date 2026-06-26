@@ -7,7 +7,7 @@ import { useWorkspace } from '../hooks/useWorkspace'
 import { api, extractErrorMessage } from '../lib/api'
 import { useEscKey } from '../hooks/useEscKey'
 import { useAnimatedClose } from '../hooks/useAnimatedClose'
-import { Avatar } from '../components/ui'
+import { Avatar, SkeletonCardList } from '../components/ui'
 import { UserPicker } from '../components/UserPicker'
 import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import { PageHeader, Button } from '../design-system'
@@ -289,7 +289,7 @@ export function AssignmentsView() {
           {error && <div className="board-rollback-banner" role="alert"><span className="board-rollback-banner__icon">⚠</span><span className="board-rollback-banner__msg">{error}</span></div>}
 
           {loading ? (
-            <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40, fontSize: 13 }}>{t('Loading…')}</div>
+            <SkeletonCardList count={5} label={t('Loading…')} />
           ) : items.length === 0 ? (
             <EmptyState canAssign={canAssign} onCreate={() => setShowCreate(true)} />
           ) : boardMode === 'board' ? (

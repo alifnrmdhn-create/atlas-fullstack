@@ -242,6 +242,24 @@
   color: var(--indigo);
 }
 
+/* Phone: grid 3-kolom (avatar | nama | tombol) menyisakan ~190px utk nama
+   sehingga "M. Iswahyudi" patah jadi "M." / "Iswahyudi". Jadikan 2-kolom
+   (avatar | nama) dan turunkan tombol Edit ke baris penuh di bawah. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .profile-v2 .pv-hero {
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    column-gap: 14px;
+  }
+  .profile-v2 .pv-hero__edit-btn {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    align-self: stretch;
+    text-align: center;
+    margin-top: 4px;
+  }
+}
+
 /* ─── Section base ───────────────────────────────────────── */
 
 .profile-v2 .pv-section {

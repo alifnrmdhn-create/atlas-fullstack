@@ -164,6 +164,7 @@ class ProgramCharterService
                 'to'   => $program->targetEndDate?->format('Y-m') ?? now()->format('Y-m'),
             ],
             'currentMonth'        => now()->format('Y-m'),
+            'today'               => now()->format('Y-m-d'),
         ];
     }
 

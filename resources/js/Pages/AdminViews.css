@@ -558,6 +558,48 @@
   margin-bottom: 12px;
 }
 
+/* Permission matrix punya banyak kolom (View All, Manage User, …). Di layar
+   sempit kolom kanan terpotong tanpa petunjuk scroll. Bungkus dengan scroll-x
+   + min-width agar kolom tetap terbaca, dan buat kolom Role sticky supaya
+   konteks baris tak hilang saat menggeser. */
+.admin-v2 .perm-matrix-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .admin-v2 .perm-matrix { min-width: 480px; }
+  .admin-v2 .perm-matrix__header-cell--role,
+  .admin-v2 .perm-matrix__role-cell {
+    position: sticky;
+    left: 0;
+    background: var(--ds-surface-card);
+    z-index: 1;
+  }
+}
+
+/* Section "+ New" button (Orgs: tambah direktorat/unit). Tanpa style ia
+   jatuh ke default UA (abu washed-out, kontras rendah di dark). Beri chrome
+   tombol sekunder yang jelas terbaca. */
+.admin-v2 .btn-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: var(--ds-radius-md);
+  border: 1px solid var(--ds-border-default);
+  background: var(--ds-surface-card);
+  color: var(--ds-text-primary);
+  font-size: var(--ds-text-13);
+  font-weight: var(--ds-weight-semibold);
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.admin-v2 .btn-create:hover {
+  background: var(--ds-surface-hover);
+  border-color: var(--ds-border-strong);
+}
+
 /* ─── Role badge inside cells ──────────────────────────── */
 
 .admin-v2 .org-node__role-badge,

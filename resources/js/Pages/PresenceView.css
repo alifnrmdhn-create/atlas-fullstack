@@ -342,4 +342,26 @@
   .presence-v2 .ds-page-header__actions,
   .presence-v2 .presence-controls-bar { flex-wrap: wrap; }
   .presence-v2 .presence-controls-bar .presence-search-wrap { flex: 1 1 100%; max-width: none; }
+  /* Sidebar "My Status" mewarisi width:280px dari .right-rail dan tak pernah
+     di-reset saat layout stack → kartu lebih sempit dari daftar direktorat di
+     atasnya. Penuhi lebar + buang border-left (tak relevan saat ditumpuk). */
+  .presence-v2 .presence-sidebar.right-rail {
+    width: 100%;
+    max-width: none;
+    border-left: none;
+  }
+  /* Touch targets ≥40px di phone (pakem ≥44, floor 40). Tombol/baris klik di
+     Presence sebelumnya 24–32px → sulit di-tap. Hanya berlaku ≤640. */
+  .presence-v2 .presence-row__dm-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .presence-v2 .presence-unit__sort-btn,
+  .presence-v2 .presence-show-more,
+  .presence-v2 .presence-filter-tab,
+  .presence-v2 .presence-tab-btn,
+  .presence-v2 .presence-density-btn {
+    min-height: 40px;
+  }
+  .presence-v2 .status-preset-row { min-height: 44px; }
 }

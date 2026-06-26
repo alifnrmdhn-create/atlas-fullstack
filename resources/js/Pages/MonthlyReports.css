@@ -626,6 +626,16 @@
   .mr-db-row { flex-direction: column; }
   .mr-db-col-side { width: 100%; }
   .mr-hero-grid { grid-template-columns: repeat(2, 1fr); }
+  /* Stat strip: 4 kartu flex-row menyusut ke ~80px @390 → label "Total
+     Reports/Approved/Awaiting Review/Draft" terpotong. Reflow ke 2×2 grid
+     agar tiap kartu cukup lebar untuk label penuh. */
+  .mr-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .mr-strip__card { flex: none; }
 }
 
 /* ── Hero KPI grid ───────────────────────────────────────────────────────── */

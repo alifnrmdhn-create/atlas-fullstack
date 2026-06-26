@@ -374,7 +374,10 @@
   text-transform: uppercase;
   color: var(--ds-text-tertiary);
 }
-.mm-sheet__foot-space { height: calc(20px + env(safe-area-inset-bottom, 0px)); }
+/* Sheet (z 130) berada DI BAWAH bottom tab-bar (--z-tabbar 150), jadi tab-bar
+   menimpa ~67px area bawah sheet. Beri ruang bawah ≥ tinggi tab-bar agar baris
+   terakhir (Account: Profile/Settings) bisa di-scroll naik di atas tab-bar. */
+.mm-sheet__foot-space { height: calc(76px + env(safe-area-inset-bottom, 0px)); }
 
 /* ════════════════════════════════════════════════════════════════════════
    ProgramsMobile — daftar program app-like (search + filter chips + kartu)

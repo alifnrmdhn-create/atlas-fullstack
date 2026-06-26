@@ -125,6 +125,17 @@
   text-overflow: ellipsis;
   margin-right: 16px;
 }
+/* Phone: subtitle header dipotong elipsis ("…outpu…", "…prefere…") karena
+   nowrap. Di layar sempit biarkan membungkus penuh — ada cukup ruang
+   vertikal, dan deskripsi halaman lebih berguna utuh daripada terpotong. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .view-toolbar__subtitle {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    margin-right: 0;
+  }
+}
 .view-toolbar__tabs {
   display: flex;
   align-items: center;

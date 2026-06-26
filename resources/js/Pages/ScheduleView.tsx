@@ -8,7 +8,7 @@ import { MeetingDetailPanel } from './MeetingDetailPanel'
 import { useEscKey } from '../hooks/useEscKey'
 import { formatRoleLabel } from '../lib/roleLabel'
 import { UserPicker } from '../components/UserPicker'
-import { looksLikeAvatarUrl } from '../components/ui'
+import { looksLikeAvatarUrl, SkeletonCardList } from '../components/ui'
 import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import { PageHeader } from '../design-system'
 import { useTranslation } from 'react-i18next'
@@ -1325,8 +1325,8 @@ export function ScheduleView() {
       <div className={`schedule-layout${selectedMeeting ? ' schedule-layout--split' : ''}${viewMode === 'calendar' ? ' schedule-layout--calendar' : ''}`}>
       <div className="schedule-content">
         {loading && (
-          <div className="schedule-empty">
-            <span className="text-muted text-sm">{t('Loading schedule…')}</span>
+          <div className="schedule-content__loading">
+            <SkeletonCardList count={4} label={t('Loading schedule…')} />
           </div>
         )}
 

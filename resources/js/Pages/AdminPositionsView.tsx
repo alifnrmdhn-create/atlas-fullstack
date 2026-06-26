@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
+import { SkeletonCardList } from '../components/ui'
 import { useDialogFocus } from '../hooks/useDialogFocus'
 import './AdminViews.css'
 import { useEscKey } from '../hooks/useEscKey'
@@ -354,7 +355,7 @@ export function AdminPositionsView() {
               {loading ? (
                 <tr>
                   <td colSpan={9} className="admin-table-placeholder">
-                    <span className="text-muted text-sm">{t('Loading data…')}</span>
+                    <SkeletonCardList count={5} label={t('Loading data…')} />
                   </td>
                 </tr>
               ) : positions.map(pos => (

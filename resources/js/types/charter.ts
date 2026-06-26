@@ -25,6 +25,7 @@ export type CharterProgram = {
   pic: CharterPic
   period: CharterPeriod
   currentMonth: string // YYYY-MM
+  today: string // YYYY-MM-DD — server now(), single source for the "now" marker tooltip
 }
 
 export type MonthKey =

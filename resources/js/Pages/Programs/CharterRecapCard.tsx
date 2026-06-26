@@ -140,6 +140,7 @@ export function CharterRecapCard({ seed }: Props) {
               activities={data.activities}
               period={data.program.period}
               currentMonth={data.program.currentMonth}
+              today={data.program.today}
             />
           </div>
 
