@@ -19,6 +19,7 @@ import { ContextPanel } from '../components/ContextPanel'
 import { TOPBAR_ACTIONS } from '../lib/topbar-config'
 import { resolveContextPanel } from '../lib/context-panel-config'
 import { formatRoleLabel } from '../lib/roleLabel'
+import { taskIsOverdue } from '../lib/taskSchedule'
 
 type NavItem = {
   path: string
@@ -617,7 +618,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     notifToasts, dismissToast,
     setSelectedProgramId, setSelectedTaskId, setSelectedChannelId,
     authStatus, logoutPending, requestLogout, cancelLogout,
-    programs, myWork,
+    myWork,
   } = useWorkspace()
   const { status: realtimeStatus } = useRealtime()
   const isAdmin = ADMIN_ROLES.has(currentUser?.roleType?.toLowerCase() ?? '')
@@ -1007,8 +1008,18 @@ export function AppShell({ children }: { children?: ReactNode }) {
   }
 
   const fokusItem: NavItem = { path: '/fokus', label: t('Focus'), caption: t('Tasks and items awaiting you'), icon: IconInbox, badge: () => focusBadgeCount, badgeUrgent: true, shortcut: 'G F' }
-  const programsCount = programs?.length ?? 0
-  const tasksCount = myWork?.tasks?.length ?? 0
+  // Badge sidebar = SATU makna seragam: "sekian hal menunggu aksimu" (bukan
+  // jumlah katalog/antrian). Lihat memory project_status_label_fragmentation.
+  //  - Workboard: task milik user yang overdue / ter-blokir (butuh aksi),
+  //    bukan total task assigned. taskIsOverdue = sumber tunggal (taskSchedule).
+  //  - Assignment: assignment yang masih jalan & due-window (gate sudah di BE
+  //    /my-work: belum selesai DAN due ≤7h / overdue / belum ber-due).
+  //  - Programs: TIDAK ada badge — "total program di portofolio" itu stok, bukan
+  //    sinyal aksi (selaras keputusan bottom-nav mobile yang men-set 0).
+  const tasksCount = (myWork?.tasks ?? []).filter(
+    t => taskIsOverdue(t) || t.isBlocked || t.status === 'BLOCKED',
+  ).length
+  const assignmentsCount = myWork?.assignments?.length ?? 0
 
   // ── Nav items palette ──────────────────────────────────────────────────────
   // Sidebar di-organize secara intent-based (post 2026-05-25, revisi 2026-05-26):
@@ -1020,9 +1031,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const NI = {
     home:        { path: '/',          label: t('Home'),             caption: t('Executive overview of work programs'), icon: IconHome,        shortcut: 'G H' },
     roadmap:     { path: '/roadmap',   label: t('Roadmap'),          caption: t('Visual program timeline'),           icon: IconRoadmap    },
-    programs:    { path: '/programs',  label: t('Programs'),         caption: t('Portfolio orchestration'),           icon: IconPrograms,    shortcut: 'G P', badge: () => programsCount },
-    execution:   { path: '/execution', label: t('Workboard'),        caption: t('Scheduled tasks from Programs'),     icon: IconExecution,   shortcut: 'G E', badge: () => tasksCount },
-    penugasan:   { path: '/penugasan', label: t('Assignment'),       caption: t('Ad-hoc tasks outside Programs'),     icon: IconAssignments, shortcut: 'G A' },
+    programs:    { path: '/programs',  label: t('Programs'),         caption: t('Portfolio orchestration'),           icon: IconPrograms,    shortcut: 'G P' },
+    execution:   { path: '/execution', label: t('Workboard'),        caption: t('Scheduled tasks from Programs'),     icon: IconExecution,   shortcut: 'G E', badge: () => tasksCount, badgeUrgent: true },
+    penugasan:   { path: '/penugasan', label: t('Assignment'),       caption: t('Ad-hoc tasks outside Programs'),     icon: IconAssignments, shortcut: 'G A', badge: () => assignmentsCount, badgeUrgent: true },
     goals:       { path: '/goals',      label: t('Goals & KPI'),   caption: t('Manage org KPIs & achievement tracking'),  icon: IconGoals    },
     activity:    { path: '/activity',   label: t('Team Activity'), caption: t('Session leaderboard & daily team activity'), icon: IconActivity },
     reports:       { path: '/reports',         label: t('Analytics'),       caption: t('KPI, program health & leaderboard'),  icon: IconReports       },
@@ -1644,14 +1655,13 @@ export function AppShell({ children }: { children?: ReactNode }) {
            4 destinasi inti + "Menu" yang membuka drawer lengkap. Hanya phone. */}
       {viewportPhone ? (
         <nav className="mobile-tabbar" aria-label={t('Main navigation')}>
-          {/* Badge bottom-nav HANYA untuk sinyal unread/butuh-aksi (Channels).
-           * Workboard/Programs dulu pakai count total (tasksCount/programsCount)
-           * → dot mengambang yang selalu nyala terbaca sebagai notifikasi padahal
-           * cuma jumlah katalog/antrian. Count tetap tersedia inline di sidebar
-           * (afordans inventaris, bukan dot). 2026-06-03. */}
+          {/* Badge bottom-nav HANYA untuk sinyal unread/butuh-aksi. Workboard kini
+           * pakai count task overdue/blokir (bukan lagi total antrian katalog yang
+           * dulu selalu nyala) → konsisten dgn makna badge di sidebar. Programs
+           * tetap 0 (total portofolio = stok, bukan sinyal). 2026-06-26. */}
           {[
             { path: '/',           label: t('Home'),      icon: IconHome,      badge: 0 },
-            { path: '/execution',  label: t('Workboard'), icon: IconExecution, badge: 0 },
+            { path: '/execution',  label: t('Workboard'), icon: IconExecution, badge: tasksCount, urgent: true },
             { path: '/programs',   label: t('Programs'),  icon: IconPrograms,  badge: 0 },
             { path: '/channels',   label: t('Channels'),  icon: IconChannels,  badge: totalUnreadChannels, urgent: true },
           ].map((tab) => {
@@ -1770,7 +1780,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
           open={menuSheetOpen}
           onClose={() => setMenuSheetOpen(false)}
           gates={{ isAdmin, isSuperAdmin, canAccessPerformance }}
-          badges={{ channels: totalUnreadChannels, focus: focusBadgeCount }}
+          badges={{ channels: totalUnreadChannels, focus: focusBadgeCount, workboard: tasksCount, assignment: assignmentsCount }}
           activePath={activePath}
         />
       ) : null}

@@ -12,7 +12,7 @@ import '../styles/mobile-native.css'
  * Single source: `buildMobileMenu()` (sama dengan quick-access grid di Home).
  * Reuse gates dari AppShell (isAdmin/isSuperAdmin/canAccessPerformance).
  */
-export type MobileMenuBadges = { channels?: number; focus?: number }
+export type MobileMenuBadges = { channels?: number; focus?: number; workboard?: number; assignment?: number }
 
 interface Props {
   open: boolean
@@ -39,6 +39,8 @@ export function MobileMenuSheet({ open, onClose, gates, badges, activePath }: Pr
   const badgeFor = (tile: MenuTile): number => {
     if (tile.badgeKey === 'channels') return badges?.channels ?? 0
     if (tile.badgeKey === 'focus') return badges?.focus ?? 0
+    if (tile.badgeKey === 'workboard') return badges?.workboard ?? 0
+    if (tile.badgeKey === 'assignment') return badges?.assignment ?? 0
     return 0
   }
 

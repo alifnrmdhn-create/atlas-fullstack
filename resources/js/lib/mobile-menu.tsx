@@ -57,7 +57,7 @@ export type MenuTile = {
   /** Accent hue (hex). Tint chip + warna ikon. */
   accent: string
   /** Badge dinamis opsional — di-resolve di komponen (mis. unread Channels). */
-  badgeKey?: 'channels' | 'focus'
+  badgeKey?: 'channels' | 'focus' | 'workboard' | 'assignment'
 }
 
 export type MenuSection = { label: string; items: MenuTile[] }
@@ -91,8 +91,8 @@ export function buildMobileMenu(g: MenuGates): MenuSection[] {
   sections.push({
     label: 'Work',
     items: [
-      { path: '/execution', label: 'Workboard',    icon: Icons.workboard,    accent: A.sky },
-      { path: '/penugasan', label: 'Assignment',   icon: Icons.assignment,   accent: A.indigo },
+      { path: '/execution', label: 'Workboard',    icon: Icons.workboard,    accent: A.sky, badgeKey: 'workboard' },
+      { path: '/penugasan', label: 'Assignment',   icon: Icons.assignment,   accent: A.indigo, badgeKey: 'assignment' },
       { path: '/jadwal',    label: 'Coordination', icon: Icons.coordination, accent: A.teal },
       { path: '/channels',  label: 'Channels',     icon: Icons.channels,     accent: A.blue, badgeKey: 'channels' },
       { path: '/presence',  label: 'Presence',     icon: Icons.presence,     accent: A.cyan },
