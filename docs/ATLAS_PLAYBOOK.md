@@ -660,17 +660,25 @@ Roadmap menyajikan portofolio Program secara visual — lane atau timeline — u
 
 **Siapa yang bisa:** Semua pengguna (OFFICER/ASISTEN terutama)
 
-Papan Kerja adalah tempat utama untuk mengelola dan memantau tugas harian. Tersedia **empat tampilan**: **By Program** (default — task dikelompokkan per program, unit akuntabilitas PIC), **Board** (kanban kolom urgensi), **List** (daftar), dan **Blockers** (hambatan saja).
+Papan Kerja adalah tempat utama untuk mengelola dan memantau tugas harian. **Sejak 27 Juni 2026** empat tab lama (By Program / Board / List / Blockers) diringkas jadi **satu sumbu "Group by"** dengan tiga pilihan pengelompokan, plus Blocker yang naik jadi *filter* lintas-grouping:
+
+| Group by | Isi |
+|----------|-----|
+| **Program** *(default)* | Task dikelompokkan per program (unit akuntabilitas PIC). Program On Track / Completed terlipat default agar fokus ke yang butuh perhatian. |
+| **Urgency** | Kanban 5 kolom urgensi (Overdue · At Risk · On Track · Not Started · Completed) — lihat tabel di bawah. |
+| **Owner** *(Penanggung jawab)* | Task dikelompokkan per assignee — beban kerja per orang. |
+
+> 💡 **List dibuang & Blockers jadi filter** (27 Juni 2026): tampilan List datar ditutupi oleh grouping, dan "Blockers" tidak lagi tab — kini chip filter **"Blockers only"** yang menyaring task ber-blocker di **semua** grouping (Program/Urgency/Owner). Klik baris/kartu blocked tetap membuka task terkait.
 
 ### Cara Menggunakan Papan Kerja
 
 1. Klik **Workboard** di sidebar (atau tekan **G E**)
-2. Pilih tampilan **By Program**, **Board**, **List**, atau **Blockers** di bagian atas
-3. Filter berdasarkan **Program** atau **Workstream**, dan (di Board/List) batasi waktu lewat chip **Active This Week / Overdue / In Progress / All**
+2. Pilih sumbu **Group by** (Program / Urgency / Owner) di bagian atas
+3. Filter berdasarkan **Program** atau **Workstream** (saat "All Programs", opsi workstream di-prefix kode program agar nama kembar terbedakan), aktifkan chip **"Blockers only"** bila ingin fokus ke yang terhambat, dan (di Urgency / Owner) batasi waktu lewat chip **Active This Week / Overdue / In Progress / All**
 
-### Kolom Board — by Urgency (5 kolom)
+### Kolom Urgency — by Urgency (5 kolom)
 
-Sejak 25 Juni 2026 tab **Board** **tidak lagi** dikelompokkan per status lifecycle (Backlog→Completed) — task telat dulu "nyangkut" di kolom In Progress tanpa rumah yang jelas. Board kini dipecah jadi **5 kolom urgensi** (selaras kosakata jadwal sistem, lihat Glosarium → *Status Jadwal & Urgensi*):
+Sejak 25 Juni 2026 grouping **Urgency** **tidak** dikelompokkan per status lifecycle (Backlog→Completed) — task telat dulu "nyangkut" di kolom In Progress tanpa rumah yang jelas. Grouping ini dipecah jadi **5 kolom urgensi** (selaras kosakata jadwal sistem, lihat Glosarium → *Status Jadwal & Urgensi*):
 
 | Kolom | Isi |
 |-------|-----|
@@ -680,7 +688,9 @@ Sejak 25 Juni 2026 tab **Board** **tidak lagi** dikelompokkan per status lifecyc
 | **Not Started** | Belum dimulai. |
 | **Completed** | Sudah selesai. |
 
-Posisi kartu **di-derive** dari kondisi jadwal (helper tunggal `scheduleOf` / `scheduleBucket` di `lib/taskSchedule`, dipakai bersama oleh desktop & mobile) — **bukan drag manual**. Tab **By Program** menyusun task dalam baris per-program (program On Track / Completed terlipat default agar fokus ke yang butuh perhatian); tab **Blockers** menampilkan hambatan yang di-scope ke "My Tasks" + filter program/workstream, dan klik baris membuka task terkait.
+Posisi kartu **di-derive** dari kondisi jadwal (helper tunggal `scheduleOf` / `scheduleBucket` di `lib/taskSchedule`, dipakai bersama oleh desktop & mobile) — **bukan drag manual**.
+
+> 💡 **Pil health program di grouping "Program" diturunkan dari realita task** (27 Juni 2026): program yang semua task-nya **COMPLETED** turun ke bawah dengan pil **"Completed"** netral (terlipat default), bukan lagi merah "Overdue". Pil **"Overdue"** hanya muncul bila program punya **task aktif yang benar-benar lewat tempo** (`taskIsOverdue`), bukan sekadar `targetEndDate` program yang stale — menghapus puluhan "Overdue" palsu. Selain itu, strip "N butuh perhatian" ganda di dalam board dibuang; satu-satunya inbox aksi adalah kartu **Butuh aksi** di sidebar.
 
 > 💡 **BLOCKED bukan status terpisah.** Sejak 19 Mei 2026 BLOCKED jadi *orthogonal flag* (`isBlocked: true`) yang bisa di-attach ke status lifecycle manapun. Kartu blocked menampilkan badge **⚠ Terhambat**; di Board ia masuk kolom **Overdue** (bila sudah lewat tempo) atau **At Risk** (bila belum), progress historis tidak hilang. Hover badge untuk lihat `blockedReason`. Status **CANCELLED** disembunyikan default (filter "Termasuk dibatalkan" untuk show).
 
@@ -721,7 +731,7 @@ Penugasan adalah tugas ad-hoc di luar struktur Program — perintah cepat dari a
 
 ### Cara Akses
 
-Klik **Penugasan** (Assignment) di sidebar (grup **Work**), atau tekan **G A**.
+Klik **Penugasan** (Assignment) di sidebar (grup **My Work**), atau tekan **G A**.
 
 ### Kolom Kanban Penugasan
 
@@ -795,7 +805,7 @@ Blocker adalah hambatan yang menghalangi penyelesaian suatu tugas atau program.
 
 ### Cara Menyelesaikan atau Mengeskalasikan Blocker
 
-1. Buka daftar blocker dari **Papan Kerja** (tab Blockers) atau dari tab Hambatan di detail Program
+1. Buka daftar blocker dari **Papan Kerja** (aktifkan chip filter **"Blockers only"**) atau dari tab Hambatan di detail Program
 2. Klik blocker yang ingin ditangani
 3. Pilih:
    - **Tandai Selesai** dengan ringkasan resolusi (countermeasure)
@@ -954,7 +964,7 @@ Halaman Rapat Koordinasi adalah pusat manajemen rapat — dari undangan, RSVP, n
 
 ### Cara Akses
 
-Sidebar → grup **Work** → **Coordination** (Rapat Koordinasi), atau tekan **G R**.
+Sidebar → grup **My Work** → **Coordination** (Rapat Koordinasi), atau tekan **G R**.
 
 ### Cara Membuat Rapat
 
@@ -970,6 +980,8 @@ Sidebar → grup **Work** → **Coordination** (Rapat Koordinasi), atau tekan **
 3. Temukan rapat, klik **RSVP**
 4. Pilih: **Hadir**, **Tidak Hadir**, atau **Delegasi** (tunjuk pengganti)
 
+> 💡 **Saat memilih Delegasi** (sejak 27 Juni 2026), pengganti yang Anda tunjuk **otomatis ditambahkan sebagai peserta** rapat dan menerima **notifikasi delegasi** ("{nama} mendelegasikan kehadiran rapat … kepada Anda") — sehingga ia bisa membuka detail rapat dan melihatnya di jadwalnya. Sebelumnya delegasi hanya mencatat status tanpa memberi akses ke pengganti.
+
 ### Saat & Setelah Rapat — Notulen & Action Items
 
 1. Buka detail rapat
@@ -977,6 +989,8 @@ Sidebar → grup **Work** → **Coordination** (Rapat Koordinasi), atau tekan **
 3. Tambahkan **Keputusan** yang dihasilkan
 4. Buat **Action Items** — tandai PIC dan batas waktu
 5. Action Items dapat langsung **dijadikan Task** di Papan Kerja dengan satu klik
+
+> 🔒 **Hanya organizer rapat yang dapat menambah atau menghapus Keputusan** (decision) — di-enforce di backend sejak 27 Juni 2026 (sebelumnya tombol hanya disembunyikan di UI, API masih menerima dari siapa saja). Keputusan juga tidak bisa ditambahkan pada rapat berstatus **Dibatalkan** atau **Ditunda**.
 
 > 💡 **PICA Composite Panel** menampilkan 4-cell grid (Problem / Identification / Corrective / Action) untuk rapat tipe RAPAT_KOORDINASI — membantu menelusuri akar masalah & tindakan korektif.
 
@@ -1213,6 +1227,8 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 | Integrasi APMS (live sync) | ❌ | ⚠️ | — | ⚠️ |
 | Meeting V1 (CRUD + RSVP) | ✅ | ✅ | ✅ | ✅ |
 | Meeting V2 (Notulen + Action Items) | ✅ | ✅ | ✅ | ✅ |
+| Meeting — Decision authz (hanya organizer tambah/hapus Keputusan; blokir di rapat Dibatalkan/Ditunda) | ✅ | ✅ | — | ✅ |
+| Meeting — RSVP Delegasi: pengganti otomatis jadi peserta + notifikasi `MEETING_DELEGATED` | ✅ | ✅ | ✅ | ✅ |
 | Meeting V3 (Prep Packet) | ✅ | ✅ | — | ✅ |
 | PICA Composite Panel (RAPAT_KOORDINASI) | ✅ | ✅ | ✅ | ✅ |
 | Meeting V4 (Cost + Google Calendar) | ❌ | ❌ | — | ❌ |
@@ -1237,8 +1253,9 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 | Visual system — Pill/badge background strip + spacing ladder + primary CTA dedupe | — | ✅ | — | ✅ |
 | Motion — `.ds-stagger` page-enter utility across all pages | — | ✅ | — | ✅ |
 | Execution — TaskDetailModal expand animation + URL deep-link `?task={id}` | ✅ | ✅ | ✅ | ✅ |
-| Execution — Workboard 4 mode (By Program default · Board kolom-urgensi · List · Blockers); BLOCKED = orthogonal flag `isBlocked` + badge ⚠ Terhambat | ✅ | ✅ | ✅ | ✅ |
-| Execution — Board by-urgency (Overdue · At Risk · On Track · Not Started · Completed) via `lib/taskSchedule` (sumber tunggal, dipakai mobile+desktop) | — | ✅ | — | ✅ |
+| Execution — Workboard sumbu **Group by** (Program default · Urgency · Owner/PIC); List dibuang, Blockers jadi chip filter "Blockers only"; BLOCKED = orthogonal flag `isBlocked` + badge ⚠ Terhambat | ✅ | ✅ | ✅ | ✅ |
+| Execution — Grouping Urgency by-urgency (Overdue · At Risk · On Track · Not Started · Completed) via `lib/taskSchedule` (sumber tunggal, dipakai mobile+desktop) | — | ✅ | — | ✅ |
+| Execution — Pil health program di By-Program diturunkan dari realita task (completed→Completed, Overdue hanya bila ada task benar-benar lewat tempo) | — | ✅ | — | ✅ |
 | Execution — Backward / skip-forward transition wajib alasan (audit log via `categorizeTransition`) | ✅ | ✅ | — | ✅ |
 | Execution — Badge perbandingan On time / Late di kartu Selesai | — | ✅ | — | ✅ |
 | Vocabulary — Status single source of truth (`lib/status.ts`) + gate `audit:status-labels` (anti enum-mentah bocor ke UI) | — | ✅ | — | ✅ |
@@ -1255,13 +1272,15 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 - ❌ **APMS Live Sync** — fetch data real dari AGHRIS belum diimplementasi; KPI APMS masih menggunakan seed data. KPI internal berfungsi penuh termasuk monitoring health
 - ⚠️ **My Work endpoint** — implementasi minimal, sebagian besar fungsionalitas sudah diserap ke Fokus dan Papan Kerja
 
-**Status: ✅ Evaluasi Lengkap per 26 Juni 2026** (Sprint 0–5 MVP selesai 8 Mei 2026)
+**Status: ✅ Evaluasi Lengkap per 27 Juni 2026** (Sprint 0–5 MVP selesai 8 Mei 2026)
 
 > 🗓️ **Perubahan signifikan sejak 24 Mei 2026** (tercermin di dokumen ini): navigasi sidebar di-organize ulang berbasis **intent** (Today / Portfolio & Performance / Work / Admin) menggantikan grouping fase PDCA; akses dashboard Performance dipindah ke gate `EnsurePerformanceAccess` (pilot DIR-KMR), bukan lagi role granular; dukungan **phone penuh ≤640px** dan **PWA installable**; dashboard Risiko standalone dihilangkan dari discovery (2 Jun 2026); migrasi bertahap ke **design-system primitives** (`@/design-system`).
 >
 > 🗓️ **Perubahan 24–25 Juni 2026**: **i18n bilingual EN ⟷ ID** (switcher di Settings → Language); **dark mode** token theme-aware (Light/Dark/System); **status vocabulary unified** ke satu sumber `lib/status.ts` (enum mentah tak lagi bocor ke UI; health fork "Off Track/Critical" di-collapse; program "running" = **Active**); **Workboard redesign** — tab **Board** kini berkolom **urgensi** (Overdue · At Risk · On Track · Not Started · Completed), **By Program** jadi default, tab **Blockers** baru; **phone mobile-native** (bottom-tab + All-menu sheet + Home launcher) menggantikan drawer off-canvas; **Fokus** dapat panel **disposisi** & DM/mention dikeluarkan dari feed; **Pusat Bantuan** pindah ke topbar.
 >
+> 🗓️ **Perubahan 27 Juni 2026**: **Workboard IA dirombak** — empat tab (By Program / Board / List / Blockers) diringkas jadi satu sumbu **Group by** (Program default · Urgency · Owner/PIC); **List dibuang**, **Blockers jadi chip filter** "Blockers only" lintas-grouping. **Pil health program** di By-Program diturunkan dari realita task (program selesai → "Completed" netral & terlipat, "Overdue" hanya bila ada task benar-benar lewat tempo — bukan `targetEndDate` stale). **Meeting**: **decision authz** (hanya organizer boleh tambah/hapus Keputusan; tak boleh di rapat Dibatalkan/Ditunda) + **RSVP Delegasi** kini menambahkan pengganti sebagai peserta & mengirim notifikasi delegasi.
+>
 > 🗓️ **Perubahan 26 Juni 2026**: **Sidebar disederhanakan** — label panjang "Portfolio & Performance" dibuang, **Programs** naik ke **pita primer** (Home · Fokus · Programs, di-pin tanpa label), sisanya grup **My Work** → **Performance** (satu-tujuan, auto-hidden) → Admin; + **workspace switcher chip** di footer. **RBAC penyusunan plan**: hanya **KADIV/KASUBDIV** (+ADMIN) yang membuat Program/Workstream & jadi owner — ASISTEN/OFFICER murni pelaksana; tangga approval jadi 2-tingkat (KASUBDIV → KADIV). **Status Workstream/Phase = turunan task** (rollup, dropdown manual dicabut); **owner & PIC Workstream/Phase dibuang** (akuntabilitas di PIC Program + `Task.assignedTo`). **Notifikasi @mention** di diskusi Task/Program; **Charter recap** sub-view ke-5 di Portfolio; **Profil read-only modal** (klik orang app-wide) + **foto lightbox**.
 
 
-*Panduan ini mencerminkan kondisi implementasi ATLAS per 26 Juni 2026. Perbarui dokumen setiap ada perubahan fitur signifikan.*
+*Panduan ini mencerminkan kondisi implementasi ATLAS per 27 Juni 2026. Perbarui dokumen setiap ada perubahan fitur signifikan.*

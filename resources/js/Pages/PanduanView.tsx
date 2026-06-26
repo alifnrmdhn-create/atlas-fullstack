@@ -161,10 +161,10 @@ const getTopik = (): Topik[] => [
     ringkas:   i18n.t('Update status, log progress %, mark tasks done'),
     audience:  ['ALL'],
     bacaMenit: 2,
-    apa:       i18n.t('The Workboard has four views: By Program (the default — tasks grouped under their program), Board (a kanban organized by schedule urgency: Overdue · At Risk · On Track · Not Started · Completed), List, and Blockers. You update a task from its detail panel — card positions are derived from schedule and progress, not dragged.'),
+    apa:       i18n.t('The Workboard has one "Group by" axis with three options: Program (the default — tasks grouped under their program), Urgency (a kanban by schedule urgency: Overdue · At Risk · On Track · Not Started · Completed), and Owner (tasks grouped per assignee). Blockers is a filter chip ("Blockers only") that works across all groupings. You update a task from its detail panel — card positions are derived from schedule and progress, not dragged.'),
     langkah: [
       { judul: i18n.t('Open the Workboard'),           deskripsi: i18n.t('Sidebar → My Work → Workboard. Or use the shortcut G E.') },
-      { judul: i18n.t('Filter to your tasks'),         deskripsi: i18n.t('Use the "My Tasks" filter to see only the tasks assigned to you. Switch views (By Program / Board / List / Blockers) from the tabs at the top.') },
+      { judul: i18n.t('Filter to your tasks'),         deskripsi: i18n.t('Use the "My Tasks" filter to see only the tasks assigned to you. Switch the grouping (Program / Urgency / Owner) from the "Group by" selector at the top, and toggle "Blockers only" to focus on blocked work.') },
       { judul: i18n.t('Click a task card'),            deskripsi: i18n.t('The detail modal opens. Change the status from the Status dropdown and log your progress %.') },
       { judul: i18n.t('Mark it done with evidence'),   deskripsi: i18n.t('Move it to Completed and attach evidence — a link or a note. Its progress history (start, completion) is kept.'), tip: i18n.t('A backward transition (e.g. In Progress → Ready) requires a reason.') },
     ],
@@ -247,7 +247,7 @@ const getFaq = (): Array<{ q: string; a: string; link?: { anchor: string; label:
   },
   {
     q: i18n.t('What’s the difference between Program Status and Work Status?'),
-    a: i18n.t('Program Status (On Track / At Risk / Delayed / Completed) is the strategic, schedule/health level — it answers "is the program healthy?". Work Status (Backlog / Ready / In Progress / In Review / Completed) is the operator, lifecycle level — it answers "which stage of the pipeline is this in?". They are orthogonal — a program can be On Track while some of its tasks are still in the Backlog. The Workboard Board view groups tasks by the schedule axis (Overdue / At Risk / On Track / Not Started / Completed).'),
+    a: i18n.t('Program Status (On Track / At Risk / Delayed / Completed) is the strategic, schedule/health level — it answers "is the program healthy?". Work Status (Backlog / Ready / In Progress / In Review / Completed) is the operator, lifecycle level — it answers "which stage of the pipeline is this in?". They are orthogonal — a program can be On Track while some of its tasks are still in the Backlog. The Workboard’s "Group by → Urgency" option groups tasks by the schedule axis (Overdue / At Risk / On Track / Not Started / Completed).'),
     link: { anchor: 'glosarium-istilah', label: i18n.t('Glossary') },
   },
   {
@@ -257,7 +257,7 @@ const getFaq = (): Array<{ q: string; a: string; link?: { anchor: string; label:
   },
   {
     q: i18n.t('Why does my task show "⚠ Blocked"?'),
-    a: i18n.t('Your task is flagged `isBlocked` — either you or your superior reported an obstacle. It is not a separate status; it is a flag layered on top of the task’s lifecycle status. On the Board its card moves to the At Risk column (or Overdue if it is already past due). Hover over the badge to see the reason. Once the obstacle is resolved, toggle the flag off from the detail panel.'),
+    a: i18n.t('Your task is flagged `isBlocked` — either you or your superior reported an obstacle. It is not a separate status; it is a flag layered on top of the task’s lifecycle status. In the Urgency grouping its card sits in the At Risk column (or Overdue if it is already past due), and you can isolate all blocked work with the "Blockers only" filter. Hover over the badge to see the reason. Once the obstacle is resolved, toggle the flag off from the detail panel.'),
     link: { anchor: '11-eksekusi--blocker-hambatan-kerja', label: i18n.t('§11 Blocker') },
   },
   {
