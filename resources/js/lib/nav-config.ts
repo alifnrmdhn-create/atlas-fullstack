@@ -27,17 +27,15 @@ export const NAV_SECTIONS: NavSection[] = [
       { path: '/fokus', label: 'Focus' },
     ],
   },
-  // Portfolio diangkat ke atas My Work (2026-05-26): Programs = objek inti
-  // produk (jangkar strategis), dulu terkubur di dasar sebagai grup 1-item.
-  // Label "Portfolio" (bukan "Portfolio & Performance") untuk non-SUPERADMIN —
-  // Performance items SUPERADMIN-only & dihilangkan dari palette/breadcrumb.
-  // AppShell render label dinamis: "Portfolio & Performance" hanya saat
-  // SUPERADMIN (item Performance hadir).
+  // Programs = objek inti produk (jangkar strategis). Di SIDEBAR (post
+  // 2026-06-26) Programs dipromosikan ke pita primer (sebaris Home·Focus) —
+  // lihat AppShell.tsx todayItems. Di palette/breadcrumb ia tetap di-grup
+  // "Portfolio" karena di sini grup = label referensi (list, bukan rail), dan
+  // "Portfolio" header lebih akurat untuk Programs daripada "Today".
   // NOTE: Performance items (Scorecard, KPI Direktorat, dll) dihilangkan dari
   // Command Palette + breadcrumb dropdown per permintaan user 2026-05-25
-  // (akses dibatasi ke SUPERADMIN via gate di AppShell.tsx + middleware di
-  // routes/web.php). Re-enable: tambah item di section ini + hapus gate
-  // `isSuperAdmin` di AppShell.tsx portfolioItems + middleware closure.
+  // (akses dibatasi via gate di AppShell.tsx performanceItems + middleware di
+  // routes/web.php). Re-enable: tambah item di section ini + longgarkan gate.
   {
     label: 'Portfolio',
     items: [
@@ -49,7 +47,7 @@ export const NAV_SECTIONS: NavSection[] = [
   // (lihat AppShell.tsx navGroups). Halaman tetap hidup via direct URL,
   // notif deep-link, dan link di /reports analytics panel.
   {
-    label: 'Work',
+    label: 'My Work',
     items: [
       { path: '/execution', label: 'Workboard' },
       { path: '/penugasan', label: 'Assignment' },

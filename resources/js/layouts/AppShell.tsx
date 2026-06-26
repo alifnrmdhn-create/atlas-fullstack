@@ -1085,8 +1085,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
   // ── Nav items palette ──────────────────────────────────────────────────────
   // Sidebar di-organize secara intent-based (post 2026-05-25, revisi 2026-05-26):
-  //   Today (pinned: Home + Focus) → My Work → Portfolio[& Performance] → Admin
-  //   (grup Account dihapus — Presence ke My Work, Profile/Settings ke popover)
+  //   Primary (pinned: Home + Focus + Programs) → My Work → Performance → Admin
+  //   (revisi 2026-06-26: Programs naik ke pita primer; grup Performance jadi
+  //    satu-tujuan; "Portfolio & Performance" yang panjang/campur dibuang.
+  //    grup Account dihapus — Presence ke My Work, Profile/Settings ke popover)
   // PDCA tetap framework sistem di docs/playbook, tapi navigasi user-facing
   // dioptimasi untuk fast lookup (group by intent, bukan by abstract phase).
   // Single source of truth: lib/nav-config.ts. Labels & order mirror that file.
@@ -1112,47 +1114,47 @@ export function AppShell({ children }: { children?: ReactNode }) {
     settings:    { path: '/settings',  label: t('Settings'),         caption: t('Workspace preferences'),             icon: IconSettings   },
   } satisfies Record<string, NavItem>
 
-  // ── Sidebar groups — intent-based (post 2026-05-25) ──────────────────────
-  // Order (revisi 2026-05-26): Portfolio[& Performance] (jangkar strategis) →
-  // My Work (eksekusi harian) → Admin. Programs diangkat ke atas karena ia
-  // objek inti produk (PDCA Plan sebelum Do) + Home memfunnel ke sana; dulu
-  // terkubur di dasar sebagai grup 1-item. PDCA framework masih hidup di
-  // docs/playbook; sidebar dioptimasi untuk fast nav (group by intent).
+  // ── Sidebar groups — intent-based (post 2026-05-25, revisi 2026-06-26) ─────
+  // Order: My Work (eksekusi harian, frekuensi tertinggi) → Performance
+  // (dashboard KPI, referensi role-gated) → Admin. Programs TIDAK lagi di grup
+  // ini — ia naik ke pita primer (todayItems, sebaris Home·Focus) sebagai
+  // destinasi jangkar. PDCA framework masih hidup di docs/playbook; sidebar
+  // dioptimasi untuk fast nav (group by intent, label = 1 kata).
+  //
+  // Kenapa redesign (2026-06-26): label lama "Portfolio & Performance" terlalu
+  // panjang + grup memikul 2 hal (1 Programs + N KPI). Memisahkan Programs ke
+  // pita primer & menyisakan grup "Performance" satu-tujuan menutup 4 masalah
+  // sekaligus: label panjang, grup campur, prominensi Programs, dan label-flip
+  // per-role. Tahan di semua role (Officer tanpa KPI → grup Performance kosong,
+  // auto-hidden oleh filter items.length>0 di render; Programs tetap tampil).
   //
   // My Work = aktivitas harian: task terjadwal (Workboard), tugas ad-hoc
-  // (Assignment), jadwal rapat, messaging, status kehadiran (Presence).
-  //
-  // Portfolio & Performance = Programs (kelola portfolio) + KPI dashboards
-  // (SUPERADMIN-only sejak 2026-05-25 — sebelumnya role-based: BOD tanpa KPI
-  // Saya, KASUBDIV hanya KPI Divisi+Saya, OFFICER/ASISTEN hanya KPI Saya).
-  // Presence ditarik ke My Work (keputusan 2026-05-26): Presence = status
-  // kehadiran/ketersediaan tim → operasional, bukan "akun". Sebelumnya salah
-  // kategori di grup Account bersama Profile.
-  // Label 'Work' (bukan 'My Work') 2026-05-26: isi grup juga mencakup kolaborasi
-  // tim (Channels/Presence/Coordination), bukan murni tugas personal — 'Work'
-  // lebih pas & tetap intent-based. 'Workspace' dihindari (tabrakan dgn .workspace
-  // container + route /workspace/overview + tab Settings Workspace).
-  const grpMyWork  = { label: t('Work'), tone: 'do', items: [NI.execution, NI.penugasan, NI.schedule, NI.channels, NI.presence] }
+  // (Assignment), jadwal rapat (Coordination), messaging (Channels), status
+  // kehadiran tim (Presence). Label 'My Work' (revisi 2026-06-26 dari 'Work',
+  // yang terlalu generik) — rasa kepemilikan, pola Asana/ClickUp. 'Workspace'
+  // tetap dihindari (tabrakan dgn .workspace container + route /workspace/*).
+  const grpMyWork  = { label: t('My Work'), tone: 'do', items: [NI.execution, NI.penugasan, NI.schedule, NI.channels, NI.presence] }
   // Settings & Profile eksklusif di user popover (sidebar footer) per keputusan
   // 2026-05-26 — eliminasi grup Account 1-item + duplikat entry point. Keduanya
   // personal/identity, sepasang natural dengan Mode gelap toggle di popover.
 
-  // Performance items role-scoped (2026-05-29). SUPERADMIN: full portfolio grid.
-  // DIR-KMR members (canAccessPerformance): Scorecard (overview direktorat) →
-  // KPI Direktorat (19 KPI per perspektif; /performance/kolegial me-redirect
-  // non-eksekutif ke detail direktoratnya) → KPI Divisi (detail divisinya;
-  // controller mengunci unit-level user ke divisinya sendiri). Leaderboard/
-  // executive tetap SUPERADMIN-only. Lain-lain hanya Programs.
-  const portfolioItems: NavItem[] = isSuperAdmin
-    ? [NI.programs, NI.executive, NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfIndividu, NI.perfSaya]
+  // Performance items role-scoped (2026-05-29). SUPERADMIN: full grid (Executive,
+  // Scorecard, KPI Direktorat/Divisi, Leaderboard, My KPI). DIR-KMR members
+  // (canAccessPerformance): Scorecard (overview direktorat) → KPI Direktorat
+  // (19 KPI per perspektif; /performance/kolegial me-redirect non-eksekutif ke
+  // detail direktoratnya) → KPI Divisi (detail divisinya; controller mengunci
+  // unit-level user ke divisinya sendiri). Tanpa akses → grup kosong (Programs
+  // sudah di pita primer, jadi tak ada lagi grup 1-item canggung).
+  const performanceItems: NavItem[] = isSuperAdmin
+    ? [NI.executive, NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi, NI.perfIndividu, NI.perfSaya]
     : canAccessPerformance
-      ? [NI.programs, NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi]
-      : [NI.programs]
-  // Label jujur ke isi: "Performance" hanya saat item Performance benar hadir.
-  const grpPortfolio = {
-    label: isSuperAdmin || canAccessPerformance ? t('Portfolio & Performance') : t('Portfolio'),
+      ? [NI.perfScorecard, NI.perfDirektorat, NI.perfDivisi]
+      : []
+  // Grup satu-tujuan, label 1 kata. Kosong → auto-hidden oleh filter di render.
+  const grpPerformance = {
+    label: t('Performance'),
     tone: 'check',
-    items: portfolioItems,
+    items: performanceItems,
   }
   const grpAdmin = {
     label: t('Admin'),
@@ -1169,9 +1171,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
     ],
   }
 
-  // ── Sidebar composition (intent-based, role-aware via portfolioItems) ──────
-  // 3 group: My Work → Portfolio & Performance → Account. Programs always
-  // hadir di Portfolio; Performance items role-gated di portfolioItems above.
+  // ── Sidebar composition (intent-based, role-aware via performanceItems) ────
+  // Pita primer (todayItems): Home · Focus · Programs. Lalu grup: My Work →
+  // Performance (role-gated, auto-hidden saat kosong) → Admin.
   //
   // NOTE: grup "Pelaporan" dihilangkan dari semua surface navigasi utama
   // (sidebar + Command Palette + breadcrumb) per permintaan user 2026-05-10.
@@ -1179,8 +1181,8 @@ export function AppShell({ children }: { children?: ReactNode }) {
   // Dashboard Risiko standalone (/laporan-risiko) DIHILANGKAN dari discovery 2026-06-02
   // (ATLAS bukan app manajemen risiko); API /risk-reports tetap untuk Monthly Report DIMR.
   const navGroups: { label: string; tone: string; items: NavItem[] }[] = [
-    grpPortfolio,
     grpMyWork,
+    grpPerformance,
     ...(isAdmin ? [grpAdmin] : []),
   ]
 
@@ -1291,9 +1293,12 @@ export function AppShell({ children }: { children?: ReactNode }) {
         </div>
 
         <nav className="sidebar__nav">
-          {/* Today — Home (organisasi) + Focus (personal), always at top */}
+          {/* Pita primer — Home (organisasi) + Focus (personal) + Programs
+              (jangkar portfolio), always at top. Programs diangkat ke sini
+              2026-06-26: destinasi inti, peer Home; sebelumnya terkubur di grup
+              "Portfolio & Performance" yang panjang/campur. */}
           {(() => {
-            const todayItems: NavItem[] = [NI.home, fokusItem]
+            const todayItems: NavItem[] = [NI.home, fokusItem, NI.programs]
             return (
               <div className="sidebar__fokus-wrap">
                 {todayItems.map((item) => {
