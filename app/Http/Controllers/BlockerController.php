@@ -12,6 +12,7 @@ use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class BlockerController extends Controller
 {
@@ -55,12 +56,23 @@ class BlockerController extends Controller
         // sebagai blocked → langsung menurunkan health program tsb.
         $this->assertCanModifyBlockerTask((int) $data['taskId'], $request->user());
 
+        // createdByUnitId men-scope sinyal blocker (criticalBlockers/needsAction,
+        // blockerSignal, controls di OrgSummaryService) ke unit pemilik program.
+        // Blocker buatan app sebelumnya tak pernah mengisinya → selalu null →
+        // whereIn('createdByUnitId', $unitIds) tak match apa pun → KADIV/KASUBDIV
+        // non-eksekutif TAK PERNAH menerima sinyal blocker barunya. Warisi dari
+        // unit pemilik program task (sama dengan yang dipakai scope guard di bawah).
+        $ownerUnitId = Task::query()
+            ->with(['workstream:id,programId', 'workstream.program:id,ownerUnitId'])
+            ->find((int) $data['taskId'])?->workstream?->program?->ownerUnitId;
+
         $code = 'BLK-' . strtoupper(substr(md5(uniqid()), 0, 6));
         $blocker = Blocker::create([
             ...$data,
             'code' => $code,
             'workItemId' => $data['taskId'],
             'createdBy' => $request->user()->id,
+            'createdByUnitId' => $ownerUnitId,
             'status' => 'OPEN',
             'priority' => 'HIGH',
         ]);
@@ -71,6 +83,11 @@ class BlockerController extends Controller
         // Blocker baru menaikkan blocker-count → health program harus di-refresh
         // saat itu juga (sebelumnya hanya updateStatus yang memicu recompute).
         $this->recomputeHealthForTask((int) $data['taskId']);
+
+        // Sinyal blocker (criticalBlockers/needsAction) di-derive dalam payload
+        // program-summary ber-cache per-user. Bust supaya item baru/hilang segera
+        // tampil tanpa menunggu TTL 3 menit.
+        Cache::forget("program_summary:user:{$request->user()->id}");
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $blocker], 201);
@@ -117,6 +134,10 @@ class BlockerController extends Controller
                 rescue(fn () => $this->healthService->recompute($task->workstream->programId));
             }
         }
+
+        // Resolve/ubah status blocker mengubah sinyal needsAction → bust cache
+        // program-summary actor supaya item kritis hilang dari Focus seketika.
+        Cache::forget("program_summary:user:{$request->user()->id}");
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $blocker->fresh()]);
@@ -227,6 +248,7 @@ class BlockerController extends Controller
 
         // Menghapus blocker bisa meng-unblock task → health program berubah.
         $this->recomputeHealthForTask((int) $taskId);
+        Cache::forget("program_summary:user:{$request->user()->id}");
 
         if ($request->expectsJson()) {
             return response()->json(['ok' => true]);

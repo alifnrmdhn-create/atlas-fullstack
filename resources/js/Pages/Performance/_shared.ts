@@ -17,6 +17,12 @@ export function fillRatio(val: number, cap = 110): number {
   return Math.min(Math.max(val / cap, 0), 1)
 }
 
+/** Target-bullet fill: zoom skala 90–110 (target 100 = tengah). <90→0, >110→100.
+ *  Dipakai hero Scorecard + header subject Collegial/Division (satu bahasa visual). */
+export function bulletPct(val: number): number {
+  return Math.min(Math.max(((val - 90) / 20) * 100, 0), 100)
+}
+
 /** Compute percentage achievement of target with polarity. */
 export function realisasiPercent(
   sasaran: string | number,

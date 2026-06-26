@@ -9,6 +9,7 @@ use App\Models\Program;
 use App\Services\BroadcastService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Disposition item "Needs Action" di Focus — menutup loop tindak lanjut.
@@ -77,6 +78,19 @@ class FocusDispositionController extends Controller
                 'escalationId' => $data['escalationId'] ?? null,
             ],
         );
+
+        // Mute window di OrgSummaryService disaring pada `updatedAt`. updateOrCreate
+        // hanya menyentuh updatedAt bila ada atribut yang berubah; re-disposition
+        // identik (mis. "Tandai ditangani" dua kali tanpa note) tidak akan bikin
+        // dirty → window tak ter-reset. touch() menjamin window mulai ulang tiap aksi.
+        $disposition->touch();
+
+        // Item Needs Action di-derive di dalam payload program-summary yang
+        // di-cache per-user 3 menit (OrganizationController::programSummary).
+        // Tanpa invalidasi, loadOverview('refresh') sesudah disposition mengambil
+        // payload BASI yang masih memuat item → "sudah dikirim dukungan tapi item
+        // tetap muncul". Bust cache supaya rebuild berikutnya menerapkan filter.
+        Cache::forget("program_summary:user:{$user->id}");
 
         return response()->json(['data' => $disposition], 201);
     }

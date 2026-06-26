@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Head, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
-import { Card, Pill, Gauge, Meter } from '../../design-system'
-import { scoreTone, realisasiPercent, formatNumber, formatPeriod } from './_shared'
+import { Card, Pill } from '../../design-system'
+import { scoreTone, realisasiPercent, formatNumber, formatPeriod, bulletPct } from './_shared'
 import { InsightPanel, type InsightPayload } from './InsightPanel'
 import { KpiScoreTable, type ScoreGroup } from './KpiScoreTable'
 import './Performance.css'
@@ -128,42 +128,50 @@ export default function KolegialDetailView() {
             </div>
           </header>
 
-          {/* ─── Subject card 3-zona: meta | meter perspektif | gauge ──
-              (density pass: interior dulu kosong di tengah). */}
-          <Card padding="md" className="perf__section perf-subject perf-subject--gauge" data-tone={totalTone}>
-            <div className="perf-subject__meta">
-              <span className="perf-subject__eyebrow">{direktur.jabatan}</span>
-              <div className="perf-subject__name">{direktur.nama}</div>
-              <div className="perf-subject__chips">
-                <Pill variant="mono">{direktur.kode}</Pill>
-                <Pill tone="neutral" variant="soft">{periodeLabel}</Pill>
-                <Pill tone="neutral" variant="soft">{t('{{count}} KPI items', { count: totalKpi })}</Pill>
-                {attentionCount > 0 && (
-                  <Pill tone="amber" variant="soft">{t('{{count}} below target', { count: attentionCount })}</Pill>
-                )}
+          {/* ─── Subject hero: verdict (angka besar solid) | bullet perspektif ──
+              Satu bahasa visual dengan Scorecard (Target Bullet). */}
+          <Card padding="none" className="perf__section perf-hero perf-hero--bullet" data-tone={totalTone}>
+            <div className="perf-hero__top">
+              <div className="perf-hero__verdict">
+                <span className="perf-hero__eyebrow">{direktur.jabatan}</span>
+                <h2 className="perf-hero__name">{direktur.nama}</h2>
+                <div className="perf-hero__numrow">
+                  <span className="perf-hero__num" data-tone={totalTone}>
+                    {formatNumber(totalSkor)}<span className="perf-hero__num-unit">%</span>
+                  </span>
+                </div>
+                <div className="perf-hero__tags">
+                  <Pill variant="mono">{direktur.kode}</Pill>
+                  <Pill tone="neutral" variant="soft">{periodeLabel}</Pill>
+                  <Pill tone="neutral" variant="soft">{t('{{count}} KPI items', { count: totalKpi })}</Pill>
+                  {attentionCount > 0 && (
+                    <Pill tone="amber" variant="soft">{t('{{count}} below target', { count: attentionCount })}</Pill>
+                  )}
+                </div>
+                <span className="perf-hero__sub">{t('Total score · vs target 100% · {{period}}', { period: periodeLabel })}</span>
+              </div>
+              <div className="perf-bullet-wrap perf-bullet-wrap--persp">
+                <div className="perf-bullet-scale">
+                  <span>90</span>
+                  <span className="perf-bullet-scale__t">{t('Target 100')}</span>
+                  <span>110</span>
+                </div>
+                <div className="perf-bullet-rows">
+                  {kpiGroups.map(g => (
+                    <div key={g.perspektif_key} className="perf-bullet-row perf-bullet-row--static">
+                      <span className="perf-bullet-row__code" title={g.perspektif}>
+                        {g.perspektif === 'Internal Business Process' ? 'IBP' : g.perspektif}
+                      </span>
+                      <span className="perf-bullet perf-bullet--mini" aria-hidden>
+                        <span className="perf-bullet__target" />
+                        <span className="perf-bullet__measure" data-tone={scoreTone(g.pct)} style={{ width: `${bulletPct(g.pct)}%` }} />
+                      </span>
+                      <span className="perf-bullet-row__val" data-tone={scoreTone(g.pct)}>{formatNumber(g.pct)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="perf-hero__divisions perf-subject__perspectives">
-              {kpiGroups.map(g => (
-                <div key={g.perspektif_key} className="perf-hero__divrow perf-hero__divrow--static">
-                  <span className="perf-hero__divcode" title={g.perspektif}>
-                    {g.perspektif === 'Internal Business Process' ? 'IBP' : g.perspektif}
-                  </span>
-                  <Meter value={Math.min(g.pct, 110)} max={110} target={100} tone={scoreTone(g.pct)} height={7} className="perf-hero__divbar" />
-                  <span className="perf-hero__divval" data-tone={scoreTone(g.pct)}>{formatNumber(g.pct)}</span>
-                </div>
-              ))}
-            </div>
-            <Gauge
-              value={Math.min(totalSkor, 110)}
-              max={110}
-              tone={totalTone}
-              size={118}
-              thickness={12}
-              valueText={formatNumber(totalSkor)}
-              unit="%"
-              label={t('Total score')}
-            />
           </Card>
 
           {/* ─── Insight Utama (auto-derived) ───── */}

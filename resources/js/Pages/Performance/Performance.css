@@ -2467,3 +2467,158 @@ a.perf-matrix__cell--divhead {
   .perf-subject--gauge { grid-template-columns: 1fr 1fr; }
   .perf-subject--gauge .ds-gauge { grid-column: 1 / -1; justify-self: center; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REDESAIN 2026-06-26 — "premium worldclass" pass (Scorecard slice)
+   Thesis: halaman dibuka dengan apa yang menyimpang, bukan betapa hijaunya
+   semuanya. Hijau di-refine jadi sinyal (bukan banjir); hero = Target Bullet
+   ("vs target 100%") + angka editorial besar; exception = strip ramping.
+   Skor tetap di-cap 110% (capaian realisasi apa adanya). Layered paling akhir.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hero: Target Bullet ─────────────────────────────────────────────────── */
+.perf-hero--bullet {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  padding: 18px 24px;
+}
+
+.perf-hero__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: clamp(20px, 3vw, 44px);
+}
+
+/* Angka editorial SOLID (bukan gradien) — "spend boldness in one place":
+   ini satu-satunya momen hijau besar; sisanya disiplin. */
+.perf-hero--bullet .perf-hero__num {
+  font-size: clamp(2.8rem, 3.6vw, 4rem);
+  font-weight: var(--ds-weight-bold);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  background: none;
+  -webkit-text-fill-color: var(--tone-green);
+  color: var(--tone-green);
+}
+.perf-hero--bullet .perf-hero__num[data-tone="amber"] { -webkit-text-fill-color: var(--tone-amber); color: var(--tone-amber); }
+.perf-hero--bullet .perf-hero__num[data-tone="red"]   { -webkit-text-fill-color: var(--tone-red); color: var(--tone-red); }
+.perf-hero--bullet .perf-hero__num-unit { font-size: 0.4em; -webkit-text-fill-color: var(--ds-text-tertiary); color: var(--ds-text-tertiary); font-weight: var(--ds-weight-semibold); }
+
+.perf-hero__tags { display: flex; align-items: center; gap: 10px; margin-top: 9px; flex-wrap: wrap; }
+.perf-hero__kpis { font-size: 11.5px; color: var(--ds-text-tertiary); margin-top: 9px; font-variant-numeric: tabular-nums; }
+.perf-hero__kpis strong { color: var(--ds-text-secondary); font-weight: var(--ds-weight-semibold); }
+
+/* Bullet "vs target 100%": band amber/green + garis target + measure. */
+.perf-bullet-wrap { display: flex; flex-direction: column; gap: 12px; min-width: 0; position: relative; z-index: 1; }
+.perf-bullet-scale {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--ds-text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.06em; font-variant-numeric: tabular-nums;
+}
+.perf-bullet-scale__t { color: var(--ds-text-secondary); font-weight: var(--ds-weight-semibold); }
+
+.perf-bullet {
+  position: relative; height: 22px; border-radius: var(--ds-radius-md); overflow: hidden;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--tone-amber) 13%, transparent) 0 50%,
+    color-mix(in srgb, var(--tone-green) 15%, transparent) 50% 100%);
+}
+.perf-bullet__target { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; background: var(--ds-text-primary); opacity: 0.68; z-index: 2; }
+.perf-bullet__measure {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  height: 8px; border-radius: var(--ds-radius-pill); z-index: 1;
+  transition: width 480ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.perf-bullet__measure[data-tone="green"] { background: var(--ds-brand-500); }
+.perf-bullet__measure[data-tone="amber"] { background: var(--ds-amber-500); }
+.perf-bullet__measure[data-tone="red"]   { background: var(--ds-red-500); }
+
+.perf-bullet-rows { display: flex; flex-direction: column; gap: 7px; margin-top: 2px; }
+.perf-bullet-row {
+  display: grid; grid-template-columns: 48px 1fr 52px; align-items: center; gap: 12px;
+  text-decoration: none; color: inherit; border-radius: 8px; padding: 2px 4px;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+@media (hover: hover) { .perf-bullet-row:hover { background: var(--ds-surface-hover); } }
+.perf-bullet-row__code { font-family: var(--ds-font-mono); font-size: 11px; font-weight: var(--ds-weight-semibold); color: var(--ds-text-secondary); letter-spacing: -0.01em; }
+.perf-bullet--mini { height: 11px; border-radius: 4px; }
+.perf-bullet--mini .perf-bullet__measure { height: 5px; }
+.perf-bullet--mini .perf-bullet__target { top: -1px; bottom: -1px; }
+.perf-bullet-row__val { font-size: var(--ds-text-13); font-weight: var(--ds-weight-semibold); font-variant-numeric: tabular-nums; text-align: right; color: var(--ds-text-primary); }
+.perf-bullet-row__val[data-tone="amber"] { color: var(--tone-amber); }
+.perf-bullet-row__val[data-tone="red"]   { color: var(--tone-red); }
+
+/* Varian perspektif (header subject Collegial/Division): label kata (bukan kode),
+   kolom lebih lebar + sans; baris non-klik (static). */
+.perf-bullet-row--static { cursor: default; }
+@media (hover: hover) { .perf-bullet-row--static:hover { background: transparent; } }
+.perf-bullet-wrap--persp .perf-bullet-row { grid-template-columns: 76px 1fr 52px; }
+.perf-bullet-wrap--persp .perf-bullet-row__code {
+  font-family: var(--ds-font-sans);
+  font-weight: var(--ds-weight-medium);
+  letter-spacing: 0;
+  color: var(--ds-text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Exception strip — slim, subordinate, findable (bukan kotak alarm). */
+.perf-hero__xstrip {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 10px; text-decoration: none; color: inherit;
+  position: relative; z-index: 1; min-width: 0;
+  transition: filter var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.perf-hero__xstrip[data-sev="red"]   { background: color-mix(in srgb, var(--tone-red) 7%, transparent); box-shadow: inset 3px 0 0 0 var(--tone-red); }
+.perf-hero__xstrip[data-sev="amber"] { background: color-mix(in srgb, var(--tone-amber) 8%, transparent); box-shadow: inset 3px 0 0 0 var(--tone-amber); }
+@media (hover: hover) { .perf-hero__xstrip:hover { filter: brightness(1.03); } }
+.perf-hero__xstrip-k { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: var(--ds-weight-semibold); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+.perf-hero__xstrip[data-sev="red"] .perf-hero__xstrip-k   { color: var(--tone-red); }
+.perf-hero__xstrip[data-sev="amber"] .perf-hero__xstrip-k { color: var(--tone-amber); }
+.perf-hero__xstrip-name { font-size: var(--ds-text-13); font-weight: var(--ds-weight-semibold); color: var(--ds-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 0; }
+.perf-hero__xstrip-meta { font-size: 11.5px; color: var(--ds-text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.perf-hero__xstrip-sp { flex: 1; min-width: 8px; }
+.perf-hero__xstrip-pct { font-size: var(--ds-text-14); font-weight: var(--ds-weight-bold); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.perf-hero__xstrip-pct[data-tone="red"]   { color: var(--tone-red); }
+.perf-hero__xstrip-pct[data-tone="amber"] { color: var(--tone-amber); }
+.perf-hero__xstrip-go { font-size: 11.5px; font-weight: var(--ds-weight-semibold); white-space: nowrap; flex-shrink: 0; }
+.perf-hero__xstrip[data-sev="red"] .perf-hero__xstrip-go   { color: var(--tone-red); }
+.perf-hero__xstrip[data-sev="amber"] .perf-hero__xstrip-go { color: var(--tone-amber); }
+
+@container perfpage (max-width: 760px) {
+  .perf-hero__top { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .perf-hero--bullet { padding: 16px; }
+  .perf-hero__xstrip { flex-wrap: wrap; row-gap: 4px; }
+  .perf-hero__xstrip-meta { flex-basis: 100%; order: 5; }
+}
+
+/* ── Matriks: refine heatmap — field hijau tenang, deviasi memotong ───────── */
+/* On-target tetap ink (calm, intensitas 0.08 dari cellIntensity); below-target
+   pakai warna tone supaya nyala. Override layer rich (ink) di source order. */
+.perf-matrix__cell[data-tone="amber"] { color: var(--tone-amber); font-weight: var(--ds-weight-bold); }
+.perf-matrix__cell[data-tone="red"]   { color: var(--tone-red); font-weight: var(--ds-weight-bold); }
+
+/* ── Tabel: baris di-bawah-target dominan, zero-target dikuncupkan ────────── */
+.kst__row[data-tone="red"] {
+  background: color-mix(in srgb, var(--tone-red) 6%, transparent);
+  box-shadow: inset 3px 0 0 0 var(--tone-red);
+}
+.kst__row[data-tone="red"] .kst__kpi-name { font-weight: var(--ds-weight-semibold); }
+.kst__row[data-tone="amber"] { box-shadow: inset 3px 0 0 0 color-mix(in srgb, var(--tone-amber) 60%, transparent); }
+
+.kst__zero-summary {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 14px; border: none; border-bottom: 1px solid var(--ds-border-subtle);
+  background: transparent; font-family: inherit; text-align: left; cursor: pointer;
+  color: var(--ds-text-tertiary); font-size: var(--ds-text-13);
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.kst__group:last-child .kst__zero-summary:last-child { border-bottom: none; }
+@media (hover: hover) { .kst__zero-summary:hover { background: var(--ds-surface-hover); } }
+.kst__zero-summary svg { width: 14px; height: 14px; color: var(--tone-green); flex-shrink: 0; }
+.kst__zero-summary b { color: var(--ds-text-secondary); font-weight: var(--ds-weight-semibold); }
+.kst__zero-summary-chev { margin-left: auto; color: var(--ds-text-tertiary); font-size: 11px; }

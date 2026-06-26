@@ -173,6 +173,11 @@ class WorkspaceController extends Controller
             'blockers' => Blocker::query()
                 ->with(['task.workstream.program:id,code,name,healthStatus,approvalStatus'])
                 ->whereHas('task.workstream.program', $notArchived)
+                // Blocker yang sudah RESOLVED tak boleh balik ke feed Focus. Tanpa
+                // filter ini, "Mark resolved" → loadOverview('refresh') menarik
+                // ulang blocker yang sama (kartu kritis muncul lagi). Selaras
+                // konvensi whereNull('resolvedAt') di OrgSummaryService.
+                ->whereNull('resolvedAt')
                 ->where(fn ($q) => $q
                     ->where('assignedTo', $user->id)
                     ->orWhere('createdBy', $user->id))

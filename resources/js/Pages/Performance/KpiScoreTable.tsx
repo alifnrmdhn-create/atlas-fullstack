@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { scoreTone, realisasiPercent, formatVal, formatNumber, formatPercent, isZeroTargetMet } from './_shared'
 
@@ -75,6 +75,54 @@ export function KpiScoreTable({ groups }: { groups: ScoreGroup[] }) {
       return next
     })
 
+  const renderRow = (r: ScoreRow): ReactNode => {
+    const pct = rowPct(r)
+    const tone = scoreTone(pct)
+    const zeroMet = isZeroTargetMet(r.target, r.realisasi)
+    const isNA = r.realisasi === '—'
+    return (
+      <div key={r.kode} className="kst__row" data-tone={zeroMet ? 'green' : isNA ? undefined : tone}>
+        <span className="kst__cell kst__cell--no">{r.no}</span>
+        <div className="kst__cell kst__cell--kpi">
+          <span className="kst__kpi-name">{r.nama}</span>
+          <span className="kst__kpi-sub">
+            <span className="kst__kpi-code">{r.kode}</span>
+            <span aria-hidden>·</span>
+            <span>{r.polaritas === 'maximize' ? '↑' : '↓'} {r.satuan || '—'}</span>
+            {r.definisi && (
+              <>
+                <span aria-hidden>·</span>
+                <span className="kst__kpi-def" title={r.definisi}>{r.definisi}</span>
+              </>
+            )}
+          </span>
+        </div>
+        <span className="kst__cell kst__num" data-label={t('Weight')}>{formatNumber(r.bobot, 0)}%</span>
+        <span className="kst__cell kst__num" data-label={t('Target')}>{formatVal(r.target, r.satuan)}</span>
+        <span className="kst__cell kst__num" data-label={t('Realization')}>
+          {isNA
+            ? <span className="kst__na" title={t('Not yet measured for this period')}>{t('N/A')}</span>
+            : <span data-tone={tone} className="kst__val">{formatVal(r.realisasi, r.satuan)}</span>}
+        </span>
+        <div className="kst__cell kst__cell--ach">
+          {zeroMet ? (
+            <span className="kst__zero" data-tone="green">{t('✓ zero target met')}</span>
+          ) : isNA ? (
+            <span className="kst__na">{t('not measured')}</span>
+          ) : (
+            <>
+              <DeviationBar pct={pct} />
+              <span className="kst__ach-pct" data-tone={tone}>{formatPercent(pct, 0)}</span>
+            </>
+          )}
+        </div>
+        <span className="kst__cell kst__num kst__score" data-label={t('Score')} data-tone={zeroMet ? 'green' : isNA ? undefined : tone}>
+          {formatNumber(r.skor)}
+        </span>
+      </div>
+    )
+  }
+
   return (
     <div className="kst">
       <div className="kst__headrow" aria-hidden>
@@ -104,56 +152,53 @@ export function KpiScoreTable({ groups }: { groups: ScoreGroup[] }) {
               <span className="kst__group-pct" data-tone={scoreTone(g.pct)}>{formatPercent(g.pct)}</span>
             </button>
 
-            {!isCollapsed && g.items.map(r => {
-              const pct = rowPct(r)
-              const tone = scoreTone(pct)
-              const zeroMet = isZeroTargetMet(r.target, r.realisasi)
-              const isNA = r.realisasi === '—'
+            {!isCollapsed && (() => {
+              // De-noise: baris zero-target (target 0, realisasi 0 → skor penuh)
+              // dikuncupkan jadi satu ringkasan agar KPI material mendominasi.
+              const normal = g.items.filter(r => !isZeroTargetMet(r.target, r.realisasi))
+              const zero = g.items.filter(r => isZeroTargetMet(r.target, r.realisasi))
               return (
-                <div key={r.kode} className="kst__row" data-tone={zeroMet ? 'green' : isNA ? undefined : tone}>
-                  <span className="kst__cell kst__cell--no">{r.no}</span>
-                  <div className="kst__cell kst__cell--kpi">
-                    <span className="kst__kpi-name">{r.nama}</span>
-                    <span className="kst__kpi-sub">
-                      <span className="kst__kpi-code">{r.kode}</span>
-                      <span aria-hidden>·</span>
-                      <span>{r.polaritas === 'maximize' ? '↑' : '↓'} {r.satuan || '—'}</span>
-                      {r.definisi && (
-                        <>
-                          <span aria-hidden>·</span>
-                          <span className="kst__kpi-def" title={r.definisi}>{r.definisi}</span>
-                        </>
-                      )}
-                    </span>
-                  </div>
-                  <span className="kst__cell kst__num" data-label={t('Weight')}>{formatNumber(r.bobot, 0)}%</span>
-                  <span className="kst__cell kst__num" data-label={t('Target')}>{formatVal(r.target, r.satuan)}</span>
-                  <span className="kst__cell kst__num" data-label={t('Realization')}>
-                    {isNA
-                      ? <span className="kst__na" title={t('Not yet measured for this period')}>{t('N/A')}</span>
-                      : <span data-tone={tone} className="kst__val">{formatVal(r.realisasi, r.satuan)}</span>}
-                  </span>
-                  <div className="kst__cell kst__cell--ach">
-                    {zeroMet ? (
-                      <span className="kst__zero" data-tone="green">{t('✓ zero target met')}</span>
-                    ) : isNA ? (
-                      <span className="kst__na">{t('not measured')}</span>
-                    ) : (
-                      <>
-                        <DeviationBar pct={pct} />
-                        <span className="kst__ach-pct" data-tone={tone}>{formatPercent(pct, 0)}</span>
-                      </>
-                    )}
-                  </div>
-                  <span className="kst__cell kst__num kst__score" data-label={t('Score')} data-tone={zeroMet ? 'green' : isNA ? undefined : tone}>
-                    {formatNumber(r.skor)}
-                  </span>
-                </div>
+                <>
+                  {normal.map(renderRow)}
+                  {zero.length > 0 && <ZeroTargetGroup rows={zero} render={renderRow} />}
+                </>
               )
-            })}
+            })()}
           </section>
         )
       })}
     </div>
+  )
+}
+
+/**
+ * Baris ringkas yang menggantikan deretan KPI zero-target (target 0 / realisasi
+ * 0 → skor penuh). Klik untuk membentangkan detail. De-noise: KPI material tetap
+ * dominan, baris "mati" tak lagi mendilusi sinyal.
+ */
+function ZeroTargetGroup({ rows, render }: { rows: ScoreRow[]; render: (r: ScoreRow) => ReactNode }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const totalSkor = rows.reduce((s, r) => s + r.skor, 0)
+  return (
+    <>
+      <button
+        type="button"
+        className="kst__zero-summary"
+        aria-expanded={open}
+        onClick={() => setOpen(v => !v)}
+      >
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden>
+          <path d="M3 8.5 6.5 12 13 4.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span>
+          <b>{t('{{count}} zero-target KPIs', { count: rows.length })}</b>
+          {' · '}{t('all met')}
+          {' · '}{t('score {{score}}', { score: formatNumber(totalSkor) })}
+        </span>
+        <span className="kst__zero-summary-chev">{open ? t('Hide') : t('Show')}</span>
+      </button>
+      {open && rows.map(render)}
+    </>
   )
 }

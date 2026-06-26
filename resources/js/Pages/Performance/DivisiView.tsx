@@ -1,9 +1,9 @@
 import { Head, Link, usePage } from '@inertiajs/react'
 import { useTranslation } from 'react-i18next'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
-import { Card, Pill, Gauge, Meter } from '../../design-system'
+import { Card, Pill } from '../../design-system'
 import { useState } from 'react'
-import { scoreTone, realisasiPercent, formatNumber, formatPercent, formatPeriod } from './_shared'
+import { scoreTone, realisasiPercent, formatNumber, formatPercent, formatPeriod, bulletPct } from './_shared'
 import { KpiScoreTable, DeviationBar, type ScoreGroup } from './KpiScoreTable'
 import { InsightPanel, type InsightPayload } from './InsightPanel'
 import { ExceptionsCard, type ExceptionRow } from './ExceptionsCard'
@@ -344,51 +344,60 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
             </div>
           </header>
 
-          {/* ─── Subject card 3-zona: meta | meter perspektif | gauge ── */}
-          <Card padding="md" className="perf__section perf-subject perf-subject--gauge" data-tone={tone}>
-            <div className="perf-subject__meta">
-              <span className="perf-subject__eyebrow">{t('Division')}</span>
-              <div className="perf-subject__name">{divisi.nama}</div>
-              <div className="perf-subject__jabatan">
-                {t('Part of')}{' '}
-                <Link
-                  href={`/performance/kolegial/${direktorat.kode.toLowerCase()}`}
-                  style={{ color: 'inherit', textDecoration: 'underline' }}
-                >
-                  {direktorat.nama}
-                </Link>
-              </div>
-              <div className="perf-subject__chips">
-                <Pill variant="mono">{divisi.kode}</Pill>
-                <Pill tone="neutral" variant="soft">{t('{{count}} KPI items', { count: kpiItems.length })}</Pill>
-                <Pill tone="neutral" variant="soft">{t('Rank #{{rank}} of {{total}} divisions', { rank: divisi.rank, total: divisi.totalDivisi })}</Pill>
-                <Pill tone="neutral" variant="soft">{t('Directorate {{pct}}', { pct: formatPercent(direktorat.nilai) })}</Pill>
-                {attentionCount > 0 && (
-                  <Pill tone="amber" variant="soft">{t('{{count}} below target', { count: attentionCount })}</Pill>
-                )}
-              </div>
-            </div>
-            <div className="perf-hero__divisions perf-subject__perspectives">
-              {tableGroupsAll.map(g => (
-                <div key={g.key} className="perf-hero__divrow perf-hero__divrow--static">
-                  <span className="perf-hero__divcode" title={g.label}>
-                    {g.label === 'Internal Business Process' ? 'IBP' : g.label}
-                  </span>
-                  <Meter value={Math.min(g.pct, 110)} max={110} target={100} tone={scoreTone(g.pct)} height={7} className="perf-hero__divbar" />
-                  <span className="perf-hero__divval" data-tone={scoreTone(g.pct)}>{formatNumber(g.pct)}</span>
+          {/* ─── Subject hero: verdict (angka besar solid) | bullet perspektif ──
+              Satu bahasa visual dengan Scorecard (Target Bullet). */}
+          <Card padding="none" className="perf__section perf-hero perf-hero--bullet" data-tone={tone}>
+            <div className="perf-hero__top">
+              <div className="perf-hero__verdict">
+                <span className="perf-hero__eyebrow">{t('Division')}</span>
+                <h2 className="perf-hero__name">{divisi.nama}</h2>
+                <div className="perf-subject__jabatan">
+                  {t('Part of')}{' '}
+                  <Link
+                    href={`/performance/kolegial/${direktorat.kode.toLowerCase()}`}
+                    style={{ color: 'inherit', textDecoration: 'underline' }}
+                  >
+                    {direktorat.nama}
+                  </Link>
                 </div>
-              ))}
+                <div className="perf-hero__numrow">
+                  <span className="perf-hero__num" data-tone={tone}>
+                    {formatNumber(divisi.nilai)}<span className="perf-hero__num-unit">%</span>
+                  </span>
+                </div>
+                <div className="perf-hero__tags">
+                  <Pill variant="mono">{divisi.kode}</Pill>
+                  <Pill tone="neutral" variant="soft">{t('{{count}} KPI items', { count: kpiItems.length })}</Pill>
+                  <Pill tone="neutral" variant="soft">{t('Rank #{{rank}} of {{total}} divisions', { rank: divisi.rank, total: divisi.totalDivisi })}</Pill>
+                  <Pill tone="neutral" variant="soft">{t('Directorate {{pct}}', { pct: formatPercent(direktorat.nilai) })}</Pill>
+                  {attentionCount > 0 && (
+                    <Pill tone="amber" variant="soft">{t('{{count}} below target', { count: attentionCount })}</Pill>
+                  )}
+                </div>
+                <span className="perf-hero__sub">{t('Score · vs target 100% · {{period}}', { period: periodeLabel })}</span>
+              </div>
+              <div className="perf-bullet-wrap perf-bullet-wrap--persp">
+                <div className="perf-bullet-scale">
+                  <span>90</span>
+                  <span className="perf-bullet-scale__t">{t('Target 100')}</span>
+                  <span>110</span>
+                </div>
+                <div className="perf-bullet-rows">
+                  {tableGroupsAll.map(g => (
+                    <div key={g.key} className="perf-bullet-row perf-bullet-row--static">
+                      <span className="perf-bullet-row__code" title={g.label}>
+                        {g.label === 'Internal Business Process' ? 'IBP' : g.label}
+                      </span>
+                      <span className="perf-bullet perf-bullet--mini" aria-hidden>
+                        <span className="perf-bullet__target" />
+                        <span className="perf-bullet__measure" data-tone={scoreTone(g.pct)} style={{ width: `${bulletPct(g.pct)}%` }} />
+                      </span>
+                      <span className="perf-bullet-row__val" data-tone={scoreTone(g.pct)}>{formatNumber(g.pct)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            <Gauge
-              value={Math.min(divisi.nilai, 110)}
-              max={110}
-              tone={tone}
-              size={118}
-              thickness={12}
-              valueText={formatNumber(divisi.nilai)}
-              unit="%"
-              label={t('Score · {{period}}', { period: periodeLabel })}
-            />
           </Card>
 
           {/* ─── Insight Utama (auto-derived) ───── */}

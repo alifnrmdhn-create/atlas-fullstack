@@ -198,6 +198,13 @@ class EscalationController extends Controller
             return response()->json(['message' => 'Cannot reroute to the current target.'], 422);
         }
 
+        // Reroute ke requester asli = escalation yang "ditujukan ke diri sendiri"
+        // (requestedById === escalatedToId) → loop no-op. store() sudah mencegah
+        // self-escalation; mirror guard-nya di reroute (target = input manual).
+        if ((int) $data['reroutedToId'] === (int) $req->requestedById) {
+            return response()->json(['message' => 'Cannot reroute back to the original requester.'], 422);
+        }
+
         $newTarget = User::find($data['reroutedToId']);
         if (!$newTarget) {
             return response()->json(['message' => 'Reroute target user not found.'], 422);

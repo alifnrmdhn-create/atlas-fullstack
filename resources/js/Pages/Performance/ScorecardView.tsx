@@ -1,7 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react'
 import { useTranslation } from 'react-i18next'
-import { Card, Pill, Gauge, Meter } from '../../design-system'
-import { scoreTone, fillRatio, formatNumber, formatPercent, formatPeriod } from './_shared'
+import { Card, Pill } from '../../design-system'
+import { scoreTone, fillRatio, formatNumber, formatPercent, formatPeriod, formatVal, bulletPct } from './_shared'
 import { KpiTrendChart, type KpiTrendPayload } from './KpiTrendChart'
 import { ExceptionsCard, type ExceptionRow } from './ExceptionsCard'
 import './Performance.css'
@@ -32,12 +32,14 @@ type PageProps = {
 }
 
 /**
- * Intensitas tint heatmap dari deviasi terhadap 100% — biar matriks "hidup"
- * walau semua hijau (110% jadi blok pekat, 100,5% nyaris bening, 97% amber
- * pekat). Tanpa ini semua sel ter-tint rata = kembali terasa "standard".
+ * Intensitas tint heatmap. Disiplin warna (2026-06-26): sel on-target (≥100)
+ * = field tenang seragam (over-achiever TIDAK lagi membanjiri hijau pekat);
+ * sel di bawah target makin pekat makin jauh dari 100 → matriks jadi "peta
+ * kelemahan", bukan "peta hijau".
  */
 function cellIntensity(v: number): number {
-  return Math.min(Math.max(Math.abs(v - 100) / 12, 0.1), 0.85)
+  if (v >= 100) return 0.08
+  return Math.min(Math.max((100 - v) / 22, 0.18), 0.6)
 }
 
 // Urutan + label pendek kolom perspektif BSC di matriks.
@@ -178,53 +180,107 @@ export default function ScorecardView() {
               perspektif mana); hero = verdict ber-gradient ala Home. */}
           {soloDir ? (
             <>
-            <Card padding="none" className="perf__section perf-hero perf-hero--rich" data-tone={scoreTone(soloDir.nilai)}>
-              {/* Zona 1 — verdict: angka gradient + delta + per-divisi mini-bar
-                  (mirror persis kartu "KPI Achievement" di Home). */}
-              <div className="perf-hero__verdict">
-                <span className="perf-hero__eyebrow">{t('Directorate scorecard · {{period}}', { period: periodeLabel })}</span>
-                <h2 className="perf-hero__name">{soloDir.nama}</h2>
-                <div className="perf-hero__numrow">
-                  <span className="perf-hero__num" data-tone={scoreTone(soloDir.nilai)}>
-                    {formatNumber(soloDir.nilai)}<span className="perf-hero__num-unit">%</span>
-                  </span>
-                  {soloDelta && (
-                    <span className="perf__header-delta" data-tone={soloDelta.value >= 0 ? 'green' : 'red'}>
-                      {soloDelta.value >= 0 ? '▲' : '▼'} {formatPercent(Math.abs(soloDelta.value))} {t('vs {{period}}', { period: soloDelta.vs })}
+            <Card padding="none" className="perf__section perf-hero perf-hero--bullet" data-tone={scoreTone(soloDir.nilai)}>
+              <div className="perf-hero__top">
+                {/* Verdict — angka editorial besar (solid, bukan banjir hijau). */}
+                <div className="perf-hero__verdict">
+                  <span className="perf-hero__eyebrow">{t('Directorate scorecard · {{period}}', { period: periodeLabel })}</span>
+                  <h2 className="perf-hero__name">{soloDir.nama}</h2>
+                  <div className="perf-hero__numrow">
+                    <span className="perf-hero__num" data-tone={scoreTone(soloDir.nilai)}>
+                      {formatNumber(soloDir.nilai)}<span className="perf-hero__num-unit">%</span>
                     </span>
-                  )}
+                  </div>
+                  <div className="perf-hero__tags">
+                    <Pill tone={scoreTone(soloDir.nilai)} variant="soft">
+                      {soloDir.nilai >= 100 ? t('On track') : soloDir.nilai >= 80 ? t('Needs attention') : t('Below target')}
+                    </Pill>
+                    {soloDelta && (
+                      <span className="perf__header-delta" data-tone={soloDelta.value >= 0 ? 'green' : 'red'}>
+                        {soloDelta.value >= 0 ? '▲' : '▼'} {formatPercent(Math.abs(soloDelta.value))} {t('vs {{period}}', { period: soloDelta.vs })}
+                      </span>
+                    )}
+                  </div>
+                  <span className="perf-hero__sub">{t('vs target 100% · {{period}}', { period: periodeLabel })}</span>
+                  <span className="perf-hero__kpis">
+                    <strong data-num>{kpiTotals.onTarget}</strong> / <strong data-num>{kpiTotals.total}</strong> {t('KPIs on target')}
+                  </span>
                 </div>
-                <span className="perf-hero__sub">{t('vs target 100% · {{period}}', { period: periodeLabel })}</span>
-              </div>
 
-              {/* Zona 2 — mini-bar per divisi (Meter, target tick 100). */}
-              <div className="perf-hero__divisions">
-                {[...soloDir.divisi].sort((a, b) => b.nilai - a.nilai).map(d => (
-                  <Link
-                    key={d.kode}
-                    href={`/performance/divisi/${d.kode.replace('-HLD', '').toLowerCase()}`}
-                    className="perf-hero__divrow"
+                {/* Target bullet — direktorat + divisi relatif garis target 100%.
+                    Signature "vs target": band amber/green, garis target tegas,
+                    unit di bawah target jatuh di kiri garis. */}
+                <div className="perf-bullet-wrap">
+                  <div className="perf-bullet-scale">
+                    <span>90</span>
+                    <span className="perf-bullet-scale__t">{t('Target 100')}</span>
+                    <span>110</span>
+                  </div>
+                  <div
+                    className="perf-bullet"
+                    role="img"
+                    aria-label={t('{{name}} achievement {{pct}} versus 100% target', { name: soloDir.nama, pct: formatPercent(soloDir.nilai) })}
                   >
-                    <span className="perf-hero__divcode">{d.kode.replace('-HLD', '')}</span>
-                    <Meter value={Math.min(d.nilai, 110)} max={110} target={100} tone={scoreTone(d.nilai)} height={7} className="perf-hero__divbar" />
-                    <span className="perf-hero__divval" data-tone={scoreTone(d.nilai)}>{formatNumber(d.nilai)}</span>
-                  </Link>
-                ))}
+                    <span className="perf-bullet__target" aria-hidden />
+                    <span
+                      className="perf-bullet__measure"
+                      data-tone={scoreTone(soloDir.nilai)}
+                      style={{ width: `${bulletPct(soloDir.nilai)}%` }}
+                      aria-hidden
+                    />
+                  </div>
+                  <div className="perf-bullet-rows">
+                    {[...soloDir.divisi].sort((a, b) => b.nilai - a.nilai).map(d => (
+                      <Link
+                        key={d.kode}
+                        href={`/performance/divisi/${d.kode.replace('-HLD', '').toLowerCase()}`}
+                        className="perf-bullet-row"
+                        title={d.nama}
+                      >
+                        <span className="perf-bullet-row__code">{d.kode.replace('-HLD', '')}</span>
+                        <span className="perf-bullet perf-bullet--mini" aria-hidden>
+                          <span className="perf-bullet__target" />
+                          <span
+                            className="perf-bullet__measure"
+                            data-tone={scoreTone(d.nilai)}
+                            style={{ width: `${bulletPct(d.nilai)}%` }}
+                          />
+                        </span>
+                        <span className="perf-bullet-row__val" data-tone={scoreTone(d.nilai)}>{formatNumber(d.nilai)}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              {/* Zona 3 — gauge speedometer cakupan KPI on-target. */}
-              <div className="perf-hero__gauge">
-                <Gauge
-                  value={kpiTotals.onTarget}
-                  max={kpiTotals.total || 1}
-                  tone={kpiTotals.onTarget === kpiTotals.total ? 'green' : 'amber'}
-                  size={148}
-                  thickness={14}
-                  valueText={`${kpiTotals.onTarget}`}
-                  unit={`/${kpiTotals.total}`}
-                  label={t('KPIs on target')}
-                />
-              </div>
+              {/* Exception strip — 1 KPI paling mendesak: mudah ditemukan tapi
+                  subordinate (bukan kotak alarm). Detail lengkap di aside. */}
+              {exceptions.length > 0 && (
+                <Link
+                  href={`/performance/divisi/${exceptions[0].divisi.replace('-HLD', '').toLowerCase()}`}
+                  className="perf-hero__xstrip"
+                  data-sev={exceptions[0].pct < 80 ? 'red' : 'amber'}
+                >
+                  <span className="perf-hero__xstrip-k"><IconAlert />{t('Needs attention')}</span>
+                  <span className="perf-hero__xstrip-name">{exceptions[0].kpi}</span>
+                  <span className="perf-hero__xstrip-meta">
+                    {exceptions[0].divisi.replace('-HLD', '')}
+                    {' · '}
+                    {exceptions[0].realisasi === '—'
+                      ? t('not measured yet')
+                      : t('{{realisasi}} of {{sasaran}} target', {
+                          realisasi: formatVal(exceptions[0].realisasi, exceptions[0].satuan),
+                          sasaran: formatVal(exceptions[0].sasaran, exceptions[0].satuan),
+                        })}
+                    {' · '}{t('weight {{weight}}%', { weight: formatNumber(exceptions[0].bobot, 0) })}
+                  </span>
+                  <span className="perf-hero__xstrip-sp" aria-hidden />
+                  <span className="perf-hero__xstrip-pct" data-tone={scoreTone(exceptions[0].pct)}>
+                    {exceptions[0].realisasi === '—' ? t('N/A') : formatPercent(exceptions[0].pct, 0)}
+                  </span>
+                  <span className="perf-hero__xstrip-go">{t('Open')} →</span>
+                </Link>
+              )}
             </Card>
 
             <div className="perf-cockpit perf__section">
@@ -482,6 +538,15 @@ function IconCalendar() {
     <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
       <rect x="1" y="2" width="12" height="11" rx="1.5" />
       <path d="M1 6h12M5 2v2M9 2v2" />
+    </svg>
+  )
+}
+
+function IconAlert() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+      <path d="M8 1.5 15 14H1L8 1.5Z" strokeLinejoin="round" />
+      <path d="M8 6.3v3.4M8 11.6v.1" strokeLinecap="round" />
     </svg>
   )
 }

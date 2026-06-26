@@ -222,19 +222,31 @@ class OrgSummaryService
         // SUPPORTED/REROUTED/HANDLED) selama mute window. Lewat window, item muncul
         // lagi bila sinyal masih ada — re-nudge yang disengaja. Key per (program, tag)
         // supaya concern berbeda (approval vs blocker) di-track terpisah.
+        // Window disaring pada `updatedAt` (BUKAN createdAt): disposition pakai
+        // updateOrCreate, createdAt beku saat insert pertama. Kalau item re-nudge
+        // lewat window lalu di-disposition lagi, filter createdAt tak pernah
+        // mengakui aksi kedua → item tak bisa di-mute ulang (atasan re-handle
+        // tanpa henti). updatedAt di-touch tiap disposition (controller).
         $muteDays = (int) config('atlas-thresholds.focus.disposition_mute_days', 7);
         $dispositioned = \App\Models\FocusDisposition::query()
             ->where('userId', $user->id)
-            ->where('createdAt', '>=', $now->copy()->subDays($muteDays))
+            ->where('updatedAt', '>=', $now->copy()->subDays($muteDays))
             ->get(['programId', 'tag'])
             ->map(fn ($d) => "{$d->programId}:{$d->tag}")
             ->flip();
 
+        // `unique('id')` HARUS sebelum `reject`: needsAction dedup per-program
+        // (satu baris/program, prioritas approval > blocker > support sesuai urutan
+        // concat) sedangkan disposition di-record per (program, tag) — pada tag
+        // yang TAMPIL. Kalau reject jalan dulu, men-disposition tag yang tampil
+        // membuat concern sibling program yang sama lolos `unique` dan muncul di
+        // bawah tag berbeda (mis. approval di-handle → blocker muncul) → "sudah
+        // ditindaklanjuti tapi muncul lagi". Dedup dulu, baru saring disposition.
         $needsAction = $pendingApproval
             ->concat($criticalBlockers)
             ->concat($needsSupport)
-            ->reject(fn ($item) => $dispositioned->has("{$item['id']}:{$item['tag']}"))
             ->unique('id')
+            ->reject(fn ($item) => $dispositioned->has("{$item['id']}:{$item['tag']}"))
             ->take(50)
             ->values();
 
