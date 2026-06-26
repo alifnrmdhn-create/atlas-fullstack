@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Auth\OrgScope;
 use App\Models\Blocker;
 use App\Models\Comment;
+use App\Models\Notification;
 use App\Models\Program;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Workstream;
+use App\Services\BroadcastService;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -151,11 +153,76 @@ class CommentController extends Controller
             Comment::query()->where('id', $data['parentCommentId'])->increment('replyCount');
         }
 
+        // Fan-out notifikasi @mention. Sebelumnya mentionedUserIds hanya tersimpan
+        // di row komentar tanpa notifikasi apa pun (hanya Channels yang notify) →
+        // @mention di diskusi task/program kosmetik. Sekarang dipasangkan dengan
+        // Notification + BroadcastService (konvensi proyek), dengan guard scope.
+        if (!empty($data['mentions'])) {
+            $this->notifyMentions($request->user(), $type, $entityId, $comment, $data['mentions']);
+        }
+
         if ($request->expectsJson()) {
             return response()->json(['data' => $comment->load('author:id,name,avatarUrl,roleType,positionTitle')], 201);
         }
 
         return back()->with('success', 'Comment added.');
+    }
+
+    /**
+     * Kirim notifikasi MENTION ke user yang di-@ pada komentar entity. Guard
+     * fan-out: hanya user yang OrgScope-nya mencakup unit pemilik entity (mirror
+     * assertEntityAccess) yang menerima — supaya client tak bisa spam notifikasi
+     * ke sembarang userId. Author dikecualikan; penerima di-cap sebagai backstop.
+     */
+    private function notifyMentions(User $sender, string $type, int $entityId, Comment $comment, array $mentionIds): void
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $mentionIds),
+            fn ($uid) => $uid !== (int) $sender->id,
+        )));
+        if (empty($ids)) return;
+
+        $ownerUnit = $this->ownerUnitForEntity($type, $entityId);
+        $recipients = User::query()->whereIn('id', array_slice($ids, 0, 25))->get();
+        if ($recipients->isEmpty()) return;
+
+        $text = (string) $comment->commentText;
+        $preview = mb_strlen($text) > 100 ? mb_substr($text, 0, 100) . '…' : $text;
+        $msg = "{$sender->name} mentioned you in a discussion: \"{$preview}\"";
+        $source = "{$sender->name}·" . $this->notifSourceToken($type, $entityId);
+
+        foreach ($recipients as $u) {
+            if (!RolePolicy::isAdminOrAbove($u->roleType)
+                && !OrgScope::forUser($u)->coversUnit($ownerUnit)) {
+                continue;
+            }
+            $notif = Notification::create([
+                'userId' => $u->id,
+                'type' => 'MENTION',
+                'message' => $msg,
+                'source' => $source,
+                'createdAt' => now(),
+                'state' => 'UNREAD',
+            ]);
+            BroadcastService::toUsers('notification:created', [
+                'notification' => $notif,
+            ], [(int) $u->id]);
+        }
+    }
+
+    /**
+     * Token entity untuk Notification.source agar bell deep-link benar (lihat
+     * InboxView navigateToNotifSource). Blocker → task induknya (blocker tak
+     * punya route detail sendiri).
+     */
+    private function notifSourceToken(string $type, int $entityId): string
+    {
+        return match ($type) {
+            'PROGRAM' => "program:{$entityId}",
+            'WORKSTREAM' => "workstream:{$entityId}",
+            'BLOCKER' => 'task:' . ((int) (Blocker::query()->find($entityId)?->workItemId ?? 0)),
+            default => "task:{$entityId}",
+        };
     }
 
     // GET /comments/:commentId/thread
@@ -225,7 +292,7 @@ class CommentController extends Controller
     public function addReaction(Request $request, int $commentId): JsonResponse|RedirectResponse
     {
         $this->assertCommentEntityAccess($request->user(), Comment::findOrFail($commentId));
-        $data = $request->validate(['emoji' => 'required|string|max:10']);
+        $data = $request->validate(['emoji' => 'required|string|max:32']);
         $this->toggleReaction($commentId, $request->user()->id, $data['emoji'], false);
 
         if ($request->expectsJson()) {

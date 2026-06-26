@@ -1051,7 +1051,7 @@ export function WorkboardView() {
                           </Button>
                         )}
                         <Link href={`/programs/${pid}`} className="wb-prog__plan-link">
-                          {t('Edit plan')} →
+                          {roleAccess.canEditProgram(program?.owner?.id === currentUser?.id) ? t('Edit plan') : t('View')} →
                         </Link>
                       </div>
                     </header>

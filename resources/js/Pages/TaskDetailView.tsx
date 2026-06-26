@@ -306,8 +306,13 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
     if (nextValue === currentISO) { setTenggatEditing(false); return }
     setTenggatSaving(true)
     try {
+      // Kirim plannedWeeks eksisting secara eksplisit bila ada, supaya BE tidak
+      // me-re-derive & menimpa Weekly Plan manual saat tenggat digeser. Bila
+      // belum ada plan sama sekali, biarkan BE derive fresh dari tenggat baru.
+      const existingPlan = detail.plannedWeeks ?? []
       await api.patch(`/tasks/${id}`, {
         targetCompletion: new Date(nextValue).toISOString(),
+        ...(existingPlan.length ? { plannedWeeks: existingPlan } : {}),
       })
       await loadDetail(true)
     } catch (err) {
@@ -711,7 +716,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
     if (next === (detail.description ?? '').trim()) { setDescEditing(false); return }
     setDescSaving(true)
     try {
-      await api.patch(`/tasks/${id}`, { description: next || undefined })
+      await api.patch(`/tasks/${id}`, { description: next || null })
       await loadDetail(true)
     } catch (err) {
       showToast(extractErr(err, t('Failed to save description.')), 'error')
@@ -813,7 +818,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
 
   // ── Blockers ──────────────────────────────────────────────────────
   const [showCreateBlocker, setShowCreateBlocker] = useState(false)
-  const [blForm, setBlForm] = useState({ code: '', title: '', severity: 'HIGH', description: '', assignedTo: '' })
+  const [blForm, setBlForm] = useState({ title: '', severity: 'HIGH', description: '', assignedTo: '' })
   const [blSaving, setBlSaving] = useState(false)
   const [blError, setBlError] = useState<string | null>(null)
   const [blEditTarget, setBlEditTarget] = useState<{ id: number; title: string; description: string; severity: string; assignedTo: number | null } | null>(null)
@@ -830,7 +835,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
 
   useEscKey(() => setPriorityEditing(false), priorityEditing)
   useEscKey(() => {
-    const blDirty = blForm.code !== '' || blForm.title !== '' || blForm.description !== '' || blForm.assignedTo !== '' || blForm.severity !== 'HIGH'
+    const blDirty = blForm.title !== '' || blForm.description !== '' || blForm.assignedTo !== '' || blForm.severity !== 'HIGH'
     if (blDirty && !confirmDiscard()) return
     setShowCreateBlocker(false); setBlError(null)
   }, showCreateBlocker)
@@ -1009,12 +1014,12 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
     setBlSaving(true); setBlError(null)
     try {
       await api.post('/blockers', {
-        code: blForm.code.trim(), taskId: Number(id),
+        taskId: Number(id),
         title: blForm.title.trim(), severity: blForm.severity,
         description: blForm.description.trim() || undefined,
         assignedTo: blForm.assignedTo ? Number(blForm.assignedTo) : undefined,
       })
-      setBlForm({ code: '', title: '', severity: 'HIGH', description: '', assignedTo: '' })
+      setBlForm({ title: '', severity: 'HIGH', description: '', assignedTo: '' })
       setShowCreateBlocker(false)
       await Promise.all([loadDetail(true), loadOverview('refresh')])
     } catch (err) {
@@ -1029,7 +1034,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
     try {
       await api.patch(`/blockers/${blEditTarget.id}`, {
         title: blEditTarget.title.trim(),
-        description: blEditTarget.description.trim() || undefined,
+        description: blEditTarget.description.trim() || null,
         severity: blEditTarget.severity,
         assignedTo: blEditTarget.assignedTo,
       })
@@ -1078,6 +1083,9 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null)
   const [sending, setSending] = useState(false)
   const [commentError, setCommentError] = useState<string | null>(null)
+  // @mention: lacak user yang dipilih dari dropdown supaya ID-nya ikut terkirim
+  // (notifikasi). Saat submit, hanya yang `@Nama`-nya masih ada di teks yang dikirim.
+  const [mentionedUsers, setMentionedUsers] = useState<{ id: number; name: string }[]>([])
 
   // Auto-grow textarea whenever commentValue changes or composer (re)mounts
   useEffect(() => {
@@ -1090,11 +1098,17 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
     setSending(true)
     setCommentError(null)
     try {
+      // Hanya kirim mention yang token `@Nama`-nya masih ada di teks final
+      // (user bisa menghapus mention setelah memilihnya).
+      const mentions = mentionedUsers
+        .filter(m => commentValue.includes(`@${m.name}`))
+        .map(m => m.id)
       await api.post(`/tasks/${id}/comments`, {
         commentText: commentValue.trim(),
         parentCommentId: replyTargetId ?? undefined,
+        mentions: mentions.length ? mentions : undefined,
       })
-      setCommentValue(''); setReplyTargetId(null)
+      setCommentValue(''); setReplyTargetId(null); setMentionedUsers([])
       await loadDetail(true)
     } catch (err) {
       setCommentError(err instanceof Error ? err.message : t('Failed to post comment.'))
@@ -1790,7 +1804,6 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
               {showCreateBlocker && !inPlanning && (
                 <form className="wid-bl-form" onSubmit={(e) => void submitCreateBlocker(e)}>
                   <div className="wid-form__row">
-                    <input className="wid-input" disabled={blSaving} maxLength={40} minLength={3} onChange={e => setBlForm(f => ({ ...f, code: e.target.value }))} placeholder={t('Code (BLK-001)')} required style={{ flex: '0 0 140px' }} type="text" value={blForm.code} />
                     <select className="wid-input" disabled={blSaving} onChange={e => setBlForm(f => ({ ...f, severity: e.target.value }))} value={blForm.severity}>
                       <option value="CRITICAL">{t('Critical')}</option>
                       <option value="HIGH">{t('High')}</option>
@@ -2028,6 +2041,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                                 const inserted = `@${user.name} `
                                 const next = before + inserted + after
                                 setCommentValue(next)
+                                setMentionedUsers(prev => prev.some(m => m.id === user.id) ? prev : [...prev, { id: user.id, name: user.name }])
                                 setMentionOpen(false)
                                 setTimeout(() => {
                                   ta.focus()
@@ -2071,6 +2085,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                                   const inserted = `@${u.name} `
                                   const next = before + inserted + after
                                   setCommentValue(next)
+                                  setMentionedUsers(prev => prev.some(m => m.id === u.id) ? prev : [...prev, { id: u.id, name: u.name }])
                                   setMentionOpen(false)
                                   setTimeout(() => {
                                     ta.focus()

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Auth\OrgScope;
 use App\Models\Blocker;
 use App\Models\Comment;
+use App\Models\EntityPic;
 use App\Models\SubTask;
 use App\Models\Task;
 use App\Models\User;
@@ -311,6 +312,12 @@ class TaskController extends Controller
 
         $data = $request->validate(['assignedTo' => 'nullable|integer|exists:User,id']);
         Task::query()->where('id', $id)->update(['assignedTo' => $data['assignedTo']]);
+
+        // Jaga invariant assignedTo === picPersonIds[0]: picker "Executor" & "PIC"
+        // di Task Detail menulis orang yang sama, tapi PIC lewat EntityPic. Tanpa
+        // sync ini, set Executor tak mengisi picPersonIds → surface lain (ExecutionGrid,
+        // widget PIC) tampil kosong/basi. Lihat memory dual_pic_assignedto_vs_picpersonids.
+        EntityPic::syncForEntity('WorkItem', $id, $data['assignedTo'] ? [$data['assignedTo']] : []);
 
         if ($request->expectsJson()) {
             return response()->json(['data' => Task::findOrFail($id)]);

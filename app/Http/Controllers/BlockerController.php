@@ -47,6 +47,7 @@ class BlockerController extends Controller
             'title' => 'required|string|min:3|max:120',
             'description' => 'nullable|string|max:400',
             'severity' => 'required|in:CRITICAL,HIGH,MEDIUM,LOW',
+            'assignedTo' => 'nullable|integer',
         ]);
 
         // Scope guard (H5): blocker mewarisi kepemilikan dari task induknya.
