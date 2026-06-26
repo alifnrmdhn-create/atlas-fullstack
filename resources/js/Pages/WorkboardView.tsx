@@ -181,6 +181,19 @@ function BoardCard({
 // scheduleOf/scheduleBucket/taskIsOverdue/ScheduleTone dipindah ke
 // lib/taskSchedule (sumber tunggal, dipakai WorkboardMobile juga).
 
+/** Avatar kecil dgn fallback inisial. Foto yang URL-nya valid tapi 404 (umum di
+ *  dev) di-handle via onError → tampil inisial, bukan ikon gambar pecah. */
+function MiniAvatar({ name, url, className }: { name?: string; url?: string | null; className: string }) {
+  const [broken, setBroken] = useState(false)
+  const initials = name
+    ? name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+    : ''
+  if (url && looksLikeAvatarUrl(url) && !broken) {
+    return <img className={className} src={url} alt={name} title={name} aria-label={name} onError={() => setBroken(true)} style={{ objectFit: 'cover' }} />
+  }
+  return <span className={className} title={name} aria-label={name}>{initials || '—'}</span>
+}
+
 /** Baris task di bawah section program (By Program). Bukan kartu — flat,
  *  ber-indentasi di bawah header program → keanggotaan otomatis jelas. Rail
  *  kiri + pill = sinyal JADWAL (urgensi). */
@@ -198,9 +211,6 @@ function ProgramTaskRow({
   const health = normalizeHealthStatus(item.healthStatus ?? 'GREEN')
   const healthClass = health === 'GREEN' ? 'on-track' : health === 'YELLOW' ? 'at-risk' : 'off-track'
   const assigneeName = item.assignee?.name
-  const initials = assigneeName
-    ? assigneeName.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
-    : ''
   const iniName = contextLabel
   // Tenggat eksplisit di kolom kanan (sebelumnya tak tampil di baris). Merah bila
   // sudah lewat tempo. Tak ditampilkan untuk task yang sudah selesai.
@@ -233,11 +243,7 @@ function ProgramTaskRow({
       </div>
       <div className="wb-row__right">
         {dueLabel && <span className={`wb-row__due${dueLate ? ' wb-row__due--late' : ''}`}>{dueLabel}</span>}
-        {assigneeName && (
-          looksLikeAvatarUrl(item.assignee?.avatarUrl)
-            ? <img className="wb-row__avatar" src={item.assignee.avatarUrl} alt={assigneeName} title={assigneeName} aria-label={assigneeName} style={{ objectFit: 'cover' }} />
-            : <span className="wb-row__avatar" title={assigneeName} aria-label={assigneeName}>{initials}</span>
-        )}
+        {assigneeName && <MiniAvatar name={assigneeName} url={item.assignee?.avatarUrl} className="wb-row__avatar" />}
       </div>
     </button>
   )
@@ -245,6 +251,8 @@ function ProgramTaskRow({
 
 export function WorkboardView() {
   const { t } = useTranslation()
+  // Hitung tugas dgn pluralisasi benar ("1 task" vs "3 tasks").
+  const taskCountLabel = (n: number) => `${n} ${n === 1 ? t('task') : t('tasks')}`
   const SCHEDULE_LANES = getScheduleLanes()
   const TIME_FILTER_LABELS = getTimeFilterLabels()
   const {
@@ -511,6 +519,11 @@ export function WorkboardView() {
   const REPORT_LABEL: Record<HealthAtTime, string> = {
     on_track: t('On Track'), at_risk: t('At Risk'), terlambat: t('Delayed'), overdue: t('Overdue'),
   }
+  // Label pill kondisi program — di-derive dari _slug efektif (sudah hitung
+  // effDone + overdue-realita-task), supaya tampilan == urutan == default-lipat.
+  const COND_LABEL_BY_SLUG: Record<string, string> = {
+    overdue: t('Overdue'), red: t('Delayed'), yellow: t('At Risk'), green: t('On Track'), completed: t('Completed'),
+  }
   const isAdminRole = ['SUPERADMIN', 'ADMIN'].includes(roleAccess.role ?? '')
   const canReportFor = (p?: Program) => {
     if (!p) return false
@@ -554,7 +567,18 @@ export function WorkboardView() {
         // merah "Overdue" di puncak (temuan utama audit UX Workboard).
         const effDone = items.length > 0 && items.every(i => i.status === 'COMPLETED')
         const baseSlug = program ? getProgramHealthDisplay(program).slug : undefined
-        return { program, pid, items, _effDone: effDone, _slug: effDone ? 'completed' : baseSlug }
+        // #1b: "Overdue" program HANYA bila ada task aktif yang benar-benar lewat
+        // tempo. Deadline program basi tapi sisa task due di masa depan → turunkan
+        // ke health (At Risk/On Track/Delayed), bukan merah. Mengempiskan "tembok
+        // merah Overdue" palsu yang membuat triase tumpul (semua merah = nol sinyal).
+        const hasOverdueTask = items.some(i => taskIsOverdue(i))
+        let slug = baseSlug
+        if (slug === 'overdue' && !hasOverdueTask) {
+          const h = program?.healthStatus?.toUpperCase()
+          slug = h === 'GREEN' ? 'green' : h === 'RED' ? 'red' : 'yellow'
+        }
+        if (effDone) slug = 'completed'
+        return { program, pid, items, _effDone: effDone, _slug: slug }
       })
       .sort((a, b) => {
         const ra = rankSlug(a._slug), rb = rankSlug(b._slug)
@@ -598,17 +622,21 @@ export function WorkboardView() {
 
   // Derive workstream options from loaded items, scoped by program filter if set
   const workstreamOptions = (() => {
-    const seen = new Map<number, { id: number; name: string; programId: number | null }>()
+    const seen = new Map<number, { id: number; name: string; programId: number | null; programCode: string | null }>()
     for (const item of rawItems) {
       const ini = item.workstream
       if (!ini?.id) continue
       const programId = ini.program?.id ?? null
       if (boardFilterProgramId && programId !== boardFilterProgramId) continue
       if (!seen.has(ini.id)) {
-        seen.set(ini.id, { id: ini.id, name: ini.name ?? '', programId })
+        seen.set(ini.id, { id: ini.id, name: ini.name ?? '', programId, programCode: ini.program?.code ?? null })
       }
     }
-    return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name))
+    // Tanpa filter program, banyak workstream ber-nama identik ("Rencana &
+    // Eksekusi 2026") di lintas program → tak terbedakan. Prefix kode program
+    // (saat "All Programs") supaya tiap opsi unik & bisa dipilih dgn benar.
+    return Array.from(seen.values()).sort((a, b) =>
+      (a.programCode ?? '').localeCompare(b.programCode ?? '') || a.name.localeCompare(b.name))
   })()
 
   // Reset workstream filter if the selected one is no longer valid under program filter
@@ -835,7 +863,9 @@ export function WorkboardView() {
         >
           <option value="">{t('All Workstreams')}</option>
           {workstreamOptions.map(ini => (
-            <option key={ini.id} value={ini.id}>{ini.name}</option>
+            <option key={ini.id} value={ini.id}>
+              {!boardFilterProgramId && ini.programCode ? `${ini.programCode} · ${ini.name}` : ini.name}
+            </option>
           ))}
         </select>
         {/* #4: Blocker = filter (bukan tab). */}
@@ -1006,12 +1036,9 @@ export function WorkboardView() {
           ) : null}
           {boardReady && boardMode === 'by-program' && programSections.length > 0 && (
             <div className="wb-prog-list">
-              {programSections.map(({ program, pid, items, _effDone }) => {
-                const baseCond = program ? getProgramHealthDisplay(program) : null
-                // Program tuntas → pill netral "Completed" (bukan Overdue merah).
-                const cond = _effDone && baseCond
-                  ? { ...baseCond, label: t('Completed'), slug: 'completed', tone: 'selesai' as const, isOverdue: false }
-                  : baseCond
+              {programSections.map(({ program, pid, items, _effDone, _slug }) => {
+                // Pill kondisi = _slug efektif (effDone + overdue-realita-task).
+                const cond = _slug ? { label: COND_LABEL_BY_SLUG[_slug] ?? _slug, slug: _slug } : null
                 const reported = reportedThisSession[pid]
                 const done = items.filter(i => i.status === 'COMPLETED').length
                 const overdue = items.filter(taskIsOverdue).length
@@ -1063,7 +1090,7 @@ export function WorkboardView() {
                         <div className="wb-prog__title-row">
                           <span className="wb-prog__code">{program?.code ?? `#${pid}`}</span>
                           <span className="wb-prog__counts">
-                            <span>{t('{{count}} tasks', { count: items.length })}</span>
+                            <span>{taskCountLabel(items.length)}</span>
                             <span className="wb-prog__count-done">{done} {t('done')}</span>
                             {overdue > 0 && <span className="wb-prog__count-overdue">{overdue} {t('overdue')}</span>}
                           </span>
@@ -1151,15 +1178,12 @@ export function WorkboardView() {
             <div className="wb-prog-list">
               {picSections.map(g => {
                 const needAction = g.items.filter(i => taskIsOverdue(i) || i.isBlocked || i.status === 'BLOCKED').length
-                const initials = g.name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
                 return (
                   <section className="wb-prog" key={g.id ?? 'unassigned'}>
                     <header className="wb-pic__head">
-                      {looksLikeAvatarUrl(g.avatarUrl)
-                        ? <img className="wb-pic__avatar" src={g.avatarUrl ?? ''} alt={g.name} style={{ objectFit: 'cover' }} />
-                        : <span className="wb-pic__avatar" aria-hidden="true">{initials || '—'}</span>}
+                      <MiniAvatar name={g.name} url={g.avatarUrl} className="wb-pic__avatar" />
                       <span className="wb-pic__name">{g.name}</span>
-                      <span className="wb-pic__count">{t('{{count}} tasks', { count: g.items.length })}</span>
+                      <span className="wb-pic__count">{taskCountLabel(g.items.length)}</span>
                       {needAction > 0 && <span className="wb-pic__need">{t('{{count}} need action', { count: needAction })}</span>}
                     </header>
                     <div className="wb-prog__rows">
