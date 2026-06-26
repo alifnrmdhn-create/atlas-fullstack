@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Auth\OrgScope;
 use App\Models\Directorate;
+use App\Models\DirektoratScorecard;
 use App\Models\OrganizationalUnit;
 use App\Services\KpiInsightService;
 use App\Services\ScorecardSummaryService;
@@ -80,20 +81,20 @@ class PerformanceController extends Controller
         // Compute summary stats from the (scoped) grid
         $totalKpi = array_sum(array_intersect_key($totalKpiByCode, array_flip(array_column($grid, 'kode'))));
         $avgCapaian = count($grid) > 0
-            ? round(array_sum(array_column($grid, 'nilai')) / count($grid), 1)
+            ? round(array_sum(array_column($grid, 'nilai')) / count($grid), 2)
             : 0;
         $memenuhi = count(array_filter($grid, fn ($d) => $d['nilai'] >= 100));
         $belowTarget = array_values(array_filter($grid, fn ($d) => $d['nilai'] < 80));
 
         $stats = [
             ['label' => 'Total KPI Kolegial', 'value' => (string) $totalKpi,                    'color' => 'muted'],
-            ['label' => 'Rata-rata Capaian',  'value' => $avgCapaian . '%',                     'color' => $avgCapaian >= 90 ? 'green' : ($avgCapaian >= 80 ? 'amber' : 'red')],
+            ['label' => 'Rata-rata Capaian',  'value' => number_format($avgCapaian, 2, ',', '.') . '%', 'color' => $avgCapaian >= 90 ? 'green' : ($avgCapaian >= 80 ? 'amber' : 'red')],
             ['label' => 'Memenuhi Target',    'value' => (string) $memenuhi,
                 'sub'   => 'dari ' . count($grid) . ' direktur',
                 'color' => $memenuhi === count($grid) ? 'green' : ($memenuhi >= count($grid) / 2 ? 'amber' : 'red'),
             ],
             ['label' => 'Di Bawah Target',    'value' => (string) count($belowTarget),
-                'sub'   => $belowTarget ? 'Dir. ' . explode(' ', $belowTarget[0]['nama'])[1] . ' ' . round($belowTarget[0]['nilai'], 1) . '%' : '—',
+                'sub'   => $belowTarget ? 'Dir. ' . explode(' ', $belowTarget[0]['nama'])[1] . ' ' . number_format($belowTarget[0]['nilai'], 2, ',', '.') . '%' : '—',
                 'color' => $belowTarget ? 'red' : 'green',
             ],
         ];
@@ -129,6 +130,20 @@ class PerformanceController extends Controller
         $periode = $request->query('periode') ?? $this->defaultPeriode();
 
         $kpiGroups = $this->getDirekturKpiGroups($direktur['kode'], $periode);
+
+        // Skor total direktorat = nilai kanonik tersimpan (DirektoratScorecard.nilai),
+        // SAMA dengan yang dipakai halaman list (KolegialView/Scorecard via
+        // ScorecardSummaryService). JANGAN biarkan FE menjumlahkan ulang skor item —
+        // itu rumus berbeda (tak ternormalisasi, beda cap) → angka beda antar halaman.
+        $dbCode = ['DKM' => 'DIR-KMR'][strtoupper($direktur['kode'])] ?? strtoupper($direktur['kode']);
+        $directorateId = Directorate::query()->where('code', $dbCode)->value('id');
+        $nilai = $directorateId
+            ? DirektoratScorecard::query()
+                ->where('directorateId', $directorateId)
+                ->where('periode', $periode)
+                ->value('nilai')
+            : null;
+        $direktur = [...$direktur, 'nilai' => $nilai !== null ? (float) $nilai : null];
 
         // Flatten kpi groups for insight derive (treat 'target' as 'sasaran').
         $flatItems = collect($kpiGroups)
@@ -213,7 +228,7 @@ class PerformanceController extends Controller
                 }
                 $cells = [];
                 foreach ($perAgg as $p => $agg) {
-                    $cells[$p] = $agg['b'] > 0 ? round(($agg['s'] / $agg['b']) * 100, 1) : null;
+                    $cells[$p] = $agg['b'] > 0 ? round(($agg['s'] / $agg['b']) * 100, 2) : null;
                 }
                 $matrix[] = [
                     'kode' => $div['kode'],
@@ -367,7 +382,7 @@ class PerformanceController extends Controller
                 $perspektif[] = [
                     'nama'  => $p,
                     'bobot' => round($agg['b'], 1),
-                    'pct'   => $agg['b'] > 0 ? round(($agg['s'] / $agg['b']) * 100, 1) : null,
+                    'pct'   => $agg['b'] > 0 ? round(($agg['s'] / $agg['b']) * 100, 2) : null,
                 ];
             }
 

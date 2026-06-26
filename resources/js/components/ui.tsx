@@ -407,14 +407,37 @@ function avatarTone(name: string): AvatarTone {
   return AVATAR_TONES[Math.abs(h) % AVATAR_TONES.length]
 }
 
-export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
+// Apakah `avatarUrl` benar-benar sebuah foto yang bisa dirender? DB kadang
+// menyimpan inisial 2-huruf alih-alih URL — nilai seperti itu bukan path yang
+// valid (browser akan menafsirkannya sebagai path relatif dan 404). Foto asli
+// selalu URL absolut, path root-absolut, atau data: URI.
+export function looksLikeAvatarUrl(v?: string | null): v is string {
+  return !!v && /^(https?:\/\/|\/|data:)/.test(v)
+}
+
+export function Avatar({ name, size = 32, avatarUrl, ring }: { name: string; size?: number; avatarUrl?: string | null; ring?: boolean }) {
+  const [failed, setFailed] = useState(false)
+  const dimension = Math.max(18, size)
+  if (looksLikeAvatarUrl(avatarUrl) && !failed) {
+    return (
+      <img
+        className={`avatar avatar--photo${ring ? ' avatar--ring' : ''}`}
+        src={avatarUrl}
+        alt={name}
+        width={dimension}
+        height={dimension}
+        style={{ width: dimension, height: dimension }}
+        onError={() => setFailed(true)}
+        draggable={false}
+      />
+    )
+  }
   const initials = name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
   const tone = avatarTone(name)
-  const dimension = Math.max(18, size)
   const fontSize = Math.max(9, Math.round(dimension * 0.34))
   return (
     <span
-      className="avatar"
+      className={`avatar${ring ? ' avatar--ring' : ''}`}
       data-tone={tone}
       style={{ width: dimension, height: dimension, fontSize }}
     >
@@ -446,10 +469,9 @@ export function effectivePresenceSlug(status: string, lastActivityAt: string): s
 
 function UserAvatar({ avatarUrl, name, className }: { avatarUrl?: string; name: string; className?: string }) {
   const [failed, setFailed] = useState(false)
-  // Filter out garbage values (DB sometimes stores 2-letter initials instead of a URL).
-  // A real avatar must be an absolute URL, root-absolute path, or data: URI — never
-  // a bare token that the browser would interpret as a relative path and 404 on.
-  const looksLikeUrl = !!avatarUrl && /^(https?:\/\/|\/|data:)/.test(avatarUrl)
+  // Lihat looksLikeAvatarUrl — saring nilai sampah (DB kadang menyimpan inisial
+  // 2-huruf, bukan URL). PresenceRow memakai className khusus untuk sizing 36px.
+  const looksLikeUrl = looksLikeAvatarUrl(avatarUrl)
   if (looksLikeUrl && !failed) {
     return (
       <img

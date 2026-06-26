@@ -65,9 +65,29 @@ class KpiInsightService
         if ($sasaran === null || $realisasi === null) return null;
 
         $polaritas = strtolower($item['polaritas'] ?? 'maximize');
-        $ratio = $this->achievementRatio($sasaran, $realisasi, $polaritas);
+        $naiveRatio = $this->achievementRatio($sasaran, $realisasi, $polaritas);
 
+        // Rasio kanonik dari skor RESMI (skor tersimpan = bobot_fraction × nilai_KPI,
+        // bobot di sini sudah ×100). nilai_KPI/100 = capaian ber-cap & sadar-target-negatif.
+        // Ini SUMBER KEBENARAN yang sama dengan kolom Score/header grup di tabel —
+        // dipakai untuk klasifikasi supaya Insight tak berbeda nilai dgn tabel.
+        // Contoh bug yang ditutup: ROI (target -0,50%, real 0,89% → skor 110) dulu
+        // tampil "-178% Perlu Perhatian" karena realisasi/target naif pada target negatif.
+        $bobot = isset($item['bobot']) ? (float) $item['bobot'] : 0.0;
+        $skor  = isset($item['skor']) ? (float) $item['skor'] : 0.0;
+        $scoreRatio = ($bobot > 0 && $skor > 0) ? $skor / $bobot : null;
+
+        // Klasifikasi: utamakan skor resmi; fallback ke rasio naif bila skor tak tersedia.
+        $ratio = $scoreRatio ?? $naiveRatio;
         if ($ratio === null) return null;
+
+        // Tampilan: pertahankan magnitudo realisasi/target bila bermakna (target > 0 &
+        // rasio non-negatif) supaya "278 vs target 90 → 309%" tetap informatif; selain
+        // itu (target ≤ 0 atau rasio negatif/undefined) pakai skor resmi agar tak muncul
+        // persentase janggal seperti "-178%".
+        $displayRatio = ($naiveRatio !== null && $naiveRatio >= 0 && $sasaran > 0)
+            ? $naiveRatio
+            : ($scoreRatio ?? $naiveRatio);
 
         $bucket = null;
         if ($ratio >= self::POSITIVE_THRESHOLD) {
@@ -84,7 +104,7 @@ class KpiInsightService
                 'kpi'       => $item['nama'],
                 'realisasi' => (string) ($item['realisasi'] ?? '—'),
                 'sasaran'   => (string) ($item['sasaran'] ?? '—'),
-                'ratio'     => $ratio,
+                'ratio'     => $displayRatio,
                 'satuan'    => $item['satuan'] ?? null,
             ],
         ];

@@ -126,6 +126,72 @@
 .profile-v2 .pv-hero__avatar[data-tone="blue"]   { background: color-mix(in srgb, #6366F1 22%, var(--surface-1));        color: var(--blue); }
 .profile-v2 .pv-hero__avatar[data-tone="purple"] { background: color-mix(in srgb, #A855F7 22%, var(--surface-1));        color: var(--purple); }
 
+/* ── Avatar upload (foto profil) ─────────────────────────────── */
+.profile-v2 .pv-hero__avatar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.profile-v2 .pv-hero__avatar-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+}
+.profile-v2 .pv-hero__avatar--photo {
+  object-fit: cover;
+  background: var(--surface-1);
+}
+.profile-v2 .pv-hero__avatar-edit {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--panel);
+  background: var(--green);
+  color: var(--text-inverse);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px -2px rgba(15,20,40,0.3); /* dark-allow: drop-shadow halus tombol, theme-independent */
+  transition: transform 0.12s var(--ds-ease-standard, ease), background 0.12s ease;
+}
+.profile-v2 .pv-hero__avatar-edit:hover:not(:disabled) { transform: scale(1.08); }
+.profile-v2 .pv-hero__avatar-edit:disabled { opacity: 0.5; cursor: default; }
+.profile-v2 .pv-hero__avatar-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+}
+.profile-v2 .pv-hero__avatar-status {
+  min-height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile-v2 .pv-hero__avatar-msg { font-size: 11px; color: var(--text-muted); }
+.profile-v2 .pv-hero__avatar-msg--error { color: var(--red); }
+.profile-v2 .pv-hero__avatar-remove {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.profile-v2 .pv-hero__avatar-remove:hover { color: var(--text-strong); }
+
 .profile-v2 .pv-hero__body {
   display: flex;
   flex-direction: column;
@@ -663,6 +729,7 @@
 .profile-v2 .org-node__avatar[data-tone="red"]    { background: color-mix(in srgb, var(--red) 14%, var(--surface-1));    color: var(--red); }
 .profile-v2 .org-node__avatar[data-tone="blue"]   { background: color-mix(in srgb, #6366F1 14%, var(--surface-1));        color: var(--blue); }
 .profile-v2 .org-node__avatar--self { background: var(--indigo); color: var(--text-inverse); }
+.profile-v2 .org-node__avatar--photo { object-fit: cover; background: var(--surface-1); }
 .profile-v2 .org-node__info { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .profile-v2 .org-node__name { font-size: 13px; font-weight: 600; color: var(--text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .profile-v2 .org-node__pos { font-size: 11.5px; color: var(--text-muted); }

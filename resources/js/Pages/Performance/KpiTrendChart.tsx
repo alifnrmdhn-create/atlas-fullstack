@@ -96,7 +96,7 @@ export function KpiTrendChart({ trend, height = 260 }: Props) {
             }}
             formatter={(value) => {
               const n = typeof value === 'number' ? value : Number(value)
-              return [Number.isFinite(n) ? formatPercent(n, 1) : '—', '']
+              return [Number.isFinite(n) ? formatPercent(n) : '—', '']
             }}
           />
           <Legend
@@ -157,14 +157,14 @@ function SparseTrendSummary({ trend }: { trend: KpiTrendPayload }) {
               <span className="kpi-trend-sparse__period">{r.last!.label}</span>
             </div>
             <span className="kpi-trend-sparse__value" data-tone={scoreTone(r.last!.v)}>
-              {formatPercent(r.last!.v, 1)}
+              {formatPercent(r.last!.v)}
             </span>
             <span className="kpi-trend-sparse__delta" data-tone={deltaTone}>
               {delta == null
                 ? t('first month')
                 : t('{{arrow}} {{value}} vs {{period}}', {
                     arrow: delta >= 0 ? '▲' : '▼',
-                    value: formatPercent(Math.abs(delta), 1),
+                    value: formatPercent(Math.abs(delta)),
                     period: r.prev!.label,
                   })}
             </span>

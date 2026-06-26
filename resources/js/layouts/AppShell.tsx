@@ -16,6 +16,7 @@ import { CommandPalette } from '../components/CommandPalette'
 import { MobileMenuSheet } from '../components/MobileMenuSheet'
 import { InstallBanner } from '../components/InstallBanner'
 import { ContextPanel } from '../components/ContextPanel'
+import { looksLikeAvatarUrl } from '../components/ui'
 import { TOPBAR_ACTIONS } from '../lib/topbar-config'
 import { resolveContextPanel } from '../lib/context-panel-config'
 import { formatRoleLabel } from '../lib/roleLabel'
@@ -785,6 +786,47 @@ export function AppShell({ children }: { children?: ReactNode }) {
     n.state === 'UNREAD' && notificationRequiresAction(n)
   ).length
 
+  // ── Anchor "Butuh aksi" (sidebar, 2026-06-26) ────────────────────────────
+  // Cerminan ringkas halaman Focus (InboxView). HARUS pakai angka & kosakata
+  // yang SAMA dgn Focus, kalau tidak terasa bug (2026-06-26: user 0 unread tapi
+  // 29 item Focus → anchor salah "All clear"). MIRROR komputasi InboxView:
+  //   total ("All") = jumlah semua entity di feed (escalation+blocker+task+
+  //     actionItem+assignment+approval+programAktif-terkait+notif-actionable),
+  //     tiap entity dihitung sekali (lihat InboxView rakit array lalu dedup).
+  //   baris = tab Focus: Action (task|blocker|actionItem|assignment) & Risk
+  //     (programAktif|blocker). Schedule (meeting/focus-block) di-skip — butuh
+  //     fetch async, jarang & Focus sering 0; total juga tak menyertakannya.
+  // ⚠ Jaga sinkron dgn InboxView (rankedFocusItems + focusItemMatchesScope).
+  // 'mine' scope (default Focus, tanpa toggle divisi di sidebar): program aktif
+  // yang TERKAIT user = myWork.programs aktif (BE sudah resolve via membership).
+  const fTasks = (myWork?.tasks ?? []).length
+  const fBlockers = (myWork?.blockers ?? []).length
+  const fEscalations = (myWork?.committedEscalations ?? []).length
+  const fApprovals = (myWork?.decisions ?? []).length
+  const fActionItems = (myWork?.actionItems ?? []).length
+  const fAssignments = (myWork?.assignments ?? []).length
+  const fProgramsActive = (myWork?.programs ?? []).filter(p => p.approvalStatus === 'ACTIVE').length
+  // Notif actionable (mirror actionableOtherUnread di InboxView; chat dikecualikan).
+  const ANCHOR_NOTIF_ACTIONABLE = new Set([
+    'REPORT_NEEDS_REVISION', 'PROGRAM_NEEDS_APPROVAL', 'PROGRAM_REJECTED',
+    'DEADLINE_APPROACHING', 'BLOCKER_CREATED', 'TASK_ASSIGNED',
+  ])
+  const fNotif = activeNotifications.filter(
+    n => n.state === 'UNREAD' && ANCHOR_NOTIF_ACTIONABLE.has(n.type),
+  ).length
+  const anchorTotal = fEscalations + fBlockers + fTasks + fActionItems + fAssignments + fApprovals + fProgramsActive + fNotif
+  // Breakdown per TIPE entity (bukan tab Focus yang overlapping & butuh urgency
+  // scoring) — jumlah baris = anchorTotal persis, internal konsisten. Urut
+  // severity, tampil 3 teratas non-nol.
+  const anchorTopRows = [
+    { key: 'block',    count: fBlockers + fEscalations,    label: t('blockers'),     tone: 'danger' },
+    { key: 'approval', count: fApprovals,                  label: t('approvals'),    tone: 'warn' },
+    { key: 'task',     count: fTasks,                      label: t('tasks'),        tone: 'warn' },
+    { key: 'work',     count: fActionItems + fAssignments, label: t('action items'), tone: 'info' },
+    { key: 'program',  count: fProgramsActive,             label: t('programs'),     tone: 'info' },
+    { key: 'notif',    count: fNotif,                      label: t('updates'),      tone: 'neutral' },
+  ].filter(r => r.count > 0).slice(0, 3)
+
   // ── Notification dropdown ──────────────────────────────────────────────────
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => getThemeSnapshot().resolved)
 
@@ -820,6 +862,26 @@ export function AppShell({ children }: { children?: ReactNode }) {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [notifDropOpen])
+
+  // ── Workspace switcher (sidebar header chip, 2026-06-26) ──────────────────
+  // Header brand jadi chip clickable (sinyal SaaS premium) + popover ringkas
+  // scope workspace. SENGAJA tidak menduplikasi akun/logout (itu tetap di
+  // user-popover topbar) — popover ini fokus konteks workspace + shortcut.
+  const [wsMenuOpen, setWsMenuOpen] = useState(false)
+  const wsMenuRef = useRef<HTMLDivElement>(null)
+  useEscKey(() => setWsMenuOpen(false), wsMenuOpen)
+  useEffect(() => {
+    if (!wsMenuOpen) return
+    const handler = (e: MouseEvent) => {
+      if (wsMenuRef.current && !wsMenuRef.current.contains(e.target as Node)) setWsMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [wsMenuOpen])
+  // Tutup popover saat pindah halaman supaya tidak menggantung.
+  useEffect(() => { setWsMenuOpen(false) }, [activePath])
+  // Scope ringkas untuk sub-line chip: direktorat user > unit > Holding.
+  const wsScope = currentUser?.directorate?.code ?? currentUser?.unit?.code ?? t('Holding')
 
   const NOTIF_TYPE_LABEL: Record<string, string> = {
     MENTION: t('Mention'), APPROVAL: t('Approval'),
@@ -1144,28 +1206,38 @@ export function AppShell({ children }: { children?: ReactNode }) {
     <div className={`app-shell${effectiveCollapsed ? ' app-shell--collapsed' : ''}${hasContextPanel ? ' app-shell--with-panel' : ''}${authStatus === 'logging_out' ? ' app-shell--exiting' : ''}${viewportPhone ? ' app-shell--mobile' : ''}`} ref={shellRef}>
       {/* ── Sidebar (disembunyikan di phone via shell.css; navigasi = MobileMenuSheet) ── */}
       <aside className="sidebar">
-        <div className="sidebar__header">
-          <div className="sidebar__brand">
-            <div
-              className="sidebar__brand-mark"
-              role={sidebarCollapsedView ? 'button' : undefined}
-              tabIndex={sidebarCollapsedView ? 0 : undefined}
-              aria-label={sidebarCollapsedView ? t('Expand sidebar') : undefined}
-              title={sidebarCollapsedView ? t('Expand sidebar (⌘\\)') : 'ATLAS'}
-              onClick={sidebarCollapsedView ? toggleSidebar : undefined}
-              onKeyDown={sidebarCollapsedView ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSidebar() } } : undefined}
-            >
+        <div className="sidebar__header" ref={wsMenuRef}>
+          {/* Workspace switcher chip (2026-06-26): brand jadi clickable.
+              Collapsed → klik = expand sidebar. Expanded → klik = popover scope. */}
+          <button
+            type="button"
+            className={`sidebar__brand sidebar__wschip${wsMenuOpen ? ' sidebar__wschip--open' : ''}`}
+            onClick={sidebarCollapsedView ? toggleSidebar : () => setWsMenuOpen(o => !o)}
+            aria-haspopup={sidebarCollapsedView ? undefined : 'menu'}
+            aria-expanded={sidebarCollapsedView ? undefined : wsMenuOpen}
+            aria-label={sidebarCollapsedView ? t('Expand sidebar') : t('Workspace menu')}
+            title={sidebarCollapsedView ? t('Expand sidebar (⌘\\)') : t('Workspace')}
+          >
+            <span className="sidebar__brand-mark">
               <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
                 <line x1="2.5" y1="18.5" x2="10" y2="2.5"/>
                 <line x1="17.5" y1="18.5" x2="10" y2="2.5"/>
                 <line x1="6.3" y1="11.5" x2="13.7" y2="11.5"/>
               </svg>
-            </div>
-            <div className="sidebar__brand-name">
-              <span className="sidebar__brand-title" title="Advanced Transformation &amp; Leadership Alignment System">ATLAS</span>
-              <span className="sidebar__brand-tagline" aria-label={t('PTPN III Holding workspace')}>PTPN III · Holding</span>
-            </div>
-          </div>
+            </span>
+            <span className="sidebar__brand-name">
+              <span className="sidebar__brand-titlerow">
+                <span className="sidebar__brand-title" title="Advanced Transformation &amp; Leadership Alignment System">ATLAS</span>
+                <span className="sidebar__brand-chip">{t('Holding')}</span>
+              </span>
+              <span className="sidebar__brand-tagline" aria-label={t('PTPN III Holding workspace')}>PTPN III · {wsScope}</span>
+            </span>
+            <span className="sidebar__brand-chev" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 5.5 7 8.5l3-3" />
+              </svg>
+            </span>
+          </button>
           <button
             className="sidebar__collapse-toggle"
             onClick={toggleSidebar}
@@ -1179,6 +1251,43 @@ export function AppShell({ children }: { children?: ReactNode }) {
               <path d="m9 5.5-1.5 1.5L9 8.5" />
             </svg>
           </button>
+
+          {wsMenuOpen && !sidebarCollapsedView ? (
+            <div className="sidebar__ws-popover" role="menu">
+              <div className="sidebar__ws-popover-head">
+                <span className="sidebar__ws-popover-mark" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                    <line x1="2.5" y1="18.5" x2="10" y2="2.5"/>
+                    <line x1="17.5" y1="18.5" x2="10" y2="2.5"/>
+                    <line x1="6.3" y1="11.5" x2="13.7" y2="11.5"/>
+                  </svg>
+                </span>
+                <div className="sidebar__ws-popover-id">
+                  <strong>ATLAS</strong>
+                  <span>{t('PTPN III Holding workspace')}</span>
+                </div>
+              </div>
+              {currentUser?.directorate?.name || currentUser?.unit?.name ? (
+                <div className="sidebar__ws-popover-scope">
+                  <span className="sidebar__ws-popover-scope-label">{t('Your scope')}</span>
+                  <span className="sidebar__ws-popover-scope-value">
+                    {currentUser?.directorate?.name ?? currentUser?.unit?.name}
+                  </span>
+                </div>
+              ) : null}
+              <div className="sidebar__ws-popover-divider" />
+              <Link className="sidebar__ws-popover-item" href="/settings" onClick={() => setWsMenuOpen(false)}>
+                <IconSettings />
+                <span>{t('Workspace settings')}</span>
+              </Link>
+              {isAdmin ? (
+                <Link className="sidebar__ws-popover-item" href="/admin/orgs" onClick={() => setWsMenuOpen(false)}>
+                  <IconOrg />
+                  <span>{t('Organization')}</span>
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <nav className="sidebar__nav">
@@ -1251,10 +1360,71 @@ export function AppShell({ children }: { children?: ReactNode }) {
           )})}
         </nav>
 
-        {/* Footer — rak utilitas (2026-06-01): ikon kalem tanpa label, hint via
-            title native. Bantuan & Panduan + toggle tema (dipindah dari topbar).
-            Expanded = baris rata kiri (sejajar kolom ikon nav); collapsed = tumpuk. */}
-        <div className="sidebar__footer">
+        {/* Anchor "Butuh aksi" (2026-06-26): mengisi ruang kosong bawah rail
+            dengan sintesis sinyal aksi (sama sumber dgn badge Focus). Disembunyikan
+            saat collapsed — Focus nav item sudah membawa badge-nya. */}
+        {!sidebarCollapsedView ? (
+          <Link
+            className={`sidebar__anchor${anchorTotal === 0 ? ' sidebar__anchor--clear' : ''}`}
+            href="/fokus"
+            onMouseEnter={() => prefetchRoute('/fokus')}
+            aria-label={anchorTotal > 0
+              ? t('{{count}} items need your action — open Focus', { count: anchorTotal })
+              : t('Nothing waiting — open Focus')}
+          >
+            {anchorTotal > 0 ? (
+              <>
+                <div className="sidebar__anchor-top">
+                  <span className="sidebar__anchor-dot" aria-hidden="true" />
+                  <span className="sidebar__anchor-title">{t('Needs action')}</span>
+                  <span className="sidebar__anchor-n">{anchorTotal > 99 ? '99+' : anchorTotal}</span>
+                </div>
+                {anchorTopRows.map(row => (
+                  <div className="sidebar__anchor-row" key={row.key}>
+                    <span className={`sidebar__anchor-pip sidebar__anchor-pip--${row.tone}`} aria-hidden="true" />
+                    <b>{row.count}</b>&nbsp;{row.label}
+                  </div>
+                ))}
+                <span className="sidebar__anchor-cta">
+                  {t('Open Focus')}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M5 12h14" /><path d="M13 6l6 6-6 6" />
+                  </svg>
+                </span>
+              </>
+            ) : (
+              <div className="sidebar__anchor-clear">
+                <span className="sidebar__anchor-check" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
+                <div className="sidebar__anchor-clear-copy">
+                  <strong>{t('All clear')}</strong>
+                  <span>{t('Nothing needs your action')}</span>
+                </div>
+              </div>
+            )}
+          </Link>
+        ) : null}
+
+        {/* Footer — rak utilitas (2026-06-26): seimbang dua-sisi — Playbook (kiri)
+            + toggle tema (kanan). Bantuan/Panduan tetap di topbar (help-btn).
+            Collapsed = tumpuk vertikal. */}
+        <div className="sidebar__footer sidebar__footer--balanced">
+          <Link
+            className="sidebar__util-btn"
+            href="/playbook"
+            title={t('Playbook')}
+            aria-label={t('Playbook')}
+            onMouseEnter={() => prefetchRoute('/playbook')}
+            aria-current={activePath === '/playbook' ? 'page' : undefined}
+          >
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3.5 4.5A1.5 1.5 0 0 1 5 3h6v13H5a1.5 1.5 0 0 0-1.5 1.5Z" />
+              <path d="M16.5 4.5A1.5 1.5 0 0 0 15 3h-4v13h4a1.5 1.5 0 0 1 1.5 1.5Z" />
+            </svg>
+          </Link>
           <button
             type="button"
             className="sidebar__util-btn"
@@ -1537,7 +1707,11 @@ export function AppShell({ children }: { children?: ReactNode }) {
                 title={currentUser?.positionTitle ? `${currentUser?.name} — ${currentUser.positionTitle}` : (currentUser?.name ?? t('User menu'))}
                 type="button"
               >
-                <span className="topbar__avatar"><span className="topbar__avatar-initials">{userInitials || 'AU'}</span></span>
+                <span className="topbar__avatar">
+                  {looksLikeAvatarUrl(currentUser?.avatarUrl)
+                    ? <img className="topbar__avatar-photo" src={currentUser.avatarUrl} alt="" />
+                    : <span className="topbar__avatar-initials">{userInitials || 'AU'}</span>}
+                </span>
                 <span className="topbar__avatar-text">
                   <span className="topbar__avatar-name">{currentUser?.name ?? 'Atlas User'}</span>
                   {currentUser?.positionTitle && (
@@ -1554,7 +1728,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
                   <div className="topbar__menu-backdrop" onClick={closeUserMenu} />
                   <div className="topbar__user-popover" role="menu">
                     <div className="topbar__user-popover-identity">
-                      <div className="topbar__user-popover-avatar">{userInitials || 'AU'}</div>
+                      {looksLikeAvatarUrl(currentUser?.avatarUrl)
+                        ? <img className="topbar__user-popover-avatar topbar__user-popover-avatar--photo" src={currentUser.avatarUrl} alt="" />
+                        : <div className="topbar__user-popover-avatar">{userInitials || 'AU'}</div>}
                       <div>
                         <strong>{currentUser?.name}</strong>
                         {currentUser?.positionTitle && (

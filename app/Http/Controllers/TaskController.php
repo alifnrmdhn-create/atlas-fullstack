@@ -114,13 +114,14 @@ class TaskController extends Controller
                 'comments' => Comment::query()
                     ->where('entityType', 'TASK')
                     ->where('entityId', $id)
-                    ->with('author:id,name,roleType,positionTitle')
+                    ->with('author:id,name,roleType,positionTitle,avatarUrl')
                     ->orderBy('createdAt')
                     ->get()
                     ->map(function (Comment $c) {
                         $arr = $c->toArray();
                         $arr['authorName'] = $c->author?->name;
                         $arr['authorRole'] = $c->author?->positionTitle ?? $c->author?->roleType;
+                        $arr['authorAvatarUrl'] = $c->author?->avatarUrl;
                         // reactions kolom nullable → cast 'array' bisa null. FE
                         // (CommentThreadList) mengakses reactions[':thumbsup:'] →
                         // crash kalau null. Jamin selalu objek (kontrak CommentItem
@@ -224,6 +225,12 @@ class TaskController extends Controller
             $this->assertCanUpdateProgress($existing, $request->user());
         }
 
+        // Penunjukan PIC (picPersonIds) / unit PIC = hak plan-author, bukan
+        // pelaksana — meski assignee lolos assertCanModifyTask untuk field lain.
+        if (array_key_exists('picPersonIds', $data) || array_key_exists('picUnitIds', $data)) {
+            $this->assertCanAssignPic($existing, $request->user());
+        }
+
         $task = $this->taskService->update($id, $data);
         $this->triggerHealth($id);
         BroadcastService::task($id, 'updated');
@@ -308,7 +315,8 @@ class TaskController extends Controller
 
     public function assign(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        $this->assertCanModifyTask(Task::findOrFail($id), $request->user());
+        // Menunjuk executor = menunjuk PIC → hanya Kadiv/Kasubdiv (se-scope)/admin.
+        $this->assertCanAssignPic(Task::findOrFail($id), $request->user());
 
         $data = $request->validate(['assignedTo' => 'nullable|integer|exists:User,id']);
         Task::query()->where('id', $id)->update(['assignedTo' => $data['assignedTo']]);
@@ -435,6 +443,25 @@ class TaskController extends Controller
         }
 
         abort(403, 'You do not have access to modify a work item that belongs to another unit.');
+    }
+
+    /**
+     * Gate KHUSUS penunjukan PIC/executor task (assign + picPersonIds/picUnitIds).
+     * Menunjuk siapa yang bertanggung jawab = keputusan plan-author → HANYA
+     * Kadiv/Kasubdiv (se-scope) atau admin. BEDA dengan assertCanModifyTask:
+     * TIDAK ada shortcut assignee/creator — pelaksana (ASISTEN/OFFICER) yang jadi
+     * PIC tak boleh mengoper PIC ke orang lain (akuntabilitas dipegang manajer).
+     */
+    private function assertCanAssignPic(Task $task, User $user): void
+    {
+        if (RolePolicy::isAdminOrAbove($user->roleType)) return;
+
+        if (in_array(RolePolicy::norm($user->roleType), ['kadiv', 'kasubdiv'], true)
+            && OrgScope::forUser($user)->coversUnit($this->ownerUnitForTask($task))) {
+            return;
+        }
+
+        abort(403, 'Only the division head (Kadiv/Kasubdiv) can assign the PIC of this work item.');
     }
 
     /**

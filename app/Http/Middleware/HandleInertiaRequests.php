@@ -54,6 +54,7 @@ class HandleInertiaRequests extends Middleware
                     'unitId' => $user->unitId,
                     'unit' => $user->unit?->only(['id', 'code', 'name']),
                     'directorateId' => $user->directorateId,
+                    'directorate' => $user->directorate?->only(['id', 'code', 'name']),
                     'managerUserId' => $user->managerUserId,
                     'toursCompleted' => $user->toursCompleted ?? [],
                     // Sidebar gate for the Performance module (role-scoped 2026-05-29).

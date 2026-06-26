@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { scheduleOf, scheduleBucket } from '../lib/taskSchedule'
 import { TaskDetailModal } from '../components/TaskDetailModal'
-import { SectionState } from '../components/ui'
+import { SectionState, looksLikeAvatarUrl } from '../components/ui'
 import type { Task } from '../types'
 import '../styles/mobile-native.css'
 
@@ -156,7 +156,11 @@ export default function WorkboardMobile() {
                             <div className={`wb-m-card__fill wb-m-card__fill--${slug}`} style={{ width: `${Math.max(tk.percentComplete, 2)}%` }} />
                           </div>
                           <span className="wb-m-card__pct">{tk.percentComplete}%</span>
-                          {tk.assignee?.name ? <span className="wb-m-card__avatar" title={tk.assignee.name}>{initialsOf(tk.assignee.name)}</span> : null}
+                          {tk.assignee?.name ? (
+                            looksLikeAvatarUrl(tk.assignee.avatarUrl)
+                              ? <img className="wb-m-card__avatar" src={tk.assignee.avatarUrl} alt={tk.assignee.name} title={tk.assignee.name} style={{ objectFit: 'cover' }} />
+                              : <span className="wb-m-card__avatar" title={tk.assignee.name}>{initialsOf(tk.assignee.name)}</span>
+                          ) : null}
                         </div>
                       </div>
                     </button>

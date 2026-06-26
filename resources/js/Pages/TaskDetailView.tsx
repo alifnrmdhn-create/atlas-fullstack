@@ -53,7 +53,7 @@ function taskSeverityTones(dark: boolean) {
   } as const
 }
 
-type DirectoryUser = { id: number; name: string; positionTitle: string | null; roleType?: string }
+type DirectoryUser = { id: number; name: string; positionTitle: string | null; roleType?: string; avatarUrl?: string | null }
 
 // ── Inline icon bank ───────────────────────────────────────────────────────
 const Icon = {
@@ -325,6 +325,9 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
 
   // ── Ren (plannedWeeks) editor ─────────────────────────────────────
   const [renEditing, setRenEditing] = useState(false)
+  // Modal: Weekly Plan + Realization dilipat default jadi satu toggle "Schedule"
+  // (kurangi kepadatan rail; page mode tetap tampil penuh). Usulan A 2026-06-26.
+  const [scheduleOpen, setScheduleOpen] = useState(false)
   const [renStart, setRenStart] = useState('')
   const [renEnd, setRenEnd] = useState('')
   const [renSaving, setRenSaving] = useState(false)
@@ -432,33 +435,12 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
     }
   }
 
-  // ── PIC Unit/Person ───────────────────────────────────────────────
-  type OrgUnit = { id: number; code: string; name: string }
-  const [orgUnits, setOrgUnits] = useState<OrgUnit[]>([])
-  const [picUnitSearch, setPicUnitSearch] = useState('')
+  // ── PIC Person ────────────────────────────────────────────────────
+  // Field "Unit PIC" dihapus dari Task Detail (2026-06-26) — tak dipakai;
+  // akuntabilitas via PIC orang (picPersonIds) + program owner.
   const [picPersonSearch, setPicPersonSearch] = useState('')
   const [picSaving, setPicSaving] = useState(false)
   const [showPicAdder, setShowPicAdder] = useState(false)
-  const [showUnitAdder, setShowUnitAdder] = useState(false)
-
-  const loadOrgUnits = async () => {
-    if (orgUnits.length > 0) return
-    try {
-      const res = await api.get<{ data: OrgUnit[] }>('/organization/units')
-      setOrgUnits(res.data ?? [])
-    } catch { /* non-fatal */ }
-  }
-
-  const savePicUnits = async (ids: number[]) => {
-    if (!id) return
-    setPicSaving(true)
-    try {
-      await api.patch(`/tasks/${id}`, { picUnitIds: ids })
-      await loadDetail(true)
-    } catch (err) {
-      showToast(extractErr(err, t('Failed to save unit PIC.')), 'error')
-    } finally { setPicSaving(false) }
-  }
 
   const savePicPersons = async (ids: number[]) => {
     if (!id) return
@@ -546,10 +528,9 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
     if (contextTaskDetail?.id === Number(id)) setDetail(contextTaskDetail)
   }, [contextTaskDetail])
 
-  // Modal rail mode: info-footer always expanded, prefetch org + assign users
+  // Modal rail mode: info-footer always expanded, prefetch assign users
   useEffect(() => {
     if (mode === 'modal' && id) {
-      void loadOrgUnits()
       void loadAssignUsers()
     }
   }, [mode, id])
@@ -1401,23 +1382,23 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
               form body bawah yang interactive. Pill di sini cuma read-only
               duplicate. */}
           {detail.assignee ? (
-            !roleAccess.isMonitoringOnly && mode === 'modal' ? (
+            roleAccess.canAssignPic && mode === 'modal' ? (
               <button
                 type="button"
                 className="wid-hero__assignee wid-hero__assignee--clickable"
                 onClick={() => { setShowAssigneeEdit(true); void loadAssignUsers() }}
                 title={t('Click to change executor')}
               >
-                <Avatar name={detail.assignee.name} />
+                <Avatar name={detail.assignee.name} avatarUrl={detail.assignee.avatarUrl} />
                 <span className="wid-hero__assignee-name">{detail.assignee.name}</span>
               </button>
             ) : (
               <div className="wid-hero__assignee">
-                <Avatar name={detail.assignee.name} />
+                <Avatar name={detail.assignee.name} avatarUrl={detail.assignee.avatarUrl} />
                 <span className="wid-hero__assignee-name">{detail.assignee.name}</span>
               </div>
             )
-          ) : !roleAccess.isMonitoringOnly && mode === 'modal' ? (
+          ) : roleAccess.canAssignPic && mode === 'modal' ? (
             <button
               type="button"
               className="wid-hero__assignee wid-hero__assignee--empty wid-hero__assignee--clickable"
@@ -1518,7 +1499,8 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
 
       {/* ── Metastrip — execution controls ───────────────────── */}
       {!roleAccess.isMonitoringOnly && !inPlanning ? (
-        <form className="wid-metastrip" onSubmit={(e) => void saveExecution(e)}>
+        <form className="wid-metastrip wid-metastrip--report" onSubmit={(e) => void saveExecution(e)}>
+          <span className="wid-ms-head">{t('Report progress')}</span>
           <div className="wid-ms-field">
             <span className="wid-ms-label">{t('Status')}</span>
             {/* Status read-only — di-derive dari progress (slider) + tombol review +
@@ -1708,6 +1690,16 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                 </button>
               )}
             </div>
+            {subtaskStats.total === 0 && !showAddSubtask && !roleAccess.isMonitoringOnly && (
+              <button className="wid-empty-guide" onClick={() => setShowAddSubtask(true)} type="button">
+                <span className="wid-empty-guide__icon">{Icon.subtask}</span>
+                <span className="wid-empty-guide__text">
+                  <b>{t('Break the work into steps')}</b>
+                  {t('Subtasks make progress easier to see and check off.')}
+                </span>
+                <span className="wid-empty-guide__cta">{t('+ Add subtask')}</span>
+              </button>
+            )}
             {(subtaskStats.total > 0 || showAddSubtask) && (
             <div className="wid-panel__body">
               {subtaskStats.total > 0 && (
@@ -1931,6 +1923,17 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                   </div>
                 )
               })}
+
+              {(detail.blockers ?? []).length === 0 && !showCreateBlocker && !inPlanning && !roleAccess.isMonitoringOnly && (
+                <button className="wid-empty-guide wid-empty-guide--quiet" onClick={() => { setShowCreateBlocker(true); setBlError(null); void loadAssignUsers() }} type="button">
+                  <span className="wid-empty-guide__icon">{Icon.blocker}</span>
+                  <span className="wid-empty-guide__text">
+                    <b>{t('No blockers logged')}</b>
+                    {t('Log a blocker if something is holding this work back.')}
+                  </span>
+                  <span className="wid-empty-guide__cta">{t('+ Add blocker')}</span>
+                </button>
+              )}
             </div>
           </section>
           )}
@@ -1957,7 +1960,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
 
               <form className={`wid-composer${commentValue.trim().length > 0 ? ' is-dirty' : ''}`} onSubmit={(e) => void submitComment(e)}>
                 {currentUser && (
-                  <div className="wid-composer__author"><Avatar name={currentUser.name} /></div>
+                  <div className="wid-composer__author"><Avatar name={currentUser.name} avatarUrl={currentUser.avatarUrl} /></div>
                 )}
                 <div className="wid-composer__body">
                   {replyTargetId && (
@@ -2096,7 +2099,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                                 }}
                                 type="button"
                               >
-                                <Avatar name={u.name} />
+                                <Avatar name={u.name} avatarUrl={u.avatarUrl} />
                                 <div className="wid-mention-item__meta">
                                   <span className="wid-mention-item__name">{u.name}</span>
                                   {u.positionTitle && <span className="wid-mention-item__role">{u.positionTitle}</span>}
@@ -2138,7 +2141,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                 className="wid-info-footer__toggle"
                 onClick={() => {
                   togglePanel('infoFooter')
-                  if (collapsed.infoFooter) { loadOrgUnits(); void loadAssignUsers() }
+                  if (collapsed.infoFooter) { void loadAssignUsers() }
                 }}
                 type="button"
               >
@@ -2162,13 +2165,38 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
             {(mode === 'modal' || !collapsed.infoFooter) && (
               <div className="wid-info-footer__body">
 
+                {/* Program Induk block — dinaikkan ke atas rail (konteks paling
+                    berguna untuk pelaksana) per redesign Usulan A 2026-06-26 */}
+                {parentProgram && (
+                  <div className="wid-info-footer__block">
+                    <p className="wid-info-footer__block-title">{t('Parent Program')}</p>
+                    <button className="wid-parent-card" onClick={() => navigate(`/programs/${parentProgram.id}`)} type="button">
+                      <div className="wid-parent-card__head">
+                        <span className="wid-parent-card__code">{parentProgram.code}</span>
+                        <HealthPill status={parentProgram.healthStatus} />
+                      </div>
+                      <p className="wid-parent-card__name">{parentProgram.name}</p>
+                      <div className="wid-parent-card__progress">
+                        <div className="wid-parent-card__track">
+                          <div className="wid-parent-card__fill" style={{ width: `${parentProgram.progressPercent}%` }} />
+                        </div>
+                        <span className="wid-parent-card__pct">{parentProgram.progressPercent}%</span>
+                      </div>
+                      <div className="wid-parent-card__foot">
+                        <span>{t('Open program')}</span>
+                        {Icon.arrow}
+                      </div>
+                    </button>
+                  </div>
+                )}
+
                 {/* Tim block */}
                 <div className="wid-info-footer__block">
                   <p className="wid-info-footer__block-title">{t('Team')}</p>
 
                   <div className={`wid-team-row wid-team-row--executor${showAssigneeEdit ? ' is-editing' : ''}`}>
                     <span className="wid-sp-label">{t('Executor')}</span>
-                    {showAssigneeEdit && !roleAccess.isMonitoringOnly ? (
+                    {showAssigneeEdit && roleAccess.canAssignPic ? (
                       <div className="wid-team-row__edit">
                         <UserPicker
                           allowClear
@@ -2184,17 +2212,24 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                         <button className="wid-btn" onClick={() => setShowAssigneeEdit(false)} type="button">{t('Cancel')}</button>
                       </div>
                     ) : detail.assignee ? (
-                      <button
-                        className="wid-team-row__person"
-                        disabled={assignSaving || roleAccess.isMonitoringOnly}
-                        onClick={() => { if (!roleAccess.isMonitoringOnly) { setShowAssigneeEdit(true); void loadAssignUsers() } }}
-                        type="button"
-                      >
-                        <Avatar name={detail.assignee.name} />
-                        <span className="wid-team-row__name">{detail.assignee.name}</span>
-                        {!roleAccess.isMonitoringOnly && <svg aria-hidden="true" fill="none" height="9" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" viewBox="0 0 10 6" width="9"><path d="M1 1l4 4 4-4"/></svg>}
-                      </button>
-                    ) : !roleAccess.isMonitoringOnly ? (
+                      roleAccess.canAssignPic ? (
+                        <button
+                          className="wid-team-row__person"
+                          disabled={assignSaving}
+                          onClick={() => { setShowAssigneeEdit(true); void loadAssignUsers() }}
+                          type="button"
+                        >
+                          <Avatar name={detail.assignee.name} avatarUrl={detail.assignee.avatarUrl} />
+                          <span className="wid-team-row__name">{detail.assignee.name}</span>
+                          <svg aria-hidden="true" fill="none" height="9" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" viewBox="0 0 10 6" width="9"><path d="M1 1l4 4 4-4"/></svg>
+                        </button>
+                      ) : (
+                        <span className="wid-team-row__person wid-team-row__person--readonly">
+                          <Avatar name={detail.assignee.name} avatarUrl={detail.assignee.avatarUrl} />
+                          <span className="wid-team-row__name">{detail.assignee.name}</span>
+                        </span>
+                      )
+                    ) : roleAccess.canAssignPic ? (
                       <button
                         className="wid-flat-add"
                         disabled={assignSaving}
@@ -2206,135 +2241,75 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                     ) : <span className="wid-sp-val">—</span>}
                   </div>
 
-                  {!roleAccess.isMonitoringOnly && (
-                    <>
-                      <div className="wid-team-row">
-                        <span className="wid-sp-label">{t('PIC')}</span>
-                        <div className="wid-team-row__chips">
-                          {(() => {
-                            // Fallback ke assignee: task buatan New Task modal mengisi
-                            // assignedTo tapi belum tentu punya row EntityPic (picPersonIds).
-                            const currentId = (detail?.picPersonIds ?? [])[0] ?? detail?.assignee?.id
-                            if (currentId) {
-                              const person = assignUsers.find((u) => u.id === currentId)
-                              const label = person ? person.name : (detail?.assignee?.name ?? `#${currentId}`)
-                              return (
-                                <span className="wid-pic-chip">
-                                  {label}
-                                  <button type="button" className="wid-pic-chip__remove"
-                                    disabled={picSaving} onClick={() => savePicPersons([])}
-                                    aria-label={t('Remove PIC {{label}}', { label })}>×</button>
-                                </span>
-                              )
-                            }
-                            return null
-                          })()}
-                          {!showPicAdder ? (
-                            <button
-                              type="button"
-                              className="wid-pic-adder-toggle"
-                              onClick={() => { setShowPicAdder(true); void loadAssignUsers() }}
-                              disabled={picSaving}
-                            >
-                              {((detail?.picPersonIds ?? [])[0] ?? detail?.assignee?.id) ? t('Change') : t('+ Select')}
-                            </button>
-                          ) : (
-                          <div className="wid-pic-adder">
-                            <input
-                              autoFocus
-                              className="wid-pic-search"
-                              disabled={picSaving}
-                              onBlur={() => { if (picPersonSearch.length === 0) setShowPicAdder(false) }}
-                              onChange={(e) => { setPicPersonSearch(e.target.value); void loadAssignUsers() }}
-                              onKeyDown={(e) => { if (e.key === 'Escape') { setPicPersonSearch(''); setShowPicAdder(false) } }}
-                              placeholder={t('Search name…')}
-                              value={picPersonSearch}
-                            />
-                            {picPersonSearch.length > 0 && (() => {
-                              const currentId = (detail?.picPersonIds ?? [])[0] ?? detail?.assignee?.id
-                              const filtered = assignUsers.filter(
-                                (u) => u.id !== currentId &&
-                                  u.name.toLowerCase().includes(picPersonSearch.toLowerCase())
-                              ).slice(0, 6)
-                              return filtered.length > 0 ? (
-                                <div className="wid-pic-dropdown">
-                                  {filtered.map((u) => (
-                                    <button key={u.id} type="button" className="wid-pic-dropdown__item"
-                                      onMouseDown={() => { void savePicPersons([u.id]); setPicPersonSearch('') }}>
-                                      <span className="wid-pic-dropdown__name">{u.name}</span>
-                                      {u.positionTitle && <span className="wid-pic-dropdown__role">{u.positionTitle}</span>}
-                                    </button>
-                                  ))}
-                                </div>
-                              ) : null
-                            })()}
-                          </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="wid-team-row">
-                        <span className="wid-sp-label">{t('Unit')}</span>
-                        <div className="wid-team-row__chips">
-                          {(detail?.picUnitIds ?? []).map((uid) => {
-                            const unit = orgUnits.find((u) => u.id === uid)
-                            const label = unit ? unit.code : `#${uid}`
-                            return (
-                              <span key={uid} className="wid-pic-chip">
-                                {label}
+                  {/* PIC row — penunjukan penanggung jawab. Read-only untuk pelaksana;
+                      hanya Kadiv/Kasubdiv(+admin) yang boleh mengganti (canAssignPic),
+                      cermin assertCanAssignPic di BE. Field "Unit" dihapus (tak perlu). */}
+                  <div className="wid-team-row">
+                    <span className="wid-sp-label">{t('PIC')}</span>
+                    <div className="wid-team-row__chips">
+                      {(() => {
+                        // Fallback ke assignee: task buatan New Task modal mengisi
+                        // assignedTo tapi belum tentu punya row EntityPic (picPersonIds).
+                        const currentId = (detail?.picPersonIds ?? [])[0] ?? detail?.assignee?.id
+                        if (currentId) {
+                          const person = assignUsers.find((u) => u.id === currentId)
+                          const label = person ? person.name : (detail?.assignee?.name ?? `#${currentId}`)
+                          return (
+                            <span className="wid-pic-chip">
+                              {label}
+                              {roleAccess.canAssignPic && (
                                 <button type="button" className="wid-pic-chip__remove"
-                                  disabled={picSaving}
-                                  onClick={() => savePicUnits((detail?.picUnitIds ?? []).filter((x) => x !== uid))}
-                                  aria-label={t('Remove {{label}}', { label })}>×</button>
-                              </span>
-                            )
-                          })}
-                          {!showUnitAdder ? (
-                            <button
-                              type="button"
-                              className="wid-pic-adder-toggle"
-                              onClick={() => { setShowUnitAdder(true); loadOrgUnits() }}
-                              disabled={picSaving}
-                            >
-                              {t('+ Add unit')}
-                            </button>
-                          ) : (
-                          <div className="wid-pic-adder">
-                            <input
-                              autoFocus
-                              className="wid-pic-search"
-                              disabled={picSaving}
-                              onBlur={() => { if (picUnitSearch.length === 0) setShowUnitAdder(false) }}
-                              onChange={(e) => { setPicUnitSearch(e.target.value); loadOrgUnits() }}
-                              onKeyDown={(e) => { if (e.key === 'Escape') { setPicUnitSearch(''); setShowUnitAdder(false) } }}
-                              placeholder={t('Search unit code/name…')}
-                              value={picUnitSearch}
-                            />
-                            {picUnitSearch.length > 0 && (() => {
-                              const current = new Set(detail?.picUnitIds ?? [])
-                              const filtered = orgUnits.filter(
-                                (u) => !current.has(u.id) &&
-                                  (u.code.toLowerCase().includes(picUnitSearch.toLowerCase()) ||
-                                   u.name.toLowerCase().includes(picUnitSearch.toLowerCase()))
-                              ).slice(0, 6)
-                              return filtered.length > 0 ? (
-                                <div className="wid-pic-dropdown">
-                                  {filtered.map((u) => (
-                                    <button key={u.id} type="button" className="wid-pic-dropdown__item"
-                                      onMouseDown={() => { savePicUnits([...(detail?.picUnitIds ?? []), u.id]); setPicUnitSearch('') }}>
-                                      <span className="code-badge">{u.code}</span>
-                                      <span className="wid-pic-dropdown__name">{u.name}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                              ) : null
-                            })()}
-                          </div>
-                          )}
-                        </div>
+                                  disabled={picSaving} onClick={() => savePicPersons([])}
+                                  aria-label={t('Remove PIC {{label}}', { label })}>×</button>
+                              )}
+                            </span>
+                          )
+                        }
+                        return roleAccess.canAssignPic ? null : <span className="wid-sp-val">—</span>
+                      })()}
+                      {roleAccess.canAssignPic && (!showPicAdder ? (
+                        <button
+                          type="button"
+                          className="wid-pic-adder-toggle"
+                          onClick={() => { setShowPicAdder(true); void loadAssignUsers() }}
+                          disabled={picSaving}
+                        >
+                          {((detail?.picPersonIds ?? [])[0] ?? detail?.assignee?.id) ? t('Change') : t('+ Select')}
+                        </button>
+                      ) : (
+                      <div className="wid-pic-adder">
+                        <input
+                          autoFocus
+                          className="wid-pic-search"
+                          disabled={picSaving}
+                          onBlur={() => { if (picPersonSearch.length === 0) setShowPicAdder(false) }}
+                          onChange={(e) => { setPicPersonSearch(e.target.value); void loadAssignUsers() }}
+                          onKeyDown={(e) => { if (e.key === 'Escape') { setPicPersonSearch(''); setShowPicAdder(false) } }}
+                          placeholder={t('Search name…')}
+                          value={picPersonSearch}
+                        />
+                        {picPersonSearch.length > 0 && (() => {
+                          const currentId = (detail?.picPersonIds ?? [])[0] ?? detail?.assignee?.id
+                          const filtered = assignUsers.filter(
+                            (u) => u.id !== currentId &&
+                              u.name.toLowerCase().includes(picPersonSearch.toLowerCase())
+                          ).slice(0, 6)
+                          return filtered.length > 0 ? (
+                            <div className="wid-pic-dropdown">
+                              {filtered.map((u) => (
+                                <button key={u.id} type="button" className="wid-pic-dropdown__item"
+                                  onMouseDown={() => { void savePicPersons([u.id]); setPicPersonSearch('') }}>
+                                  <span className="wid-pic-dropdown__name">{u.name}</span>
+                                  {u.positionTitle && <span className="wid-pic-dropdown__role">{u.positionTitle}</span>}
+                                </button>
+                              ))}
+                            </div>
+                          ) : null
+                        })()}
                       </div>
-                    </>
-                  )}
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Detail metadata block */}
@@ -2372,7 +2347,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                       )}
                     </div>
                     {dueDate && (
-                      <div className="wid-sp-grid__cell">
+                      <div className="wid-sp-grid__cell wid-sp-grid__cell--deadline">
                         <span className="wid-sp-label">{t('Deadline')}</span>
                         <span className={`wid-sp-val${isOverdue ? ' is-overdue' : isDueSoon ? ' is-soon' : ''}`}>
                           {dueDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -2400,8 +2375,27 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                   </div>
                 </div>
 
+                {/* Schedule collapse toggle (modal only) — lipat Weekly Plan +
+                    Realization jadi satu ringkasan agar rail tidak padat. */}
+                {mode === 'modal' && !roleAccess.isMonitoringOnly && (
+                  <div className="wid-info-footer__block wid-rail-sched">
+                    <button
+                      className="wid-rail-sched__toggle"
+                      onClick={() => setScheduleOpen(o => !o)}
+                      aria-expanded={scheduleOpen || renEditing || realEditing}
+                      type="button"
+                    >
+                      <span className="wid-info-footer__block-title">{t('Schedule')}</span>
+                      <span className="wid-rail-sched__summary">
+                        {t('{{count}} weeks planned', { count: (detail?.plannedWeeks ?? []).length })}
+                        <span className="wid-rail-sched__chev" aria-hidden="true">{(scheduleOpen || renEditing || realEditing) ? '▾' : '▸'}</span>
+                      </span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Ren block */}
-                {!roleAccess.isMonitoringOnly && (
+                {(mode !== 'modal' || scheduleOpen || renEditing || realEditing) && !roleAccess.isMonitoringOnly && (
                   <div className="wid-info-footer__block wid-info-footer__block--full">
                     <p className="wid-info-footer__block-title">{t('Weekly Plan')}</p>
                     {!renEditing ? (
@@ -2450,7 +2444,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
 
                 {/* Weekly Realization block — input realisasi di sisi Workboard;
                     tab Timeline read-only menampilkannya (catatan 24 Jun opsi B). */}
-                {canReportProgress && !inPlanning && (
+                {(mode !== 'modal' || scheduleOpen || renEditing || realEditing) && canReportProgress && !inPlanning && (
                   <div className="wid-info-footer__block wid-info-footer__block--full">
                     <p className="wid-info-footer__block-title">{t('Weekly Realization')}</p>
                     {!realEditing ? (
@@ -2463,7 +2457,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                           </div>
                         ) : (
                           <p className="wid-ren-auto-note">
-                            {t('Auto — derived from progress ({{percent}}%). Shown read-only on the program Timeline.', { percent: detail?.percentComplete ?? 0 })}
+                            {t('Tracked automatically from progress ({{percent}}%).', { percent: detail?.percentComplete ?? 0 })}
                           </p>
                         )}
                         {realCandidateWeeks.length > 0 && (
@@ -2507,30 +2501,6 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                   </div>
                 )}
 
-                {/* Program Induk block */}
-                {parentProgram && (
-                  <div className="wid-info-footer__block">
-                    <p className="wid-info-footer__block-title">{t('Parent Program')}</p>
-                    <button className="wid-parent-card" onClick={() => navigate(`/programs/${parentProgram.id}`)} type="button">
-                      <div className="wid-parent-card__head">
-                        <span className="wid-parent-card__code">{parentProgram.code}</span>
-                        <HealthPill status={parentProgram.healthStatus} />
-                      </div>
-                      <p className="wid-parent-card__name">{parentProgram.name}</p>
-                      <div className="wid-parent-card__progress">
-                        <div className="wid-parent-card__track">
-                          <div className="wid-parent-card__fill" style={{ width: `${parentProgram.progressPercent}%` }} />
-                        </div>
-                        <span className="wid-parent-card__pct">{parentProgram.progressPercent}%</span>
-                      </div>
-                      <div className="wid-parent-card__foot">
-                        <span>{t('Open program')}</span>
-                        {Icon.arrow}
-                      </div>
-                    </button>
-                  </div>
-                )}
-
                 {/* Recent activity block */}
                 {recentActivity.length > 0 && (
                   <div className="wid-info-footer__block wid-info-footer__block--full">
@@ -2539,7 +2509,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                       {recentActivity.map(c => (
                         <div className="wid-activity__row" key={c.id}>
                           <div className="wid-activity__avatar">
-                            {c.authorName ? <Avatar name={c.authorName} /> : <div className="wid-assignee-avatar-empty" />}
+                            {c.authorName ? <Avatar name={c.authorName} avatarUrl={c.authorAvatarUrl} /> : <div className="wid-assignee-avatar-empty" />}
                           </div>
                           <div className="wid-activity__body">
                             <div className="wid-activity__top">

@@ -31,4 +31,16 @@ class Position extends Model
     {
         return $this->hasMany(User::class, 'positionId');
     }
+
+    /** Jabatan atasan (struktural). Sumber kebenaran rantai org. */
+    public function reportsTo()
+    {
+        return $this->belongsTo(self::class, 'reportsToPositionId');
+    }
+
+    /** Jabatan-jabatan yang melapor langsung ke jabatan ini. */
+    public function reports()
+    {
+        return $this->hasMany(self::class, 'reportsToPositionId');
+    }
 }

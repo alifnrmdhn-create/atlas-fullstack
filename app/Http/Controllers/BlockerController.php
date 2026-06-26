@@ -26,7 +26,7 @@ class BlockerController extends Controller
                 'task.workstream:id,name,programId',
                 'task.workstream.program:id,code,name',
                 'creator:id,name',
-                'assignee:id,name',
+                'assignee:id,name,avatarUrl',
             ])
             ->orderByRaw("CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END")
             ->orderBy('createdAt');

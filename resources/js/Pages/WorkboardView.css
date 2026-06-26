@@ -1361,6 +1361,138 @@
   border-left: 1px solid color-mix(in srgb, var(--panel-border, #e5e7eb) 100%, transparent);
 }
 
+/* ── "Report progress" card (Usulan A, 2026-06-26) ─────────────────────────
+   Mengubah metastrip tipis jadi kartu aksi-utama yang menonjol — tujuan modal
+   ini = pelaksana melapor progres. Tinted brand halus + label, slider lebih
+   tegas. Scoped ke modal; mode page memakai metastrip tipis seperti semula. */
+.wid-page--modal .wid-metastrip--report {
+  height: auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 4px 24px 0;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--green, #2E8B4E) 26%, var(--panel-border, #e5e7eb));
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--green, #2E8B4E) 7%, var(--panel)) 0%, var(--panel) 64%);
+  border-bottom: 1px solid color-mix(in srgb, var(--green, #2E8B4E) 26%, var(--panel-border, #e5e7eb));
+}
+.wid-page--modal .wid-metastrip--report .wid-ms-head {
+  flex-basis: 100%;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--green, #2E8B4E);
+  margin-bottom: 2px;
+}
+/* Slider gets the room — it's the primary input */
+.wid-page--modal .wid-metastrip--report .wid-ms-field--progress {
+  flex: 1;
+  min-width: 200px;
+  max-width: none;
+}
+.wid-page--modal .wid-metastrip--report .wid-ms-pct {
+  font-size: 15px;
+  font-weight: 700;
+}
+.wid-page--modal .wid-metastrip--report .wid-ms-actions {
+  margin-left: auto;
+}
+/* Hide the head label when not in modal (page mode keeps thin strip) */
+.wid-page:not(.wid-page--modal) .wid-ms-head { display: none; }
+
+/* Deadline sudah tampil di hero (chip due) → buang duplikatnya di rail Detail
+   saat modal. Page mode tetap menampilkan (tak ada hero due chip sebesar itu). */
+.wid-page--modal .wid-sp-grid__cell--deadline { display: none; }
+
+/* Schedule toggle — ringkasan terlipat (Weekly Plan + Realization) di rail modal */
+.wid-page--modal .wid-rail-sched__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.wid-page--modal .wid-rail-sched__toggle .wid-info-footer__block-title {
+  margin: 0;
+}
+.wid-page--modal .wid-rail-sched__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--text-muted, #64748b);
+}
+.wid-page--modal .wid-rail-sched__chev {
+  font-size: 10px;
+  opacity: 0.7;
+}
+.wid-page--modal .wid-rail-sched__toggle:hover .wid-rail-sched__summary {
+  color: var(--text, #0f172a);
+}
+
+/* ── Guided empty states (Subtasks / Blockers) ─────────────────────────────
+   Ganti tombol "+Add" telanjang dengan ajakan singkat berkonteks → ruang mati
+   jadi afordans yang jelas. Seluruh baris klik = buka form tambah. */
+.wid-empty-guide {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  margin: 2px 0 6px;
+  border: 1px dashed color-mix(in srgb, var(--text-muted, #64748b) 32%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text-muted, #64748b) 4%, transparent);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+.wid-empty-guide:hover {
+  border-color: color-mix(in srgb, var(--green, #2E8B4E) 45%, transparent);
+  background: color-mix(in srgb, var(--green, #2E8B4E) 6%, transparent);
+}
+.wid-empty-guide__icon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text-muted, #64748b) 10%, transparent);
+  color: var(--text-muted, #64748b);
+}
+.wid-empty-guide--quiet .wid-empty-guide__icon { color: var(--text-muted, #64748b); }
+.wid-empty-guide__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-muted, #64748b);
+  min-width: 0;
+}
+.wid-empty-guide__text b {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #0f172a);
+}
+.wid-empty-guide__cta {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--green, #2E8B4E);
+  white-space: nowrap;
+}
+
 /* ════════════════════════════════════════════════════════════════════
    PHONE DENSITY PASS (≤640) — 2026-06-03
    Di phone lane kanban menumpuk vertikal. Floor min-height 200px × 5 lane =

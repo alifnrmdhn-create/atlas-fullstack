@@ -8,6 +8,7 @@ import { MeetingDetailPanel } from './MeetingDetailPanel'
 import { useEscKey } from '../hooks/useEscKey'
 import { formatRoleLabel } from '../lib/roleLabel'
 import { UserPicker } from '../components/UserPicker'
+import { looksLikeAvatarUrl } from '../components/ui'
 import { TOPBAR_ACTION_EVENT } from '../lib/topbar-config'
 import { PageHeader } from '../design-system'
 import { useTranslation } from 'react-i18next'
@@ -164,6 +165,7 @@ type PersonView = {
   name: string
   roleType: string
   positionTitle?: string
+  avatarUrl?: string | null
   unit?: { code: string; name: string }
 }
 
@@ -172,6 +174,7 @@ type UserOption = {
   name: string
   roleType: string
   positionTitle?: string
+  avatarUrl?: string | null
   unit?: { id: number; code: string; name: string }
 }
 
@@ -297,8 +300,18 @@ function rsvpSymbol(status: RsvpStatus) {
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
-function Avatar({ name, size = 28 }: { name: string; size?: number }) {
+function Avatar({ name, size = 28, avatarUrl }: { name: string; size?: number; avatarUrl?: string | null }) {
   const tone = AVATAR_TONES[nameToColorIndex(name)]
+  if (looksLikeAvatarUrl(avatarUrl)) {
+    return (
+      <img
+        className="schedule-avatar"
+        src={avatarUrl}
+        alt={name}
+        style={{ width: size, height: size, objectFit: 'cover' }}
+      />
+    )
+  }
   return (
     <div
       className="schedule-avatar"
@@ -1106,9 +1119,13 @@ export function ScheduleView() {
           {personView ? (
             /* Selected person header */
             <div className="person-view-header">
-              <div className="person-view-header__avatar">
-                {personView.name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()}
-              </div>
+              {looksLikeAvatarUrl(personView.avatarUrl) ? (
+                <img className="person-view-header__avatar" src={personView.avatarUrl} alt={personView.name} style={{ objectFit: 'cover' }} />
+              ) : (
+                <div className="person-view-header__avatar">
+                  {personView.name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()}
+                </div>
+              )}
               <div className="person-view-header__info">
                 <span className="person-view-header__name">{personView.name}</span>
                 <span className="person-view-header__meta">
@@ -1154,9 +1171,13 @@ export function ScheduleView() {
                         setPersonSearch('')
                       }}
                     >
-                      <div className="person-view-item__avatar">
-                        {u.name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()}
-                      </div>
+                      {looksLikeAvatarUrl(u.avatarUrl) ? (
+                        <img className="person-view-item__avatar" src={u.avatarUrl} alt={u.name} style={{ objectFit: 'cover' }} />
+                      ) : (
+                        <div className="person-view-item__avatar">
+                          {u.name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()}
+                        </div>
+                      )}
                       <div className="person-view-item__info">
                         <span className="person-view-item__name">{u.name}</span>
                         <span className="person-view-item__meta">
@@ -1750,7 +1771,7 @@ export function ScheduleView() {
                                       className="schedule-card__avatar-wrap"
                                       title={a.user?.name ?? `User ${a.userId}`}
                                     >
-                                      <Avatar name={a.user?.name ?? '?'} size={22} />
+                                      <Avatar name={a.user?.name ?? '?'} size={22} avatarUrl={a.user?.avatarUrl} />
                                     </div>
                                   ))}
                                   {meeting.attendees.length > 5 && (
@@ -2201,13 +2222,13 @@ export function ScheduleView() {
                 </div>
                 <div className="schedule-attendee-list">
                   <div className="schedule-attendee-chip schedule-attendee-chip--organizer">
-                    <Avatar name={currentUser?.name ?? ''} size={18} />
+                    <Avatar name={currentUser?.name ?? ''} size={18} avatarUrl={currentUser?.avatarUrl} />
                     <span>{currentUser?.name}</span>
                     <span className="schedule-attendee-chip__meta">{t('Organizer')}</span>
                   </div>
                   {selectedAttendees.map(a => (
                     <div key={a.user.id} className="schedule-attendee-chip">
-                      <Avatar name={a.user.name} size={18} />
+                      <Avatar name={a.user.name} size={18} avatarUrl={a.user.avatarUrl} />
                       <span>{a.user.name}</span>
                       <button
                         type="button"
@@ -2243,7 +2264,7 @@ export function ScheduleView() {
                           onClick={() => addAttendee(u)}
                         >
                           <div className="schedule-user-option">
-                            <Avatar name={u.name} size={22} />
+                            <Avatar name={u.name} size={22} avatarUrl={u.avatarUrl} />
                             <div className="schedule-user-option__body">
                               <span className="text-sm text-strong">{u.name}</span>
                               <span className="text-xs text-muted">{u.positionTitle ?? formatRoleLabel(u.roleType)}{u.unit ? ` · ${u.unit.code}` : ''}</span>

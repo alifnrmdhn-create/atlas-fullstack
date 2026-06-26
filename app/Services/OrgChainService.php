@@ -33,7 +33,7 @@ class OrgChainService
         }
 
         $manager = User::query()
-            ->select('id', 'name', 'roleType', 'positionTitle', 'directorateId', 'unitId', 'managerUserId', 'isActive')
+            ->select('id', 'name', 'roleType', 'positionTitle', 'directorateId', 'unitId', 'managerUserId', 'isActive', 'avatarUrl')
             ->find($user->managerUserId);
 
         if (!$manager) return null;
@@ -137,7 +137,7 @@ class OrgChainService
         return User::query()
             ->where('managerUserId', $user->id)
             ->where('isActive', true)
-            ->get(['id', 'name', 'roleType', 'positionTitle', 'unitId', 'directorateId']);
+            ->get(['id', 'name', 'roleType', 'positionTitle', 'unitId', 'directorateId', 'avatarUrl']);
     }
 
     /**

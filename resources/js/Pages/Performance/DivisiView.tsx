@@ -266,7 +266,7 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
                 <>
                   <DeviationBar pct={p.pct} />
                   <span className="perf-compare-card__kpi-skor" data-tone={scoreTone(p.pct)}>
-                    {formatPercent(p.pct, 1)}
+                    {formatPercent(p.pct)}
                   </span>
                 </>
               )}
@@ -375,7 +375,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                     {g.label === 'Internal Business Process' ? 'IBP' : g.label}
                   </span>
                   <Meter value={Math.min(g.pct, 110)} max={110} target={100} tone={scoreTone(g.pct)} height={7} className="perf-hero__divbar" />
-                  <span className="perf-hero__divval" data-tone={scoreTone(g.pct)}>{formatNumber(g.pct, 1)}</span>
+                  <span className="perf-hero__divval" data-tone={scoreTone(g.pct)}>{formatNumber(g.pct)}</span>
                 </div>
               ))}
             </div>
@@ -385,7 +385,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
               tone={tone}
               size={118}
               thickness={12}
-              valueText={formatNumber(divisi.nilai, 1)}
+              valueText={formatNumber(divisi.nilai)}
               unit="%"
               label={t('Score · {{period}}', { period: periodeLabel })}
             />

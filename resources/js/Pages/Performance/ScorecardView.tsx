@@ -138,7 +138,7 @@ export default function ScorecardView() {
               {soloDir ? null : (
                 <>
                   <span className="perf__header-stat">
-                    <strong data-tone={scoreTone(avgScore)} data-num>{formatPercent(avgScore, 1)}</strong>
+                    <strong data-tone={scoreTone(avgScore)} data-num>{formatPercent(avgScore)}</strong>
                     <span>{t('average')}</span>
                   </span>
                   <span className="perf__header-divider" aria-hidden />
@@ -186,11 +186,11 @@ export default function ScorecardView() {
                 <h2 className="perf-hero__name">{soloDir.nama}</h2>
                 <div className="perf-hero__numrow">
                   <span className="perf-hero__num" data-tone={scoreTone(soloDir.nilai)}>
-                    {formatNumber(soloDir.nilai, 1)}<span className="perf-hero__num-unit">%</span>
+                    {formatNumber(soloDir.nilai)}<span className="perf-hero__num-unit">%</span>
                   </span>
                   {soloDelta && (
                     <span className="perf__header-delta" data-tone={soloDelta.value >= 0 ? 'green' : 'red'}>
-                      {soloDelta.value >= 0 ? '▲' : '▼'} {formatPercent(Math.abs(soloDelta.value), 1)} {t('vs {{period}}', { period: soloDelta.vs })}
+                      {soloDelta.value >= 0 ? '▲' : '▼'} {formatPercent(Math.abs(soloDelta.value))} {t('vs {{period}}', { period: soloDelta.vs })}
                     </span>
                   )}
                 </div>
@@ -207,7 +207,7 @@ export default function ScorecardView() {
                   >
                     <span className="perf-hero__divcode">{d.kode.replace('-HLD', '')}</span>
                     <Meter value={Math.min(d.nilai, 110)} max={110} target={100} tone={scoreTone(d.nilai)} height={7} className="perf-hero__divbar" />
-                    <span className="perf-hero__divval" data-tone={scoreTone(d.nilai)}>{formatNumber(d.nilai, 1)}</span>
+                    <span className="perf-hero__divval" data-tone={scoreTone(d.nilai)}>{formatNumber(d.nilai)}</span>
                   </Link>
                 ))}
               </div>
@@ -437,7 +437,7 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
                 style={v == null ? undefined : ({ ['--i' as never]: cellIntensity(v) })}
                 role="cell"
               >
-                {v == null ? '—' : formatPercent(v, 1)}
+                {v == null ? '—' : formatPercent(v)}
               </span>
             )
           })}
@@ -454,7 +454,7 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
             style={{ ['--i' as never]: cellIntensity(r.nilai) }}
             role="cell"
           >
-            {formatPercent(r.nilai, 1)}
+            {formatPercent(r.nilai)}
           </span>
         ))}
       </div>

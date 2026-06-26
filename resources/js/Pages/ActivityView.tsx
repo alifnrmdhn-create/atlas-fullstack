@@ -37,6 +37,7 @@ type ActivityDetail = {
     userId: number
     name: string
     positionTitle: string | null
+    avatarUrl?: string | null
     unit: { id: number; name: string } | null
     directorate: { id: number; name: string } | null
   }
@@ -150,7 +151,7 @@ function DetailPanel({ userId, range }: { userId: number; range: RangeOption }) 
     <div className="activity-detail-panel">
       {/* Header */}
       <div className="activity-detail-header">
-        <Avatar name={detail.user.name} size={36} />
+        <Avatar name={detail.user.name} avatarUrl={detail.user.avatarUrl} size={36} />
         <div className="activity-detail-header__meta">
           <div className="activity-detail-header__name">{detail.user.name}</div>
           {detail.user.positionTitle && (
@@ -253,7 +254,7 @@ function LeaderRow({
       </span>
       <span className="activity-leader-row__avatar">
         <span className="activity-leader-row__avatar-wrap">
-          <Avatar name={user.name} size={28} />
+          <Avatar name={user.name} avatarUrl={user.avatarUrl} size={28} />
           {isOnline && <span className="activity-leader-row__online-dot" />}
         </span>
       </span>

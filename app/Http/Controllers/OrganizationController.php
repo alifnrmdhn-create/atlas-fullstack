@@ -7,6 +7,7 @@ use App\Models\Blocker;
 use App\Models\Directorate;
 use App\Models\KpiDefinition;
 use App\Models\KpiValue;
+use App\Services\OrgHierarchyService;
 use App\Services\OrgSummaryService;
 use App\Services\ProgramSnapshotService;
 use App\Models\OrganizationalUnit;
@@ -26,8 +27,10 @@ use Inertia\Response;
 
 class OrganizationController extends Controller
 {
-    public function __construct(private readonly OrgSummaryService $orgSummary)
-    {
+    public function __construct(
+        private readonly OrgSummaryService $orgSummary,
+        private readonly OrgHierarchyService $orgHierarchy,
+    ) {
     }
 
     // ── Pages ─────────────────────────────────────────────────────────────────
@@ -235,6 +238,7 @@ class OrganizationController extends Controller
         $positions = Position::with([
             'directorate:id,code,name',
             'division:id,code,name',
+            'reportsTo:id,code,name',
             'users' => fn ($q) => $q->whereRaw('"isActive" IS TRUE')->select('id','name','roleType','positionId'),
         ])->orderBy('seatOrder')->get()
             ->map(fn ($p) => [
@@ -242,6 +246,7 @@ class OrganizationController extends Controller
                 'title'         => $p->name,
                 'unit'          => $p->division,
                 'level'         => $p->levelCode ? (int) filter_var($p->levelCode, FILTER_SANITIZE_NUMBER_INT) : null,
+                'reportsTo'     => $p->reportsTo ? ['id' => $p->reportsTo->id, 'code' => $p->reportsTo->code, 'name' => $p->reportsTo->name] : null,
                 'currentHolder' => $p->users->first(),
             ])->values();
 
@@ -258,11 +263,16 @@ class OrganizationController extends Controller
             'roleType' => 'required|string',
             'directorateId' => 'nullable|integer',
             'divisionId' => 'nullable|integer',
-            'reportsToPositionId' => 'nullable|integer',
+            'reportsToPositionId' => 'nullable|integer|exists:Position,id',
             'seatOrder' => 'nullable|integer',
             'isActive' => 'boolean',
         ]);
         $position = Position::create($data);
+
+        // Atasan baru bisa mengubah rantai bawahan → recompute managerUserId.
+        if (! empty($data['reportsToPositionId'])) {
+            $this->orgHierarchy->recompute();
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $position], 201);
@@ -283,12 +293,25 @@ class OrganizationController extends Controller
             'roleType' => 'sometimes|string',
             'directorateId' => 'nullable|integer',
             'divisionId' => 'nullable|integer',
-            'reportsToPositionId' => 'nullable|integer',
+            'reportsToPositionId' => 'nullable|integer|exists:Position,id',
             'seatOrder' => 'nullable|integer',
             'isActive' => 'sometimes|boolean',
         ]);
         $position = Position::findOrFail($id);
+
+        $reportsToChanged = array_key_exists('reportsToPositionId', $data)
+            && (int) ($data['reportsToPositionId'] ?? 0) !== (int) ($position->reportsToPositionId ?? 0);
+
+        if ($reportsToChanged) {
+            // Cegah lingkar (A→B→A) sebelum simpan.
+            $this->orgHierarchy->assertNoCycle($position->id, $data['reportsToPositionId'] ?: null);
+        }
+
         $position->update($data);
+
+        if ($reportsToChanged) {
+            $this->orgHierarchy->recompute();
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $position->fresh()]);
@@ -300,9 +323,16 @@ class OrganizationController extends Controller
     public function destroyPosition(Request $request, int $id): JsonResponse|RedirectResponse
     {
         RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
+        $position = Position::findOrFail($id);
         // Unassign users from this position first
         User::where('positionId', $id)->update(['positionId' => null]);
-        Position::findOrFail($id)->delete();
+        // Reparent anak ke kakek (atasan posisi yang dihapus) agar rantai tetap
+        // utuh dan pointer tak menggantung — bukan di-null-kan.
+        Position::where('reportsToPositionId', $id)
+            ->update(['reportsToPositionId' => $position->reportsToPositionId]);
+        $position->delete();
+
+        $this->orgHierarchy->recompute();
 
         if ($request->expectsJson()) {
             return response()->json(['ok' => true]);
@@ -341,6 +371,9 @@ class OrganizationController extends Controller
                 'createdBy' => $request->user()->id,
             ]);
         }
+
+        // Holder berubah → atasan holder ini + atasan semua bawahannya ikut bergeser.
+        $this->orgHierarchy->recompute();
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $position->fresh(['users' => fn ($q) => $q->whereRaw('"isActive" IS TRUE')])]);

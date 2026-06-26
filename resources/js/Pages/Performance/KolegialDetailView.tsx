@@ -32,6 +32,8 @@ type Direktur = {
   nama: string
   jabatan: string
   slug: string
+  /** Skor total kanonik (DirektoratScorecard.nilai) — single source of truth, sama dgn halaman list. Null bila belum ada data periode ini. */
+  nilai: number | null
 }
 
 type PageProps = {
@@ -63,7 +65,10 @@ export default function KolegialDetailView() {
   const [attentionOnly, setAttentionOnly] = useState(false)
   const [lowestFirst, setLowestFirst] = useState(false)
 
-  const totalSkor = kpiGroups.reduce((sum, g) => sum + g.items.reduce((s, i) => s + i.skor, 0), 0)
+  // Skor total = nilai kanonik dari BE (DirektoratScorecard.nilai) supaya IDENTIK
+  // dengan halaman list. Fallback ke penjumlahan item HANYA bila data kanonik kosong.
+  const computedSkor = kpiGroups.reduce((sum, g) => sum + g.items.reduce((s, i) => s + i.skor, 0), 0)
+  const totalSkor = direktur.nilai ?? computedSkor
   const totalTone = scoreTone(totalSkor)
   const totalKpi = kpiGroups.reduce((n, g) => n + g.items.length, 0)
   const periodeLabel = formatPeriod(periode)
@@ -145,7 +150,7 @@ export default function KolegialDetailView() {
                     {g.perspektif === 'Internal Business Process' ? 'IBP' : g.perspektif}
                   </span>
                   <Meter value={Math.min(g.pct, 110)} max={110} target={100} tone={scoreTone(g.pct)} height={7} className="perf-hero__divbar" />
-                  <span className="perf-hero__divval" data-tone={scoreTone(g.pct)}>{formatNumber(g.pct, 1)}</span>
+                  <span className="perf-hero__divval" data-tone={scoreTone(g.pct)}>{formatNumber(g.pct)}</span>
                 </div>
               ))}
             </div>
@@ -155,7 +160,7 @@ export default function KolegialDetailView() {
               tone={totalTone}
               size={118}
               thickness={12}
-              valueText={formatNumber(totalSkor, 1)}
+              valueText={formatNumber(totalSkor)}
               unit="%"
               label={t('Total score')}
             />

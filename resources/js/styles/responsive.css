@@ -129,6 +129,17 @@
 .avatar[data-tone="pink"] { background: var(--pink-dim); color: var(--pink-ink); }
 .avatar[data-tone="orange"] { background: var(--orange-dim); color: var(--orange-ink); }
 
+/* Foto profil: avatar berbasis <img> (lihat komponen Avatar). object-fit cover
+   supaya foto non-persegi tetap terisi penuh dalam lingkaran; ring hairline agar
+   foto terang tetap terbaca di latar terang. Sizing (width/height) ikut .avatar
+   + inline style dari prop `size`, jadi semua call-site lama otomatis konsisten. */
+.avatar--photo {
+  object-fit: cover;
+  background: var(--surface-overlay-strong);
+  box-shadow: inset 0 0 0 1px var(--panel-border-soft);
+}
+.avatar--ring { box-shadow: 0 0 0 2px var(--panel), inset 0 0 0 1px var(--panel-border-soft); }
+
 /* PanelHeader component */
 .panel-header {
   padding: 14px 18px 12px;

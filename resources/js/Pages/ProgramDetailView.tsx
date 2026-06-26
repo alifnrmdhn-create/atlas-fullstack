@@ -26,6 +26,7 @@ import {
   SectionState,
   SkeletonBlock,
   SkeletonStack,
+  looksLikeAvatarUrl,
 } from '../components/ui'
 import type { ProgramDetail, ProgramKpiLink } from '../types'
 import { ExecutionTab } from '../components/ExecutionTab'
@@ -105,7 +106,7 @@ type TaskItem = {
   isBlocked?: boolean
   output?: string | null
   description?: string | null
-  picPersons?: Array<{ id: number; name: string }>
+  picPersons?: Array<{ id: number; name: string; avatarUrl?: string | null }>
 }
 
 type PhaseItem = {
@@ -129,7 +130,7 @@ type WorkstreamDetail = {
  * +N badge ringkas kalau ada multiple penanggung jawab. Vocab "Penanggung
  * jawab" konsisten dengan field di planning panel (bukan "PIC").
  */
-function TaskPicChip({ picPersons }: { picPersons?: Array<{ id: number; name: string }> }) {
+function TaskPicChip({ picPersons }: { picPersons?: Array<{ id: number; name: string; avatarUrl?: string | null }> }) {
   const { t } = useTranslation()
   const list = picPersons ?? []
   if (list.length === 0) {
@@ -151,7 +152,11 @@ function TaskPicChip({ picPersons }: { picPersons?: Array<{ id: number; name: st
       className="wi-row__pic"
       title={t('Person in charge: {{names}}', { names: list.map(p => p.name).join(', ') })}
     >
-      <span className="wi-row__pic-avatar" aria-hidden="true">{initials}</span>
+      {looksLikeAvatarUrl(primary.avatarUrl) ? (
+        <img className="wi-row__pic-avatar" src={primary.avatarUrl} alt="" aria-hidden="true" style={{ objectFit: 'cover' }} />
+      ) : (
+        <span className="wi-row__pic-avatar" aria-hidden="true">{initials}</span>
+      )}
       <span className="wi-row__pic-name">{primary.name}</span>
       {extra > 0 && <span className="wi-row__pic-extra">+{extra}</span>}
     </span>
@@ -1796,7 +1801,7 @@ export function ProgramDetailView() {
                     return (
                       <>
                         <div className="prog-hero__value">
-                          <Avatar name={owner.name} size={22} />
+                          <Avatar name={owner.name} avatarUrl={owner.avatarUrl} size={22} />
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {owner.name}
                           </span>

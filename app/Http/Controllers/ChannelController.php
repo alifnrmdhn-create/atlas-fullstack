@@ -61,6 +61,7 @@ class ChannelController extends Controller
                     'userId' => $member->userId,
                     'name' => $member->user?->name,
                     'roleType' => $member->user?->roleType,
+                    'avatarUrl' => $member->user?->avatarUrl,
                     'status' => null,
                     'lastViewedAt' => $member->lastViewedAt,
                     'isMuted' => $member->isMuted,

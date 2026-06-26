@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../hooks/useWorkspace'
-import { HealthPill, SectionState } from '../components/ui'
+import { HealthPill, SectionState, looksLikeAvatarUrl } from '../components/ui'
 import i18n from '../lib/i18n'
 
 type ReportTab = 'kpi' | 'leaderboard'
@@ -241,7 +241,9 @@ export function ReportsView() {
                       return (
                         <div className="leaderboard-row" key={entry.id}>
                           <span className="leaderboard-row__rank">{medal}</span>
-                          <div className="leaderboard-row__avatar">{entry.name[0]}</div>
+                          {looksLikeAvatarUrl(entry.avatarUrl)
+                            ? <img className="leaderboard-row__avatar" src={entry.avatarUrl} alt="" style={{ objectFit: 'cover' }} />
+                            : <div className="leaderboard-row__avatar">{entry.name[0]}</div>}
                           <div className="leaderboard-row__info">
                             <span className="leaderboard-row__name">{entry.name}</span>
                             <div className="leaderboard-row__bar">

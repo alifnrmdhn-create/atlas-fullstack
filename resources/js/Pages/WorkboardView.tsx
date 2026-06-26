@@ -8,6 +8,7 @@ import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import {
   HealthPill,
   SectionState,
+  looksLikeAvatarUrl,
 } from '../components/ui'
 import type { Task, Program } from '../types'
 import { api } from '../lib/api'
@@ -143,9 +144,11 @@ function CardFace({
         <span className="work-card__footer-meta">
           <span className="work-card__pct">{item.percentComplete}%</span>
           {assigneeName && (
-            <span className="work-card__avatar" title={assigneeName} aria-label={assigneeName}>
-              {assigneeInitials}
-            </span>
+            looksLikeAvatarUrl(item.assignee?.avatarUrl)
+              ? <img className="work-card__avatar" src={item.assignee.avatarUrl} alt={assigneeName} title={assigneeName} aria-label={assigneeName} style={{ objectFit: 'cover' }} />
+              : <span className="work-card__avatar" title={assigneeName} aria-label={assigneeName}>
+                  {assigneeInitials}
+                </span>
           )}
         </span>
       </div>
@@ -216,7 +219,9 @@ function ProgramTaskRow({
         <span className="wb-row__pct">{item.percentComplete}%</span>
       </div>
       {assigneeName && (
-        <span className="wb-row__avatar" title={assigneeName} aria-label={assigneeName}>{initials}</span>
+        looksLikeAvatarUrl(item.assignee?.avatarUrl)
+          ? <img className="wb-row__avatar" src={item.assignee.avatarUrl} alt={assigneeName} title={assigneeName} aria-label={assigneeName} style={{ objectFit: 'cover' }} />
+          : <span className="wb-row__avatar" title={assigneeName} aria-label={assigneeName}>{initials}</span>
       )}
     </button>
   )
@@ -988,7 +993,17 @@ export function WorkboardView() {
                 const reported = reportedThisSession[pid]
                 const done = items.filter(i => i.status === 'COMPLETED').length
                 const overdue = items.filter(taskIsOverdue).length
-                const collapsed = progCollapseOverride[pid] ?? defaultProgCollapsed(cond?.slug)
+                // Pelaksana (asisten/officer) lapor progres/eksekusi LANGSUNG dari
+                // card task di sini — bukan lewat masuk ke Programs. Auto-collapse
+                // program "On Track" (default manajer untuk triage lintas-program)
+                // menyembunyikan card task milik user → jalur lapornya buntu. Jadi:
+                // jangan collapse-by-default bila view "Tugas Saya" aktif atau bila
+                // program ini punya task aktif yang di-assign ke user.
+                const hasMyActiveTask = items.some(
+                  i => i.status !== 'COMPLETED' && i.assignee?.id === currentUser?.id,
+                )
+                const collapsed = progCollapseOverride[pid]
+                  ?? (effectiveMyItemsOnly || hasMyActiveTask ? false : defaultProgCollapsed(cond?.slug))
                 const doneExpanded = expandedDoneLanes.has(pid)
                 // Nama workstream cuma berguna bila program punya >1 workstream.
                 const multiWorkstream = new Set(items.map(i => i.workstream?.id).filter(Boolean)).size > 1

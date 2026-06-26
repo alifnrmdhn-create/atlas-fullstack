@@ -25,6 +25,7 @@ use App\Models\UserStatus;
 use App\Models\Workstream;
 use App\Services\BroadcastService;
 use App\Services\OrgChainService;
+use App\Services\OrgHierarchyService;
 use App\Services\ProgramHealthService;
 use App\Support\RolePolicy;
 use Illuminate\Support\Facades\Cache;
@@ -42,6 +43,7 @@ class WorkspaceController extends Controller
     public function __construct(
         private ProgramHealthService $healthService,
         private ScopeResolver $scopeResolver,
+        private OrgHierarchyService $orgHierarchy,
     ) {}
 
     public function workspaceOverview(Request $request): JsonResponse
@@ -135,8 +137,8 @@ class WorkspaceController extends Controller
                 'performance' => User::query()
                     ->where('isActive', true)
                     ->limit(10)
-                    ->get(['id', 'name'])
-                    ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'score' => null, 'status' => 'GREEN'])
+                    ->get(['id', 'name', 'avatarUrl'])
+                    ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'avatarUrl' => $u->avatarUrl, 'score' => null, 'status' => 'GREEN'])
                     ->values(),
                 // Sengaja kosong (audit 2026-06-10): dulu berisi 8 ChannelMessage
                 // terbaru GLOBAL tanpa cek keanggotaan — bocor konten DM/channel
@@ -605,6 +607,10 @@ class WorkspaceController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:120',
             'email' => 'required|email|max:160|unique:User,email,' . $request->user()->id,
+            // avatarUrl hanya boleh path hasil upload kita sendiri (/storage/...),
+            // bukan URL eksternal sembarang. `sometimes` → field hanya tersentuh
+            // bila dikirim (save nama/email saja tak menghapus foto). null = hapus foto.
+            'avatarUrl' => ['sometimes', 'nullable', 'string', 'max:2048', 'regex:#^/storage/#'],
         ]);
 
         $request->user()->update($data);
@@ -709,6 +715,8 @@ class WorkspaceController extends Controller
                 'mutationType' => 'initial_assignment',
                 'createdBy' => $request->user()?->id,
             ]);
+            // Atasan diturunkan dari rantai jabatan (Position.reportsToPositionId).
+            $this->orgHierarchy->recompute();
         }
 
         return response()->json(['data' => $user->load(['unit', 'directorate', 'position'])], 201);
@@ -782,6 +790,10 @@ class WorkspaceController extends Controller
             ]);
 
             $this->scopeResolver->invalidate($user->id);
+
+            // Jabatan baru → atasan (managerUserId) user ini + bawahan posisi lama/baru
+            // diturunkan ulang dari rantai jabatan.
+            $this->orgHierarchy->recompute();
         }
 
         return response()->json(['data' => $user->fresh()->load(['unit', 'directorate', 'position'])]);

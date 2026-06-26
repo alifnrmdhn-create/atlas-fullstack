@@ -26,6 +26,7 @@ import {
   SkeletonStack,
   formatDate,
   formatRelativeTime,
+  looksLikeAvatarUrl,
   resolveEmoji,
 } from '../components/ui'
 
@@ -493,8 +494,8 @@ function getChannelPreview(
   }
 }
 
-type UserOption = { id: number; name: string; roleType: string }
-type DMPartner = { id: number; name: string; roleType: string; status?: string }
+type UserOption = { id: number; name: string; roleType: string; avatarUrl?: string | null }
+type DMPartner = { id: number; name: string; roleType: string; status?: string; avatarUrl?: string | null }
 export type ChannelAttachment = { url: string; name: string; type: string; size?: number }
 
 // Parse "dm-{a}-{b}" channel name → returns the partner ID (the one that's not currentUserId)
@@ -964,10 +965,10 @@ export function ChannelsView({
   const filteredMentionMembers = useMemo(() => {
     if (!mentionState.active) return []
     const q = mentionState.query.toLowerCase()
-    const candidates = new Map<number, { userId: number; name: string; roleType: string }>()
+    const candidates = new Map<number, { userId: number; name: string; roleType: string; avatarUrl?: string | null }>()
     channelMembers.forEach((m) => candidates.set(m.userId, m))
     workspaceUsers.forEach((u) => {
-      if (!candidates.has(u.id)) candidates.set(u.id, { userId: u.id, name: u.name, roleType: u.roleType })
+      if (!candidates.has(u.id)) candidates.set(u.id, { userId: u.id, name: u.name, roleType: u.roleType, avatarUrl: u.avatarUrl })
     })
     return Array.from(candidates.values())
       .filter((m) => m.name.toLowerCase().includes(q) || m.roleType.toLowerCase().includes(q))
@@ -1396,12 +1397,12 @@ export function ChannelsView({
 
   const switcherItems = useMemo(() => {
     const q = switcherQuery.trim().toLowerCase()
-    const items: Array<{ channel: ChannelSummary; displayName: string; kind: 'channel' | 'dm' }> = []
+    const items: Array<{ channel: ChannelSummary; displayName: string; kind: 'channel' | 'dm'; avatarUrl?: string | null }> = []
     for (const c of channels) {
       const partnerId = parseDmPartnerId(c.name, currentUserId)
       if (partnerId != null) {
         const partner = userLookup.get(partnerId)
-        items.push({ channel: c, displayName: partner?.name ?? c.name, kind: 'dm' })
+        items.push({ channel: c, displayName: partner?.name ?? c.name, kind: 'dm', avatarUrl: partner?.avatarUrl })
       } else {
         items.push({ channel: c, displayName: c.name, kind: 'channel' })
       }
@@ -1531,7 +1532,7 @@ export function ChannelsView({
       const partner = userLookup.get(partnerId)
       out.push({
         channel,
-        partner: partner ? { id: partner.id, name: partner.name, roleType: partner.roleType } : null,
+        partner: partner ? { id: partner.id, name: partner.name, roleType: partner.roleType, avatarUrl: partner.avatarUrl } : null,
       })
     }
     return out
@@ -1550,7 +1551,7 @@ export function ChannelsView({
     const partnerId = parseDmPartnerId(selectedChannel.name, currentUserId)
     if (partnerId == null) return null
     const partner = userLookup.get(partnerId)
-    return partner ? { id: partner.id, name: partner.name, roleType: partner.roleType } : null
+    return partner ? { id: partner.id, name: partner.name, roleType: partner.roleType, avatarUrl: partner.avatarUrl } : null
   }, [selectedChannel, currentUserId, userLookup])
 
   const unreadTotal = channels.reduce((sum, channel) => sum + channel.unreadCount, 0)
@@ -1840,7 +1841,7 @@ export function ChannelsView({
                         type="button"
                       >
                         <div className="dm-avatar-wrap">
-                          <Avatar name={displayName} />
+                          <Avatar name={displayName} avatarUrl={partner?.avatarUrl} />
                           <span className={`dm-presence-dot dm-presence-dot--${isOnline ? 'online' : 'offline'}`} />
                         </div>
                         <div className="channel-row__content">
@@ -1900,7 +1901,7 @@ export function ChannelsView({
           <div className="channel-header-slim__title">
             {selectedDmPartner ? (
               <>
-                <Avatar name={selectedDmPartner.name} size={40} />
+                <Avatar name={selectedDmPartner.name} size={40} avatarUrl={selectedDmPartner.avatarUrl} />
                 <div className="channel-header-slim__dm-info">
                   <div className="channel-header-slim__dm-top">
                     <h3>{selectedDmPartner.name}</h3>
@@ -2274,7 +2275,7 @@ export function ChannelsView({
                       ) : (
                         <div className="message-card__avatar">
                           <div className="message-card__avatar-wrap">
-                            <Avatar name={message.authorName ?? 'Unknown'} />
+                            <Avatar name={message.authorName ?? 'Unknown'} avatarUrl={message.authorAvatarUrl} />
                             {presenceStatusMap.has(message.userId) && (
                               <span className={`message-card__presence-dot msg-dot--${presenceStatusMap.get(message.userId)!}`} />
                             )}
@@ -2437,7 +2438,16 @@ export function ChannelsView({
                               {channelMembers.slice(0, Math.min(message.replyCount, 3)).map((m, i) => (
                                 (() => {
                                   const tone = THREAD_AVATAR_PALETTE[m.userId % THREAD_AVATAR_PALETTE.length]
-                                  return (
+                                  return looksLikeAvatarUrl(m.avatarUrl) ? (
+                                    <img
+                                      alt={m.name}
+                                      className="thread-footer__avatar"
+                                      key={m.userId}
+                                      src={m.avatarUrl}
+                                      style={{ zIndex: 3 - i, objectFit: 'cover' }}
+                                      title={m.name}
+                                    />
+                                  ) : (
                                     <div
                                       className="thread-footer__avatar"
                                       key={m.userId}
@@ -2886,7 +2896,7 @@ export function ChannelsView({
                             role="option"
                             type="button"
                           >
-                            <Avatar name={member.name} />
+                            <Avatar name={member.name} avatarUrl={member.avatarUrl} />
                             <div>
                               <strong>{member.name}</strong>
                               <span>{formatRoleLabel(member.roleType)}</span>
@@ -3231,7 +3241,7 @@ export function ChannelsView({
                         }}
                         type="button"
                       >
-                        <Avatar name={user.name} />
+                        <Avatar name={user.name} avatarUrl={user.avatarUrl} />
                         <div>
                           <strong>{user.name}</strong>
                           <span>{formatRoleLabel(user.roleType)}</span>
@@ -3260,7 +3270,7 @@ export function ChannelsView({
               <div className="presence-list">
                 {channelMembers.map((member) => (
                   <div className="member-row member-row--channel member-row--manageable" key={member.userId}>
-                    <Avatar name={member.name} />
+                    <Avatar name={member.name} avatarUrl={member.avatarUrl} />
                     <div>
                       <strong>{member.name}</strong>
                       <p>
@@ -3331,7 +3341,7 @@ export function ChannelsView({
                   type="button"
                 >
                   <span className="switcher__item-icon">
-                    {it.kind === 'dm' ? <Avatar name={it.displayName} /> : (it.channel.type === 'PRIVATE' ? <IcoLock /> : '#')}
+                    {it.kind === 'dm' ? <Avatar name={it.displayName} avatarUrl={it.avatarUrl} /> : (it.channel.type === 'PRIVATE' ? <IcoLock /> : '#')}
                   </span>
                   <span className="switcher__item-name">{it.displayName}</span>
                   {it.channel.unreadCount > 0 && <span className="channel-row__unread">{it.channel.unreadCount}</span>}
@@ -3482,7 +3492,7 @@ export function ChannelsView({
                       }}
                       type="button"
                     >
-                      <Avatar name={u.name} />
+                      <Avatar name={u.name} avatarUrl={u.avatarUrl} />
                       <div>
                         <strong>{u.name}</strong>
                         <span>{formatRoleLabel(u.roleType)}</span>

@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { router } from '@inertiajs/react'
 import { useTranslation } from 'react-i18next'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { api } from '../lib/api'
 import { formatRoleLabel } from '../lib/roleLabel'
+import { looksLikeAvatarUrl } from '../components/ui'
+import { AvatarCropper } from '../components/AvatarCropper'
 import './ProfileView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -132,9 +135,18 @@ function OrgNode({ person, positionName, isSelf = false }:
 
   return (
     <div className={`org-node${isSelf ? ' org-node--self' : ''}`} data-tone={tone}>
-      <div className={`org-node__avatar${isSelf ? ' org-node__avatar--self' : ''}`} data-tone={isSelf ? 'yellow' : tone}>
-        {person ? initials(name) : '?'}
-      </div>
+      {looksLikeAvatarUrl(person?.avatarUrl) ? (
+        <img
+          className={`org-node__avatar org-node__avatar--photo${isSelf ? ' org-node__avatar--self' : ''}`}
+          src={person!.avatarUrl!}
+          alt={name}
+          data-tone={isSelf ? 'yellow' : tone}
+        />
+      ) : (
+        <div className={`org-node__avatar${isSelf ? ' org-node__avatar--self' : ''}`} data-tone={isSelf ? 'yellow' : tone}>
+          {person ? initials(name) : '?'}
+        </div>
+      )}
       <div className="org-node__info">
         <div className="org-node__name">
           {person ? name : <em className="org-node__empty-name">{t('Vacant')}</em>}
@@ -166,6 +178,11 @@ export function ProfileView() {
   const [activityLoading, setActivityLoading] = useState(false)
   const [emailCopied, setEmailCopied] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
+  // Avatar upload
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [cropFile, setCropFile] = useState<File | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarError, setAvatarError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -197,6 +214,54 @@ export function ProfileView() {
       setSaved(true); setTimeout(() => setSaved(false), 2000)
     } catch (err) { setSaveError(err instanceof Error ? err.message : t('Failed to save')) }
     finally { setSaving(false) }
+  }
+
+  // ── Avatar upload ──────────────────────────────────────────────────────
+  function pickPhoto() {
+    setAvatarError(null)
+    fileInputRef.current?.click()
+  }
+
+  function onPhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    e.target.value = '' // reset → pilih file sama lagi tetap memicu onChange
+    if (!f) return
+    if (!/^image\//.test(f.type)) { setAvatarError(t('Please choose an image file.')); return }
+    setAvatarError(null)
+    setCropFile(f) // buka cropper
+  }
+
+  // Sinkronkan foto baru ke seluruh app: PUT /profile lalu reload prop `auth`
+  // Inertia supaya WorkspaceContext (topbar, dll) ikut memperbarui avatarUrl.
+  async function persistAvatar(avatarUrl: string | null) {
+    const u = profileData?.user
+    await api.put('/profile', { name: u?.name ?? formName, email: u?.email ?? formEmail, avatarUrl })
+    setProfileData(prev => prev ? { ...prev, user: { ...prev.user, avatarUrl: avatarUrl ?? undefined } } : prev)
+    router.reload({ only: ['auth'] })
+  }
+
+  async function handleCropped(cropped: File) {
+    setUploadingAvatar(true); setAvatarError(null)
+    try {
+      const fd = new FormData()
+      fd.append('files[]', cropped) // backend /uploads memvalidasi `files` sebagai array
+      const res = await api.upload<{ data: { url: string }[] }>('/uploads', fd)
+      const url = res.data?.[0]?.url
+      if (!url) throw new Error(t('Upload failed'))
+      await persistAvatar(url)
+      setCropFile(null)
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : t('Upload failed'))
+    } finally { setUploadingAvatar(false) }
+  }
+
+  async function handleRemovePhoto() {
+    setUploadingAvatar(true); setAvatarError(null)
+    try {
+      await persistAvatar(null)
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : t('Failed to save'))
+    } finally { setUploadingAvatar(false) }
   }
 
   const user = profileData?.user ?? (currentUser as unknown as ProfileUser | null)
@@ -254,8 +319,48 @@ export function ProfileView() {
 
         {/* ─── HERO BAND ─────────────────────────────────────── */}
         <section className="pv-hero" aria-label={t('Identity')}>
-          <div className={`pv-hero__avatar`} data-tone={userRoleTone}>
-            {user ? initials(user.name) : '?'}
+          <div className="pv-hero__avatar-col">
+            <div className="pv-hero__avatar-wrap">
+              {looksLikeAvatarUrl(user?.avatarUrl) ? (
+                <img className="pv-hero__avatar pv-hero__avatar--photo" src={user!.avatarUrl!} alt={user?.name ?? ''} />
+              ) : (
+                <div className="pv-hero__avatar" data-tone={userRoleTone}>
+                  {user ? initials(user.name) : '?'}
+                </div>
+              )}
+              <button
+                type="button"
+                className="pv-hero__avatar-edit"
+                onClick={pickPhoto}
+                disabled={uploadingAvatar}
+                aria-label={t('Change photo')}
+                title={t('Change photo')}
+              >
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h1.2l.7-1.2A1 1 0 0 1 7.3 4.3h5.4a1 1 0 0 1 .9.5L14.3 6h1.2A1.5 1.5 0 0 1 17 7.5v7A1.5 1.5 0 0 1 15.5 16h-11A1.5 1.5 0 0 1 3 14.5z" />
+                  <circle cx="10" cy="10.7" r="2.6" />
+                </svg>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="pv-hero__avatar-file"
+                onChange={onPhotoSelected}
+                tabIndex={-1}
+              />
+            </div>
+            <div className="pv-hero__avatar-status" aria-live="polite">
+              {uploadingAvatar ? (
+                <span className="pv-hero__avatar-msg">{t('Uploading…')}</span>
+              ) : avatarError ? (
+                <span className="pv-hero__avatar-msg pv-hero__avatar-msg--error">{avatarError}</span>
+              ) : looksLikeAvatarUrl(user?.avatarUrl) ? (
+                <button type="button" className="pv-hero__avatar-remove" onClick={handleRemovePhoto}>{t('Remove photo')}</button>
+              ) : (
+                <button type="button" className="pv-hero__avatar-remove" onClick={pickPhoto}>{t('Add photo')}</button>
+              )}
+            </div>
           </div>
           <div className="pv-hero__body">
             <h2 className="pv-hero__name">{user?.name ?? '—'}</h2>
@@ -549,6 +654,15 @@ export function ProfileView() {
         </div> {/* /pv-body */}
 
       </div>
+
+      {cropFile && (
+        <AvatarCropper
+          file={cropFile}
+          busy={uploadingAvatar}
+          onCancel={() => { if (!uploadingAvatar) setCropFile(null) }}
+          onCrop={handleCropped}
+        />
+      )}
     </div>
   )
 }

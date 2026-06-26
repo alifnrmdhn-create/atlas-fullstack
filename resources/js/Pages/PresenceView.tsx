@@ -182,7 +182,7 @@ function HoverCard({
     >
       <div className="presence-hover-card__header">
         <div className="presence-hover-card__avatar-wrap">
-          <Avatar name={presence.user?.name ?? 'U'} />
+          <Avatar name={presence.user?.name ?? 'U'} avatarUrl={presence.user?.avatarUrl} />
           <span className={`presence-dot presence-dot--${slug} presence-hover-card__dot`} />
         </div>
         <div className="presence-hover-card__meta">

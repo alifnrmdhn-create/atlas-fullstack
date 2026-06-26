@@ -264,7 +264,7 @@ class MeetingController extends Controller
             ->whereNotIn('status', ['RESOLVED'])
             ->with([
                 'task:id,title,initiativeId',
-                'assignee:id,name,roleType,positionTitle',
+                'assignee:id,name,roleType,positionTitle,avatarUrl',
                 'creator:id,name',
             ])
             ->orderByRaw("CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END")

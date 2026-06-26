@@ -8,6 +8,7 @@ import { useDialogFocus } from '../hooks/useDialogFocus'
 import { useEscKey } from '../hooks/useEscKey'
 import { PicaCompositePanel } from '../components/PicaCompositePanel'
 import { UserPicker } from '../components/UserPicker'
+import { looksLikeAvatarUrl } from '../components/ui'
 import { formatRoleLabel } from '../lib/roleLabel'
 import { severityLabel, healthLabel } from '../lib/status'
 import type { Meeting, MeetingType, PresenceStatus } from '../types'
@@ -207,8 +208,13 @@ function rsvpLabel(status: string) {
   ) : status
 }
 
-function Avatar({ name }: { name: string }) {
+function Avatar({ name, avatarUrl }: { name: string; avatarUrl?: string | null }) {
   const tone = AVATAR_TONES[nameToColorIndex(name)]
+  if (looksLikeAvatarUrl(avatarUrl)) {
+    return (
+      <img className="meeting-avatar" src={avatarUrl} alt={name} style={{ objectFit: 'cover' }} />
+    )
+  }
   return (
     <div className="meeting-avatar" data-tone={tone}>
       {getInitials(name)}
@@ -1024,7 +1030,7 @@ export function MeetingDetailPanel({
               return (
                 <div key={a.id} className="meeting-detail__attendee">
                   <div className="meeting-detail__attendee-avatar">
-                    <Avatar name={name} />
+                    <Avatar name={name} avatarUrl={a.user?.avatarUrl} />
                     <span
                       className={presenceDotPulse ? 'attendee-presence-dot attendee-presence-dot--pulse' : 'attendee-presence-dot'}
                       data-tone={PRESENCE_STATUS_TONE[pStatus]}

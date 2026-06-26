@@ -90,6 +90,40 @@ class KpiInsightServiceTest extends TestCase
         $this->assertSame([], $result['perhatian']);
     }
 
+    public function test_negative_target_uses_canonical_score_not_naive_ratio(): void
+    {
+        // ROI: target -0,50% (rugi diharapkan), realisasi +0,89% (untung) = melampaui.
+        // Skor resmi tersimpan = 110 (penuh) → bobot 3% ⇒ skor terbobot 0.03×110 = 3.3.
+        // Rasio naif realisasi/target = 0,89 / -0,50 = -1,78 → DULU salah masuk
+        // "perhatian" dengan "-178%". Kini klasifikasi pakai skor resmi → positif.
+        $items = [
+            ['nama' => 'ROI', 'polaritas' => 'maximize', 'sasaran' => '-0,50',
+             'realisasi' => '0,89', 'bobot' => 3.0, 'skor' => 3.3, 'satuan' => '%'],
+        ];
+        $result = $this->service->deriveFromKpiItems($items);
+
+        $this->assertCount(1, $result['positif']);
+        $this->assertCount(0, $result['perhatian']);
+        $this->assertSame('ROI', $result['positif'][0]['kpi']);
+        // Magnitudo tampil = skor resmi (1,10), bukan -1,78.
+        $this->assertEqualsWithDelta(1.10, $result['positif'][0]['ratio'], 0.01);
+    }
+
+    public function test_positive_target_keeps_uncapped_naive_magnitude(): void
+    {
+        // Capaian jauh di atas target (positif) tetap menampilkan magnitudo naif
+        // (real 278 vs target 90 → 3,09 = "309%") untuk narasi outperformance,
+        // walau skor resmi-nya ber-cap 110.
+        $items = [
+            ['nama' => 'Akurasi', 'polaritas' => 'maximize', 'sasaran' => '90',
+             'realisasi' => '278', 'bobot' => 4.0, 'skor' => 4.4],
+        ];
+        $result = $this->service->deriveFromKpiItems($items);
+
+        $this->assertCount(1, $result['positif']);
+        $this->assertEqualsWithDelta(3.09, $result['positif'][0]['ratio'], 0.01);
+    }
+
     public function test_parses_indo_number_format(): void
     {
         // "3.257,8" = 3257.8 dalam Indo format

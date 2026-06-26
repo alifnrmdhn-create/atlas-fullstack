@@ -62,7 +62,7 @@ class OrgSummaryService
                 'startDate', 'targetEndDate', 'progressPercent', 'approvalStatus', 'updatedAt',
                 'kelompok', 'pilarStrategis', 'progresTerkini', 'dukunganDibutuhkan',
             ])
-            ->with('owner:id,name')
+            ->with('owner:id,name,avatarUrl')
             ->get();
 
         $now = Carbon::now();
@@ -432,6 +432,7 @@ class OrgSummaryService
                     'timeElapsedPct'     => $timeElapsedPct,
                     'daysIdle'           => $updatedAt ? (int) $updatedAt->diffInDays($now) : null,
                     'ownerName'          => $p['owner']['name'] ?? null,
+                    'ownerAvatarUrl'     => $p['owner']['avatarUrl'] ?? null,
                     'priority'           => $p['priority'] ?? null,
                     'taskTotal'          => (int) ($taskCountsByProgram[$p['id']]->total ?? 0),
                     'taskDone'           => (int) ($taskCountsByProgram[$p['id']]->done ?? 0),

@@ -6,6 +6,11 @@ import type {
   ExecutionStep,
 } from '../types'
 import { workStatusLabel } from '../lib/status'
+import { looksLikeAvatarUrl } from './ui'
+
+// Backend kini mengirim `avatarUrl` pada picPersons; tipe shared ExecutionPicRef
+// belum mendeklarasikannya, jadi widen lokal di sini (tanpa menyentuh types.ts).
+type ExecPicWithAvatar = { id: number; name: string; avatarUrl?: string | null }
 
 type Props = {
   data: ExecutionGridData
@@ -263,7 +268,7 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
               }
               if (row.kind === 'step-plan') {
                 const { step, letter } = row
-                const personEntries = step.picPersons.length > 0
+                const personEntries: ExecPicWithAvatar[] = step.picPersons.length > 0
                   ? step.picPersons
                   : (step.primaryAssignee ? [{ id: step.primaryAssignee.id, name: step.primaryAssignee.name }] : [])
                 const personPrimary = personEntries[0]
@@ -278,7 +283,9 @@ export function ExecutionGrid({ data, onToggleActualWeek, onResetActualWeeks }: 
                     <div className={`${cls} execution-grid__info-cell execution-grid__col-person`}>
                       {personPrimary ? (
                         <span className="exec-grid-pic" title={personEntries.map(p => p.name).join(', ')}>
-                          <span className="exec-grid-pic__avatar" aria-hidden="true">{personInitials}</span>
+                          {looksLikeAvatarUrl(personPrimary.avatarUrl)
+                            ? <img className="exec-grid-pic__avatar" src={personPrimary.avatarUrl} alt="" aria-hidden="true" style={{ objectFit: 'cover' }} />
+                            : <span className="exec-grid-pic__avatar" aria-hidden="true">{personInitials}</span>}
                           <span className="exec-grid-pic__name">{personPrimary.name}</span>
                           {personExtra > 0 && <span className="exec-grid-pic__extra">+{personExtra}</span>}
                         </span>

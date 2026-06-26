@@ -298,6 +298,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       positionTitle: user.positionTitle ?? undefined,
       avatarUrl: user.avatarUrl ?? undefined,
       unit: user.unit ?? undefined,
+      directorate: user.directorate ?? undefined,
     }
   }
 
@@ -1019,13 +1020,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   })
 
   // ── Channel message event handlers ───────────────────────
-  const handleMessageCreated = useStableCallback((event: { channelId: number; message: ChannelMessage & { author?: { name?: string; roleType?: string } } }) => {
+  const handleMessageCreated = useStableCallback((event: { channelId: number; message: ChannelMessage & { author?: { name?: string; roleType?: string; avatarUrl?: string } } }) => {
     // Normalize: backend sends author relationship, frontend uses authorName/authorRole
     const msg: ChannelMessage = {
       ...event.message,
       reactions: event.message.reactions ?? {},
       authorName: event.message.authorName ?? event.message.author?.name,
       authorRole: event.message.authorRole ?? event.message.author?.roleType,
+      authorAvatarUrl: event.message.authorAvatarUrl ?? event.message.author?.avatarUrl,
     }
 
     // "Viewing" hanya berlaku kalau user benar-benar di halaman /channels DAN tab visible.
@@ -1136,12 +1138,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const handleMessageUpdated = useStableCallback((event: { channelId: number; message: ChannelMessage & { author?: { name?: string; roleType?: string } } }) => {
+  const handleMessageUpdated = useStableCallback((event: { channelId: number; message: ChannelMessage & { author?: { name?: string; roleType?: string; avatarUrl?: string } } }) => {
     const msg: ChannelMessage = {
       ...event.message,
       reactions: event.message.reactions ?? {},
       authorName: event.message.authorName ?? event.message.author?.name,
       authorRole: event.message.authorRole ?? event.message.author?.roleType,
+      authorAvatarUrl: event.message.authorAvatarUrl ?? event.message.author?.avatarUrl,
     }
     setChannels((prev) => prev.map((channel) => {
       if (channel.id !== event.channelId || channel.lastMessage?.id !== msg.id) {

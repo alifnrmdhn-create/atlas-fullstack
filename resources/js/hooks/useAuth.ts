@@ -10,6 +10,7 @@ export type AuthUser = {
     unitId?: number | null
     unit?: { id: number; code: string; name: string } | null
     directorateId?: number | null
+    directorate?: { id: number; code: string; name: string } | null
     managerUserId?: number | null
     /** Sidebar/route gate for the Performance module (role-scoped). */
     canAccessPerformance?: boolean

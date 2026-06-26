@@ -43,6 +43,13 @@ export function useRoleAccess() {
       return isAnyOf('KADIV', 'KASUBDIV')
     },
 
+    /**
+     * Can assign/change a task's PIC (executor) — hanya KADIV/KASUBDIV (+admin),
+     * cermin `assertCanAssignPic` di TaskController. Menunjuk penanggung jawab =
+     * keputusan plan-author; pelaksana (ASISTEN/OFFICER) tak boleh mengoper PIC.
+     */
+    canAssignPic: isAnyOf('SUPERADMIN', 'ADMIN', 'KADIV', 'KASUBDIV'),
+
     /** Can delete a program they own */
     canDeleteProgram: (isOwner: boolean) =>
       isAnyOf('SUPERADMIN', 'ADMIN') ||

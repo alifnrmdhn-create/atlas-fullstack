@@ -5,7 +5,7 @@ import { Head, usePage } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { useAuth } from '../hooks/useAuth'
-import {  SectionState } from '../components/ui'
+import {  SectionState, looksLikeAvatarUrl } from '../components/ui'
 import { DualLanguageAnnouncement } from '../components/DualLanguageAnnouncement'
 import { Card, Sparkline, Meter, Delta, Bars, Gauge, Tooltip } from '../design-system'
 import { scoreTone, type Tone } from '../lib/tone'
@@ -1082,7 +1082,13 @@ export default function HomeView() {
                             <span className="hvc__topname" title={p.name}>{p.name}</span>
                             <span className="hvc__topmeta">{p.divisi || '—'} · {p.code}{(p.priority === 'HIGH' || p.priority === 'CRITICAL') ? <span className="hvc__topprio" data-prio={p.priority}>{p.priority === 'CRITICAL' ? t('Critical') : t('High priority')}</span> : null}</span>
                           </span>
-                          {p.ownerName ? <span className="hvc__topowner" title={t('PIC: {{name}}', { name: p.ownerName })} aria-label={t('PIC: {{name}}', { name: p.ownerName })}>{initials(p.ownerName)}</span> : null}
+                          {p.ownerName ? (
+                            looksLikeAvatarUrl(p.ownerAvatarUrl) ? (
+                              <img className="hvc__topowner" src={p.ownerAvatarUrl} alt="" title={t('PIC: {{name}}', { name: p.ownerName })} style={{ objectFit: 'cover' }} />
+                            ) : (
+                              <span className="hvc__topowner" title={t('PIC: {{name}}', { name: p.ownerName })} aria-label={t('PIC: {{name}}', { name: p.ownerName })}>{initials(p.ownerName)}</span>
+                            )
+                          ) : null}
                           <span className="hvc__topdays" data-tone="red">{daysLabel}</span>
                         </button>
                       )

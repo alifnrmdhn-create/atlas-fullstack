@@ -133,7 +133,8 @@ class ExecutionGridController extends Controller
         $tasks = Task::query()
             ->where('initiativeId', $workstreamId)
             ->with([
-                'entityPics.user:id,name',
+                'entityPics.user:id,name,avatarUrl',
+                'assignee:id,name,avatarUrl',
                 'blockers' => fn ($q) => $q->where('status', 'OPEN')->select('id', 'workItemId', 'severity'),
             ])
             ->orderBy('phaseId')
@@ -380,7 +381,7 @@ class ExecutionGridController extends Controller
                 'percentComplete' => (int) ($task->percentComplete ?? 0),
                 'healthStatus'    => $task->healthStatus ?? null,
                 'primaryAssignee' => $task->assignedTo
-                    ? ['id' => $task->assignedTo, 'name' => $task->assignee?->name ?? '—']
+                    ? ['id' => $task->assignedTo, 'name' => $task->assignee?->name ?? '—', 'avatarUrl' => $task->assignee?->avatarUrl]
                     : null,
                 'picUnits'        => $this->resolveUnits($task->picUnitIds ?? [], $unitMap),
                 'picPersons'      => $this->resolvePersons($task->entityPics),
@@ -417,6 +418,7 @@ class ExecutionGridController extends Controller
             ->map(fn ($ep) => [
                 'id'   => $ep->userId,
                 'name' => $ep->user->name,
+                'avatarUrl' => $ep->user->avatarUrl,
             ])
             ->values()
             ->all();

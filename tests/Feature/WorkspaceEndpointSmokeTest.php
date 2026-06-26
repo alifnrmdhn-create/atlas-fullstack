@@ -415,6 +415,43 @@ class WorkspaceEndpointSmokeTest extends TestCase
         ])->assertCreated()->assertJsonStructure(['data' => ['id', 'name', 'email']]);
     }
 
+    public function test_profile_update_avatar_accepts_storage_path_rejects_external_and_clears_on_null(): void
+    {
+        $this->actingAs($this->admin);
+
+        // Path /storage/ hasil upload kita sendiri → diterima & tersimpan.
+        $this->putJson('/profile', [
+            'name' => $this->admin->name,
+            'email' => $this->admin->email,
+            'avatarUrl' => '/storage/uploads/avatar-abc.jpg',
+        ])->assertOk();
+        $this->assertSame('/storage/uploads/avatar-abc.jpg', $this->admin->fresh()->avatarUrl);
+
+        // URL eksternal → ditolak (422), avatar lama tak berubah.
+        $this->putJson('/profile', [
+            'name' => $this->admin->name,
+            'email' => $this->admin->email,
+            'avatarUrl' => 'https://evil.example.com/x.png',
+        ])->assertStatus(422);
+        $this->assertSame('/storage/uploads/avatar-abc.jpg', $this->admin->fresh()->avatarUrl);
+
+        // null → hapus foto (kembali ke inisial).
+        $this->putJson('/profile', [
+            'name' => $this->admin->name,
+            'email' => $this->admin->email,
+            'avatarUrl' => null,
+        ])->assertOk();
+        $this->assertNull($this->admin->fresh()->avatarUrl);
+
+        // Tanpa field avatarUrl (save nama/email saja) → foto tak tersentuh.
+        $this->admin->update(['avatarUrl' => '/storage/uploads/keep.jpg']);
+        $this->putJson('/profile', [
+            'name' => 'Nama Baru',
+            'email' => $this->admin->email,
+        ])->assertOk();
+        $this->assertSame('/storage/uploads/keep.jpg', $this->admin->fresh()->avatarUrl);
+    }
+
     public function test_mutation_syncs_roletype_from_position_and_records_history(): void
     {
         $this->actingAs($this->admin);

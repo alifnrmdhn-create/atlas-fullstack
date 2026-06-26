@@ -90,6 +90,7 @@ export type ChannelMember = {
   userId: number
   name: string
   roleType: string
+  avatarUrl?: string | null
   status?: PresenceStatus
   statusEmoji?: string
   lastViewedAt?: string
@@ -132,6 +133,7 @@ export type ChannelMessage = {
   updatedAt: string
   authorName?: string
   authorRole?: string
+  authorAvatarUrl?: string | null
 }
 
 export type CommentItem = {
@@ -153,6 +155,7 @@ export type CommentItem = {
   updatedAt: string
   authorName?: string
   authorRole?: string
+  authorAvatarUrl?: string | null
 }
 
 export type Kelompok = 'SCORECARD' | 'NON_SCORECARD'
@@ -340,7 +343,7 @@ export type TaskDetail = {
   blockedReason?: string
   targetCompletion?: string | null
   estimatedHours?: number | null
-  assignee?: { id: number; name: string; positionTitle?: string } | null
+  assignee?: { id: number; name: string; positionTitle?: string; avatarUrl?: string | null } | null
   comments: CommentItem[]
   blockers: Array<{
     id: number
@@ -692,6 +695,7 @@ export type ProgramSummaryPayload = {
     timeElapsedPct?: number | null
     daysIdle?: number | null
     ownerName?: string | null
+    ownerAvatarUrl?: string | null
     priority?: string | null
     taskTotal?: number
     taskDone?: number
@@ -722,7 +726,7 @@ export type DashboardPayload = {
     timeIntelligence: Array<{ id: number; code: string; title: string; targetCompletion: string; status: string }>
     accountability: ActivityItem[]
     controls: Array<{ id: number; code: string; title: string; status: string; severity: string }>
-    performance: Array<{ id: number; name: string; score?: number; status: HealthStatus }>
+    performance: Array<{ id: number; name: string; avatarUrl?: string | null; score?: number; status: HealthStatus }>
     collaboration: ChannelMessage[]
   }
   recentActivity: ActivityItem[]

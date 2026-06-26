@@ -24,7 +24,7 @@ class ChannelMessage extends Model
         'updatedAt' => 'datetime',
     ];
 
-    protected $appends = ['authorName', 'authorRole'];
+    protected $appends = ['authorName', 'authorRole', 'authorAvatarUrl'];
 
     public function getAuthorNameAttribute(): ?string
     {
@@ -34,6 +34,11 @@ class ChannelMessage extends Model
     public function getAuthorRoleAttribute(): ?string
     {
         return $this->relationLoaded('author') ? ($this->author?->roleType) : null;
+    }
+
+    public function getAuthorAvatarUrlAttribute(): ?string
+    {
+        return $this->relationLoaded('author') ? ($this->author?->avatarUrl) : null;
     }
 
     public function channel()

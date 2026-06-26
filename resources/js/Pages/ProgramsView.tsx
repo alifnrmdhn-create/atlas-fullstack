@@ -1423,7 +1423,7 @@ export function ProgramsView() {
                               <div className="program-row__owner-block">
                                 {prog.owner ? (
                                   <>
-                                    <Avatar name={prog.owner.name} size={24} />
+                                    <Avatar name={prog.owner.name} avatarUrl={prog.owner.avatarUrl} size={24} />
                                     <span className="program-row__owner" title={prog.owner.name}>
                                       {prog.owner.name}
                                     </span>

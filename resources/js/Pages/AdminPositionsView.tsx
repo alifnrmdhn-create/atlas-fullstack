@@ -19,7 +19,8 @@ type PositionRecord = {
   levelCode?: string
   level?: number
   isActive: boolean
-  reportsToPositionId?: number
+  reportsToPositionId?: number | null
+  reportsTo?: { id: number; code: string; name: string } | null
   directorate?: PositionDirectorate
   unit?: PositionUnit
   currentHolder?: PositionHolder
@@ -45,6 +46,29 @@ type UnitsResponse = { data: UnitOption[]; total: number }
 const LEVEL_LABEL: Record<number, string> = { 1: 'BOD-1', 2: 'BOD-2', 3: 'BOD-3' }
 const LEVEL_BADGE: Record<number, string> = { 1: 'badge--red', 2: 'badge--yellow', 3: 'badge--green' }
 
+// Kumpulan id keturunan (langsung+tak langsung) dari sebuah posisi — dipakai untuk
+// menyaring opsi "Reports To" agar tak bisa memilih dirinya sendiri / bawahannya
+// (mencegah lingkar). Server tetap otoritatif (assertNoCycle).
+function collectDescendantIds(positions: PositionRecord[], rootId: number): Set<number> {
+  const childrenOf = new Map<number, number[]>()
+  for (const p of positions) {
+    if (p.reportsToPositionId != null) {
+      const arr = childrenOf.get(p.reportsToPositionId) ?? []
+      arr.push(p.id)
+      childrenOf.set(p.reportsToPositionId, arr)
+    }
+  }
+  const out = new Set<number>()
+  const stack = [...(childrenOf.get(rootId) ?? [])]
+  while (stack.length) {
+    const id = stack.pop()!
+    if (out.has(id)) continue
+    out.add(id)
+    stack.push(...(childrenOf.get(id) ?? []))
+  }
+  return out
+}
+
 export function AdminPositionsView() {
   const { t } = useTranslation()
   const { currentUser } = useWorkspace()
@@ -67,7 +91,7 @@ export function AdminPositionsView() {
     }).catch((err) => console.error('[Atlas] Silent failure in AdminPositionsView.tsx:', err))
   }, [])
 
-  const emptyPosForm = { code: '', name: '', levelCode: 'BOD-4', roleType: 'ASISTEN', directorateId: '', divisionId: '', isActive: true }
+  const emptyPosForm = { code: '', name: '', levelCode: 'BOD-4', roleType: 'ASISTEN', directorateId: '', divisionId: '', reportsToPositionId: '', isActive: true }
 
   // Create position modal
   const [showCreatePos, setShowCreatePos] = useState(false)
@@ -91,6 +115,7 @@ export function AdminPositionsView() {
         roleType: cpPosForm.roleType,
         directorateId: cpPosForm.directorateId ? Number(cpPosForm.directorateId) : undefined,
         divisionId: cpPosForm.divisionId ? Number(cpPosForm.divisionId) : undefined,
+        reportsToPositionId: cpPosForm.reportsToPositionId ? Number(cpPosForm.reportsToPositionId) : null,
         isActive: cpPosForm.isActive,
       })
       closeCreatePos()
@@ -120,6 +145,7 @@ export function AdminPositionsView() {
       roleType: pos.currentHolder?.roleType ?? 'ASISTEN',
       directorateId: String(pos.directorate?.id ?? ''),
       divisionId: String(pos.unit?.id ?? ''),
+      reportsToPositionId: String(pos.reportsToPositionId ?? ''),
       isActive: pos.isActive,
     })
     setEpPosError(null)
@@ -140,6 +166,7 @@ export function AdminPositionsView() {
         roleType: epPosForm.roleType,
         directorateId: epPosForm.directorateId ? Number(epPosForm.directorateId) : null,
         divisionId: epPosForm.divisionId ? Number(epPosForm.divisionId) : null,
+        reportsToPositionId: epPosForm.reportsToPositionId ? Number(epPosForm.reportsToPositionId) : null,
         isActive: epPosForm.isActive,
       })
       closeEditPos()
@@ -317,6 +344,7 @@ export function AdminPositionsView() {
                 <th>{t('Level')}</th>
                 <th>{t('Unit')}</th>
                 <th>{t('Directorate')}</th>
+                <th>{t('Reports To')}</th>
                 <th>{t('Holder')}</th>
                 <th>{t('Status')}</th>
                 <th></th>
@@ -325,7 +353,7 @@ export function AdminPositionsView() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="admin-table-placeholder">
+                  <td colSpan={9} className="admin-table-placeholder">
                     <span className="text-muted text-sm">{t('Loading data…')}</span>
                   </td>
                 </tr>
@@ -357,6 +385,14 @@ export function AdminPositionsView() {
                       ? <div className="admin-cell-inline">
                           <span className="code-badge">{pos.directorate.code}</span>
                           <span className="text-xs text-muted">{pos.directorate.name}</span>
+                        </div>
+                      : <span className="text-muted text-xs">–</span>}
+                  </td>
+                  <td data-label="Reports To">
+                    {pos.reportsTo
+                      ? <div className="admin-cell-inline">
+                          <span className="code-badge">{pos.reportsTo.code}</span>
+                          <span className="text-xs text-muted">{pos.reportsTo.name}</span>
                         </div>
                       : <span className="text-muted text-xs">–</span>}
                   </td>
@@ -425,6 +461,13 @@ export function AdminPositionsView() {
         const filteredUnits = form.directorateId
           ? units.filter(u => u.directorateId === Number(form.directorateId))
           : units
+        // Opsi atasan: semua posisi, kecuali diri sendiri & keturunannya (cegah lingkar).
+        const excludedParentIds = editingPos
+          ? new Set<number>([editingPos.id, ...collectDescendantIds(positions, editingPos.id)])
+          : new Set<number>()
+        const reportsToOptions = positions
+          .filter(p => !excludedParentIds.has(p.id))
+          .sort((a, b) => a.title.localeCompare(b.title))
         // Portal-mounted untuk modal-safety di bawah ds-stagger parent wrapper.
         return createPortal(
           <div className="modal-backdrop" onClick={closeModal}>
@@ -465,7 +508,7 @@ export function AdminPositionsView() {
                       <div className="modal-field">
                         <label className="modal-label">{t('Level Code')} <span className="admin-required">*</span></label>
                         <select className="form-input" value={form.levelCode} onChange={e => setForm(f => ({ ...f, levelCode: e.target.value }))}>
-                          {['BOD-1','BOD-2','BOD-3','BOD-4','M1','M2','M3','S1','S2'].map(l => <option key={l} value={l}>{l}</option>)}
+                          {['BOD','BOD-1','BOD-2','BOD-3','BOD-4','M1','M2','M3','S1','S2'].map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
                       </div>
                       <div className="modal-field">
@@ -496,6 +539,14 @@ export function AdminPositionsView() {
                           {filteredUnits.map(u => <option key={u.id} value={u.id}>{u.code} — {u.name}</option>)}
                         </select>
                       </div>
+                    </div>
+                    <div className="modal-field">
+                      <label className="modal-label">{t('Reports To (Superior)')}</label>
+                      <select className="form-input" value={form.reportsToPositionId} onChange={e => setForm(f => ({ ...f, reportsToPositionId: e.target.value }))}>
+                        <option value="">{t('— No superior (top of structure) —')}</option>
+                        {reportsToOptions.map(p => <option key={p.id} value={p.id}>{p.code ? `${p.code} — ` : ''}{p.title}</option>)}
+                      </select>
+                      <span className="text-xs text-muted">{t('Determines the direct supervisor of the position holder (used for escalation & approval).')}</span>
                     </div>
                     <label className="admin-checkbox-row">
                       <input type="checkbox" checked={form.isActive} onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))} />

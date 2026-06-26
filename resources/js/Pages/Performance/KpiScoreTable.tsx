@@ -101,7 +101,7 @@ export function KpiScoreTable({ groups }: { groups: ScoreGroup[] }) {
               <span className="kst__dot" style={{ background: g.color }} aria-hidden />
               <span className="kst__group-label">{g.label}</span>
               <span className="kst__group-meta">{t('{{count}} KPI · weight {{weight}}%', { count: g.items.length, weight: formatNumber(g.bobot, 0) })}</span>
-              <span className="kst__group-pct" data-tone={scoreTone(g.pct)}>{formatPercent(g.pct, 1)}</span>
+              <span className="kst__group-pct" data-tone={scoreTone(g.pct)}>{formatPercent(g.pct)}</span>
             </button>
 
             {!isCollapsed && g.items.map(r => {
@@ -146,7 +146,7 @@ export function KpiScoreTable({ groups }: { groups: ScoreGroup[] }) {
                     )}
                   </div>
                   <span className="kst__cell kst__num kst__score" data-label={t('Score')} data-tone={zeroMet ? 'green' : isNA ? undefined : tone}>
-                    {formatNumber(r.skor, 1)}
+                    {formatNumber(r.skor)}
                   </span>
                 </div>
               )
