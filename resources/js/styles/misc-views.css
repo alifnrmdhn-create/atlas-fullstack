@@ -1832,6 +1832,7 @@
 .meeting-detail__header {
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 16px 18px 14px;
   border-bottom: 1px solid var(--panel-border);
@@ -1845,7 +1846,11 @@
 .meeting-detail__header[data-tone="green"] { border-left-color: var(--green-subtle); }
 .meeting-detail__header[data-tone="blue"] { border-left-color: var(--blue-subtle); }
 .meeting-detail__header[data-tone="purple"] { border-left-color: var(--purple-subtle); }
-.meeting-detail__header-main { flex: 1; min-width: 0; }
+/* flex-basis 200px forces the actions row to wrap onto its own line when the
+   panel is too narrow to fit title + buttons side-by-side, instead of letting
+   the (flex-shrink:0) actions squeeze this column to ~0 — which made the title
+   wrap one character per line in the 360px detail panel. */
+.meeting-detail__header-main { flex: 1 1 200px; min-width: 0; }
 
 .meeting-avatar {
   width: 26px;
@@ -1963,6 +1968,7 @@
   display: flex;
   gap: 5px;
   align-items: flex-start;
+  flex-wrap: wrap;
   flex-shrink: 0;
 }
 .meeting-detail__action-btn { font-size: 11px; }

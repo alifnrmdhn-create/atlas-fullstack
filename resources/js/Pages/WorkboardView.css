@@ -1823,3 +1823,71 @@
   .workboard-v2 .wb-prog__actions { display: none; }
   .workboard-v2 .wb-row__ws { display: none; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   #4 (2026-06-27): "Kelompokkan" (group-by) control + Blocker-as-filter + PIC
+   ───────────────────────────────────────────────────────────────────────── */
+.workboard-v2 .wb-groupby { display: inline-flex; align-items: center; gap: 8px; }
+.workboard-v2 .wb-groupby__label {
+  font-size: 11.5px; font-weight: 500; color: var(--ds-text-tertiary, var(--ds-text-secondary));
+  white-space: nowrap;
+}
+
+/* Chip "Hanya blocker" — filter, bukan tab. */
+.workboard-v2 .wb-blocker-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 11px; border-radius: 8px;
+  border: 1px solid var(--ds-border-default, var(--ds-border-tertiary, rgba(0,0,0,.12)));
+  background: var(--ds-surface-card, #fff);
+  font: inherit; font-size: 12.5px; font-weight: 500; color: var(--ds-text-secondary);
+  white-space: nowrap; cursor: pointer;
+  transition: background var(--ds-duration-fast, .12s), border-color var(--ds-duration-fast, .12s);
+}
+.workboard-v2 .wb-blocker-chip:hover { background: var(--ds-surface-hover, rgba(0,0,0,.03)); }
+.workboard-v2 .wb-blocker-chip__box {
+  width: 14px; height: 14px; border-radius: 4px; display: grid; place-items: center;
+  border: 1.5px solid var(--ds-border-strong, rgba(0,0,0,.28));
+  font-size: 10px; line-height: 1;
+  color: #fff; /* dark-allow: centang putih di atas fill merah — identik dua tema */
+}
+.workboard-v2 .wb-blocker-chip.is-on {
+  border-color: color-mix(in srgb, var(--ds-red-500, #DC2626) 55%, transparent);
+  background: var(--ds-red-50, #FEF2F2); color: var(--tone-red);
+}
+.workboard-v2 .wb-blocker-chip.is-on .wb-blocker-chip__box {
+  background: var(--ds-red-500, #DC2626); border-color: var(--ds-red-500, #DC2626);
+}
+
+/* Hint sekali-tampil: tab Blockers pindah ke filter. */
+.workboard-v2 .wb-blocker-hint {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; color: var(--ds-text-tertiary, var(--ds-text-secondary));
+  padding: 4px 6px 4px 10px; border-radius: 7px;
+  background: var(--ds-surface-sunken, rgba(0,0,0,.04));
+}
+.workboard-v2 .wb-blocker-hint__x {
+  border: 0; background: transparent; cursor: pointer;
+  color: var(--ds-text-tertiary); font-size: 15px; line-height: 1; padding: 0 2px;
+}
+.workboard-v2 .wb-blocker-hint__x:hover { color: var(--ds-text-primary); }
+
+/* Grouping "Penanggung jawab" — header per orang, baris pakai grid yg sama. */
+.workboard-v2 .wb-pic__head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px 8px;
+  border-bottom: 1px solid var(--ds-border-secondary, var(--ds-border-tertiary, rgba(0,0,0,.1)));
+  position: sticky; top: 0; z-index: 2;
+  background: var(--ds-surface, #fff);
+}
+.workboard-v2 .wb-pic__avatar {
+  flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--ds-neutral-100, rgba(0,0,0,.06)); color: var(--ds-text-secondary);
+  font-size: 11px; font-weight: 700;
+}
+.workboard-v2 .wb-pic__name { font-size: 14px; font-weight: 600; color: var(--ds-text-primary); }
+.workboard-v2 .wb-pic__count { font-size: 11.5px; color: var(--ds-text-tertiary, var(--ds-text-secondary)); font-variant-numeric: tabular-nums; }
+.workboard-v2 .wb-pic__need {
+  font-size: 11px; font-weight: 600; color: var(--tone-red);
+  background: var(--ds-red-50, #FEF2F2); padding: 2px 8px; border-radius: 999px;
+}

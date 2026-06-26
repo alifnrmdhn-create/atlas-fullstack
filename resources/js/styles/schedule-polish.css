@@ -68,8 +68,11 @@
   overflow-wrap: break-word !important;
 }
 
-/* Detail panel header action buttons row: no overflow */
-.schedule-v2 .schedule-detail-panel header,
+/* Detail panel header + action buttons row: no overflow. NOTE the markup is a
+   `div.meeting-detail__header` (NOT a <header> element) — selecting `header`
+   here was dead, so the header row never wrapped and the (flex-shrink:0)
+   actions squeezed the title to ~0 (one char per line). Target the real class. */
+.schedule-v2 .schedule-detail-panel .meeting-detail__header,
 .schedule-v2 .schedule-detail-panel [class*="actions"] {
   flex-wrap: wrap !important;
   gap: 4px !important;

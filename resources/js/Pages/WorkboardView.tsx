@@ -6,7 +6,6 @@ import { usePage, Link } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import {
-  HealthPill,
   SectionState,
   looksLikeAvatarUrl,
 } from '../components/ui'
@@ -20,7 +19,6 @@ import { TaskDetailModal } from '../components/TaskDetailModal'
 import { ConditionReportModal } from '../components/ConditionReportModal'
 import type { HealthAtTime } from '../components/ConditionReportModal'
 import { getProgramHealthDisplay } from '../lib/programStatus'
-import { priorityLabel, severityLabel } from '../lib/status'
 import { scheduleOf, scheduleBucket, taskIsOverdue } from '../lib/taskSchedule'
 import { PageHeader, Button } from '../design-system'
 import { useIsPhone } from '../hooks/useIsPhone'
@@ -28,7 +26,10 @@ import WorkboardMobile from './WorkboardMobile'
 import { Plus } from 'lucide-react'
 import './WorkboardView.css'
 
-type BoardMode = 'kanban' | 'by-program' | 'list' | 'blockers'
+// #4 (2026-06-27): 4 tab (Board/By-Program/List/Blockers) → 1 sumbu "Kelompokkan"
+// (Program/Urgensi/Penanggung jawab). Blocker = FILTER (chip), bukan tab. List
+// dibuang (flat ditutupi grouping). Default = by-program (layar pendaratan tetap).
+type BoardMode = 'by-program' | 'kanban' | 'pic'
 type TimeFilter = 'week' | 'overdue' | 'in-flight' | 'all'
 
 // Lane Workboard — restructure 2026-05-25 (hapus drag, posisi mengikuti progress):
@@ -184,12 +185,14 @@ function BoardCard({
  *  ber-indentasi di bawah header program → keanggotaan otomatis jelas. Rail
  *  kiri + pill = sinyal JADWAL (urgensi). */
 function ProgramTaskRow({
-  item, onClick, normalizeHealthStatus, showWorkstream,
+  item, onClick, normalizeHealthStatus, contextLabel,
 }: {
   item: Task
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
   normalizeHealthStatus: (h: string) => 'GREEN' | 'YELLOW' | 'RED'
-  showWorkstream: boolean
+  // Label konteks di meta baris: nama workstream (By Program, bila >1 workstream)
+  // atau kode program (grouping Penanggung jawab). undefined = sembunyikan.
+  contextLabel?: string
 }) {
   const sched = scheduleOf(item, normalizeHealthStatus)
   const health = normalizeHealthStatus(item.healthStatus ?? 'GREEN')
@@ -198,7 +201,7 @@ function ProgramTaskRow({
   const initials = assigneeName
     ? assigneeName.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
     : ''
-  const iniName = showWorkstream ? item.workstream?.name : undefined
+  const iniName = contextLabel
   // Tenggat eksplisit di kolom kanan (sebelumnya tak tampil di baris). Merah bila
   // sudah lewat tempo. Tak ditampilkan untuk task yang sudah selesai.
   const dueLabel = item.status !== 'COMPLETED' && item.targetCompletion
@@ -245,10 +248,10 @@ export function WorkboardView() {
   const SCHEDULE_LANES = getScheduleLanes()
   const TIME_FILTER_LABELS = getTimeFilterLabels()
   const {
-    workGroups, workGroupsStatus, reloadTasks, blockers, programs,
+    workGroups, workGroupsStatus, reloadTasks, programs,
     boardStatus,
     loadOverview,
-    normalizeHealthStatus, formatStatusLabel,
+    normalizeHealthStatus,
     boardOnOpen, clearBoardOnOpen,
     currentUser,
   } = useWorkspace()
@@ -350,6 +353,18 @@ export function WorkboardView() {
   // task lepas. Buka langsung ke konteks program. Board/List/Blockers tetap
   // tersedia sebagai mode alternatif.
   const [boardMode, setBoardMode] = useState<BoardMode>('by-program')
+
+  // #4: Blocker = filter (chip "Hanya blocker") yang menyaring task ber-blocker di
+  // grouping aktif — bukan tab tersendiri. + hint sekali-tampil bahwa tab Blockers
+  // lama kini pindah ke filter (redam "kok tabnya hilang?").
+  const [blockerOnly, setBlockerOnly] = useState(false)
+  const [blockerHintDismissed, setBlockerHintDismissed] = useState(() => {
+    try { return localStorage.getItem('wb.blockerHintDismissed') === '1' } catch { return false }
+  })
+  const dismissBlockerHint = () => {
+    setBlockerHintDismissed(true)
+    try { localStorage.setItem('wb.blockerHintDismissed', '1') } catch { /* ignore */ }
+  }
 
 
   // One-door condition reporting (modal target) + session memory of what the
@@ -482,7 +497,11 @@ export function WorkboardView() {
     return taskInFlight(t) || taskIsOverdue(t) || taskDueWithinDays(t, 7)
   }
 
-  const allItems = scopedItems.filter(matchesTimeFilter)
+  // #4: filter "Hanya blocker" diterapkan di SEMUA grouping (Program/Urgensi/PIC).
+  const viewScopedItems = blockerOnly
+    ? scopedItems.filter(i => i.isBlocked || i.status === 'BLOCKED')
+    : scopedItems
+  const allItems = viewScopedItems.filter(matchesTimeFilter)
 
   // ── By-Program view: group the user's in-scope tasks under their program,
   //    enriched with program metadata (health/progress/PIC) from the programs
@@ -501,7 +520,7 @@ export function WorkboardView() {
   }
   const programSections = (() => {
     const groups = new Map<number, Task[]>()
-    for (const item of scopedItems) {
+    for (const item of viewScopedItems) {
       const pid = item.workstream?.program?.id
       if (pid == null) continue
       if (!groups.has(pid)) groups.set(pid, [])
@@ -511,8 +530,10 @@ export function WorkboardView() {
     // tasks in the current scope — otherwise the in-view Report button is
     // unreachable and they'd be forced to the deep-link. Bounded to the user's
     // own programs (owner/co-PIC), so admins don't get every program injected.
+    // Saat filter "Hanya blocker" aktif, jangan injeksi program kosong (tak ada
+    // task ber-blocker → section kosong yang menyesatkan).
     const meId = currentUser?.id
-    if (meId != null) {
+    if (meId != null && !blockerOnly) {
       for (const pr of programs) {
         const mine = pr.owner?.id === meId || (pr.picPersons ?? []).some(pic => pic.id === meId)
         if (mine && !groups.has(pr.id)) groups.set(pr.id, [])
@@ -539,6 +560,32 @@ export function WorkboardView() {
         const ra = rankSlug(a._slug), rb = rankSlug(b._slug)
         if (ra !== rb) return ra - rb
         return (a.program?.code ?? '').localeCompare(b.program?.code ?? '')
+      })
+  })()
+
+  // #4: Grouping "Penanggung jawab" — task dikelompokkan per assignee, diurut
+  //     beban paling genting dulu (rank task tergenting). Unassigned ke bawah.
+  //     Sumber = allItems (sehingga time-filter & blocker-filter ikut berlaku).
+  const picSections = (() => {
+    if (boardMode !== 'pic') return []
+    type PicGroup = { id: number | null; name: string; avatarUrl?: string | null; items: Task[] }
+    const groups = new Map<number, PicGroup>()
+    for (const item of allItems) {
+      const a = item.assignee
+      const key = a?.id ?? 0
+      if (!groups.has(key)) groups.set(key, { id: a?.id ?? null, name: a?.name ?? t('Unassigned'), avatarUrl: a?.avatarUrl, items: [] })
+      groups.get(key)!.items.push(item)
+    }
+    return Array.from(groups.values())
+      .map(g => {
+        g.items.sort((x, y) => scheduleOf(x, normalizeHealthStatus).rank - scheduleOf(y, normalizeHealthStatus).rank)
+        const minRank = Math.min(...g.items.map(i => scheduleOf(i, normalizeHealthStatus).rank))
+        return { ...g, _rank: minRank }
+      })
+      .sort((a, b) => {
+        if ((a.id === null) !== (b.id === null)) return a.id === null ? 1 : -1
+        if (a._rank !== b._rank) return a._rank - b._rank
+        return a.name.localeCompare(b.name)
       })
   })()
 
@@ -714,12 +761,20 @@ export function WorkboardView() {
 
       {/* ── Filters + state row: toggles + selects + stats ── */}
       <div className="view-toolbar wb-toolbar-filters">
-        <div className="view-toggle">
-          {(['kanban', 'by-program', 'list', 'blockers'] as BoardMode[]).map(mode => (
-            <button className={`view-toggle-btn${boardMode === mode ? ' active' : ''}`} key={mode} onClick={() => setBoardMode(mode)}>
-              {mode === 'kanban' ? `⬜ ${t('Board')}` : mode === 'by-program' ? `▤ ${t('By Program')}` : mode === 'list' ? `≡ ${t('List')}` : `⚑ ${t('Blockers')}`}
-            </button>
-          ))}
+        {/* #4: satu sumbu "Kelompokkan" (ganti 4 tab yang terbaca seperti 4 app). */}
+        <div className="wb-groupby">
+          <span className="wb-groupby__label">{t('Group by')}</span>
+          <div className="view-toggle">
+            {([
+              ['by-program', t('Program')],
+              ['kanban', t('Urgency')],
+              ['pic', t('Owner')],
+            ] as [BoardMode, string][]).map(([mode, label]) => (
+              <button className={`view-toggle-btn${boardMode === mode ? ' active' : ''}`} key={mode} onClick={() => setBoardMode(mode)}>
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
         {/* BOD: monitoring badge only — no filter toggle */}
         {roleAccess.isMonitoringOnly ? (
@@ -783,6 +838,23 @@ export function WorkboardView() {
             <option key={ini.id} value={ini.id}>{ini.name}</option>
           ))}
         </select>
+        {/* #4: Blocker = filter (bukan tab). */}
+        <button
+          type="button"
+          className={`wb-blocker-chip${blockerOnly ? ' is-on' : ''}`}
+          onClick={() => { setBlockerOnly(v => !v); dismissBlockerHint() }}
+          aria-pressed={blockerOnly}
+          title={t('Show only tasks with an active blocker')}
+        >
+          <span className="wb-blocker-chip__box" aria-hidden="true">{blockerOnly ? '✓' : ''}</span>
+          ⚑ {t('Blockers only')}
+        </button>
+        {!blockerHintDismissed && (
+          <span className="wb-blocker-hint" role="note">
+            {t('“Blockers” moved here — it’s a filter now.')}
+            <button type="button" className="wb-blocker-hint__x" onClick={dismissBlockerHint} aria-label={t('Dismiss')}>×</button>
+          </span>
+        )}
         <div className="view-toolbar__right">
           <div className="view-toolbar__stats wb-stats wb-daily-summary">
             {/* Ringkasan = DISPLAY-ONLY (konsisten span semua). Penyaringan ada di
@@ -1034,7 +1106,7 @@ export function WorkboardView() {
                           item={item}
                           onClick={(e) => openTaskModal(item.id, e)}
                           normalizeHealthStatus={normalizeHealthStatus}
-                          showWorkstream={multiWorkstream}
+                          contextLabel={multiWorkstream ? item.workstream?.name : undefined}
                         />
                       ))}
                       {doneItems.length > 0 && (
@@ -1054,7 +1126,7 @@ export function WorkboardView() {
                               item={item}
                               onClick={(e) => openTaskModal(item.id, e)}
                               normalizeHealthStatus={normalizeHealthStatus}
-                              showWorkstream={multiWorkstream}
+                              contextLabel={multiWorkstream ? item.workstream?.name : undefined}
                             />
                           ))}
                         </>
@@ -1067,99 +1139,45 @@ export function WorkboardView() {
             </div>
           )}
 
-          {boardReady && boardMode === 'list' && (
-            <div className="panel">
-              <div className="panel__header">
-                <h3 className="panel__title">{myItemsOnly ? t('My Tasks') : t('All Tasks')}</h3>
-                <span className="badge">{t('{{count}} tasks', { count: allItems.length })}</span>
-              </div>
-              <div className="wi-list">
-                {allItems.map((item) => (
-                  <button
-                    className="wi-list-row"
-                    key={item.id}
-                    onClick={(e) => openTaskModal(item.id, e)}
-                  >
-                    <div className="wi-list-row__left">
-                      <span className="code-badge">{item.code}</span>
-                      <div>
-                        <strong>{item.title}</strong>
-                        <span className="text-muted text-sm">{item.workstream?.name ?? t('No workstream yet')}</span>
-                      </div>
+          {/* #4: Grouping "Penanggung jawab" — beban per orang, rows ber-grid sama. */}
+          {boardReady && boardMode === 'pic' && picSections.length === 0 ? (
+            <SectionState
+              icon="✨"
+              title={blockerOnly ? t('No blocked tasks') : t('No tasks match the current filter')}
+              text={t('Adjust the program / workstream filter, the time preset, or the blocker filter.')}
+            />
+          ) : null}
+          {boardReady && boardMode === 'pic' && picSections.length > 0 && (
+            <div className="wb-prog-list">
+              {picSections.map(g => {
+                const needAction = g.items.filter(i => taskIsOverdue(i) || i.isBlocked || i.status === 'BLOCKED').length
+                const initials = g.name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+                return (
+                  <section className="wb-prog" key={g.id ?? 'unassigned'}>
+                    <header className="wb-pic__head">
+                      {looksLikeAvatarUrl(g.avatarUrl)
+                        ? <img className="wb-pic__avatar" src={g.avatarUrl ?? ''} alt={g.name} style={{ objectFit: 'cover' }} />
+                        : <span className="wb-pic__avatar" aria-hidden="true">{initials || '—'}</span>}
+                      <span className="wb-pic__name">{g.name}</span>
+                      <span className="wb-pic__count">{t('{{count}} tasks', { count: g.items.length })}</span>
+                      {needAction > 0 && <span className="wb-pic__need">{t('{{count}} need action', { count: needAction })}</span>}
+                    </header>
+                    <div className="wb-prog__rows">
+                      {g.items.map(item => (
+                        <ProgramTaskRow
+                          key={item.id}
+                          item={item}
+                          onClick={(e) => openTaskModal(item.id, e)}
+                          normalizeHealthStatus={normalizeHealthStatus}
+                          contextLabel={item.workstream?.program?.code}
+                        />
+                      ))}
                     </div>
-                    <div className="wi-list-row__right">
-                      <span className={`status-dot-label status-dot-label--${statusSlug(item.status)}`}>
-                        {formatStatusLabel(item.status)}
-                      </span>
-                      <span className={`priority-badge priority-badge--${item.priority.toLowerCase()}`}>{priorityLabel(item.priority)}</span>
-                      <HealthPill status={normalizeHealthStatus(item.healthStatus ?? 'GREEN')} />
-                      {item.isBlocked ? <span className="severity-badge severity-badge--high">⚑</span> : null}
-                      <div className="progress-bar progress-bar--inline">
-                        <div className="progress-bar__fill" style={{ width: `${item.percentComplete}%` }} />
-                      </div>
-                      <span className="text-muted text-sm">{item.percentComplete}%</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                  </section>
+                )
+              })}
             </div>
           )}
-
-          {boardReady && boardMode === 'blockers' && (() => {
-            // Scope blocker SAMA spt task: My Tasks (assignedTo), filter program/
-            // workstream (via blocker.task). + konteks program & klik-ke-task —
-            // dulu tab ini abaikan semua filter & barisnya mati (tak bisa diklik).
-            const scopedBlockers = blockers
-              .filter(b => effectiveMyItemsOnly ? b.assignedTo === currentUser?.id : true)
-              .filter(b => boardFilterProgramId ? b.task?.workstream?.program?.id === boardFilterProgramId : true)
-              .filter(b => boardFilterWorkstreamId ? b.task?.workstream?.id === boardFilterWorkstreamId : true)
-            return (
-            <div className="panel">
-              <div className="panel__header">
-                <h3 className="panel__title">{t('Blocker Tracker')}</h3>
-                <span className="badge badge--red">{t('{{count}} blockers', { count: scopedBlockers.length })}</span>
-              </div>
-              {scopedBlockers.length > 0 ? (
-                <div className="blocker-list">
-                  {scopedBlockers.map((blocker) => {
-                    const prog = blocker.task?.workstream?.program
-                    const tid = blocker.taskId ?? blocker.task?.id
-                    const body = (
-                      <>
-                        <div className="blocker-row__left">
-                          <span className={`severity-badge severity-badge--${blocker.severity.toLowerCase()}`}>
-                            {severityLabel(blocker.severity)}
-                          </span>
-                          <div>
-                            <strong>{blocker.code}</strong>
-                            <p>{blocker.title}</p>
-                            {(prog || blocker.task) && (
-                              <span className="blocker-row__context">
-                                {prog && <span className="blocker-row__prog">{prog.code}</span>}
-                                {prog && blocker.task && <span className="blocker-row__sep"> › </span>}
-                                {blocker.task && <span>{blocker.task.title}</span>}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <span className="badge">{formatStatusLabel(blocker.status)}</span>
-                      </>
-                    )
-                    return tid ? (
-                      <button type="button" className="blocker-row blocker-row--clickable" key={blocker.id} onClick={(e) => openTaskModal(tid, e)}>
-                        {body}
-                      </button>
-                    ) : (
-                      <div className="blocker-row" key={blocker.id}>{body}</div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <SectionState icon="✅" title={t('No blockers')} text={effectiveMyItemsOnly ? t('No blockers on your tasks right now.') : t('No blockers recorded at this time.')} />
-              )}
-            </div>
-            )
-          })()}
         </div>
 
       </div>
