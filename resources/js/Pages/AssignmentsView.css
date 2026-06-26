@@ -206,6 +206,21 @@
   }
 }
 
+/* Phone: kanban kolom = satu lajur full-width yang ditumpuk vertikal.
+   `auto-fill, minmax(260px,1fr)` di ≤640 menyisakan satu lajur ~260px yang
+   tidak melebar penuh sehingga ada void di kanan. Kunci ke 1 kolom eksplisit
+   + matikan scroll-x agar lajur mengisi lebar layar. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .assignments-v2 .kanban-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .assignments-v2 .workboard-main { overflow-x: hidden; }
+  /* Global `.kanban-col` punya max-width:280px (workboard.css) untuk board
+     multi-kolom desktop. Di phone kolomnya ditumpuk satu-lajur, jadi cap itu
+     menyisakan void di kanan — lepas agar mengisi lebar layar. */
+  .assignments-v2 .kanban-col { max-width: none; }
+}
+
 .assignments-v2 .kanban-col {
   background: var(--ds-surface-sunken);
   border: 1px solid var(--ds-border-subtle);

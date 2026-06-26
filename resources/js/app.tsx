@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client'
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers'
 import { RealtimeProvider } from './contexts/RealtimeProvider'
 import { WorkspaceProvider } from './contexts/workspace'
+import { UserProfileProvider } from './components/UserProfileModal'
 import { AppShell } from './layouts/AppShell'
 
 class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; stack: string }> {
@@ -112,7 +113,9 @@ createInertiaApp({
                 <AppErrorBoundary>
                     <RealtimeProvider>
                         <WorkspaceProvider>
-                            <AppShell>{page}</AppShell>
+                            <UserProfileProvider>
+                                <AppShell>{page}</AppShell>
+                            </UserProfileProvider>
                         </WorkspaceProvider>
                     </RealtimeProvider>
                 </AppErrorBoundary>

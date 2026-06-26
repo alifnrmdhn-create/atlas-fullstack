@@ -56,6 +56,7 @@ export type CharterStatus = {
   achievementPct: number | null // null for non-scorecard
   badgeColor: string
   completedCount: number
+  inProgressCount: number
   totalCount: number
 }
 

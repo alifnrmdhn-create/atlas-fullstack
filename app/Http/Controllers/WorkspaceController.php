@@ -602,6 +602,82 @@ class WorkspaceController extends Controller
         ]);
     }
 
+    /**
+     * Profil publik user lain — read-only, dipakai oleh UserProfileModal yang
+     * dibuka saat klik nama/avatar orang (Presence, Channels, dst). Ini BUKAN
+     * profile() (yang self-only + editable). Field-nya selaras dengan yang
+     * sudah tampil di Presence (nama/posisi/email/status) + atasan langsung +
+     * ringkasan beban kerja ringan (read-only). Semua user terautentikasi
+     * boleh melihat — konsisten dengan /users/directory & /users/presence yang
+     * juga tidak di-scope direktorat (direktori orang memang lintas-direktorat).
+     */
+    public function userProfile(Request $request, int $id, OrgChainService $orgChain): JsonResponse
+    {
+        $user = User::query()
+            ->with([
+                'unit:id,code,name',
+                'directorate:id,code,name',
+                'position:id,code,name,levelCode,roleType',
+            ])
+            ->findOrFail($id);
+
+        $supervisor = $orgChain->getDirectSupervisor($user);
+        $status     = UserStatus::query()->where('userId', $user->id)->first();
+
+        $orgRef = fn ($rel) => $rel ? ['id' => $rel->id, 'code' => $rel->code, 'name' => $rel->name] : null;
+
+        return response()->json([
+            'user' => [
+                'id'            => $user->id,
+                'name'          => $user->name,
+                'email'         => $user->email,
+                'phone'         => $user->phone,
+                'roleType'      => $user->roleType,
+                'positionTitle' => $user->positionTitle,
+                'avatarUrl'     => $user->avatarUrl,
+                'isActive'      => (bool) $user->isActive,
+                'unit'          => $orgRef($user->unit),
+                'directorate'   => $orgRef($user->directorate),
+                'position'      => $user->position ? [
+                    'id'        => $user->position->id,
+                    'code'      => $user->position->code,
+                    'name'      => $user->position->name,
+                    'levelCode' => $user->position->levelCode,
+                    'roleType'  => $user->position->roleType,
+                ] : null,
+            ],
+            'presence' => $status ? [
+                'status'         => $status->status,
+                'statusMessage'  => $status->statusMessage,
+                'statusEmoji'    => $status->statusEmoji,
+                'lastActivityAt' => $status->lastActivityAt,
+            ] : null,
+            'supervisor' => $supervisor ? [
+                'id'            => $supervisor->id,
+                'name'          => $supervisor->name,
+                'roleType'      => $supervisor->roleType,
+                'positionTitle' => $supervisor->positionTitle,
+                'avatarUrl'     => $supervisor->avatarUrl,
+            ] : null,
+            // Beban kerja ringkas (read-only). assignedTo/assigneeId/ownerId
+            // sesuai NAMING_CONVENTION. Status "selesai/batal" dikecualikan agar
+            // angka = pekerjaan yang masih berjalan.
+            'workload' => [
+                'activeTasks' => Task::query()
+                    ->where('assignedTo', $user->id)
+                    ->whereNotIn('status', ['COMPLETED', 'CANCELLED'])
+                    ->count(),
+                'activeAssignments' => Assignment::query()
+                    ->where('assigneeId', $user->id)
+                    ->whereNotIn('status', ['SELESAI', 'DITOLAK', 'DIBATALKAN', 'COMPLETED', 'CANCELLED'])
+                    ->count(),
+                'programsOwned' => Program::query()
+                    ->where('ownerId', $user->id)
+                    ->count(),
+            ],
+        ]);
+    }
+
     public function updateProfile(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -754,18 +830,28 @@ class WorkspaceController extends Controller
             $update['passwordHash'] = Hash::make($data['password']);
         }
 
+        // Transfer ke jabatan baru ATAU melepas jabatan (vacate → positionId null).
+        // Kedua-duanya = perubahan jabatan yang harus dijejak. positionId null yang
+        // dikirim eksplisit (key ada) berarti "jadikan vacant".
+        $newPositionId = array_key_exists('positionId', $data) ? $data['positionId'] : null;
         $positionChanged = array_key_exists('positionId', $data)
-            && $data['positionId']
-            && (int) $data['positionId'] !== (int) $user->positionId;
+            && (int) ($newPositionId ?? 0) !== (int) ($user->positionId ?? 0);
+        $vacating = array_key_exists('positionId', $data) && ! $newPositionId;
 
-        if (array_key_exists('positionId', $data) && $data['positionId']) {
-            $position = Position::query()->find($data['positionId']);
+        if ($newPositionId) {
+            $position = Position::query()->find($newPositionId);
             $update['unitId'] = $position?->divisionId;
             $update['directorateId'] = $position?->directorateId;
             $update['positionTitle'] = $position?->name;
             // Sinkronkan hak akses (roleType) dari jabatan — sebelumnya terlewat,
             // sehingga mutasi jabatan tidak mengubah role (mis. Kasubdiv tetap Asisten).
             $update['roleType'] = $position?->roleType ?? $user->roleType;
+        } elseif ($vacating) {
+            // Lepas dari jabatan: kosongkan denormalisasi org. roleType (akses sistem)
+            // sengaja dipertahankan — untuk mencabut akses gunakan Deactivate terpisah.
+            $update['unitId'] = null;
+            $update['directorateId'] = null;
+            $update['positionTitle'] = null;
         }
 
         $user->update($update);
@@ -779,15 +865,19 @@ class WorkspaceController extends Controller
                 ->whereNull('endDate')
                 ->update(['endDate' => $now]);
 
-            PositionHistory::create([
-                'userId' => $user->id,
-                'positionId' => (int) $data['positionId'],
-                'startDate' => $now,
-                'mutationType' => $data['mutationType'] ?? 'mutation',
-                'mutationReason' => $data['mutationReason'] ?? null,
-                'skNumber' => $data['skNumber'] ?? null,
-                'createdBy' => $request->user()?->id,
-            ]);
+            // Saat vacating, riwayat lama cukup ditutup (endDate) tanpa baris baru —
+            // PositionHistory.positionId NOT NULL + FK, tak bisa menyimpan "kosong".
+            if (! $vacating) {
+                PositionHistory::create([
+                    'userId' => $user->id,
+                    'positionId' => (int) $newPositionId,
+                    'startDate' => $now,
+                    'mutationType' => $data['mutationType'] ?? 'mutation',
+                    'mutationReason' => $data['mutationReason'] ?? null,
+                    'skNumber' => $data['skNumber'] ?? null,
+                    'createdBy' => $request->user()?->id,
+                ]);
+            }
 
             $this->scopeResolver->invalidate($user->id);
 

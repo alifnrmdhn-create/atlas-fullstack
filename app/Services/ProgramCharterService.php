@@ -173,14 +173,19 @@ class ProgramCharterService
         $totalCount = $tasks->count();
         // DB pakai status 'COMPLETED' (bukan 'DONE') — cek 'DONE' lama selalu 0.
         $completedCount = $tasks->whereIn('status', ['COMPLETED', 'DONE'])->count();
+        // In-progress mencakup IN_REVIEW (kerja sudah jalan, tinggal verifikasi).
+        // Dipakai StatusPanel untuk mendamaikan "0/3 done" dengan "% Achievement"
+        // berbasis-minggu — supaya angka tak terbaca kontradiktif.
+        $inProgressCount = $tasks->whereIn('status', ['IN_PROGRESS', 'IN_REVIEW'])->count();
         $achievementPct = $this->computeAchievementPct($program, $tasks);
 
         return [
-            'health'         => $health['key'],
-            'achievementPct' => $achievementPct,
-            'badgeColor'     => $health['color'],
-            'completedCount' => $completedCount,
-            'totalCount'     => $totalCount,
+            'health'          => $health['key'],
+            'achievementPct'  => $achievementPct,
+            'badgeColor'      => $health['color'],
+            'completedCount'  => $completedCount,
+            'inProgressCount' => $inProgressCount,
+            'totalCount'      => $totalCount,
         ];
     }
 

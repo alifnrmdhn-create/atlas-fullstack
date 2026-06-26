@@ -1,0 +1,298 @@
+/* UserProfileModal — pop-up profil read-only orang lain.
+   Token --ds-* (dark-aware). Scrim theme-independent → dark-allow. */
+
+.upm-overlay {
+  position: fixed;
+  inset: 0;
+  /* Di atas modal/panel app (Workboard task modal = 9800, dst) karena profil
+     sering dibuka DARI dalam modal lain. Lightbox (9999) diluncurkan dari sini
+     jadi tetap di atas profil. */
+  z-index: 9900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ds-space-5);
+  background: rgba(15, 23, 26, 0.55); /* dark-allow: scrim sama di kedua tema */
+  backdrop-filter: blur(2px);
+  animation: upm-fade 0.14s ease;
+}
+
+@keyframes upm-fade { from { opacity: 0 } to { opacity: 1 } }
+
+.upm-modal {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100vh - 2 * var(--ds-space-5));
+  overflow-y: auto;
+  background: var(--ds-surface-card);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-modal);
+  padding: var(--ds-space-6);
+  animation: upm-pop 0.16s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes upm-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.98) }
+  to   { opacity: 1; transform: none }
+}
+
+.upm-close {
+  position: absolute;
+  top: var(--ds-space-3);
+  right: var(--ds-space-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: var(--ds-radius-md);
+  background: transparent;
+  color: var(--ds-text-tertiary);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.upm-close:hover { background: var(--ds-surface-hover); color: var(--ds-text-primary); }
+
+/* ── Loading / error ── */
+.upm-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-10) var(--ds-space-4);
+  color: var(--ds-text-secondary);
+  font-size: var(--ds-text-14);
+}
+.upm-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid var(--ds-border-default);
+  border-top-color: var(--ds-brand-500);
+  border-radius: 50%;
+  animation: upm-spin 0.7s linear infinite;
+}
+@keyframes upm-spin { to { transform: rotate(360deg) } }
+
+/* ── Header (band bertint = "hero" kartu) ── */
+.upm-header {
+  display: flex;
+  gap: var(--ds-space-4);
+  align-items: flex-start;
+  margin: calc(-1 * var(--ds-space-6)) calc(-1 * var(--ds-space-6)) 0;
+  padding: var(--ds-space-6) var(--ds-space-8) var(--ds-space-5) var(--ds-space-6);
+  background: linear-gradient(180deg, var(--ds-brand-50), transparent);
+  border-bottom: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
+}
+
+.upm-avatar-btn {
+  position: relative;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  line-height: 0;
+}
+.upm-avatar-btn.is-photo { cursor: zoom-in; }
+.upm-avatar-btn .avatar {
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--ds-surface-card), 0 1px 3px rgba(15, 23, 26, 0.12); /* dark-allow: drop shadow halus */
+}
+
+.upm-dot {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 16px;
+  height: 16px;
+  border: 2.5px solid var(--ds-surface-card);
+  border-radius: 50%;
+}
+
+.upm-avatar-zoom {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff; /* dark-allow: ikon di atas scrim gelap, sama dua tema */
+  background: rgba(15, 23, 26, 0.42); /* dark-allow */
+  opacity: 0;
+  transition: opacity 0.14s ease;
+}
+.upm-avatar-btn.is-photo:hover .upm-avatar-zoom,
+.upm-avatar-btn.is-photo:focus-visible .upm-avatar-zoom { opacity: 1; }
+
+.upm-id { min-width: 0; flex: 1; padding-top: var(--ds-space-1); }
+.upm-name {
+  margin: 0;
+  font-size: var(--ds-text-20);
+  font-weight: 650;
+  color: var(--ds-text-primary);
+  line-height: 1.25;
+}
+.upm-position {
+  margin-top: 2px;
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-secondary);
+}
+.upm-org {
+  margin-top: 2px;
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-tertiary);
+}
+.upm-org-sep { color: var(--ds-border-strong); }
+
+.upm-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-2);
+  margin-top: var(--ds-space-3);
+}
+.upm-status-msg {
+  font-size: var(--ds-text-13);
+  color: var(--ds-text-secondary);
+}
+.upm-active {
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-tertiary);
+}
+
+/* ── Sections ── */
+.upm-section {
+  margin-top: var(--ds-space-5);
+  padding-top: var(--ds-space-5);
+  border-top: 1px solid var(--ds-border-subtle);
+}
+/* Section pertama tepat di bawah header → cukup pakai pembatas header. */
+.upm-header + .upm-section {
+  border-top: none;
+  padding-top: 0;
+  margin-top: var(--ds-space-5);
+}
+.upm-section__label {
+  font-size: var(--ds-text-11);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ds-text-tertiary);
+  margin-bottom: var(--ds-space-3);
+}
+
+/* ── Contact rows ── */
+.upm-contact {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  width: 100%;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-sunken);
+  color: var(--ds-text-primary);
+  font-size: var(--ds-text-13);
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.upm-contact + .upm-contact { margin-top: var(--ds-space-2); }
+.upm-contact:hover { border-color: var(--ds-border-strong); background: var(--ds-surface-hover); }
+.upm-contact.is-copied { border-color: var(--ds-brand-500); }
+.upm-contact__ico { flex-shrink: 0; color: var(--ds-text-tertiary); }
+.upm-contact__val {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.upm-contact__hint {
+  flex-shrink: 0;
+  font-size: var(--ds-text-11);
+  font-weight: 600;
+  color: var(--ds-brand-600);
+}
+
+/* ── Supervisor ── */
+.upm-supervisor {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  width: 100%;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-sunken);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.upm-supervisor:hover { border-color: var(--ds-border-strong); background: var(--ds-surface-hover); }
+.upm-supervisor__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.upm-supervisor__name {
+  font-size: var(--ds-text-13);
+  font-weight: 600;
+  color: var(--ds-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.upm-supervisor__pos {
+  font-size: var(--ds-text-11);
+  color: var(--ds-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.upm-supervisor__chev { flex-shrink: 0; color: var(--ds-text-tertiary); }
+
+/* ── Workload stats ── */
+.upm-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--ds-space-2);
+}
+.upm-stats .ds-stat {
+  padding: var(--ds-space-3) var(--ds-space-2);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-sunken);
+  text-align: center;
+}
+/* Label workload selalu 1 baris, tinggi seragam (grid tak miring). */
+.upm-stats .ds-stat__label { white-space: nowrap; }
+.upm-zero { color: var(--ds-text-tertiary); font-weight: 500; }
+
+/* ── Footer ── */
+.upm-footer {
+  margin-top: var(--ds-space-6);
+  display: flex;
+}
+.upm-footer .ds-button { width: 100%; justify-content: center; }
+
+/* ── Phone ≤640: bottom-sheet ── */
+@media (max-width: 640px) {
+  .upm-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .upm-modal {
+    max-width: 100%;
+    max-height: 92vh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    padding-bottom: calc(var(--ds-space-6) + env(safe-area-inset-bottom));
+    animation: upm-sheet 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+  @keyframes upm-sheet {
+    from { transform: translateY(100%) }
+    to   { transform: none }
+  }
+}

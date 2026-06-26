@@ -110,6 +110,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/users', [WorkspaceController::class, 'storeUser'])->name('users.store');
     Route::get('/users/directory', [WorkspaceController::class, 'usersDirectory'])->name('users.directory');
     Route::get('/users/presence', [WorkspaceController::class, 'usersPresence'])->name('users.presence');
+    // Profil publik read-only user lain (UserProfileModal). {id} numeric agar tak
+    // bentrok dengan literal /users/directory & /users/presence di atas.
+    Route::get('/users/{id}/profile', [WorkspaceController::class, 'userProfile'])->whereNumber('id')->name('users.profile');
     Route::put('/users/me/status', [WorkspaceController::class, 'updateMyStatus'])->name('users.me.status');
     Route::post('/users/me/tours-completed', [WorkspaceController::class, 'markTourCompleted'])->name('users.me.tours-completed');
     Route::patch('/users/{id}', [WorkspaceController::class, 'updateUser'])->name('users.update');

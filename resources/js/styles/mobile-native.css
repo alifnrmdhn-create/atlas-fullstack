@@ -433,6 +433,13 @@
   padding: 2px;
   -ms-overflow-style: none;
   scrollbar-width: none;
+  /* `overflow-x:auto` membuat overflow-y dikomputasi jadi `auto` (scroll
+     container). Sebagai flex-item di kolom `.pm`, min-height otomatisnya
+     jatuh ke 0 dan basisnya kolaps → baris chip menyusut ke ~4px (label &
+     angka terpotong). Kunci tingginya ke konten + jangan biarkan menyusut. */
+  flex-shrink: 0;
+  min-height: 40px;
+  align-items: center;
 }
 .pm__chips::-webkit-scrollbar { display: none; }
 .pm__chip {

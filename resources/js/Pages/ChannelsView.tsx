@@ -13,6 +13,7 @@ import i18n from '../lib/i18n'
 import { workStatusLabel, priorityLabel } from '../lib/status'
 import { getProgramHealthDisplay, getProgramDisplayStatus } from '../lib/programStatus'
 import { useInlineToast } from '../components/InlineToast'
+import { ImageLightbox } from '../components/ImageLightbox'
 import { PageHeader } from '../design-system'
 import './ChannelsView.css'
 import {
@@ -360,40 +361,6 @@ function PdfThumbnail({ url }: { url: string }) {
 
   if (failed) return null
   return <canvas className="doc-pdf-thumb" ref={canvasRef} />
-}
-
-function ImageLightbox({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
-  useEscKey(onClose)
-  return createPortal(
-    <div
-      className="lightbox-overlay"
-      onClick={onClose}
-    >
-      <button aria-label={i18n.t('Close')} className="lightbox-close" onClick={onClose} type="button">
-        <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeWidth="2" viewBox="0 0 24 24" width="18">
-          <path d="M18 6 6 18M6 6l12 12"/>
-        </svg>
-      </button>
-      <img
-        alt={name}
-        className="lightbox-img"
-        onClick={(e) => e.stopPropagation()}
-        src={url}
-      />
-      <a
-        className="lightbox-download"
-        download={name}
-        href={url}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <svg fill="none" height="15" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="15">
-          <path d="M12 3v13M5 16l7 7 7-7"/><path d="M3 21h18"/>
-        </svg>
-        {i18n.t('Download')}
-      </a>
-    </div>,
-    document.body,
-  )
 }
 
 const IcoBlocker = () => (
@@ -1901,7 +1868,7 @@ export function ChannelsView({
           <div className="channel-header-slim__title">
             {selectedDmPartner ? (
               <>
-                <Avatar name={selectedDmPartner.name} size={40} avatarUrl={selectedDmPartner.avatarUrl} />
+                <Avatar name={selectedDmPartner.name} size={40} avatarUrl={selectedDmPartner.avatarUrl} userId={selectedDmPartner.id} />
                 <div className="channel-header-slim__dm-info">
                   <div className="channel-header-slim__dm-top">
                     <h3>{selectedDmPartner.name}</h3>
@@ -2275,7 +2242,7 @@ export function ChannelsView({
                       ) : (
                         <div className="message-card__avatar">
                           <div className="message-card__avatar-wrap">
-                            <Avatar name={message.authorName ?? 'Unknown'} avatarUrl={message.authorAvatarUrl} />
+                            <Avatar name={message.authorName ?? 'Unknown'} avatarUrl={message.authorAvatarUrl} userId={message.userId} />
                             {presenceStatusMap.has(message.userId) && (
                               <span className={`message-card__presence-dot msg-dot--${presenceStatusMap.get(message.userId)!}`} />
                             )}
@@ -3270,7 +3237,7 @@ export function ChannelsView({
               <div className="presence-list">
                 {channelMembers.map((member) => (
                   <div className="member-row member-row--channel member-row--manageable" key={member.userId}>
-                    <Avatar name={member.name} avatarUrl={member.avatarUrl} />
+                    <Avatar name={member.name} avatarUrl={member.avatarUrl} userId={member.userId} />
                     <div>
                       <strong>{member.name}</strong>
                       <p>

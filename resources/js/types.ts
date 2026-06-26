@@ -26,6 +26,42 @@ export type ManagerSummary = {
   positionTitle?: string
 }
 
+// Respons GET /users/{id}/profile — profil publik read-only orang lain,
+// dirender oleh UserProfileModal. Bukan profil editable milik sendiri.
+export type UserProfileData = {
+  user: {
+    id: number
+    name: string
+    email?: string | null
+    phone?: string | null
+    roleType: string
+    positionTitle?: string | null
+    avatarUrl?: string | null
+    isActive: boolean
+    unit?: OrganizationRef | null
+    directorate?: OrganizationRef | null
+    position?: { id: number; code: string; name: string; levelCode?: string | null; roleType?: string | null } | null
+  }
+  presence: {
+    status: PresenceStatus
+    statusMessage?: string | null
+    statusEmoji?: string | null
+    lastActivityAt: string
+  } | null
+  supervisor: {
+    id: number
+    name: string
+    roleType?: string | null
+    positionTitle?: string | null
+    avatarUrl?: string | null
+  } | null
+  workload: {
+    activeTasks: number
+    activeAssignments: number
+    programsOwned: number
+  }
+}
+
 export type AuthUser = {
   id: number
   userId: string

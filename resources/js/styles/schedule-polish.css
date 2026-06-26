@@ -34,12 +34,30 @@
 /* ───────── Calendar detail panel: prevent narrow text wrapping ─────────
    When the right detail panel is too narrow, "Rapat Organizing Committee"
    wraps to many 1-2 word lines. Set a sensible min-width to keep text
-   readable.                                                              */
-.schedule-v2 .schedule-detail-panel,
-.view-schedule .schedule-detail-panel,
+   readable — but ONLY when the panel is actually open. The closed panel is
+   `width:0`; without the `--open` gate the 320px min-width forced it to
+   reserve 320px permanently, which on a 390px phone squeezed the calendar/
+   list into a ~70px sliver glued to the left (the "nyempit ke kiri" bug). */
+.schedule-v2 .schedule-detail-panel--open,
+.view-schedule .schedule-detail-panel--open,
 .schedule-v2 [class*="schedule-content"] > aside,
 .view-schedule [class*="schedule-content"] > aside {
   min-width: 320px !important;
+}
+
+/* Phone: the open detail panel becomes a full-bleed overlay, so drop the
+   320px floor (viewport may be < 320 + chrome) and let it fill the width.
+   The misc-views.css ≤900 rule already sets width:100%; here we just make
+   sure the min-width floor can't reintroduce a horizontal sliver. */
+@media (max-width: 640px) {
+  .schedule-v2 .schedule-detail-panel--open,
+  .view-schedule .schedule-detail-panel--open,
+  .schedule-v2 [class*="schedule-content"] > aside,
+  .view-schedule [class*="schedule-content"] > aside {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
 }
 
 /* Detail panel title: prevent extreme line breaks */

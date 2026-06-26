@@ -66,12 +66,27 @@
 /* Section title modern: sentence case, no uppercase tracking. Konsisten
    dengan typography refresh di halaman lain (Ringkasan/Struktur). */
 .charter-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
   color: var(--text-strong);
   margin: 0;
+}
+/* Eyebrow accent tipis — ritme dokumen executive-brief. */
+.charter-section-title::before {
+  content: '';
+  width: 3px;
+  height: 13px;
+  border-radius: 2px;
+  background: var(--green);
+  flex-shrink: 0;
+}
+@media print {
+  .charter-section-title::before { display: none; }
 }
 
 /* ── Header strip (metadata top row) ──────────────────────────────── */
@@ -208,6 +223,17 @@
   color: var(--text-muted);
   margin-top: 2px;
 }
+/* Meta periode — durasi + posisi bulan berjalan ("6 months · month 5 of 6"). */
+.cs-header__meta {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.cs-header__meta-dot {
+  margin: 0 5px;
+  opacity: 0.55;
+}
 .cs-header__sub--muted {
   font-style: italic;
 }
@@ -327,8 +353,9 @@
 }
 .cs-status__head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  gap: 10px;
 }
 .cs-status__label {
   font-size: 11.5px;
@@ -367,6 +394,30 @@
 .cs-status__bar--terlambat .cs-status__bar-fill { background: var(--red); }
 .cs-status__bar--completed .cs-status__bar-fill { background: var(--green); }
 
+/* Health chip di pojok kanan-atas kartu (sejajar label). */
+.cs-status__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.cs-status__chip--on_track { background: color-mix(in srgb, var(--green) 12%, transparent); color: var(--green); }
+.cs-status__chip--at_risk { background: color-mix(in srgb, var(--yellow) 14%, transparent); color: var(--yellow); }
+.cs-status__chip--terlambat { background: color-mix(in srgb, var(--red) 12%, transparent); color: var(--red); }
+.cs-status__chip--completed { background: color-mix(in srgb, var(--green) 12%, transparent); color: var(--green); }
+/* Caption basis angka achievement — di bawah angka besar. */
+.cs-status__caption {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
 .cs-status__health-row {
   display: flex;
   align-items: center;
@@ -388,49 +439,52 @@
   font-weight: 500;
   color: var(--text-strong);
 }
+/* Breakdown aktivitas — mendamaikan "X/Y done" dengan % achievement
+   (basis minggu). Baris utama completed/total + sub in-progress/not-started. */
 .cs-status__breakdown {
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--panel-border);
-  font-size: 12px;
-  color: var(--text-muted);
+}
+.cs-status__breakdown-row {
   display: flex;
   align-items: baseline;
-  gap: 4px;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
 }
-/* Mini track for activity ratio — full width below "X/Y aktivitas selesai" */
-.cs-status__activity-track {
-  width: 100%;
-  height: 4px;
-  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
-  border-radius: 99px;
-  overflow: hidden;
-  margin-top: 6px;
+.cs-status__breakdown-key {
+  font-size: 12px;
+  color: var(--text-muted);
 }
-.cs-status__activity-fill {
-  height: 100%;
-  border-radius: 99px;
-  transition: width 240ms ease;
-  background: var(--green);
-}
-.cs-status__activity-fill--at_risk { background: var(--yellow); }
-.cs-status__activity-fill--terlambat { background: var(--red); }
+.cs-status__breakdown-val { font-variant-numeric: tabular-nums; }
 .cs-status__breakdown-num {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-strong);
-  font-variant-numeric: tabular-nums;
 }
 .cs-status__breakdown-sep,
 .cs-status__breakdown-total {
   font-size: 14px;
   color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
 }
-.cs-status__breakdown-label {
-  margin-left: 4px;
+.cs-status__breakdown-sub {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+  font-size: 11.5px;
+  color: var(--text-muted);
 }
+.cs-status__breakdown-dot { margin: 0 2px; }
+.cs-status__pip {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.cs-status__pip--progress { background: var(--blue); }
+.cs-status__pip--idle { background: color-mix(in srgb, var(--text-muted) 45%, transparent); }
 
 /* ── Update panel (side rail) ─────────────────────────────────────── */
 .cs-update {
@@ -490,12 +544,26 @@
   min-width: 0;
 }
 .cs-pica__label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
   color: var(--text-strong);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+}
+.cs-pica__label::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--green) 70%, transparent);
+  flex-shrink: 0;
+}
+@media print {
+  .cs-pica__label::before { display: none; }
 }
 .cs-pica__body {
   display: flex;
@@ -789,6 +857,10 @@
      lebih sempit, .charter-grid stack vertikal jadi table dapat full width. */
   min-width: 800px;
   border-collapse: collapse;
+  /* Fixed layout: kolom identitas dikunci selebar konten, 12 kolom bulan
+     (width:auto) menyerap SISA ruang → bar panjang & grid mengisi kartu,
+     bukan kolom Activity yang membengkak menyisakan void. */
+  table-layout: fixed;
   font-size: 11.5px;
 }
 
@@ -836,13 +908,13 @@
 .atl-head--mon {
   text-align: center;
   font-variant-numeric: tabular-nums;
-  width: 36px;
+  width: auto; /* serap sisa ruang (table-layout: fixed) */
   padding: 8px 4px;
 }
-.atl-head--name { min-width: 150px; }
-.atl-head--workstream { min-width: 95px; }
-.atl-head--deliverable { min-width: 100px; }
-.atl-head--label { width: 44px; padding: 8px 6px; }
+.atl-head--name { width: 264px; }
+.atl-head--workstream { width: 120px; }
+.atl-head--deliverable { width: 130px; }
+.atl-head--label { width: 54px; padding: 8px 6px; }
 
 .atl-row {
   border-bottom: 1px solid var(--panel-border);
@@ -887,29 +959,172 @@
 }
 .atl-cell--label {
   color: var(--text-muted);
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   padding: 6px 8px;
-  background: var(--surface-1);
+  background: transparent;
 }
 .atl-cell--mon {
-  padding: 4px;
+  position: relative;
+  height: 30px;
+  padding: 0;
   text-align: center;
-  border-left: 1px solid var(--panel-border-soft, var(--panel-border));
+}
+/* Bars meniadakan separator antar sub-row (target/real) di area bulan —
+   satu aktivitas terbaca sebagai satu blok track+bar, bukan dua baris grid. */
+.atl-row--real .atl-cell--mon {
+  border-top: 0;
 }
 
-/* Cell color states — per PPT slide 21 vocabulary */
-.atl-cell--mon.is-target {
-  background: color-mix(in srgb, var(--green) 18%, transparent);
-}
-.atl-cell--mon.is-realized {
+/* ── Timeline bars (pill menerus) ──────────────────────────────────────
+   Target = track tipis (light), Real = bar solid (oranye saat below). Span
+   absolut, center-vertikal; sel sejenis bersebelahan abut → pill menyatu.
+   Inset + rounding 7px HANYA di ujung run (is-start / is-end). */
+.atl-bar {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  height: 15px;
   background: var(--green);
 }
-.atl-cell--mon.is-below {
-  background: color-mix(in srgb, var(--orange, #f59e0b) 65%, transparent);
+.atl-bar.is-start {
+  left: 3px;
+  border-top-left-radius: 7px;
+  border-bottom-left-radius: 7px;
 }
+.atl-bar.is-end {
+  right: 3px;
+  border-top-right-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+.atl-bar--target {
+  height: 8px;
+  background: color-mix(in srgb, var(--green) 22%, transparent);
+}
+.atl-bar--realized { background: var(--green); }
+.atl-bar--below { background: color-mix(in srgb, var(--orange) 68%, transparent); }
+
+/* ── Garis penanda waktu ───────────────────────────────────────────────
+   Saran Pak Iswahyudi (Jun 2026): beri anchor waktu pada grid TARGET/REAL
+   supaya keterlambatan terbaca, bukan "semua sesuai plan".
+   - Biru solid  = posisi bulan berjalan ("sekarang") di tepi kiri kolom.
+   - Merah putus = bulan target selesai program, di tepi kanan kolom.
+   Garis digambar per-cell via pseudo-element (border-collapse mematahkan
+   border vertikal kontinu); cell-cell saling tumpuk → garis menyambung.
+   z-index 1 supaya kolom Aktivitas sticky (z-2) tetap menutupi saat scroll. */
+.atl-col-now,
+.atl-col-now--past,
+.atl-col-deadline,
+.atl-col-deadline--past {
+  position: relative;
+}
+
+/* Tooltip kustom garis penanda — portal ke body, position:fixed (tak terpotong
+   overflow tabel). Warna auto-invert lewat token: bg text-strong + teks panel. */
+.atl-tip {
+  position: fixed;
+  z-index: 1200;
+  transform: translate(-50%, -100%);
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: var(--text-strong);
+  color: var(--panel);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  letter-spacing: 0;
+  pointer-events: none;
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--text-strong) 26%, transparent);
+}
+.atl-col-now::before,
+.atl-col-now--past::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: -1px;
+  width: 2px;
+  background: var(--blue);
+  z-index: 1;
+  pointer-events: none;
+}
+.atl-col-now::before { left: -1px; }
+.atl-col-now--past::before { right: -1px; }
+.atl-col-deadline::after,
+.atl-col-deadline--past::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: -1px;
+  right: -1px;
+  border-right: 2px dashed var(--red);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ── Toolbar di atas tabel: caption workstream (kiri) + legend (kanan) ── */
+.atl-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.atl-group {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11.5px;
+  min-width: 0;
+}
+.atl-group__label { color: var(--text-muted); }
+.atl-group__value {
+  color: var(--text-strong);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Legend — selalu rata kanan (margin-left auto) baik ada caption maupun tidak. */
+.atl-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.atl-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.atl-legend__chip {
+  display: inline-block;
+  width: 16px;
+  height: 9px;
+  border-radius: 5px;
+}
+.atl-legend__chip--target { background: color-mix(in srgb, var(--green) 22%, transparent); }
+.atl-legend__chip--real { background: var(--green); }
+.atl-legend__sep {
+  width: 1px;
+  height: 12px;
+  background: var(--panel-border);
+}
+.atl-legend__mark {
+  display: inline-block;
+  width: 0;
+  height: 13px;
+}
+.atl-legend__mark--now { border-left: 2px solid var(--blue); }
+.atl-legend__mark--deadline { border-left: 2px dashed var(--red); }
 
 .atl-muted {
   color: var(--text-muted);

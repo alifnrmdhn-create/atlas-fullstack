@@ -24,6 +24,14 @@ function formatYearMonth(ym: string): string {
   return `${MONTH_ID[mi]} ${y}`
 }
 
+/** Jumlah bulan inklusif antara dua "YYYY-MM" (>=0). */
+function monthsBetween(from: string, to: string): number {
+  const [fy, fm] = from.split('-').map(n => parseInt(n, 10))
+  const [ty, tm] = to.split('-').map(n => parseInt(n, 10))
+  if ([fy, fm, ty, tm].some(Number.isNaN)) return 0
+  return (ty - fy) * 12 + (tm - fm)
+}
+
 /**
  * Top metadata strip — Title row (code chip + program name + status/actions)
  * di atas, kemudian grid 4-kolom: Strategic Objective, KPI, PIC, Period.
@@ -74,9 +82,13 @@ export function HeaderStrip({ program, status, kpi, actionSlot }: Props) {
             <div className="cs-header__sub">{t('Target {{value}} {{unit}}', { value: kpi.target.toLocaleString('en-US'), unit: kpi.unit })}</div>
           </>
         ) : (
-          // kpi null = belum ada KpiDefinition (APMS maupun internal). Bukan
-          // "non-scorecard" — owner bisa menetapkannya via tab KPI program.
-          <div className="cs-header__sub cs-header__sub--muted">{t('Not set')}</div>
+          // kpi null = belum ada KpiDefinition (APMS maupun internal). Tampilkan
+          // sebagai state yang DIRANCANG (diukur via penyelesaian aktivitas),
+          // bukan "Not set" yang berkesan lupa diisi.
+          <>
+            <div className="cs-header__value">{t('Activity completion')}</div>
+            <div className="cs-header__sub">{t('No numeric KPI defined')}</div>
+          </>
         )}
       </div>
 
@@ -91,6 +103,18 @@ export function HeaderStrip({ program, status, kpi, actionSlot }: Props) {
         <div className="cs-header__value">
           {formatYearMonth(program.period.from)} → {formatYearMonth(program.period.to)}
         </div>
+        {(() => {
+          const span = monthsBetween(program.period.from, program.period.to) + 1
+          if (span <= 0) return null
+          const pos = Math.min(span, Math.max(1, monthsBetween(program.period.from, program.currentMonth) + 1))
+          return (
+            <div className="cs-header__meta">
+              {t('{{count}} months', { count: span })}
+              <span className="cs-header__meta-dot">·</span>
+              {t('month {{pos}} of {{span}}', { pos, span })}
+            </div>
+          )
+        })()}
         <div className="cs-header__sub">
           {program.directorateName} · {program.divisionName}
         </div>

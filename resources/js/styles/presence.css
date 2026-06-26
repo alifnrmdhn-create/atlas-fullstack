@@ -329,6 +329,52 @@
   transition: background var(--transition);
 }
 .presence-hover-card__dm-btn:hover { background: var(--indigo); color: var(--text-inverse); }
+
+/* Header jadi tombol → buka modal profil. Reset chrome button, pertahankan
+   layout/bg dari .presence-hover-card__header. */
+.presence-hover-card__header--btn {
+  appearance: none;
+  margin: 0;
+  border: none;
+  border-bottom: 0.5px solid var(--panel-border);
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.presence-hover-card__header--btn:hover { filter: brightness(0.98); }
+:root[data-theme="dark"] .presence-hover-card__header--btn:hover { filter: brightness(1.08); }
+
+/* Footer kini 2 tombol berdampingan. */
+.presence-hover-card__footer { display: flex; gap: 6px; }
+.presence-hover-card__profile-btn,
+.presence-hover-card__dm-btn { flex: 1; min-width: 0; }
+.presence-hover-card__profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 7px;
+  border: 0.5px solid var(--panel-border);
+  background: var(--surface-1);
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  justify-content: center;
+  transition: background var(--transition), border-color var(--transition);
+}
+.presence-hover-card__profile-btn:hover { background: var(--surface-2, var(--surface-0)); border-color: var(--text-muted); }
+
+/* Baris presence yang bisa diklik (buka profil). */
+.presence-v2 .presence-row--clickable { cursor: pointer; }
+.presence-v2 .presence-row--clickable:focus-visible {
+  outline: 2px solid var(--indigo);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
 .presence-unit__chevron { font-size: 9px; color: var(--text-muted); flex-shrink: 0; }
 .presence-unit__name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .presence-unit__list { border-top: none; }

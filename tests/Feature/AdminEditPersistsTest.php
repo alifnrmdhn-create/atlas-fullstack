@@ -141,6 +141,45 @@ class AdminEditPersistsTest extends TestCase
         $this->assertTrue(Hash::check('DKMR2026', $created->passwordHash));
     }
 
+    public function test_transfer_to_vacant_clears_position_and_org(): void
+    {
+        $this->actingAs($this->admin);
+
+        // Target awalnya memegang sebuah jabatan + org denormalisasi terisi.
+        $this->target->update([
+            'positionId' => $this->position->id,
+            'positionTitle' => $this->position->name,
+            'unitId' => $this->position->divisionId,
+            'directorateId' => $this->position->directorateId,
+        ]);
+        \App\Models\PositionHistory::create([
+            'userId' => $this->target->id,
+            'positionId' => $this->position->id,
+            'startDate' => now()->subMonth(),
+            'mutationType' => 'initial_assignment',
+        ]);
+
+        $this->patchJson("/users/{$this->target->id}", [
+            'positionId' => null,
+            'mutationType' => 'vacated',
+            'mutationReason' => 'Dibebastugaskan',
+        ])->assertOk();
+
+        $this->target->refresh();
+        $this->assertNull($this->target->positionId);
+        $this->assertNull($this->target->positionTitle);
+        $this->assertNull($this->target->unitId);
+        $this->assertNull($this->target->directorateId);
+        // roleType (akses sistem) dipertahankan — vacate ≠ cabut akun.
+        $this->assertSame('ASISTEN', $this->target->roleType);
+
+        // Riwayat lama ditutup; tidak ada baris baru (positionId NOT NULL).
+        $open = \App\Models\PositionHistory::where('userId', $this->target->id)
+            ->whereNull('endDate')->count();
+        $this->assertSame(0, $open);
+        $this->assertSame(1, \App\Models\PositionHistory::where('userId', $this->target->id)->count());
+    }
+
     public function test_non_admin_cannot_edit_user(): void
     {
         $this->actingAs($this->target); // ASISTEN

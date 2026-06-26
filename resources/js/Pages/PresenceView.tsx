@@ -5,6 +5,7 @@ import { useWorkspace } from '../hooks/useWorkspace'
 import { useRoleAccess } from '../hooks/useRoleAccess'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { PresenceRow, SectionState, Avatar, resolveEmoji, formatRelativeTime, effectivePresenceSlug } from '../components/ui'
+import { useProfileViewer } from '../components/UserProfileModal'
 import { api } from '../lib/api'
 import type { PresenceStatus, PresenceUser } from '../types'
 import { ActivityView } from './ActivityView'
@@ -135,11 +136,12 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
 
 // ── Hover profile card ───────────────────────────────────────
 function HoverCard({
-  presence, onDm, onClose, onCancelClose,
+  presence, onDm, onOpenProfile, onClose, onCancelClose,
   anchorRect,
 }: {
   presence: PresenceUser
   onDm: (userId: number) => void
+  onOpenProfile: (userId: number) => void
   onClose: () => void
   /** Dipanggil saat cursor masuk popup — cancel pending close timer
    *  yang di-schedule oleh onMouseLeave dari trigger row. Tanpa ini,
@@ -180,7 +182,12 @@ function HoverCard({
       onMouseEnter={onCancelClose}
       onMouseLeave={onClose}
     >
-      <div className="presence-hover-card__header">
+      <button
+        type="button"
+        className="presence-hover-card__header presence-hover-card__header--btn"
+        onClick={() => presence.userId && onOpenProfile(presence.userId)}
+        title={t('View profile')}
+      >
         <div className="presence-hover-card__avatar-wrap">
           <Avatar name={presence.user?.name ?? 'U'} avatarUrl={presence.user?.avatarUrl} />
           <span className={`presence-dot presence-dot--${slug} presence-hover-card__dot`} />
@@ -191,7 +198,7 @@ function HoverCard({
             <div className="presence-hover-card__position">{presence.user.positionTitle}</div>
           )}
         </div>
-      </div>
+      </button>
 
       <div className="presence-hover-card__body">
         {(presence.user?.unit || presence.user?.directorate) && (
@@ -227,6 +234,17 @@ function HoverCard({
 
       {presence.userId && (
         <div className="presence-hover-card__footer">
+          <button
+            className="presence-hover-card__profile-btn"
+            onClick={() => onOpenProfile(presence.userId)}
+            type="button"
+          >
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="5" r="2.6" stroke="currentColor" strokeWidth="1.4"/>
+              <path d="M3 13.5c0-2.2 2.2-3.5 5-3.5s5 1.3 5 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+            {t('View profile')}
+          </button>
           <button
             className="presence-hover-card__dm-btn"
             onClick={() => onDm(presence.userId)}
@@ -339,6 +357,7 @@ export function PresenceView() {
   const { t } = useTranslation()
   const { presence, currentUser, presenceDraft, setPresenceDraft, setPresence, setSelectedChannelId, setSelectedThreadId, loadOverview } = useWorkspace()
   const navigate  = useInertiaNavigate()
+  const { openProfile } = useProfileViewer()
   const searchRef = useRef<HTMLInputElement>(null)
 
   // Tab Activity = leaderboard jam-aktif SEMUA user (data surveilans). Endpoint
@@ -733,7 +752,7 @@ export function PresenceView() {
                             highlightQuery={searchQuery}
                             isFlashing={flashIds.has(u.userId)}
                             onDm={u.userId !== currentUser?.id ? handleOpenDm : undefined}
-                            onHover={handleHoverStart} onHoverEnd={handleHoverEnd}
+                            onHover={handleHoverStart} onHoverEnd={handleHoverEnd} onOpenProfile={openProfile}
                           />
                         ))}
                       </div>
@@ -783,7 +802,7 @@ export function PresenceView() {
                                         highlightQuery={searchQuery}
                                         isFlashing={flashIds.has(u.userId)}
                                         onDm={u.userId !== currentUser?.id ? handleOpenDm : undefined}
-                                        onHover={handleHoverStart} onHoverEnd={handleHoverEnd}
+                                        onHover={handleHoverStart} onHoverEnd={handleHoverEnd} onOpenProfile={openProfile}
                                       />
                                     ))}
                                     {visibleOffline.map(u => (
@@ -791,7 +810,7 @@ export function PresenceView() {
                                         highlightQuery={searchQuery}
                                         isFlashing={flashIds.has(u.userId)}
                                         onDm={u.userId !== currentUser?.id ? handleOpenDm : undefined}
-                                        onHover={handleHoverStart} onHoverEnd={handleHoverEnd}
+                                        onHover={handleHoverStart} onHoverEnd={handleHoverEnd} onOpenProfile={openProfile}
                                       />
                                     ))}
                                     {hiddenCount > 0 && !isOfflineExpanded && (
@@ -811,7 +830,7 @@ export function PresenceView() {
                                       highlightQuery={searchQuery}
                                       isFlashing={flashIds.has(u.userId)}
                                       onDm={u.userId !== currentUser?.id ? handleOpenDm : undefined}
-                                      onHover={handleHoverStart} onHoverEnd={handleHoverEnd}
+                                      onHover={handleHoverStart} onHoverEnd={handleHoverEnd} onOpenProfile={openProfile}
                                     />
                                   ))
                                 )}
@@ -943,6 +962,7 @@ export function PresenceView() {
           presence={hovered.user}
           anchorRect={hovered.rect}
           onDm={handleOpenDm}
+          onOpenProfile={openProfile}
           onClose={handleHoverEnd}
           onCancelClose={handleCancelHoverEnd}
         />

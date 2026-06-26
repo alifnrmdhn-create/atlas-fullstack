@@ -9,6 +9,7 @@ import { useEscKey } from '../hooks/useEscKey'
 import { PicaCompositePanel } from '../components/PicaCompositePanel'
 import { UserPicker } from '../components/UserPicker'
 import { looksLikeAvatarUrl } from '../components/ui'
+import { useProfileViewer } from '../contexts/profileViewer'
 import { formatRoleLabel } from '../lib/roleLabel'
 import { severityLabel, healthLabel } from '../lib/status'
 import type { Meeting, MeetingType, PresenceStatus } from '../types'
@@ -250,6 +251,7 @@ export function MeetingDetailPanel({
 }) {
   const { t } = useTranslation()
   const { currentUser, presence, meetingRefreshKey } = useWorkspace()
+  const { openProfile } = useProfileViewer()
   const isOrganizer = meeting.organizerId === currentUser?.id
   const isCancelled = meeting.status === 'CANCELLED'
   const isPostponed = meeting.status === 'POSTPONED'
@@ -1030,7 +1032,9 @@ export function MeetingDetailPanel({
               return (
                 <div key={a.id} className="meeting-detail__attendee">
                   <div className="meeting-detail__attendee-avatar">
-                    <Avatar name={name} avatarUrl={a.user?.avatarUrl} />
+                    <button type="button" className="avatar-btn" onClick={() => openProfile(a.userId)} title={t('View profile')} aria-label={t('View profile of {{name}}', { name })}>
+                      <Avatar name={name} avatarUrl={a.user?.avatarUrl} />
+                    </button>
                     <span
                       className={presenceDotPulse ? 'attendee-presence-dot attendee-presence-dot--pulse' : 'attendee-presence-dot'}
                       data-tone={PRESENCE_STATUS_TONE[pStatus]}

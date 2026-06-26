@@ -881,7 +881,7 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
                       <span className="pg-approval-chain__dot" />
                       <div className="pg-approval-chain__body">
                         <div className="pg-approval-chain__who">
-                          <Avatar name={c.name} avatarUrl={c.avatarUrl} size={18} />
+                          <Avatar name={c.name} avatarUrl={c.avatarUrl} size={18} userId={c.userId} />
                           <strong>{c.name}</strong>
                           <span className="pg-approval-chain__role">{c.role}</span>
                           {isCurrent && <span className="pg-approval-chain__now">{t('current turn')}</span>}
@@ -922,11 +922,11 @@ function DetailPanel({ assignment, isOpen, currentUserId, isAdmin, onClose }: {
             <h4 className="pg-section__title">{t('Detail')}</h4>
             <dl className="pg-meta">
               <div><dt>{t('PIC')}</dt><dd>
-                <span className="pg-person"><Avatar name={a.assignee.name} avatarUrl={a.assignee.avatarUrl} size={20} />{a.assignee.name}</span>
+                <span className="pg-person"><Avatar name={a.assignee.name} avatarUrl={a.assignee.avatarUrl} size={20} userId={a.assignee.id} />{a.assignee.name}</span>
                 {a.assignee.positionTitle && <small>{a.assignee.positionTitle}</small>}
               </dd></div>
               <div><dt>{t('Assigner')}</dt><dd>
-                <span className="pg-person"><Avatar name={a.assigner.name} avatarUrl={a.assigner.avatarUrl} size={20} />{a.assigner.name}</span>
+                <span className="pg-person"><Avatar name={a.assigner.name} avatarUrl={a.assigner.avatarUrl} size={20} userId={a.assigner.id} />{a.assigner.name}</span>
                 {a.assigner.positionTitle && <small>{a.assigner.positionTitle}</small>}
               </dd></div>
               <div><dt>{t('Deadline')}</dt><dd style={{ padding: 0 }}>

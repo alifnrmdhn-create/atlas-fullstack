@@ -29,12 +29,13 @@ import { UserPicker } from '../components/UserPicker'
 import { PageHeader } from '../design-system'
 import { useIsPhone } from '../hooks/useIsPhone'
 import ProgramsMobile from './ProgramsMobile'
+import { CharterRecap } from './Programs/CharterRecap'
 import './ProgramsView.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 type ProgramTab = 'portfolio' | 'timeline' | 'monitoring' | 'pulse' | 'archive'
-type PortfolioView = 'list' | 'kanban' | 'table' | 'map'
+type PortfolioView = 'list' | 'kanban' | 'table' | 'map' | 'charter'
 type TimelineView = 'lanes' | 'gantt'
 type LaneGrouping = 'status' | 'priority' | 'health'
 
@@ -1284,10 +1285,10 @@ export function ProgramsView() {
             {tab === 'portfolio' && (
               <>
                 <div className="view-toggle">
-                  {(['list', 'kanban', 'table', 'map'] as PortfolioView[]).map(mode => (
+                  {(['list', 'kanban', 'table', 'map', 'charter'] as PortfolioView[]).map(mode => (
                     <button key={mode} className={`view-toggle-btn${portfolioView === mode ? ' active' : ''}`}
                       onClick={() => setPortfolioView(mode)}>
-                      {mode === 'list' ? t('List') : mode === 'kanban' ? t('Board') : mode === 'table' ? t('Table') : t('Map')}
+                      {mode === 'list' ? t('List') : mode === 'kanban' ? t('Board') : mode === 'table' ? t('Table') : mode === 'map' ? t('Map') : t('Charter')}
                     </button>
                   ))}
                 </div>
@@ -1680,6 +1681,44 @@ export function ProgramsView() {
                       })}
                       onOpen={(id) => navigate(`/programs/${id}`)}
                     />
+                  ) : (
+                    <SectionState
+                      tone="info" compact
+                      icon={
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <circle cx="11" cy="11" r="7" />
+                          <path d="m20 20-4-4" />
+                        </svg>
+                      }
+                      title={portfolioSearch ? t('No results') : t('Portfolio empty')}
+                      text={portfolioSearch
+                        ? t('No programs match "{{query}}".', { query: portfolioSearch })
+                        : t('Programs appear once data loads.')}
+                    />
+                  )}
+                </div>
+              )}
+
+              {portfolioView === 'charter' && (
+                <div className="section-block section-block--bare">
+                  {filteredPortfolio.length > 0 ? (
+                    <>
+                      <CharterRecap
+                        programs={pagedPortfolio.map(prog => ({
+                          id: prog.id,
+                          code: prog.code,
+                          name: prog.name,
+                          progressPercent: prog.progressPercent,
+                        }))}
+                      />
+                      <Pager
+                        page={portfolioPageSafe}
+                        pageCount={portfolioPageCount}
+                        total={filteredPortfolio.length}
+                        pageSize={PORTFOLIO_PAGE_SIZE}
+                        onPage={goToPage}
+                      />
+                    </>
                   ) : (
                     <SectionState
                       tone="info" compact

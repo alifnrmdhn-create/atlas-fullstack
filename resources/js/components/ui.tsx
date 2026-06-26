@@ -6,6 +6,7 @@ import i18n from '../lib/i18n'
 import { healthLabel } from '../lib/status'
 import type { CommentItem, PresenceUser } from '../types'
 import { useEscKey } from '../hooks/useEscKey'
+import { useProfileViewer } from '../contexts/profileViewer'
 
 type IconName =
   | 'pulse'
@@ -415,11 +416,14 @@ export function looksLikeAvatarUrl(v?: string | null): v is string {
   return !!v && /^(https?:\/\/|\/|data:)/.test(v)
 }
 
-export function Avatar({ name, size = 32, avatarUrl, ring }: { name: string; size?: number; avatarUrl?: string | null; ring?: boolean }) {
+export function Avatar({ name, size = 32, avatarUrl, ring, userId }: { name: string; size?: number; avatarUrl?: string | null; ring?: boolean; userId?: number | null }) {
   const [failed, setFailed] = useState(false)
+  const { openProfile } = useProfileViewer()
   const dimension = Math.max(18, size)
+
+  let inner: ReactNode
   if (looksLikeAvatarUrl(avatarUrl) && !failed) {
-    return (
+    inner = (
       <img
         className={`avatar avatar--photo${ring ? ' avatar--ring' : ''}`}
         src={avatarUrl}
@@ -431,19 +435,39 @@ export function Avatar({ name, size = 32, avatarUrl, ring }: { name: string; siz
         draggable={false}
       />
     )
+  } else {
+    const initials = name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
+    const tone = avatarTone(name)
+    const fontSize = Math.max(9, Math.round(dimension * 0.34))
+    inner = (
+      <span
+        className={`avatar${ring ? ' avatar--ring' : ''}`}
+        data-tone={tone}
+        style={{ width: dimension, height: dimension, fontSize }}
+      >
+        {initials}
+      </span>
+    )
   }
-  const initials = name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
-  const tone = avatarTone(name)
-  const fontSize = Math.max(9, Math.round(dimension * 0.34))
-  return (
-    <span
-      className={`avatar${ring ? ' avatar--ring' : ''}`}
-      data-tone={tone}
-      style={{ width: dimension, height: dimension, fontSize }}
-    >
-      {initials}
-    </span>
-  )
+
+  // userId opt-in → avatar jadi tombol pembuka modal profil orang itu.
+  // stopPropagation supaya klik avatar di dalam baris/kartu yang juga clickable
+  // tetap membuka profil (bukan memicu aksi container).
+  if (userId != null) {
+    return (
+      <button
+        type="button"
+        className="avatar-btn"
+        style={{ width: dimension, height: dimension }}
+        onClick={(e) => { e.stopPropagation(); openProfile(userId) }}
+        title={i18n.t('View profile')}
+        aria-label={i18n.t('View profile of {{name}}', { name })}
+      >
+        {inner}
+      </button>
+    )
+  }
+  return <>{inner}</>
 }
 
 function presenceStatusLabels(): Record<string, string> {
@@ -520,6 +544,7 @@ export function PresenceRow({
   onDm,
   onHover,
   onHoverEnd,
+  onOpenProfile,
   compact = false,
   highlightQuery = '',
   isFlashing = false,
@@ -528,6 +553,8 @@ export function PresenceRow({
   onDm?: (userId: number) => void
   onHover?: (user: PresenceUser, rect: DOMRect) => void
   onHoverEnd?: () => void
+  /** Klik baris → buka modal profil orang ini. */
+  onOpenProfile?: (userId: number) => void
   compact?: boolean
   highlightQuery?: string
   isFlashing?: boolean
@@ -553,9 +580,13 @@ export function PresenceRow({
 
   return (
     <div
-      className={`presence-row list-row presence-row--${slug}${compact ? ' presence-row--compact' : ''}${isFlashing ? ' presence-row--flashing' : ''}`}
+      className={`presence-row list-row presence-row--${slug}${compact ? ' presence-row--compact' : ''}${isFlashing ? ' presence-row--flashing' : ''}${onOpenProfile ? ' presence-row--clickable' : ''}`}
       onMouseEnter={onHover ? (e) => onHover(presence, (e.currentTarget as HTMLDivElement).getBoundingClientRect()) : undefined}
       onMouseLeave={onHoverEnd}
+      onClick={onOpenProfile ? () => onOpenProfile(presence.userId) : undefined}
+      role={onOpenProfile ? 'button' : undefined}
+      tabIndex={onOpenProfile ? 0 : undefined}
+      onKeyDown={onOpenProfile ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenProfile(presence.userId) } } : undefined}
     >
       <div className="presence-row__avatar-wrap">
         {avatarEl}

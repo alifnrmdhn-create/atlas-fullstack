@@ -2509,7 +2509,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                       {recentActivity.map(c => (
                         <div className="wid-activity__row" key={c.id}>
                           <div className="wid-activity__avatar">
-                            {c.authorName ? <Avatar name={c.authorName} avatarUrl={c.authorAvatarUrl} /> : <div className="wid-assignee-avatar-empty" />}
+                            {c.authorName ? <Avatar name={c.authorName} avatarUrl={c.authorAvatarUrl} userId={c.createdBy} /> : <div className="wid-assignee-avatar-empty" />}
                           </div>
                           <div className="wid-activity__body">
                             <div className="wid-activity__top">

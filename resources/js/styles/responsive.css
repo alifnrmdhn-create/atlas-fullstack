@@ -129,6 +129,27 @@
 .avatar[data-tone="pink"] { background: var(--pink-dim); color: var(--pink-ink); }
 .avatar[data-tone="orange"] { background: var(--orange-dim); color: var(--orange-ink); }
 
+/* Avatar yang bisa diklik (prop userId) → tombol pembuka modal profil. Reset
+   chrome button; lingkaran hover ring halus agar terasa interaktif. Sizing
+   diwarisi dari inline style width/height = dimensi avatar. */
+.avatar-btn {
+  appearance: none;
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  margin: 0;
+  background: none;
+  border-radius: 50%;
+  line-height: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+.avatar-btn:hover { box-shadow: 0 0 0 2px var(--surface-0), 0 0 0 4px var(--indigo); }
+.avatar-btn:active { transform: scale(0.94); }
+.avatar-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--surface-0), 0 0 0 4px var(--indigo); }
+@media (hover: none) { .avatar-btn:hover { box-shadow: none; } }
+
 /* Foto profil: avatar berbasis <img> (lihat komponen Avatar). object-fit cover
    supaya foto non-persegi tetap terisi penuh dalam lingkaran; ring hairline agar
    foto terang tetap terbaca di latar terang. Sizing (width/height) ikut .avatar
@@ -12325,6 +12346,32 @@ a svg,
   font-size: 12.5px;
   line-height: 1.6;
   color: var(--text-muted);
+}
+
+.modal-checkrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-strong) 36%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 40%, transparent);
+  cursor: pointer;
+}
+
+.modal-checkrow input[type="checkbox"] {
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  accent-color: var(--green, var(--ds-brand-500, #2E8B4E));
+  cursor: pointer;
+}
+
+.modal-checkrow > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .modal-keyline {

@@ -88,6 +88,7 @@ export function AdminUsersView() {
   const [posOptions, setPosOptions] = useState<PositionOption[]>([])
   const [allPositions, setAllPositions] = useState<PositionOption[]>([])
   const [selectedPos, setSelectedPos] = useState<PositionOption | null>(null)
+  const [vacant, setVacant] = useState(false)
   const [mutationReason, setMutationReason] = useState('')
   const [skNumber, setSkNumber] = useState('')
   const [saving, setSaving] = useState(false)
@@ -211,6 +212,7 @@ export function AdminUsersView() {
       : null
     )
     setPosSearch('')
+    setVacant(false)
     setMutationReason('')
     setSkNumber('')
     setSaveError(null)
@@ -220,18 +222,19 @@ export function AdminUsersView() {
   const closeMutasi = () => {
     setMutasiTarget(null)
     setSelectedPos(null)
+    setVacant(false)
     setSaveError(null)
   }
   useEscKey(closeMutasi, mutasiTarget !== null)
 
   const handleMutasi = async () => {
-    if (!mutasiTarget || !selectedPos) return
+    if (!mutasiTarget || (!selectedPos && !vacant)) return
     setSaving(true)
     setSaveError(null)
     try {
       await api.patch(`/users/${mutasiTarget.id}`, {
-        positionId: selectedPos.id,
-        mutationType: 'mutation',
+        positionId: vacant ? null : selectedPos!.id,
+        mutationType: vacant ? 'vacated' : 'mutation',
         mutationReason: mutationReason || undefined,
         skNumber: skNumber || undefined,
       })
@@ -677,9 +680,10 @@ export function AdminUsersView() {
                     placeholder={t('Type to search positions (name, code, or unit)…')}
                     value={posSearch}
                     onChange={e => setPosSearch(e.target.value)}
+                    disabled={vacant}
                     autoFocus
                   />
-                  {posOptions.length > 0 && !selectedPos && (
+                  {!vacant && posOptions.length > 0 && !selectedPos && (
                     <div className="user-picker-list">
                       {posOptions.map(p => (
                         <button
@@ -702,13 +706,24 @@ export function AdminUsersView() {
                       ))}
                     </div>
                   )}
-                  {selectedPos && (
+                  {!vacant && selectedPos && (
                     <div className="selected-user-chip">
                       <span>✓ {selectedPos.code ? `[${selectedPos.code}] ` : ''}{selectedPos.title}</span>
                       <button type="button" onClick={() => { setSelectedPos(null); setPosSearch('') }}><svg fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 12 12" width="10"><path d="m1 1 10 10M11 1 1 11" /></svg></button>
                     </div>
                   )}
                 </div>
+                <label className="modal-checkrow">
+                  <input
+                    type="checkbox"
+                    checked={vacant}
+                    onChange={e => { setVacant(e.target.checked); if (e.target.checked) { setSelectedPos(null); setPosSearch('') } }}
+                  />
+                  <span>
+                    <span className="text-sm text-strong">{t('Make vacant (remove from any position)')}</span>
+                    <span className="text-xs text-muted">{t('The user keeps their account but no longer holds a position. Their current position becomes vacant.')}</span>
+                  </span>
+                </label>
               </section>
               <section className="modal-section">
                 <div className="modal-section__intro">
@@ -746,9 +761,9 @@ export function AdminUsersView() {
               <button
                 className="btn btn--primary"
                 onClick={handleMutasi}
-                disabled={saving || !selectedPos}
+                disabled={saving || (!selectedPos && !vacant)}
               >
-                {saving ? t('Saving…') : t('Save Transfer')}
+                {saving ? t('Saving…') : vacant ? t('Save (Vacate)') : t('Save Transfer')}
               </button>
             </div>
           </div>
