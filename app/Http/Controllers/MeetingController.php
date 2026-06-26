@@ -624,6 +624,23 @@ class MeetingController extends Controller
             'respondedAt' => now(),
         ]);
 
+        // Delegation: the delegate stands in for this attendee. Make them an
+        // attendee (so the meeting shows up in their schedule and they can
+        // actually open it — assertAccess requires participation) and notify
+        // them. firstOrCreate preserves an existing attendee's RSVP/role.
+        if ($data['rsvpStatus'] === 'DELEGASI') {
+            MeetingAttendee::firstOrCreate(
+                ['meetingId' => $id, 'userId' => (int) $data['delegateToId']],
+                ['attendeeRole' => 'REQUIRED', 'rsvpStatus' => 'PENDING'],
+            );
+            rescue(function () use ($meeting, $data, $request) {
+                $when = $meeting->startAt->format('d M Y H:i');
+                $by = $request->user()->name;
+                $note = !empty($data['delegateNote']) ? ' Note: ' . $data['delegateNote'] : '';
+                $this->notifyMeetingUsers([(int) $data['delegateToId']], 'MEETING_DELEGATED', "{$by} delegated attendance for the meeting \"{$meeting->title}\" on {$when} to you.{$note}", $meeting->id);
+            });
+        }
+
         if ($request->expectsJson()) {
             return response()->json(['data' => $attendee->fresh()]);
         }
@@ -666,6 +683,12 @@ class MeetingController extends Controller
 
     public function addDecision(Request $request, int $id): JsonResponse|RedirectResponse
     {
+        $meeting = Meeting::findOrFail($id);
+        if ($meeting->organizerId !== $request->user()->id) abort(403, 'Only the organizer can add decisions.');
+        if (in_array($meeting->status, ['CANCELLED', 'POSTPONED'], true)) {
+            return $this->validationError($request, 'Cannot add a decision to a meeting that is postponed or cancelled.');
+        }
+
         $data = $request->validate(['decision' => 'required|string|min:3|max:600']);
         $decision = MeetingDecision::create([
             'meetingId' => $id,
@@ -682,6 +705,9 @@ class MeetingController extends Controller
 
     public function destroyDecision(Request $request, int $id, int $decisionId): JsonResponse|RedirectResponse
     {
+        $meeting = Meeting::findOrFail($id);
+        if ($meeting->organizerId !== $request->user()->id) abort(403, 'Only the organizer can delete decisions.');
+
         MeetingDecision::where('meetingId', $id)->where('id', $decisionId)->delete();
 
         if ($request->expectsJson()) {

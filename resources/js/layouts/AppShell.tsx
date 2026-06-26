@@ -369,6 +369,7 @@ const ACTION_NOTIF_TYPES = new Set([
   'PROGRAM_TASKS_ASSIGNED',
   // Meeting flow — invite minta RSVP, action item minta dikerjakan, update perlu acknowledge
   'MEETING_INVITED',
+  'MEETING_DELEGATED',
   'MEETING_UPDATED',
   'ACTION_ITEM_ASSIGNED',
   // Assignment review flow — reviewer giliran perlu approve, PIC perlu revisi/lanjut
@@ -400,6 +401,7 @@ function notifFallbackContext(): Record<string, { roleImpact: string; impact: st
   PROGRAM_TASKS_ASSIGNED: { roleImpact: i18n.t('New tasks in your pipeline'), impact: i18n.t('Program is active, start executing') },
   // Meeting flow
   MEETING_INVITED:       { roleImpact: i18n.t('You are invited to a meeting'),   impact: i18n.t('Confirm your RSVP so the organizer knows your attendance') },
+  MEETING_DELEGATED:     { roleImpact: i18n.t('Attendance was delegated to you'), impact: i18n.t('You are standing in for someone — confirm your RSVP') },
   MEETING_UPDATED:       { roleImpact: i18n.t('The meeting schedule changed'),   impact: i18n.t('Check the new time and adjust your calendar') },
   MEETING_CANCELLED:     { roleImpact: i18n.t('The organizer cancelled the meeting'), impact: i18n.t('Your time slot is free again') },
   MEETING_POSTPONED:     { roleImpact: i18n.t('The meeting is postponed'),       impact: i18n.t('Wait for a new schedule from the organizer') },
@@ -433,7 +435,7 @@ function notificationIntentLabel(notification: NotificationItem): string {
   if (notification.type === 'CLEAR_PATH_CLEARED') return i18n.t('Resume execution')
   if (notification.type === 'CARRYOVER_THRESHOLD') return i18n.t('Review again')
   if (notification.type === 'PROGRAM_TASKS_ASSIGNED') return i18n.t('Open pipeline')
-  if (notification.type === 'MEETING_INVITED') return i18n.t('Confirm RSVP')
+  if (notification.type === 'MEETING_INVITED' || notification.type === 'MEETING_DELEGATED') return i18n.t('Confirm RSVP')
   if (notification.type === 'MEETING_UPDATED') return i18n.t('View schedule')
   if (notification.type === 'MEETING_CANCELLED' || notification.type === 'MEETING_POSTPONED') return i18n.t('Open meeting')
   if (notification.type === 'ACTION_ITEM_ASSIGNED') return i18n.t('Work on it')
@@ -893,7 +895,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     CLEAR_PATH_REQUESTED: t('Clear the Path'), CLEAR_PATH_COMMITTED: t('Clear the Path'),
     CLEAR_PATH_CLEARED: t('Clear the Path'), CARRYOVER_THRESHOLD: t('Carryover'),
     PROGRAM_TASKS_ASSIGNED: t('Pipeline'),
-    MEETING_INVITED: t('Meeting'), MEETING_UPDATED: t('Meeting'),
+    MEETING_INVITED: t('Meeting'), MEETING_DELEGATED: t('Meeting'), MEETING_UPDATED: t('Meeting'),
     MEETING_CANCELLED: t('Meeting'), MEETING_POSTPONED: t('Meeting'),
     ACTION_ITEM_ASSIGNED: t('Action Item'),
     ASSIGNMENT_REVIEW: t('Review'), ASSIGNMENT_RETURNED: t('Assignment'),
@@ -910,6 +912,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     CLEAR_PATH_REQUESTED: 'notif-type--approval', CARRYOVER_THRESHOLD: 'notif-type--warn',
     CLEAR_PATH_CLEARED: 'notif-type--success' as string,
     MEETING_INVITED: 'notif-type--approval',
+    MEETING_DELEGATED: 'notif-type--approval',
     MEETING_UPDATED: 'notif-type--warn',
     MEETING_CANCELLED: 'notif-type--danger',
     MEETING_POSTPONED: 'notif-type--warn',

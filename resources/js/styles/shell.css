@@ -2421,12 +2421,16 @@
   position: fixed;
   inset: 0;
   background: color-mix(in srgb, black 36%, transparent);
-  z-index: 60;
+  z-index: var(--z-modal-backdrop);
   animation: side-panel-fade .15s ease;
 }
 .side-panel {
   position: fixed;
-  top: 0;
+  /* Topbar (--z-topbar 9500) sengaja float di atas semua modal, jadi panel
+   * mulai DI BAWAH topbar agar header (judul + tombol close) tidak ter-clip.
+   * z-index naik ke tier modal — sebelumnya 61 (di bawah topbar) bikin panel
+   * meluncur di belakang topbar dan header-nya hilang. */
+  top: var(--topbar-height);
   right: 0;
   bottom: 0;
   width: var(--side-panel-width, 420px);
@@ -2434,7 +2438,7 @@
   background: var(--panel);
   border-left: 1px solid var(--panel-border);
   box-shadow: -8px 0 32px color-mix(in srgb, black 16%, transparent);
-  z-index: 61;
+  z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
   animation: side-panel-slide-in .18s cubic-bezier(.2,.8,.2,1);

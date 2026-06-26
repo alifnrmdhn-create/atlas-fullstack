@@ -178,8 +178,25 @@ function nameToColorIndex(name: string) {
   return Math.abs(h) % AVATAR_PALETTE_SIZE
 }
 
-function toDateInput(iso: string) { return iso.slice(0, 10) }
-function toTimeInput(iso: string) { return iso.slice(11, 16) }
+/* Form date/time inputs must use the SAME wall-clock zone as the display
+   (Asia/Jakarta / WIB). The app stores datetimes in UTC, so slicing the raw
+   ISO string gave UTC components (e.g. 03:00) while the panel showed WIB
+   (10:00) — and submit re-interpreted the input in the browser's local zone,
+   shifting the meeting by the TZ offset on every edit. WIB is fixed UTC+7
+   (no DST), so we derive inputs in Asia/Jakarta and submit with an explicit
+   +07:00 offset for a stable round-trip. */
+function wibParts(iso: string) {
+  const p = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(iso))
+  const get = (t: string) => p.find(x => x.type === t)?.value ?? ''
+  return { date: `${get('year')}-${get('month')}-${get('day')}`, time: `${get('hour')}:${get('minute')}` }
+}
+function toDateInput(iso: string) { return wibParts(iso).date }
+function toTimeInput(iso: string) { return wibParts(iso).time }
+/* Interpret a `YYYY-MM-DD` + `HH:mm` wall-clock pair as WIB, return UTC ISO. */
+function wibInputsToIso(date: string, time: string) { return new Date(`${date}T${time}:00+07:00`).toISOString() }
 
 function formatDatetime(iso: string) {
   return new Intl.DateTimeFormat('id-ID', {
@@ -258,6 +275,9 @@ export function MeetingDetailPanel({
   const isCancelled = meeting.status === 'CANCELLED'
   const isPostponed = meeting.status === 'POSTPONED'
   const isCompleted = meeting.status === 'COMPLETED'
+  // BE rejects starting a meeting more than 15 min before its scheduled time;
+  // mirror that here so the Start button isn't shown active just to fail on click.
+  const startTooEarly = new Date(meeting.startAt).getTime() > Date.now() + 15 * 60 * 1000
 
   const getPresenceStatus = (userId: number): PresenceStatus => {
     return presence.find(p => p.userId === userId)?.status ?? 'OFFLINE'
@@ -267,6 +287,7 @@ export function MeetingDetailPanel({
   const [actionItems, setActionItems] = useState<ActionItem[]>([])
   const [decisions, setDecisions] = useState<Decision[]>([])
   const [loadingData, setLoadingData] = useState(true)
+  const [dataError, setDataError] = useState(false)
   const [prep, setPrep] = useState<PrepPacket | null>(null)
   const [prepExpanded, setPrepExpanded] = useState(true)
   const [prepUnavailable, setPrepUnavailable] = useState(false)
@@ -384,6 +405,7 @@ export function MeetingDetailPanel({
   const loadData = useCallback(async () => {
     setLoadingData(true)
     setErrorMsg(null)
+    setDataError(false)
     try {
       const [aiRes, decRes] = await Promise.allSettled([
         api.get<{ data: ActionItem[] }>(`/meetings/${meeting.id}/action-items`),
@@ -391,6 +413,14 @@ export function MeetingDetailPanel({
       ])
       if (aiRes.status === 'fulfilled') setActionItems(aiRes.value.data)
       if (decRes.status === 'fulfilled') setDecisions(decRes.value.data)
+      // Surface fetch failures instead of swallowing them — otherwise the
+      // sections render "No decisions / No action items yet" which reads as
+      // "empty" when the request actually failed (the Workboard/Channels bug).
+      if (aiRes.status === 'rejected' || decRes.status === 'rejected') {
+        setDataError(true)
+        if (aiRes.status === 'rejected') console.error('[Atlas] action-items fetch failed:', aiRes.reason)
+        if (decRes.status === 'rejected') console.error('[Atlas] decisions fetch failed:', decRes.reason)
+      }
       // Prep packet — non-blocking, load separately
       api.get<{ data: PrepPacket }>(`/meetings/${meeting.id}/prep`)
         .then(res => { setPrep(res.data); setPrepUnavailable(false) })
@@ -636,8 +666,8 @@ export function MeetingDetailPanel({
     if (!editForm.title.trim()) { setEditError(t('Title is required.')); return }
     if (editForm.title.trim().length < 3) { setEditError(t('Title must be at least 3 characters.')); return }
     if (!editForm.date || !editForm.startTime || !editForm.endTime) { setEditError(t('Date and time are required.')); return }
-    const startAt = new Date(`${editForm.date}T${editForm.startTime}:00`).toISOString()
-    const endAt   = new Date(`${editForm.date}T${editForm.endTime}:00`).toISOString()
+    const startAt = wibInputsToIso(editForm.date, editForm.startTime)
+    const endAt   = wibInputsToIso(editForm.date, editForm.endTime)
     if (new Date(endAt) <= new Date(startAt)) { setEditError(t('End time must be after start time.')); return }
     setEditSaving(true)
     setEditError(null)
@@ -785,7 +815,12 @@ export function MeetingDetailPanel({
             <button className="btn btn--sm btn--ghost meeting-detail__action-btn" onClick={openEdit}>{t('Edit')}</button>
           )}
           {isOrganizer && meeting.status === 'SCHEDULED' && (
-            <button className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--info" onClick={startMeeting} disabled={startLoading}>
+            <button
+              className="btn btn--sm btn--ghost meeting-detail__action-btn meeting-detail__action-btn--info"
+              onClick={startMeeting}
+              disabled={startLoading || startTooEarly}
+              title={startTooEarly ? t('Can be started up to 15 minutes before the scheduled time.') : undefined}
+            >
               {startLoading ? '…' : `▶ ${t('Start')}`}
             </button>
           )}
@@ -1104,7 +1139,13 @@ export function MeetingDetailPanel({
             <span className="meeting-detail__section-count">{decisions.length}</span>
           </div>
 
-          {!loadingData && decisions.length === 0 && (
+          {!loadingData && dataError && (
+            <p className="meeting-detail__empty-note meeting-detail__empty-note--error">
+              {t("Couldn't load data.")}{' '}
+              <button type="button" className="meeting-detail__retry-link" onClick={() => void loadData()}>{t('Retry')}</button>
+            </p>
+          )}
+          {!loadingData && !dataError && decisions.length === 0 && (
             <p className="meeting-detail__empty-note">{t('No decisions recorded yet.')}</p>
           )}
 
@@ -1221,7 +1262,13 @@ export function MeetingDetailPanel({
             </div>
           )}
 
-          {!loadingData && actionItems.length === 0 && (
+          {!loadingData && dataError && (
+            <p className="meeting-detail__empty-note meeting-detail__empty-note--error">
+              {t("Couldn't load data.")}{' '}
+              <button type="button" className="meeting-detail__retry-link" onClick={() => void loadData()}>{t('Retry')}</button>
+            </p>
+          )}
+          {!loadingData && !dataError && actionItems.length === 0 && (
             <p className="meeting-detail__empty-note">{t('No action items yet.')}</p>
           )}
 

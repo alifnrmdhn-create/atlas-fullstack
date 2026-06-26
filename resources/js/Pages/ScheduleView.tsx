@@ -941,8 +941,10 @@ export function ScheduleView() {
   const submitCreate = async () => {
     if (!form.title.trim()) { setCreateError(t('Meeting title is required.')); return }
     if (!form.date || !form.startTime || !form.endTime) { setCreateError(t('Date and time are required.')); return }
-    const startAt = new Date(`${form.date}T${form.startTime}:00`).toISOString()
-    const endAt   = new Date(`${form.date}T${form.endTime}:00`).toISOString()
+    // Interpret inputs as WIB (UTC+7, fixed) so they match the Asia/Jakarta
+    // display regardless of the browser's local timezone.
+    const startAt = new Date(`${form.date}T${form.startTime}:00+07:00`).toISOString()
+    const endAt   = new Date(`${form.date}T${form.endTime}:00+07:00`).toISOString()
     if (new Date(endAt) <= new Date(startAt)) { setCreateError(t('End time must be after start time.')); return }
     if (new Date(startAt) < new Date(Date.now() - 15 * 60 * 1000)) { setCreateError(t('Cannot create a meeting in the past.')); return }
 

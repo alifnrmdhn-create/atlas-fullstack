@@ -218,6 +218,8 @@ const NOTIF_TYPE_LABEL: Record<string, string> = {
   REPORT_AWAITING_APPROVAL: 'Report', REPORT_APPROVED: 'Report',
   REPORT_REJECTED: 'Report', REPORT_NEEDS_REVISION: 'Report',
   DEADLINE_APPROACHING: 'Deadline', DM_RECEIVED: 'DM',
+  MEETING_INVITED: 'Meeting', MEETING_DELEGATED: 'Meeting',
+  ACTION_ITEM_ASSIGNED: 'Action Item',
 }
 
 function _todayLabel(): string {
@@ -727,7 +729,7 @@ function notifVerbFor(type: string): string {
     case 'BLOCKER_CREATED': return 'Follow up'
     case 'TASK_ASSIGNED': return 'Work on it'
     case 'DEADLINE_APPROACHING': return 'Check deadline'
-    case 'MEETING_INVITED': return 'Confirm'
+    case 'MEETING_INVITED': case 'MEETING_DELEGATED': return 'Confirm'
     case 'ACTION_ITEM_ASSIGNED': return 'Work on it'
     case 'CLEAR_PATH_REQUESTED': return 'Disposition'
     default: return 'Open'
