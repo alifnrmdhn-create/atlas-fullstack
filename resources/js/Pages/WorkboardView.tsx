@@ -199,6 +199,12 @@ function ProgramTaskRow({
     ? assigneeName.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
     : ''
   const iniName = showWorkstream ? item.workstream?.name : undefined
+  // Tenggat eksplisit di kolom kanan (sebelumnya tak tampil di baris). Merah bila
+  // sudah lewat tempo. Tak ditampilkan untuk task yang sudah selesai.
+  const dueLabel = item.status !== 'COMPLETED' && item.targetCompletion
+    ? new Date(item.targetCompletion).toLocaleDateString(i18n.language?.startsWith('en') ? 'en-GB' : 'id-ID', { day: '2-digit', month: 'short' })
+    : null
+  const dueLate = taskIsOverdue(item)
   return (
     <button type="button" data-task-card="true" className={`wb-row wb-row--${sched.tone}`} onClick={onClick}>
       <span className="wb-row__rail" aria-hidden="true" />
@@ -209,20 +215,27 @@ function ProgramTaskRow({
           {iniName && <span className="wb-row__ws">{iniName}</span>}
         </div>
       </div>
-      {sched.tone !== 'green' && sched.tone !== 'done' && (
-        <span className={`wb-row__sched wb-row__sched--${sched.tone}`}>{sched.label}</span>
-      )}
+      {/* Kolom KONDISI — selalu dirender (kosong saat On Track / Selesai) supaya
+          grid tetap sejajar dengan header program & baris lain. */}
+      <span className="wb-row__cond">
+        {sched.tone !== 'green' && sched.tone !== 'done' && (
+          <span className={`wb-row__sched wb-row__sched--${sched.tone}`}>{sched.label}</span>
+        )}
+      </span>
       <div className="wb-row__progress">
         <div className="progress-bar-track wb-row__progress-track">
           <div className={`progress-bar-fill ${healthClass}`} style={{ width: `${item.percentComplete}%` }} />
         </div>
         <span className="wb-row__pct">{item.percentComplete}%</span>
       </div>
-      {assigneeName && (
-        looksLikeAvatarUrl(item.assignee?.avatarUrl)
-          ? <img className="wb-row__avatar" src={item.assignee.avatarUrl} alt={assigneeName} title={assigneeName} aria-label={assigneeName} style={{ objectFit: 'cover' }} />
-          : <span className="wb-row__avatar" title={assigneeName} aria-label={assigneeName}>{initials}</span>
-      )}
+      <div className="wb-row__right">
+        {dueLabel && <span className={`wb-row__due${dueLate ? ' wb-row__due--late' : ''}`}>{dueLabel}</span>}
+        {assigneeName && (
+          looksLikeAvatarUrl(item.assignee?.avatarUrl)
+            ? <img className="wb-row__avatar" src={item.assignee.avatarUrl} alt={assigneeName} title={assigneeName} aria-label={assigneeName} style={{ objectFit: 'cover' }} />
+            : <span className="wb-row__avatar" title={assigneeName} aria-label={assigneeName}>{initials}</span>
+        )}
+      </div>
     </button>
   )
 }
@@ -338,9 +351,6 @@ export function WorkboardView() {
   // tersedia sebagai mode alternatif.
   const [boardMode, setBoardMode] = useState<BoardMode>('by-program')
 
-  // Attention Queue di By Program: strip ringkas, default terlipat — hindari
-  // task yang sama tampil dua kali (di queue + di dalam program).
-  const [attentionExpanded, setAttentionExpanded] = useState(false)
 
   // One-door condition reporting (modal target) + session memory of what the
   // user just reported per program (immediate badge feedback, no full reload).
@@ -516,7 +526,14 @@ export function WorkboardView() {
     return Array.from(groups.entries())
       .map(([pid, items]) => {
         const program = programById.get(pid)
-        return { program, pid, items, _slug: program ? getProgramHealthDisplay(program).slug : undefined }
+        // "Selesai ≠ Overdue": program yang SEMUA task-nya COMPLETED diperlakukan
+        // sebagai selesai — turun ke bawah & pill netral — walau program.status
+        // belum di-flip ke COMPLETED dan targetEndDate lewat (akar: status
+        // kontainer belum di-derive dari task). Mencegah program tuntas nangkring
+        // merah "Overdue" di puncak (temuan utama audit UX Workboard).
+        const effDone = items.length > 0 && items.every(i => i.status === 'COMPLETED')
+        const baseSlug = program ? getProgramHealthDisplay(program).slug : undefined
+        return { program, pid, items, _effDone: effDone, _slug: effDone ? 'completed' : baseSlug }
       })
       .sort((a, b) => {
         const ra = rankSlug(a._slug), rb = rankSlug(b._slug)
@@ -563,14 +580,6 @@ export function WorkboardView() {
   const overdueCount = scopedItems.filter(taskIsOverdue).length
   const dueTodayCount = scopedItems.filter(taskDueToday).length
   const dueWeekCount = scopedItems.filter(t => taskDueWithinDays(t, 7)).length
-  const criticalItems = [...allItems]
-    .sort((a, b) => {
-      const bw = Number(b.isBlocked || b.status === 'BLOCKED') - Number(a.isBlocked || a.status === 'BLOCKED')
-      if (bw !== 0) return bw
-      const po = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
-      return po.indexOf(a.priority) - po.indexOf(b.priority)
-    })
-    .slice(0, 6)
 
   // ── Buat Work Item modal ───────────────────────────────────────────────
   const [showCreateWI, setShowCreateWI] = useState(false)
@@ -656,39 +665,6 @@ export function WorkboardView() {
       setWiSaving(false)
     }
   }
-
-  // Attention Queue — task paling kritis. Di By Program dirender di ATAS daftar
-  // program (triage dulu, baru detail); di mode lain tetap di bawah board.
-  const attentionPanel = criticalItems.length > 0 ? (
-    <div className="panel attention-panel">
-      <div className="panel__header">
-        <h3 className="panel__title">{t('Attention Queue')}</h3>
-        <span className="badge">{t('Top {{count}}', { count: criticalItems.length })}</span>
-      </div>
-      <div className="wi-list">
-        {criticalItems.map((item) => (
-          <button
-            className="wi-list-row"
-            key={item.id}
-            onClick={(e) => openTaskModal(item.id, e)}
-          >
-            <div className="wi-list-row__left">
-              <span className="code-badge">{item.code}</span>
-              <div>
-                <strong>{item.title}</strong>
-                <span className="text-muted text-sm">{t('{{percent}}% complete', { percent: item.percentComplete })}</span>
-              </div>
-            </div>
-            <div className="wi-list-row__right">
-              <span className={`priority-badge priority-badge--${item.priority.toLowerCase()}`}>{priorityLabel(item.priority)}</span>
-              {item.isBlocked ? <span className="severity-badge severity-badge--high">{t('BLOCKED')}</span> : null}
-              <HealthPill status={normalizeHealthStatus(item.healthStatus ?? 'GREEN')} />
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  ) : null
 
   return (
     <div className="ds workboard-v2 view-workboard">
@@ -956,44 +932,14 @@ export function WorkboardView() {
           {boardReady && boardMode === 'by-program' && programSections.length === 0 ? (
             <SectionState icon="✨" title={t('No programs match the current filter')} text={t('Adjust the program / workstream filter, or toggle to All tasks.')} />
           ) : null}
-          {boardReady && boardMode === 'by-program' && criticalItems.length > 0 && (
-            <div className={`wb-attention-strip${attentionExpanded ? ' is-open' : ''}`}>
-              <button
-                type="button"
-                className="wb-attention-strip__toggle"
-                onClick={() => setAttentionExpanded(v => !v)}
-                aria-expanded={attentionExpanded}
-              >
-                <span className="wb-attention-strip__caret" aria-hidden="true">{attentionExpanded ? '▾' : '▸'}</span>
-                <span className="wb-attention-strip__icon" aria-hidden="true">⚠</span>
-                <strong>{t('{{count}} need attention', { count: criticalItems.length })}</strong>
-                {!attentionExpanded && <span className="wb-attention-strip__hint">{t('across all programs')}</span>}
-              </button>
-              {attentionExpanded && (
-                <div className="wi-list wb-attention-strip__list">
-                  {criticalItems.map((item) => (
-                    <button className="wi-list-row" key={item.id} onClick={(e) => openTaskModal(item.id, e)}>
-                      <div className="wi-list-row__left">
-                        <span className="code-badge">{item.code}</span>
-                        <div>
-                          <strong>{item.title}</strong>
-                          <span className="text-muted text-sm">{item.workstream?.program?.code ?? ''}</span>
-                        </div>
-                      </div>
-                      <div className="wi-list-row__right">
-                        {item.isBlocked ? <span className="severity-badge severity-badge--high">{t('BLOCKED')}</span> : null}
-                        <HealthPill status={normalizeHealthStatus(item.healthStatus ?? 'GREEN')} />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
           {boardReady && boardMode === 'by-program' && programSections.length > 0 && (
             <div className="wb-prog-list">
-              {programSections.map(({ program, pid, items }) => {
-                const cond = program ? getProgramHealthDisplay(program) : null
+              {programSections.map(({ program, pid, items, _effDone }) => {
+                const baseCond = program ? getProgramHealthDisplay(program) : null
+                // Program tuntas → pill netral "Completed" (bukan Overdue merah).
+                const cond = _effDone && baseCond
+                  ? { ...baseCond, label: t('Completed'), slug: 'completed', tone: 'selesai' as const, isOverdue: false }
+                  : baseCond
                 const reported = reportedThisSession[pid]
                 const done = items.filter(i => i.status === 'COMPLETED').length
                 const overdue = items.filter(taskIsOverdue).length
@@ -1007,7 +953,7 @@ export function WorkboardView() {
                   i => i.status !== 'COMPLETED' && i.assignee?.id === currentUser?.id,
                 )
                 const collapsed = progCollapseOverride[pid]
-                  ?? (effectiveMyItemsOnly || hasMyActiveTask ? false : defaultProgCollapsed(cond?.slug))
+                  ?? (_effDone ? true : effectiveMyItemsOnly || hasMyActiveTask ? false : defaultProgCollapsed(cond?.slug))
                 const doneExpanded = expandedDoneLanes.has(pid)
                 // Nama workstream cuma berguna bila program punya >1 workstream.
                 const multiWorkstream = new Set(items.map(i => i.workstream?.id).filter(Boolean)).size > 1
@@ -1028,20 +974,27 @@ export function WorkboardView() {
                 const doneItems = items.filter(i => i.status === 'COMPLETED')
                 return (
                   <section className={`wb-prog${collapsed ? ' wb-prog--collapsed' : ''}`} key={pid}>
+                    {/* Header = grid 5 kolom (caret · id+jumlah · kondisi · progres ·
+                        aksi). Kolom kondisi & progres sejajar dengan baris task di
+                        bawahnya (var --wb-grid) → mata punya jangkar vertikal. */}
                     <header className="wb-prog__head">
+                      <button
+                        type="button"
+                        className="wb-prog__toggle"
+                        onClick={() => setProgCollapseOverride(prev => ({ ...prev, [pid]: !collapsed }))}
+                        aria-expanded={!collapsed}
+                        title={collapsed ? t('Expand program') : t('Collapse program')}
+                      >
+                        <span className="wb-prog__caret" aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
+                      </button>
                       <div className="wb-prog__id">
                         <div className="wb-prog__title-row">
-                          <button
-                            type="button"
-                            className="wb-prog__toggle"
-                            onClick={() => setProgCollapseOverride(prev => ({ ...prev, [pid]: !collapsed }))}
-                            aria-expanded={!collapsed}
-                            title={collapsed ? t('Expand program') : t('Collapse program')}
-                          >
-                            <span className="wb-prog__caret" aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
-                          </button>
                           <span className="wb-prog__code">{program?.code ?? `#${pid}`}</span>
-                          {cond && <span className={`wb-prog__cond wb-prog__cond--${cond.slug}`}>{cond.label}</span>}
+                          <span className="wb-prog__counts">
+                            <span>{t('{{count}} tasks', { count: items.length })}</span>
+                            <span className="wb-prog__count-done">{done} {t('done')}</span>
+                            {overdue > 0 && <span className="wb-prog__count-overdue">{overdue} {t('overdue')}</span>}
+                          </span>
                           {reported && (
                             <span className="wb-prog__reported" title={t('What you reported this week')}>
                               {t('Reported')}: {REPORT_LABEL[reported]}
@@ -1050,18 +1003,14 @@ export function WorkboardView() {
                         </div>
                         <h3 className="wb-prog__name">{program?.name ?? t('Unknown program')}</h3>
                       </div>
-                      <div className="wb-prog__metrics">
-                        <div className="wb-prog__progress">
-                          <div className="progress-bar-track wb-prog__progress-track">
-                            <div className="progress-bar-fill" style={{ width: `${program?.progressPercent ?? 0}%` }} />
-                          </div>
-                          <span className="wb-prog__progress-val">{program?.progressPercent ?? 0}%</span>
+                      <span className="wb-prog__cond-cell">
+                        {cond && <span className={`wb-prog__cond wb-prog__cond--${cond.slug}`}>{cond.label}</span>}
+                      </span>
+                      <div className="wb-prog__progress">
+                        <div className="progress-bar-track wb-prog__progress-track">
+                          <div className="progress-bar-fill" style={{ width: `${program?.progressPercent ?? 0}%` }} />
                         </div>
-                        <div className="wb-prog__counts">
-                          <span>{t('{{count}} tasks', { count: items.length })}</span>
-                          <span className="wb-prog__count-done">{done} {t('done')}</span>
-                          {overdue > 0 && <span className="wb-prog__count-overdue">{overdue} {t('overdue')}</span>}
-                        </div>
+                        <span className="wb-prog__progress-val">{program?.progressPercent ?? 0}%</span>
                       </div>
                       <div className="wb-prog__actions">
                         {canReportFor(program) && (
@@ -1211,10 +1160,6 @@ export function WorkboardView() {
             </div>
             )
           })()}
-
-          {/* Attention Queue — di bawah board untuk mode Board/List/Blockers.
-              Di By Program panel ini dirender di atas daftar program. */}
-          {boardReady && boardMode !== 'by-program' && attentionPanel}
         </div>
 
       </div>
