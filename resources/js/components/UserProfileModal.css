@@ -277,6 +277,10 @@
 }
 .upm-footer .ds-button { width: 100%; justify-content: center; }
 
+/* Lightbox foto yang dibuka DARI modal profil (.upm-overlay = 9900) harus di
+   atasnya; varian global .lightbox-overlay = 9500 (cukup utk Channels). */
+.lightbox-overlay.lightbox-overlay--above-modal { z-index: 10000; }
+
 /* ── Phone ≤640: bottom-sheet ── */
 @media (max-width: 640px) {
   .upm-overlay {

@@ -9,10 +9,10 @@ import i18n from '../lib/i18n'
  * dipakai juga oleh UserProfileModal (klik foto profil → preview besar). CSS
  * `.lightbox-*` global di styles/responsive.css. Klik backdrop / ESC menutup.
  */
-export function ImageLightbox({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
+export function ImageLightbox({ url, name, onClose, className }: { url: string; name: string; onClose: () => void; className?: string }) {
   useEscKey(onClose)
   return createPortal(
-    <div className="lightbox-overlay" onClick={onClose}>
+    <div className={`lightbox-overlay${className ? ' ' + className : ''}`} onClick={onClose}>
       <button aria-label={i18n.t('Close')} className="lightbox-close" onClick={onClose} type="button">
         <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeWidth="2" viewBox="0 0 24 24" width="18">
           <path d="M18 6 6 18M6 6l12 12" />

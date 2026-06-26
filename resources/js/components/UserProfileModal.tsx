@@ -254,7 +254,8 @@ function ProfileModal({
       </div>
 
       {lightbox && photo && (
-        <ImageLightbox url={photo} name={u?.name ?? 'photo'} onClose={() => setLightbox(false)} />
+        // Lightbox dibuka DARI modal (z 9900) → butuh z lebih tinggi via varian.
+        <ImageLightbox url={photo} name={u?.name ?? 'photo'} className="lightbox-overlay--above-modal" onClose={() => setLightbox(false)} />
       )}
     </>,
     document.body,
