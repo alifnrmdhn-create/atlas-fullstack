@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useId, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useId, useRef, Suspense, lazy } from 'react'
 import { createPortal, flushSync } from 'react-dom'
 import type { FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -29,9 +29,12 @@ import {
   looksLikeAvatarUrl,
 } from '../components/ui'
 import type { ProgramDetail, ProgramKpiLink } from '../types'
-import { ExecutionTab } from '../components/ExecutionTab'
 import { UserPickerMulti } from '../components/UserPicker'
-import { TaskPlanningPanel } from './TaskPlanningPanel'
+// Lazy: hanya dimuat saat tab Eksekusi / Workstream dibuka (default = Ringkasan).
+// Mengeluarkan ~860 baris dari chunk awal ProgramDetailView → first-paint lebih
+// ringan. Suspense fallback = skeleton di titik pakai.
+const ExecutionTab = lazy(() => import('../components/ExecutionTab').then(m => ({ default: m.ExecutionTab })))
+const TaskPlanningPanel = lazy(() => import('./TaskPlanningPanel').then(m => ({ default: m.TaskPlanningPanel })))
 import { getProgramDisplayStatus } from '../lib/programStatus'
 import './ProgramDetailView.css'
 
@@ -167,8 +170,12 @@ function TaskPicChip({ picPersons }: { picPersons?: Array<{ id: number; name: st
 
 export function ProgramDetailView() {
   const { t } = useTranslation()
-  const page = usePage<{ program?: { id: number } }>()
-  const numId = Number(page.props.program?.id)
+  // Inertia mengirim payload program LENGKAP (identik dengan respons XHR
+  // `GET /programs/{id}`, lihat ProgramController@show). Dipakai untuk seed
+  // render instan tanpa menunggu fetch — lihat state `detail` di bawah.
+  const page = usePage<{ program?: ProgramDetail }>()
+  const seededProgram = page.props.program
+  const numId = Number(seededProgram?.id)
   const navigate = useInertiaNavigate()
   const {
     programs, currentUser, apmsKpis, apmsLastFetchedAt, refreshApmsKpis,
@@ -215,8 +222,10 @@ export function ProgramDetailView() {
     err instanceof Error ? err.message : (typeof err === 'string' ? err : fallback)
 
   // ── Detail data ───────────────────────────────────────────────────────
-  const [detail, setDetail] = useState<ProgramDetail | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Seed dari prop Inertia → halaman langsung ter-render dengan data yang sudah
+  // dikirim server, tanpa fase blank/loading menunggu XHR pertama.
+  const [detail, setDetail] = useState<ProgramDetail | null>(seededProgram ?? null)
+  const [loading, setLoading] = useState(!seededProgram)
   // Bedakan kegagalan-muat dari program-tidak-ada: null = belum ada error;
   // 'notfound' = program memang tidak ada (404); string = gagal memuat
   // (network/500/403) → tampilkan pesan + tombol "Coba lagi". Tanpa ini, request
@@ -246,7 +255,20 @@ export function ProgramDetailView() {
     }
   }
 
-  useEffect(() => { void loadDetail() }, [numId])
+  useEffect(() => {
+    // Navigasi in-app: Inertia memperbarui prop `program` ke target. Bila prop
+    // cocok dengan numId, render instan dari situ lalu refresh diam-diam
+    // (tanpa flash loading). Tanpa prop (skenario tak biasa) → load biasa.
+    if (seededProgram && Number(seededProgram.id) === numId) {
+      setDetail(seededProgram)
+      setDetailError(null)
+      setLoading(false)
+      void loadDetail(true)
+    } else {
+      void loadDetail()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [numId])
 
   // ── Approval Log ─────────────────────────────────────────────────────
   type ApprovalLogEntry = {
@@ -3096,12 +3118,14 @@ export function ProgramDetailView() {
                               </div>{/* end workstream-detail-panel__content */}
                               {planningTaskId && (
                                 <div className={`tpp-push-wrap${planningPanelClosing ? ' tpp-push-wrap--closing' : ''}`}>
-                                  <TaskPlanningPanel
-                                    taskId={planningTaskId}
-                                    mode="push"
-                                    onClose={triggerPlanningPanelClose}
-                                    onRefresh={() => selectedIniId && void reloadIniDetail(selectedIniId)}
-                                  />
+                                  <Suspense fallback={<div style={{ padding: 16 }}><SkeletonStack lines={[90, 70, 80]} /></div>}>
+                                    <TaskPlanningPanel
+                                      taskId={planningTaskId}
+                                      mode="push"
+                                      onClose={triggerPlanningPanelClose}
+                                      onRefresh={() => selectedIniId && void reloadIniDetail(selectedIniId)}
+                                    />
+                                  </Suspense>
                                 </div>
                               )}
                             </div>
@@ -3117,7 +3141,9 @@ export function ProgramDetailView() {
           {/* ── EXECUTION GRID ─────────────────────────────────────────── */}
           {activeTab === 'execution' && (
             <div className="prog-detail-tab-body">
-              <ExecutionTab programId={numId} programName={detail?.name} approvalStatus={detail?.approvalStatus} />
+              <Suspense fallback={<div style={{ padding: 16 }}><SkeletonStack lines={[80, 100, 90, 70]} /></div>}>
+                <ExecutionTab programId={numId} programName={detail?.name} approvalStatus={detail?.approvalStatus} />
+              </Suspense>
             </div>
           )}
 
