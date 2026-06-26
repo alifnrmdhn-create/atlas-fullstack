@@ -52,7 +52,6 @@ type PulseWorkstream = {
   progressPercent: number; healthStatus: string
   targetCompletion: string; daysRemaining: number
   program: { id: number; code: string; name: string }
-  owner: { id: number; name: string } | null
 }
 
 type PulseTask = {
@@ -679,7 +678,7 @@ export function ProgramsView() {
   const [editProgram, setEditProgram] = useState<EditProgram | null>(null)
   const [epSaving, setEpSaving] = useState(false)
   const [epError, setEpError] = useState<string | null>(null)
-  const [epUserDirectory, setEpUserDirectory] = useState<Array<{ id: number; name: string; positionTitle?: string | null }>>([])
+  const [epUserDirectory, setEpUserDirectory] = useState<Array<{ id: number; name: string; positionTitle?: string | null; roleType?: string }>>([])
   const [epDirLoading, setEpDirLoading] = useState(false)
   const editProgramTitleId = useId()
   const editProgramDialogRef = useDialogFocus<HTMLDivElement>(!!editProgram)
@@ -705,7 +704,7 @@ export function ProgramsView() {
     setKebabMenu(null)
     // Pre-load user directory so it's ready when form opens
     setEpDirLoading(true)
-    void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null }> }>('/users/directory')
+    void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null; roleType?: string }> }>('/users/directory')
       .then(r => setEpUserDirectory(r.data ?? []))
       .catch((err) => console.error('[Atlas] Gagal memuat user directory (EP):', err))
       .finally(() => setEpDirLoading(false))
@@ -825,7 +824,7 @@ export function ProgramsView() {
   const [cpHasNoApmsKpi, setCpHasNoApmsKpi] = useState(false)
   const [cpSaving, setCpSaving] = useState(false)
   const [cpError, setCpError] = useState<string | null>(null)
-  const [cpUserDirectory, setCpUserDirectory] = useState<Array<{ id: number; name: string; positionTitle?: string | null }>>([])
+  const [cpUserDirectory, setCpUserDirectory] = useState<Array<{ id: number; name: string; positionTitle?: string | null; roleType?: string }>>([])
 
   const closeCpModal = useCallback(() => closeOverlay('create-program', () => {
     setShowCreateProgram(false)
@@ -1927,7 +1926,7 @@ export function ProgramsView() {
                                   {ini.name}
                                 </div>
                                 <div className="pulse-item__meta">
-                                  {ini.program.code} · {ini.owner?.name ?? '—'}
+                                  {ini.program.code}
                                 </div>
                               </div>
                               <div className="pulse-item__progress">
@@ -2218,7 +2217,7 @@ export function ProgramsView() {
                       <button
                         className="btn btn--ghost btn--sm"
                         onClick={() => {
-                          void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null }> }>('/users/directory')
+                          void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null; roleType?: string }> }>('/users/directory')
                             .then(r => setCpUserDirectory(r.data ?? []))
                             .catch((err) => console.error('[Atlas] Gagal memuat user directory (CP):', err))
                         }}
@@ -2232,7 +2231,10 @@ export function ProgramsView() {
                         onChange={e => setCpOwnerId(Number(e.target.value))}
                         value={cpOwnerId ?? currentUser?.id ?? ''}
                       >
-                        {cpUserDirectory.map(u => (
+                        {/* Owner/Lead PIC wajib Kadiv/Kasub (2026-06-26) — mirror BE assertCanAssignOwner */}
+                        {cpUserDirectory
+                          .filter(u => u.roleType === 'KADIV' || u.roleType === 'KASUBDIV')
+                          .map(u => (
                           <option key={u.id} value={u.id}>
                             {u.name}{u.positionTitle ? ` — ${u.positionTitle}` : ''}
                           </option>
@@ -2583,7 +2585,8 @@ export function ProgramsView() {
                       <UserPicker
                         currentUserId={currentUser?.id}
                         onChange={id => setEditProgram(p => p ? { ...p, ownerId: id } : p)}
-                        options={epUserDirectory}
+                        // Owner/Lead PIC wajib Kadiv/Kasub (2026-06-26) — mirror BE assertCanAssignOwner
+                        options={epUserDirectory.filter(u => u.roleType === 'KADIV' || u.roleType === 'KASUBDIV')}
                         placeholder={t('Select lead PIC…')}
                         value={editProgram.ownerId ?? currentUser?.id ?? null}
                       />

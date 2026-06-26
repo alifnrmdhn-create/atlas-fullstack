@@ -67,7 +67,7 @@ class ProgramLifecycleHardeningTest extends TestCase
     public function test_bod_cannot_mutate_kpi_links_or_internal_owner_can(): void
     {
         [$dir, $unit] = $this->makeDirectorate('DIR-A', 'DIV-A');
-        $owner = $this->makeUser('owner-asisten', 'ASISTEN', $unit->id, $dir->id);
+        $owner = $this->makeUser('owner-kasubdiv', 'KASUBDIV', $unit->id, $dir->id);
         $bod = $this->makeUser('bod', 'BOD', $unit->id, $dir->id);
 
         $id = $this->createProgram($owner);
@@ -79,7 +79,7 @@ class ProgramLifecycleHardeningTest extends TestCase
             'code' => 'INT-1', 'name' => 'Internal KPI', 'targetValue' => 100,
         ])->assertForbidden();
 
-        // Owner (stakeholder ASISTEN) tetap boleh — fix tidak over-restrict.
+        // Owner (stakeholder KASUBDIV) tetap boleh — fix tidak over-restrict.
         $this->actingAs($owner)->postJson("/programs/{$id}/kpi-links", ['apmsKpiCode' => 'KPI-A'])
             ->assertCreated();
         $this->assertDatabaseHas('ProgramKpiLink', ['programId' => $id, 'apmsKpiCode' => 'KPI-A']);
@@ -95,12 +95,17 @@ class ProgramLifecycleHardeningTest extends TestCase
         $kasubdiv = $this->makeUser('kasubdiv-orphan', 'KASUBDIV', $unit->id, $dir->id);
         $asisten = $this->makeUser('asisten-a', 'ASISTEN', $unit->id, $dir->id, $kasubdiv->id);
 
-        $id = $this->createProgram($asisten);
-        $this->actingAs($asisten)->postJson("/programs/{$id}/submit")->assertSuccessful();
-        $this->assertSame('PENDING_KASUB', Program::find($id)->approvalStatus);
+        // State PENDING_KASUB + submitter ASISTEN di-set langsung: sejak ASISTEN tak
+        // lagi menginisiasi program (2026-06-26), state ini tak tercapai via flow
+        // normal — tapi guard eskalasi approve() KASUBDIV→KADIV tetap diuji defensif.
+        $id = $this->createProgram($kasubdiv);
+        Program::where('id', $id)->update([
+            'approvalStatus' => 'PENDING_KASUB',
+            'submittedById'  => $asisten->id,
+        ]);
 
-        // KASUBDIV approve → tak ada KADIV di rantai → 422, status TETAP PENDING_KASUB.
-        // Sebelum fix: naik ke PENDING_KADIV lalu nyangkut (tak ada yang bisa approve).
+        // KASUBDIV approve → eskalasi ke KADIV, tak ada KADIV di rantai → 422,
+        // status TETAP PENDING_KASUB (sebelum fix: nyangkut di PENDING_KADIV).
         $this->actingAs($kasubdiv)->postJson("/programs/{$id}/approve")->assertStatus(422);
         $this->assertSame('PENDING_KASUB', Program::find($id)->approvalStatus);
     }
@@ -112,38 +117,37 @@ class ProgramLifecycleHardeningTest extends TestCase
         [$dir, $unit] = $this->makeDirectorate('DIR-A', 'DIV-A');
         $kadiv = $this->makeUser('kadiv-a', 'KADIV', $unit->id, $dir->id);
         $kasubdiv = $this->makeUser('kasubdiv-a', 'KASUBDIV', $unit->id, $dir->id, $kadiv->id);
-        $asisten = $this->makeUser('asisten-a', 'ASISTEN', $unit->id, $dir->id, $kasubdiv->id);
         $admin = $this->makeUser('admin-a', 'SUPERADMIN', $unit->id, $dir->id);
 
-        $id = $this->createProgram($asisten);
+        $id = $this->createProgram($kasubdiv);
 
         // DRAFT: owner bebas menambah struktur.
-        $wsId = (int) $this->actingAs($asisten)->postJson('/workstreams', [
+        $wsId = (int) $this->actingAs($kasubdiv)->postJson('/workstreams', [
             'programId' => $id,
             'name' => 'WS-1',
             'priority' => 'HIGH',
             'targetCompletion' => now()->addWeeks(2)->toDateString(),
-            'ownerId' => $asisten->id,
+            'ownerId' => $kasubdiv->id,
         ])->assertCreated()->json('data.id');
 
-        // Submit → PENDING_KASUB.
-        $this->actingAs($asisten)->postJson("/programs/{$id}/submit")->assertSuccessful();
-        $this->assertSame('PENDING_KASUB', Program::find($id)->approvalStatus);
+        // Submit (KASUBDIV) → PENDING_KADIV.
+        $this->actingAs($kasubdiv)->postJson("/programs/{$id}/submit")->assertSuccessful();
+        $this->assertSame('PENDING_KADIV', Program::find($id)->approvalStatus);
 
         // Non-admin: tambah task / workstream saat PENDING → 422.
-        $this->actingAs($asisten)->postJson('/tasks', [
+        $this->actingAs($kasubdiv)->postJson('/tasks', [
             'title' => 'Task saat pending',
             'workstreamId' => $wsId,
             'targetCompletion' => now()->addWeek()->toDateString(),
             'priority' => 'MEDIUM',
         ])->assertStatus(422);
 
-        $this->actingAs($asisten)->postJson('/workstreams', [
+        $this->actingAs($kasubdiv)->postJson('/workstreams', [
             'programId' => $id,
             'name' => 'WS-2 saat pending',
             'priority' => 'HIGH',
             'targetCompletion' => now()->addWeeks(2)->toDateString(),
-            'ownerId' => $asisten->id,
+            'ownerId' => $kasubdiv->id,
         ])->assertStatus(422);
 
         // Admin tetap bisa (bypass) — mis. koreksi struktural darurat.
@@ -197,6 +201,58 @@ class ProgramLifecycleHardeningTest extends TestCase
         $this->assertSame('RED', Workstream::find($wsId)->healthStatus);
         $this->assertSame('RED', $health);
         $this->assertSame('RED', Program::find($id)->healthStatus);
+    }
+
+    // ── status Workstream/Phase = turunan dari task (2026-06-26) ──────────────
+
+    public function test_structure_status_derived_from_child_tasks(): void
+    {
+        [$dir, $unit] = $this->makeDirectorate('DIR-A', 'DIV-A');
+        $admin = $this->makeUser('admin-a', 'SUPERADMIN', $unit->id, $dir->id);
+
+        $id = $this->createProgram($admin);
+        $wsId = (int) $this->actingAs($admin)->postJson('/workstreams', [
+            'programId' => $id, 'name' => 'WS', 'priority' => 'HIGH',
+            'targetCompletion' => now()->addWeeks(4)->toDateString(),
+        ])->assertCreated()->json('data.id');
+        $phaseId = (int) $this->actingAs($admin)
+            ->postJson("/workstreams/{$wsId}/phases", ['name' => 'Phase 1'])
+            ->assertCreated()->json('data.id');
+
+        $t1 = (int) $this->actingAs($admin)->postJson('/tasks', [
+            'title' => 'T1', 'workstreamId' => $wsId, 'phaseId' => $phaseId,
+            'targetCompletion' => now()->addWeek()->toDateString(), 'priority' => 'MEDIUM',
+        ])->assertCreated()->json('data.id');
+        $t2 = (int) $this->actingAs($admin)->postJson('/tasks', [
+            'title' => 'T2', 'workstreamId' => $wsId, 'phaseId' => $phaseId,
+            'targetCompletion' => now()->addWeek()->toDateString(), 'priority' => 'MEDIUM',
+        ])->assertCreated()->json('data.id');
+
+        $svc = app(\App\Services\TaskService::class);
+
+        // Belum ada yang dimulai (BACKLOG) → default planning di kedua level.
+        $svc->recomputeStructureStatus($wsId);
+        $this->assertSame('BACKLOG', Workstream::find($wsId)->status);
+        $this->assertSame('PLANNING', \App\Models\Phase::find($phaseId)->status);
+
+        // Satu task berjalan → IN_PROGRESS.
+        Task::where('id', $t1)->update(['status' => 'IN_PROGRESS', 'percentComplete' => 40]);
+        $svc->recomputeStructureStatus($wsId);
+        $this->assertSame('IN_PROGRESS', Workstream::find($wsId)->status);
+        $this->assertSame('IN_PROGRESS', \App\Models\Phase::find($phaseId)->status);
+
+        // Semua task selesai → COMPLETED.
+        Task::whereIn('id', [$t1, $t2])->update(['status' => 'COMPLETED', 'percentComplete' => 100]);
+        $svc->recomputeStructureStatus($wsId);
+        $this->assertSame('COMPLETED', Workstream::find($wsId)->status);
+        $this->assertSame('COMPLETED', \App\Models\Phase::find($phaseId)->status);
+
+        // Status TIDAK bisa di-set manual lewat API — request `status` diabaikan,
+        // nilai turunan (COMPLETED) bertahan.
+        $this->actingAs($admin)->putJson("/phases/{$phaseId}", ['status' => 'PLANNING'])
+            ->assertOk()->assertJsonPath('data.status', 'COMPLETED');
+        $this->actingAs($admin)->putJson("/workstreams/{$wsId}", ['status' => 'BACKLOG'])
+            ->assertOk()->assertJsonPath('data.status', 'COMPLETED');
     }
 
     // ── plannedWeeks editable (timeline Plan) ─────────────────────────────────

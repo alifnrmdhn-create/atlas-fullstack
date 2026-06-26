@@ -385,7 +385,7 @@ function notifFallbackContext(): Record<string, { roleImpact: string; impact: st
   PROGRAM_NEEDS_APPROVAL: { roleImpact: i18n.t('You are the program approver'), impact: i18n.t("Program can't proceed without approval") },
   PROGRAM_REJECTED: { roleImpact: i18n.t('You are the program PIC'), impact: i18n.t('Fix per the notes, then resubmit') },
   PROGRAM_WITHDRAWN: { roleImpact: i18n.t('You are the program reviewer'), impact: i18n.t('Submission withdrawn by PIC — no further review needed') },
-  PROGRAM_COMMITMENT_CHANGED: { roleImpact: i18n.t('You are the KADIV approver for this program'), impact: i18n.t('PIC changed the commitment (target/priority/budget/etc.) — review if needed') },
+  PROGRAM_COMMITMENT_CHANGED: { roleImpact: i18n.t('You are the KADIV approver for this program'), impact: i18n.t('PIC changed the commitment (target/priority/etc.) — review if needed') },
   REPORT_NEEDS_REVISION: { roleImpact: i18n.t('You need to revise the report'), impact: i18n.t('Review cycle is on hold until the revision lands') },
   TASK_ASSIGNED: { roleImpact: i18n.t('You are the task PIC'), impact: i18n.t('Awaiting your follow-up') },
   // Sprint 4 — Clear the Path

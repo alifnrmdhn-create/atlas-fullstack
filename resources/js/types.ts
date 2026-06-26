@@ -275,11 +275,6 @@ export type ProgramDetail = {
     targetCompletion: string
     startDate: string | null
     actualCompletion: string | null
-    budgetIdr?: number | null
-    budgetSpent?: number | null
-    picPersonIds?: number[]
-    primaryPicPersonId?: number
-    picPersons?: Array<{ id: number; name: string }>
   }>
   hasNoApmsKpi?: boolean
   kpis?: Array<{
@@ -928,7 +923,6 @@ export type ExecutionWorkstreamSummary = {
   status: string
   healthStatus: HealthStatus | null
   progressPercent: number
-  ownerId: number
   phaseCount: number
   taskCount: number
 }
@@ -992,7 +986,6 @@ export type ExecutionGridData = {
     status: string
     healthStatus: HealthStatus | null
     progressPercent: number
-    owner: { id: number; name: string } | null
   }
   weekRange: { startWeek: string; endWeek: string; weeks: string[] }
   monthHeaders: ExecutionMonthHeader[]

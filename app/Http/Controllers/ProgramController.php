@@ -292,7 +292,6 @@ class ProgramController extends Controller
             'priority' => 'in:LOW,MEDIUM,HIGH,CRITICAL',
             'ownerId' => 'nullable|integer|exists:User,id',
             'ownerUnitId' => 'nullable|integer|exists:OrganizationalUnit,id',
-            'budgetIdr' => 'nullable|numeric',
             'picPersonIds' => 'nullable|array',
             'picPersonIds.*' => 'integer|exists:User,id',
             'hasNoApmsKpi' => 'nullable|boolean',
@@ -329,7 +328,7 @@ class ProgramController extends Controller
      */
     private const COMMITMENT_FIELDS = [
         'targetEndDate', 'startDate', 'priority',
-        'budgetIdr', 'kelompok', 'pilarStrategis',
+        'kelompok', 'pilarStrategis',
     ];
 
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
@@ -359,7 +358,6 @@ class ProgramController extends Controller
             'startDate' => 'sometimes|date',
             'targetEndDate' => 'sometimes|date|after_or_equal:startDate',
             'priority' => 'sometimes|in:LOW,MEDIUM,HIGH,CRITICAL',
-            'budgetIdr' => 'nullable|numeric|min:0',
             'linkedChannelId' => 'nullable|integer|exists:Channel,id',
             'picPersonIds' => 'nullable|array',
             'picPersonIds.*' => 'integer|exists:User,id',
@@ -546,17 +544,11 @@ class ProgramController extends Controller
                 ->where('entityId', $program->id)
                 ->pluck('userId')->all();
 
-            $workstreamOwners = Workstream::query()
-                ->where('programId', $program->id)
-                ->whereNotNull('ownerId')
-                ->pluck('ownerId')->all();
-
             $ownerIds = $program->ownerId ? [$program->ownerId] : [];
 
             $allRecipients = collect([
                 ...array_keys($taskCountByUser->toArray()),
                 ...$picUserIds,
-                ...$workstreamOwners,
                 ...$ownerIds,
             ])
                 ->map(fn ($id) => (int) $id)

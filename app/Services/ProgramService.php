@@ -188,7 +188,6 @@ class ProgramService
 
         // Resolve user names
         $userIds = collect()
-            ->merge($atRiskWs->pluck('ownerId'))
             ->merge($stagnantTasks->pluck('assignedTo')->filter())
             ->unique()->values();
 
@@ -227,7 +226,6 @@ class ProgramService
                 'targetCompletion' => $ws->targetCompletion,
                 'daysRemaining' => (int) ceil($ws->targetCompletion->diffInDays($now, false) * -1),
                 'program' => $ws->program,
-                'owner' => $ws->ownerId ? ['id' => $ws->ownerId, 'name' => $userMap->get($ws->ownerId, '—')] : null,
             ])->values()->all(),
 
             'stagnantItems' => $stagnantTasks->map(fn ($t) => [
@@ -256,9 +254,7 @@ class ProgramService
                 'owner.unit:id,name',
                 'coPics',
                 'linkedChannel:id,name',
-                'workstreams.entityPics',
                 'workstreams.phases',
-                'workstreams.phases.entityPics',
                 'workstreams.tasks.blockers',
                 'workstreams.tasks.entityPics',
                 // KPI internal aktif — supaya `detail.kpis` terisi di FE tanpa N+1 lazy load.
@@ -311,14 +307,38 @@ class ProgramService
     }
 
     /**
-     * Guard reassignment owner program: non-admin hanya boleh menetapkan ownerId
-     * ke dirinya sendiri atau user dalam scope-nya (unit/bawahan). Sebelumnya
-     * ownerId bebas di-set ke siapa pun → kepemilikan program bisa "dilempar"
-     * ke user di luar wewenang. Admin/eksekutif (allowsAllUsers) bebas.
+     * Guard penetapan owner program. Dua lapis:
+     *
+     * 1. INVARIANT ROLE (2026-06-26): saat user lapangan menetapkan owner, owner
+     *    WAJIB Kepala Divisi (KADIV) atau Kepala Sub Divisi (KASUBDIV) — selaras
+     *    "plan di-author/di-own oleh Kadiv/Kasub". Karena hanya Kadiv/Kasub yang
+     *    bisa create/edit (canCreateProgram), self-assign mereka otomatis valid;
+     *    delegasi ke user lain dibatasi sesama plan-manager.
+     *    ADMIN/SUPERADMIN (operator) DIKECUALIKAN dari invariant ini — dipakai
+     *    untuk seeding/administrasi & boleh menetapkan owner siapa pun, sejalan
+     *    dengan bypass scope di bawah. (Owner non-plan-manager yang diset operator
+     *    tetap "inert": canEditProgram menolaknya, jadi tak memberi hak edit.)
+     * 2. SCOPE: non-admin hanya boleh menetapkan ownerId ke dirinya sendiri atau
+     *    user dalam scope-nya (unit/bawahan). Admin/eksekutif (allowsAllUsers) bebas.
      */
     public function assertCanAssignOwner(User $actor, ?int $ownerId): void
     {
-        if ($ownerId === null || $ownerId === $actor->id) {
+        if ($ownerId === null) {
+            return;
+        }
+
+        // Lapis 1 — invariant role owner (kecuali aktor admin/superadmin operator).
+        if (!RolePolicy::isAdminOrAbove($actor->roleType)) {
+            $ownerRole = $ownerId === $actor->id
+                ? $actor->roleType
+                : User::query()->whereKey($ownerId)->value('roleType');
+            if (!in_array(RolePolicy::norm($ownerRole), ['kadiv', 'kasubdiv'], true)) {
+                abort(422, 'Owner program harus Kepala Divisi atau Kepala Sub Divisi.');
+            }
+        }
+
+        // Lapis 2 — scope.
+        if ($ownerId === $actor->id) {
             return;
         }
         $scope = $this->scopeResolver->resolveUserScope($actor);
@@ -467,7 +487,6 @@ class ProgramService
                     ->orderBy('phaseId')
                     ->orderBy('letterIndex')
                     ->with('blockers:id,workItemId,status,severity'),
-                'owner:id,name',
             ])
             ->orderBy('createdAt')
             ->get();

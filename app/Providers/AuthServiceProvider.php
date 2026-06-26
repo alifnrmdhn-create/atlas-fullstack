@@ -59,11 +59,13 @@ class AuthServiceProvider extends ServiceProvider
                 return false;
             }
 
-            // Hak edit KADIV tanpa-kepemilikan dibatasi direktoratnya sendiri.
-            // Tanpa ini, KADIV direktorat lain bisa PUT detail program manapun
+            // Hak edit KADIV/KASUBDIV tanpa-kepemilikan dibatasi scope-nya sendiri
+            // (KADIV = se-direktorat, KASUBDIV = unit sendiri, lihat OrgScope).
+            // Tanpa ini, sejak ASISTEN/owner-syarat dilepas (2026-06-26) seorang
+            // KASUBDIV/KADIV direktorat/unit lain bisa PUT detail program manapun
             // lewat API langsung (halaman detailnya sendiri tertutup oleh
             // assertAccess di jalur baca, tapi Gate ini tidak ber-scope).
-            if (!$isStakeholder && RolePolicy::norm($user->roleType) === 'kadiv') {
+            if (!$isStakeholder && in_array(RolePolicy::norm($user->roleType), ['kadiv', 'kasubdiv'], true)) {
                 return OrgScope::forUser($user)->coversUnit(
                     $program->ownerUnitId !== null ? (int) $program->ownerUnitId : null,
                 );

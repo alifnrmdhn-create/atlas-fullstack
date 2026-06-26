@@ -73,7 +73,7 @@ class ActionItemCloseLoopTest extends TestCase
         ]);
         $this->workstream = Workstream::create([
             'code' => 'WS-LOOP', 'programId' => $this->program->id,
-            'name' => 'Workstream Loop', 'ownerId' => $this->organizer->id,
+            'name' => 'Workstream Loop',
             'status' => 'IN_PROGRESS', 'priority' => 'HIGH',
             'progressPercent' => 0, 'targetCompletion' => '2026-12-31',
         ]);

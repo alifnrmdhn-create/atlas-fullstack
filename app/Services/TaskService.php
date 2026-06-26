@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Blocker;
 use App\Models\EntityPic;
+use App\Models\Phase;
 use App\Models\SubTask;
 use App\Models\Task;
 use App\Models\User;
@@ -70,6 +71,14 @@ class TaskService
         // truth: primary PIC selalu masuk ke Task.assignedTo.
         if (!empty($picPersonIds) && !isset($data['assignedTo'])) {
             $data['assignedTo'] = $picPersonIds[0];
+        }
+
+        // Arah sebaliknya: New Task modal hanya kirim assignedTo (tanpa
+        // picPersonIds). Mirror balik supaya EntityPic ikut terisi — kalau tidak,
+        // panel detail (baca picPersonIds) tampil "+ Assign…" walau PIC sudah ada.
+        // Invariant: assignedTo === picPersonIds[0].
+        if (empty($picPersonIds) && !empty($data['assignedTo'])) {
+            $picPersonIds = [$data['assignedTo']];
         }
 
         $task = Task::create([
@@ -441,6 +450,69 @@ class TaskService
                 $this->recomputeProgramProgress($programId);
             }
         }
+
+        // Status Workstream + Phase = turunan dari status task anak (2026-06-26).
+        // Di luar guard $avg null supaya tetap ter-derive walau workstream belum
+        // punya task (→ kembali ke default planning).
+        $this->recomputeStructureStatus($workstreamId);
+    }
+
+    /**
+     * Derive status Workstream + tiap Phase dari status task anaknya — read-only
+     * di Programs (2026-06-26). Status kontainer TIDAK lagi di-set manual; selalu
+     * cerminan eksekusi yang diinput di Workboard:
+     *   - semua task COMPLETED    → COMPLETED
+     *   - ada task sudah berjalan  → IN_PROGRESS
+     *   - belum ada yang dimulai   → default planning (Workstream BACKLOG / Phase PLANNING)
+     * CANCELLED dipertahankan (state lifecycle manual, tak pernah ditimpa rollup).
+     */
+    public function recomputeStructureStatus(int $workstreamId): void
+    {
+        $tasks = Task::query()
+            ->where('initiativeId', $workstreamId)
+            ->where('status', '!=', 'CANCELLED')
+            ->get(['phaseId', 'status']);
+
+        // Rollup level Workstream.
+        Workstream::query()
+            ->where('id', $workstreamId)
+            ->where('status', '!=', 'CANCELLED')
+            ->update(['status' => $this->deriveContainerStatus($tasks, 'BACKLOG')]);
+
+        // Rollup per Phase — hanya task ber-phaseId yang berkontribusi.
+        $byPhase = $tasks->whereNotNull('phaseId')->groupBy('phaseId');
+        $phases = Phase::query()
+            ->where('initiativeId', $workstreamId)
+            ->where('status', '!=', 'CANCELLED')
+            ->get(['id', 'status']);
+
+        foreach ($phases as $phase) {
+            $derived = $this->deriveContainerStatus($byPhase->get($phase->id) ?? collect(), 'PLANNING');
+            if ($derived !== $phase->status) {
+                Phase::query()->where('id', $phase->id)->update(['status' => $derived]);
+            }
+        }
+    }
+
+    /**
+     * Status kontainer dari kumpulan task anak.
+     * $emptyDefault = status saat belum ada task / belum ada yang dimulai.
+     *
+     * @param \Illuminate\Support\Collection<int, \App\Models\Task> $tasks
+     */
+    private function deriveContainerStatus($tasks, string $emptyDefault): string
+    {
+        if ($tasks->isEmpty()) {
+            return $emptyDefault;
+        }
+        $total = $tasks->count();
+        $completed = $tasks->where('status', 'COMPLETED')->count();
+        if ($completed === $total) {
+            return 'COMPLETED';
+        }
+        // "Sudah berjalan" = keluar dari kolom perencanaan (BACKLOG/READY).
+        $started = $tasks->whereNotIn('status', ['BACKLOG', 'READY'])->count();
+        return $started > 0 ? 'IN_PROGRESS' : $emptyDefault;
     }
 
     /** Recalculate program progress from average of active workstreams.
@@ -507,6 +579,14 @@ class TaskService
                 $this->writeStatusLog($taskId, $autoCompletedFrom, 'COMPLETED', $userId, 'Auto-completed: all sub-tasks done');
             }
         });
+
+        // Cascade: progres/status task induk berubah dari subtask → recompute
+        // progress + status rollup workstream/phase. Sebelumnya jalur subtask tak
+        // men-cascade, jadi Workstream.progressPercent & status kontainer basi.
+        $workstreamId = Task::query()->where('id', $taskId)->value('initiativeId');
+        if ($workstreamId) {
+            $this->recomputeWorkstreamProgress((int) $workstreamId);
+        }
     }
 
     /** Auto-unblock task ketika semua blocker resolved. */

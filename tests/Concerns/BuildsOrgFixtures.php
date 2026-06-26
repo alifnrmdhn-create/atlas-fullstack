@@ -75,7 +75,6 @@ trait BuildsOrgFixtures
             'name' => "Workstream {$tag}",
             'priority' => 'HIGH',
             'targetCompletion' => now()->addWeeks(2)->toDateString(),
-            'ownerId' => $admin->id,
         ])->assertCreated()->json('data.id');
 
         $taskId = $this->postJson('/tasks', [

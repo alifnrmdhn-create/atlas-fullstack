@@ -424,9 +424,12 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                 <p className="tpp-section-label">{t('Person in Charge')}</p>
                 <div className="wid-team-row__chips" style={{ paddingTop: 2 }}>
                   {(() => {
-                    const currentId = (detail.picPersonIds ?? [])[0] ?? null
+                    // Fallback ke assignee: task buatan New Task modal mengisi
+                    // assignedTo tapi tidak selalu punya row EntityPic (picPersonIds).
+                    // Tanpa fallback, panel tampil "+ Assign…" walau PIC sudah ada.
+                    const currentId = (detail.picPersonIds ?? [])[0] ?? detail.assignee?.id ?? null
                     const person    = currentId ? directoryUsers.find(u => u.id === currentId) : null
-                    const label     = person?.name ?? (currentId ? `#${currentId}` : null)
+                    const label     = person?.name ?? detail.assignee?.name ?? (currentId ? `#${currentId}` : null)
                     return label ? (
                       <span className="wid-pic-chip">
                         {label}
@@ -445,11 +448,11 @@ export function TaskPlanningPanel({ taskId, closing, onClose, onRefresh, mode = 
                         className="wid-pic-search"
                         disabled={personSaving}
                         onChange={e => setPersonSearch(e.target.value)}
-                        placeholder={(detail.picPersonIds ?? []).length > 0 ? t('Change…') : t('+ Assign…')}
+                        placeholder={((detail.picPersonIds ?? [])[0] ?? detail.assignee?.id) ? t('Change…') : t('+ Assign…')}
                         value={personSearch}
                       />
                       {personSearch.length > 0 && (() => {
-                        const currentId = (detail.picPersonIds ?? [])[0]
+                        const currentId = (detail.picPersonIds ?? [])[0] ?? detail.assignee?.id
                         const filtered  = directoryUsers
                           .filter(u => u.id !== currentId && u.name.toLowerCase().includes(personSearch.toLowerCase()))
                           .slice(0, 6)

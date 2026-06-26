@@ -4,14 +4,14 @@ import { useWorkspace } from './useWorkspace'
  * Role-access hook — single source of truth for what the current user is
  * allowed to do in the Programs and Execution modules.
  *
- * Role rules:
+ * Role rules (plan-authoring diperketat 2026-06-26 — lihat RolePolicy.php):
  *   BOD       → pure monitoring: read-only everywhere, can comment only
- *   KADIV     → full write access within their division scope
- *   KASUBDIV  → full write within their subdivision scope
- *   ASISTEN   → primary program initiator, full write for their own programs
- *   OFFICER   → PIC operasional: write-enabled untuk create/update, masih
- *               scoped self-only di Execution board (myItemsLocked)
- *   ADMIN/SUPERADMIN → unrestricted
+ *   KADIV     → meng-author plan + full write dalam division scope
+ *   KASUBDIV  → meng-author plan + full write dalam subdivision scope
+ *   ASISTEN   → pelaksana: TIDAK meng-author plan; update progres/subtask task
+ *               yang di-assign ke dirinya (jalur eksekusi)
+ *   OFFICER   → pelaksana operasional: sama dgn ASISTEN, scoped self di board
+ *   ADMIN/SUPERADMIN → unrestricted (operator)
  */
 export function useRoleAccess() {
   const { currentUser } = useWorkspace()
@@ -24,33 +24,34 @@ export function useRoleAccess() {
     role,
 
     // ── Program module ────────────────────────────────────────────────────
-    /** Can initiate a new program — semua role kecuali BOD */
-    canCreateProgram: role !== '' && !is('BOD'),
+    /** Can initiate a new program — hanya Kadiv/Kasub (+admin), 2026-06-26 */
+    canCreateProgram: isAnyOf('SUPERADMIN', 'ADMIN', 'KADIV', 'KASUBDIV'),
 
     /** Can create a workstream within a program — sejajar dengan canCreateProgram */
-    canCreateWorkstream: role !== '' && !is('BOD'),
+    canCreateWorkstream: isAnyOf('SUPERADMIN', 'ADMIN', 'KADIV', 'KASUBDIV'),
 
     /**
-     * Can edit a program they own; KADIV can edit any in their division.
+     * Can edit a program's plan — hanya KADIV/KASUBDIV (+admin), 2026-06-26.
+     * (Scope unit/direktorat di-enforce di BE: gate `edit-program`.)
      * `isInRevision` = program baru ditolak & menunggu PIC memperbaiki —
-     * selama state ini hanya owner & admin yang boleh edit (KADIV reviewer
-     * step back agar tidak mem-bypass koreksi yang baru diminta sendiri).
+     * selama state ini hanya owner & admin yang boleh edit (reviewer step back
+     * agar tidak mem-bypass koreksi yang baru diminta sendiri).
      */
     canEditProgram: (isOwner: boolean, isInRevision: boolean = false) => {
       if (isAnyOf('SUPERADMIN', 'ADMIN')) return true
       if (isInRevision) return isOwner
-      return isAnyOf('KADIV') || (isAnyOf('KASUBDIV', 'ASISTEN') && isOwner)
+      return isAnyOf('KADIV', 'KASUBDIV')
     },
 
     /** Can delete a program they own */
     canDeleteProgram: (isOwner: boolean) =>
       isAnyOf('SUPERADMIN', 'ADMIN') ||
-      (isAnyOf('KADIV', 'ASISTEN') && isOwner),
+      (isAnyOf('KADIV') && isOwner),
 
     /** Can archive a program (soft-delete) */
     canArchiveProgram: (isOwner: boolean) =>
       isAnyOf('SUPERADMIN', 'ADMIN', 'KADIV') ||
-      (isAnyOf('KASUBDIV', 'ASISTEN') && isOwner),
+      (isAnyOf('KASUBDIV') && isOwner),
 
     /** Can view archived programs and restore them */
     canViewArchive: isAnyOf('SUPERADMIN', 'ADMIN', 'KADIV'),

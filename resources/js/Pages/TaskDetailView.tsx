@@ -2197,10 +2197,12 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                         <span className="wid-sp-label">{t('PIC')}</span>
                         <div className="wid-team-row__chips">
                           {(() => {
-                            const currentId = (detail?.picPersonIds ?? [])[0]
+                            // Fallback ke assignee: task buatan New Task modal mengisi
+                            // assignedTo tapi belum tentu punya row EntityPic (picPersonIds).
+                            const currentId = (detail?.picPersonIds ?? [])[0] ?? detail?.assignee?.id
                             if (currentId) {
                               const person = assignUsers.find((u) => u.id === currentId)
-                              const label = person ? person.name : `#${currentId}`
+                              const label = person ? person.name : (detail?.assignee?.name ?? `#${currentId}`)
                               return (
                                 <span className="wid-pic-chip">
                                   {label}
@@ -2219,7 +2221,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                               onClick={() => { setShowPicAdder(true); void loadAssignUsers() }}
                               disabled={picSaving}
                             >
-                              {(detail?.picPersonIds ?? []).length > 0 ? t('Change') : t('+ Select')}
+                              {((detail?.picPersonIds ?? [])[0] ?? detail?.assignee?.id) ? t('Change') : t('+ Select')}
                             </button>
                           ) : (
                           <div className="wid-pic-adder">
@@ -2234,7 +2236,7 @@ export function TaskDetailView({ taskId, mode = 'page', onClose: _onClose }: Tas
                               value={picPersonSearch}
                             />
                             {picPersonSearch.length > 0 && (() => {
-                              const currentId = (detail?.picPersonIds ?? [])[0]
+                              const currentId = (detail?.picPersonIds ?? [])[0] ?? detail?.assignee?.id
                               const filtered = assignUsers.filter(
                                 (u) => u.id !== currentId &&
                                   u.name.toLowerCase().includes(picPersonSearch.toLowerCase())

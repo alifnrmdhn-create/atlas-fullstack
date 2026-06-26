@@ -127,7 +127,6 @@ class WorkflowMutationSmokeTest extends TestCase
             'name' => 'Mutation Workstream',
             'priority' => 'HIGH',
             'targetCompletion' => now()->addWeeks(2)->toDateString(),
-            'ownerId' => $this->admin->id,
         ])
             ->assertCreated()
             ->assertJsonPath('data.name', 'Mutation Workstream')
@@ -142,9 +141,13 @@ class WorkflowMutationSmokeTest extends TestCase
             ->assertJsonPath('data.name', 'Mutation Phase')
             ->json('data.id');
 
-        $this->putJson("/phases/{$phaseId}", ['status' => 'IN_PROGRESS'])
+        // Status Phase tak lagi bisa di-set manual (2026-06-26) — di-derive dari
+        // status task anak. PUT hanya mengubah field struktur; status di request
+        // diabaikan (fase tanpa task tetap di default 'PLANNING').
+        $this->putJson("/phases/{$phaseId}", ['name' => 'Mutation Phase v2', 'status' => 'IN_PROGRESS'])
             ->assertOk()
-            ->assertJsonPath('data.status', 'IN_PROGRESS');
+            ->assertJsonPath('data.name', 'Mutation Phase v2')
+            ->assertJsonPath('data.status', 'PLANNING');
 
         $taskId = $this->postJson('/tasks', [
             'workstreamId' => $workstreamId,
@@ -489,27 +492,25 @@ class WorkflowMutationSmokeTest extends TestCase
             ->assertCreated()
             ->json('data.id');
 
-        // Buat workstream dengan PIC
+        // Buat workstream (tak lagi punya owner/PIC sendiri — 2026-06-26)
         $wsId = $this->postJson('/workstreams', [
             'programId'        => $programId,
             'name'             => 'Detail WS',
             'targetCompletion' => now()->addWeeks(2)->toDateString(),
-            'picPersonIds'     => [$this->admin->id],
         ])
             ->assertCreated()
             ->json('data.id');
 
-        // Buat phase dengan PIC
+        // Buat phase (struktur murni — tanpa PIC)
         $this->postJson("/workstreams/{$wsId}/phases", [
-            'name'         => 'Detail Phase',
-            'picPersonIds' => [$this->teammate->id],
+            'name' => 'Detail Phase',
         ])->assertCreated();
 
-        // entity_pics tersync untuk workstream
-        $this->assertDatabaseHas('entity_pics', [
+        // Workstream TIDAK boleh punya entity_pics (owner/PIC dipindah ke
+        // PIC program + Task.assignedTo).
+        $this->assertDatabaseMissing('entity_pics', [
             'entityType' => 'Initiative',
             'entityId'   => $wsId,
-            'userId'     => $this->admin->id,
         ]);
 
         // GET /programs/:id harus berhasil (bukan 500) dan mengandung workstreams + phases
@@ -522,9 +523,10 @@ class WorkflowMutationSmokeTest extends TestCase
         $this->assertNotNull($ws, 'Workstream yang dibuat harus ada di detail');
         $this->assertNotEmpty($ws['phases'], 'Phases harus ter-load di workstream');
 
-        // picPersonIds dari entity_pics (accessor)
+        // PIC program (PIC utama) tetap dari entity_pics 'Program'.
         $this->assertEquals([$this->teammate->id], $detail['picPersonIds']);
-        $this->assertEquals([$this->admin->id], $ws['picPersonIds']);
+        // Workstream tak lagi expose picPersonIds.
+        $this->assertArrayNotHasKey('picPersonIds', $ws);
 
         // readiness WAJIB ada di payload DETAIL (di-append eksplisit di
         // ProgramController::show sejak dikeluarkan dari $appends global —

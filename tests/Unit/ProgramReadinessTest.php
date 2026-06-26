@@ -75,7 +75,7 @@ class ProgramReadinessTest extends TestCase
         $program = $this->newProgram();
         Workstream::create([
             'code' => 'WS-1', 'name' => 'WS 1', 'programId' => $program->id,
-            'status' => 'IN_PROGRESS', 'ownerId' => $this->owner->id,
+            'status' => 'IN_PROGRESS',
             'targetCompletion' => '2026-12-31',
         ]);
 
@@ -90,7 +90,7 @@ class ProgramReadinessTest extends TestCase
         $program = $this->newProgram();
         $ws = Workstream::create([
             'code' => 'WS-2', 'name' => 'WS 2', 'programId' => $program->id,
-            'status' => 'IN_PROGRESS', 'ownerId' => $this->owner->id,
+            'status' => 'IN_PROGRESS',
             'targetCompletion' => '2026-12-31',
         ]);
         Task::create([
@@ -111,7 +111,7 @@ class ProgramReadinessTest extends TestCase
         $program = $this->newProgram();
         $ws = Workstream::create([
             'code' => 'WS-3', 'name' => 'WS 3', 'programId' => $program->id,
-            'status' => 'IN_PROGRESS', 'ownerId' => $this->owner->id,
+            'status' => 'IN_PROGRESS',
             'targetCompletion' => '2026-12-31',
         ]);
         Task::create([

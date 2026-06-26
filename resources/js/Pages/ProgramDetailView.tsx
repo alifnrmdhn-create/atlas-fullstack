@@ -29,7 +29,7 @@ import {
 } from '../components/ui'
 import type { ProgramDetail, ProgramKpiLink } from '../types'
 import { ExecutionTab } from '../components/ExecutionTab'
-import { UserPicker, UserPickerMulti } from '../components/UserPicker'
+import { UserPickerMulti } from '../components/UserPicker'
 import { TaskPlanningPanel } from './TaskPlanningPanel'
 import { getProgramDisplayStatus } from '../lib/programStatus'
 import './ProgramDetailView.css'
@@ -96,11 +96,7 @@ type PulseBlocker = {
 type WorkstreamRow = {
   id: number; name: string; status: string; priority: string
   startDate: string | null; targetCompletion: string
-  description?: string; picPersonIds?: number[]; primaryPicPersonId?: number | null
-  picPersons?: Array<{ id: number; name: string }>
-  ownerId?: number | null
-  budgetIdr?: number | null
-  budgetSpent?: number | null
+  description?: string
 }
 
 type TaskItem = {
@@ -120,8 +116,6 @@ type PhaseItem = {
 type WorkstreamDetail = {
   id: number; name: string; status: string
   startDate?: string | null; targetCompletion?: string; description?: string
-  primaryPicPersonId?: number | null
-  picPersons?: Array<{ id: number; name: string }>
   phases: PhaseItem[]
   tasks: TaskItem[]
 }
@@ -903,7 +897,7 @@ export function ProgramDetailView() {
   const [epOwnerQuery, setEpOwnerQuery] = useState('')
   const [epSaving, setEpSaving] = useState(false)
   const [epError, setEpError] = useState<string | null>(null)
-  const [userDirectory, setUserDirectory] = useState<Array<{ id: number; name: string; positionTitle?: string | null }>>([])
+  const [userDirectory, setUserDirectory] = useState<Array<{ id: number; name: string; positionTitle?: string | null; roleType?: string }>>([])
   const triggerEpClose = useCallback(() => closeOverlay('edit-program', () => { setShowEdit(false); setEpError(null) }), [closeOverlay])
   const epClosing = closingOverlay === 'edit-program'
   // Modal Refleksi Mingguan — refactor dari inline form 2026-05-19. Focus task,
@@ -962,7 +956,7 @@ export function ProgramDetailView() {
     setEpOwnerEditing(false)
     setEpOwnerQuery('')
     if (userDirectory.length === 0) {
-      void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null }> }>('/users/directory')
+      void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null; roleType?: string }> }>('/users/directory')
         .then(r => setUserDirectory(r.data ?? []))
         .catch((err) => console.error('[Atlas] Gagal memuat user directory:', err))
     }
@@ -1001,24 +995,16 @@ export function ProgramDetailView() {
   // ── Create Workstream modal ───────────────────────────────────────────
   const [showCreateIni, setShowCreateIni] = useState(false)
   const [ciForm, setCiForm] = useState({
-    name: '', description: '', status: 'BACKLOG', priority: 'MEDIUM',
+    name: '', description: '', priority: 'MEDIUM',
     startDate: '', targetCompletion: '',
-    budgetIdr: '', budgetSpent: '',
   })
   const [ciSaving, setCiSaving] = useState(false)
   const [ciError, setCiError] = useState<string | null>(null)
-  // Owner workstream = penanggung jawab workstream.
-  // Default ke current user, tapi visible + bisa override.
-  const [ciOwnerId, setCiOwnerId] = useState<number | null>(null)
-  const [ciPicIds, setCiPicIds] = useState<number[]>([])
-  const [eiPicIds, setEiPicIds] = useState<number[]>([])
-  const [ciPrimaryPicId, setCiPrimaryPicId] = useState<number | null>(null)
-  const [eiPrimaryPicId, setEiPrimaryPicId] = useState<number | null>(null)
-  const [ciPicSearch, setCiPicSearch] = useState('')
-  const [eiPicSearch, setEiPicSearch] = useState('')
+  // Workstream tak lagi punya owner/PIC sendiri (2026-06-26): akuntabilitas di
+  // PIC program, penunjukan orang di Task.assignedTo. Hanya field struktur.
   const triggerCiClose = useCallback(() => closeOverlay('create-ini', () => {
-    setShowCreateIni(false); setCiError(null); setCiPicIds([]); setCiPicSearch(''); setCiPrimaryPicId(null)
-    setCiForm({ name: '', description: '', status: 'BACKLOG', priority: 'MEDIUM', startDate: '', targetCompletion: '', budgetIdr: '', budgetSpent: '' })
+    setShowCreateIni(false); setCiError(null)
+    setCiForm({ name: '', description: '', priority: 'MEDIUM', startDate: '', targetCompletion: '' })
   }), [closeOverlay])
   const ciClosing = closingOverlay === 'create-ini'
   const createWorkstreamDialogRef = useDialogFocus<HTMLDivElement>(showCreateIni || ciClosing)
@@ -1027,9 +1013,7 @@ export function ProgramDetailView() {
     if (ciSaving) return
     const ciDirty = ciForm.name !== '' || ciForm.description !== '' ||
       ciForm.startDate !== '' || ciForm.targetCompletion !== '' ||
-      ciForm.status !== 'BACKLOG' || ciForm.priority !== 'MEDIUM' ||
-      ciForm.budgetIdr !== '' || ciForm.budgetSpent !== '' ||
-      ciPicIds.length > 0 || ciOwnerId !== null
+      ciForm.priority !== 'MEDIUM'
     if (ciDirty && !window.confirm(t('Discard unsaved changes?'))) return
     triggerCiClose()
   }, showCreateIni || ciClosing)
@@ -1042,14 +1026,9 @@ export function ProgramDetailView() {
         programId: numId,
         name: ciForm.name.trim(),
         description: ciForm.description.trim() || undefined,
-        status: ciForm.status, priority: ciForm.priority,
+        priority: ciForm.priority,
         startDate: ciForm.startDate || undefined,
         targetCompletion: ciForm.targetCompletion,
-        ownerId: ciOwnerId ?? currentUser?.id ?? undefined,
-        budgetIdr: ciForm.budgetIdr === '' ? null : Number(ciForm.budgetIdr),
-        budgetSpent: ciForm.budgetSpent === '' ? null : Number(ciForm.budgetSpent),
-        picPersonIds: ciPicIds.length > 0 ? ciPicIds : undefined,
-        primaryPicPersonId: ciPrimaryPicId ?? (ciPicIds[0] ?? undefined),
       })
       triggerCiClose()
       await Promise.all([loadDetail(true), loadOverview('refresh')])
@@ -1064,14 +1043,12 @@ export function ProgramDetailView() {
   const [editIni, setEditIni] = useState<WorkstreamRow | null>(null)
   const [showEditIni, setShowEditIni] = useState(false)
   const [eiForm, setEiForm] = useState({
-    name: '', description: '', status: 'BACKLOG', priority: 'MEDIUM',
+    name: '', description: '', priority: 'MEDIUM',
     startDate: '', targetCompletion: '',
-    ownerId: null as number | null,
-    budgetIdr: '', budgetSpent: '',
   })
   const [eiSaving, setEiSaving] = useState(false)
   const [eiError, setEiError] = useState<string | null>(null)
-  const triggerEiClose = useCallback(() => closeOverlay('edit-ini', () => { setShowEditIni(false); setEditIni(null); setEiError(null); setEiPicIds([]); setEiPrimaryPicId(null); setEiPicSearch('') }), [closeOverlay])
+  const triggerEiClose = useCallback(() => closeOverlay('edit-ini', () => { setShowEditIni(false); setEditIni(null); setEiError(null) }), [closeOverlay])
   const eiClosing = closingOverlay === 'edit-ini'
   const editWorkstreamDialogRef = useDialogFocus<HTMLDivElement>(showEditIni || eiClosing)
   const editWorkstreamTitleId = useId()
@@ -1081,16 +1058,9 @@ export function ProgramDetailView() {
     const eiDirty = !!editIni && (
       eiForm.name !== editIni.name ||
       eiForm.description !== (editIni.description ?? '') ||
-      eiForm.status !== editIni.status ||
       eiForm.priority !== editIni.priority ||
       eiForm.startDate !== (editIni.startDate?.slice(0, 10) ?? '') ||
-      eiForm.targetCompletion !== (editIni.targetCompletion?.slice(0, 10) ?? '') ||
-      eiForm.ownerId !== (editIni.ownerId ?? null) ||
-      eiForm.budgetIdr !== (editIni.budgetIdr != null ? String(Number(editIni.budgetIdr)) : '') ||
-      eiForm.budgetSpent !== (editIni.budgetSpent != null ? String(Number(editIni.budgetSpent)) : '') ||
-      eiPicIds.length !== (editIni.picPersonIds?.length ?? 0) ||
-      eiPicIds.some(id => !(editIni.picPersonIds ?? []).includes(id)) ||
-      eiPrimaryPicId !== (editIni.primaryPicPersonId ?? null)
+      eiForm.targetCompletion !== (editIni.targetCompletion?.slice(0, 10) ?? '')
     )
     if (eiDirty && !window.confirm(t('Discard unsaved changes?'))) return
     triggerEiClose()
@@ -1100,20 +1070,10 @@ export function ProgramDetailView() {
     setEditIni(ini)
     setEiForm({
       name: ini.name, description: ini.description ?? '',
-      status: ini.status, priority: ini.priority,
+      priority: ini.priority,
       startDate: ini.startDate?.slice(0, 10) ?? '',
       targetCompletion: ini.targetCompletion?.slice(0, 10) ?? '',
-      ownerId: ini.ownerId ?? null,
-      budgetIdr: ini.budgetIdr != null ? String(Number(ini.budgetIdr)) : '',
-      budgetSpent: ini.budgetSpent != null ? String(Number(ini.budgetSpent)) : '',
     })
-    setEiPicIds(ini.picPersonIds ?? [])
-    setEiPrimaryPicId(ini.primaryPicPersonId ?? (ini.picPersonIds?.[0] ?? null))
-    if (userDirectory.length === 0) {
-      void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null }> }>('/users/directory')
-        .then(r => setUserDirectory(r.data ?? []))
-        .catch((err) => console.error('[Atlas] Gagal memuat user directory:', err))
-    }
     setShowEditIni(true)
   }
 
@@ -1125,14 +1085,9 @@ export function ProgramDetailView() {
       await api.put(`/workstreams/${editIni.id}`, {
         name: eiForm.name.trim(),
         description: eiForm.description.trim() || undefined,
-        status: eiForm.status, priority: eiForm.priority,
+        priority: eiForm.priority,
         startDate: eiForm.startDate || undefined,
         targetCompletion: eiForm.targetCompletion,
-        ownerId: eiForm.ownerId ?? undefined,
-        budgetIdr: eiForm.budgetIdr === '' ? null : Number(eiForm.budgetIdr),
-        budgetSpent: eiForm.budgetSpent === '' ? null : Number(eiForm.budgetSpent),
-        picPersonIds: eiPicIds.length > 0 ? eiPicIds : undefined,
-        primaryPicPersonId: eiPrimaryPicId ?? (eiPicIds[0] ?? undefined),
       })
       triggerEiClose()
       await Promise.all([loadDetail(true), loadOverview('refresh')])
@@ -1166,12 +1121,12 @@ export function ProgramDetailView() {
   // ── Edit Phase (Tugas) modal ─────────────────────────────────────────
   const [editPhase, setEditPhase] = useState<PhaseItem | null>(null)
   const [showEditPhase, setShowEditPhase] = useState(false)
-  const [ephForm, setEphForm] = useState({ name: '', description: '', status: 'PLANNING', startWeek: '', endWeek: '' })
+  const [ephForm, setEphForm] = useState({ name: '', description: '', startWeek: '', endWeek: '' })
   const [ephSaving, setEphSaving] = useState(false)
   const [ephError, setEphError] = useState<string | null>(null)
   const triggerEphClose = useCallback(() => closeOverlay('edit-phase', () => {
     setShowEditPhase(false); setEditPhase(null); setEphError(null)
-    setEphForm({ name: '', description: '', status: 'PLANNING', startWeek: '', endWeek: '' })
+    setEphForm({ name: '', description: '', startWeek: '', endWeek: '' })
   }), [closeOverlay])
   const ephClosing = closingOverlay === 'edit-phase'
   const editPhaseDialogRef = useDialogFocus<HTMLDivElement>(showEditPhase || ephClosing)
@@ -1180,7 +1135,6 @@ export function ProgramDetailView() {
     if (ephSaving) return
     const ephDirty = !!editPhase && (
       ephForm.name !== editPhase.name ||
-      ephForm.status !== editPhase.status ||
       ephForm.startWeek !== (editPhase.startWeek ?? '') ||
       ephForm.endWeek !== (editPhase.endWeek ?? '') ||
       ephForm.description !== ''
@@ -1191,7 +1145,7 @@ export function ProgramDetailView() {
 
   const openEditPhase = (phase: PhaseItem) => {
     setEditPhase(phase)
-    setEphForm({ name: phase.name, description: '', status: phase.status, startWeek: phase.startWeek ?? '', endWeek: phase.endWeek ?? '' })
+    setEphForm({ name: phase.name, description: '', startWeek: phase.startWeek ?? '', endWeek: phase.endWeek ?? '' })
     setShowEditPhase(true)
   }
 
@@ -1203,7 +1157,6 @@ export function ProgramDetailView() {
       await api.put(`/phases/${editPhase.id}`, {
         name: ephForm.name.trim(),
         description: ephForm.description.trim() || undefined,
-        status: ephForm.status,
         startWeek: ephForm.startWeek || null,
         endWeek: ephForm.endWeek || null,
       })
@@ -1238,19 +1191,19 @@ export function ProgramDetailView() {
   // ── Create Phase (Tugas) modal ────────────────────────────────────────
   const [showCreatePhase, setShowCreatePhase] = useState(false)
   const [cpWorkstreamId, setCpWorkstreamId] = useState<number | null>(null)
-  const [cpForm, setCpForm] = useState({ name: '', description: '', status: 'PLANNING', startWeek: '', endWeek: '' })
+  const [cpForm, setCpForm] = useState({ name: '', description: '', startWeek: '', endWeek: '' })
   const [cpSaving, setCpSaving] = useState(false)
   const [cpError, setCpError] = useState<string | null>(null)
   const triggerCpClose = useCallback(() => closeOverlay('create-phase', () => {
     setShowCreatePhase(false); setCpError(null); setCpWorkstreamId(null)
-    setCpForm({ name: '', description: '', status: 'PLANNING', startWeek: '', endWeek: '' })
+    setCpForm({ name: '', description: '', startWeek: '', endWeek: '' })
   }), [closeOverlay])
   const cpClosing = closingOverlay === 'create-phase'
   const createPhaseDialogRef = useDialogFocus<HTMLDivElement>(showCreatePhase || cpClosing)
   const createPhaseTitleId = useId()
   useEscKey(() => {
     if (cpSaving) return
-    const cpDirty = cpForm.name !== '' || cpForm.description !== '' || cpForm.status !== 'PLANNING' || cpForm.startWeek !== '' || cpForm.endWeek !== ''
+    const cpDirty = cpForm.name !== '' || cpForm.description !== '' || cpForm.startWeek !== '' || cpForm.endWeek !== ''
     if (cpDirty && !window.confirm(t('Discard unsaved changes?'))) return
     triggerCpClose()
   }, showCreatePhase || cpClosing)
@@ -1280,7 +1233,6 @@ export function ProgramDetailView() {
       await api.post(`/workstreams/${cpWorkstreamId}/phases`, {
         name: cpForm.name.trim(),
         description: cpForm.description.trim() || undefined,
-        status: cpForm.status,
         startWeek: cpForm.startWeek || null,
         endWeek: cpForm.endWeek || null,
       })
@@ -2761,14 +2713,7 @@ export function ProgramDetailView() {
                   )}
                 </div>
                 {roleAccess.canCreateWorkstream && (
-                  <button className="btn btn--ghost program-detail-section-btn" onClick={() => {
-                    if (userDirectory.length === 0) {
-                      void api.get<{ data: Array<{ id: number; name: string; positionTitle?: string | null }> }>('/users/directory')
-                        .then(r => setUserDirectory(r.data ?? []))
-                        .catch((err) => console.error('[Atlas] Gagal memuat user directory:', err))
-                    }
-                    setShowCreateIni(true)
-                  }} type="button">
+                  <button className="btn btn--ghost program-detail-section-btn" onClick={() => setShowCreateIni(true)} type="button">
                     {t('+ New Workstream')}
                   </button>
                 )}
@@ -2846,35 +2791,6 @@ export function ProgramDetailView() {
                                 {iDeadline && (
                                   <span className={`program-deadline program-deadline--${iDeadline.tone}`}>{iDeadline.label}</span>
                                 )}
-                                {(ini.picPersons ?? []).length > 0 && (() => {
-                                  const primaryId = ini.primaryPicPersonId ?? ini.picPersons![0].id
-                                  const ordered = [...ini.picPersons!].sort((a, b) => (a.id === primaryId ? -1 : b.id === primaryId ? 1 : 0))
-                                  return (
-                                    <span className="workstream-row__pic-list">
-                                      {ordered.slice(0, 2).map(p => (
-                                        <span
-                                          key={p.id}
-                                          className={`workstream-row__pic-chip${p.id === primaryId ? ' workstream-row__pic-chip--primary' : ''}`}
-                                          title={p.id === primaryId ? t('Lead PIC') : t('PIC')}
-                                        >
-                                          {p.id === primaryId && <span className="workstream-row__pic-chip-star">★</span>}
-                                          {p.name}
-                                        </span>
-                                      ))}
-                                      {ordered.length > 2 && (
-                                        <span className="workstream-row__pic-chip">+{ordered.length - 2}</span>
-                                      )}
-                                    </span>
-                                  )
-                                })()}
-                              {ini.budgetIdr != null && (
-                                <span className="ws-budget">
-                                  {t('Budget:')} {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(ini.budgetIdr))}
-                                  {ini.budgetSpent != null && ini.budgetSpent > 0 && (
-                                    <span className="ws-budget__spent"> · {t('Spent: {{pct}}%', { pct: Math.round(Number(ini.budgetSpent) / Number(ini.budgetIdr) * 100) })}</span>
-                                  )}
-                                </span>
-                              )}
                               </span>
                             </div>
                             <div className="workstream-row__progress">
@@ -3715,7 +3631,7 @@ export function ProgramDetailView() {
                     <div className="prog-edit-commitment-hint__body">
                       <strong>{t('Program is active')}</strong>
                       <span>
-                        {t('Changes to commitment fields (target date, priority, budget, group, strategic pillar) are logged in the Approval History and KADIV is notified automatically. Detail fields (description, PIC, progress narrative) are free-edit without notification.')}
+                        {t('Changes to commitment fields (target date, priority, group, strategic pillar) are logged in the Approval History and KADIV is notified automatically. Detail fields (description, PIC, progress narrative) are free-edit without notification.')}
                       </span>
                     </div>
                   </div>
@@ -3815,7 +3731,13 @@ export function ProgramDetailView() {
                         const currentOwnerId = epOwnerId ?? detail?.ownerId ?? 0
                         const currentOwner = userDirectory.find(u => u.id === currentOwnerId)
                         const q = epOwnerQuery.trim().toLowerCase()
-                        const ownerCandidates = userDirectory.filter(u => u.id !== currentOwnerId)
+                        // Owner / Main PIC wajib Kepala Divisi atau Kepala Sub Divisi
+                        // (2026-06-26) — picker hanya menawarkan mereka. (Mirror invariant
+                        // BE ProgramService::assertCanAssignOwner.) PIC Team co-PIC di
+                        // bawah tetap bebas role.
+                        const ownerCandidates = userDirectory.filter(u =>
+                          u.id !== currentOwnerId && (u.roleType === 'KADIV' || u.roleType === 'KASUBDIV'),
+                        )
                         const ownerFiltered = (q
                           ? ownerCandidates.filter(u =>
                               u.name.toLowerCase().includes(q) ||
@@ -3982,81 +3904,6 @@ export function ProgramDetailView() {
                     <option value="LOW">{t('Low')}</option>
                   </select>
                 </div>
-                <div className="prog-form-grid prog-form-grid--equal">
-                  <div className="form-field">
-                    <label>{t('Budget (IDR)')}</label>
-                    <input min={0} onChange={e => setCiForm(f => ({ ...f, budgetIdr: e.target.value }))} type="number" value={ciForm.budgetIdr} />
-                  </div>
-                  <div className="form-field">
-                    <label>{t('Spent (IDR)')}</label>
-                    <input min={0} onChange={e => setCiForm(f => ({ ...f, budgetSpent: e.target.value }))} type="number" value={ciForm.budgetSpent} />
-                  </div>
-                </div>
-                <div className="form-field">
-                  <label>
-                    {t('Workstream Owner')}
-                    <span className="form-field__hint">{t(' · reviewer for tasks entering IN_REVIEW')}</span>
-                  </label>
-                  <UserPicker
-                    currentUserId={currentUser?.id}
-                    onChange={id => setCiOwnerId(id ?? currentUser?.id ?? null)}
-                    options={userDirectory.length > 0 ? userDirectory : (currentUser ? [{ id: currentUser.id, name: currentUser.name, positionTitle: null }] : [])}
-                    placeholder={t('Select workstream owner…')}
-                    value={ciOwnerId ?? currentUser?.id ?? null}
-                  />
-                </div>
-                <div className="form-field">
-                  <label>{t('Assignee')}</label>
-                  <div className="wid-pic-adder" style={{ position: 'relative' }}>
-                    {ciPicIds.length > 0 && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
-                        {ciPicIds.map(uid => {
-                          const u = userDirectory.find(x => x.id === uid)
-                          return (
-                            <span className="wid-pic-chip" key={uid}>
-                              {u?.name ?? `#${uid}`}
-                              <button className="wid-pic-chip__remove" type="button"
-                                onClick={() => setCiPicIds(prev => {
-                                  const next = prev.filter(id => id !== uid)
-                                  if (ciPrimaryPicId === uid) setCiPrimaryPicId(next[0] ?? null)
-                                  return next
-                                })}>×</button>
-                            </span>
-                          )
-                        })}
-                      </div>
-                    )}
-                    <input
-                      className="wid-pic-search"
-                      onChange={e => setCiPicSearch(e.target.value)}
-                      placeholder={t('+ Search name...')}
-                      style={{ width: '100%' }}
-                      type="text"
-                      value={ciPicSearch}
-                    />
-                    {ciPicSearch.length > 0 && (() => {
-                      const filtered = userDirectory.filter(u => !ciPicIds.includes(u.id) && u.name.toLowerCase().includes(ciPicSearch.toLowerCase())).slice(0, 6)
-                      return filtered.length > 0 ? (
-                        <div className="wid-pic-dropdown">
-                          {filtered.map(u => (
-                            <button className="wid-pic-dropdown__item" key={u.id} type="button"
-                              onMouseDown={() => {
-                                setCiPicIds(prev => {
-                                  const next = [...prev, u.id]
-                                  if (!ciPrimaryPicId) setCiPrimaryPicId(u.id)
-                                  return next
-                                })
-                                setCiPicSearch('')
-                              }}>
-                              <span className="wid-pic-dropdown__name">{u.name}</span>
-                              {u.positionTitle && <span className="wid-pic-dropdown__role">{u.positionTitle}</span>}
-                            </button>
-                          ))}
-                        </div>
-                      ) : null
-                    })()}
-                  </div>
-                </div>
               </div>
               <div className="modal__footer">
                 <button className="btn btn--ghost" disabled={ciSaving} onClick={triggerCiClose} type="button">{t('Cancel')}</button>
@@ -4100,19 +3947,6 @@ export function ProgramDetailView() {
                   <label>{t('Description')}</label>
                   <textarea className="composer__input prog-modal-textarea" maxLength={400} onChange={e => setEiForm(f => ({ ...f, description: e.target.value }))} rows={2} value={eiForm.description} />
                 </div>
-                {detail?.approvalStatus === 'ACTIVE' && (
-                  <div className="form-field">
-                    <label>{t('Status')}</label>
-                    <select className="form-input" onChange={e => setEiForm(f => ({ ...f, status: e.target.value }))} value={eiForm.status}>
-                      <option value="BACKLOG">{t('Backlog')}</option>
-                      <option value="READY">{t('Ready')}</option>
-                      <option value="IN_PROGRESS">{t('In Progress')}</option>
-                      <option value="IN_REVIEW">{t('In Review')}</option>
-                      <option value="BLOCKED">{t('Blocked')}</option>
-                      <option value="COMPLETED">{t('Completed')}</option>
-                    </select>
-                  </div>
-                )}
                 <div className="prog-form-grid prog-form-grid--equal">
                   <div className="form-field">
                     <label>{t('Start Date')}</label>
@@ -4132,78 +3966,6 @@ export function ProgramDetailView() {
                     <option value="MEDIUM">{t('Medium')}</option>
                     <option value="LOW">{t('Low')}</option>
                   </select>
-                </div>
-                <div className="prog-form-grid prog-form-grid--equal">
-                  <div className="form-field">
-                    <label>{t('Budget (IDR)')}</label>
-                    <input min={0} onChange={e => setEiForm(f => ({ ...f, budgetIdr: e.target.value }))} type="number" value={eiForm.budgetIdr} />
-                  </div>
-                  <div className="form-field">
-                    <label>{t('Spent (IDR)')}</label>
-                    <input min={0} onChange={e => setEiForm(f => ({ ...f, budgetSpent: e.target.value }))} type="number" value={eiForm.budgetSpent} />
-                  </div>
-                </div>
-                <div className="form-field">
-                  <label>
-                    {t('Workstream Owner')}
-                    <span className="form-field__hint">{t(' · reviewer for tasks entering IN_REVIEW')}</span>
-                  </label>
-                  <UserPicker
-                    currentUserId={currentUser?.id}
-                    onChange={id => setEiForm(f => ({ ...f, ownerId: id }))}
-                    options={userDirectory.length > 0 ? userDirectory : (currentUser ? [{ id: currentUser.id, name: currentUser.name, positionTitle: null }] : [])}
-                    placeholder={t('Select workstream owner…')}
-                    value={eiForm.ownerId}
-                  />
-                </div>
-                <div className="ws-pic-section">
-                  <label className="ws-pic-section__label">{t('Assignee')}</label>
-                  <input
-                    className="ws-pic-section__search"
-                    onChange={e => setEiPicSearch(e.target.value)}
-                    placeholder={t('Search name...')}
-                    type="text"
-                    value={eiPicSearch}
-                  />
-                  <div className="ws-pic-list">
-                    {userDirectory
-                      .filter(u => u.name.toLowerCase().includes(eiPicSearch.toLowerCase()))
-                      .map(u => {
-                        const checked = eiPicIds.includes(u.id)
-                        return (
-                          <label key={u.id} className={`ws-pic-item${checked ? ' ws-pic-item--checked' : ''}`}>
-                            <input
-                              checked={checked}
-                              className="ws-pic-item__check"
-                              onChange={() => setEiPicIds(prev => {
-                                const next = prev.includes(u.id) ? prev.filter(id => id !== u.id) : [...prev, u.id]
-                                if (eiPrimaryPicId === u.id && !next.includes(u.id)) setEiPrimaryPicId(next[0] ?? null)
-                                if (next.length > 0 && !eiPrimaryPicId) setEiPrimaryPicId(next[0])
-                                return next
-                              })}
-                              type="checkbox"
-                            />
-                            <span className="ws-pic-item__name">{u.name}</span>
-                            {u.positionTitle && <span className="ws-pic-item__role">{u.positionTitle}</span>}
-                          </label>
-                        )
-                      })}
-                  </div>
-                  {eiPicIds.length > 1 && (
-                    <div className="ws-pic-primary">
-                      <label className="ws-pic-primary__label">{t('Main PIC')}</label>
-                      <select
-                        className="ws-pic-primary__select"
-                        value={eiPrimaryPicId ?? eiPicIds[0]}
-                        onChange={e => setEiPrimaryPicId(Number(e.target.value))}
-                      >
-                        {eiPicIds.map(uid => {
-                          const u = userDirectory.find(x => x.id === uid)
-                          return <option key={uid} value={uid}>{u?.name ?? t('User #{{id}}', { id: uid })}</option>
-                        })}
-                      </select>
-                    </div>
-                  )}
                 </div>
               </div>
               <div className="modal__footer">
@@ -4243,14 +4005,6 @@ export function ProgramDetailView() {
                 <div className="form-field">
                   <label>{t('Description')}</label>
                   <textarea className="composer__input prog-modal-textarea" maxLength={400} onChange={e => setEphForm(f => ({ ...f, description: e.target.value }))} rows={2} value={ephForm.description} />
-                </div>
-                <div className="form-field">
-                  <label>{t('Status')}</label>
-                  <select className="form-input" onChange={e => setEphForm(f => ({ ...f, status: e.target.value }))} value={ephForm.status}>
-                    <option value="PLANNING">{t('Planning')}</option>
-                    <option value="IN_PROGRESS">{t('In Progress')}</option>
-                    <option value="COMPLETED">{t('Completed')}</option>
-                  </select>
                 </div>
                 <div className="prog-form-grid prog-form-grid--equal">
                   <div className="form-field">

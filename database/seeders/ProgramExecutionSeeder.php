@@ -90,7 +90,6 @@ class ProgramExecutionSeeder extends Seeder
                 'programId' => $program->id,
                 'name' => 'Rencana & Eksekusi 2026',
                 'description' => self::DRAFT_NOTE,
-                'ownerId' => $program->ownerId,
                 'ownerUnitId' => $program->ownerUnitId,
                 'status' => $allDone ? 'COMPLETED' : 'IN_PROGRESS',
                 'priority' => 'MEDIUM',

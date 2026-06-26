@@ -3478,7 +3478,7 @@
 }
 
 /* Reusable <UserPicker> + <UserPickerMulti> from components/UserPicker.tsx */
-.user-picker { position: relative; width: 100%; }
+.user-picker { position: relative; width: 100%; min-width: 0; }
 .user-picker__trigger {
   display: flex;
   align-items: center;
@@ -3563,6 +3563,61 @@
   text-align: left;
 }
 .user-picker__clear:hover { background: var(--app-bg); color: var(--text); }
+
+/* Org-aware grouping: chip filter Direktorat + header Divisi sticky */
+.user-picker__dirchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.user-picker__dirchip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.user-picker__dirchip:hover { background: var(--app-bg); color: var(--text); }
+.user-picker__dirchip.is-active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+.user-picker__group {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px 4px;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--panel-border);
+}
+.user-picker__group-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-picker__group-dir {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
 
 /* Multi variant: always-open inline */
 .user-picker--multi { display: flex; flex-direction: column; gap: 8px; }

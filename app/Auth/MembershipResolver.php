@@ -17,9 +17,8 @@ use Illuminate\Support\Facades\Cache;
  * di luar scope unit. User dianggap partisipan jika:
  *   1. Owner Program.
  *   2. Co-PIC Program (via entity_pics).
- *   3. Owner Workstream di program tsb.
- *   4. Assignee Task di workstream di program tsb.
- *   5. Member Channel yang linked ke program/workstream.
+ *   3. Assignee Task di workstream di program tsb.
+ *   4. Member Channel yang linked ke program/workstream.
  *
  * Penting: program kolaboratif lintas unit (mis. Penyehatan SGN) harus tetap
  * terlihat oleh kontributor dari direktorat lain meski scope unit tidak
@@ -73,15 +72,9 @@ class MembershipResolver
             $ids[(int) $id] = true;
         }
 
-        // 3. Owner Workstream → programId
-        $wsProgramIds = Workstream::query()
-            ->where('ownerId', $userId)
-            ->pluck('programId');
-        foreach ($wsProgramIds as $id) {
-            $ids[(int) $id] = true;
-        }
-
-        // 4. Assignee Task → workstream.programId
+        // 3. Assignee Task → workstream.programId
+        // (Owner Workstream dihapus 2026-06-26: workstream tak lagi punya owner;
+        //  partisipasi eksekusi diwakili assignee task di bawahnya.)
         $taskProgramIds = Task::query()
             ->where('assignedTo', $userId)
             ->join('Initiative', 'WorkItem.initiativeId', '=', 'Initiative.id')

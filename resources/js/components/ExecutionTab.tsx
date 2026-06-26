@@ -94,7 +94,7 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
   // sebaiknya hanya tampilan, otomatis berubah dari update workboard"). Baris
   // "Real" di-derive otomatis dari status/percentComplete task (Workboard) di
   // ExecutionGridController — tidak ada lagi override manual per-minggu.
-  const { gridRefreshTick, currentUser } = useWorkspace()
+  const { gridRefreshTick } = useWorkspace()
   const [workstreams, setWorkstreams] = useState<ExecutionWorkstreamSummary[] | null>(null)
   const [activeId, setActiveId] = useState<number | null>(null)
   const [grid, setGrid] = useState<ExecutionGridData | null>(null)
@@ -102,7 +102,6 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
   const [gridLoading, setGridLoading] = useState(false)
   const [wsError, setWsError] = useState<string | null>(null)
   const [gridError, setGridError] = useState<string | null>(null)
-  const [myOnly, setMyOnly] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -148,22 +147,10 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
     return () => { cancelled = true }
   }, [programId, activeId, gridRefreshTick])
 
-  const visibleWorkstreams = useMemo(
-    () => (workstreams ?? []).filter((w) => !myOnly || w.ownerId === currentUser?.id),
-    [workstreams, myOnly, currentUser?.id],
-  )
-
   const totalSteps = useMemo(
     () => (workstreams ?? []).reduce((n, w) => n + w.taskCount, 0),
     [workstreams],
   )
-
-  // Jika filter "Saya saja" menyembunyikan workstream aktif, reset ke pertama yang visible
-  useEffect(() => {
-    if (!visibleWorkstreams.find((w) => w.id === activeId)) {
-      setActiveId(visibleWorkstreams[0]?.id ?? null)
-    }
-  }, [visibleWorkstreams])
 
   if (wsLoading) {
     return (
@@ -197,14 +184,6 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            type="button"
-            className={`view-toggle-btn${myOnly ? ' active' : ''}`}
-            onClick={() => setMyOnly((v) => !v)}
-            title={t('Show only workstreams I lead')}
-          >
-            {t('Mine only')}
-          </button>
           {grid && activeId && (
             <>
               <button
@@ -226,39 +205,29 @@ export function ExecutionTab({ programId, programName, approvalStatus }: Props) 
             </>
           )}
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            {visibleWorkstreams.length === workstreams.length
-              ? t('{{count}} workstream', { count: workstreams.length })
-              : t('{{visible}} of {{total}} workstream', { visible: visibleWorkstreams.length, total: workstreams.length })}
+            {t('{{count}} workstream', { count: workstreams.length })}
             {' · '}
             {t('{{count}} steps', { count: totalSteps })}
           </span>
         </div>
       </div>
 
-      {visibleWorkstreams.length === 0 ? (
-        <SectionState
-          title={t('No workstreams you lead')}
-          text={t("Turn off the 'Mine only' filter to see all workstreams in this program.")}
-          compact
-        />
-      ) : (
-        <div className="workstream-pills">
-          {visibleWorkstreams.map((w) => (
-            <button
-              key={w.id}
-              type="button"
-              className={`workstream-pill${activeId === w.id ? ' workstream-pill--active' : ''}`}
-              onClick={() => setActiveId(w.id)}
-              title={w.code}
-            >
-              {w.name}
-              <span className="workstream-pill__count">
-                {t('{{phases}} phases · {{tasks}} tasks', { phases: w.phaseCount, tasks: w.taskCount })}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="workstream-pills">
+        {workstreams.map((w) => (
+          <button
+            key={w.id}
+            type="button"
+            className={`workstream-pill${activeId === w.id ? ' workstream-pill--active' : ''}`}
+            onClick={() => setActiveId(w.id)}
+            title={w.code}
+          >
+            {w.name}
+            <span className="workstream-pill__count">
+              {t('{{phases}} phases · {{tasks}} tasks', { phases: w.phaseCount, tasks: w.taskCount })}
+            </span>
+          </button>
+        ))}
+      </div>
 
       {gridLoading && (
         <div style={{ padding: 16 }}>

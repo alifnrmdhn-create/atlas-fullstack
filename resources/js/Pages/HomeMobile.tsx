@@ -26,9 +26,9 @@ function greetingKey(): string {
   if (h < 19) return 'Good evening'
   return 'Good night'
 }
-function firstName(name?: string): string {
+function fullName(name?: string): string {
   if (!name) return ''
-  return name.trim().split(/\s+/)[0]
+  return name.trim()
 }
 function scoreTone(v: number): 'green' | 'amber' | 'red' {
   if (v >= 100) return 'green'
@@ -73,7 +73,7 @@ export default function HomeMobile({ scorecard }: Props) {
   // Buka command palette (⌘K) lewat event yang didengar AppShell.
   const openSearch = () => window.dispatchEvent(new CustomEvent('atlas:open-palette'))
 
-  const greetName = firstName(currentUser?.name)
+  const greetName = fullName(currentUser?.name)
   const subtitle = currentUser?.positionTitle || currentUser?.directorate?.name || currentUser?.unit?.name || ''
 
   return (

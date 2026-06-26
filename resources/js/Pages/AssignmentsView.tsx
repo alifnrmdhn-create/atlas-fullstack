@@ -73,7 +73,14 @@ type Evidence = {
   uploader: { id: number; name: string; positionTitle: string | null }
 }
 
-type DirectoryUser = { id: number; name: string; positionTitle: string | null; roleType?: string }
+type DirectoryUser = {
+  id: number
+  name: string
+  positionTitle: string | null
+  roleType?: string
+  unit?: { code?: string | null; name?: string | null } | null
+  directorate?: { code?: string | null; name?: string | null } | null
+}
 
 const ASSIGNER_ROLES = new Set<Role>(['BOD', 'KADIV', 'KASUBDIV', 'ADMIN', 'SUPERADMIN'])
 
@@ -1336,6 +1343,7 @@ const PENUGASAN_CSS = `
 .pg-form input:focus, .pg-form select:focus, .pg-form textarea:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px var(--indigo-dim); }
 .pg-form textarea { resize: vertical; min-height: 64px; }
 .pg-form__row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; }
+.pg-form__row > * { min-width: 0; }
 .pg-form__hint { font-size: 10.5px; color: var(--text-muted); font-style: italic; }
 
 @keyframes pgFade { from { opacity: 0; } to { opacity: 1; } }

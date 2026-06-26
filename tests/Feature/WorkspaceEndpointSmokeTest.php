@@ -105,7 +105,6 @@ class WorkspaceEndpointSmokeTest extends TestCase
             'code' => 'WS-RUNTIME',
             'programId' => $this->program->id,
             'name' => 'Runtime Workstream',
-            'ownerId' => $this->admin->id,
             'status' => 'IN_PROGRESS',
             'priority' => 'HIGH',
             'startDate' => now()->subDays(3),

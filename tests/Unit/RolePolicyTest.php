@@ -37,9 +37,11 @@ class RolePolicyTest extends TestCase
 
     // ── canCreateProgram ───────────────────────────────────────────────────
 
-    public function test_asisten_can_create_program(): void
+    public function test_asisten_cannot_create_program(): void
     {
-        $this->assertTrue(RolePolicy::canCreateProgram('ASISTEN'));
+        // 2026-06-26: penyusunan plan = hak Kadiv/Kasub. ASISTEN kini pelaksana,
+        // bukan penyusun program.
+        $this->assertFalse(RolePolicy::canCreateProgram('ASISTEN'));
     }
 
     public function test_kadiv_can_create_program(): void
@@ -47,11 +49,15 @@ class RolePolicyTest extends TestCase
         $this->assertTrue(RolePolicy::canCreateProgram('KADIV'));
     }
 
-    public function test_officer_can_create_program(): void
+    public function test_kasubdiv_can_create_program(): void
     {
-        // 2026-05-19: OFFICER dipromote ke write-enabled — PIC operasional
-        // perlu inisiasi program di lapangan.
-        $this->assertTrue(RolePolicy::canCreateProgram('OFFICER'));
+        $this->assertTrue(RolePolicy::canCreateProgram('KASUBDIV'));
+    }
+
+    public function test_officer_cannot_create_program(): void
+    {
+        // 2026-06-26: hanya Kadiv/Kasub (+admin) yang meng-author plan.
+        $this->assertFalse(RolePolicy::canCreateProgram('OFFICER'));
     }
 
     public function test_bod_cannot_create_program(): void
@@ -89,9 +95,17 @@ class RolePolicyTest extends TestCase
         $this->assertTrue(RolePolicy::canEditProgram('KADIV', false));
     }
 
-    public function test_asisten_can_edit_own_program(): void
+    public function test_kasubdiv_can_edit_any_program(): void
     {
-        $this->assertTrue(RolePolicy::canEditProgram('ASISTEN', true));
+        // 2026-06-26: KASUBDIV tak lagi disyaratkan owner untuk edit plan (scope
+        // dijaga di gate edit-program via OrgScope::coversUnit unit-nya sendiri).
+        $this->assertTrue(RolePolicy::canEditProgram('KASUBDIV', false));
+    }
+
+    public function test_asisten_cannot_edit_own_program(): void
+    {
+        // 2026-06-26: ASISTEN tak lagi meng-author/edit plan (dan tak bisa jadi owner).
+        $this->assertFalse(RolePolicy::canEditProgram('ASISTEN', true));
     }
 
     public function test_asisten_cannot_edit_others_program(): void
@@ -115,8 +129,9 @@ class RolePolicyTest extends TestCase
 
     public function test_in_revision_owner_can_still_edit(): void
     {
-        $this->assertTrue(RolePolicy::canEditProgram('ASISTEN', true, true));
+        // Owner kini selalu KADIV/KASUBDIV (invariant assertCanAssignOwner).
         $this->assertTrue(RolePolicy::canEditProgram('KASUBDIV', true, true));
+        $this->assertTrue(RolePolicy::canEditProgram('KADIV', true, true));
     }
 
     public function test_in_revision_admin_retains_override(): void

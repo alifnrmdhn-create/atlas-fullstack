@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Auth\OrgScope;
-use App\Models\EntityPic;
 use App\Models\Phase;
 use App\Models\User;
 use App\Models\Workstream;
@@ -26,20 +25,17 @@ class PhaseController extends Controller
             $request->user(),
         );
 
+        // Status TIDAK diterima dari klien (2026-06-26): status Phase = turunan
+        // dari status task anak (TaskService::recomputeStructureStatus), bukan
+        // input manual di Programs. Fase baru selalu mulai 'PLANNING'.
         $data = $request->validate([
             'name' => 'required|string|max:120',
             'description' => 'nullable|string',
-            'status' => 'nullable|string|max:40',
             'color' => 'nullable|string|max:20',
             'startWeek' => 'nullable|string|max:10',
             'endWeek' => 'nullable|string|max:10',
-            'picPersonIds' => 'nullable|array',
-            'picUnitIds' => 'nullable|array',
             'order' => 'nullable|integer',
         ]);
-
-        $picPersonIds = $data['picPersonIds'] ?? [];
-        unset($data['picPersonIds']);
 
         $nextOrder = Phase::query()->where('initiativeId', $id)->max('order');
         $phase = Phase::create([
@@ -47,15 +43,10 @@ class PhaseController extends Controller
             'code' => 'PH-' . strtoupper(substr(sha1(uniqid('', true)), 0, 8)),
             'initiativeId' => $id,
             'order' => $data['order'] ?? ((int) $nextOrder + 1),
-            'status' => $data['status'] ?? 'PLANNING',
+            'status' => 'PLANNING',
             'healthStatus' => 'YELLOW',
         ]);
 
-        if (!empty($picPersonIds)) {
-            EntityPic::syncForEntity('Phase', $phase->id, $picPersonIds);
-        }
-
-        $phase->load('entityPics');
         return response()->json(['data' => $phase], 201);
     }
 
@@ -67,29 +58,21 @@ class PhaseController extends Controller
         $phase = Phase::findOrFail($id);
         $this->assertUnitScope($this->ownerUnitForWorkstream((int) $phase->initiativeId), $request->user());
 
+        // Status di-drop dari validator (2026-06-26) → tak bisa di-set manual;
+        // di-derive dari status task anak. Field yang tersisa = struktur/timeline.
         $data = $request->validate([
             'name' => 'sometimes|string|max:120',
             'description' => 'nullable|string',
-            'status' => 'sometimes|string',
             'color' => 'nullable|string|max:20',
             'startWeek' => 'nullable|string|max:10',
             'endWeek' => 'nullable|string|max:10',
-            'picPersonIds' => 'nullable|array',
-            'picUnitIds' => 'nullable|array',
             'order' => 'sometimes|integer',
         ]);
 
-        $picPersonIds = array_key_exists('picPersonIds', $data) ? $data['picPersonIds'] : null;
-        unset($data['picPersonIds']);
-
         Phase::query()->where('id', $id)->update($data);
 
-        if ($picPersonIds !== null) {
-            EntityPic::syncForEntity('Phase', $id, $picPersonIds ?? []);
-        }
-
         if ($request->expectsJson()) {
-            return response()->json(['data' => Phase::with('entityPics')->findOrFail($id)]);
+            return response()->json(['data' => Phase::findOrFail($id)]);
         }
 
         return back()->with('success', 'Phase updated.');

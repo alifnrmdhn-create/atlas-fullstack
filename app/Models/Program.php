@@ -32,8 +32,6 @@ class Program extends Model
 
     protected $casts = [
         'hasNoApmsKpi' => 'boolean',
-        'budgetIdr' => 'decimal:4',
-        'budgetSpent' => 'decimal:4',
         'strategicAlignment' => 'float',
         'startDate' => 'datetime',
         'targetEndDate' => 'datetime',

@@ -6,6 +6,8 @@ export type UserOption = {
   id: number
   name: string
   positionTitle?: string | null
+  unit?: { code?: string | null; name?: string | null } | null
+  directorate?: { code?: string | null; name?: string | null } | null
 }
 
 type SingleProps = {
@@ -40,19 +42,66 @@ export function UserPicker({
   const [open, setOpen] = useState(!!autoOpen)
   const [query, setQuery] = useState('')
   const [activeIdx, setActiveIdx] = useState(0)
+  const [dirFilter, setDirFilter] = useState<string | null>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
 
   const selected = useMemo(() => options.find(u => u.id === value) ?? null, [options, value])
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return options
-    return options.filter(u =>
-      u.name.toLowerCase().includes(q) ||
-      (u.positionTitle ?? '').toLowerCase().includes(q),
-    )
-  }, [options, query])
+
+  // Org-aware grouping: aktif hanya bila options membawa info unit (mis. directory PIC).
+  // Tanpa data unit, picker tetap list datar seperti semula (degradasi mulus).
+  const groupable = useMemo(() => options.some(u => !!u.unit?.name), [options])
+  const dirChips = useMemo(() => {
+    if (!groupable) return []
+    const map = new Map<string, string>()
+    for (const u of options) {
+      const code = u.directorate?.code
+      if (code) map.set(code, u.directorate?.name || code)
+    }
+    return [...map.entries()]
+      .map(([code, name]) => ({ code, name }))
+      .sort((a, b) => a.code.localeCompare(b.code))
+  }, [options, groupable])
+
+  const q = query.trim().toLowerCase()
+  const searching = q.length > 0
+  const ordered = useMemo(() => {
+    const scoped = dirFilter ? options.filter(u => u.directorate?.code === dirFilter) : options
+    if (searching) {
+      return scoped.filter(u =>
+        u.name.toLowerCase().includes(q) ||
+        (u.positionTitle ?? '').toLowerCase().includes(q),
+      )
+    }
+    if (!groupable) return scoped
+    return [...scoped].sort((a, b) => {
+      const ua = a.unit?.name ?? '￿'
+      const ub = b.unit?.name ?? '￿'
+      if (ua !== ub) return ua.localeCompare(ub)
+      return a.name.localeCompare(b.name)
+    })
+  }, [options, dirFilter, q, searching, groupable])
+
+  const rows = useMemo(() => {
+    type Row =
+      | { kind: 'header'; key: string; label: string; dir?: string | null }
+      | { kind: 'user'; user: UserOption; idx: number }
+    const out: Row[] = []
+    const showGroups = groupable && !searching
+    let lastUnit: string | null = null
+    ordered.forEach((u, idx) => {
+      if (showGroups) {
+        const unitName = u.unit?.name || t('No unit')
+        if (unitName !== lastUnit) {
+          lastUnit = unitName
+          out.push({ kind: 'header', key: `h-${unitName}`, label: unitName, dir: u.directorate?.code })
+        }
+      }
+      out.push({ kind: 'user', user: u, idx })
+    })
+    return out
+  }, [ordered, groupable, searching, t])
 
   useEffect(() => {
     if (!open) return
@@ -74,6 +123,7 @@ export function UserPicker({
   }, [open])
 
   useEffect(() => { setActiveIdx(0) }, [query])
+  useEffect(() => { if (!open) setDirFilter(null) }, [open])
 
   useEffect(() => {
     if (!open || !listRef.current) return
@@ -90,13 +140,13 @@ export function UserPicker({
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActiveIdx(i => Math.min(i + 1, Math.max(filtered.length - 1, 0)))
+      setActiveIdx(i => Math.min(i + 1, Math.max(ordered.length - 1, 0)))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setActiveIdx(i => Math.max(i - 1, 0))
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      const hit = filtered[activeIdx]
+      const hit = ordered[activeIdx]
       if (hit) pick(hit.id)
     } else if (e.key === 'Escape') {
       e.preventDefault()
@@ -142,24 +192,51 @@ export function UserPicker({
               value={query}
             />
           </div>
-          {filtered.length === 0 ? (
+          {groupable && !searching && dirChips.length > 1 && (
+            <div className="user-picker__dirchips">
+              <button
+                className={`user-picker__dirchip${dirFilter === null ? ' is-active' : ''}`}
+                onClick={() => setDirFilter(null)}
+                type="button"
+              >
+                {t('All')}
+              </button>
+              {dirChips.map(c => (
+                <button
+                  className={`user-picker__dirchip${dirFilter === c.code ? ' is-active' : ''}`}
+                  key={c.code}
+                  onClick={() => setDirFilter(dirFilter === c.code ? null : c.code)}
+                  title={c.name}
+                  type="button"
+                >
+                  {c.code}
+                </button>
+              ))}
+            </div>
+          )}
+          {ordered.length === 0 ? (
             <p className="user-picker__empty">{t('No matching names.')}</p>
           ) : (
             <ul className="user-picker__results" ref={listRef} role="listbox">
-              {filtered.map((u, idx) => (
-                <li key={u.id}>
+              {rows.map(row => row.kind === 'header' ? (
+                <li className="user-picker__group" key={row.key} role="presentation">
+                  <span className="user-picker__group-label">{row.label}</span>
+                  {row.dir && <span className="user-picker__group-dir">{row.dir}</span>}
+                </li>
+              ) : (
+                <li key={row.user.id}>
                   <button
-                    className={`user-picker-item${idx === activeIdx ? ' user-picker-item--active' : ''}${u.id === value ? ' user-picker-item--selected' : ''}`}
-                    data-idx={idx}
-                    onClick={() => pick(u.id)}
-                    onMouseEnter={() => setActiveIdx(idx)}
+                    className={`user-picker-item${row.idx === activeIdx ? ' user-picker-item--active' : ''}${row.user.id === value ? ' user-picker-item--selected' : ''}`}
+                    data-idx={row.idx}
+                    onClick={() => pick(row.user.id)}
+                    onMouseEnter={() => setActiveIdx(row.idx)}
                     type="button"
                   >
                     <span className="user-picker-item__name">
-                      {u.name}{u.id === currentUserId ? ` ${t('(You)')}` : ''}
+                      {row.user.name}{row.user.id === currentUserId ? ` ${t('(You)')}` : ''}
                     </span>
-                    {u.positionTitle && (
-                      <span className="user-picker-item__meta">{u.positionTitle}</span>
+                    {row.user.positionTitle && (
+                      <span className="user-picker-item__meta">{row.user.positionTitle}</span>
                     )}
                   </button>
                 </li>

@@ -119,7 +119,6 @@ class ExecutionGridController extends Controller
         $workstream = Workstream::query()
             ->where('id', $workstreamId)
             ->where('programId', $programId)
-            ->with(['owner:id,name'])
             ->first();
 
         if (!$workstream) abort(404, 'Workstream not found in this program.');
@@ -127,7 +126,6 @@ class ExecutionGridController extends Controller
         // Load phases ordered
         $phases = Phase::query()
             ->where('initiativeId', $workstreamId)
-            ->with(['entityPics.user:id,name'])
             ->orderBy('order')
             ->get();
 
@@ -143,11 +141,8 @@ class ExecutionGridController extends Controller
             ->orderBy('createdAt')
             ->get();
 
-        // Collect all unit IDs referenced by phases and tasks
+        // Collect all unit IDs referenced by tasks (phase-level PIC dropped 2026-06-26)
         $allUnitIds = collect();
-        foreach ($phases as $phase) {
-            $allUnitIds = $allUnitIds->merge($phase->picUnitIds ?? []);
-        }
         foreach ($tasks as $task) {
             $allUnitIds = $allUnitIds->merge($task->picUnitIds ?? []);
         }
@@ -196,8 +191,8 @@ class ExecutionGridController extends Controller
             'healthStatus'=> $phase->healthStatus ?? null,
             'startWeek'   => $phase->startWeek ?? null,
             'endWeek'     => $phase->endWeek ?? null,
-            'picUnits'    => $this->resolveUnits($phase->picUnitIds ?? [], $unitMap),
-            'picPersons'  => $this->resolvePersons($phase->entityPics),
+            'picUnits'    => [],
+            'picPersons'  => [],
             'steps'       => $this->buildSteps(
                 $tasksByPhase->get($phase->id) ?? collect(),
                 $weeks,
@@ -227,9 +222,6 @@ class ExecutionGridController extends Controller
                     'status'         => $workstream->status,
                     'healthStatus'   => $workstream->healthStatus ?? null,
                     'progressPercent'=> $workstream->progressPercent ?? 0,
-                    'owner'          => $workstream->owner
-                        ? ['id' => $workstream->owner->id, 'name' => $workstream->owner->name]
-                        : null,
                 ],
                 'weekRange'    => ['startWeek' => $weeks[0] ?? $currentWeek, 'endWeek' => $weeks[count($weeks) - 1] ?? $currentWeek, 'weeks' => $weeks],
                 'monthHeaders' => $monthHeaders,

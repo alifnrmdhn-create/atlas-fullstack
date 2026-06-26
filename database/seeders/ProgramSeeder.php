@@ -104,7 +104,6 @@ class ProgramSeeder extends Seeder
                 'programId'        => $program->id,
                 'name'             => $r['name'],
                 'description'      => $this->blankToNull($r['output'] ?? null),
-                'ownerId'          => $ownerId,
                 'ownerUnitId'      => $cfg['unitId'],
                 'status'           => $taskStatus,
                 'priority'         => 'MEDIUM',

@@ -56,7 +56,7 @@ class TaskProgressDerivationTest extends TestCase
         ]);
         $ws = Workstream::create([
             'code' => 'WS-' . uniqid(), 'name' => 'WS', 'programId' => $program->id,
-            'status' => 'IN_PROGRESS', 'ownerId' => $this->user->id, 'targetCompletion' => '2026-12-31',
+            'status' => 'IN_PROGRESS', 'targetCompletion' => '2026-12-31',
         ]);
 
         return Task::create([

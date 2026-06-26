@@ -21,7 +21,7 @@ class TaskCommentVisibilityTest extends TestCase
     public function test_task_show_returns_posted_comments(): void
     {
         [$dir, $unit] = $this->makeDirectorate('DIR-A', 'DIV-A');
-        $owner = $this->makeUser('owner-cmt', 'ASISTEN', $unit->id, $dir->id);
+        $owner = $this->makeUser('owner-cmt', 'KASUBDIV', $unit->id, $dir->id);
         $stack = $this->seedProgramStack($owner, 'CMT');
         $taskId = $stack['task'];
 

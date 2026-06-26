@@ -11,7 +11,6 @@ use App\Models\EscalationRequest;
 use App\Models\Channel;
 use App\Models\ChannelMember;
 use App\Models\ChannelMessage;
-use App\Models\EntityPic;
 use App\Models\KpiDefinition;
 use App\Models\Meeting;
 use App\Models\MeetingActionItem;
@@ -823,7 +822,6 @@ class WorkspaceController extends Controller
                     ->orderBy('letterIndex')
                     ->orderBy('createdAt'),
                 'phases.tasks.assignee:id,name,avatarUrl',
-                'entityPics',
             ])
             ->findOrFail($id);
 
@@ -862,11 +860,6 @@ class WorkspaceController extends Controller
             'priority' => 'nullable|in:LOW,MEDIUM,HIGH,CRITICAL',
             'startDate' => 'nullable|date',
             'targetCompletion' => 'required|date',
-            'ownerId' => 'nullable|integer|exists:User,id',
-            'picPersonIds' => 'nullable|array',
-            'primaryPicPersonId' => 'nullable|integer',
-            'budgetIdr' => 'nullable|numeric',
-            'budgetSpent' => 'nullable|numeric',
         ]);
 
         // Scope guard: workstream mewarisi kepemilikan dari program induk.
@@ -877,27 +870,16 @@ class WorkspaceController extends Controller
         // PENDING-lock (audit 2026-06-17): jangan ubah struktur saat program di-review.
         \App\Services\ProgramService::assertProgramNotUnderApproval((int) $data['programId'], $request->user());
 
-        $picPersonIds = $data['picPersonIds'] ?? [];
-        unset($data['picPersonIds']);
-
         $workstream = Workstream::create([
             ...$data,
             'code' => 'WS-' . strtoupper(substr(sha1(uniqid('', true)), 0, 8)),
-            'ownerId' => $data['ownerId'] ?? $request->user()->id,
-            // Isi ownerUnitId dari program — sebelumnya tak pernah di-set
-            // (selalu null) sehingga scope check di lapisan task bisa keliru.
+            // Isi ownerUnitId dari program — dipakai scope check di lapisan task.
             'ownerUnitId' => $ownerUnitId,
             'status' => 'BACKLOG',
             'priority' => $data['priority'] ?? 'MEDIUM',
             'progressPercent' => 0,
             'healthStatus' => 'YELLOW',
         ]);
-
-        if (!empty($picPersonIds)) {
-            EntityPic::syncForEntity('Initiative', $workstream->id, $picPersonIds);
-        }
-
-        $workstream->load('entityPics');
 
         // Broadcast cascade: workstream baru → parent program readiness
         // berubah (hasWorkstream berpotensi flip false→true). FE perlu
@@ -914,35 +896,25 @@ class WorkspaceController extends Controller
 
     public function updateWorkstream(Request $request, int $id): JsonResponse
     {
+        // Status di-drop dari validator (2026-06-26): status Workstream = turunan
+        // dari status task anak (TaskService::recomputeStructureStatus), bukan
+        // input manual di Programs. Hanya field struktur/timeline yang diterima.
         $data = $request->validate([
             'name' => 'sometimes|string|max:160',
             'description' => 'nullable|string|max:2000',
-            'status' => 'sometimes|string|max:40',
             'priority' => 'sometimes|in:LOW,MEDIUM,HIGH,CRITICAL',
             'startDate' => 'nullable|date',
             'targetCompletion' => 'nullable|date',
-            'ownerId' => 'nullable|integer|exists:User,id',
-            'picPersonIds' => 'nullable|array',
-            'primaryPicPersonId' => 'nullable|integer',
-            'budgetIdr' => 'nullable|numeric',
-            'budgetSpent' => 'nullable|numeric',
         ]);
-
-        $picPersonIds = array_key_exists('picPersonIds', $data) ? $data['picPersonIds'] : null;
-        unset($data['picPersonIds']);
 
         $workstream = Workstream::findOrFail($id);
         // Scope guard: blokir edit workstream lintas-direktorat.
         $this->assertCanMutateWorkstream($this->ownerUnitForWorkstream($id), $request->user());
         $workstream->update($data);
 
-        if ($picPersonIds !== null) {
-            EntityPic::syncForEntity('Initiative', $id, $picPersonIds ?? []);
-        }
-
         rescue(fn () => $this->healthService->recompute($workstream->programId));
 
-        return response()->json(['data' => $workstream->fresh(['entityPics'])]);
+        return response()->json(['data' => $workstream->fresh()]);
     }
 
     public function destroyWorkstream(Request $request, int $id): JsonResponse

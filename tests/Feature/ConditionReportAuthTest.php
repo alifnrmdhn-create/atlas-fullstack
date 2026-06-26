@@ -50,7 +50,7 @@ class ConditionReportAuthTest extends TestCase
     public function test_owner_can_report_condition(): void
     {
         [$dir, $unit] = $this->makeDirectorate('DIR-A', 'DIV-A');
-        $owner = $this->makeUser('owner-a', 'ASISTEN', $unit->id, $dir->id);
+        $owner = $this->makeUser('owner-a', 'KASUBDIV', $unit->id, $dir->id);
         $id = $this->makeProgram($owner);
 
         $this->actingAs($owner)
@@ -67,7 +67,7 @@ class ConditionReportAuthTest extends TestCase
     public function test_co_pic_can_report_condition(): void
     {
         [$dir, $unit] = $this->makeDirectorate('DIR-A', 'DIV-A');
-        $owner = $this->makeUser('owner-b', 'ASISTEN', $unit->id, $dir->id);
+        $owner = $this->makeUser('owner-b', 'KASUBDIV', $unit->id, $dir->id);
         $coPic = $this->makeUser('copic-b', 'OFFICER', $unit->id, $dir->id);
         $id = $this->makeProgram($owner);
 
@@ -87,7 +87,7 @@ class ConditionReportAuthTest extends TestCase
     public function test_non_pic_cannot_report_condition(): void
     {
         [$dir, $unit] = $this->makeDirectorate('DIR-A', 'DIV-A');
-        $owner    = $this->makeUser('owner-c', 'ASISTEN', $unit->id, $dir->id);
+        $owner    = $this->makeUser('owner-c', 'KASUBDIV', $unit->id, $dir->id);
         $stranger = $this->makeUser('stranger-c', 'OFFICER', $unit->id, $dir->id);
         $id = $this->makeProgram($owner);
 
@@ -101,7 +101,7 @@ class ConditionReportAuthTest extends TestCase
     public function test_reflection_meta_exposes_can_report_flag(): void
     {
         [$dir, $unit] = $this->makeDirectorate('DIR-A', 'DIV-A');
-        $owner    = $this->makeUser('owner-d', 'ASISTEN', $unit->id, $dir->id);
+        $owner    = $this->makeUser('owner-d', 'KASUBDIV', $unit->id, $dir->id);
         // Officer di unit yang sama → scope-nya mencakup program (assertAccess
         // lolos) tapi BUKAN PIC → boleh BACA meta tapi canReport=false.
         $officer = $this->makeUser('officer-d', 'OFFICER', $unit->id, $dir->id);

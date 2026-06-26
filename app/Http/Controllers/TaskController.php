@@ -401,11 +401,18 @@ class TaskController extends Controller
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /**
-     * Gate mutasi task per-direktorat. Sebelumnya update/status/progress/assign
-     * hanya cek isReadOnly → user non-BOD mana pun bisa mengubah task program/
-     * divisi LAIN (merusak integritas progres yang menggerakkan health & dashboard).
-     * Izinkan: admin, pembuat/PIC task, atau user yang scope-nya mencakup unit
-     * pemilik program task. Blokir lintas-direktorat.
+     * Gate mutasi STRUKTURAL task (assign/planning/destroy/subtask) per-direktorat.
+     * Sebelumnya update/status/progress/assign hanya cek isReadOnly → user non-BOD
+     * mana pun bisa mengubah task program/divisi LAIN (merusak integritas progres
+     * yang menggerakkan health & dashboard).
+     * Izinkan: admin, pembuat/PIC task, atau MANAJER PLAN (KADIV/KASUBDIV) yang
+     * scope-nya mencakup unit pemilik program task. Blokir lintas-direktorat.
+     *
+     * Pengetatan 2026-06-26: menata STRUKTUR plan adalah hak Kadiv/Kasub — jadi
+     * jalur coversUnit dibatasi ke kadiv/kasubdiv. ASISTEN/OFFICER yang sekadar
+     * "cover unit" (OrgScope se-direktorat) tak lagi boleh merestrukturisasi task
+     * sembarang; mereka tetap mengelola task yang di-assign ke dirinya (shortcut
+     * assignee/creator di atas) & update progres lewat assertCanUpdateProgress.
      */
     private function assertCanModifyTask(Task $task, User $user): void
     {
@@ -415,7 +422,8 @@ class TaskController extends Controller
         if (RolePolicy::isAdminOrAbove($user->roleType)) return;
         if ($task->createdBy === $user->id || $task->assignedTo === $user->id) return;
 
-        if (OrgScope::forUser($user)->coversUnit($this->ownerUnitForTask($task))) {
+        if (in_array(RolePolicy::norm($user->roleType), ['kadiv', 'kasubdiv'], true)
+            && OrgScope::forUser($user)->coversUnit($this->ownerUnitForTask($task))) {
             return;
         }
 
