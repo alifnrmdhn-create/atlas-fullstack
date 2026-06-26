@@ -905,7 +905,15 @@
 .mrd-table-toggle:hover { background: var(--mrd-surface-muted); color: var(--mrd-text-strong); }
 
 /* ── Full data table ─────────────────────────────────────────────────────── */
-.mrd-full-table { display: flex; flex-direction: column; gap: 16px; }
+/* Inner-scroll: header kolom tetap terlihat saat tabel data penuh (bisa puluhan
+   baris) di-scroll. Semua tabel kategori berbagi kolom identik, jadi satu scroll
+   container cukup; saat kategori berikut naik, thead-nya menggantikan yang lama. */
+.mrd-full-table {
+  display: flex; flex-direction: column; gap: 16px;
+  max-height: clamp(360px, calc(100dvh - 320px), 760px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .mrd-full-table__group-head {
   font-size: 10.5px; font-weight: 700; color: var(--mrd-text-soft);
   padding-bottom: 6px; border-bottom: 1px solid var(--mrd-border);
@@ -922,6 +930,8 @@
   font-size: 10px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.05em;
   color: var(--mrd-text-subtle); background: var(--mrd-surface-soft); white-space: nowrap;
+  position: sticky; top: 0; z-index: 2;
+  box-shadow: inset 0 -1px 0 var(--mrd-border);
 }
 .mrd-table tr:hover td { background: var(--mrd-surface-hover); }
 .mrd-table__th--right { text-align: right !important; }

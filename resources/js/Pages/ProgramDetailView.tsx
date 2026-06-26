@@ -1545,6 +1545,13 @@ export function ProgramDetailView() {
     _detailStatus === 'PENDING_KASUB' || _detailStatus === 'PENDING_KADIV' || _isRejected
   )
 
+  // Selama PENDING approval, BE menolak SEMUA mutasi struktur (workstream/phase/
+  // task) via ProgramService::assertProgramNotUnderApproval. Sebelumnya tombol
+  // struktur tetap aktif → klik = 422 senyap + banner menyesatkan ("can still be
+  // refined"). Kunci tombolnya, sejajar gate tab KPI (lihat usage di tab Struktur).
+  const structureLocked = _detailStatus === 'PENDING_KASUB' || _detailStatus === 'PENDING_KADIV'
+  const canEditStructure = roleAccess.canCreateWorkstream && !structureLocked
+
   return (
     <div className="ds program-detail-v2 prog-detail-page view-program-detail ds-stagger">
       {/* `view-program-detail` + `ds-stagger`: Phase 3 motion standardization.
@@ -1934,8 +1941,8 @@ export function ProgramDetailView() {
               ? t('Checklist complete — click the button below to activate / submit for approval.')
               : t('Complete the prep checklist, then activate the program.')
           }
-          else if (status === 'PENDING_KASUB') hint = t('Awaiting KASUBDIV approval. Structure & plan can still be refined; execution becomes active once approved.')
-          else if (status === 'PENDING_KADIV') hint = t('Awaiting KADIV approval. Structure & plan can still be refined; execution becomes active once approved.')
+          else if (status === 'PENDING_KASUB') hint = t('Awaiting KASUBDIV approval. The structure is locked while under review — withdraw to revise, then resubmit.')
+          else if (status === 'PENDING_KADIV') hint = t('Awaiting KADIV approval. The structure is locked while under review — withdraw to revise, then resubmit.')
         } else if (phase === 'execution') {
           const days = detail.targetEndDate ? daysUntil(detail.targetEndDate) : null
           const dl = days !== null ? formatDaysLabel(days) : null
@@ -2739,7 +2746,7 @@ export function ProgramDetailView() {
                     <span className="section-badge">{(detail.workstreams ?? []).length}</span>
                   )}
                 </div>
-                {roleAccess.canCreateWorkstream && (
+                {canEditStructure && (
                   <button className="btn btn--ghost program-detail-section-btn" onClick={() => setShowCreateIni(true)} type="button">
                     {t('+ New Workstream')}
                   </button>
@@ -2826,7 +2833,7 @@ export function ProgramDetailView() {
                               </div>
                               <span>{ini.progressPercent}%</span>
                             </div>
-                            {roleAccess.canCreateWorkstream && (
+                            {canEditStructure && (
                               <div className="workstream-row__actions" onClick={e => e.stopPropagation()}>
                                 <button
                                   className="ws-icon-btn"
@@ -2919,7 +2926,7 @@ export function ProgramDetailView() {
                                           {t("Start by adding the first phase to group steps, or add a task directly if grouping isn't needed.")}
                                         </span>
                                       </p>
-                                      {roleAccess.canCreateWorkstream && (
+                                      {canEditStructure && (
                                         <button
                                           className="btn btn--ghost workstream-empty-body__btn"
                                           onClick={() => { setCpWorkstreamId(ini.id); setShowCreatePhase(true) }}
@@ -2945,7 +2952,7 @@ export function ProgramDetailView() {
                                             {!['PLANNING', 'BACKLOG', 'READY'].includes(phase.status) && (
                                               <span className="wi-status-chip phase-group__status" data-status={phase.status}>{formatStatusLabel(phase.status)}</span>
                                             )}
-                                            {roleAccess.canCreateWorkstream && confirmDelPhaseId !== phase.id && (
+                                            {canEditStructure && confirmDelPhaseId !== phase.id && (
                                               <div className="phase-group__actions" onClick={e => e.stopPropagation()}>
                                                 <button className="phase-group__action-btn" onClick={() => openEditPhase(phase)} title={t('Edit phase')} type="button">✎</button>
                                                 <button className="phase-group__action-btn phase-group__action-btn--del" onClick={() => setConfirmDelPhaseId(phase.id)} title={t('Delete phase')} type="button">×</button>
@@ -3019,7 +3026,7 @@ export function ProgramDetailView() {
                                                 </button>
                                               ))
                                             )}
-                                            {roleAccess.canCreateWorkstream && (
+                                            {canEditStructure && (
                                               <button
                                                 className="btn btn--ghost wi-add-subtask-btn"
                                                 onClick={() => {
@@ -3089,7 +3096,7 @@ export function ProgramDetailView() {
                                         </div>
                                       )}
 
-                                      {roleAccess.canCreateWorkstream && (
+                                      {canEditStructure && (
                                         <button
                                           className="btn btn--ghost wi-add-phase-btn"
                                           onClick={() => { setCpWorkstreamId(ini.id); setShowCreatePhase(true) }}

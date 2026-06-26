@@ -323,9 +323,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/action-items',               [MeetingController::class, 'storeActionItem'])->name('action-items.store');
         Route::patch('/{id}/action-items/{itemId}',     [MeetingController::class, 'updateActionItem'])->name('action-items.update');
         Route::delete('/{id}/action-items/{itemId}',    [MeetingController::class, 'destroyActionItem'])->name('action-items.destroy');
+        // Act → Do bridge: push action item ke Workboard sebagai Task.
+        Route::post('/{id}/action-items/{itemId}/push', [MeetingController::class, 'pushActionItem'])->name('action-items.push');
 
-        // Continuity
+        // Continuity + prep packet (Meeting Briefing)
         Route::get('/{id}/continuity',  [MeetingController::class, 'continuity'])->name('continuity');
+        Route::get('/{id}/prep',        [MeetingController::class, 'prep'])->name('prep');
 
         // Sprint 3 — PICA Composite View Context
         Route::get('/{id}/pica-context', [MeetingController::class, 'picaContext'])->name('pica-context');

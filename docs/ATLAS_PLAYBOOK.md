@@ -93,7 +93,7 @@ Klasifikasi kondisi pelaksanaan program pada periode pelaporan.
 
 | Istilah | Penjelasan |
 |---------|------------|
-| **PDCA** | Siklus *Plan-Do-Check-Act* — kerangka kerja sistem ATLAS untuk mengklasifikasi modul (Plan = Programs/Workstream, Do = Workboard/Penugasan, Check = Performance/Scorecard, Act = Rapat Koordinasi/Eskalasi). **Sejak 25 Mei 2026 navigasi sidebar di-organize berbasis *intent* (Today / Portfolio & Performance / Work / Admin), bukan fase PDCA** — agar lookup lebih cepat. PDCA tetap kerangka di balik layar (dipakai di playbook & dokumentasi untuk klasifikasi modul). |
+| **PDCA** | Siklus *Plan-Do-Check-Act* — kerangka kerja sistem ATLAS untuk mengklasifikasi modul (Plan = Programs/Workstream, Do = Workboard/Penugasan, Check = Performance/Scorecard, Act = Rapat Koordinasi/Eskalasi). **Sejak 25 Mei 2026 navigasi sidebar di-organize berbasis *intent*, bukan fase PDCA** — agar lookup lebih cepat. Sejak 26 Juni 2026 strukturnya: pita primer (Home · Fokus · Programs, di-pin tanpa label) → My Work → Performance → Admin. PDCA tetap kerangka di balik layar (dipakai di playbook & dokumentasi untuk klasifikasi modul). |
 | **Workstream** | Jalur kerja dalam satu Program — mengelompokkan Phase dan Task berdasarkan bidang atau tim. *Contoh: Audit Divisi Keuangan.* |
 | **Phase** | Tahapan utama dalam sebuah Workstream. Mengelompokkan Task yang saling berkaitan. Tampil sebagai container bernomor di tab Struktur. *Contoh: Pengumpulan Dokumen.* |
 | **Task** | Satu unit pekerjaan konkret di dalam sebuah Phase — memiliki status, assignee, prioritas, dan batas waktu. Muncul di **Workboard**. *Contoh: Kumpulkan laporan arus kas Q1.* |
@@ -144,13 +144,13 @@ flowchart TD
 
 ### 2. Sidebar (Intent-based)
 
-Sejak 25 Mei 2026 sidebar ATLAS di-organize berbasis **intent pengguna** (bukan fase PDCA) agar lookup cepat. Grup & item bersifat *role-aware* — pengguna hanya melihat menu yang relevan untuk jabatannya. **Today** (Home + Fokus) di-pin paling atas; **Profile & Settings** pindah ke popover avatar (sidebar footer), bukan lagi grup tersendiri.
+Sejak 25 Mei 2026 sidebar ATLAS di-organize berbasis **intent pengguna** (bukan fase PDCA) agar lookup cepat. Grup & item bersifat *role-aware* — pengguna hanya melihat menu yang relevan untuk jabatannya. **Sejak 26 Juni 2026** strukturnya disederhanakan: **pita primer** (Home · Fokus · **Programs**) di-pin paling atas **tanpa label** sebagai destinasi jangkar; label panjang "Portfolio & Performance" dibuang dan Programs naik dari grup ke pita primer. Sisanya: grup **My Work** (eksekusi harian) → grup **Performance** (dashboard KPI, satu-tujuan, *role-gated* & auto-hidden saat user tak punya akses) → **Admin**. **Profile & Settings** pindah ke popover avatar (sidebar footer), bukan lagi grup tersendiri.
 
 ```mermaid
 flowchart LR
-    T["Today<br/>Home · Fokus"]:::today --> P["Portfolio & Performance<br/>Programs · KPI dashboards"]:::check
-    P --> W["Work<br/>Workboard · Penugasan · Koordinasi · Channels · Presence"]:::do
-    W --> AD["Admin<br/>ADMIN/SUPERADMIN"]:::akun
+    T["Pita primer (pinned, tanpa label)<br/>Home · Fokus · Programs"]:::today --> W["My Work<br/>Workboard · Penugasan · Koordinasi · Channels · Presence"]:::do
+    W --> P["Performance<br/>KPI dashboards (role-gated, auto-hidden)"]:::check
+    P --> AD["Admin<br/>ADMIN/SUPERADMIN"]:::akun
 
     classDef today fill:#bfdbfe,stroke:#2563eb,color:#1e3a8a,stroke-width:2px
     classDef do    fill:#fde68a,stroke:#b45309,color:#451a03,stroke-width:2px
@@ -193,7 +193,7 @@ flowchart TD
 
 ### 4. Alur Approval Program
 
-Pembuatan program melewati alur persetujuan berjenjang sesuai jabatan pembuat.
+Pembuatan program melewati alur persetujuan berjenjang sesuai jabatan pembuat. **Sejak 26 Juni 2026 hanya KADIV / KASUBDIV (+ ADMIN) yang dapat menyusun program & menjadi owner** — ASISTEN/OFFICER adalah pelaksana, bukan penyusun. Tangga approval karenanya jadi **dua tingkat** (KASUBDIV → KADIV).
 
 ```mermaid
 flowchart LR
@@ -201,17 +201,10 @@ flowchart LR
 
     Role -- KADIV --> Active([ACTIVE]):::done
     Role -- KASUBDIV --> PK[PENDING_KADIV]:::pending
-    Role -- ASISTEN --> Draft[DRAFT]:::neutral
 
     PK --> AK{Review KADIV?}:::decision
     AK -- Setuju --> Active
     AK -- Tolak --> Rejected([REJECTED]):::err
-
-    Draft --> Ajukan[Ajukan Persetujuan]:::proc
-    Ajukan --> PKS[PENDING_KASUB]:::pending
-    PKS --> AKS{Review KASUBDIV?}:::decision
-    AKS -- Setuju --> PK
-    AKS -- Tolak --> Rejected
 
     classDef start    fill:#1e3a2f,stroke:#14532d,color:#ffffff
     classDef done     fill:#15803d,stroke:#166534,color:#ffffff
@@ -221,6 +214,8 @@ flowchart LR
     classDef neutral  fill:#e2e8f0,stroke:#64748b,color:#1e293b,stroke-width:1.5px
     classDef decision fill:#fde68a,stroke:#b45309,color:#451a03,stroke-width:1.5px
 ```
+
+> 💡 Status `DRAFT` dan `PENDING_KASUB` masih ada di kode sebagai jalur legacy (saat masih ada penyusun di bawah KASUBDIV), tetapi tidak lagi tercapai pada alur normal.
 
 ### 5. Alur Eksekusi Task
 
@@ -360,16 +355,16 @@ Seluruh pengguna mendarat di **Home** (`/`) — namun **konten Home berbeda per 
 
 ### Grup Menu Sidebar (Intent-based)
 
-Urutan render: **Today** (pinned) → **Portfolio & Performance** → **Work** → **Admin**.
+Urutan render (sejak 26 Juni 2026): **Pita primer** (pinned, tanpa label) → **My Work** → **Performance** → **Admin**.
 
 | Grup | Item | Catatan akses |
 |------|------|---------------|
-| **Today** *(pinned, paling atas)* | Home, Fokus | Semua pengguna |
-| **Portfolio & Performance** | Programs, Scorecard, KPI Direktorat, KPI Divisi, KPI Saya, Leaderboard, Executive Summary | Programs untuk semua; dashboard KPI/Performance *role-gated* (lihat tabel di bawah). Label grup jadi "Portfolio" saja bila user tak punya akses Performance. |
-| **Work** | Workboard, Assignment (Penugasan), Coordination (Rapat Koordinasi), Channels, Presence | Semua pengguna |
+| **Pita primer** *(pinned, paling atas, tanpa label)* | Home, Fokus, **Programs** | Semua pengguna. Programs naik ke pita primer sebagai destinasi jangkar (sebelumnya di grup "Portfolio & Performance" yang kini dibuang). |
+| **My Work** | Workboard, Assignment (Penugasan), Coordination (Rapat Koordinasi), Channels, Presence | Semua pengguna. Label "My Work" (sebelumnya "Work") — rasa kepemilikan, pola Asana/ClickUp. |
+| **Performance** | Scorecard, KPI Direktorat, KPI Divisi, KPI Saya, Leaderboard, Executive Summary | Grup satu-tujuan, *role-gated* (lihat tabel di bawah). **Auto-hidden** saat user tak punya akses Performance — tak ada lagi grup 1-item canggung karena Programs sudah pindah ke pita primer. |
 | **Admin** *(ADMIN/SUPERADMIN)* | Companies, Positions, Users, Roles, Pilot Metrics, Thresholds *(SUPERADMIN)* | ADMIN/SUPERADMIN |
 
-> 💡 **Profile & Settings** tidak lagi punya grup tersendiri — keduanya diakses dari popover avatar di footer sidebar. Roadmap (visual timeline portofolio), Goals & KPI, Team Activity, Analytics, dan Laporan Bulanan tetap hidup tapi diakses lewat shortcut, breadcrumb, ⌘K, atau deep-link — tidak menempati slot sidebar.
+> 💡 **Profile & Settings** tidak lagi punya grup tersendiri — keduanya diakses dari popover avatar di footer sidebar. Footer juga memuat **workspace switcher chip** (scope direktorat) dan toggle tema. Roadmap (visual timeline portofolio), Goals & KPI, Team Activity, Analytics, dan Laporan Bulanan tetap hidup tapi diakses lewat shortcut, breadcrumb, ⌘K, atau deep-link — tidak menempati slot sidebar.
 
 ### Skup Item Performance per Akses
 
@@ -467,7 +462,9 @@ Setiap item menampilkan: ikon jenis, judul, meta, alasan urgensi, cue aksi berik
 
 ## 5. Perencanaan — Program & Workstream
 
-**Siapa yang bisa:** KADIV (langsung aktif) · KASUBDIV (perlu approval KADIV) · ASISTEN (perlu approval KASUBDIV → KADIV) · Semua (lihat)
+**Siapa yang bisa:** KADIV (langsung aktif) · KASUBDIV (perlu approval KADIV) · Semua (lihat)
+
+> 🔒 **Sejak 26 Juni 2026 penyusunan plan dibatasi.** Hanya **KADIV / KASUBDIV** (+ ADMIN/SUPERADMIN) yang dapat membuat Program & Workstream serta menjadi **owner** program. **ASISTEN & OFFICER adalah pelaksana** — mereka mengerjakan Task yang di-assign, tetapi tidak meng-author plan. Owner program juga wajib KADIV/KASUBDIV (aktor admin dikecualikan). Co-PIC bebas siapa saja.
 
 Program adalah unit kerja strategis utama di ATLAS. Di dalamnya terdapat Workstream sebagai jalur kerja, Phase sebagai tahapan, dan Task sebagai unit eksekusi konkret.
 
@@ -493,14 +490,13 @@ Program adalah unit kerja strategis utama di ATLAS. Di dalamnya terdapat Workstr
 |---------|--------------|
 | KADIV | Langsung ACTIVE — tidak perlu approval |
 | KASUBDIV | Dibuat → PENDING_KADIV → KADIV setujui → ACTIVE |
-| ASISTEN | Dibuat → DRAFT → Ajukan → PENDING_KASUB → KASUBDIV setujui → PENDING_KADIV → KADIV setujui → ACTIVE |
 
 **Status approval program:**
-- **DRAFT** — dibuat ASISTEN, belum diajukan (bisa diedit, lalu klik "Ajukan Persetujuan")
-- **PENDING_KASUB** — menunggu persetujuan KASUBDIV
 - **PENDING_KADIV** — menunggu persetujuan KADIV
 - **ACTIVE** — aktif, program berjalan normal
 - **REJECTED** — ditolak, kembali ke DRAFT dengan catatan (bisa direvisi & diajukan ulang)
+
+> 💡 Status `DRAFT` & `PENDING_KASUB` masih tersisa di kode sebagai jalur legacy (untuk penyusun di bawah KASUBDIV), tetapi sejak penyusunan plan dibatasi ke KADIV/KASUBDIV (26 Juni 2026) keduanya tidak lagi tercapai pada alur normal.
 
 > 💡 Program berstatus non-ACTIVE menampilkan **banner notifikasi** di halaman detail dengan tombol aksi sesuai peran Anda. Setelah ACTIVE, muncul **toast konfirmasi** + badge **"Berjalan"**, plus *post-activation hint banner* yang menjembatani Plan → Do (saran: tambah Workstream/Task pertama bila belum ada).
 
@@ -538,8 +534,10 @@ PIC dapat menulis **Refleksi mingguan / bulanan** lewat tab Ringkasan. Aturan:
 
 1. Buka detail program → tab **Struktur**
 2. Klik **+ Workstream Baru**
-3. Isi nama, kode, tanggal mulai/selesai, dan pilih PIC
+3. Isi nama, kode, prioritas, dan tanggal mulai/selesai
 4. Klik **Simpan**
+
+> 🔧 *Sejak 26 Juni 2026 Workstream & Phase **tidak lagi punya owner/PIC sendiri** — akuntabilitas terpusat di PIC Program (KADIV/KASUBDIV) dan `Task.assignedTo`. Kolom `Initiative.ownerId` / `primaryPicPersonId` / `Phase.picUnitIds` sudah di-drop dari skema.*
 
 ### Cara Menambah Phase
 
@@ -561,6 +559,8 @@ PIC dapat menulis **Refleksi mingguan / bulanan** lewat tab Ringkasan. Aturan:
 1. Buka menu **Workboard**
 2. Klik **+ Tugas Baru**
 3. Pilih Workstream tujuan, isi detail, klik **Simpan**
+
+> 🔧 *Sejak 26 Juni 2026 status Workstream & Phase **diturunkan otomatis dari status Task anaknya** (rollup), bukan diset manual: semua Task COMPLETED → container COMPLETED; ada Task yang sudah jalan → IN_PROGRESS; belum mulai → planning (status CANCELLED dipertahankan). Dropdown status Workstream/Phase dicabut dari UI; progres masuk lewat update Task, bukan edit container.*
 
 ### Aturan Edit Program
 
@@ -1173,19 +1173,23 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 | Modul | Backend | Frontend | Realtime | Status |
 |-------|---------|----------|----------|--------|
 | Login (NIK/UserID) & Session | ✅ | ✅ | — | ✅ |
-| Navigasi Sidebar intent-based per Role (Today/Portfolio/Work/Admin) | ✅ | ✅ | — | ✅ |
+| Navigasi Sidebar intent-based per Role (pita primer Home·Fokus·Programs → My Work → Performance → Admin) + workspace switcher chip | ✅ | ✅ | — | ✅ |
 | Home (Ringkasan Eksekutif) | ✅ | ✅ | ✅ | ✅ |
 | Fokus (Inbox) + humanized notif source & verb-specific CTA | ✅ | ✅ | ✅ | ✅ |
 | Program CRUD | ✅ | ✅ | ✅ | ✅ |
+| RBAC penyusunan plan — Program/Workstream & owner = KADIV/KASUBDIV only (ASISTEN/OFFICER pelaksana) | ✅ | ✅ | — | ✅ |
 | Program Approval (DRAFT→ACTIVE) + UX polish | ✅ | ✅ | ✅ | ✅ |
 | Program Governance (audit + notify on post-active commitment edit) | ✅ | ✅ | ✅ | ✅ |
 | Post-activation hint banner (Plan → Do bridge) | — | ✅ | — | ✅ |
 | Progress Log (structured period picker Mingguan/Bulanan) | ✅ | ✅ | — | ✅ |
 | Charter View Program | ✅ | ✅ | — | ✅ |
 | Charter — Per-cell KPI status icons (above/on/below) | — | ✅ | — | ✅ |
+| Charter recap — sub-view ke-5 di Portfolio (List·Board·Table·Map·Charter), kartu padat lazy-fetch | — | ✅ | — | ✅ |
 | Charter Export PPTX (single + batch) | ✅ | ✅ | — | ✅ |
 | Roadmap (Lanes + Timeline) | ✅ | ✅ | ✅ | ✅ |
 | Workstream CRUD | ✅ | ✅ | ✅ | ✅ |
+| Status Workstream/Phase = turunan task (rollup `recomputeStructureStatus`, dropdown manual dicabut) | ✅ | ✅ | — | ✅ |
+| Workstream/Phase owner & PIC dibuang (akuntabilitas terpusat di PIC Program + Task.assignedTo) | ✅ | ✅ | — | ✅ |
 | Phase / Task / Subtask | ✅ | ✅ | ✅ | ✅ |
 | Papan Kerja (Workboard) | ✅ | ✅ | ✅ | ✅ |
 | Penugasan (Assignment + approval chain) | ✅ | ✅ | ✅ | ✅ |
@@ -1217,7 +1221,9 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 | Channels + Pesan + Thread + Reaksi | ✅ | ✅ | ✅ | ✅ |
 | Direct Message | ✅ | ✅ | ✅ | ✅ |
 | Notifikasi | ✅ | ✅ | ✅ | ✅ |
+| Notifikasi @mention di diskusi Task/Program (comment) | ✅ | ✅ | ✅ | ✅ |
 | Kehadiran Tim | ✅ | ✅ | ✅ | ✅ |
+| Profil read-only modal (klik orang app-wide) + foto lightbox | ✅ | ✅ | — | ✅ |
 | Pencarian | ✅ | ✅ | — | ✅ |
 | Admin Users/Org/Roles/Positions | ✅ | ✅ | — | ✅ |
 | Admin Pilot Metrics | ✅ | ✅ | — | ✅ |
@@ -1249,11 +1255,13 @@ Tabel berikut adalah evaluasi teknis per modul untuk keperluan developer dan eva
 - ❌ **APMS Live Sync** — fetch data real dari AGHRIS belum diimplementasi; KPI APMS masih menggunakan seed data. KPI internal berfungsi penuh termasuk monitoring health
 - ⚠️ **My Work endpoint** — implementasi minimal, sebagian besar fungsionalitas sudah diserap ke Fokus dan Papan Kerja
 
-**Status: ✅ Evaluasi Lengkap per 25 Juni 2026** (Sprint 0–5 MVP selesai 8 Mei 2026)
+**Status: ✅ Evaluasi Lengkap per 26 Juni 2026** (Sprint 0–5 MVP selesai 8 Mei 2026)
 
 > 🗓️ **Perubahan signifikan sejak 24 Mei 2026** (tercermin di dokumen ini): navigasi sidebar di-organize ulang berbasis **intent** (Today / Portfolio & Performance / Work / Admin) menggantikan grouping fase PDCA; akses dashboard Performance dipindah ke gate `EnsurePerformanceAccess` (pilot DIR-KMR), bukan lagi role granular; dukungan **phone penuh ≤640px** dan **PWA installable**; dashboard Risiko standalone dihilangkan dari discovery (2 Jun 2026); migrasi bertahap ke **design-system primitives** (`@/design-system`).
 >
 > 🗓️ **Perubahan 24–25 Juni 2026**: **i18n bilingual EN ⟷ ID** (switcher di Settings → Language); **dark mode** token theme-aware (Light/Dark/System); **status vocabulary unified** ke satu sumber `lib/status.ts` (enum mentah tak lagi bocor ke UI; health fork "Off Track/Critical" di-collapse; program "running" = **Active**); **Workboard redesign** — tab **Board** kini berkolom **urgensi** (Overdue · At Risk · On Track · Not Started · Completed), **By Program** jadi default, tab **Blockers** baru; **phone mobile-native** (bottom-tab + All-menu sheet + Home launcher) menggantikan drawer off-canvas; **Fokus** dapat panel **disposisi** & DM/mention dikeluarkan dari feed; **Pusat Bantuan** pindah ke topbar.
+>
+> 🗓️ **Perubahan 26 Juni 2026**: **Sidebar disederhanakan** — label panjang "Portfolio & Performance" dibuang, **Programs** naik ke **pita primer** (Home · Fokus · Programs, di-pin tanpa label), sisanya grup **My Work** → **Performance** (satu-tujuan, auto-hidden) → Admin; + **workspace switcher chip** di footer. **RBAC penyusunan plan**: hanya **KADIV/KASUBDIV** (+ADMIN) yang membuat Program/Workstream & jadi owner — ASISTEN/OFFICER murni pelaksana; tangga approval jadi 2-tingkat (KASUBDIV → KADIV). **Status Workstream/Phase = turunan task** (rollup, dropdown manual dicabut); **owner & PIC Workstream/Phase dibuang** (akuntabilitas di PIC Program + `Task.assignedTo`). **Notifikasi @mention** di diskusi Task/Program; **Charter recap** sub-view ke-5 di Portfolio; **Profil read-only modal** (klik orang app-wide) + **foto lightbox**.
 
 
-*Panduan ini mencerminkan kondisi implementasi ATLAS per 25 Juni 2026. Perbarui dokumen setiap ada perubahan fitur signifikan.*
+*Panduan ini mencerminkan kondisi implementasi ATLAS per 26 Juni 2026. Perbarui dokumen setiap ada perubahan fitur signifikan.*

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Head, usePage } from '@inertiajs/react'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { Card, Pill } from '../../design-system'
-import { scoreTone, realisasiPercent, formatNumber, formatPeriod, bulletPct } from './_shared'
+import { scoreTone, realisasiPercent, formatNumber, formatPeriod, bulletPct, perspektifLabel } from './_shared'
 import { InsightPanel, type InsightPayload } from './InsightPanel'
 import { KpiScoreTable, type ScoreGroup } from './KpiScoreTable'
 import './Performance.css'
@@ -87,7 +87,7 @@ export default function KolegialDetailView() {
       if (lowestFirst) items = [...items].sort((a, b) => itemPct(a) - itemPct(b))
       return {
         key: g.perspektif_key,
-        label: g.perspektif,
+        label: perspektifLabel(g.perspektif),
         color: PERSPEKTIF_COLORS[g.perspektif_key] ?? 'var(--ds-text-tertiary)',
         bobot: items.reduce((s, i) => s + i.bobot, 0),
         pct: g.pct,
@@ -159,8 +159,8 @@ export default function KolegialDetailView() {
                 <div className="perf-bullet-rows">
                   {kpiGroups.map(g => (
                     <div key={g.perspektif_key} className="perf-bullet-row perf-bullet-row--static">
-                      <span className="perf-bullet-row__code" title={g.perspektif}>
-                        {g.perspektif === 'Internal Business Process' ? 'IBP' : g.perspektif}
+                      <span className="perf-bullet-row__code" title={perspektifLabel(g.perspektif)}>
+                        {perspektifLabel(g.perspektif)}
                       </span>
                       <span className="perf-bullet perf-bullet--mini" aria-hidden>
                         <span className="perf-bullet__target" />
@@ -205,7 +205,7 @@ export default function KolegialDetailView() {
                 onClick={() => setActiveFilter(g.perspektif_key)}
               >
                 <span className="perf-filter__dot" style={{ background: PERSPEKTIF_COLORS[g.perspektif_key] ?? 'var(--ds-text-tertiary)' }} />
-                {g.perspektif}
+                {perspektifLabel(g.perspektif)}
               </button>
             ))}
             <span className="perf-filter-row__spacer" aria-hidden />

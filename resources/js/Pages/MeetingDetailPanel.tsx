@@ -26,7 +26,9 @@ type ActionItem = {
   dueDate?: string
   status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED'
   completedAt?: string
-  linkedTaskId?: number | null
+  // Kolom BE = linkedWorkItemId (bukan linkedTaskId). Nama lama tak pernah match
+  // → pill "WI ✓" tak muncul & tombol "→ WB" tampil walau sudah di-push.
+  linkedWorkItemId?: number | null
   createdAt: string
 }
 
@@ -1200,7 +1202,7 @@ export function MeetingDetailPanel({
           {/* Gap pass 2 — clarify close-loop behavior: tandai action item
               selesai akan auto-close task yang ditautkan, tapi reopen tidak
               revert. Mencegah user surprise saat unmark accidentally. */}
-          {actionItems.some(ai => ai.linkedTaskId) && (
+          {actionItems.some(ai => ai.linkedWorkItemId) && (
             <p className="meeting-detail__hint">
               💡 {t('Action items linked to a task will automatically close the task when marked complete. Reopening an action item does NOT revert the task — open the task to reopen it manually if needed.')}
             </p>
@@ -1257,7 +1259,7 @@ export function MeetingDetailPanel({
                     </div>
                   </div>
                   <div className="meeting-action-item__actions">
-                    {item.linkedTaskId ? (
+                    {item.linkedWorkItemId ? (
                       <span className="meeting-action-item__wi-pill">
                         WI ✓
                       </span>

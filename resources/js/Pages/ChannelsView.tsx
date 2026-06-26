@@ -507,7 +507,8 @@ type ChannelsViewProps = {
   onSelectChannel: (channelId: number) => void
   onCloseConversation: () => void
   onSelectThread: (threadId: number | null) => void
-  onReactEmoji: (messageId: number, emoji: string) => void
+  // remove=true → lepas reaksi (DELETE). Dipakai chip aktif (toggle off).
+  onReactEmoji: (messageId: number, emoji: string, remove?: boolean) => void
   onEditMessage: (messageId: number, content: string) => Promise<void>
   onDeleteMessage: (messageId: number, scope: 'self' | 'all') => Promise<void>
   onPinMessage: (messageId: number) => Promise<void>
@@ -2349,7 +2350,7 @@ export function ChannelsView({
                                 <button
                                   className={`reaction-chip ${currentUserId && userIds.includes(currentUserId) ? 'reaction-chip--active' : ''}`}
                                   key={emojiKey}
-                                  onClick={() => onReactEmoji(message.id, emojiKey)}
+                                  onClick={() => onReactEmoji(message.id, emojiKey, !!(currentUserId && userIds.includes(currentUserId)))}
                                   title={emojiKey}
                                   type="button"
                                 >

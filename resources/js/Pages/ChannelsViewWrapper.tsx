@@ -194,10 +194,17 @@ export function ChannelsViewWrapper() {
     return json.data
   }
 
-  const handleReactEmoji = (messageId: number, emoji: string) => {
+  const handleReactEmoji = (messageId: number, emoji: string, remove?: boolean) => {
     if (!selectedChannelId) return
-    // Fire-and-forget — SSE reaction:changed event updates state
-    void api.post(`/channels/${selectedChannelId}/messages/${messageId}/reactions`, { emoji })
+    // Fire-and-forget — realtime reaction:changed event updates state.
+    // remove=true (klik chip yang sudah aktif) → DELETE supaya reaksi bisa
+    // dilepas. Sebelumnya selalu POST (add idempotent) → chip aktif tak bisa
+    // di-un-react (endpoint DELETE ada tapi tak pernah dipanggil).
+    if (remove) {
+      void api.delete(`/channels/${selectedChannelId}/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`)
+    } else {
+      void api.post(`/channels/${selectedChannelId}/messages/${messageId}/reactions`, { emoji })
+    }
   }
 
   const handleEditMessage = async (messageId: number, content: string) => {

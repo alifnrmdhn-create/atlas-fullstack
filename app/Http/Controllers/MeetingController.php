@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Auth\OrgScope;
 use App\Models\Blocker;
+use App\Models\KpiDefinition;
+use App\Models\KpiValue;
 use App\Models\Meeting;
 use App\Models\MeetingActionItem;
 use App\Models\MeetingAttendee;
@@ -12,8 +14,10 @@ use App\Models\Notification;
 use App\Models\Program;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\Workstream;
 use App\Services\BroadcastService;
 use App\Services\ProgramService;
+use App\Services\TaskService;
 use App\Support\RolePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -848,6 +852,178 @@ class MeetingController extends Controller
         }
 
         return back()->with('success', 'Action item deleted.');
+    }
+
+    /**
+     * Push action item → Workboard sebagai Task (Act → Do bridge).
+     *
+     * Membuat Task di workstream pilihan, lalu menautkan action item ke task
+     * via `linkedWorkItemId`. Tautan inilah yang mengaktifkan close-loop di
+     * updateActionItem (COMPLETED action item → auto-COMPLETE task). Sebelumnya
+     * route ini tidak ada → tombol "→ WB" selalu 404 dan close-loop tak pernah
+     * bisa menyala (tak ada jalur yang mengisi linkedWorkItemId).
+     */
+    public function pushActionItem(Request $request, int $id, int $itemId, TaskService $taskService): JsonResponse|RedirectResponse
+    {
+        $meeting = Meeting::findOrFail($id);
+        $user = $request->user();
+
+        // Hanya organizer (atau admin) — selaras storeActionItem & gating tombol FE.
+        if ($meeting->organizerId !== $user->id && !RolePolicy::isAdminOrAbove($user->roleType)) {
+            abort(403, 'Only the organizer can push an action item to the Workboard.');
+        }
+        if ($meeting->status === 'CANCELLED') {
+            return $this->validationError($request, 'Cannot push from a cancelled meeting.');
+        }
+
+        $item = MeetingActionItem::where('meetingId', $id)->findOrFail($itemId);
+        if ($item->linkedWorkItemId !== null) {
+            return $this->validationError($request, 'This action item is already linked to a Workboard task.');
+        }
+
+        $data = $request->validate([
+            'workstreamId' => 'required|integer|exists:Initiative,id',
+            'targetCompletion' => 'nullable|date',
+        ]);
+
+        // Scope guard (mirror TaskController::store H2): hanya boleh membuat task
+        // di workstream yang unit pemilik programnya ada dalam scope user.
+        $program = Workstream::query()->with('program:id,ownerUnitId')->find((int) $data['workstreamId'])?->program;
+        if (!OrgScope::forUser($user)->coversUnit($program?->ownerUnitId)) {
+            abort(403, "You do not have access to a workstream in another unit's program.");
+        }
+        // PENDING-lock (selaras TaskController::store): jangan suntik task ke
+        // program yang sedang di-review.
+        ProgramService::assertProgramNotUnderApproval(
+            Workstream::query()->where('id', (int) $data['workstreamId'])->value('programId'),
+            $user,
+        );
+
+        $targetCompletion = $data['targetCompletion']
+            ?? $item->dueDate?->toDateString()
+            ?? now()->addWeeks(2)->toDateString();
+
+        $task = $taskService->create($user->id, [
+            'initiativeId'     => (int) $data['workstreamId'],
+            'title'            => $item->title,
+            'description'      => $item->description,
+            'status'           => 'READY',
+            'priority'         => 'MEDIUM',
+            'targetCompletion' => $targetCompletion,
+            // Action item assignee tetap PIC task bila ada (TaskService sinkron
+            // assignedTo ↔ picPersonIds[0]).
+            'assignedTo'       => $item->assignedToId ?: null,
+        ]);
+
+        $item->update(['linkedWorkItemId' => $task->id]);
+        BroadcastService::task($task->id, 'created');
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => ['taskId' => $task->id, 'taskCode' => $task->code]], 201);
+        }
+
+        return back()->with('success', "Task {$task->code} created in Workboard.");
+    }
+
+    /**
+     * Prep packet (Meeting Briefing) — ringkasan kesiapan rapat dari data existing
+     * (tanpa storage baru): konfirmasi kehadiran (RSVP), konteks program ter-link
+     * (health + blocker aktif + KPI), dan kontinuitas dari rapat sebelumnya.
+     * Sebelumnya route ini tak ada → briefing selalu "unavailable".
+     */
+    public function prep(Request $request, int $id): JsonResponse
+    {
+        $meeting = Meeting::with('attendees:id,meetingId,userId,attendeeRole,rsvpStatus')->findOrFail($id);
+        $this->assertAccess($meeting, $request->user()->id, $request->user()->roleType);
+
+        // ── RSVP summary ──────────────────────────────────────────────────────
+        $hadir = $tidakHadir = $delegasi = $pending = 0;
+        foreach ($meeting->attendees as $a) {
+            if ($a->attendeeRole === 'ORGANIZER') { $hadir++; continue; } // organizer pasti hadir
+            match ($a->rsvpStatus) {
+                'HADIR'       => $hadir++,
+                'TIDAK_HADIR' => $tidakHadir++,
+                'DELEGASI'    => $delegasi++,
+                default       => $pending++, // null / belum merespons
+            };
+        }
+        $rsvpSummary = [
+            'hadir' => $hadir, 'tidakHadir' => $tidakHadir, 'delegasi' => $delegasi,
+            'pending' => $pending, 'total' => $meeting->attendees->count(),
+        ];
+
+        // ── Program context (bila rapat ter-link program) ─────────────────────
+        $programContext = null;
+        if ($meeting->linkedProgramId) {
+            $program = Program::query()->find($meeting->linkedProgramId, [
+                'id', 'name', 'code', 'healthStatus', 'progressPercent', 'status',
+            ]);
+            if ($program) {
+                $blockers = Blocker::query()
+                    ->whereHas('task.workstream', fn ($q) => $q->where('programId', $program->id))
+                    ->whereNull('resolvedAt')
+                    ->whereNotIn('status', ['RESOLVED'])
+                    ->orderByRaw("CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END")
+                    ->orderBy('createdAt')
+                    ->limit(5)
+                    ->get(['id', 'title', 'severity', 'status']);
+
+                $kpis = KpiDefinition::query()
+                    ->where('programId', $program->id)
+                    ->where('isActive', true)
+                    ->orderBy('createdAt')
+                    ->limit(8)
+                    ->get(['id', 'name']);
+                $kpiValues = KpiValue::query()
+                    ->whereIn('kpiDefinitionId', $kpis->pluck('id'))
+                    ->orderBy('measurementDate')
+                    ->get(['kpiDefinitionId', 'targetValue', 'actualValue'])
+                    ->groupBy('kpiDefinitionId');
+
+                $programContext = [
+                    'id' => $program->id, 'name' => $program->name, 'code' => $program->code,
+                    'healthStatus' => $program->healthStatus, 'progressPercent' => (int) $program->progressPercent,
+                    'status' => $program->status,
+                    'activeBlockers' => $blockers->all(),
+                    'kpis' => $kpis->map(function ($k) use ($kpiValues) {
+                        $latest = $kpiValues->get($k->id)?->last();
+                        return [
+                            'id' => $k->id, 'name' => $k->name,
+                            'targetValue' => $latest && $latest->targetValue !== null ? (float) $latest->targetValue : 0,
+                            'actualValue' => $latest && $latest->actualValue !== null ? (float) $latest->actualValue : null,
+                        ];
+                    })->all(),
+                ];
+            }
+        }
+
+        // ── Continuity (re-use buildContinuity, di-adapt ke shape prep) ───────
+        $c = $this->buildContinuity($meeting);
+        $continuity = null;
+        if ($c['previousMeeting']) {
+            $unresolved = collect($c['unresolvedItems']);
+            $continuity = [
+                'previousMeeting' => [
+                    'id' => $c['previousMeeting']->id,
+                    'title' => $c['previousMeeting']->title,
+                    'startAt' => $c['previousMeeting']->startAt,
+                ],
+                'unresolvedCount' => $unresolved->count(),
+                'totalCount' => $c['totalItems'],
+                'completionRate' => $c['completionRate'],
+                'unresolvedItems' => $unresolved->map(fn ($i) => [
+                    'id' => $i['id'], 'title' => $i['title'],
+                    'status' => $i['status'], 'dueDate' => $i['dueDate'] ?? null,
+                ])->all(),
+            ];
+        }
+
+        return response()->json(['data' => [
+            'meetingId' => $meeting->id,
+            'rsvpSummary' => $rsvpSummary,
+            'programContext' => $programContext,
+            'continuity' => $continuity,
+        ]]);
     }
 
     // ── Private query helper ──────────────────────────────────────────────────

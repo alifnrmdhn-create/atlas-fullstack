@@ -100,14 +100,14 @@ const getTopik = (): Topik[] => [
     icon:      '📋',
     judul:     i18n.t('Create a work program'),
     ringkas:   i18n.t('Register a new strategic program or initiative in ATLAS'),
-    audience:  ['KADIV', 'KASUBDIV', 'ASISTEN', 'ADMIN'],
+    audience:  ['KADIV', 'KASUBDIV', 'ADMIN'],
     bacaMenit: 2,
-    apa:       i18n.t('A work program is the largest planning unit — a container for a strategic initiative that you will break down into Workstreams, Tasks, and KPIs. A KADIV can activate it directly; a KASUBDIV or ASISTEN needs approval from their superior.'),
+    apa:       i18n.t('A work program is the largest planning unit — a container for a strategic initiative that you will break down into Workstreams, Tasks, and KPIs. Only a KADIV or KASUBDIV (or an admin) can author a program and be its owner — ASISTEN and OFFICER are executors. A KADIV can activate it directly; a KASUBDIV needs approval from a KADIV.'),
     langkah: [
-      { judul: i18n.t('Open the Programs menu'),      deskripsi: i18n.t('Sidebar → Portfolio → Programs.') },
+      { judul: i18n.t('Open the Programs menu'),      deskripsi: i18n.t('Programs is pinned at the top of the sidebar.') },
       { judul: i18n.t('Click "+ Create Program"'),    deskripsi: i18n.t('Button in the top-right corner of the page.') },
-      { judul: i18n.t('Fill in the minimum fields'),  deskripsi: i18n.t('Code, Name, a short Description, and the program Year. The default owner is you.') },
-      { judul: i18n.t('Click Save'),                  deskripsi: i18n.t('The program is created. KADIV: immediately ACTIVE. KASUBDIV: status PENDING_KADIV. ASISTEN: status DRAFT (you then need to click "Submit for Approval").'), tip: i18n.t('As an ASISTEN, you can keep editing the draft before submitting it.') },
+      { judul: i18n.t('Fill in the minimum fields'),  deskripsi: i18n.t('Code, Name, a short Description, and the program Year. The default owner is you (KADIV/KASUBDIV).') },
+      { judul: i18n.t('Click Save'),                  deskripsi: i18n.t('The program is created. KADIV: immediately ACTIVE. KASUBDIV: status PENDING_KADIV, awaiting a KADIV’s approval.') },
     ],
     tips: [
       i18n.t('Once a program is ACTIVE, any change to commitment fields (target, deadline, KPI link) is recorded in the audit log and the relevant people are notified — this keeps everyone accountable.'),
@@ -120,9 +120,9 @@ const getTopik = (): Topik[] => [
     icon:      '✅',
     judul:     i18n.t('Approve or reject a program'),
     ringkas:   i18n.t('Review a program submitted by your team'),
-    audience:  ['KASUBDIV', 'KADIV', 'ADMIN'],
+    audience:  ['KADIV', 'ADMIN'],
     bacaMenit: 2,
-    apa:       i18n.t('Programs created by a KASUBDIV or ASISTEN need your review. As a KASUBDIV you are the first reviewer for an ASISTEN; as a KADIV you are the final reviewer.'),
+    apa:       i18n.t('Programs created by a KASUBDIV need a KADIV’s review before they go ACTIVE. As a KADIV you are the approver.'),
     langkah: [
       { judul: i18n.t('Open a notification or Focus'), deskripsi: i18n.t('A "Program awaiting your approval" item appears in Focus and the notification bell. Click it to open the program detail.') },
       { judul: i18n.t('Review the program content'),  deskripsi: i18n.t('Check the Summary tab: description, target, owner, KPI link. Check the Structure tab if Workstreams already exist.') },
@@ -139,12 +139,12 @@ const getTopik = (): Topik[] => [
     icon:      '🌳',
     judul:     i18n.t('Add Workstreams & Tasks'),
     ringkas:   i18n.t('Build the work hierarchy: Workstream → Phase → Task'),
-    audience:  ['KADIV', 'KASUBDIV', 'ASISTEN', 'OFFICER'],
+    audience:  ['KADIV', 'KASUBDIV', 'ADMIN'],
     bacaMenit: 3,
-    apa:       i18n.t('Once a program is ACTIVE, you break it down into work tracks (Workstreams), stages (Phases), and execution units (Tasks). Tasks are what appear on the Workboard and can be assigned to team members.'),
+    apa:       i18n.t('Once a program is ACTIVE, the owner (KADIV/KASUBDIV) breaks it down into work tracks (Workstreams), stages (Phases), and execution units (Tasks). Tasks are what appear on the Workboard and can be assigned to team members — including ASISTEN and OFFICER, who execute the work.'),
     langkah: [
       { judul: i18n.t('Open the Program detail'),      deskripsi: i18n.t('Click a program from the list, then open the Structure tab.') },
-      { judul: i18n.t('Add a Workstream'),             deskripsi: i18n.t('Click "+ New Workstream". Fill in the name, code, dates, and PIC.') },
+      { judul: i18n.t('Add a Workstream'),             deskripsi: i18n.t('Click "+ New Workstream". Fill in the name, code, priority, and dates. (Workstreams no longer have their own owner/PIC — accountability sits with the program PIC and each task’s assignee.)') },
       { judul: i18n.t('Add a Phase to the Workstream'), deskripsi: i18n.t('Click the Workstream, then "+ Add Phase". Give it a name (e.g. "Document Collection", "Analysis", "Report Drafting").') },
       { judul: i18n.t('Add a Task to the Phase'),      deskripsi: i18n.t('Click "+ Add Task" under the Phase. Fill in the title, priority, assignee, and target completion date.'), tip: i18n.t('The new Task appears on the assignee’s Workboard.') },
     ],
@@ -163,7 +163,7 @@ const getTopik = (): Topik[] => [
     bacaMenit: 2,
     apa:       i18n.t('The Workboard has four views: By Program (the default — tasks grouped under their program), Board (a kanban organized by schedule urgency: Overdue · At Risk · On Track · Not Started · Completed), List, and Blockers. You update a task from its detail panel — card positions are derived from schedule and progress, not dragged.'),
     langkah: [
-      { judul: i18n.t('Open the Workboard'),           deskripsi: i18n.t('Sidebar → Work → Workboard. Or use the shortcut G E.') },
+      { judul: i18n.t('Open the Workboard'),           deskripsi: i18n.t('Sidebar → My Work → Workboard. Or use the shortcut G E.') },
       { judul: i18n.t('Filter to your tasks'),         deskripsi: i18n.t('Use the "My Tasks" filter to see only the tasks assigned to you. Switch views (By Program / Board / List / Blockers) from the tabs at the top.') },
       { judul: i18n.t('Click a task card'),            deskripsi: i18n.t('The detail modal opens. Change the status from the Status dropdown and log your progress %.') },
       { judul: i18n.t('Mark it done with evidence'),   deskripsi: i18n.t('Move it to Completed and attach evidence — a link or a note. Its progress history (start, completion) is kept.'), tip: i18n.t('A backward transition (e.g. In Progress → Ready) requires a reason.') },
@@ -204,7 +204,7 @@ const getTopik = (): Topik[] => [
     bacaMenit: 2,
     apa:       i18n.t('An Assignment is an ad-hoc task from a superior to a team member, outside the Program structure. It usually comes with completion evidence (file, link, or note).'),
     langkah: [
-      { judul: i18n.t('Open the Assignment page'),     deskripsi: i18n.t('Sidebar → Work → Assignment. Or use the shortcut G A.') },
+      { judul: i18n.t('Open the Assignment page'),     deskripsi: i18n.t('Sidebar → My Work → Assignment. Or use the shortcut G A.') },
       { judul: i18n.t('Click "+ New Assignment"'),     deskripsi: i18n.t('Button in the top-right corner.') },
       { judul: i18n.t('Choose a recipient from the directory'), deskripsi: i18n.t('The system shows a preview of the approval chain if the recipient needs approval first.') },
       { judul: i18n.t('Fill in the details & send'),   deskripsi: i18n.t('Title, description, priority, target completion date, and the type of evidence expected. Click Send — the recipient is notified immediately.'), tip: i18n.t('If the recipient is in a different directorate, ATLAS asks for a justification (cross-directorate policy).') },
@@ -272,11 +272,15 @@ const getFaq = (): Array<{ q: string; a: string; link?: { anchor: string; label:
   },
   {
     q: i18n.t('Why don’t some sidebar menu items appear for me?'),
-    a: i18n.t('The sidebar is intent-based and role-aware — items are hidden automatically based on your access. Everyone sees Today (Home, Focus), Programs, and the Work group (Workboard, Assignment, Coordination, Channels, Presence). The Performance dashboards (Scorecard, Directorate & Division KPI) only appear for directorates with performance access; Executive Summary and the Leaderboard are SUPERADMIN-only; the Admin group is visible only to admins. You can still reach a page via its direct URL if you know the link, but the content may be empty or limited according to policy.'),
+    a: i18n.t('The sidebar is intent-based and role-aware — items are hidden automatically based on your access. Everyone sees the pinned top of the sidebar (Home, Focus, Programs) and the My Work group (Workboard, Assignment, Coordination, Channels, Presence). The Performance group (Scorecard, Directorate & Division KPI) only appears for directorates with performance access, and is hidden entirely otherwise; Executive Summary and the Leaderboard are SUPERADMIN-only; the Admin group is visible only to admins. You can still reach a page via its direct URL if you know the link, but the content may be empty or limited according to policy.'),
   },
   {
     q: i18n.t('How do I switch language or turn on dark mode?'),
     a: i18n.t('Open Settings from your avatar menu (bottom of the sidebar). Under Appearance, choose Light, Dark, or System (which follows your device). Under Language, switch between English and Bahasa Indonesia — the whole interface, including status labels, updates instantly. Your choices are saved on this device.'),
+  },
+  {
+    q: i18n.t('How do I look up a teammate or mention them?'),
+    a: i18n.t('Click any person — their name or avatar, anywhere in ATLAS (Presence, Channels, an assignment, a task comment, a meeting) — to open a read-only profile card showing their position, supervisor, and current workload. Click their photo to view it full-size. In a task or program discussion, type @ to mention a teammate; they get a notification linking straight to the comment.'),
   },
   {
     q: i18n.t('How do I get around on my phone?'),

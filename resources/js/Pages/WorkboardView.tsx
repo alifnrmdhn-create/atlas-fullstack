@@ -718,7 +718,11 @@ export function WorkboardView() {
                 {boardStatus.message}
               </div>
             ) : null}
-            {!roleAccess.isMonitoringOnly && (
+            {/* Gate ke canCreateProgram (mirror BE TaskController::store →
+                RolePolicy::canCreateProgram). `!isMonitoringOnly` lama keliru:
+                ASISTEN/OFFICER ikut melihat tombol padahal BE 403 sejak
+                pengetatan author-plan 26 Jun → CTA mati untuk mereka. */}
+            {roleAccess.canCreateProgram && (
               <Button
                 variant="primary"
                 size="sm"

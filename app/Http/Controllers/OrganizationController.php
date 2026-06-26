@@ -22,6 +22,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -324,13 +325,20 @@ class OrganizationController extends Controller
     {
         RolePolicy::canManageUsers($request->user()->roleType) || abort(403);
         $position = Position::findOrFail($id);
-        // Unassign users from this position first
-        User::where('positionId', $id)->update(['positionId' => null]);
-        // Reparent anak ke kakek (atasan posisi yang dihapus) agar rantai tetap
-        // utuh dan pointer tak menggantung — bukan di-null-kan.
-        Position::where('reportsToPositionId', $id)
-            ->update(['reportsToPositionId' => $position->reportsToPositionId]);
-        $position->delete();
+
+        // Atomik: unassign holder + reparent anak + delete harus all-or-nothing.
+        // Sebelumnya tanpa transaksi, bila delete gagal (mis. FK position_history)
+        // unassign/reparent sudah ter-commit → hierarki rusak separuh. position_history
+        // kini cascadeOnDelete (lihat migration 2026_06_26) sehingga delete tak lagi
+        // 23503, tapi transaksi tetap melindungi dari kegagalan tak terduga.
+        DB::transaction(function () use ($id, $position) {
+            User::where('positionId', $id)->update(['positionId' => null]);
+            // Reparent anak ke kakek (atasan posisi yang dihapus) agar rantai tetap
+            // utuh dan pointer tak menggantung — bukan di-null-kan.
+            Position::where('reportsToPositionId', $id)
+                ->update(['reportsToPositionId' => $position->reportsToPositionId]);
+            $position->delete();
+        });
 
         $this->orgHierarchy->recompute();
 

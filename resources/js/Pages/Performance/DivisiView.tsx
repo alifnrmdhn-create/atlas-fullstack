@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useInertiaNavigate } from '../../hooks/useInertiaNavigate'
 import { Card, Pill } from '../../design-system'
 import { useState } from 'react'
-import { scoreTone, realisasiPercent, formatNumber, formatPercent, formatPeriod, bulletPct } from './_shared'
+import { scoreTone, realisasiPercent, formatNumber, formatPercent, formatPeriod, bulletPct, perspektifLabel } from './_shared'
 import { KpiScoreTable, DeviationBar, type ScoreGroup } from './KpiScoreTable'
 import { InsightPanel, type InsightPayload } from './InsightPanel'
 import { ExceptionsCard, type ExceptionRow } from './ExceptionsCard'
@@ -257,8 +257,8 @@ function DivisiCompareCard({ div }: { div: DivisiCompare }) {
         ) : (
           div.perspektif.map(p => (
             <div key={p.nama} className="perf-compare-card__kpi">
-              <span className="perf-compare-card__kpi-name" title={`${p.nama} · ${t('weight {{pct}}%', { pct: formatNumber(p.bobot, 0) })}`}>
-                {p.nama}
+              <span className="perf-compare-card__kpi-name" title={`${perspektifLabel(p.nama)} · ${t('weight {{pct}}%', { pct: formatNumber(p.bobot, 0) })}`}>
+                {perspektifLabel(p.nama)}
               </span>
               {p.pct == null ? (
                 <span className="perf-compare-card__kpi-empty">—</span>
@@ -302,7 +302,7 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
       if (lowestFirst) items = [...items].sort((a, b) => itemPct(a) - itemPct(b))
       return {
         key: g.perspektif,
-        label: g.perspektif,
+        label: perspektifLabel(g.perspektif),
         color: PERSPEKTIF_COLOR[g.perspektif] ?? 'var(--ds-text-tertiary)',
         bobot: items.reduce((s, i) => s + i.bobot, 0),
         pct: g.pct,
@@ -385,8 +385,8 @@ function SingleView({ divisi, direktorat, peers, kpiItems, topPerformers, insigh
                 <div className="perf-bullet-rows">
                   {tableGroupsAll.map(g => (
                     <div key={g.key} className="perf-bullet-row perf-bullet-row--static">
-                      <span className="perf-bullet-row__code" title={g.label}>
-                        {g.label === 'Internal Business Process' ? 'IBP' : g.label}
+                      <span className="perf-bullet-row__code" title={perspektifLabel(g.label)}>
+                        {perspektifLabel(g.label)}
                       </span>
                       <span className="perf-bullet perf-bullet--mini" aria-hidden>
                         <span className="perf-bullet__target" />

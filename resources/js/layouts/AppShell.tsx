@@ -880,9 +880,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
   }, [wsMenuOpen])
   // Tutup popover saat pindah halaman supaya tidak menggantung.
   useEffect(() => { setWsMenuOpen(false) }, [activePath])
-  // Scope ringkas untuk sub-line chip: direktorat user > unit > Holding.
-  const wsScope = currentUser?.directorate?.code ?? currentUser?.unit?.code ?? t('Holding')
-
   const NOTIF_TYPE_LABEL: Record<string, string> = {
     MENTION: t('Mention'), APPROVAL: t('Approval'),
     BLOCKER_CREATED: t('Blocker'), TASK_ASSIGNED: t('Task'),
@@ -1228,11 +1225,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
               </svg>
             </span>
             <span className="sidebar__brand-name">
-              <span className="sidebar__brand-titlerow">
-                <span className="sidebar__brand-title" title="Advanced Transformation &amp; Leadership Alignment System">ATLAS</span>
-                <span className="sidebar__brand-chip">{t('Holding')}</span>
-              </span>
-              <span className="sidebar__brand-tagline" aria-label={t('PTPN III Holding workspace')}>PTPN III · {wsScope}</span>
+              <span className="sidebar__brand-title" title="Advanced Transformation &amp; Leadership Alignment System" aria-label={t('PTPN III Holding workspace')}>ATLAS</span>
             </span>
             <span className="sidebar__brand-chev" aria-hidden="true">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">

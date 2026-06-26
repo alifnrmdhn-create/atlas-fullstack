@@ -260,7 +260,7 @@ export function MonthlyReportsView() {
               <div className="mr-index__cards">
                 {rows.map(r => {
                   const st         = STATUS[r.status] ?? STATUS.DRAFT
-                  const cnt        = r._count?.metrics ?? 0
+                  const cnt        = r.metrics_count ?? 0
                   const approvable = canApprove(r)
                   return (
                     <div key={r.id} className={`mr-card ${st.row}${approvable ? ' needs-action' : ''}`}>

@@ -19,6 +19,7 @@ type PositionRecord = {
   code?: string
   levelCode?: string
   level?: number
+  roleType?: string
   isActive: boolean
   reportsToPositionId?: number | null
   reportsTo?: { id: number; code: string; name: string } | null
@@ -143,7 +144,10 @@ export function AdminPositionsView() {
       code: pos.code ?? '',
       name: pos.title,
       levelCode: pos.levelCode ?? 'BOD-4',
-      roleType: pos.currentHolder?.roleType ?? 'ASISTEN',
+      // Prefill dari roleType POSISI (sumber kebenaran yg di-persist balik), bukan
+      // dari pemegang. Posisi KOSONG dulu jatuh ke 'ASISTEN' → edit field apa pun
+      // diam-diam menurunkan kursi KADIV/KASUBDIV jadi ASISTEN (data-corruption).
+      roleType: pos.roleType ?? pos.currentHolder?.roleType ?? 'ASISTEN',
       directorateId: String(pos.directorate?.id ?? ''),
       divisionId: String(pos.unit?.id ?? ''),
       reportsToPositionId: String(pos.reportsToPositionId ?? ''),
@@ -182,14 +186,20 @@ export function AdminPositionsView() {
   // Delete position
   const [confirmDeletePosId, setConfirmDeletePosId] = useState<number | null>(null)
   const [deletePosSaving, setDeletePosSaving] = useState(false)
+  const [deletePosError, setDeletePosError] = useState<string | null>(null)
 
   const handleDeletePos = async (id: number) => {
     setDeletePosSaving(true)
+    setDeletePosError(null)
     try {
       await api.delete(`/organization/positions/${id}`)
       setConfirmDeletePosId(null)
       loadPositions()
-    } catch { /* ignore */ } finally {
+    } catch (err) {
+      // Dulu ditelan diam → tombol seakan mati. Surface-kan supaya admin tahu
+      // kenapa gagal (mis. sisa keterkaitan / error server).
+      setDeletePosError(err instanceof Error ? err.message : t('Failed to delete position.'))
+    } finally {
       setDeletePosSaving(false)
     }
   }
@@ -337,6 +347,7 @@ export function AdminPositionsView() {
           <p className="text-muted text-sm admin-state-copy admin-state-copy--center">{t('No position data.')}</p>
         )}
         {!error && (loading || positions.length > 0) && (
+          <div className="table-scroll">
           <table className="reports-table">
             <thead>
               <tr>
@@ -418,14 +429,14 @@ export function AdminPositionsView() {
                       <button className="btn btn--sm btn--ghost" onClick={() => openEditPos(pos)}>{t('Edit')}</button>
                       <button
                         className="btn btn--sm btn--ghost admin-row-status-btn admin-row-status-btn--danger"
-                        onClick={() => setConfirmDeletePosId(confirmDeletePosId === pos.id ? null : pos.id)}
+                        onClick={() => { setDeletePosError(null); setConfirmDeletePosId(confirmDeletePosId === pos.id ? null : pos.id) }}
                       >
                         {t('Delete')}
                       </button>
                     </div>
                     {confirmDeletePosId === pos.id && (
                       <div className="admin-inline-confirm">
-                        <span className="admin-inline-confirm__label">{t('Delete this?')}</span>
+                        <span className="admin-inline-confirm__label">{deletePosError ?? t('Delete this?')}</span>
                         <button
                           className="btn btn--sm btn--danger admin-inline-confirm__btn"
                           disabled={deletePosSaving}
@@ -447,6 +458,7 @@ export function AdminPositionsView() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

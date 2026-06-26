@@ -463,6 +463,26 @@
 .reports-table tr:last-child td { border-bottom: none; }
 .reports-table tr:hover td { background: var(--surface-1); }
 
+/* Inner-scroll + sticky thead untuk tabel record panjang (opt-in lewat wrapper
+   <div class="table-scroll">). Header kolom tetap terlihat saat baris di-scroll;
+   scroll terjadi di dalam tabel, bukan seluruh halaman. --surface-1 solid jadi
+   baris tak menembus header. box-shadow menggantikan border-bottom th yang
+   "hilang" karena border-collapse saat sticky. */
+.table-scroll {
+  max-height: clamp(360px, calc(100dvh - 300px), 760px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.table-scroll .reports-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  box-shadow: inset 0 -1px 0 var(--panel-border);
+}
+@media (max-width: 640px) { /* bp-allow: --bp-sm — di HP tabel jadi kartu, jangan kurung scroll */
+  .table-scroll { max-height: none; overflow: visible; }
+}
+
 /* M4 mobile (≤640): tabel record klasik → kartu bertumpuk. Setiap <tr> jadi
  * kartu, tiap <td> jadi baris "Label: nilai" (label dari atribut data-label di
  * td). Sel tanpa data-label (mis. kolom aksi) tampil sebagai baris aksi penuh.

@@ -23,6 +23,21 @@ export function bulletPct(val: number): number {
   return Math.min(Math.max(((val - 90) / 20) * 100, 0), 100)
 }
 
+/**
+ * Label perspektif BSC — EJA PENUH, sumber tunggal (anti singkatan opaque +
+ * anti-drift). Mandat 2026-06-26: "langsung paham IBP/L&G apa". Backend simpan
+ * 'L&G' (lihat normPerspektif) → di-decode ke 'Learning & Growth'; 'Internal
+ * Business Process' & sisanya sudah penuh. JANGAN tampilkan 'IBP'/'L&G' mentah
+ * sebagai label utama.
+ */
+export function perspektifLabel(p: string): string {
+  switch (p) {
+    case 'L&G': return 'Learning & Growth'
+    case 'IBP': return 'Internal Business Process'
+    default: return p
+  }
+}
+
 /** Compute percentage achievement of target with polarity. */
 export function realisasiPercent(
   sasaran: string | number,

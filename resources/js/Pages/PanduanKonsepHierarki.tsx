@@ -77,7 +77,7 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
                   <div>
                     <span className="phx-node-tag">{t('WORKSTREAM A')}</span>
                     <h4 className="phx-node-title">{t('Finance Division Audit')}</h4>
-                    <p className="phx-node-meta">{t('PIC: KASUBDIV Finance Audit · Mar–Apr')}</p>
+                    <p className="phx-node-meta">{t('Finance area · Mar–Apr')}</p>
                   </div>
                 </div>
 
@@ -134,7 +134,7 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
                   <div>
                     <span className="phx-node-tag">{t('WORKSTREAM B')}</span>
                     <h4 className="phx-node-title">{t('Production Division Audit')}</h4>
-                    <p className="phx-node-meta">{t('PIC: KASUBDIV Production Audit · Apr–May (parallel with A)')}</p>
+                    <p className="phx-node-meta">{t('Production area · Apr–May (parallel with A)')}</p>
                   </div>
                 </div>
                 <p className="phx-node-collapsed">{t('+ 3 Phases, 8 Tasks')} <span>{t('(structure similar to Workstream A)')}</span></p>
@@ -146,7 +146,7 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
                   <div>
                     <span className="phx-node-tag">{t('WORKSTREAM C')}</span>
                     <h4 className="phx-node-title">{t('Consolidation & Final Reporting')}</h4>
-                    <p className="phx-node-meta">{t('PIC: KADIV Audit · May–Jun (after A & B)')}</p>
+                    <p className="phx-node-meta">{t('Consolidation · May–Jun (after A & B)')}</p>
                   </div>
                 </div>
                 <p className="phx-node-collapsed">{t('+ 2 Phases, 5 Tasks')}</p>
@@ -178,21 +178,21 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
                   <td><strong>{t('Program')}</strong></td>
                   <td>{t('Strategy')}</td>
                   <td>{t('6–12 months')}</td>
-                  <td>KADIV / KASUBDIV / ASISTEN</td>
+                  <td>KADIV / KASUBDIV</td>
                   <td>{t('Programs menu')}</td>
                 </tr>
                 <tr>
                   <td><strong>{t('Workstream')}</strong></td>
                   <td>{t('Area / Team')}</td>
                   <td>{t('2–4 months')}</td>
-                  <td>KASUBDIV</td>
+                  <td>{t('Program PIC (no separate PIC)')}</td>
                   <td>{t('Structure tab (in the Program detail)')}</td>
                 </tr>
                 <tr>
                   <td><strong>{t('Phase')}</strong></td>
                   <td>{t('Stage')}</td>
                   <td>{t('2–4 weeks')}</td>
-                  <td>{t('Same as the Workstream owner')}</td>
+                  <td>{t('Program PIC (no separate PIC)')}</td>
                   <td>{t('Structure tab (nested)')}</td>
                 </tr>
                 <tr>
@@ -251,7 +251,7 @@ export default function PanduanKonsepHierarki({ onBack }: Props) {
               </div>
             </header>
             <p className="phx-level-body">
-              <strong>{t('A Workstream splits a Program into parallel tracks.')}</strong> {t('Each Workstream usually owns one area (e.g. Finance Audit vs Production Audit) and has its own PIC (typically a KASUBDIV). A Workstream')} <em>{t('does not wait')}</em> {t('for another to finish — they run at the same time, unless there is an explicit dependency.')}
+              <strong>{t('A Workstream splits a Program into parallel tracks.')}</strong> {t('Each Workstream usually covers one area (e.g. Finance Audit vs Production Audit). It no longer carries its own owner/PIC — accountability stays with the program PIC (KADIV/KASUBDIV) and each task’s assignee. A Workstream')} <em>{t('does not wait')}</em> {t('for another to finish — they run at the same time, unless there is an explicit dependency.')}
             </p>
             <div className="phx-example">
               <span className="phx-example-label">{t('Example:')}</span>

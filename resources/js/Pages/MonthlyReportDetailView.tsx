@@ -69,14 +69,14 @@ function HeroCard({ m }: { m: Metric; year: number }) {
 
   return (
     <div className={`mrd-hero-card ${tint}`}>
-      <div className="mrd-hero-label">{m.label}</div>
+      <div className="mrd-hero-label">{m.label === 'NOCF' ? 'Net Operating Cash Flow' : m.label}</div>
       <div className={`mrd-hero-val ${isNeg ? 'neg' : ''}`}>{val}</div>
       {m.rkap != null && n(m.rkap) !== 0 && (
-        <div className="mrd-hero-target">vs {fmtRp(m.rkap, m.satuan)} RKAP</div>
+        <div className="mrd-hero-target">vs {fmtRp(m.rkap, m.satuan)} <span title="Rencana Kerja & Anggaran Perusahaan">RKAP</span></div>
       )}
       <div className="mrd-hero-badges">
         {pRkap != null && (
-          <span className={`mrd-hero-badge rkap ${cls}`}>
+          <span className={`mrd-hero-badge rkap ${cls}`} title="Rencana Kerja & Anggaran Perusahaan">
             {pRkap >= 100 ? '▲' : '▼'} {pRkap}% RKAP
           </span>
         )}
@@ -125,7 +125,7 @@ function RatioCard({ m, year }: { m: Metric; year: number }) {
         </div>
         <div className="mrd-ratio-benchmarks">
           <span className="mrd-ratio-bench">
-            <span className="mrd-ratio-bench-lbl">RKAP</span>
+            <span className="mrd-ratio-bench-lbl" title="Rencana Kerja & Anggaran Perusahaan">RKAP</span>
             <span className="mrd-ratio-bench-val">{fmtVal(m.rkap, m.satuan)}</span>
           </span>
           <span className="mrd-ratio-bench">
@@ -218,9 +218,9 @@ function FullDataTable({ metrics, month, year }: { metrics: Metric[]; month: num
                   <th>{t('Description')}</th>
                   <th>{t('Unit')}</th>
                   <th className="mrd-table__th--right">{prevYrLabel(year)}</th>
-                  <th className="mrd-table__th--right">RKAP</th>
+                  <th className="mrd-table__th--right" title="Rencana Kerja & Anggaran Perusahaan">RKAP</th>
                   <th className="mrd-table__th--right">{periodLabel(month, year)}</th>
-                  <th className="mrd-table__th--right">% RKAP</th>
+                  <th className="mrd-table__th--right" title="% capaian vs Rencana Kerja & Anggaran Perusahaan">% RKAP</th>
                   <th className="mrd-table__th--right">% YoY</th>
                 </tr>
               </thead>
@@ -813,9 +813,13 @@ export function MonthlyReportDetailView() {
   const loadReport = useCallback(() => {
     if (!reportId) return
     setLoading(true); setError(null)
-    api.get<{ data: Report }>(`/monthly-reports/${reportId}`)
+    api.get<{ data: Report; linkedPrograms?: Report['linkedPrograms'] }>(`/monthly-reports/${reportId}`)
       .then(r => {
-        setReport(r.data)
+        // BE mengirim linkedPrograms sebagai SIBLING dari `data` (bukan di dalam
+        // report). Tanpa di-merge, panel "Linked Programs" selalu kosong, tombol
+        // "Import from Atlas" tak pernah muncul, DAN menyimpan editor mengirim
+        // linkedProgramIds:[] → menghapus link yang ada (data-loss).
+        setReport({ ...r.data, linkedPrograms: r.linkedPrograms ?? [] })
         setNarrativeForm({ narrativeSummary: r.data.narrativeSummary ?? '', highlights: r.data.highlights ?? '' })
       })
       .catch(e => setError(e instanceof Error ? e.message : t('Failed to load report')))
@@ -1096,8 +1100,8 @@ export function MonthlyReportDetailView() {
                     {t('✓ Approved')} {new Date(lastApproval.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </span>
                 )}
-                {(report._count?.metrics ?? 0) > 0 && (
-                  <span className="mrd-cover__count">{t('{{count}} indicators', { count: report._count!.metrics })}</span>
+                {(report.metrics_count ?? 0) > 0 && (
+                  <span className="mrd-cover__count">{t('{{count}} indicators', { count: report.metrics_count })}</span>
                 )}
               </div>
             </div>

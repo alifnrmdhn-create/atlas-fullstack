@@ -46,7 +46,10 @@ export default function Login({ errors: _pageErrors }: PageProps) {
     const [isSuccess, setIsSuccess] = useState(false)
     const [isExiting, setIsExiting] = useState(false)
 
-    const authError = errors.identifier ?? null
+    // Server melempar error kredensial di key `identifier`, tapi gagal-`required`
+    // password masuk ke `errors.password`. Tanpa membaca keduanya, submit dengan
+    // password kosong = diam tanpa pesan apa pun (dead-end).
+    const authError = errors.identifier ?? errors.password ?? null
 
     useEffect(() => {
         if (!isSuccess) return
@@ -133,6 +136,7 @@ export default function Login({ errors: _pageErrors }: PageProps) {
                                     autoComplete="username"
                                     onChange={(e) => setData('identifier', e.target.value)}
                                     placeholder=" "
+                                    required
                                     type="text"
                                     value={data.identifier}
                                 />
@@ -146,6 +150,7 @@ export default function Login({ errors: _pageErrors }: PageProps) {
                                     autoComplete="current-password"
                                     onChange={(e) => setData('password', e.target.value)}
                                     placeholder=" "
+                                    required
                                     type={showPassword ? 'text' : 'password'}
                                     value={data.password}
                                 />

@@ -355,6 +355,7 @@ export function AdminUsersView() {
           </p>
         )}
         {!error && (loading || users.length > 0) && (
+          <div className="table-scroll">
           <table className="reports-table">
             <thead>
               <tr>
@@ -433,6 +434,7 @@ export function AdminUsersView() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

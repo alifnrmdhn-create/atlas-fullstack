@@ -19,7 +19,9 @@ export type Report = {
   submittedAt: string | null; submittedBy: UserRef | null; unit: UnitRef
   linkedProgramIds?: number[]; linkedPrograms?: ProgramRef[]
   metrics?: Metric[]; files?: ReportFile[]; approvals?: Approval[]
-  _count?: { metrics: number; files: number }
+  // Laravel withCount(['metrics','files']) → `metrics_count`/`files_count`.
+  // (Dulu typo `_count` ala Prisma yang TAK pernah dikirim BE → count selalu 0.)
+  metrics_count?: number; files_count?: number
 }
 
 // Shared helpers
@@ -31,6 +33,11 @@ export const YEARS    = [CY, CY - 1, CY - 2]
 export const STATUS: Record<string, { label: string; cls: string; row: string; color: string }> = {
   DRAFT:     { label: 'Draft',      cls: 'draft',     row: 'draft',     color: 'var(--text-muted)' },
   SUBMITTED: { label: 'Submitted',  cls: 'submitted', row: 'submitted', color: 'var(--yellow)' },
+  // DIMR/risk report memakai alur berjenjang PENDING_KASUB → PENDING_KADIV.
+  // Tanpa entri ini, fallback `?? STATUS['APPROVED']` membuat laporan PENDING
+  // tampil badge hijau "Approved" (menyesatkan approver).
+  PENDING_KASUB: { label: 'Awaiting Sub-Division Head', cls: 'submitted', row: 'submitted', color: 'var(--yellow)' },
+  PENDING_KADIV: { label: 'Awaiting Division Head',     cls: 'submitted', row: 'submitted', color: 'var(--yellow)' },
   REVIEWED:  { label: 'Reviewed',   cls: 'reviewed',  row: 'reviewed',  color: 'var(--blue)' },
   APPROVED:  { label: 'Approved',   cls: 'approved',  row: 'approved',  color: 'var(--green)' },
   REJECTED:  { label: 'Rejected',   cls: 'rejected',  row: 'rejected',  color: 'var(--red)' },

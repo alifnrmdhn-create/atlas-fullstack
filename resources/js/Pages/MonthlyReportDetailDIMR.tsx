@@ -509,7 +509,9 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
   const lossEvents = report.lossEvents    ?? []
   const narratives = report.narratives    ?? []
 
-  const st = STATUS[report.status] ?? STATUS['APPROVED']!
+  // Fallback ke DRAFT (netral), BUKAN APPROVED — status tak dikenal jangan
+  // pernah menyamar jadi badge hijau "Approved".
+  const st = STATUS[report.status] ?? STATUS['DRAFT']!
   const isDraft = report.status === 'DRAFT'
 
   // Summary strip
@@ -606,21 +608,42 @@ export function MonthlyReportDetailDIMR({ report, onBack, onRefresh, userRole }:
             </>
           )}
           {canApprove && (
-            <button
-              className="mrd-btn green"
-              disabled={busy}
-              onClick={async () => {
-                if (!confirm(t('Approve this risk report?'))) return
-                setBusy(true)
-                try {
-                  await api.post(`/risk-reports/${report.id}/approve`, { action: 'APPROVED' })
-                  onRefresh()
-                } catch (e) { alert(e instanceof Error ? e.message : t('Failed to approve')) }
-                finally { setBusy(false) }
-              }}
-            >
-              {busy ? '…' : t('✓ Approve')}
-            </button>
+            <>
+              <button
+                className="mrd-btn green"
+                disabled={busy}
+                onClick={async () => {
+                  if (!confirm(t('Approve this risk report?'))) return
+                  setBusy(true)
+                  try {
+                    // BE memvalidasi action in:APPROVE,REJECT — JANGAN kirim 'APPROVED'
+                    // (drift lama → 422 di tiap klik, approval DIMR tak pernah jalan).
+                    await api.post(`/risk-reports/${report.id}/approve`, { action: 'APPROVE' })
+                    onRefresh()
+                  } catch (e) { alert(e instanceof Error ? e.message : t('Failed to approve')) }
+                  finally { setBusy(false) }
+                }}
+              >
+                {busy ? '…' : t('✓ Approve')}
+              </button>
+              <button
+                className="mrd-btn"
+                disabled={busy}
+                onClick={async () => {
+                  const note = window.prompt(t('Reason for rejection (sent back to the PIC):'))
+                  if (note === null) return
+                  if (note.trim() === '') { alert(t('A rejection reason is required.')); return }
+                  setBusy(true)
+                  try {
+                    await api.post(`/risk-reports/${report.id}/approve`, { action: 'REJECT', note: note.trim() })
+                    onRefresh()
+                  } catch (e) { alert(e instanceof Error ? e.message : t('Failed to reject')) }
+                  finally { setBusy(false) }
+                }}
+              >
+                {busy ? '…' : t('✕ Reject')}
+              </button>
+            </>
           )}
           <button className="mrd-btn" onClick={() => window.print()}>{t('⎙ Print')}</button>
         </div>

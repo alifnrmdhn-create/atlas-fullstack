@@ -1,7 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react'
 import { useTranslation } from 'react-i18next'
 import { Card, Pill } from '../../design-system'
-import { scoreTone, fillRatio, formatNumber, formatPercent, formatPeriod, formatVal, bulletPct } from './_shared'
+import { scoreTone, fillRatio, formatNumber, formatPercent, formatPeriod, formatVal, bulletPct, perspektifLabel } from './_shared'
 import { KpiTrendChart, type KpiTrendPayload } from './KpiTrendChart'
 import { ExceptionsCard, type ExceptionRow } from './ExceptionsCard'
 import './Performance.css'
@@ -42,12 +42,13 @@ function cellIntensity(v: number): number {
   return Math.min(Math.max((100 - v) / 22, 0.18), 0.6)
 }
 
-// Urutan + label pendek kolom perspektif BSC di matriks.
-const MATRIX_COLS: Array<{ key: string; label: string }> = [
-  { key: 'Financial', label: 'Financial' },
-  { key: 'Customer', label: 'Customer' },
-  { key: 'Internal Business Process', label: 'IBP' },
-  { key: 'L&G', label: 'L&G' },
+// Urutan perspektif BSC di matriks. Label di-render EJA PENUH via perspektifLabel
+// (mandat "langsung paham") — key = string kanonik data (match perspektif[c.key]).
+const MATRIX_COLS: Array<{ key: string }> = [
+  { key: 'Financial' },
+  { key: 'Customer' },
+  { key: 'Internal Business Process' },
+  { key: 'L&G' },
 ]
 
 /** Rank row with inline proportion bar — fills wide-column whitespace
@@ -286,7 +287,7 @@ export default function ScorecardView() {
             <div className="perf-cockpit perf__section">
             <section>
               <div className="perf-section-head">
-                <span className="perf__section-label">{t('BSC Perspective × Division')}</span>
+                <span className="perf__section-label">{t('Perspective × Division')}</span>
                 <span className="perf-section-meta">{t('click a division to drill down')}</span>
               </div>
               <Card padding="none" className="perf-matrix-card">
@@ -460,7 +461,7 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
     <div
       className="perf-matrix perf-matrix--transposed"
       role="table"
-      aria-label={t('BSC perspective by division achievement')}
+      aria-label={t('Perspective by division achievement')}
       // Jumlah kolom eksplisit — auto-fit membuat sel wrap ke baris implisit
       // saat sempit, bukan memicu scroll-x.
       style={{ ['--matrix-cols' as never]: rows.length }}
@@ -482,7 +483,7 @@ function ScoreMatrix({ rows }: { rows: MatrixRow[] }) {
 
       {perspectives.map(p => (
         <div key={p.key} className="perf-matrix__row" role="row">
-          <span className="perf-matrix__rowlabel" role="cell" title={p.key}>{p.label}</span>
+          <span className="perf-matrix__rowlabel" role="cell">{perspektifLabel(p.key)}</span>
           {rows.map(r => {
             const v = r.perspektif[p.key]
             return (

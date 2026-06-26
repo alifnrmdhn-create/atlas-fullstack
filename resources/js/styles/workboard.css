@@ -552,6 +552,30 @@
   min-height: 100px;
   flex: 1;
 }
+
+/* ── Inner-scroll: lane/list header tetap terlihat saat daftar panjang ─────────
+   Berlaku untuk Workboard & Assignments (keduanya di .workboard-main); Programs
+   Board pakai .program-kanban → tak tersentuh. Pola: header (lane / panel) di
+   luar area scroll, jadi tetap menempel tanpa position:sticky. Kolom dibatasi
+   tinggi viewport → body-nya yang scroll, bukan seluruh halaman. */
+.workboard-main .kanban-col {
+  max-height: clamp(420px, calc(100dvh - 240px), 1200px);
+}
+.workboard-main .kanban-col__body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* List mode: header panel (judul + count) tetap, baris yang scroll. */
+.workboard-main .wi-list {
+  max-height: clamp(420px, calc(100dvh - 260px), 1200px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@media (max-width: 640px) { /* bp-allow: --bp-sm — versi HP punya komponen sendiri (WorkboardMobile); jangan kurung scroll desktop */
+  .workboard-main .kanban-col { max-height: none; }
+  .workboard-main .kanban-col__body,
+  .workboard-main .wi-list { overflow-y: visible; max-height: none; }
+}
 .kanban-col__empty {
   margin: 6px 2px;
   padding: 24px 12px;
