@@ -73,4 +73,42 @@ class EscalationRequest extends Model
     {
         return in_array($this->status, ['CLEARED', 'DECLINED', 'REROUTED'], true);
     }
+
+    /**
+     * Blocker-id & program-id yang sedang DALAM pipeline Clear the Path — punya
+     * escalation aktif (status belum CLEARED/DECLINED). Dipakai Focus untuk
+     * MENEKAN nag "critical blockers need escalation" (di needsAction maupun feed
+     * NOW): begitu seseorang sudah angkat eskalasi, sinyalnya pindah ke tracker
+     * "Escalations I Raised" — bukan di-nag terus untuk meng-eskalasi yang sudah
+     * dieskalasi (loop melingkar). DECLINED tidak menekan: eskalasi yang ditolak
+     * berarti masalahnya kembali butuh jalur lain → nag boleh muncul lagi.
+     *
+     * Match: source BLOCKER presisi (sourceId = blocker) ATAU linkedProgram untuk
+     * eskalasi BLOCKER/AD_HOC (kompat jalur AD_HOC lama yang tak menyimpan sourceId
+     * blocker). PROGRESS_LOG/ACTION_ITEM TIDAK menekan blocker — beda concern.
+     *
+     * @param  array<int>  $blockerIds
+     * @param  array<int>  $programIds
+     * @return array{blockerIds: \Illuminate\Support\Collection, programIds: \Illuminate\Support\Collection}
+     */
+    public static function activeCoverage(array $blockerIds, array $programIds): array
+    {
+        if (empty($blockerIds) && empty($programIds)) {
+            return ['blockerIds' => collect(), 'programIds' => collect()];
+        }
+
+        $rows = static::query()
+            ->whereNotIn('status', ['CLEARED', 'DECLINED'])
+            ->where(function ($q) use ($blockerIds, $programIds) {
+                $q->where(fn ($qq) => $qq->where('sourceType', 'BLOCKER')->whereIn('sourceId', $blockerIds ?: [0]))
+                  ->orWhere(fn ($qq) => $qq->whereIn('sourceType', ['BLOCKER', 'AD_HOC'])->whereIn('linkedProgramId', $programIds ?: [0]));
+            })
+            ->get(['sourceType', 'sourceId', 'linkedProgramId']);
+
+        return [
+            // `flip()` → value jadi key supaya `->has($id)` = test keanggotaan O(1).
+            'blockerIds' => $rows->where('sourceType', 'BLOCKER')->pluck('sourceId')->filter()->unique()->flip(),
+            'programIds' => $rows->pluck('linkedProgramId')->filter()->unique()->flip(),
+        ];
+    }
 }

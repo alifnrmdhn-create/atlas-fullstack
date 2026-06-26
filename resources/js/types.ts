@@ -624,6 +624,10 @@ export type NeedsActionItem = {
   reason: string
   tag: 'approval' | 'blocker' | 'support'
   divisi: string
+  /** Blocker sumber (tag='blocker') — eskalasi dari panel link ke sini (sourceType=BLOCKER). */
+  blockerId?: number
+  /** True bila user = owner/PIC program → aksi "Give support to the PIC" disembunyikan. */
+  isOwner?: boolean
 }
 
 export type StagnantProgram = {

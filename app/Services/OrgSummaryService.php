@@ -181,25 +181,49 @@ class OrgSummaryService
                 'divisi' => $units->firstWhere('id', $p->ownerUnitId)?->code ?? '-',
             ]);
 
-        // Programs with critical blockers (via createdByUnitId path)
-        $criticalBlockers = Blocker::query()
+        // Programs with critical blockers (via createdByUnitId path).
+        // Blocker open + severity CRITICAL/HIGH dalam scope. Yang SUDAH punya
+        // escalation aktif (sedang di-clear-the-path) di-DROP di sini — rumahnya
+        // pindah ke tracker "Escalations I Raised"; tanpa ini atasan yang sudah
+        // eskalasi tetap di-nag "critical blockers need escalation" (loop melingkar
+        // — keluhan user Jun 2026). Lihat EscalationRequest::activeCoverage.
+        $openBlockers = Blocker::query()
             ->whereNull('resolvedAt')
             ->whereIn('severity', ['CRITICAL', 'HIGH'])
             ->when(!$isExecutive, fn ($q) => $q->whereIn('createdByUnitId', $unitIds))
             ->limit(20)
-            ->with('task.workstream.program:id,code,name,ownerUnitId')
+            ->with('task.workstream.program:id,code,name,ownerUnitId,ownerId')
             ->get()
-            ->map(fn ($b) => $b->task?->workstream?->program)
-            ->filter()
-            ->unique('id')
-            ->map(fn ($p) => [
-                'id'     => $p->id,
-                'code'   => $p->code,
-                'name'   => $p->name,
-                'reason' => 'Critical blockers need escalation',
-                'tag'    => 'blocker',
-                'divisi' => $units->firstWhere('id', $p->ownerUnitId)?->code ?? '-',
-            ]);
+            ->filter(fn ($b) => $b->task?->workstream?->program); // hanya yang program-nya ke-resolve
+
+        $coverage = \App\Models\EscalationRequest::activeCoverage(
+            $openBlockers->pluck('id')->all(),
+            $openBlockers->map(fn ($b) => $b->task->workstream->program->id)->unique()->all(),
+        );
+
+        $criticalBlockers = $openBlockers
+            ->reject(fn ($b) => $coverage['blockerIds']->has($b->id)
+                || $coverage['programIds']->has($b->task->workstream->program->id))
+            // Dedup per-program (satu baris/program). blockerId yang dibawa = blocker
+            // pertama yang belum tertutup — cukup untuk mengarahkan eskalasi presisi.
+            ->unique(fn ($b) => $b->task->workstream->program->id)
+            ->map(function ($b) use ($units, $user) {
+                $p = $b->task->workstream->program;
+                return [
+                    'id'        => $p->id,
+                    'code'      => $p->code,
+                    'name'      => $p->name,
+                    'reason'    => 'Critical blockers need escalation',
+                    'tag'       => 'blocker',
+                    'divisi'    => $units->firstWhere('id', $p->ownerUnitId)?->code ?? '-',
+                    // Eskalasi dari panel Focus link ke blocker ini (sourceType=BLOCKER)
+                    // alih-alih AD_HOC terputus → activeCoverage bisa men-dedup-nya.
+                    'blockerId' => $b->id,
+                    // Saat user = owner program, "Give support to the PIC" tak berlaku
+                    // (dia ADALAH PIC-nya) → panel menyembunyikan aksi no-op itu.
+                    'isOwner'   => $p->ownerId === $user->id,
+                ];
+            });
 
         // Programs with dukunganDibutuhkan filled + bad health = director support needed
         $needsSupport = $classified

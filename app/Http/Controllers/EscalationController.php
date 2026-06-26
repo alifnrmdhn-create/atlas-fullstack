@@ -10,6 +10,7 @@ use App\Services\FeatureFlagService;
 use App\Services\OrgChainService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -164,6 +165,12 @@ class EscalationController extends Controller
 
             return $r;
         });
+
+        // Eskalasi baru men-suppress item "needs escalation" di Focus (OrgSummaryService
+        // ::needsAction lewat activeCoverage). program-summary di-cache 3 menit per-user,
+        // jadi bust cache requester supaya nag hilang seketika di SEMUA jalur create —
+        // bukan hanya jalur panel Focus (yang sudah bust via disposition REROUTED).
+        Cache::forget("program_summary:user:{$user->id}");
 
         return response()->json(['data' => $req->fresh(['requester', 'escalatedTo', 'linkedProgram'])], 201);
     }

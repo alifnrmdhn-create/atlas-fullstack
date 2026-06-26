@@ -161,6 +161,31 @@ class WorkspaceController extends Controller
         // dengan fix Pulse di 679f2cd).
         $notArchived = fn ($q) => $q->whereNull('archivedAt');
 
+        // Blocker untuk feed Focus "NOW". Yang sudah RESOLVED tak boleh balik
+        // (whereNull resolvedAt). Selain itu, blocker yang SUDAH punya escalation
+        // aktif di-suppress di sini juga — supaya tidak ada duplikasi: satu masalah
+        // yang sama tidak lagi berteriak di NOW SEKALIGUS di needsAction setelah
+        // di-eskalasi. Begitu eskalasi resolved/declined, blocker kembali muncul
+        // (DECLINED tak menekan — lihat EscalationRequest::activeCoverage).
+        $rawBlockers = Blocker::query()
+            ->with(['task.workstream.program:id,code,name,healthStatus,approvalStatus'])
+            ->whereHas('task.workstream.program', $notArchived)
+            ->whereNull('resolvedAt')
+            ->where(fn ($q) => $q
+                ->where('assignedTo', $user->id)
+                ->orWhere('createdBy', $user->id))
+            ->orderByDesc('createdAt')
+            ->limit(30)
+            ->get();
+        $blockerCoverage = EscalationRequest::activeCoverage(
+            $rawBlockers->pluck('id')->all(),
+            $rawBlockers->map(fn ($b) => $b->task?->workstream?->program?->id)->filter()->unique()->values()->all(),
+        );
+        $blockers = $rawBlockers
+            ->reject(fn ($b) => $blockerCoverage['blockerIds']->has($b->id)
+                || ($b->task?->workstream?->program && $blockerCoverage['programIds']->has($b->task->workstream->program->id)))
+            ->values();
+
         return response()->json(['data' => [
             'role' => $user->roleType,
             'tasks' => Task::query()
@@ -170,20 +195,7 @@ class WorkspaceController extends Controller
                 ->orderBy('targetCompletion')
                 ->limit(30)
                 ->get(),
-            'blockers' => Blocker::query()
-                ->with(['task.workstream.program:id,code,name,healthStatus,approvalStatus'])
-                ->whereHas('task.workstream.program', $notArchived)
-                // Blocker yang sudah RESOLVED tak boleh balik ke feed Focus. Tanpa
-                // filter ini, "Mark resolved" → loadOverview('refresh') menarik
-                // ulang blocker yang sama (kartu kritis muncul lagi). Selaras
-                // konvensi whereNull('resolvedAt') di OrgSummaryService.
-                ->whereNull('resolvedAt')
-                ->where(fn ($q) => $q
-                    ->where('assignedTo', $user->id)
-                    ->orWhere('createdBy', $user->id))
-                ->orderByDesc('createdAt')
-                ->limit(30)
-                ->get(),
+            'blockers' => $blockers,
             // Focus = "program terkait user", bukan hanya yang dia owner (catatan
             // 24 Jun 2026). MembershipResolver = definisi kanonik partisipasi:
             // owner + co-PIC + owner workstream + assignee task + member channel.

@@ -114,11 +114,17 @@ export function NeedsActionPanel({
           <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
             {t('Follow up')}
           </div>
-          <button type="button" className="btn btn--primary btn--sm" disabled={saving} onClick={() => setMode('support')}>
-            {t('Give support to the PIC')}
-          </button>
+          {/* "Give support to the PIC" hanya untuk ATASAN yang men-disposition program
+              orang lain — bukan saat user ADALAH PIC-nya (mengirim arahan ke diri
+              sendiri = no-op; note nguap). Untuk owner, aksi yang berarti = eskalasi
+              (Clear the Path) atau buka program untuk resolve blocker. */}
+          {!item.isOwner && (
+            <button type="button" className="btn btn--primary btn--sm" disabled={saving} onClick={() => setMode('support')}>
+              {t('Give support to the PIC')}
+            </button>
+          )}
           {clearPathEnabled && (
-            <button type="button" className="btn btn--ghost btn--sm" disabled={saving} onClick={() => setShowReroute(true)}>
+            <button type="button" className={`btn btn--sm ${item.isOwner ? 'btn--primary' : 'btn--ghost'}`} disabled={saving} onClick={() => setShowReroute(true)}>
               {t('Escalate upward (Clear the Path)')}
             </button>
           )}
@@ -163,8 +169,12 @@ export function NeedsActionPanel({
 
       {showReroute && (
         <EscalationCreateModal
-          sourceType="AD_HOC"
-          sourceId={null}
+          // Eskalasi blocker → sumber BLOCKER presisi (bukan AD_HOC terputus) supaya
+          // OrgSummaryService bisa men-dedup item "needs escalation" begitu diangkat,
+          // dan resolusi eskalasi tertaut balik ke blocker-nya. Fallback AD_HOC bila
+          // item tak membawa blockerId (mis. tag support/approval).
+          sourceType={item.blockerId ? 'BLOCKER' : 'AD_HOC'}
+          sourceId={item.blockerId ?? null}
           prefillTitle={item.name}
           prefillDescription={item.reason}
           linkedProgramId={item.id}

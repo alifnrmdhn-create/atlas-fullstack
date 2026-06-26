@@ -60,9 +60,19 @@ class FocusDispositionController extends Controller
             abort(403, 'This program is outside your scope.');
         }
 
-        // SUPPORTED → kirim arahan ke PIC (program owner). Lewati bila owner = diri
-        // sendiri (atasan yang juga PIC) atau owner tak ada.
-        if ($data['action'] === 'SUPPORTED' && $program->ownerId && $program->ownerId !== $user->id) {
+        // SUPPORTED tak berlaku bila user ADALAH PIC-nya (atau program tanpa owner):
+        // dulu jalur ini diam-diam menelan note ("Give support to the PIC") tanpa
+        // mengirim ke siapa pun — silent no-op yang menyesatkan. FE sudah
+        // menyembunyikan tombolnya saat isOwner, guard ini menutup celahnya di BE.
+        if ($data['action'] === 'SUPPORTED' && (!$program->ownerId || $program->ownerId === $user->id)) {
+            return response()->json([
+                'message' => 'You are the PIC of this program — sending support to yourself does not apply. Escalate or resolve the blocker instead.',
+                'errors'  => ['action' => ['Not applicable when you own the program.']],
+            ], 422);
+        }
+
+        // SUPPORTED → kirim arahan ke PIC (program owner).
+        if ($data['action'] === 'SUPPORTED') {
             $this->notifyPic(
                 $program->ownerId,
                 $program->id,
