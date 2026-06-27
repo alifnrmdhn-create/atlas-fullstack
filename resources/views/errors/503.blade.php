@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '503')
+@section('title', 'Sedang pemeliharaan')
+@section('message', 'ATLAS sedang dalam pemeliharaan singkat. Silakan kembali beberapa saat lagi.')
+@section('action', 'Coba lagi')

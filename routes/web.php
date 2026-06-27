@@ -315,6 +315,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{id}/attendees/{userId}',       [MeetingController::class, 'removeAttendee'])->name('attendees.destroy');
 
         // Decisions
+        Route::get('/{id}/decisions',                   [MeetingController::class, 'listDecisions'])->name('decisions.index');
         Route::post('/{id}/decisions',                  [MeetingController::class, 'addDecision'])->name('decisions.store');
         Route::delete('/{id}/decisions/{decisionId}',   [MeetingController::class, 'destroyDecision'])->name('decisions.destroy');
 

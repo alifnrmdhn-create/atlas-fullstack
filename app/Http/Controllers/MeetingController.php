@@ -353,6 +353,30 @@ class MeetingController extends Controller
         ]);
     }
 
+    /**
+     * Per-meeting decisions list. The detail panel fetches
+     * GET /meetings/{id}/decisions; only POST/DELETE on that path existed, so
+     * the GET 404'd and the panel rendered "Couldn't load data". Mirrors
+     * listActionItems() (same access gate + decidedByUser hydration as the
+     * global /decisions search).
+     */
+    public function listDecisions(Request $request, int $id)
+    {
+        $meeting = Meeting::with('attendees:meetingId,userId')->findOrFail($id);
+        $this->assertAccess($meeting, $request->user()->id, $request->user()->roleType);
+
+        $decisions = MeetingDecision::where('meetingId', $id)->orderBy('createdAt')->get();
+        $userMap = User::whereIn('id', $decisions->pluck('decidedBy')->filter()->unique())
+            ->get(['id','name','roleType'])->keyBy('id');
+
+        return response()->json([
+            'data' => $decisions->map(fn ($d) => [
+                ...$d->toArray(),
+                'decidedByUser' => $d->decidedBy ? $userMap->get($d->decidedBy) : null,
+            ])->values()->all(),
+        ]);
+    }
+
     // ── Mutations ────────────────────────────────────────────────────────────
 
     public function store(Request $request): JsonResponse|RedirectResponse

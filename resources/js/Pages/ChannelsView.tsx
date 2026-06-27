@@ -1871,23 +1871,27 @@ export function ChannelsView({
               <>
                 <Avatar name={selectedDmPartner.name} size={40} avatarUrl={selectedDmPartner.avatarUrl} userId={selectedDmPartner.id} />
                 <div className="channel-header-slim__dm-info">
-                  <div className="channel-header-slim__dm-top">
-                    <h3>{selectedDmPartner.name}</h3>
+                  {/* Name owns the full top row — the role badge moves to the meta
+                      line below (alongside presence) so a long name isn't clipped
+                      to a sliver by the badge + header action icons on narrow
+                      screens. Standard messaging-header pattern. */}
+                  <h3>{selectedDmPartner.name}</h3>
+                  <div className="channel-header-slim__dm-meta">
                     <span className="ch-role-badge">{formatRoleLabel(selectedDmPartner.roleType)}</span>
+                    {dmPartnerPresence && (() => {
+                      // Use lastActivityAt as primary truth for display — status alone
+                      // can be stale if the user was idle but hasn't pinged recently.
+                      const msSince = Date.now() - new Date(dmPartnerPresence.lastActivityAt).getTime()
+                      const isReallyOnline = dmPartnerPresence.status === 'ONLINE' && msSince < 3 * 60_000
+                      const label = dmPartnerPresence.status === 'DO_NOT_DISTURB'
+                        ? t('Do not disturb')
+                        : isReallyOnline
+                          ? t('Online now')
+                          : t('Last active {{time}}', { time: formatRelativeTime(dmPartnerPresence.lastActivityAt).text })
+                      const tone = isReallyOnline ? 'online' : dmPartnerPresence.status === 'DO_NOT_DISTURB' ? 'do_not_disturb' : 'offline'
+                      return <span className={`dm-last-seen dm-last-seen--${tone}`}>{label}</span>
+                    })()}
                   </div>
-                  {dmPartnerPresence && (() => {
-                    // Use lastActivityAt as primary truth for display — status alone
-                    // can be stale if the user was idle but hasn't pinged recently.
-                    const msSince = Date.now() - new Date(dmPartnerPresence.lastActivityAt).getTime()
-                    const isReallyOnline = dmPartnerPresence.status === 'ONLINE' && msSince < 3 * 60_000
-                    const label = dmPartnerPresence.status === 'DO_NOT_DISTURB'
-                      ? t('Do not disturb')
-                      : isReallyOnline
-                        ? t('Online now')
-                        : t('Last active {{time}}', { time: formatRelativeTime(dmPartnerPresence.lastActivityAt).text })
-                    const tone = isReallyOnline ? 'online' : dmPartnerPresence.status === 'DO_NOT_DISTURB' ? 'do_not_disturb' : 'offline'
-                    return <span className={`dm-last-seen dm-last-seen--${tone}`}>{label}</span>
-                  })()}
                 </div>
               </>
             ) : (

@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '419')
+@section('title', 'Sesi kedaluwarsa')
+@section('message', 'Sesi Anda berakhir demi keamanan. Muat ulang halaman lalu coba lagi.')
+@section('action', 'Muat ulang')

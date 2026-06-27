@@ -99,6 +99,29 @@
   font-size: 12px;
 }
 
+/* Phone (≤640): the shared .view-toolbar is locked to height:46px;overflow:hidden
+   (single row), but programs.css lets the subtitle wrap to 2 lines at this width
+   — so the wrapped subtitle and the year dropdown collided/clipped. Let the
+   toolbar grow and wrap: title + controls share row 1, subtitle drops to row 2.
+   Scoped to .view-mr so other .view-toolbar consumers are untouched. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .view-mr .view-toolbar {
+    height: auto;
+    min-height: 46px;
+    overflow: visible;
+    flex-wrap: wrap;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    row-gap: 2px;
+  }
+  .view-mr .view-toolbar__sep { display: none; }
+  .view-mr .view-toolbar__subtitle {
+    flex-basis: 100%;
+    order: 3;
+    margin-right: 0;
+  }
+}
+
 [data-theme="dark"] .view-mr {
   --mr-surface-soft: var(--surface-1);
   --mr-surface-muted: var(--surface-1);

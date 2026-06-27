@@ -223,6 +223,13 @@
   pointer-events: none;
 }
 
+/* Phone (≤640): the input's 42px right padding can't clear this ~60px count
+   badge, so the long placeholder ran underneath it. The count is decorative —
+   hide it on narrow screens and give the placeholder the full width. */
+@media (max-width: 640px) { /* bp-allow: --bp-sm */
+  .panduan__search-kbd { display: none; }
+}
+
 /* ── Section titles ──────────────────────────────────────────────── */
 
 .panduan__sec-title {

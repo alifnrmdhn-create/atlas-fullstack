@@ -786,16 +786,34 @@
   box-shadow: 0 4px 10px -4px rgba(31, 107, 53, 0.35); /* dark-allow: brand-green glow on avatar */
 }
 
-.ds.channels-v2 .channel-header-slim__dm-top {
+/* Meta line under the DM name: role badge + presence. Lives below the name so
+   the name row is never squeezed by the badge competing with the header's
+   action icons (the "Dima…" over-truncation). */
+.ds.channels-v2 .channel-header-slim__dm-meta {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+
+.ds.channels-v2 .channel-header-slim__dm-info {
+  min-width: 0;
 }
 
 .ds.channels-v2 .channel-header-slim__dm-info h3 {
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.014em;
+  /* Name owns the full row; truncate deliberately with an ellipsis only when
+     it genuinely overflows (min-width:0 lets the flex item shrink first). */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds.channels-v2 .channel-header-slim__dm-meta .ch-role-badge {
+  flex-shrink: 0;
 }
 
 /* Presence "last seen" indicator — more prominent */

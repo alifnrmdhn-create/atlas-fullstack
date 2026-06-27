@@ -95,4 +95,31 @@ class MeetingDecisionAuthzTest extends TestCase
 
         $this->assertDatabaseCount('MeetingDecision', 1);
     }
+
+    /**
+     * Regresi: GET /meetings/{id}/decisions tidak punya route (hanya POST/DELETE),
+     * jadi panel detail rapat selalu 404 → render "Couldn't load data". Endpoint
+     * GET kini ada, mengembalikan keputusan rapat + decidedByUser.
+     */
+    public function test_organizer_can_list_decisions(): void
+    {
+        MeetingDecision::create([
+            'meetingId' => $this->meeting->id,
+            'decision' => 'Setujui anggaran Q3',
+            'decidedBy' => $this->organizer->id,
+        ]);
+
+        $this->actingAs($this->organizer)
+            ->getJson($this->url())
+            ->assertOk()
+            ->assertJsonPath('data.0.decision', 'Setujui anggaran Q3')
+            ->assertJsonPath('data.0.decidedByUser.name', $this->organizer->name);
+    }
+
+    public function test_outsider_cannot_list_decisions(): void
+    {
+        $this->actingAs($this->outsider)
+            ->getJson($this->url())
+            ->assertForbidden();
+    }
 }

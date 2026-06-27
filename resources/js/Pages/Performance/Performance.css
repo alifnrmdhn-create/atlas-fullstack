@@ -194,6 +194,16 @@
     flex-wrap: wrap;
   }
   .perf__header-actions { margin-left: 0; }
+  /* .perf__header-left was a nowrap row (back · title · subtitle); at 390px the
+     title "KPI Division" clipped to a lone "K" and the subtitle overflowed.
+     Let it wrap and drop the subtitle to its own full-width line. */
+  .perf__header-left { flex-wrap: wrap; }
+  .perf__subtitle { flex-basis: 100%; }
+  /* Directorate hero: the space-between row squeezed the code·divisions·average
+     sub-line into a one-word-per-line stack next to the score. Stack instead —
+     meta on top, score below — and let the sub-line wrap cleanly. */
+  .perf-compare__hero { flex-wrap: wrap; gap: 12px; }
+  .perf-compare__hero-sub { flex-wrap: wrap; row-gap: 2px; }
 }
 
 /* ─── Subject header card (Direktur / Divisi / Individu) ──── */
