@@ -19,7 +19,7 @@
         },
         "passwordHash": "$2y$12$YSGimwdQNMIBMRqSO0sHTukiBFkwkrn5O9y2g7bbWq0NfJNpnNIpO",
         "directorateId": 5,
-        "managerUserId": null,
+        "managerUserId": 196,
         "positionTitle": "Kepala Divisi Keuangan Strategis dan Anggaran",
         "availableRoles": null,
         "toursCompleted": null
@@ -419,7 +419,7 @@
         },
         "passwordHash": "$2y$12$YSGimwdQNMIBMRqSO0sHTukiBFkwkrn5O9y2g7bbWq0NfJNpnNIpO",
         "directorateId": 5,
-        "managerUserId": null,
+        "managerUserId": 196,
         "positionTitle": "Kepala Divisi Akuntasi dan Perpajakan",
         "availableRoles": null,
         "toursCompleted": null
@@ -719,7 +719,7 @@
         },
         "passwordHash": "$2y$12$YSGimwdQNMIBMRqSO0sHTukiBFkwkrn5O9y2g7bbWq0NfJNpnNIpO",
         "directorateId": 5,
-        "managerUserId": null,
+        "managerUserId": 196,
         "positionTitle": "Kepala Divisi Manajemen Risiko",
         "availableRoles": null,
         "toursCompleted": null

@@ -159,6 +159,39 @@ class EscalationFlowTest extends TestCase
         ])->assertStatus(422);
     }
 
+    // ── Per-jenjang: tak boleh lompat / menyamping ────────────────────────────
+
+    public function test_explicit_target_cannot_skip_levels(): void
+    {
+        // Sibling asisten (peer atasan langsung officer) — se-direktorat tapi BUKAN
+        // di rantai ke atas officer. Override target ke sini = lompat jenjang → 422.
+        $sibling = $this->makeUser('sibling@ptpn.test', 'ASISTEN',
+            $this->asisten->unitId, $this->asisten->directorateId, $this->kadiv->id);
+
+        $this->actingAs($this->officer)->postJson('/escalations', [
+            'sourceType'    => 'AD_HOC',
+            'title'         => 'Coba lompat jenjang',
+            'escalatedToId' => $sibling->id,
+        ])->assertStatus(422);
+
+        $this->assertDatabaseMissing('EscalationRequest', ['escalatedToId' => $sibling->id]);
+    }
+
+    public function test_reroute_cannot_go_sideways(): void
+    {
+        // Reroute ke peer (bukan naik rantai requester) → blocked.
+        $sibling = $this->makeUser('sibling2@ptpn.test', 'ASISTEN',
+            $this->asisten->unitId, $this->asisten->directorateId, $this->kadiv->id);
+        $req = $this->createEscalation($this->officer, $this->asisten);
+
+        $this->actingAs($this->asisten)->postJson("/escalations/{$req->id}/reroute", [
+            'reroutedToId' => $sibling->id,
+        ])->assertStatus(422);
+
+        $req->refresh();
+        $this->assertNotEquals('REROUTED', $req->status);
+    }
+
     // ── Cross-direktorat policy ───────────────────────────────────────────────
 
     public function test_cross_directorate_create_blocked(): void

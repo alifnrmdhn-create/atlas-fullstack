@@ -145,6 +145,14 @@ class EscalationController extends Controller
                     'message' => 'Cross-directorate escalation is not allowed. Select a supervisor within your directorate.',
                 ], 422);
             }
+            // Per-jenjang: target eksplisit harus di rantai ke atas user (atau BOD),
+            // bukan lompat ke sembarang orang se-direktorat. Jalur normal (modal)
+            // tak mengirim escalatedToId → auto-route ke atasan langsung, aman.
+            if (!$this->orgChain->isValidEscalationTarget($user, $target)) {
+                return response()->json([
+                    'message' => 'Escalation must follow the hierarchy — target your direct manager (or the board), not skip levels.',
+                ], 422);
+            }
         }
 
         if ($targetId === $user->id) {
@@ -223,6 +231,14 @@ class EscalationController extends Controller
         if ($requester && !$this->orgChain->canEscalateAcrossDirectorate($requester, $newTarget)) {
             return response()->json([
                 'message' => 'Cross-directorate reroute is not allowed for the original requester.',
+            ], 422);
+        }
+        // Per-jenjang: reroute mengarah NAIK rantai requester (atau ke BOD), bukan
+        // lompat ke orang acak se-direktorat. Reroute = mendaki hierarki, bukan
+        // melempar ke sembarang pihak.
+        if ($requester && !$this->orgChain->isValidEscalationTarget($requester, $newTarget)) {
+            return response()->json([
+                'message' => 'Reroute must follow the hierarchy — pass it up the chain (or to the board), not sideways.',
             ], 422);
         }
 
