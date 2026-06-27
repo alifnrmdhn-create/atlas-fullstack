@@ -88,6 +88,11 @@ class EscalationFlowTest extends TestCase
             'commitmentNote' => 'Saya akan kontak vendor langsung.',
         ]);
         $commitResp->assertOk();
+        // Respons aksi WAJIB membawa relasi arah (from→to) dgn key camelCase — panel FE
+        // menampilkan "requester → escalatedTo". Tanpa eager-load nama jatuh ke "—";
+        // tanpa $snakeAttributes=false key jadi `escalated_to` → FE undefined.
+        $commitResp->assertJsonPath('data.requester.name', $this->officer->name);
+        $commitResp->assertJsonPath('data.escalatedTo.name', $this->asisten->name);
         $req->refresh();
         $this->assertEquals('COMMITTED', $req->status);
         $this->assertNotNull($req->committedAt);

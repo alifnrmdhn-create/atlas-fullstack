@@ -18,6 +18,12 @@ class EscalationRequest extends Model
     const CREATED_AT = 'createdAt';
     const UPDATED_AT = 'updatedAt';
 
+    // Serialize relasi sebagai camelCase (escalatedTo/reroutedTo/linkedProgram),
+    // BUKAN snake_case default Eloquent. FE (tipe + panel + Focus committedEscalations)
+    // membaca camelCase; tanpa ini relasi multi-kata terkirim `escalated_to` dst →
+    // FE menerima undefined → arah from→to & badge program diam-diam tak tampil.
+    public static $snakeAttributes = false;
+
     protected $guarded = ['id'];
 
     protected $casts = [

@@ -172,7 +172,7 @@ class EscalationController extends Controller
         // bukan hanya jalur panel Focus (yang sudah bust via disposition REROUTED).
         Cache::forget("program_summary:user:{$user->id}");
 
-        return response()->json(['data' => $req->fresh(['requester', 'escalatedTo', 'linkedProgram'])], 201);
+        return response()->json(['data' => $req->fresh(['requester', 'escalatedTo', 'reroutedTo', 'linkedProgram'])], 201);
     }
 
     public function commit(Request $request, int $id): JsonResponse
@@ -258,7 +258,9 @@ class EscalationController extends Controller
                 "Escalation \"{$req->title}\" was rerouted to {$newTargetLabel}. Click to view the new tracking.");
         });
 
-        return response()->json(['data' => $req->fresh()]);
+        // Eager-load arah (from→to) + program supaya panel FE tak kehilangan nama
+        // requester/escalatedTo/reroutedTo sesudah aksi (jadi "—"). Konsisten index/show.
+        return response()->json(['data' => $req->fresh(['requester', 'escalatedTo', 'reroutedTo', 'linkedProgram'])]);
     }
 
     public function decline(Request $request, int $id): JsonResponse
@@ -281,7 +283,9 @@ class EscalationController extends Controller
         $this->createNotification($req->requestedById, 'CLEAR_PATH_CLEARED', $req,
             "Your escalation was declined by {$user->name}: {$data['declinedReason']}");
 
-        return response()->json(['data' => $req->fresh()]);
+        // Eager-load arah (from→to) + program supaya panel FE tak kehilangan nama
+        // requester/escalatedTo/reroutedTo sesudah aksi (jadi "—"). Konsisten index/show.
+        return response()->json(['data' => $req->fresh(['requester', 'escalatedTo', 'reroutedTo', 'linkedProgram'])]);
     }
 
     public function resolve(Request $request, int $id): JsonResponse
@@ -306,7 +310,9 @@ class EscalationController extends Controller
         $this->createNotification($req->requestedById, 'CLEAR_PATH_CLEARED', $req,
             "Blocker cleared by {$user->name}: {$req->title}");
 
-        return response()->json(['data' => $req->fresh()]);
+        // Eager-load arah (from→to) + program supaya panel FE tak kehilangan nama
+        // requester/escalatedTo/reroutedTo sesudah aksi (jadi "—"). Konsisten index/show.
+        return response()->json(['data' => $req->fresh(['requester', 'escalatedTo', 'reroutedTo', 'linkedProgram'])]);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -335,7 +341,9 @@ class EscalationController extends Controller
         $this->createNotification($req->requestedById, 'CLEAR_PATH_COMMITTED', $req,
             "{$user->name} committed to clearing: {$req->title}");
 
-        return response()->json(['data' => $req->fresh()]);
+        // Eager-load arah (from→to) + program supaya panel FE tak kehilangan nama
+        // requester/escalatedTo/reroutedTo sesudah aksi (jadi "—"). Konsisten index/show.
+        return response()->json(['data' => $req->fresh(['requester', 'escalatedTo', 'reroutedTo', 'linkedProgram'])]);
     }
 
     private function assertAccess(User $user, EscalationRequest $req): void

@@ -294,8 +294,12 @@ export function EscalationTriagePanel({
       open
       onClose={safeClose}
       title={request.title}
-      subtitle={t('{{code}} · requested by {{name}}', { code: request.code, name: request.requester?.name ?? '—' })}
+      subtitle={request.code}
     >
+      <Section label={t('Escalation path')}>
+        <EscRouteLine request={request} isRequester={isRequester} isTarget={isTarget} />
+      </Section>
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span className={`badge badge--${statusToTone(request.status)}`}>{statusLabel(request.status)}</span>
         <AgingIndicator days={request.agingDays} thresholds={escalationAging} />
@@ -386,6 +390,36 @@ export function EscalationTriagePanel({
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
+
+// Baris arah eksplisit "dari → ke" (from→to). Untuk Clear the Path, arah =
+// inti akuntabilitas (siapa mengangkat, siapa yang pegang bola). Sadar-perspektif:
+// pihak yang = current user ditandai "You" (drop nama+peran yang redundan).
+function EscRouteLine({ request, isRequester, isTarget }: {
+  request: EscalationRequest
+  isRequester: boolean
+  isTarget: boolean
+}) {
+  const { t } = useTranslation()
+  const party = (user: EscalationRequest['requester'], you: boolean) => {
+    const role = user?.positionTitle || user?.roleType
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5, minWidth: 0 }}>
+        <span style={{ fontWeight: 600, color: 'var(--text)' }}>{you ? t('You') : (user?.name ?? '—')}</span>
+        {!you && role && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>· {role}</span>}
+      </span>
+    )
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 13 }}>
+      {party(request.requester, isRequester)}
+      <span aria-hidden="true" style={{ color: 'var(--text-muted)' }}>→</span>
+      {party(request.escalatedTo, isTarget)}
+      {request.reroutedToId != null && (
+        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>↻ {t('rerouted')}</span>
+      )}
+    </div>
+  )
+}
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
