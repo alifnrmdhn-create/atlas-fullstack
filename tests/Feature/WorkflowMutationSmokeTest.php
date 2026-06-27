@@ -358,6 +358,14 @@ class WorkflowMutationSmokeTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.targetValue', 95);
 
+        // Regresi silent-drop (CLAUDE.md §8): toggle isLeadingIndicator saat edit
+        // harus PERSIST. update() dulu tak punya rule-nya → flip "sukses" (200) tapi
+        // no-op & balik saat refresh. Lock: flip true→false benar-benar tersimpan.
+        $this->patchJson("/kpis/{$kpiId}", ['isLeadingIndicator' => false])
+            ->assertOk()
+            ->assertJsonPath('data.isLeadingIndicator', false);
+        $this->assertDatabaseHas('KpiDefinition', ['id' => $kpiId, 'isLeadingIndicator' => false]);
+
         $this->postJson("/kpis/{$kpiId}/values", [
             'measurementDate' => now()->toDateString(),
             'actualValue' => 96,

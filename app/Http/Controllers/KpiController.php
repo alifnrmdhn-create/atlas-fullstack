@@ -115,6 +115,7 @@ class KpiController extends Controller
 
         $data = $request->validate([
             'name' => 'sometimes|string|max:120',
+            'description' => 'nullable|string|max:400',
             'targetValue' => 'sometimes|numeric',
             'warningThreshold' => 'nullable|numeric',
             'criticalThreshold' => 'nullable|numeric',
@@ -122,6 +123,11 @@ class KpiController extends Controller
             'metricType' => 'sometimes|string|max:40',
             'reviewFrequency' => 'sometimes|in:WEEKLY,MONTHLY,QUARTERLY,ANNUALLY',
             'isActive' => 'sometimes|boolean',
+            // Rekonsiliasi payload FE vs validator (anti silent-drop, CLAUDE.md §8):
+            // GoalsView edit mengirim isLeadingIndicator (toggle live yang membelah
+            // tab Leading/Lagging) + description — store() punya rule-nya, update()
+            // dulu tidak → flip toggle "sukses" tapi no-op & balik saat refresh.
+            'isLeadingIndicator' => 'sometimes|boolean',
         ]);
 
         $kpi->update($data);
