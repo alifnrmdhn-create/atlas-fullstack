@@ -363,16 +363,10 @@ export function WorkboardView() {
   const [boardMode, setBoardMode] = useState<BoardMode>('by-program')
 
   // #4: Blocker = filter (chip "Hanya blocker") yang menyaring task ber-blocker di
-  // grouping aktif — bukan tab tersendiri. + hint sekali-tampil bahwa tab Blockers
-  // lama kini pindah ke filter (redam "kok tabnya hilang?").
+  // grouping aktif — bukan tab tersendiri. Chip Blocker kini duduk jelas di dalam
+  // zona Filter (di samping select program/workstream), jadi hint "tab pindah ke
+  // sini" yang dulu nempel permanen sudah redundan & dibuang (kurangi kerumunan).
   const [blockerOnly, setBlockerOnly] = useState(false)
-  const [blockerHintDismissed, setBlockerHintDismissed] = useState(() => {
-    try { return localStorage.getItem('wb.blockerHintDismissed') === '1' } catch { return false }
-  })
-  const dismissBlockerHint = () => {
-    setBlockerHintDismissed(true)
-    try { localStorage.setItem('wb.blockerHintDismissed', '1') } catch { /* ignore */ }
-  }
 
 
   // One-door condition reporting (modal target) + session memory of what the
@@ -789,6 +783,8 @@ export function WorkboardView() {
 
       {/* ── Filters + state row: toggles + selects + stats ── */}
       <div className="view-toolbar wb-toolbar-filters">
+        {/* ── Zona 1 · View: bagaimana board ditata (group · scope-ku · waktu) ── */}
+        <div className="wb-tb-zone wb-tb-zone--view">
         {/* #4: satu sumbu "Kelompokkan" (ganti 4 tab yang terbaca seperti 4 app). */}
         <div className="wb-groupby">
           <span className="wb-groupby__label">{t('Group by')}</span>
@@ -842,49 +838,63 @@ export function WorkboardView() {
             ))}
           </div>
         )}
-        {/* Program filter */}
-        <select
-          className="wb-program-filter"
-          value={boardFilterProgramId ?? ''}
-          onChange={e => setBoardFilterProgramId(e.target.value ? Number(e.target.value) : null)}
-        >
-          <option value="">{t('All Programs')}</option>
-          {programs.map(p => (
-            <option key={p.id} value={p.id}>{p.code} — {p.name}</option>
-          ))}
-        </select>
-        {/* Workstream / Workstream filter */}
-        <select
-          className="wb-program-filter"
-          value={boardFilterWorkstreamId ?? ''}
-          onChange={e => setBoardFilterWorkstreamId(e.target.value ? Number(e.target.value) : null)}
-          disabled={workstreamOptions.length === 0}
-          title={t('Filter by workstream')}
-        >
-          <option value="">{t('All Workstreams')}</option>
-          {workstreamOptions.map(ini => (
-            <option key={ini.id} value={ini.id}>
-              {!boardFilterProgramId && ini.programCode ? `${ini.programCode} · ${ini.name}` : ini.name}
-            </option>
-          ))}
-        </select>
-        {/* #4: Blocker = filter (bukan tab). */}
-        <button
-          type="button"
-          className={`wb-blocker-chip${blockerOnly ? ' is-on' : ''}`}
-          onClick={() => { setBlockerOnly(v => !v); dismissBlockerHint() }}
-          aria-pressed={blockerOnly}
-          title={t('Show only tasks with an active blocker')}
-        >
-          <span className="wb-blocker-chip__box" aria-hidden="true">{blockerOnly ? '✓' : ''}</span>
-          ⚑ {t('Blockers only')}
-        </button>
-        {!blockerHintDismissed && (
-          <span className="wb-blocker-hint" role="note">
-            {t('“Blockers” moved here — it’s a filter now.')}
-            <button type="button" className="wb-blocker-hint__x" onClick={dismissBlockerHint} aria-label={t('Dismiss')}>×</button>
-          </span>
-        )}
+        </div>{/* /Zona 1 · View */}
+
+        {/* ── Zona 2 · Filter: data apa yang tampil (scope program→workstream · blocker) ── */}
+        <div className="wb-tb-zone wb-tb-zone--filter">
+          {/* Program + Workstream = satu kontrol "scope" tersambung (pasangan; jangan
+              sampai kepisah baris saat row penuh). Inaktif = redup, aktif = menonjol. */}
+          <div className="wb-scope">
+            <select
+              className={`wb-program-filter wb-scope__sel${boardFilterProgramId !== null ? ' is-active' : ''}`}
+              value={boardFilterProgramId ?? ''}
+              onChange={e => setBoardFilterProgramId(e.target.value ? Number(e.target.value) : null)}
+              title={t('Filter by program')}
+            >
+              <option value="">{t('All Programs')}</option>
+              {programs.map(p => (
+                <option key={p.id} value={p.id}>{p.code} — {p.name}</option>
+              ))}
+            </select>
+            <select
+              className={`wb-program-filter wb-scope__sel${boardFilterWorkstreamId !== null ? ' is-active' : ''}`}
+              value={boardFilterWorkstreamId ?? ''}
+              onChange={e => setBoardFilterWorkstreamId(e.target.value ? Number(e.target.value) : null)}
+              disabled={workstreamOptions.length === 0}
+              title={t('Filter by workstream')}
+            >
+              <option value="">{t('All Workstreams')}</option>
+              {workstreamOptions.map(ini => (
+                <option key={ini.id} value={ini.id}>
+                  {!boardFilterProgramId && ini.programCode ? `${ini.programCode} · ${ini.name}` : ini.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* #4: Blocker = filter (bukan tab). */}
+          <button
+            type="button"
+            className={`wb-blocker-chip${blockerOnly ? ' is-on' : ''}`}
+            onClick={() => setBlockerOnly(v => !v)}
+            aria-pressed={blockerOnly}
+            title={t('Show only tasks with an active blocker')}
+          >
+            <span className="wb-blocker-chip__box" aria-hidden="true">{blockerOnly ? '✓' : ''}</span>
+            ⚑ {t('Blockers only')}
+          </button>
+          {/* Reset hanya muncul saat ada filter aktif — afford "balik ke semua" sekali klik. */}
+          {(boardFilterProgramId !== null || boardFilterWorkstreamId !== null || blockerOnly) && (
+            <button
+              type="button"
+              className="wb-tb-reset"
+              onClick={() => { setBoardFilterProgramId(null); setBoardFilterWorkstreamId(null); setBlockerOnly(false) }}
+              title={t('Clear all filters')}
+            >
+              {t('Reset')}
+            </button>
+          )}
+        </div>{/* /Zona 2 · Filter */}
+
         <div className="view-toolbar__right">
           <div className="view-toolbar__stats wb-stats wb-daily-summary">
             {/* Ringkasan = DISPLAY-ONLY (konsisten span semua). Penyaringan ada di

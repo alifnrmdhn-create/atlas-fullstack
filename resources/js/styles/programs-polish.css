@@ -2503,6 +2503,49 @@ select.prog-strategic__input {
   .prog-hero__actions { justify-content: flex-start; }
 }
 
+/* ── Phone (≤640): program-detail header reflow ───────────────────────
+   Desktop uses a 28px workspace inset + a multi-column hero grid. On a
+   390px phone the inset (56px of horizontal padding) plus the 2-col grid
+   squeezed the Period field so "…May 30, 2026" clipped to "May 30, 20".
+   Tighten the inset to the page token (--space-page-x = 16px), stack the
+   hero one field per row with hairline dividers, and let the value wrap
+   instead of clipping with an ellipsis. CSS-only; no JSX change. */
+@media (max-width: 640px) {
+  .prog-detail-page .prog-hero {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  .prog-hero__col {
+    border-left: 0;
+    border-top: 1px solid color-mix(in srgb, var(--panel-border) 55%, transparent);
+    padding: 11px 0;
+  }
+  .prog-hero__col:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+  /* Period & PIC: wrap rather than truncate now that each field is full-width. */
+  .prog-hero__value {
+    white-space: normal;
+  }
+  /* Page-level horizontal insets → align to --space-page-x (16px). */
+  .prog-title-row { padding-left: 16px; padding-right: 16px; }
+  .prog-hero__subtitle { margin-left: 16px; margin-right: 16px; }
+  .wi-detail-header--slim { padding-left: 16px; padding-right: 16px; }
+  .prog-detail-page > .prog-approval-note,
+  .prog-detail-page > .prog-approval-success-banner {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+  .prog-overview-v2 { padding-left: 16px; padding-right: 16px; }
+  .prog-detail-page .prog-lifecycle-banner {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+
 /* ── Title row above hero ─────────────────────────────────────────── */
 .prog-title-row {
   display: flex;

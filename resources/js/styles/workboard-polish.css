@@ -123,6 +123,71 @@
 }
 
 
+/* ───────── Toolbar zones: View · Filter ─────────
+   Dulu satu baris rata: 3 segmented + 2 select + chip + hint berbaur tanpa
+   hierarki → "tidak bagus saat filter bertambah". Sekarang 2 zona yang wrap
+   sebagai unit: View (cara lihat) lalu Filter (data apa) — saat baris penuh
+   Filter turun utuh ke baris berikut, bukan kepisah di tengah cluster.        */
+.workboard-v2 .wb-toolbar-filters .wb-tb-zone {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Program + Workstream = satu kontrol "scope" tersambung (hairline di tengah). */
+.workboard-v2 .wb-toolbar-filters .wb-scope {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  background: var(--surface-1);
+  overflow: hidden;
+}
+.workboard-v2 .wb-toolbar-filters .wb-scope:hover {
+  border-color: var(--panel-border-strong, var(--panel-border));
+}
+.workboard-v2 .wb-toolbar-filters .wb-scope .wb-program-filter {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  max-width: 190px !important;
+}
+.workboard-v2 .wb-toolbar-filters .wb-scope .wb-program-filter + .wb-program-filter {
+  border-left: 1px solid var(--panel-border) !important;
+}
+/* Inaktif (All …) = redup; aktif (sudah dipilih) = teks tegas → filter "naik". */
+.workboard-v2 .wb-toolbar-filters .wb-scope__sel {
+  color: var(--text-muted) !important;
+}
+.workboard-v2 .wb-toolbar-filters .wb-scope__sel.is-active {
+  color: var(--text-strong) !important;
+  font-weight: 600 !important;
+}
+.workboard-v2 .wb-toolbar-filters .wb-scope:has(.is-active) {
+  border-color: var(--panel-border-strong, var(--panel-border));
+  background: var(--surface-2);
+}
+
+/* Reset: link halus, hanya tampil saat ada filter aktif. */
+.workboard-v2 .wb-toolbar-filters .wb-tb-reset {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.workboard-v2 .wb-toolbar-filters .wb-tb-reset:hover {
+  color: var(--text-strong);
+  background: var(--surface-2);
+}
+
+
 /* ───────── Stats summary: tone-aware ───────── */
 .workboard-v2 .wb-toolbar-filters .view-toolbar__right {
   margin-left: auto;

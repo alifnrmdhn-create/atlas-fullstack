@@ -5,6 +5,11 @@ html, body, #root { height: 100%; margin: 0; }
  * (tier T1/T2) body sebelumnya menyusut ke ~11,6px sehingga melelahkan dibaca.
  * Floor 15px → body (0.875rem) ~13px; tetap naik ke 16px di layar ≥1646px. */
 html { font-size: clamp(15px, 0.972vw, 16px); }
+/* Phone (≤640): drop the type floor 15→14px. Only rem-anchored structural
+ * type (page titles, section headers, body, the --type- and --ds-text-
+ * token scales) compresses ~7% for a denser feel; per-component px sizes are
+ * untouched and tap targets stay ≥44px (defined in px). bp-allow 640=--bp-sm. */
+@media (max-width: 640px) { html { font-size: 14px; } } /* bp-allow */
 body {
   font-family: var(--font-sans);
   font-size: 1rem;
