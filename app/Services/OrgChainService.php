@@ -110,28 +110,19 @@ class OrgChainService
     }
 
     /**
-     * Apakah $target sah jadi tujuan eskalasi untuk $requester — menegakkan alur
-     * PER JENJANG. Sah bila:
-     *   - $target ADA di rantai jabatan ke atas $requester (atasan langsung /
-     *     atasan-dari-atasan), ATAU
-     *   - $target seorang BOD (escape-hatch governance ke board — konsisten
-     *     dengan canEscalateAcrossDirectorate yang selalu mengizinkan target BOD).
+     * STRICT per-jenjang: $target sah jadi tujuan eskalasi/reroute untuk $from
+     * HANYA bila ia atasan LANGSUNG $from (managerUserId, atasan-aktif terdekat).
      *
-     * Mencegah "lompat jenjang" ke sembarang orang se-direktorat (mis. Kasubdiv
-     * langsung menarget rekan Kasubdiv, atau melewati Kadiv). Tidak bisa ke diri
-     * sendiri. Dipakai EscalationController saat ADA target eksplisit (override
-     * create) & saat reroute — jalur auto-route ke atasan langsung trivially sah.
+     * Tidak ada pengecualian — termasuk BOD. Eskalasi & permintaan dukungan naik
+     * SATU tingkat; untuk mencapai Direktur, didaki bertahap lewat reroute (tiap
+     * pemegang melempar ke atasan langsung-NYA). Ini menutup "lompat jenjang"
+     * (mis. Kasubdiv langsung ke Direktur). Tak bisa ke diri sendiri (seseorang
+     * bukan atasan langsung dirinya). Jalur auto-route create trivially sah.
      */
-    public function isValidEscalationTarget(User $requester, User $target): bool
+    public function isValidEscalationTarget(User $from, User $target): bool
     {
-        if ($requester->id === $target->id) {
-            return false;
-        }
-        if (strtoupper($target->roleType ?? '') === 'BOD') {
-            return true;
-        }
-        return $this->getEscalationChain($requester, self::MAX_DEPTH)
-            ->contains(fn (User $u) => $u->id === $target->id);
+        $direct = $this->getDirectSupervisor($from);
+        return $direct !== null && $direct->id === $target->id;
     }
 
     /**

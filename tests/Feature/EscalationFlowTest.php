@@ -206,15 +206,23 @@ class EscalationFlowTest extends TestCase
         ])->assertStatus(422);
     }
 
-    public function test_escalate_to_bod_always_allowed(): void
+    public function test_explicit_target_must_be_direct_manager(): void
     {
-        // Officer DKM escalate explicit ke BOD (different direktorat scenario tetap OK)
-        $resp = $this->actingAs($this->officer)->postJson('/escalations', [
-            'sourceType' => 'AD_HOC',
-            'title' => 'Eskalasi ke board',
+        // Strict per-jenjang (kebijakan 2026-06-27): tak ada escape-hatch board.
+        // Officer escalate explicit ke BOD — atasan langsungnya = asisten, jadi
+        // lompat ke board DITOLAK.
+        $this->actingAs($this->officer)->postJson('/escalations', [
+            'sourceType'    => 'AD_HOC',
+            'title'         => 'Coba lompat ke board',
             'escalatedToId' => $this->bod->id,
-        ]);
-        $resp->assertStatus(201);
+        ])->assertStatus(422);
+
+        // Explicit ke atasan LANGSUNG (asisten) → boleh.
+        $this->actingAs($this->officer)->postJson('/escalations', [
+            'sourceType'    => 'AD_HOC',
+            'title'         => 'Eskalasi ke atasan langsung',
+            'escalatedToId' => $this->asisten->id,
+        ])->assertStatus(201);
     }
 
     // ── Permission gates ─────────────────────────────────────────────────────
