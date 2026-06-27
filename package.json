@@ -17,7 +17,8 @@
         "audit:breakpoints": "node scripts/audit-breakpoints.mjs",
         "audit:darkmode": "node scripts/audit-darkmode.mjs",
         "audit:status": "node scripts/audit-status-labels.mjs",
-        "check": "npm run typecheck && npm run lint && npm run audit:routes && npm run audit:breakpoints && npm run audit:darkmode && npm run audit:status && npm run build"
+        "audit:zindex": "node scripts/audit-zindex.mjs",
+        "check": "npm run typecheck && npm run lint && npm run audit:routes && npm run audit:breakpoints && npm run audit:darkmode && npm run audit:status && npm run audit:zindex && npm run build"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",

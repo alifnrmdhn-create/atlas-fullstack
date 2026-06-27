@@ -1,0 +1,26 @@
+{
+  "_comment": "Utang z-index literal tier-overlay (≥20) yang di-grandfather. Turunkan saat migrasi ke token --z-*. Regenerate: node scripts/audit-zindex.mjs --update-baseline",
+  "_threshold": 20,
+  "counts": {
+    "20": 2,
+    "24": 1,
+    "30": 2,
+    "31": 1,
+    "40": 2,
+    "50": 4,
+    "100": 4,
+    "110": 1,
+    "120": 1,
+    "130": 1,
+    "150": 1,
+    "160": 1,
+    "200": 1,
+    "240": 1,
+    "241": 1,
+    "1000": 1,
+    "9500": 1,
+    "9600": 4,
+    "9999": 3,
+    "99999": 1
+  }
+}
