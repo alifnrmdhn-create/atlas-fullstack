@@ -45,6 +45,7 @@ class WorkspaceController extends Controller
         private ProgramHealthService $healthService,
         private ScopeResolver $scopeResolver,
         private OrgHierarchyService $orgHierarchy,
+        private \App\Services\DuplicationService $duplication,
     ) {}
 
     public function workspaceOverview(Request $request): JsonResponse
@@ -1002,6 +1003,34 @@ class WorkspaceController extends Controller
         ]);
 
         return response()->json(['data' => $workstream], 201);
+    }
+
+    /**
+     * Duplikat satu workstream beserta Phase + Task-nya (copy-from-existing).
+     * Default ke program yang sama; reset progres/status (DuplicationService).
+     */
+    public function duplicateWorkstream(Request $request, int $id): JsonResponse
+    {
+        $source = Workstream::findOrFail($id);
+        $data = $request->validate([
+            'targetProgramId' => 'nullable|integer|exists:Program,id',
+        ]);
+        $targetProgramId = (int) ($data['targetProgramId'] ?? $source->programId);
+
+        // Scope guard pada SUMBER dan TUJUAN — keduanya harus dalam jangkauan.
+        $this->assertCanMutateWorkstream($this->ownerUnitForWorkstream($id), $request->user());
+        $this->assertCanMutateWorkstream($this->ownerUnitForProgram($targetProgramId), $request->user());
+        // PENDING-lock: jangan ubah struktur program tujuan saat di-review.
+        \App\Services\ProgramService::assertProgramNotUnderApproval($targetProgramId, $request->user());
+
+        $clone = $this->duplication->duplicateWorkstream($request->user(), $source, $targetProgramId);
+
+        rescue(fn () => $this->healthService->recompute($targetProgramId));
+        BroadcastService::program($targetProgramId, 'workstream-added', [
+            'workstreamId' => $clone->id,
+        ]);
+
+        return response()->json(['data' => $clone->fresh()], 201);
     }
 
     public function updateWorkstream(Request $request, int $id): JsonResponse

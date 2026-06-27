@@ -50,6 +50,27 @@ class PhaseController extends Controller
         return response()->json(['data' => $phase], 201);
     }
 
+    /**
+     * Duplikat satu fase beserta Task-nya di dalam workstream yang sama
+     * (copy-from-existing). Reset progres/status — lihat DuplicationService.
+     */
+    public function duplicate(Request $request, \App\Services\DuplicationService $duplication, int $id): JsonResponse
+    {
+        if (!RolePolicy::canCreateProgram($request->user()->roleType)) {
+            abort(403, 'You do not have permission to duplicate a phase.');
+        }
+        $phase = Phase::findOrFail($id);
+        $this->assertUnitScope($this->ownerUnitForWorkstream((int) $phase->initiativeId), $request->user());
+        \App\Services\ProgramService::assertProgramNotUnderApproval(
+            Workstream::query()->where('id', (int) $phase->initiativeId)->value('programId'),
+            $request->user(),
+        );
+
+        $clone = $duplication->duplicatePhase($request->user(), $phase);
+
+        return response()->json(['data' => $clone], 201);
+    }
+
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         if (!RolePolicy::canCreateProgram($request->user()->roleType)) {

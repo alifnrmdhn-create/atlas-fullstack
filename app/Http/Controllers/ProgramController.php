@@ -37,6 +37,7 @@ class ProgramController extends Controller
         private ProgramHealthService $healthService,
         private OrgChainService $orgChain,
         private WeeklyDeadlineService $weeklyDeadline,
+        private \App\Services\DuplicationService $duplication,
     ) {}
 
     private function validationError(Request $request, string $message): JsonResponse|RedirectResponse
@@ -317,6 +318,39 @@ class ProgramController extends Controller
 
         return redirect()->route('programs.show', $program->id)
             ->with('success', 'Program created.');
+    }
+
+    /**
+     * Duplikat program (copy-from-existing): deep-clone workstream → phase →
+     * task + PIC + KPI sebagai DRAFT baru. Aturan reset di DuplicationService.
+     */
+    public function duplicate(Request $request, int $id): JsonResponse|RedirectResponse
+    {
+        Gate::authorize('create-program');
+        // Boleh menyalin hanya program yang user boleh lihat (scope direktorat).
+        $this->programService->assertAccess($request->user(), $id);
+
+        $data = $request->validate([
+            'name' => 'nullable|string|max:200',
+        ]);
+
+        $source = Program::findOrFail($id);
+        $clone = $this->duplication->duplicateProgram(
+            $request->user(),
+            $source,
+            array_filter(['name' => $data['name'] ?? null]),
+        );
+        // Health di-derive ulang dari struktur salinan (BACKLOG 0%, tanpa blocker)
+        // supaya badge tak menampilkan health basi dari program sumber.
+        rescue(fn () => $this->healthService->recompute($clone->id));
+        BroadcastService::program($clone->id, 'created');
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $clone], 201);
+        }
+
+        return redirect()->route('programs.show', $clone->id)
+            ->with('success', 'Program duplicated.');
     }
 
     /**

@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useId, useMemo } from 'react'
+import { useState, useEffect, useCallback, useId, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18n from '../lib/i18n'
 import { usePage, router } from '@inertiajs/react'
 import { useWorkspace } from '../hooks/useWorkspace'
+import { programHealthTone, isProgramLate } from '../contexts/workspace'
 import { useInertiaNavigate } from '../hooks/useInertiaNavigate'
 import { getProgramDisplayStatus } from '../lib/programStatus'
 import { priorityLabel, programStatusLabel } from '../lib/status'
@@ -427,7 +428,18 @@ export function ProgramsView() {
   }, [])
 
   // ── Tab state ──────────────────────────────────────────────────────────
-  const [tab, setTab] = useState<ProgramTab>('portfolio')
+  // Deep-link `?tab=pulse|monitoring|…` (mis. dari Home "critical controls open"
+  // → tab Pulse/blocker). Dibaca saat mount + di-sync saat URL berubah, TANPA
+  // melawan klik tab manual (klik tak ubah param → ref menahan re-apply).
+  const TAB_KEYS: ProgramTab[] = ['portfolio', 'timeline', 'monitoring', 'pulse', 'archive']
+  const readTabParam = (u: string): ProgramTab | null => {
+    const p = new URLSearchParams(u.split('?')[1] ?? '').get('tab')
+    return p && (TAB_KEYS as string[]).includes(p) ? (p as ProgramTab) : null
+  }
+  const [tab, setTab] = useState<ProgramTab>(() => {
+    if (typeof window === 'undefined') return 'portfolio'
+    return readTabParam(window.location.search) ?? 'portfolio'
+  })
   const [portfolioView, setPortfolioView] = useState<PortfolioView>('list')
   const [timelineView, setTimelineView] = useState<TimelineView>('lanes')
   const [laneGrouping, setLaneGrouping] = useState<LaneGrouping>(isStrategic ? 'health' : 'status')
@@ -447,18 +459,27 @@ export function ProgramsView() {
   // Status values in the URL stay human-readable (on_track | at_risk | terlambat)
   // for shareable links; we map to the internal GREEN/YELLOW/RED here.
   const { url } = usePage()
-  const urlStatusFilter = useMemo<Set<'GREEN' | 'YELLOW' | 'RED'>>(() => {
+  // Sync tab dari URL saat berubah (navigasi deep-link selagi komponen mounted).
+  // Ref menahan agar klik tab manual (tak ubah param) tak di-reset balik.
+  const lastTabParam = useRef<string | null>(readTabParam(url))
+  useEffect(() => {
+    const p = readTabParam(url)
+    if (p && p !== lastTabParam.current) {
+      lastTabParam.current = p
+      setTab(p)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url])
+  // Filter status sekarang ber-vocabulary TONE (on_track | at_risk | terlambat),
+  // bukan health mentah GREEN/YELLOW/RED. "terlambat" mencakup overdue-by-date —
+  // definisi terpadu yang sama dengan Home (lihat programHealthTone). Inilah yang
+  // membuat deep-link Home "?status=terlambat" memuat 18 program, bukan 3.
+  const urlStatusFilter = useMemo<Set<'on_track' | 'at_risk' | 'terlambat'>>(() => {
     const qs = url.split('?')[1] ?? ''
     const raw = new URLSearchParams(qs).get('status') ?? ''
-    const map: Record<string, 'GREEN' | 'YELLOW' | 'RED'> = {
-      on_track: 'GREEN',
-      at_risk: 'YELLOW',
-      terlambat: 'RED',
-    }
-    const out = new Set<'GREEN' | 'YELLOW' | 'RED'>()
+    const out = new Set<'on_track' | 'at_risk' | 'terlambat'>()
     for (const v of raw.split(',').filter(Boolean)) {
-      const mapped = map[v]
-      if (mapped) out.add(mapped)
+      if (v === 'on_track' || v === 'at_risk' || v === 'terlambat') out.add(v)
     }
     return out
   }, [url])
@@ -508,12 +529,10 @@ export function ProgramsView() {
     router.visit(`/programs${params.toString() ? '?' + params.toString() : ''}`, { preserveState: true, preserveScroll: true, replace: true })
   }, [url])
 
-  const toggleStatusFilter = useCallback((tone: 'GREEN' | 'YELLOW' | 'RED') => {
-    const map = { GREEN: 'on_track', YELLOW: 'at_risk', RED: 'terlambat' } as const
+  const toggleStatusFilter = useCallback((v: 'on_track' | 'at_risk' | 'terlambat') => {
     const qs = url.split('?')[1] ?? ''
     const params = new URLSearchParams(qs)
     const cur = new Set((params.get('status') ?? '').split(',').filter(Boolean))
-    const v = map[tone]
     if (cur.has(v)) cur.delete(v)
     else cur.add(v)
     if (cur.size > 0) params.set('status', Array.from(cur).join(','))
@@ -916,6 +935,26 @@ export function ProgramsView() {
     }
   }
 
+  // ── Duplikat program (copy-from-existing) ───────────────────────────────
+  // Deep-clone workstream → phase → task + PIC + KPI sebagai DRAFT baru, lalu
+  // antar user ke detail untuk lanjut penyesuaian. Aturan reset di backend.
+  const [duplicatingId, setDuplicatingId] = useState<number | null>(null)
+  const handleDuplicateProgram = async (progId: number, progName: string) => {
+    if (duplicatingId !== null) return
+    setDuplicatingId(progId)
+    try {
+      const res = await api.post<{ data: { id: number } }>(`/programs/${progId}/duplicate`, {})
+      const newId = res?.data?.id
+      toast.show(t('Program "{{name}}" duplicated as a draft — review and adjust.', { name: progName }), 'success')
+      void loadOverview('refresh')
+      if (newId) navigate(`/programs/${newId}`)
+    } catch (err: unknown) {
+      toast.show((err as { message?: string })?.message ?? t('Failed to duplicate program.'), 'error')
+    } finally {
+      setDuplicatingId(null)
+    }
+  }
+
   // ── Auto-suggest program code ──────────────────────────────────────────
   // Format: PRG-<KODE_DIVISI>-<SINGKATAN_NAMA>-<URUTAN>
   // Segmen DIVISI di-omit jika tidak ada (user tanpa unit dan belum pilih Divisi Pemilik).
@@ -940,10 +979,13 @@ export function ProgramsView() {
   }
 
   // ── Computed values ────────────────────────────────────────────────────
+  // Hitung dari TONE terpadu (programHealthTone), bukan healthStatus mentah.
+  // "Terlambat" = terlambat (health RED) ∪ overdue (lewat targetEndDate) — sama
+  // persis dengan angka Home. Tanpa ini, chip Terlambat under-count (akar bug).
   const healthMix = {
-    green:  programs.filter(p => normalizeHealthStatus(p.healthStatus) === 'GREEN').length,
-    yellow: programs.filter(p => normalizeHealthStatus(p.healthStatus) === 'YELLOW').length,
-    red:    programs.filter(p => normalizeHealthStatus(p.healthStatus) === 'RED').length,
+    green:  programs.filter(p => programHealthTone(p) === 'on_track').length,
+    yellow: programs.filter(p => programHealthTone(p) === 'at_risk').length,
+    red:    programs.filter(p => isProgramLate(p)).length,
   }
 
 
@@ -966,8 +1008,13 @@ export function ProgramsView() {
     return p.approvalStatus === 'DRAFT' && p.submittedById === currentUser?.id
   })
 
-  const matchesUrlStatus = (p: typeof programs[number]) =>
-    urlStatusFilter.size === 0 || urlStatusFilter.has(normalizeHealthStatus(p.healthStatus) as 'GREEN' | 'YELLOW' | 'RED')
+  const matchesUrlStatus = (p: typeof programs[number]) => {
+    if (urlStatusFilter.size === 0) return true
+    const tone = programHealthTone(p)
+    // "terlambat" di URL mencakup overdue (definisi terpadu dengan Home).
+    if (urlStatusFilter.has('terlambat') && (tone === 'terlambat' || tone === 'overdue')) return true
+    return urlStatusFilter.has(tone as 'on_track' | 'at_risk' | 'terlambat')
+  }
 
   // Deep-link filters (ortogonal, AND antar-jenis; OR di dalam satu jenis).
   const deadlineBucket = (p: typeof programs[number]): string | null => {
@@ -1062,11 +1109,17 @@ export function ProgramsView() {
       items: filteredLane.filter(p => p.priority === pri).sort(byUrgency),
     })).filter(g => g.items.length > 0)
   } else {
-    laneGroups = ['GREEN', 'YELLOW', 'RED'].map(h => ({
-      key: h,
-      label: h === 'GREEN' ? t('On Track') : h === 'YELLOW' ? t('At Risk') : t('Delayed'),
-      tone: h.toLowerCase(),
-      items: filteredLane.filter(p => normalizeHealthStatus(p.healthStatus) === h).sort(byUrgency),
+    // Kelompok health pakai tone terpadu — lane "Delayed" memuat overdue-by-date,
+    // konsisten dengan chip & Home (bukan health RED mentah).
+    laneGroups = ([
+      ['GREEN',  t('On Track'), (p: typeof programs[number]) => programHealthTone(p) === 'on_track'],
+      ['YELLOW', t('At Risk'),  (p: typeof programs[number]) => programHealthTone(p) === 'at_risk'],
+      ['RED',    t('Delayed'),  (p: typeof programs[number]) => isProgramLate(p)],
+    ] as const).map(([key, label, pred]) => ({
+      key,
+      label,
+      tone: key.toLowerCase(),
+      items: filteredLane.filter(pred).sort(byUrgency),
     })).filter(g => g.items.length > 0)
   }
   // Low-attention lanes (healthy / done / low priority) collapse by default.
@@ -1196,9 +1249,9 @@ export function ProgramsView() {
               </button>
             )}
             {([
-              ['GREEN',  t('On Track'),  'green',  healthMix.green],
-              ['YELLOW', t('At Risk'),   'amber',  healthMix.yellow],
-              ['RED',    t('Delayed'),   'red',    healthMix.red],
+              ['on_track',  t('On Track'),  'green',  healthMix.green],
+              ['at_risk',   t('At Risk'),   'amber',  healthMix.yellow],
+              ['terlambat', t('Delayed'),   'red',    healthMix.red],
             ] as const).map(([tone, label, toneClass, count]) => {
               const active = urlStatusFilter.has(tone)
               return (
@@ -1367,7 +1420,7 @@ export function ProgramsView() {
                         const progStatus = (prog as { status?: string }).status
                         const isCompleted = progStatus === 'COMPLETED'
                         const isOwner = (prog as { ownerId?: number }).ownerId === currentUser?.id
-                        const showActions = roleAccess.canEditProgram(isOwner) || roleAccess.canArchiveProgram(isOwner)
+                        const showActions = roleAccess.canEditProgram(isOwner) || roleAccess.canArchiveProgram(isOwner) || roleAccess.canCreateProgram
                         return (
                           <div
                             key={prog.id}
@@ -1673,7 +1726,9 @@ export function ProgramsView() {
                           code: prog.code,
                           name: prog.name,
                           progressPercent: prog.progressPercent,
-                          health: normalizeHealthStatus(prog.healthStatus) as 'GREEN' | 'YELLOW' | 'RED',
+                          // Warna titik ikut tone terpadu: overdue/terlambat → RED
+                          // walau healthStatus belum RED (konsisten dgn chip & Home).
+                          health: (isProgramLate(prog) ? 'RED' : programHealthTone(prog) === 'at_risk' ? 'YELLOW' : 'GREEN') as 'GREEN' | 'YELLOW' | 'RED',
                           days,
                           completed: (prog as { status?: string }).status === 'COMPLETED',
                           owner: prog.owner?.name ?? null,
@@ -2890,6 +2945,12 @@ export function ProgramsView() {
               <button className="kebab-menu__item" onClick={() => { openEditProgram(kebabMenu.prog); closeKebab() }} type="button">
                 <svg fill="none" height="13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="13"><path d="M11.5 2.5a2.121 2.121 0 1 1 3 3L6 14H2v-4L11.5 2.5Z"/></svg>
                 {t('Edit')}
+              </button>
+            )}
+            {roleAccess.canCreateProgram && (
+              <button className="kebab-menu__item" onClick={() => { void handleDuplicateProgram(kebabMenu.progId, kebabMenu.progName); closeKebab() }} type="button">
+                <svg fill="none" height="13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="13"><rect height="9" rx="1" width="9" x="5" y="5"/><path d="M3 11V3a1 1 0 0 1 1-1h8"/></svg>
+                {t('Duplicate')}
               </button>
             )}
             {roleAccess.canArchiveProgram(kebabMenu.isOwner) && (

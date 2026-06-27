@@ -58,10 +58,15 @@ function getGreeting(): string {
 }
 
 /* Proyeksi KPI akhir tahun — regresi linear tren bulanan → nilai Desember.
- * Compact (mengembalikan angka saja, bukan chart) untuk dipakai di intelligence strip. */
+ * Compact (mengembalikan angka saja, bukan chart) untuk dipakai di intelligence strip.
+ *
+ * Kejujuran (2026-06-27): butuh ≥3 titik (2 titik = garis sempurna, presisi semu);
+ * nilai DIBULATKAN ke bilangan bulat (toFixed(2) dulu menyamarkan ekstrapolasi
+ * linear sebagai angka terukur). TIDAK di-cap di 100% — KPI sah melebihi target,
+ * cap ke bawah justru memalsukan. Label "≈ … forecast" sudah menandai estimasi. */
 function projectKpi(trend: Array<{ avg: number | null }>, periode: string, target = 100): { value: number; deltaVsTarget: number; tone: Tone } | null {
   const pts = trend.map((t, i) => ({ i, v: t.avg })).filter((p): p is { i: number; v: number } => p.v != null)
-  if (pts.length < 2) return null
+  if (pts.length < 3) return null // <3 titik: ekstrapolasi tak punya cukup dasar
   const n = pts.length
   const sx = pts.reduce((s, p) => s + p.i, 0)
   const sy = pts.reduce((s, p) => s + p.v, 0)
@@ -72,9 +77,9 @@ function projectKpi(trend: Array<{ avg: number | null }>, periode: string, targe
   const lastI = trend.length - 1
   const curMonth = resolveMonthIndex(periode)
   const projI = lastI + (curMonth ? Math.max(12 - curMonth, 0) : 0)
-  const value = intercept + slope * projI
+  const value = Math.round(intercept + slope * projI)
   const tone: Tone = value >= target ? 'green' : value >= target * 0.9 ? 'amber' : 'red'
-  return { value, deltaVsTarget: value - target, tone }
+  return { value, deltaVsTarget: Math.round(value - target), tone }
 }
 
 /* Count-up — angka menghitung naik saat mount (easeOutCubic). Hormati
@@ -125,16 +130,48 @@ function entityLabel(): Record<string, string> {
   }
 }
 
-function activityText(a: { action: string; entityType: string; description?: string }): string {
-  if (a.description) return a.description
-  const ent = entityLabel()[a.entityType] ?? a.entityType
-  return `${a.action} ${ent}`.trim()
+function activityText(a: { action: string; entityType: string; description?: string; actorName?: string | null; subject?: string }): string {
+  if (a.description) return a.description // back-compat payload lama
+  // Feed nyata: komposisi terlokalisasi dari aktor + subjek (i18n natural-key).
+  const actor = a.actorName?.trim() || i18n.t('Someone')
+  const subject = a.subject ?? ''
+  switch (a.action) {
+    case 'PROGRAM_SUBMITTED': return i18n.t('{{actor}} submitted {{subject}} for approval', { actor, subject })
+    case 'PROGRAM_APPROVED':  return i18n.t('{{actor}} approved {{subject}}', { actor, subject })
+    case 'PROGRAM_REJECTED':  return i18n.t('{{actor}} requested revision on {{subject}}', { actor, subject })
+    case 'PROGRAM_ACTIVATED': return i18n.t('{{actor}} activated {{subject}}', { actor, subject })
+    case 'PROGRAM_COMPLETED': return i18n.t('{{actor}} completed program {{subject}}', { actor, subject })
+    case 'PROGRAM_WITHDRAWN': return i18n.t('{{actor}} withdrew {{subject}}', { actor, subject })
+    case 'TASK_COMPLETED':    return i18n.t('{{actor}} completed task "{{subject}}"', { actor, subject })
+    case 'PROGRESS_LOGGED':   return i18n.t('{{actor}} logged progress on {{subject}}', { actor, subject })
+    case 'BLOCKER_ADDED':     return i18n.t('{{actor}} raised a blocker: {{subject}}', { actor, subject })
+    case 'BLOCKER_RESOLVED':  return i18n.t('Blocker resolved: {{subject}}', { subject })
+    case 'ESCALATION_RAISED': return i18n.t('{{actor}} escalated {{subject}}', { actor, subject })
+    default: {
+      const ent = entityLabel()[a.entityType] ?? a.entityType
+      return `${a.action} ${ent}`.trim()
+    }
+  }
 }
 
-/* Activity feed marker — ikon JENIS aktivitas (bukan inisial nama yang
- * menyamar jadi avatar orang; feed ini sintetis tanpa data aktor). */
+/* Activity feed marker — ikon JENIS aktivitas. Feed kini NYATA (punya aktor),
+ * tapi marker tetap ikon jenis (bukan avatar) supaya baca cepat per kategori. */
 function activityTone(action: string): Tone {
-  return action === 'BLOCKER_ADDED' ? 'amber' : action === 'MEASURED' ? 'green' : 'neutral'
+  switch (action) {
+    case 'BLOCKER_ADDED':
+    case 'ESCALATION_RAISED':
+    case 'PROGRAM_REJECTED':
+      return 'amber'
+    case 'TASK_COMPLETED':
+    case 'PROGRAM_APPROVED':
+    case 'PROGRAM_ACTIVATED':
+    case 'PROGRAM_COMPLETED':
+    case 'BLOCKER_RESOLVED':
+    case 'MEASURED':
+      return 'green'
+    default:
+      return 'neutral'
+  }
 }
 function ActivityGlyph({ action }: { action: string }) {
   const p = {
@@ -145,11 +182,21 @@ function ActivityGlyph({ action }: { action: string }) {
   switch (action) {
     case 'MEASURED':       // KPI diukur — garis tren
       return <svg {...p}><path d="M4 18 L9 12 L13 15 L20 6" /><polyline points="15 6 20 6 20 11" /></svg>
-    case 'BLOCKER_ADDED':  // hambatan — segitiga waspada
+    case 'BLOCKER_ADDED':
+    case 'ESCALATION_RAISED':  // hambatan/eskalasi — segitiga waspada
       return <svg {...p}><path d="M12 3 L22 20 L2 20 Z" /><line x1="12" y1="10" x2="12" y2="14" /><circle cx="12" cy="17" r="0.6" fill="currentColor" /></svg>
-    case 'CREATED':        // program baru — dokumen
+    case 'TASK_COMPLETED':
+    case 'PROGRAM_COMPLETED':
+    case 'PROGRAM_APPROVED':
+    case 'PROGRAM_ACTIVATED':
+    case 'BLOCKER_RESOLVED':   // selesai/disetujui — centang
+      return <svg {...p}><path d="M20 6 L9 17 L4 12" /></svg>
+    case 'PROGRESS_LOGGED':    // progres dicatat — pena
+      return <svg {...p}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+    case 'PROGRAM_SUBMITTED':
+    case 'CREATED':            // diajukan/baru — dokumen
       return <svg {...p}><rect x="4" y="3" width="16" height="18" rx="2" /><line x1="8" y1="9" x2="16" y2="9" /><line x1="8" y1="13" x2="14" y2="13" /></svg>
-    default:               // STATUS_CHANGED — diperbarui (refresh)
+    default:               // STATUS_CHANGED / PROGRAM_REJECTED / WITHDRAWN — refresh
       return <svg {...p}><path d="M21 12a9 9 0 1 1-2.6-6.4" /><polyline points="21 3 21 8 16 8" /></svg>
   }
 }
@@ -590,7 +637,9 @@ export default function HomeView() {
     exceptions.push({
       id: 'cc', tone: 'amber',
       label: <><strong>{t('{{count}} critical controls', { count: criticalControlCount })}</strong> {t('open')}</>,
-      meta: t('CRITICAL/HIGH risk'), onClick: () => navigate('/programs'),
+      // Critical control = blocker CRITICAL/HIGH terbuka → tab Pulse (blocker tracker),
+      // bukan portfolio mentah. (dulu navigate('/programs') = nyasar.)
+      meta: t('CRITICAL/HIGH risk'), onClick: () => navigate('/programs?tab=pulse'),
     })
   }
 
@@ -817,7 +866,7 @@ export default function HomeView() {
               {forecast && (
                 <span className="hvc__intel-seg" data-tone={forecast.tone}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 18 L9 11 L13 14 L20 5" /><polyline points="15 5 20 5 20 10" /></svg>
-                  {t('Dec KPI forecast')} <b>≈{forecast.value.toFixed(2)}%</b> <span className="hvc__intel-delta" data-tone={forecast.tone}>({forecast.deltaVsTarget >= 0 ? '+' : ''}{forecast.deltaVsTarget.toFixed(2)} {t('vs target')})</span>
+                  {t('Dec KPI forecast')} <b>≈{forecast.value}%</b> <span className="hvc__intel-delta" data-tone={forecast.tone}>({forecast.deltaVsTarget >= 0 ? '+' : ''}{forecast.deltaVsTarget} {t('vs target')})</span>
                 </span>
               )}
               {hasDelta && (

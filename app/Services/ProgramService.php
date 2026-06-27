@@ -40,15 +40,27 @@ class ProgramService
             ->whereIn('approvalStatus', ['ACTIVE', 'PENDING_KASUB', 'PENDING_KADIV', 'DRAFT', 'COMPLETED']);
 
         if ($scope->allowsAllUsers()) {
-            return $query->orderBy('createdAt', 'desc')->get();
+            return $this->appendHealthTone($query->orderBy('createdAt', 'desc')->get());
         }
 
         $membershipIds = $this->membershipResolver->getProgramIdsViaMembership($user->id);
 
-        return $query->where(function (Builder $q) use ($scope, $membershipIds) {
+        return $this->appendHealthTone($query->where(function (Builder $q) use ($scope, $membershipIds) {
             $q->whereIn('id', $membershipIds)
               ->orWhereIn('ownerId', $scope->userIds);
-        })->orderBy('createdAt', 'desc')->get();
+        })->orderBy('createdAt', 'desc')->get());
+    }
+
+    /**
+     * Sertakan `healthTone` (single source of truth, lihat Program::classifyHealthTone)
+     * pada tiap program supaya Programs page memfilter/menghitung "Terlambat" dari
+     * tone yang sama dengan Home — bukan menghitung ulang dari healthStatus mentah
+     * (akar bug "Home 18, Programs 3").
+     */
+    private function appendHealthTone(Collection $programs): Collection
+    {
+        $programs->each(fn ($p) => $p->append('healthTone'));
+        return $programs;
     }
 
     public function listForUserPaginated(User $user, int $perPage = 50): \Illuminate\Contracts\Pagination\LengthAwarePaginator
@@ -71,7 +83,9 @@ class ProgramService
             });
         }
 
-        return $query->paginate($perPage);
+        $paginated = $query->paginate($perPage);
+        $this->appendHealthTone($paginated->getCollection());
+        return $paginated;
     }
 
     public function listArchived(User $user): Collection

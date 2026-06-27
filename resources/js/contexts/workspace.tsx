@@ -254,6 +254,38 @@ function formatDate(dateString: string): string {
 const normalizeHealthStatus = (value?: string): 'GREEN' | 'YELLOW' | 'RED' =>
   value === 'GREEN' || value === 'YELLOW' || value === 'RED' ? value : 'YELLOW'
 
+export type ProgramTone = 'on_track' | 'at_risk' | 'terlambat' | 'overdue' | 'selesai' | 'draft'
+
+/**
+ * Tone program — single source of truth bersama backend (Program::classifyHealthTone).
+ * Selalu pakai `healthTone` dari server bila ada; fallback derivasi hanya untuk
+ * payload lama/cache. Inilah yang membuat Programs page & Home setuju soal
+ * "Terlambat" (overdue-by-date ⊇ health RED). JANGAN hitung "terlambat" dari
+ * healthStatus mentah lagi.
+ */
+export const programHealthTone = (p: {
+  healthTone?: string
+  status?: string
+  approvalStatus?: string
+  targetEndDate?: string | null
+  healthStatus?: string
+}): ProgramTone => {
+  if (p.healthTone) return p.healthTone as ProgramTone
+  // Fallback — mirror persis urutan cek backend.
+  if (p.status === 'COMPLETED' || p.approvalStatus === 'COMPLETED') return 'selesai'
+  if (!p.approvalStatus || !['ACTIVE', 'COMPLETED'].includes(p.approvalStatus)) return 'draft'
+  if (p.targetEndDate && Date.parse(p.targetEndDate) < Date.now()) return 'overdue'
+  if (p.healthStatus === 'RED') return 'terlambat'
+  if (p.healthStatus === 'GREEN') return 'on_track'
+  return 'at_risk'
+}
+
+/** True bila program "telat" menurut definisi terpadu (lewat tenggat ATAU health RED). */
+export const isProgramLate = (p: Parameters<typeof programHealthTone>[0]): boolean => {
+  const tone = programHealthTone(p)
+  return tone === 'terlambat' || tone === 'overdue'
+}
+
 // Delegasi ke sumber tunggal lib/status.ts (workStatusLabel) — logika title-case
 // + i18n identik, dipusatkan agar tak ber-fork (lihat plan status-vocabulary).
 const formatStatusLabel = (value?: string): string => workStatusLabel(value)

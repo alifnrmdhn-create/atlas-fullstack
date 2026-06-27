@@ -150,6 +150,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}',          [ProgramController::class, 'show'])->name('show');
         Route::put('/{id}',          [ProgramController::class, 'update'])->name('update');
         Route::delete('/{id}',       [ProgramController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/duplicate', [ProgramController::class, 'duplicate'])->name('duplicate');
 
         // Approval workflow
         Route::post('/{id}/submit',   [ProgramController::class, 'submit'])->name('submit');
@@ -202,6 +203,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('phases')->name('phases.')->group(function () {
         Route::put('/{id}',    [PhaseController::class, 'update'])->name('update');
         Route::delete('/{id}', [PhaseController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/duplicate', [PhaseController::class, 'duplicate'])->name('duplicate');
     });
 
     // ── Workstreams ─────────────────────────────────────────────────────────
@@ -211,6 +213,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}',    [WorkspaceController::class, 'showWorkstream'])->name('show');
         Route::put('/{id}',    [WorkspaceController::class, 'updateWorkstream'])->name('update');
         Route::delete('/{id}', [WorkspaceController::class, 'destroyWorkstream'])->name('destroy');
+        Route::post('/{id}/duplicate', [WorkspaceController::class, 'duplicateWorkstream'])->name('duplicate');
         Route::post('/{id}/phases', [PhaseController::class, 'storeForWorkstream'])->name('phases.store');
     });
 

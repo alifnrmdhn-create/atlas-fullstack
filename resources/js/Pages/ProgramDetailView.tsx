@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useId, useRef, Suspense, lazy } from 'react'
+import React, { useState, useEffect, useCallback, useId, useMemo, useRef, Suspense, lazy } from 'react'
 import { createPortal, flushSync } from 'react-dom'
 import type { FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -1145,6 +1145,37 @@ export function ProgramDetailView() {
     }
   }
 
+  // ── Duplikat struktur (copy-from-existing) ───────────────────────────
+  // Workstream & Phase deep-clone (+ task anak) ke program/workstream yang
+  // sama. Progres/status di-reset di backend (DuplicationService).
+  const [dupStructBusy, setDupStructBusy] = useState(false)
+  const submitDuplicateIni = async (iniId: number) => {
+    if (dupStructBusy) return
+    setDupStructBusy(true)
+    try {
+      await api.post(`/workstreams/${iniId}/duplicate`, {})
+      await Promise.all([loadDetail(true), loadOverview('refresh')])
+      showToast(t('Workstream duplicated.'), 'success')
+    } catch (err: unknown) {
+      showToast(extractErrorMessage(err, t('Failed to duplicate workstream.')), 'error')
+    } finally {
+      setDupStructBusy(false)
+    }
+  }
+  const submitDuplicatePhase = async (phaseId: number, workstreamId: number) => {
+    if (dupStructBusy) return
+    setDupStructBusy(true)
+    try {
+      await api.post(`/phases/${phaseId}/duplicate`, {})
+      void reloadIniDetail(workstreamId)
+      showToast(t('Phase duplicated.'), 'success')
+    } catch (err: unknown) {
+      showToast(extractErrorMessage(err, t('Failed to duplicate phase.')), 'error')
+    } finally {
+      setDupStructBusy(false)
+    }
+  }
+
   // ── Edit Phase (Tugas) modal ─────────────────────────────────────────
   const [editPhase, setEditPhase] = useState<PhaseItem | null>(null)
   const [showEditPhase, setShowEditPhase] = useState(false)
@@ -1281,6 +1312,25 @@ export function ProgramDetailView() {
   const [cstError, setCstError] = useState<string | null>(null)
   const [cstDirectory, setCstDirectory] = useState<Array<{ id: number; name: string; positionTitle: string | null }>>([])
   const [cstPicSearch, setCstPicSearch] = useState('')
+  // "Salin dari task lain" — prefill ringan dari task workstream yang sedang
+  // dibuka (copy-from-existing). Tidak deep-clone (task tunggal), hanya isi field.
+  const cstSourceTasks = useMemo<TaskItem[]>(() => {
+    if (!iniDetail) return []
+    return [...(iniDetail.phases ?? []).flatMap(p => p.tasks), ...(iniDetail.tasks ?? [])]
+  }, [iniDetail])
+  const applyTaskTemplate = (taskId: number) => {
+    const src = cstSourceTasks.find(s => s.id === taskId)
+    if (!src) return
+    setCstForm(f => ({
+      ...f,
+      title: src.title,
+      description: src.description ?? '',
+      priority: src.priority ?? 'MEDIUM',
+      startDate: src.startDate ? src.startDate.slice(0, 10) : '',
+      targetCompletion: src.targetCompletion ? src.targetCompletion.slice(0, 10) : '',
+      assignedTo: src.picPersons?.[0]?.id ?? null,
+    }))
+  }
   const triggerCstClose = useCallback(() => closeOverlay('create-subtask', () => {
     setShowCreateSubTask(false); setCstError(null); setCstPhaseId(null); setCstWorkstreamId(null)
     setCstForm({ title: '', description: '', priority: 'MEDIUM', startDate: '', targetCompletion: '', assignedTo: null })
@@ -2845,6 +2895,16 @@ export function ProgramDetailView() {
                                   <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="14"><path d="M9.5 2.5 11.5 4.5 4.5 11.5 2 12l.5-2.5z"/></svg>
                                 </button>
                                 <button
+                                  className="ws-icon-btn"
+                                  disabled={dupStructBusy}
+                                  onClick={() => void submitDuplicateIni(ini.id)}
+                                  type="button"
+                                  title={t('Duplicate workstream')}
+                                  aria-label={t('Duplicate workstream')}
+                                >
+                                  <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 14 14" width="14"><rect height="8" rx="1" width="8" x="4.5" y="4.5"/><path d="M2.5 9.5V3a1 1 0 0 1 1-1H10"/></svg>
+                                </button>
+                                <button
                                   className={`ws-icon-btn ws-icon-btn--danger${isConfirmDel ? ' is-confirm' : ''}`}
                                   onClick={() => setConfirmDelIniId(isConfirmDel ? null : ini.id)}
                                   type="button"
@@ -2955,6 +3015,7 @@ export function ProgramDetailView() {
                                             {canEditStructure && confirmDelPhaseId !== phase.id && (
                                               <div className="phase-group__actions" onClick={e => e.stopPropagation()}>
                                                 <button className="phase-group__action-btn" onClick={() => openEditPhase(phase)} title={t('Edit phase')} type="button">✎</button>
+                                                <button className="phase-group__action-btn" disabled={dupStructBusy} onClick={() => void submitDuplicatePhase(phase.id, ini.id)} title={t('Duplicate phase')} type="button">⧉</button>
                                                 <button className="phase-group__action-btn phase-group__action-btn--del" onClick={() => setConfirmDelPhaseId(phase.id)} title={t('Delete phase')} type="button">×</button>
                                               </div>
                                             )}
@@ -4150,6 +4211,21 @@ export function ProgramDetailView() {
             <form onSubmit={(e) => void submitCreateSubTask(e)}>
               <div className="modal__body">
                 {cstError && <div className="prog-modal-error">{cstError}</div>}
+                {cstSourceTasks.length > 0 && (
+                  <div className="form-field">
+                    <label>{t('Copy from an existing task')}</label>
+                    <select
+                      className="form-input"
+                      defaultValue=""
+                      onChange={e => { const id = Number(e.target.value); if (id) applyTaskTemplate(id); e.target.value = '' }}
+                    >
+                      <option value="">{t('— Start blank, or pick a task to prefill —')}</option>
+                      {cstSourceTasks.map(s => (
+                        <option key={s.id} value={s.id}>{s.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="form-field">
                   <label>{t('Title')} <span className="form-field__required">*</span></label>
                   <input

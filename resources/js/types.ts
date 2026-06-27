@@ -214,6 +214,14 @@ export type Program = {
   riskScore: number
   strategicAlignment: number
   healthStatus: HealthStatus
+  /**
+   * Tone terklasifikasi dari server (single source of truth — lihat
+   * Program::classifyHealthTone). Menggabungkan health + jadwal: program yang
+   * lewat targetEndDate jadi 'overdue' walau healthStatus belum RED. Programs
+   * page WAJIB memfilter dari sini, bukan menghitung ulang dari healthStatus
+   * (akar bug "Home 18 terlambat, Programs 3"). Opsional untuk payload lama/cache.
+   */
+  healthTone?: 'on_track' | 'at_risk' | 'terlambat' | 'overdue' | 'selesai' | 'draft'
   startDate: string
   targetEndDate: string
   actualEndDate: string | null
@@ -537,10 +545,18 @@ export type SystemStatus = {
 }
 
 export type ActivityItem = {
-  id: number
+  // id sekarang string ber-prefix sumber ('apl-12'/'wisl-3'/'blk-5'...) sejak feed
+  // jadi union log audit nyata — bukan lagi PK tunggal. number dipertahankan utk
+  // back-compat payload lama/cache.
+  id: string | number
   entityType: string
   entityId: number
   action: string
+  /** Aktor sungguhan (byUserName/createdByName). null bila tak tercatat (mis. resolver blocker). */
+  actorName?: string | null
+  /** Subjek event — nama program / judul task / judul blocker. Dikomposisi terlokalisasi di FE. */
+  subject?: string
+  /** Deprecated — hanya untuk payload lama. Feed baru memakai action+actorName+subject. */
   description?: string
   changeTimestamp: string
 }

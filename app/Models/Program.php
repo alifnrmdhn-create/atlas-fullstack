@@ -44,6 +44,52 @@ class Program extends Model
         'pilarStrategis' => PilarStrategis::class,
     ];
 
+    /**
+     * Single source of truth untuk klasifikasi "tone" program (health + jadwal).
+     *
+     * SEBELUMNYA logika ini terduplikasi: OrgSummaryService::classifyProgramHealth
+     * (server, Home) menambahkan bucket `overdue` (lewat targetEndDate) di atas
+     * health RED, sedangkan ProgramsView (client) hanya membaca healthStatus
+     * mentah → Home bilang "18 terlambat", Programs page bilang "3". Dua definisi,
+     * dua implementasi. Sekarang SEMUA surface memakai fungsi ini.
+     *
+     * Urutan cek penting: COMPLETED dulu, lalu draft (belum eksekusi), lalu
+     * overdue (fakta kalender), baru sinyal health (RED/GREEN). overdue dicek
+     * SEBELUM RED supaya program yang lewat tenggat selalu masuk "telat" apapun
+     * warna health-nya.
+     *
+     * @return 'selesai'|'draft'|'overdue'|'terlambat'|'on_track'|'at_risk'
+     */
+    public static function classifyHealthTone(
+        ?string $status,
+        ?string $approvalStatus,
+        $targetEndDate,
+        ?string $healthStatus,
+        ?\Illuminate\Support\Carbon $now = null,
+    ): string {
+        $now = $now ?? now();
+        if ($status === 'COMPLETED' || $approvalStatus === 'COMPLETED') return 'selesai';
+        if (empty($approvalStatus) || !in_array($approvalStatus, ['ACTIVE', 'COMPLETED'])) return 'draft';
+        if ($targetEndDate && $now->gt($targetEndDate)) return 'overdue';
+        if ($healthStatus === 'RED') return 'terlambat';
+        if ($healthStatus === 'GREEN') return 'on_track';
+        return 'at_risk'; // YELLOW or NULL defaults to at_risk
+    }
+
+    /**
+     * Tone terklasifikasi untuk instance ini. Di-serialize ke FE (lihat $appends
+     * di ProgramService) supaya Programs page tak perlu menghitung ulang.
+     */
+    public function getHealthToneAttribute(): string
+    {
+        return self::classifyHealthTone(
+            $this->status,
+            $this->approvalStatus,
+            $this->targetEndDate,
+            $this->healthStatus,
+        );
+    }
+
     public function owner()
     {
         return $this->belongsTo(User::class, 'ownerId');

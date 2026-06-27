@@ -4,13 +4,17 @@ namespace App\Services;
 
 use App\Auth\OrgScope;
 use App\Models\Blocker;
+use App\Models\EscalationRequest;
 use App\Models\KpiDefinition;
 use App\Models\KpiValue;
 use App\Models\OrganizationalUnit;
 use App\Models\Program;
+use App\Models\ProgramApprovalLog;
+use App\Models\ProgramProgressLog;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Payload dashboard eksekutif organisasi (/organization/program-summary).
@@ -556,65 +560,18 @@ class OrgSummaryService
             })->values()->sortBy('date')->take(14)->values()->all();
         }
 
-        // ── 13. Recent Activity (synthetic feed: programs + kpi measurements + blockers) ─
-        $recentProgramActivity = $programs
-            ->filter(fn ($p) => $p->updatedAt && $p->updatedAt->gte($now->copy()->subDays(7)))
-            ->sortByDesc('updatedAt')
-            ->take(5)
-            ->map(fn ($p) => [
-                'id'              => $p->id,
-                'entityType'      => 'PROGRAM',
-                'entityId'        => $p->id,
-                'action'          => match($p->approvalStatus) {
-                    'ACTIVE'       => 'STATUS_CHANGED',
-                    'COMPLETED'    => 'STATUS_CHANGED',
-                    'PENDING_KASUB', 'PENDING_KADIV' => 'CREATED',
-                    default        => 'STATUS_CHANGED',
-                },
-                'description'     => $p->name . ' updated',
-                'changeTimestamp' => $p->updatedAt->toISOString(),
-            ]);
-
-        $recentKpiActivity = collect([]);
-        if (!empty($kpiIds)) {
-            $recentKpiActivity = KpiValue::query()
-                ->whereIn('kpiDefinitionId', $kpiIds)
-                ->where('createdAt', '>=', $now->copy()->subDays(7))
-                ->with('kpiDefinition:id,name,programId')
-                ->orderByDesc('createdAt')
-                ->take(5)
-                ->get()
-                ->map(fn ($v) => [
-                    'id'              => $v->id,
-                    'entityType'      => 'PROGRAM',
-                    'entityId'        => $v->kpiDefinition?->programId ?? 0,
-                    'action'          => 'MEASURED',
-                    'description'     => ($v->kpiDefinition?->name ?? 'KPI') . ' measured',
-                    'changeTimestamp' => $v->createdAt->toISOString(),
-                ]);
-        }
-
-        $recentBlockerActivity = Blocker::query()
-            ->when(!$isExecutive, fn ($q) => $q->whereIn('createdByUnitId', $unitIds))
-            ->where('createdAt', '>=', $now->copy()->subDays(7))
-            ->orderByDesc('createdAt')
-            ->take(5)
-            ->get(['id', 'title', 'code', 'createdAt'])
-            ->map(fn ($b) => [
-                'id'              => $b->id,
-                'entityType'      => 'TASK',
-                'entityId'        => $b->id,
-                'action'          => 'BLOCKER_ADDED',
-                'description'     => $b->title ?? ($b->code ? "Blocker {$b->code}" : 'New blocker added'),
-                'changeTimestamp' => $b->createdAt->toISOString(),
-            ]);
-
-        $recentActivity = $recentProgramActivity
-            ->concat($recentKpiActivity)
-            ->concat($recentBlockerActivity)
-            ->sortByDesc('changeTimestamp')
-            ->take(5)
-            ->values();
+        // ── 13. Recent Activity — feed NYATA dari log audit (bukan sintetik). ──────────
+        // SEBELUMNYA dikarang dari Program.updatedAt/KpiValue.createdAt; karena seeder
+        // stamp 1 now() per run, semua item "X updated" bertimestamp identik
+        // ("21 mnt lalu") tanpa aktor — user benar: "belum real". Sekarang di-agregasi
+        // dari log append-only yang mencatat SIAPA-APA-KAPAN sungguhan.
+        $recentActivity = $this->buildRecentActivity(
+            $programs->pluck('id')->all(),
+            $programs->pluck('name', 'id')->all(),
+            $unitIds,
+            $isExecutive,
+            $now,
+        );
 
         return [
             'scope'           => [
@@ -930,13 +887,158 @@ class OrgSummaryService
 
     private function classifyProgramHealth(Program $p, Carbon $now): string
     {
-        if ($p->status === 'COMPLETED' || $p->approvalStatus === 'COMPLETED') return 'selesai';
-        // DRAFT/PENDING programs not yet in execution — don't mix with operational health
-        if (empty($p->approvalStatus) || !in_array($p->approvalStatus, ['ACTIVE', 'COMPLETED'])) return 'draft';
-        if ($p->targetEndDate && $now->gt($p->targetEndDate)) return 'overdue';
-        if ($p->healthStatus === 'RED') return 'terlambat';
-        if ($p->healthStatus === 'GREEN') return 'on_track';
-        return 'at_risk'; // YELLOW or NULL defaults to at_risk
+        // Single source of truth — lihat Program::classifyHealthTone. Wrapper ini
+        // hanya meneruskan $now batch (konsistensi waktu lintas program di 1 build).
+        return Program::classifyHealthTone(
+            $p->status,
+            $p->approvalStatus,
+            $p->targetEndDate,
+            $p->healthStatus,
+            $now,
+        );
+    }
+
+    /**
+     * Feed aktivitas NYATA — union log audit append-only (who/what/when sungguhan),
+     * menggantikan feed sintetik dari *.updatedAt. Tiap item: entityType PROGRAM +
+     * entityId program (untuk navigasi FE), action (glyph/tone + template i18n di FE),
+     * actorName, subject, changeTimestamp. Description dikomposisi terlokalisasi di FE.
+     *
+     * @param  int[]              $programIds   program dalam scope user
+     * @param  array<int,string>  $programNames id → nama program
+     * @param  int[]              $unitIds      unit dalam scope (untuk blocker)
+     */
+    private function buildRecentActivity(array $programIds, array $programNames, array $unitIds, bool $isExecutive, Carbon $now): \Illuminate\Support\Collection
+    {
+        $items = collect();
+        if (empty($programIds) && !$isExecutive) {
+            return $items; // user tanpa program ter-scope & bukan eksekutif → feed kosong (jujur)
+        }
+        $since = $now->copy()->subDays(14);
+
+        // 1) Lifecycle program — submit/approve/reject/activate/complete/withdraw.
+        $approvalActionMap = [
+            'SUBMITTED' => 'PROGRAM_SUBMITTED', 'APPROVED'  => 'PROGRAM_APPROVED',
+            'REJECTED'  => 'PROGRAM_REJECTED',  'ACTIVATED' => 'PROGRAM_ACTIVATED',
+            'COMPLETED' => 'PROGRAM_COMPLETED', 'WITHDRAWN' => 'PROGRAM_WITHDRAWN',
+        ];
+        ProgramApprovalLog::query()
+            ->when(!$isExecutive, fn ($q) => $q->whereIn('programId', $programIds))
+            ->where('createdAt', '>=', $since)
+            ->orderByDesc('createdAt')->limit(12)
+            ->get(['id', 'programId', 'action', 'byUserName', 'createdAt'])
+            ->each(function ($l) use ($items, $programNames, $approvalActionMap) {
+                $items->push([
+                    'id'              => 'apl-' . $l->id,
+                    'entityType'      => 'PROGRAM',
+                    'entityId'        => (int) $l->programId,
+                    'action'          => $approvalActionMap[$l->action] ?? 'STATUS_CHANGED',
+                    'actorName'       => $l->byUserName,
+                    'subject'         => $programNames[$l->programId] ?? 'Program',
+                    'changeTimestamp' => $l->createdAt?->toISOString(),
+                ]);
+            });
+
+        // 2) Task selesai — WorkItemStatusLog (toStatus COMPLETED). Join ke program
+        //    untuk scope + navigasi. Task→WorkItem, Workstream→Initiative.
+        DB::table('WorkItemStatusLog as l')
+            ->join('WorkItem as wi', 'wi.id', '=', 'l.workItemId')
+            ->join('Initiative as ws', 'ws.id', '=', 'wi.initiativeId')
+            ->when(!$isExecutive, fn ($q) => $q->whereIn('ws.programId', $programIds))
+            ->where('l.toStatus', 'COMPLETED')
+            ->where('l.createdAt', '>=', $since)
+            ->orderByDesc('l.createdAt')->limit(10)
+            ->get(['l.id as id', 'l.byUserName as byUserName', 'l.createdAt as createdAt', 'wi.title as title', 'ws.programId as programId'])
+            ->each(function ($l) use ($items) {
+                $items->push([
+                    'id'              => 'wisl-' . $l->id,
+                    'entityType'      => 'PROGRAM',
+                    'entityId'        => (int) $l->programId,
+                    'action'          => 'TASK_COMPLETED',
+                    'actorName'       => $l->byUserName,
+                    'subject'         => $l->title,
+                    'changeTimestamp' => Carbon::parse($l->createdAt)->toISOString(),
+                ]);
+            });
+
+        // 3) Progress log program (narasi mingguan).
+        ProgramProgressLog::query()
+            ->when(!$isExecutive, fn ($q) => $q->whereIn('programId', $programIds))
+            ->where('createdAt', '>=', $since)
+            ->orderByDesc('createdAt')->limit(8)
+            ->get(['id', 'programId', 'createdByName', 'createdAt'])
+            ->each(function ($l) use ($items, $programNames) {
+                $items->push([
+                    'id'              => 'ppl-' . $l->id,
+                    'entityType'      => 'PROGRAM',
+                    'entityId'        => (int) $l->programId,
+                    'action'          => 'PROGRESS_LOGGED',
+                    'actorName'       => $l->createdByName,
+                    'subject'         => $programNames[$l->programId] ?? 'Program',
+                    'changeTimestamp' => $l->createdAt?->toISOString(),
+                ]);
+            });
+
+        // 4) Blocker dibuat / diselesaikan. createdBy & escalation requestedById hanya
+        //    id → resolve nama via satu query User. Resolver blocker tak tercatat di
+        //    skema (gap jujur) → item "resolved" tanpa aktor.
+        $blockerRows = DB::table('Blocker as b')
+            ->leftJoin('WorkItem as wi', 'wi.id', '=', 'b.workItemId')
+            ->leftJoin('Initiative as ws', 'ws.id', '=', 'wi.initiativeId')
+            ->when(!$isExecutive, fn ($q) => $q->whereIn('b.createdByUnitId', $unitIds))
+            ->where(fn ($q) => $q->where('b.createdAt', '>=', $since)->orWhere('b.resolvedAt', '>=', $since))
+            ->orderByDesc('b.createdAt')->limit(10)
+            ->get(['b.id as id', 'b.title as title', 'b.code as code', 'b.createdBy as createdBy', 'b.createdAt as createdAt', 'b.resolvedAt as resolvedAt', 'ws.programId as programId']);
+
+        // 5) Eskalasi diajukan.
+        $escalationRows = EscalationRequest::query()
+            ->when(!$isExecutive, fn ($q) => $q->whereIn('linkedProgramId', $programIds))
+            ->where('requestedAt', '>=', $since)
+            ->orderByDesc('requestedAt')->limit(8)
+            ->get(['id', 'title', 'requestedById', 'linkedProgramId', 'requestedAt']);
+
+        // Resolve nama aktor (blocker creator + escalation requester) sekali jalan.
+        $actorIds = $blockerRows->pluck('createdBy')
+            ->merge($escalationRows->pluck('requestedById'))
+            ->filter()->unique()->values();
+        $actorNames = $actorIds->isEmpty()
+            ? collect()
+            : User::query()->whereIn('id', $actorIds)->pluck('name', 'id');
+
+        foreach ($blockerRows as $b) {
+            $subject = $b->title ?: ($b->code ? "Blocker {$b->code}" : 'Blocker');
+            $entityId = (int) ($b->programId ?? 0);
+            // Item "dibuat" hanya bila benar di window (orWhere bisa lolos by resolvedAt).
+            if ($b->createdAt && Carbon::parse($b->createdAt)->gte($since)) {
+                $items->push([
+                    'id' => 'blk-' . $b->id, 'entityType' => 'PROGRAM', 'entityId' => $entityId,
+                    'action' => 'BLOCKER_ADDED', 'actorName' => $actorNames[$b->createdBy] ?? null,
+                    'subject' => $subject, 'changeTimestamp' => Carbon::parse($b->createdAt)->toISOString(),
+                ]);
+            }
+            if ($b->resolvedAt && Carbon::parse($b->resolvedAt)->gte($since)) {
+                $items->push([
+                    'id' => 'blkr-' . $b->id, 'entityType' => 'PROGRAM', 'entityId' => $entityId,
+                    'action' => 'BLOCKER_RESOLVED', 'actorName' => null,
+                    'subject' => $subject, 'changeTimestamp' => Carbon::parse($b->resolvedAt)->toISOString(),
+                ]);
+            }
+        }
+
+        foreach ($escalationRows as $e) {
+            $items->push([
+                'id' => 'esc-' . $e->id, 'entityType' => 'PROGRAM', 'entityId' => (int) ($e->linkedProgramId ?? 0),
+                'action' => 'ESCALATION_RAISED', 'actorName' => $actorNames[$e->requestedById] ?? null,
+                'subject' => $e->title ?: 'Escalation',
+                'changeTimestamp' => $e->requestedAt?->toISOString(),
+            ]);
+        }
+
+        return $items
+            ->filter(fn ($i) => !empty($i['changeTimestamp']))
+            ->sortByDesc('changeTimestamp')
+            ->take(8)
+            ->values();
     }
 
     private function toneLabel(string $tone): string
