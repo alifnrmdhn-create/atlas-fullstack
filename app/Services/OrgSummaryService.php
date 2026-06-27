@@ -182,28 +182,20 @@ class OrgSummaryService
             ]);
 
         // Programs with critical blockers (via createdByUnitId path).
-        // Blocker open + severity CRITICAL/HIGH dalam scope. Yang SUDAH punya
-        // escalation aktif (sedang di-clear-the-path) di-DROP di sini — rumahnya
-        // pindah ke tracker "Escalations I Raised"; tanpa ini atasan yang sudah
-        // eskalasi tetap di-nag "critical blockers need escalation" (loop melingkar
-        // — keluhan user Jun 2026). Lihat EscalationRequest::activeCoverage.
-        $openBlockers = Blocker::query()
-            ->whereNull('resolvedAt')
+        // Aturan lintas-feed (live: belum resolved + program tak diarsipkan) di-hoist
+        // ke FocusSignalService supaya seragam dgn feed NOW — dulu needsAction lupa
+        // filter archived. Yang SUDAH punya escalation aktif (sedang di-clear-the-path)
+        // di-DROP via rejectEscalated — rumahnya pindah ke tracker "Escalations I
+        // Raised"; tanpa ini atasan yang sudah eskalasi tetap di-nag (loop melingkar).
+        $openBlockers = FocusSignalService::liveBlockerQuery()
             ->whereIn('severity', ['CRITICAL', 'HIGH'])
             ->when(!$isExecutive, fn ($q) => $q->whereIn('createdByUnitId', $unitIds))
             ->limit(20)
             ->with('task.workstream.program:id,code,name,ownerUnitId,ownerId')
             ->get()
-            ->filter(fn ($b) => $b->task?->workstream?->program); // hanya yang program-nya ke-resolve
+            ->filter(fn ($b) => $b->task?->workstream?->program); // null-safety eager-load
 
-        $coverage = \App\Models\EscalationRequest::activeCoverage(
-            $openBlockers->pluck('id')->all(),
-            $openBlockers->map(fn ($b) => $b->task->workstream->program->id)->unique()->all(),
-        );
-
-        $criticalBlockers = $openBlockers
-            ->reject(fn ($b) => $coverage['blockerIds']->has($b->id)
-                || $coverage['programIds']->has($b->task->workstream->program->id))
+        $criticalBlockers = FocusSignalService::rejectEscalated($openBlockers)
             // Dedup per-program (satu baris/program). blockerId yang dibawa = blocker
             // pertama yang belum tertutup — cukup untuk mengarahkan eskalasi presisi.
             ->unique(fn ($b) => $b->task->workstream->program->id)

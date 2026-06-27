@@ -151,6 +151,30 @@ class FocusEscalationSuppressionTest extends TestCase
         );
     }
 
+    /**
+     * Konsolidasi FocusSignalService: aturan "live" (program tak diarsipkan) kini
+     * dipegang satu tempat & dipakai KEDUA feed. Dulu needsAction lupa filter
+     * archived (NOW menerapkannya) → blocker program ter-arsip muncul di satu feed
+     * tapi tidak di feed lain. Lock: archived → hilang dari KEDUANYA.
+     */
+    public function test_archived_program_blocker_hidden_from_both_feeds(): void
+    {
+        $this->assertNotNull($this->blockerItem($this->needsAction($this->kadiv)));
+        $this->assertContains($this->blockerId, $this->nowBlockerIds($this->admin));
+
+        Program::whereKey($this->programId)->update(['archivedAt' => now()]);
+
+        $this->assertNull(
+            $this->blockerItem($this->needsAction($this->kadiv)),
+            'Archived program blocker must not surface in needsAction.'
+        );
+        $this->assertNotContains(
+            $this->blockerId,
+            $this->nowBlockerIds($this->admin),
+            'Archived program blocker must not surface in NOW feed.'
+        );
+    }
+
     public function test_support_disposition_rejected_when_user_is_owner(): void
     {
         // admin = owner program → "Give support to the PIC" tak berlaku (kirim ke
